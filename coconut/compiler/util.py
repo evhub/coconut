@@ -41,6 +41,7 @@ from coconut._pyparsing import (
     Regex,
     Empty,
     Literal,
+    Group,
     _trim_arity,
     _ParseResultsWithOffset,
 )
@@ -459,6 +460,11 @@ def disable_outside(item, *elems):
 # -----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
 # -----------------------------------------------------------------------------------------------------------------------
+
+def labeled_group(item, label):
+    """A labeled pyparsing Group."""
+    return Group(item(label))
+
 
 def invalid_syntax(item, msg, **kwargs):
     """Mark a grammar item as an invalid item that raises a syntax err with msg."""

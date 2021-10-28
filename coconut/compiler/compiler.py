@@ -450,7 +450,7 @@ class Compiler(Grammar):
         self.simple_assign <<= attach(self.simple_assign_ref, self.item_handle)
 
         # abnormally named handlers
-        self.normal_pipe_expr <<= attach(self.normal_pipe_expr_ref, self.pipe_handle)
+        self.normal_pipe_expr <<= attach(self.normal_pipe_expr_tokens, self.pipe_handle)
         self.return_typedef <<= attach(self.return_typedef_ref, self.typedef_handle)
 
         # standard handlers of the form name <<= attach(name_tokens, name_handle) (implies name_tokens is reused)
@@ -463,7 +463,7 @@ class Compiler(Grammar):
         self.classdef <<= attach(self.classdef_ref, self.classdef_handle)
         self.import_stmt <<= attach(self.import_stmt_ref, self.import_handle)
         self.complex_raise_stmt <<= attach(self.complex_raise_stmt_ref, self.complex_raise_stmt_handle)
-        self.augassign_stmt <<= attach(self.augassign_stmt_ref, self.augassign_handle)
+        self.augassign_stmt <<= attach(self.augassign_stmt_ref, self.augassign_stmt_handle)
         self.kwd_augassign <<= attach(self.kwd_augassign_ref, self.kwd_augassign_handle)
         self.dict_comp <<= attach(self.dict_comp_ref, self.dict_comp_handle)
         self.destructuring_stmt <<= attach(self.destructuring_stmt_ref, self.destructuring_stmt_handle)
@@ -1575,57 +1575,65 @@ while True:
 
     def kwd_augassign_handle(self, loc, tokens):
         """Process global/nonlocal augmented assignments."""
-        internal_assert(len(tokens) == 3, "invalid global/nonlocal augmented assignment tokens", tokens)
-        name, op, item = tokens
-        return name + "\n" + self.augassign_handle(loc, tokens)
+        internal_assert(len(tokens) == 2, "invalid global/nonlocal augmented assignment tokens", tokens)
+        name, augassign = tokens
+        return name + "\n" + self.augassign_stmt_handle(loc, tokens)
 
-    def augassign_handle(self, loc, tokens):
+    def augassign_stmt_handle(self, loc, tokens):
         """Process augmented assignments."""
-        internal_assert(len(tokens) == 3, "invalid assignment tokens", tokens)
-        name, op, item = tokens
-        out = ""
+        internal_assert(len(tokens) == 2, "invalid augmented assignment tokens", tokens)
+        name, augassign = tokens
+
+        if "pipe" in augassign:
+            op, original_pipe_tokens = augassign[0], augassign[1:]
+            new_pipe_tokens = [ParseResults([name], name="expr"), op]
+            new_pipe_tokens.extend(original_pipe_tokens)
+            return name + " = " + self.pipe_handle(loc, new_pipe_tokens)
+
+        internal_assert("simple" in augassign, "invalid augmented assignment rhs tokens", augassign)
+        op, item = augassign
+
         if op == "|>=":
-            out += name + " = (" + item + ")(" + name + ")"
+            return name + " = (" + item + ")(" + name + ")"
         elif op == "|*>=":
-            out += name + " = (" + item + ")(*" + name + ")"
+            return name + " = (" + item + ")(*" + name + ")"
         elif op == "|**>=":
-            out += name + " = (" + item + ")(**" + name + ")"
+            return name + " = (" + item + ")(**" + name + ")"
         elif op == "<|=":
-            out += name + " = " + name + "((" + item + "))"
+            return name + " = " + name + "((" + item + "))"
         elif op == "<*|=":
-            out += name + " = " + name + "(*(" + item + "))"
+            return name + " = " + name + "(*(" + item + "))"
         elif op == "<**|=":
-            out += name + " = " + name + "(**(" + item + "))"
+            return name + " = " + name + "(**(" + item + "))"
         elif op == "|?>=":
-            out += name + " = _coconut_none_pipe(" + name + ", (" + item + "))"
+            return name + " = _coconut_none_pipe(" + name + ", (" + item + "))"
         elif op == "|?*>=":
-            out += name + " = _coconut_none_star_pipe(" + name + ", (" + item + "))"
+            return name + " = _coconut_none_star_pipe(" + name + ", (" + item + "))"
         elif op == "|?**>=":
-            out += name + " = _coconut_none_dubstar_pipe(" + name + ", (" + item + "))"
+            return name + " = _coconut_none_dubstar_pipe(" + name + ", (" + item + "))"
         elif op == "..=" or op == "<..=":
-            out += name + " = _coconut_forward_compose((" + item + "), " + name + ")"
+            return name + " = _coconut_forward_compose((" + item + "), " + name + ")"
         elif op == "..>=":
-            out += name + " = _coconut_forward_compose(" + name + ", (" + item + "))"
+            return name + " = _coconut_forward_compose(" + name + ", (" + item + "))"
         elif op == "<*..=":
-            out += name + " = _coconut_forward_star_compose((" + item + "), " + name + ")"
+            return name + " = _coconut_forward_star_compose((" + item + "), " + name + ")"
         elif op == "..*>=":
-            out += name + " = _coconut_forward_star_compose(" + name + ", (" + item + "))"
+            return name + " = _coconut_forward_star_compose(" + name + ", (" + item + "))"
         elif op == "<**..=":
-            out += name + " = _coconut_forward_dubstar_compose((" + item + "), " + name + ")"
+            return name + " = _coconut_forward_dubstar_compose((" + item + "), " + name + ")"
         elif op == "..**>=":
-            out += name + " = _coconut_forward_dubstar_compose(" + name + ", (" + item + "))"
+            return name + " = _coconut_forward_dubstar_compose(" + name + ", (" + item + "))"
         elif op == "??=":
-            out += name + " = " + item + " if " + name + " is None else " + name
+            return name + " = " + item + " if " + name + " is None else " + name
         elif op == "::=":
             ichain_var = self.get_temp_var("lazy_chain")
             # this is necessary to prevent a segfault caused by self-reference
-            out += (
+            return (
                 ichain_var + " = " + name + "\n"
                 + name + " = _coconut.itertools.chain.from_iterable(" + lazy_list_handle(loc, [ichain_var, "(" + item + ")"]) + ")"
             )
         else:
-            out += name + " " + op + " " + item
-        return out
+            return name + " " + op + " " + item
 
     def classdef_handle(self, original, loc, tokens):
         """Process class definitions."""
