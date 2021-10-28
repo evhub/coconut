@@ -3042,7 +3042,10 @@ __annotations__["{name}"] = {annotation}
             self.unused_imports.discard(name)
 
         if name == "exec":
-            return self.check_py("3", "exec function", original, loc, tokens)
+            if self.target.startswith("3"):
+                return name
+            else:
+                return "_coconut_exec"
         elif name.startswith(reserved_prefix):
             raise self.make_err(CoconutSyntaxError, "variable names cannot start with reserved prefix " + reserved_prefix, original, loc)
         else:
