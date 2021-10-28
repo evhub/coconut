@@ -773,7 +773,7 @@ class Compiler(Grammar):
                     )
         if self.strict:
             for name in self.unused_imports:
-                logger.warn("found unused import", name, extra="disable --strict to dismiss")
+                logger.warn("found unused import", name, extra="remove --strict to dismiss")
         return out
 
     def replace_matches_of_inside(self, name, elem, *items):
@@ -3009,11 +3009,10 @@ __annotations__["{name}"] = {annotation}
         """Check that syntax meets --strict requirements."""
         internal_assert(len(tokens) == 1, "invalid " + name + " tokens", tokens)
         if self.strict:
-            err = self.make_err(CoconutStyleError, "found " + name, original, loc)
             if only_warn:
-                logger.warn_err(err)
+                logger.warn_err(self.make_err(CoconutSyntaxWarning, "found " + name, original, loc, extra="remove --strict to dismiss"))
             else:
-                raise err
+                raise self.make_err(CoconutStyleError, "found " + name, original, loc)
         return tokens[0]
 
     def lambdef_check(self, original, loc, tokens):
