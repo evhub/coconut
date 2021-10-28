@@ -27,6 +27,10 @@ Specifically, Coconut adds to Python _built-in, syntactical support_ for:
 
 and much more!
 
+### Interactive Tutorial
+
+This tutorial is non-interactive. To get an interactive tutorial instead, check out [Coconut's interactive tutorial](https://hmcfabfive.github.io/coconut-tutorial).
+
 ### Installation
 
 At its very core, Coconut is a compiler that turns Coconut code into Python code. That means that anywhere where you can use a Python script, you can also use a compiled Coconut script. To access that core compiler, Coconut comes with a command-line utility, which can
