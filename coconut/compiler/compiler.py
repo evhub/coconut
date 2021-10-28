@@ -1329,11 +1329,11 @@ class Compiler(Grammar):
             - (expr,) for expression,
             - (func, pos_args, kwd_args) for partial,
             - (name, args) for attr/method, and
-            - (op, args) for itemgetter."""
+            - (op, args)+ for itemgetter."""
         # list implies artificial tokens, which must be expr
         if isinstance(tokens, list) or "expr" in tokens:
             internal_assert(len(tokens) == 1, "invalid expr pipe item tokens", tokens)
-            return "expr", (tokens[0],)
+            return "expr", tokens
         elif "partial" in tokens:
             func, args = tokens
             pos_args, star_args, kwd_args, dubstar_args = self.split_function_call(args, loc)
@@ -1342,8 +1342,8 @@ class Compiler(Grammar):
             name, args = attrgetter_atom_split(tokens)
             return "attrgetter", (name, args)
         elif "itemgetter" in tokens:
-            op, args = tokens
-            return "itemgetter", (op, args)
+            internal_assert(len(tokens) >= 2, "invalid itemgetter pipe item tokens", tokens)
+            return "itemgetter", tokens
         else:
             raise CoconutInternalException("invalid pipe item tokens", tokens)
 
@@ -1414,16 +1414,21 @@ class Compiler(Grammar):
                         raise CoconutDeferredSyntaxError("cannot star pipe into attribute access or method call", loc)
                     return "({x}).{attr}{call}".format(x=subexpr, attr=attr, call=call)
                 elif name == "itemgetter":
-                    op, args = split_item
                     if stars:
                         raise CoconutDeferredSyntaxError("cannot star pipe into item getting", loc)
-                    if op == "[":
-                        fmtstr = "({x})[{args}]"
-                    elif op == "$[":
-                        fmtstr = "_coconut_igetitem({x}, ({args}))"
-                    else:
-                        raise CoconutInternalException("pipe into invalid implicit itemgetter operation", op)
-                    return fmtstr.format(x=subexpr, args=args)
+                    internal_assert(len(split_item) % 2 == 0, "invalid itemgetter pipe tokens", split_item)
+                    out = subexpr
+                    for i in range(len(split_item) // 2):
+                        i *= 2
+                        op, args = split_item[i:i + 2]
+                        if op == "[":
+                            fmtstr = "({x})[{args}]"
+                        elif op == "$[":
+                            fmtstr = "_coconut_igetitem({x}, ({args}))"
+                        else:
+                            raise CoconutInternalException("pipe into invalid implicit itemgetter operation", op)
+                        out = fmtstr.format(x=out, args=args)
+                    return out
                 else:
                     raise CoconutInternalException("invalid split pipe item", split_item)
 

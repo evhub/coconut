@@ -393,9 +393,9 @@ def suite_test() -> bool:
     assert Quant_(0, 1, 2) |> fmap$(-> _+1) == Quant_(1, 2, 3)  # type: ignore
     a = Nest()
     assert a.b.c.d == "data"
-    assert (.b.c.d)(a) == "data"
-    assert a |> .b.c.d == "data"
+    assert a |> .b.c.d == "data" == (.b.c.d)(a)
     assert a.b.c.m() == "method"
+    assert .b.c.m() <| a == "method" == (.b.c.m())(a)
     assert a |> .b.c ..> .m() == "method"
     assert a |> .b.c |> .m() == "method"
     assert a?.b?.c?.m?() == "method"

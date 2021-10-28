@@ -225,11 +225,15 @@ def attrgetter_atom_handle(loc, tokens):
     if args is None:
         return '_coconut.operator.attrgetter("' + name + '")'
     elif "." in name:
-        raise CoconutDeferredSyntaxError("cannot have attribute access in implicit methodcaller partial", loc)
+        attr, method = name.rsplit(".", 1)
+        return '_coconut_forward_compose(_coconut.operator.attrgetter("{attr}"), {methodcaller})'.format(
+            attr=attr,
+            methodcaller=attrgetter_atom_handle(loc, [method, "(", args]),
+        )
     elif args == "":
-        return '_coconut.operator.methodcaller("' + tokens[0] + '")'
+        return '_coconut.operator.methodcaller("' + name + '")'
     else:
-        return '_coconut.operator.methodcaller("' + tokens[0] + '", ' + tokens[2] + ")"
+        return '_coconut.operator.methodcaller("' + name + '", ' + args + ")"
 
 
 def lazy_list_handle(loc, tokens):
@@ -359,14 +363,23 @@ def subscriptgroup_handle(tokens):
 
 def itemgetter_handle(tokens):
     """Process implicit itemgetter partials."""
-    internal_assert(len(tokens) == 2, "invalid implicit itemgetter args", tokens)
-    op, args = tokens
-    if op == "[":
-        return "_coconut.operator.itemgetter((" + args + "))"
-    elif op == "$[":
-        return "_coconut.functools.partial(_coconut_igetitem, index=(" + args + "))"
+    if len(tokens) == 2:
+        op, args = tokens
+        if op == "[":
+            return "_coconut.operator.itemgetter((" + args + "))"
+        elif op == "$[":
+            return "_coconut.functools.partial(_coconut_igetitem, index=(" + args + "))"
+        else:
+            raise CoconutInternalException("invalid implicit itemgetter type", op)
+    elif len(tokens) > 2:
+        internal_assert(len(tokens) % 2 == 0, "invalid itemgetter composition tokens", tokens)
+        itemgetters = []
+        for i in range(len(tokens) // 2):
+            i *= 2
+            itemgetters.append(itemgetter_handle(tokens[i:i + 2]))
+        return "_coconut_forward_compose(" + ", ".join(itemgetters) + ")"
     else:
-        raise CoconutInternalException("invalid implicit itemgetter type", op)
+        raise CoconutInternalException("invalid implicit itemgetter tokens", tokens)
 
 
 def class_suite_handle(tokens):
@@ -1003,7 +1016,7 @@ class Grammar(object):
         lparen + Optional(methodcaller_args) + rparen.suppress(),
     )
     attrgetter_atom = attach(attrgetter_atom_tokens, attrgetter_atom_handle)
-    itemgetter_atom_tokens = dot.suppress() + condense(Optional(dollar) + lbrack) + subscriptgrouplist + rbrack.suppress()
+    itemgetter_atom_tokens = dot.suppress() + OneOrMore(condense(Optional(dollar) + lbrack) + subscriptgrouplist + rbrack.suppress())
     itemgetter_atom = attach(itemgetter_atom_tokens, itemgetter_handle)
     implicit_partial_atom = attrgetter_atom | itemgetter_atom
 
