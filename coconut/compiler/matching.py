@@ -780,7 +780,7 @@ class Matcher(object):
         match, trailers = tokens[0], tokens[1:]
         for i in range(0, len(trailers), 2):
             op, arg = trailers[i], trailers[i + 1]
-            if op == "is":
+            if op == "isinstance":
                 self.add_check("_coconut.isinstance(" + item + ", " + arg + ")")
             elif op == "as":
                 self.match_var([arg], item, bind_wildcard=True)
