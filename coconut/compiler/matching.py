@@ -220,7 +220,7 @@ class Matcher(object):
             if extra:
                 full_msg += " (" + extra + ")"
             if self.style.endswith("strict"):
-                full_msg += " (disable --strict to dismiss)"
+                full_msg += " (remove --strict to dismiss)"
             logger.warn_err(self.comp.make_err(CoconutSyntaxWarning, full_msg, self.original, self.loc))
 
     def add_guard(self, cond):

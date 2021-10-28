@@ -497,7 +497,7 @@ class Command(object):
                 break
         if package_level < 0:
             if self.comp.strict:
-                logger.warn("missing __init__" + code_exts[0] + " in package", check_dir, extra="disable --strict to dismiss")
+                logger.warn("missing __init__" + code_exts[0] + " in package", check_dir, extra="remove --strict to dismiss")
             package_level = 0
         return package_level
         return 0
