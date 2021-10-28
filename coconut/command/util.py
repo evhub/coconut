@@ -28,6 +28,10 @@ from select import select
 from contextlib import contextmanager
 from copy import copy
 from functools import partial
+if PY2:
+    import __builtin__ as builtins
+else:
+    import builtins
 
 from coconut.terminal import (
     logger,
@@ -165,9 +169,8 @@ def rem_encoding(code):
 def exec_func(code, glob_vars, loc_vars=None):
     """Wrapper around exec."""
     if loc_vars is None:
-        exec(code, glob_vars)
-    else:
-        exec(code, glob_vars, loc_vars)
+        loc_vars = glob_vars
+    exec(code, glob_vars, loc_vars)
 
 
 def interpret(code, in_vars):
@@ -511,10 +514,14 @@ class Runner(object):
         }
         if path is not None:
             init_vars["__file__"] = fixpath(path)
-        # put reserved_vars in for auto-completion purposes only at the very beginning
         if init:
+            # put reserved_vars in for auto-completion purposes only at the very beginning
             for var in reserved_vars:
                 init_vars[var] = None
+            # but make sure to override with default Python built-ins, which can overlap with reserved_vars
+            for k, v in vars(builtins).items():
+                if not k.startswith("_"):
+                    init_vars[k] = v
         return init_vars
 
     def store(self, line):
