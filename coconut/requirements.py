@@ -132,6 +132,12 @@ def get_reqs(which):
                     elif not CPYTHON:
                         use_req = False
                         break
+                elif mark == "windows":
+                    if supports_env_markers:
+                        markers.append("os_name=='nt'")
+                    elif not WINDOWS:
+                        use_req = False
+                        break
                 elif mark.startswith("mark"):
                     pass  # ignore
                 else:

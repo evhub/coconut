@@ -532,6 +532,7 @@ all_reqs = {
         ("jupyter-client", "py2"),
         ("jupyter-client", "py3"),
         "jedi",
+        ("pywinpty", "py2;windows"),
     ),
     "mypy": (
         "mypy[python2]",
@@ -604,6 +605,7 @@ min_versions = {
     # don't upgrade this; it breaks on Python 3.4
     "pygments": (2, 3),
     # don't upgrade these; they break on Python 2
+    ("pywinpty", "py2;windows"): (0, 5),
     ("jupyter-console", "py2"): (5, 2),
     ("ipython", "py2"): (5, 4),
     ("ipykernel", "py2"): (4, 10),
@@ -631,6 +633,7 @@ pinned_reqs = (
     "pytest",
     "vprof",
     "pygments",
+    ("pywinpty", "py2;windows"),
     ("jupyter-console", "py2"),
     ("ipython", "py2"),
     ("ipykernel", "py2"),
@@ -654,6 +657,7 @@ max_versions = {
     "mypy[python2]": _,
     ("prompt_toolkit", "mark2"): _,
     "jedi": _,
+    ("pywinpty", "py2;windows"): _,
 }
 
 classifiers = (
