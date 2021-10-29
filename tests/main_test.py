@@ -23,6 +23,7 @@ import unittest
 import sys
 import os
 import shutil
+import functools
 from contextlib import contextmanager
 
 import pexpect
@@ -284,6 +285,32 @@ def noop_ctx():
     yield
 
 
+def test_func(test_func, cls):
+    """Decorator for test functions."""
+    @functools.wraps(test_func)
+    def new_test_func(*args, **kwargs):
+        print(
+            """
+
+===============================================================================
+running {cls_name}.{name}...
+===============================================================================""".format(
+                cls_name=cls.__name__,
+                name=test_func.__name__,
+            ),
+        )
+        return test_func(*args, **kwargs)
+    return new_test_func
+
+
+def test_class(cls):
+    """Decorator for test classes."""
+    for name, attr in cls.__dict__.items():
+        if name.startswith("test_") and callable(attr):
+            setattr(cls, name, test_func(attr, cls))
+    return cls
+
+
 # -----------------------------------------------------------------------------------------------------------------------
 # RUNNER:
 # -----------------------------------------------------------------------------------------------------------------------
@@ -452,6 +479,7 @@ def run_runnable(args=[]):
 # -----------------------------------------------------------------------------------------------------------------------
 
 
+@test_class
 class TestShell(unittest.TestCase):
 
     def test_code(self):
@@ -520,6 +548,7 @@ class TestShell(unittest.TestCase):
                     p.terminate()
 
 
+@test_class
 class TestCompilation(unittest.TestCase):
 
     def test_normal(self):
@@ -591,6 +620,7 @@ class TestCompilation(unittest.TestCase):
         run_runnable(["-n", "--minify"])
 
 
+@test_class
 class TestExternal(unittest.TestCase):
 
     def test_pyprover(self):
