@@ -555,7 +555,7 @@ all_reqs = {
     "docs": (
         "sphinx",
         "pygments",
-        "recommonmark",
+        "myst-parser",
         "sphinx_bootstrap_theme",
     ),
     "tests": (
@@ -571,7 +571,6 @@ all_reqs = {
 min_versions = {
     "cPyparsing": (2, 4, 7, 1, 0, 0),
     ("pre-commit", "py3"): (2,),
-    "recommonmark": (0, 7),
     "psutil": (5,),
     "jupyter": (1, 0),
     "mypy[python2]": (0, 910),
@@ -586,6 +585,9 @@ min_versions = {
     ("numpy", "py2;cpy"): (1,),
     ("dataclasses", "py36-only"): (0, 8),
     ("aenum", "py<34"): (3,),
+    "sphinx": (4, 2),
+    "sphinx_bootstrap_theme": (0, 8),
+    "myst-parser": (0, 15),
     # don't upgrade this until https://github.com/jupyter/jupyter_console/issues/241 is fixed
     ("jupyter-client", "py3"): (6, 1),
     # latest version supported on Python 2
@@ -611,9 +613,6 @@ min_versions = {
     ("ipykernel", "py2"): (4, 10),
     ("prompt_toolkit", "mark2"): (1,),
     "watchdog": (0, 10),
-    # don't upgrade these; they break on master
-    "sphinx": (1, 7, 4),
-    "sphinx_bootstrap_theme": (0, 4, 8),
     # don't upgrade this; it breaks with old IPython versions
     "jedi": (0, 17),
     # Coconut works best on pyparsing 2
@@ -639,8 +638,6 @@ pinned_reqs = (
     ("ipykernel", "py2"),
     ("prompt_toolkit", "mark2"),
     "watchdog",
-    "sphinx",
-    "sphinx_bootstrap_theme",
     "jedi",
     "pyparsing",
 )
@@ -652,8 +649,6 @@ _ = None
 max_versions = {
     "pyparsing": _,
     "cPyparsing": (_, _, _),
-    "sphinx": _,
-    "sphinx_bootstrap_theme": (_, _),
     "mypy[python2]": _,
     ("prompt_toolkit", "mark2"): _,
     "jedi": _,
