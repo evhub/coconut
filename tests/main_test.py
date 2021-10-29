@@ -285,7 +285,7 @@ def noop_ctx():
     yield
 
 
-def test_func(test_func, cls):
+def add_test_func_name(test_func, cls):
     """Decorator for test functions."""
     @functools.wraps(test_func)
     def new_test_func(*args, **kwargs):
@@ -303,11 +303,11 @@ running {cls_name}.{name}...
     return new_test_func
 
 
-def test_class(cls):
+def add_test_func_names(cls):
     """Decorator for test classes."""
     for name, attr in cls.__dict__.items():
         if name.startswith("test_") and callable(attr):
-            setattr(cls, name, test_func(attr, cls))
+            setattr(cls, name, add_test_func_name(attr, cls))
     return cls
 
 
@@ -479,7 +479,7 @@ def run_runnable(args=[]):
 # -----------------------------------------------------------------------------------------------------------------------
 
 
-@test_class
+@add_test_func_names
 class TestShell(unittest.TestCase):
 
     def test_code(self):
@@ -548,7 +548,7 @@ class TestShell(unittest.TestCase):
                     p.terminate()
 
 
-@test_class
+@add_test_func_names
 class TestCompilation(unittest.TestCase):
 
     def test_normal(self):
@@ -620,7 +620,7 @@ class TestCompilation(unittest.TestCase):
         run_runnable(["-n", "--minify"])
 
 
-@test_class
+@add_test_func_names
 class TestExternal(unittest.TestCase):
 
     def test_pyprover(self):
