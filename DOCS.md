@@ -1,9 +1,10 @@
 # Coconut Documentation
 
-```eval_rst
-.. contents::
-    :local:
-    :depth: 2
+```{contents}
+---
+local:
+depth: 2
+---
 ```
 
 ## Overview

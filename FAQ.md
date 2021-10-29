@@ -2,9 +2,10 @@
 
 ## Frequently Asked Questions
 
-```eval_rst
-.. contents::
-    :local:
+```{contents}
+---
+local:
+---
 ```
 
 ### Can I use Python modules from Coconut and Coconut modules from Python?
