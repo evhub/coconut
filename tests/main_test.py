@@ -30,6 +30,7 @@ if sys.version_info >= (2, 7):
 else:
     import imp
 
+import pytest
 import pexpect
 
 from coconut.terminal import (
@@ -112,9 +113,10 @@ def escape(inputstring):
         return '"' + inputstring.replace("$", "\\$").replace("`", "\\`") + '"'
 
 
-def call_with_import(module_name, argv=None, assert_result=True):
+def call_with_import(module_name, extra_argv=[], assert_result=True):
     """Import module_name and run module.main() with given argv, capturing output."""
-    print("import", module_name, "with sys.argv=" + repr(argv))
+    pytest.register_assert_rewrite(module_name)
+    print("import", module_name, "with extra_argv=" + repr(extra_argv))
     old_stdout, sys.stdout = sys.stdout, LoggingStringIO(sys.stdout)
     old_stderr, sys.stderr = sys.stderr, LoggingStringIO(sys.stderr)
     old_argv = sys.argv
@@ -124,7 +126,7 @@ def call_with_import(module_name, argv=None, assert_result=True):
                 module = importlib.import_module(module_name)
             else:
                 module = imp.load_module(module_name, *imp.find_module(module_name))
-            sys.argv = argv or [module.__file__]
+            sys.argv = [module.__file__] + extra_argv
             result = module.main()
             if assert_result:
                 assert result
@@ -173,18 +175,18 @@ def call(cmd, assert_output=False, check_mypy=False, check_errors=True, stderr_f
         assert cmd[0] == sys.executable
         if cmd[1] == "-m":
             module_name = cmd[2]
-            argv = cmd[3:]
-            stdout, stderr, retcode = call_with_import(module_name, argv)
+            extra_argv = cmd[3:]
+            stdout, stderr, retcode = call_with_import(module_name, extra_argv)
         else:
             module_path = cmd[1]
-            argv = cmd[2:]
+            extra_argv = cmd[2:]
             module_dir = os.path.dirname(module_path)
             module_name = os.path.splitext(os.path.basename(module_path))[0]
             if os.path.isdir(module_path):
                 module_name += ".__main__"
             sys.path.append(module_dir)
             try:
-                stdout, stderr, retcode = call_with_import(module_name, argv)
+                stdout, stderr, retcode = call_with_import(module_name, extra_argv)
             finally:
                 sys.path.remove(module_dir)
     else:
