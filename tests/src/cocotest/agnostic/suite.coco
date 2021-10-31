@@ -642,7 +642,7 @@ def suite_test() -> bool:
     else:
         assert False
     assert vector.__match_args__ == ("x", "y") == typed_vector.__match_args__  # type: ignore
-    assert Pred.__match_args__ == ("name",) == Pred_.__match_args__  # type: ignore
+    assert Pred.__match_args__ == ("name", "args") == Pred_.__match_args__  # type: ignore
     m = Matchable(1, 2, 3)
     class Matchable(newx, neqy, newz) = m
     assert (newx, newy, newz) == (1, 2, 3)

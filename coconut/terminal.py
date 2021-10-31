@@ -24,6 +24,10 @@ import traceback
 import logging
 import time
 from contextlib import contextmanager
+if sys.version_info < (2, 7):
+    from StringIO import StringIO
+else:
+    from io import StringIO
 
 from coconut._pyparsing import (
     lineno,
@@ -50,9 +54,8 @@ from coconut.exceptions import (
 
 
 # -----------------------------------------------------------------------------------------------------------------------
-# FUNCTIONS:
+# UTILITIES:
 # -----------------------------------------------------------------------------------------------------------------------
-
 
 def format_error(err_type, err_value, err_trace=None):
     """Properly formats the specified error."""
@@ -125,10 +128,44 @@ def get_clock_time():
         return time.process_time()
 
 
-# -----------------------------------------------------------------------------------------------------------------------
-# logger:
-# -----------------------------------------------------------------------------------------------------------------------
+class LoggingStringIO(StringIO):
+    """StringIO that logs whenever it's written to."""
 
+    def __init__(self, log_to=None, prefix=""):
+        """Initialize the buffer."""
+        super(LoggingStringIO, self).__init__()
+        self.log_to = log_to or sys.stderr
+        self.prefix = prefix
+
+    def write(self, s):
+        """Write to the buffer."""
+        super(LoggingStringIO, self).write(s)
+        self.log(s)
+
+    def writelines(self, lines):
+        """Write lines to the buffer."""
+        super(LoggingStringIO, self).writelines(lines)
+        self.log("".join(lines))
+
+    def log(self, *args):
+        """Log the buffer."""
+        with self.logging():
+            logger.display(args, self.prefix, end="")
+
+    @contextmanager
+    def logging(self):
+        if self.log_to:
+            old_stdout, sys.stdout = sys.stdout, self.log_to
+        try:
+            yield
+        finally:
+            if self.log_to:
+                sys.stdout = old_stdout
+
+
+# -----------------------------------------------------------------------------------------------------------------------
+# LOGGER:
+# -----------------------------------------------------------------------------------------------------------------------
 
 class Logger(object):
     """Container object for various logger functions and variables."""
@@ -149,7 +186,7 @@ class Logger(object):
         """Copy other onto self."""
         self.verbose, self.quiet, self.path, self.name, self.tracing, self.trace_ind = other.verbose, other.quiet, other.path, other.name, other.tracing, other.trace_ind
 
-    def display(self, messages, sig="", debug=False):
+    def display(self, messages, sig="", debug=False, **kwargs):
         """Prints an iterator of messages."""
         full_message = "".join(
             sig + line for line in " ".join(
@@ -159,9 +196,9 @@ class Logger(object):
         if not full_message:
             full_message = sig.rstrip()
         if debug:
-            printerr(full_message)
+            printerr(full_message, **kwargs)
         else:
-            print(full_message)
+            print(full_message, **kwargs)
 
     def show(self, *messages):
         """Prints messages if not --quiet."""

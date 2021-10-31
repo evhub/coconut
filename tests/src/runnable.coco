@@ -3,6 +3,10 @@ import sys
 
 success = "<success>"
 
-if __name__ == "__main__":
+def main():
     assert sys.argv[1] == "--arg"
     success |> print
+    return True
+
+if __name__ == "__main__":
+    main()

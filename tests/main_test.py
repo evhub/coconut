@@ -28,13 +28,17 @@ from contextlib import contextmanager
 
 import pexpect
 
-from coconut.terminal import logger, Logger
+from coconut.terminal import (
+    logger,
+    Logger,
+    LoggingStringIO,
+)
 from coconut.command.util import call_output, reload
 from coconut.constants import (
     WINDOWS,
     PYPY,
     IPY,
-    PY34,
+    MYPY,
     PY35,
     PY36,
     icoconut_default_kernel_names,
@@ -49,8 +53,6 @@ auto_compilation(False)
 # -----------------------------------------------------------------------------------------------------------------------
 
 logger.verbose = property(lambda self: True, lambda self, value: print("WARNING: ignoring attempt to set logger.verbose = {value}".format(value=value)))
-
-MYPY = PY34 and not WINDOWS and not PYPY
 
 base = os.path.dirname(os.path.relpath(__file__))
 src = os.path.join(base, "src")
@@ -92,10 +94,10 @@ kernel_installation_msg = (
     + "', '".join((icoconut_custom_kernel_name,) + icoconut_default_kernel_names) + "'"
 )
 
+
 # -----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
 # -----------------------------------------------------------------------------------------------------------------------
-
 
 def escape(inputstring):
     """Performs basic shell escaping.
@@ -106,9 +108,48 @@ def escape(inputstring):
         return '"' + inputstring.replace("$", "\\$").replace("`", "\\`") + '"'
 
 
-def call(cmd, assert_output=False, check_mypy=False, check_errors=True, stderr_first=False, expect_retcode=0, **kwargs):
+def call_with_import(module_name, argv=None, assert_result=True):
+    """Import module_name and run module.main() with given argv, capturing output."""
+    print("import", module_name, "with sys.argv=" + repr(argv))
+    old_stdout, sys.stdout = sys.stdout, LoggingStringIO(sys.stdout)
+    old_stderr, sys.stderr = sys.stderr, LoggingStringIO(sys.stderr)
+    old_argv = sys.argv
+    try:
+        with using_logger():
+            if sys.version_info >= (2, 7):
+                import importlib
+                module = importlib.import_module(module_name)
+            else:
+                import imp
+                module = imp.load_module(module_name, *imp.find_module(module_name))
+            sys.argv = argv or [module.__file__]
+            result = module.main()
+            if assert_result:
+                assert result
+    except SystemExit as err:
+        retcode = err.code or 0
+    except BaseException:
+        logger.print_exc()
+        retcode = 1
+    else:
+        retcode = 0
+    finally:
+        sys.argv = old_argv
+        stdout = sys.stdout.getvalue()
+        stderr = sys.stderr.getvalue()
+        sys.stdout = old_stdout
+        sys.stderr = old_stderr
+    return stdout, stderr, retcode
+
+
+def call(cmd, assert_output=False, check_mypy=False, check_errors=True, stderr_first=False, expect_retcode=0, convert_to_import=None, **kwargs):
     """Executes a shell command."""
-    print("\n>", (cmd if isinstance(cmd, str) else " ".join(cmd)))
+    if isinstance(cmd, str):
+        cmd = cmd.split()
+
+    print()
+    logger.log_cmd(cmd)
+
     if assert_output is False:
         assert_output = ("",)
     elif assert_output is True:
@@ -119,7 +160,34 @@ def call(cmd, assert_output=False, check_mypy=False, check_errors=True, stderr_f
     else:
         assert_output = tuple(x if x is not True else "<success>" for x in assert_output)
 
-    stdout, stderr, retcode = call_output(cmd, **kwargs)
+    if convert_to_import is None:
+        convert_to_import = (
+            cmd[0] == sys.executable
+            and cmd[1] != "-c"
+            and cmd[1:3] != ["-m", "coconut"]
+        )
+
+    if convert_to_import:
+        assert cmd[0] == sys.executable
+        if cmd[1] == "-m":
+            module_name = cmd[2]
+            argv = cmd[3:]
+            stdout, stderr, retcode = call_with_import(module_name, argv)
+        else:
+            module_path = cmd[1]
+            argv = cmd[2:]
+            module_dir = os.path.dirname(module_path)
+            module_name = os.path.splitext(os.path.basename(module_path))[0]
+            if os.path.isdir(module_path):
+                module_name += ".__main__"
+            sys.path.append(module_dir)
+            try:
+                stdout, stderr, retcode = call_with_import(module_name, argv)
+            finally:
+                sys.path.remove(module_dir)
+    else:
+        stdout, stderr, retcode = call_output(cmd, **kwargs)
+
     if expect_retcode is not None:
         assert retcode == expect_retcode, "Return code not as expected ({retcode} != {expect_retcode}) in: {cmd!r}".format(
             retcode=retcode,
@@ -270,9 +338,9 @@ def using_dest(dest=dest):
 
 
 @contextmanager
-def using_logger():
+def using_logger(copy_from=None):
     """Use a temporary logger, then restore the old logger."""
-    saved_logger = Logger(logger)
+    saved_logger = Logger(copy_from)
     try:
         yield
     finally:
@@ -312,9 +380,8 @@ def add_test_func_names(cls):
 
 
 # -----------------------------------------------------------------------------------------------------------------------
-# RUNNER:
+# RUNNERS:
 # -----------------------------------------------------------------------------------------------------------------------
-
 
 def comp_extras(args=[], **kwargs):
     """Compiles extras.coco."""
@@ -372,7 +439,7 @@ def run_extras(**kwargs):
     call_python([os.path.join(dest, "extras.py")], assert_output=True, check_errors=False, stderr_first=True, **kwargs)
 
 
-def run(args=[], agnostic_target=None, use_run_arg=False, **kwargs):
+def run(args=[], agnostic_target=None, use_run_arg=False, convert_to_import=None, **kwargs):
     """Compiles and runs tests."""
     if agnostic_target is None:
         agnostic_args = args
@@ -400,7 +467,7 @@ def run(args=[], agnostic_target=None, use_run_arg=False, **kwargs):
                 comp_runner(["--run"] + agnostic_args, **_kwargs)
             else:
                 comp_runner(agnostic_args, **kwargs)
-                run_src()
+                run_src(convert_to_import=convert_to_import)  # **kwargs are for comp, not run
 
             if use_run_arg:
                 _kwargs = kwargs.copy()
@@ -410,7 +477,7 @@ def run(args=[], agnostic_target=None, use_run_arg=False, **kwargs):
                 comp_extras(["--run"] + agnostic_args, **_kwargs)
             else:
                 comp_extras(agnostic_args, **kwargs)
-                run_extras()
+                run_extras(convert_to_import=convert_to_import)  # **kwargs are for comp, not run
 
 
 def comp_pyston(args=[], **kwargs):
@@ -474,10 +541,10 @@ def run_runnable(args=[]):
     """Call coconut-run on runnable_coco."""
     call(["coconut-run"] + args + [runnable_coco, "--arg"], assert_output=True)
 
+
 # -----------------------------------------------------------------------------------------------------------------------
 # TESTS:
 # -----------------------------------------------------------------------------------------------------------------------
-
 
 @add_test_func_names
 class TestShell(unittest.TestCase):
