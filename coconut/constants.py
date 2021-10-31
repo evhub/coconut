@@ -77,6 +77,11 @@ IPY = (
     # necessary until jupyter-console fixes https://github.com/jupyter/jupyter_console/issues/245
     and not PY310
 )
+MYPY = (
+    PY34
+    and not WINDOWS
+    and not PYPY
+)
 
 py_version_str = sys.version.split()[0]
 

@@ -1873,7 +1873,7 @@ def __new__(_coconut_cls, {all_args}):
         else:
             namedtuple_call = '_coconut.collections.namedtuple("' + name + '", ' + tuple_str_of(namedtuple_args, add_quotes=True) + ')'
 
-        return self.assemble_data(name, namedtuple_call, inherit, extra_stmts, stmts, base_args)
+        return self.assemble_data(name, namedtuple_call, inherit, extra_stmts, stmts, namedtuple_args)
 
     def assemble_data(self, name, namedtuple_call, inherit, extra_stmts, stmts, match_args):
         # create class

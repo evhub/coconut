@@ -43,9 +43,9 @@ from coconut.constants import (
 # -----------------------------------------------------------------------------------------------------------------------
 
 
-def printerr(*args):
+def printerr(*args, **kwargs):
     """Prints to standard error."""
-    print(*args, file=sys.stderr)
+    print(*args, file=sys.stderr, **kwargs)
 
 
 def univ_open(filename, opentype="r+", encoding=None, **kwargs):

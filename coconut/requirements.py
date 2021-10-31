@@ -27,6 +27,7 @@ from coconut.constants import (
     CPYTHON,
     PY34,
     IPY,
+    MYPY,
     WINDOWS,
     PURE_PYTHON,
     all_reqs,
@@ -197,7 +198,7 @@ extras.update({
         extras["enum"],
         extras["jobs"] if not PYPY else [],
         extras["jupyter"] if IPY else [],
-        extras["mypy"] if PY34 and not WINDOWS and not PYPY else [],
+        extras["mypy"] if MYPY else [],
         extras["asyncio"] if not PY34 and not PYPY else [],
     ),
 })

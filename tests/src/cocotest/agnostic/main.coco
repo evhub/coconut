@@ -904,7 +904,7 @@ def tco_func() = tco_func()
 
 def print_dot() = print(".", end="", flush=True)
 
-def main(test_easter_eggs=False):
+def run_main(test_easter_eggs=False):
     """Asserts arguments and executes tests."""
     using_tco = "_coconut_tco" in globals() or "_coconut_tco" in locals()
 

@@ -30,6 +30,7 @@ if IPY and not WINDOWS:
 else:
     CoconutKernel = None  # type: ignore
 
+
 def assert_raises(c, exc, not_exc=None, err_has=None):
     """Test whether callable c raises an exception of type exc."""
     try:
@@ -44,6 +45,7 @@ def assert_raises(c, exc, not_exc=None, err_has=None):
     else:
         raise AssertionError(f"{c} failed to raise exception {exc}")
 
+
 def unwrap_future(event_loop, maybe_future):
     """
     If the passed value looks like a Future, return its result, otherwise return the value unchanged.
@@ -57,6 +59,7 @@ def unwrap_future(event_loop, maybe_future):
         return event_loop.run_until_complete(maybe_future)
     else:
         return maybe_future
+
 
 def test_extras():
     if IPY:
@@ -194,7 +197,13 @@ def test_extras():
         assert np.all(fmap(-> _ + 1, np.arange(3)) == np.array([1, 2, 3]))
     print("<success>")
 
-if __name__ == "__main__":
+
+def main():
     print("Expect Coconut errors below from running extras:")
     print("(but make sure you get a <success> after them)")
     test_extras()
+    return True
+
+
+if __name__ == "__main__":
+    main()
