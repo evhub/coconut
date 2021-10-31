@@ -25,6 +25,10 @@ import os
 import shutil
 import functools
 from contextlib import contextmanager
+if sys.version_info >= (2, 7):
+    import importlib
+else:
+    import imp
 
 import pexpect
 
@@ -117,10 +121,8 @@ def call_with_import(module_name, argv=None, assert_result=True):
     try:
         with using_logger():
             if sys.version_info >= (2, 7):
-                import importlib
                 module = importlib.import_module(module_name)
             else:
-                import imp
                 module = imp.load_module(module_name, *imp.find_module(module_name))
             sys.argv = argv or [module.__file__]
             result = module.main()
@@ -143,7 +145,7 @@ def call_with_import(module_name, argv=None, assert_result=True):
 
 
 def call(cmd, assert_output=False, check_mypy=False, check_errors=True, stderr_first=False, expect_retcode=0, convert_to_import=None, **kwargs):
-    """Executes a shell command."""
+    """Execute a shell command and assert that no errors were encountered."""
     if isinstance(cmd, str):
         cmd = cmd.split()
 
@@ -671,9 +673,9 @@ class TestCompilation(unittest.TestCase):
         run(["--strict"])
 
     # avoids a strange, unreproducable failure on appveyor
-    if not (WINDOWS and sys.version_info[:2] == (3, 8)):
-        def test_run(self):
-            run(use_run_arg=True)
+    # if not (WINDOWS and sys.version_info[:2] == (3, 8)):
+    def test_run(self):
+        run(use_run_arg=True)
 
     if not PYPY and not PY26:
         def test_jobs_zero(self):
