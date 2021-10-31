@@ -70,7 +70,13 @@ PY34 = sys.version_info >= (3, 4)
 PY35 = sys.version_info >= (3, 5)
 PY36 = sys.version_info >= (3, 6)
 PY38 = sys.version_info >= (3, 8)
-IPY = ((PY2 and not PY26) or PY35) and not (PYPY and WINDOWS)
+PY310 = sys.version_info >= (3, 10)
+IPY = (
+    ((PY2 and not PY26) or PY35)
+    and not (PYPY and WINDOWS)
+    # necessary until jupyter-console fixes https://github.com/jupyter/jupyter_console/issues/245
+    and not PY310
+)
 
 py_version_str = sys.version.split()[0]
 
