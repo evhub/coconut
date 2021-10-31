@@ -48,7 +48,7 @@ auto_compilation(False)
 # CONSTANTS:
 # -----------------------------------------------------------------------------------------------------------------------
 
-logger.verbose = True
+logger.verbose = property(lambda self: True, lambda self, value: print("WARNING: ignoring attempt to set logger.verbose = {value}".format(value=value)))
 
 MYPY = PY34 and not WINDOWS and not PYPY
 
