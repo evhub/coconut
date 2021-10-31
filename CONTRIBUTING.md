@@ -161,31 +161,31 @@ After you've tested your changes locally, you'll want to add more permanent test
     1. Make sure [`coconut-develop`](https://pypi.python.org/pypi/coconut-develop) package looks good
     1. Run `make docs` and ensure local documentation looks good
     1. Make sure [develop documentation](http://coconut.readthedocs.io/en/develop/) looks good
-    1. Make sure [Travis](https://travis-ci.org/evhub/coconut/builds) and [AppVeyor](https://ci.appveyor.com/project/evhub/coconut) are passing
-    1. Turn off `develop` in `root.py`
-    1. Set `root.py` to new version number
-    1. If major release, set `root.py` to new version name
+    2. Make sure [Github Actions](https://github.com/evhub/coconut/actions) and [AppVeyor](https://ci.appveyor.com/project/evhub/coconut) are passing
+    3. Turn off `develop` in `root.py`
+    4. Set `root.py` to new version number
+    5. If major release, set `root.py` to new version name
 
 2. Pull Request:
     1. Create a pull request to merge `develop` into `master`
-    1. Link contributors on pull request
-    1. Wait until everything is passing
+    2. Link contributors on pull request
+    3. Wait until everything is passing
 
 3. Release:
     1. Release [`sublime-coconut`](https://github.com/evhub/sublime-coconut) first if applicable
-    1. Merge pull request and mark as resolved
-    1. Release `master` on GitHub
-    1. `git fetch`, `git checkout master`, and `git pull`
-    1. Run `make upload`
-    1. `git checkout develop`, `git rebase master`, and `git push`
-    1. Turn on `develop` in `root`
-    1. Run `make dev`
-    1. Push to `develop`
-    1. Wipe all updated versions on [readthedocs](https://readthedocs.org/projects/coconut/versions/)
-    1. Build all updated versions on [readthedocs](https://readthedocs.org/projects/coconut/builds/)
-    1. Copy [PyPI](https://pypi.python.org/pypi/coconut) keywords to [readthedocs tags](https://readthedocs.org/dashboard/coconut/edit/)
-    1. Get SHA-256 hash from [PyPI](https://pypi.python.org/pypi/coconut) `.tar.gz` file and use that as well as the current version requirements in [`constants.py`](https://github.com/evhub/coconut/blob/master/coconut/constants.py) to update the [local feedstock](https://github.com/evhub/coconut-feedstock)
-    1. Submit PR to update [Coconut's `conda-forge` feedstock](https://github.com/conda-forge/coconut-feedstock)
-    1. Update [website](https://github.com/evhub/coconut/tree/gh-pages) if it needs updating
-    1. Wait until feedstock PR is passing then merge it
-    1. Close release [milestone](https://github.com/evhub/coconut/milestones?direction=asc&sort=due_date)
+    2. Merge pull request and mark as resolved
+    3. Release `master` on GitHub
+    4. `git fetch`, `git checkout master`, and `git pull`
+    5. Run `make upload`
+    6. `git checkout develop`, `git rebase master`, and `git push`
+    7. Turn on `develop` in `root`
+    8. Run `make dev`
+    9. Push to `develop`
+    10. Wipe all updated versions on [readthedocs](https://readthedocs.org/projects/coconut/versions/)
+    11. Build all updated versions on [readthedocs](https://readthedocs.org/projects/coconut/builds/)
+    12. Copy [PyPI](https://pypi.python.org/pypi/coconut) keywords to [readthedocs tags](https://readthedocs.org/dashboard/coconut/edit/)
+    13. Get SHA-256 hash from [PyPI](https://pypi.python.org/pypi/coconut) `.tar.gz` file and use that as well as the current version requirements in [`constants.py`](https://github.com/evhub/coconut/blob/master/coconut/constants.py) to update the [local feedstock](https://github.com/evhub/coconut-feedstock)
+    14. Submit PR to update [Coconut's `conda-forge` feedstock](https://github.com/conda-forge/coconut-feedstock)
+    15. Update [website](https://github.com/evhub/coconut/tree/gh-pages) if it needs updating
+    16. Wait until feedstock PR is passing then merge it
+    17. Close release [milestone](https://github.com/evhub/coconut/milestones?direction=asc&sort=due_date)
