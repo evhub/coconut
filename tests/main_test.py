@@ -332,7 +332,7 @@ def using_dest(dest=dest):
     try:
         os.mkdir(dest)
     except Exception:
-        shutil.rmtree(dest)
+        rm_path(dest)
         os.mkdir(dest)
     try:
         yield
@@ -344,13 +344,13 @@ def using_dest(dest=dest):
 
 
 @contextmanager
-def using_coconut(reset_logger=True, init=False):
+def using_coconut(fresh_logger=True, fresh_convenience=False):
     """Decorator for ensuring that coconut.terminal.logger and coconut.convenience.* are reset."""
     saved_logger = logger.copy()
-    if init:
+    if fresh_convenience:
         setup()
         auto_compilation(False)
-    if reset_logger:
+    if fresh_logger:
         logger.reset()
     try:
         yield
@@ -361,13 +361,17 @@ def using_coconut(reset_logger=True, init=False):
 
 
 @contextmanager
-def using_sys_path(path):
+def using_sys_path(path, prepend=False):
     """Adds a path to sys.path."""
-    sys.path.insert(0, path)
+    old_sys_path = sys.path[:]
+    if prepend:
+        sys.path.insert(0, path)
+    else:
+        sys.path.append(path)
     try:
         yield
     finally:
-        sys.path.remove(path)
+        sys.path[:] = old_sys_path
 
 
 @contextmanager
@@ -462,7 +466,7 @@ def run_extras(**kwargs):
     call_python([os.path.join(dest, "extras.py")], assert_output=True, check_errors=False, stderr_first=True, **kwargs)
 
 
-def run(args=[], agnostic_target=None, use_run_arg=False, convert_to_import=None, **kwargs):
+def run(args=[], agnostic_target=None, use_run_arg=False, convert_to_import=False, **kwargs):
     """Compiles and runs tests."""
     if agnostic_target is None:
         agnostic_args = args
@@ -695,7 +699,7 @@ class TestCompilation(unittest.TestCase):
     def test_strict(self):
         run(["--strict"])
 
-    # avoids a strange, unreproducable failure on appveyor
+    # # avoids a strange, unreproducable failure on appveyor
     # if not (WINDOWS and sys.version_info[:2] == (3, 8)):
     def test_run(self):
         run(use_run_arg=True)
