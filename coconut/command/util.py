@@ -26,7 +26,6 @@ import subprocess
 import shutil
 from select import select
 from contextlib import contextmanager
-from copy import copy
 from functools import partial
 if PY2:
     import __builtin__ as builtins
@@ -613,7 +612,7 @@ class multiprocess_wrapper(object):
     def __init__(self, base, method):
         """Create new multiprocessable method."""
         self.rec_limit = sys.getrecursionlimit()
-        self.logger = copy(logger)
+        self.logger = logger.copy()
         self.argv = sys.argv
         self.base, self.method = base, method
 

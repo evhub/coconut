@@ -535,13 +535,13 @@ def main_test() -> bool:
     try:
         (assert)(False, "msg")
     except AssertionError as err:
-        assert str(err) == "msg"
+        assert "msg" in str(err)
     else:
         assert False
     try:
         (assert)([])
     except AssertionError as err:
-        assert str(err) == "(assert) got falsey value []"
+        assert "(assert) got falsey value []" in str(err)
     else:
         assert False
     from itertools import filterfalse as py_filterfalse
