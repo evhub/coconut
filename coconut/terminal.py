@@ -377,7 +377,7 @@ class Logger(object):
                 self.print_trace(*out)
 
     def _trace_success_action(self, original, start_loc, end_loc, expr, tokens):
-        if self.verbose:
+        if self.tracing and self.verbose:  # avoid the overhead of an extra function call
             self.log_trace(expr, original, start_loc, tokens)
 
     def _trace_exc_action(self, original, loc, expr, exc):

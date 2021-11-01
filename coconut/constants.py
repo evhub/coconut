@@ -90,13 +90,13 @@ py_version_str = sys.version.split()[0]
 # -----------------------------------------------------------------------------------------------------------------------
 
 # set this to False only ever temporarily for ease of debugging
-use_fast_pyparsing_reprs = False
+use_fast_pyparsing_reprs = True
 assert use_fast_pyparsing_reprs or DEVELOP, "use_fast_pyparsing_reprs disabled on non-develop build"
 
 enable_pyparsing_warnings = DEVELOP
 
 # experimentally determined to maximize speed
-packrat_cache = 512
+packrat_cache = 1024
 left_recursion_over_packrat = False
 
 # we don't include \r here because the compiler converts \r into \n
