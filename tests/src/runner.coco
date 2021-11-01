@@ -3,18 +3,7 @@ import os.path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 import pytest
-pytest.register_assert_rewrite("cocotest")
-pytest.register_assert_rewrite("cocotest.main")
-pytest.register_assert_rewrite("cocotest.specific")
-pytest.register_assert_rewrite("cocotest.suite")
-pytest.register_assert_rewrite("cocotest.tutorial")
-pytest.register_assert_rewrite("cocotest.util")
-pytest.register_assert_rewrite("cocotest.non_strict_test")
-pytest.register_assert_rewrite("cocotest.py2_test")
-pytest.register_assert_rewrite("cocotest.py3_test")
-pytest.register_assert_rewrite("cocotest.py35_test")
-pytest.register_assert_rewrite("cocotest.py36_test")
-pytest.register_assert_rewrite("cocotest.target_sys_test")
+pytest.register_assert_rewrite(py_str("cocotest"))
 
 import cocotest
 from cocotest.main import run_main
