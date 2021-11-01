@@ -151,10 +151,12 @@ def call_with_import(module_name, extra_argv=[], assert_result=True):
     return stdout, stderr, retcode
 
 
-def call(cmd, assert_output=False, check_mypy=False, check_errors=True, stderr_first=False, expect_retcode=0, convert_to_import=False, **kwargs):
+def call(raw_cmd, assert_output=False, check_mypy=False, check_errors=True, stderr_first=False, expect_retcode=0, convert_to_import=False, **kwargs):
     """Execute a shell command and assert that no errors were encountered."""
-    if isinstance(cmd, str):
-        cmd = cmd.split()
+    if isinstance(raw_cmd, str):
+        cmd = raw_cmd.split()
+    else:
+        cmd = raw_cmd
 
     print()
     logger.log_cmd(cmd)
@@ -192,13 +194,13 @@ def call(cmd, assert_output=False, check_mypy=False, check_errors=True, stderr_f
             with using_sys_path(module_dir):
                 stdout, stderr, retcode = call_with_import(module_name, extra_argv)
     else:
-        stdout, stderr, retcode = call_output(cmd, **kwargs)
+        stdout, stderr, retcode = call_output(raw_cmd, **kwargs)
 
     if expect_retcode is not None:
         assert retcode == expect_retcode, "Return code not as expected ({retcode} != {expect_retcode}) in: {cmd!r}".format(
             retcode=retcode,
             expect_retcode=expect_retcode,
-            cmd=cmd,
+            cmd=raw_cmd,
         )
     if stderr_first:
         out = stderr + stdout
