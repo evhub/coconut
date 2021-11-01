@@ -1418,8 +1418,7 @@ class Compiler(Grammar):
                         raise CoconutDeferredSyntaxError("cannot star pipe into item getting", loc)
                     internal_assert(len(split_item) % 2 == 0, "invalid itemgetter pipe tokens", split_item)
                     out = subexpr
-                    for i in range(len(split_item) // 2):
-                        i *= 2
+                    for i in range(0, len(split_item), 2):
                         op, args = split_item[i:i + 2]
                         if op == "[":
                             fmtstr = "({x})[{args}]"

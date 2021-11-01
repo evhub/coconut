@@ -118,6 +118,7 @@ class Matcher(object):
         "star": lambda self: self.match_star,
         "implicit_tuple": lambda self: self.match_implicit_tuple,
         "view": lambda self: self.match_view,
+        "infix": lambda self: self.match_infix,
     }
     valid_styles = (
         "coconut",
@@ -780,10 +781,10 @@ class Matcher(object):
         match, trailers = tokens[0], tokens[1:]
         for i in range(0, len(trailers), 2):
             op, arg = trailers[i], trailers[i + 1]
-            if op == "isinstance":
-                self.add_check("_coconut.isinstance(" + item + ", " + arg + ")")
-            elif op == "as":
+            if op == "as":
                 self.match_var([arg], item, bind_wildcard=True)
+            elif op == "is":
+                self.add_check("_coconut.isinstance(" + item + ", " + arg + ")")
             else:
                 raise CoconutInternalException("invalid trailer match operation", op)
         self.match(match, item)
@@ -825,6 +826,15 @@ except _coconut.Exception as _coconut_view_func_exc:
         with self.down_a_level():
             self.add_check(func_result_var + " is not _coconut_sentinel")
             self.match(view_pattern, func_result_var)
+
+    def match_infix(self, tokens, item):
+        """Matches infix patterns."""
+        internal_assert(len(tokens) > 1 and len(tokens) % 2 == 1, "invalid infix match tokens", tokens)
+        match = tokens[0]
+        for i in range(1, len(tokens), 2):
+            op, arg = tokens[i], tokens[i + 1]
+            self.add_check("(" + op + ")(" + item + ", " + arg + ")")
+        self.match(match, item)
 
     def match(self, tokens, item):
         """Performs pattern-matching processing."""

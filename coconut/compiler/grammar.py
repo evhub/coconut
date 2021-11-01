@@ -377,8 +377,7 @@ def itemgetter_handle(tokens):
     elif len(tokens) > 2:
         internal_assert(len(tokens) % 2 == 0, "invalid itemgetter composition tokens", tokens)
         itemgetters = []
-        for i in range(len(tokens) // 2):
-            i *= 2
+        for i in range(0, len(tokens), 2):
             itemgetters.append(itemgetter_handle(tokens[i:i + 2]))
         return "_coconut_forward_compose(" + ", ".join(itemgetters) + ")"
     else:
@@ -579,7 +578,6 @@ class Grammar(object):
     where_kwd = keyword("where", explicit_prefix=colon)
     addpattern_kwd = keyword("addpattern", explicit_prefix=colon)
     then_kwd = keyword("then", explicit_prefix=colon)
-    isinstance_kwd = keyword("isinstance", explicit_prefix=colon)
 
     ellipsis = Forward()
     ellipsis_ref = Literal("...") | Literal("\u2026")
@@ -1434,20 +1432,23 @@ class Grammar(object):
         ),
     )
 
-    matchlist_trailer = base_match + OneOrMore((fixto(keyword("is"), "isinstance") | isinstance_kwd) + atom_item)  # match_trailer expects unsuppressed isinstance
-    trailer_match = labeled_group(matchlist_trailer, "trailer") | base_match
+    matchlist_isinstance = base_match + OneOrMore(keyword("is") + atom_item)  # match_trailer expects unsuppressed isinstance
+    isinstance_match = base_match + ~keyword("is") | labeled_group(matchlist_isinstance, "trailer")
 
-    matchlist_bar_or = trailer_match + OneOrMore(bar.suppress() + trailer_match)
-    bar_or_match = labeled_group(matchlist_bar_or, "or") | trailer_match
+    matchlist_bar_or = isinstance_match + OneOrMore(bar.suppress() + isinstance_match)
+    bar_or_match = isinstance_match + ~bar | labeled_group(matchlist_bar_or, "or")
 
-    matchlist_as = bar_or_match + OneOrMore(keyword("as") + name)  # match_trailer expects unsuppressed as
-    as_match = labeled_group(matchlist_as, "trailer") | bar_or_match
+    matchlist_infix = bar_or_match + OneOrMore(infix_op + atom_item)
+    infix_match = bar_or_match + ~backtick | labeled_group(matchlist_infix, "infix")
+
+    matchlist_as = infix_match + OneOrMore(keyword("as") + name)  # match_trailer expects unsuppressed as
+    as_match = infix_match + ~keyword("as") | labeled_group(matchlist_as, "trailer")
 
     matchlist_and = as_match + OneOrMore(keyword("and").suppress() + as_match)
-    and_match = labeled_group(matchlist_and, "and") | as_match
+    and_match = as_match + ~keyword("and") | labeled_group(matchlist_and, "and")
 
     matchlist_kwd_or = and_match + OneOrMore(keyword("or").suppress() + and_match)
-    kwd_or_match = labeled_group(matchlist_kwd_or, "or") | and_match
+    kwd_or_match = and_match + ~keyword("or") | labeled_group(matchlist_kwd_or, "or")
 
     match <<= trace(kwd_or_match)
 

@@ -812,6 +812,8 @@ def one_int_or_str(x: int | str) -> int | str = x
 def must_be_int(x is int) -> int = cast(int, x)
 def must_be_int_(x is int) -> int: return cast(int, x)
 
+def (x is int) `typed_plus` (y is int) -> int = x + y
+
 # Enhanced Pattern-Matching
 
 def fact_(0, acc=1) = acc
