@@ -35,10 +35,12 @@ import pexpect
 
 from coconut.terminal import (
     logger,
-    Logger,
     LoggingStringIO,
 )
-from coconut.command.util import call_output, reload
+from coconut.command.util import (
+    call_output,
+    reload,
+)
 from coconut.constants import (
     WINDOWS,
     PYPY,
@@ -50,7 +52,10 @@ from coconut.constants import (
     icoconut_custom_kernel_name,
 )
 
-from coconut.convenience import auto_compilation
+from coconut.convenience import (
+    auto_compilation,
+    setup,
+)
 auto_compilation(False)
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -121,7 +126,7 @@ def call_with_import(module_name, extra_argv=[], assert_result=True):
     old_stderr, sys.stderr = sys.stderr, LoggingStringIO(sys.stderr)
     old_argv = sys.argv
     try:
-        with using_logger():
+        with using_coconut():
             if sys.version_info >= (2, 7):
                 module = importlib.import_module(module_name)
             else:
@@ -146,7 +151,7 @@ def call_with_import(module_name, extra_argv=[], assert_result=True):
     return stdout, stderr, retcode
 
 
-def call(cmd, assert_output=False, check_mypy=False, check_errors=True, stderr_first=False, expect_retcode=0, convert_to_import=None, **kwargs):
+def call(cmd, assert_output=False, check_mypy=False, check_errors=True, stderr_first=False, expect_retcode=0, convert_to_import=False, **kwargs):
     """Execute a shell command and assert that no errors were encountered."""
     if isinstance(cmd, str):
         cmd = cmd.split()
@@ -184,11 +189,8 @@ def call(cmd, assert_output=False, check_mypy=False, check_errors=True, stderr_f
             module_name = os.path.splitext(os.path.basename(module_path))[0]
             if os.path.isdir(module_path):
                 module_name += ".__main__"
-            sys.path.append(module_dir)
-            try:
+            with using_sys_path(module_dir):
                 stdout, stderr, retcode = call_with_import(module_name, extra_argv)
-            finally:
-                sys.path.remove(module_dir)
     else:
         stdout, stderr, retcode = call_output(cmd, **kwargs)
 
@@ -342,13 +344,30 @@ def using_dest(dest=dest):
 
 
 @contextmanager
-def using_logger(copy_from=None):
-    """Use a temporary logger, then restore the old logger."""
-    saved_logger = Logger(copy_from)
+def using_coconut(reset_logger=True, init=False):
+    """Decorator for ensuring that coconut.terminal.logger and coconut.convenience.* are reset."""
+    saved_logger = logger.copy()
+    if init:
+        setup()
+        auto_compilation(False)
+    if reset_logger:
+        logger.reset()
     try:
         yield
     finally:
+        setup()
+        auto_compilation(False)
         logger.copy_from(saved_logger)
+
+
+@contextmanager
+def using_sys_path(path):
+    """Adds a path to sys.path."""
+    sys.path.insert(0, path)
+    try:
+        yield
+    finally:
+        sys.path.remove(path)
 
 
 @contextmanager
@@ -563,16 +582,12 @@ class TestShell(unittest.TestCase):
         call_python(["-c", 'from coconut.convenience import parse; exec(parse("' + coconut_snip + '"))'], assert_output=True)
 
     def test_import_hook(self):
-        sys.path.append(src)
-        auto_compilation(True)
-        try:
+        with using_sys_path(src):
             with using_path(runnable_py):
-                with using_logger():
+                with using_coconut():
+                    auto_compilation(True)
                     import runnable
                     reload(runnable)
-        finally:
-            auto_compilation(False)
-            sys.path.remove(src)
         assert runnable.success == "<success>"
 
     def test_runnable(self):
@@ -582,10 +597,16 @@ class TestShell(unittest.TestCase):
     def test_runnable_nowrite(self):
         run_runnable(["-n"])
 
-    def test_compile_to_file(self):
+    def test_compile_runnable(self):
         with using_path(runnable_py):
             call_coconut([runnable_coco, runnable_py])
             call_python([runnable_py, "--arg"], assert_output=True)
+
+    def test_import_runnable(self):
+        with using_path(runnable_py):
+            call_coconut([runnable_coco, runnable_py])
+            for _ in range(2):  # make sure we can import it twice
+                call_python([runnable_py, "--arg"], assert_output=True, convert_to_import=True)
 
     if IPY and (not WINDOWS or PY35):
         def test_ipython_extension(self):

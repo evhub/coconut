@@ -186,6 +186,14 @@ class Logger(object):
         """Copy other onto self."""
         self.verbose, self.quiet, self.path, self.name, self.tracing, self.trace_ind = other.verbose, other.quiet, other.path, other.name, other.tracing, other.trace_ind
 
+    def reset(self):
+        """Completely reset the logger."""
+        self.copy_from(Logger())
+
+    def copy(self):
+        """Make a copy of the logger."""
+        return Logger(self)
+
     def display(self, messages, sig="", debug=False, **kwargs):
         """Prints an iterator of messages."""
         full_message = "".join(
