@@ -120,7 +120,7 @@ def escape(inputstring):
 
 def call_with_import(module_name, extra_argv=[], assert_result=True):
     """Import module_name and run module.main() with given argv, capturing output."""
-    pytest.register_assert_rewrite(module_name)
+    pytest.register_assert_rewrite(py_str(module_name))
     print("import", module_name, "with extra_argv=" + repr(extra_argv))
     old_stdout, sys.stdout = sys.stdout, LoggingStringIO(sys.stdout)
     old_stderr, sys.stderr = sys.stderr, LoggingStringIO(sys.stderr)
