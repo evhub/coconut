@@ -1642,14 +1642,14 @@ print(binexp(5))
 
 Coconut pattern-matching functions are just normal functions where the arguments are patterns to be matched against instead of variables to be assigned to. The syntax for pattern-matching function definition is
 ```coconut
-[match] def <name>(<arg>, <arg>, ... [if <cond>]):
+[match] def <name>(<arg>, <arg>, ... [if <cond>]) [-> <return_type>]:
     <body>
 ```
 where `<arg>` is defined as
 ```coconut
 [*|**] <pattern> [= <default>]
 ```
-where `<name>` is the name of the function, `<cond>` is an optional additional check, `<body>` is the body of the function, `<pattern>` is defined by Coconut's [`match` statement](#match), and `<default>` is the optional default if no argument is passed. The `match` keyword at the beginning is optional, but is sometimes necessary to disambiguate pattern-matching function definition from normal function definition, which will always take precedence.
+where `<name>` is the name of the function, `<cond>` is an optional additional check, `<body>` is the body of the function, `<pattern>` is defined by Coconut's [`match` statement](#match), `<default>` is the optional default if no argument is passed, and `<return_type>` is the optional return type annotation (note that argument type annotations are not supported for pattern-matching functions). The `match` keyword at the beginning is optional, but is sometimes necessary to disambiguate pattern-matching function definition from normal function definition, which will always take precedence.
 
 If `<pattern>` has a variable name (either directly or with `as`), the resulting pattern-matching function will support keyword arguments using that variable name. If pattern-matching function definition fails, it will raise a [`MatchError`](#matcherror) object just like [destructuring assignment](#destructuring-assignment).
 

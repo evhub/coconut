@@ -253,6 +253,12 @@ reserved_vars = (  # can be backslash-escaped
     "\u03bb",  # lambda
 )
 
+# names that commonly refer to functions that can't be TCOd
+untcoable_funcs = (
+    "super",
+    "cast",
+)
+
 py3_to_py2_stdlib = {
     # new_name: (old_name, before_version_info[, ])
     "builtins": ("__builtin__", (3,)),

@@ -646,11 +646,19 @@ def stores_loc_action(loc, tokens):
 stores_loc_item = attach(Empty(), stores_loc_action)
 
 
-def disallow_keywords(kwds):
+def disallow_keywords(kwds, with_suffix=None):
     """Prevent the given kwds from matching."""
-    item = ~keyword(kwds[0], explicit_prefix=False)
+    item = ~(
+        keyword(kwds[0], explicit_prefix=False)
+        if with_suffix is None else
+        keyword(kwds[0], explicit_prefix=False) + with_suffix
+    )
     for k in kwds[1:]:
-        item += ~keyword(k, explicit_prefix=False)
+        item += ~(
+            keyword(k, explicit_prefix=False)
+            if with_suffix is None else
+            keyword(k, explicit_prefix=False) + with_suffix
+        )
     return item
 
 
@@ -756,6 +764,15 @@ def collapse_indents(indentation):
     else:
         indents = openindent * change_in_level
     return indentation.replace(openindent, "").replace(closeindent, "") + indents
+
+
+def final_indentation_level(code):
+    """Determine the final indentation level of the given code."""
+    level = 0
+    for line in code.splitlines():
+        leading_indent, _, trailing_indent = split_leading_trailing_indent(line)
+        level += ind_change(leading_indent) + ind_change(trailing_indent)
+    return level
 
 
 ignore_transform = object()

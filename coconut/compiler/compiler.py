@@ -2148,19 +2148,20 @@ if not {check_var}:
         if cond is not None:
             matcher.add_guard(cond)
 
-        before_docstring = (
+        before_colon = (
             "def " + func
-            + "(*" + match_to_args_var + ", **" + match_to_kwargs_var + "):\n"
-            + openindent
+            + "(*" + match_to_args_var + ", **" + match_to_kwargs_var + ")"
         )
         after_docstring = (
-            check_var + " = False\n"
+            openindent
+            + check_var + " = False\n"
             + matcher.out()
             # we only include match_to_args_var here because match_to_kwargs_var is modified during matching
             + self.pattern_error(original, loc, match_to_args_var, check_var, function_match_error_var)
+            # closeindent because the suite will have its own openindent/closeindent
             + closeindent
         )
-        return before_docstring, after_docstring
+        return before_colon, after_docstring
 
     def op_match_funcdef_handle(self, original, loc, tokens):
         """Process infix match defs. Result must be passed to insert_docstring_handle."""
@@ -2236,9 +2237,12 @@ if not {check_var}:
             self.add_code_before[name] = "def " + name + params + ":\n" + body
         else:
             match_tokens = [name] + list(params)
+            before_colon, after_docstring = self.name_match_funcdef_handle(original, loc, match_tokens)
             self.add_code_before[name] = (
                 "@_coconut_mark_as_match\n"
-                + "".join(self.name_match_funcdef_handle(original, loc, match_tokens))
+                + before_colon
+                + ":\n"
+                + after_docstring
                 + body
             )
         return name
