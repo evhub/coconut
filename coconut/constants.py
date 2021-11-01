@@ -90,7 +90,7 @@ py_version_str = sys.version.split()[0]
 # -----------------------------------------------------------------------------------------------------------------------
 
 # set this to False only ever temporarily for ease of debugging
-use_fast_pyparsing_reprs = True
+use_fast_pyparsing_reprs = False
 assert use_fast_pyparsing_reprs or DEVELOP, "use_fast_pyparsing_reprs disabled on non-develop build"
 
 enable_pyparsing_warnings = DEVELOP
@@ -249,7 +249,6 @@ reserved_vars = (  # can be backslash-escaped
     "where",
     "addpattern",
     "then",
-    "isinstance",
     "\u03bb",  # lambda
 )
 

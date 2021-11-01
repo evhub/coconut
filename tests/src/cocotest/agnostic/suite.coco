@@ -677,6 +677,7 @@ def suite_test() -> bool:
     plus1 -> x = 5
     assert x == 6
     (plus1..plus1) -> 5 = 3
+    plus1 -> plus1 -> 3 = 1
     match plus1 -> 6 in 3:
         assert False
     only_match_if(1) -> _ = 1
@@ -688,10 +689,12 @@ def suite_test() -> bool:
     only_match_abc -> _ = "abc"
     match only_match_abc -> _ in "def":
         assert False
+    (-> 3) -> _ is int = "a"
     assert empty_it() |> list == [] == empty_it_of_int(1) |> list
     assert just_it(1) |> list == [1]
     assert just_it_of_int(1) |> list == [1] == just_it_of_int_(1) |> list
     assert must_be_int(4) == 4 == must_be_int_(4)
+    assert typed_plus(1, 2) == 3
 
     # must come at end
     assert fibs_calls[0] == 1
