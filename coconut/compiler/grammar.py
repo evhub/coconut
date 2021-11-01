@@ -28,7 +28,9 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 from coconut.root import *  # NOQA
 
 import re
+import types
 from functools import reduce
+from collections import defaultdict
 
 from coconut._pyparsing import (
     CaselessLiteral,
@@ -56,6 +58,7 @@ from coconut.exceptions import (
 from coconut.terminal import (
     trace,
     internal_assert,
+    get_clock_time,
 )
 from coconut.constants import (
     openindent,
@@ -503,6 +506,7 @@ if False:
 
 class Grammar(object):
     """Coconut grammar specification."""
+    timing_info = None
 
     comma = Literal(",")
     dubstar = Literal("**")
@@ -1041,8 +1045,8 @@ class Grammar(object):
     trailer_atom = Forward()
     trailer_atom_ref = atom + ZeroOrMore(trailer)
     atom_item = (
-        implicit_partial_atom
-        | trailer_atom
+        trailer_atom
+        | implicit_partial_atom
     )
 
     no_partial_trailer_atom = Forward()
@@ -1931,6 +1935,35 @@ def set_grammar_names():
             setattr(Grammar, varname, val.setName(varname))
             if isinstance(val, Forward):
                 trace(val)
+
+
+def add_timing_to_method(obj, method_name, method):
+    """Add timing collection to the given method."""
+    def new_method(*args, **kwargs):
+        start_time = get_clock_time()
+        try:
+            return method(*args, **kwargs)
+        finally:
+            Grammar.timing_info[str(obj)] += get_clock_time() - start_time
+    setattr(obj, method_name, new_method)
+
+
+def collect_timing_info():
+    """Modifies Grammar elements to time how long they're executed for."""
+    Grammar.timing_info = defaultdict(float)
+    for varname, val in vars(Grammar).items():
+        if isinstance(val, ParserElement):
+            for method_name in dir(val):
+                method = getattr(val, method_name)
+                if isinstance(method, types.MethodType):
+                    add_timing_to_method(val, method_name, method)
+
+
+def print_timing_info():
+    """Print timing_info collected by collect_timing_info()."""
+    sorted_timing_info = sorted(Grammar.timing_info.items(), key=lambda kv: kv[1])
+    for method_name, total_time in sorted_timing_info:
+        print("{method_name}:\t{total_time}".format(method_name=method_name, total_time=total_time))
 
 
 if DEVELOP:

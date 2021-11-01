@@ -98,13 +98,11 @@ which will install the most recent working version from Coconut's [`develop` bra
 ### Usage
 
 ```
-coconut [-h] [-v] [-t version] [-i] [-p] [-a] [-l] [-k] [-w] [-r] [-n]
-        [-d] [-q] [-s] [--no-tco] [-c code] [-j processes] [-f]
-        [--minify] [--jupyter ...] [--mypy ...] [--argv ...]
-        [--tutorial] [--documentation] [--style name]
-        [--history-file path] [--recursion-limit limit] [--verbose]
-        [--trace]
-        [source] [dest]
+coconut [-h] [--and source dest] [-v] [-t version] [-i] [-p] [-a] [-l] [-k] [-w] [-r] [-n] [-d] [-q] [-s]
+       [--no-tco] [--no-wrap] [-c code] [-j processes] [-f] [--minify] [--jupyter ...] [--mypy ...]
+       [--argv ...] [--tutorial] [--docs] [--style name] [--history-file path] [--vi-mode]
+       [--recursion-limit limit] [--site-install] [--site-uninstall] [--verbose] [--trace] [--profile]
+       [source] [dest]
 ```
 
 #### Positional Arguments
@@ -177,7 +175,9 @@ optional arguments:
   --site-uninstall, --siteuninstall
                         revert the effects of --site-install
   --verbose             print verbose debug output
-  --trace               print verbose parsing data (only available in coconut-develop)```
+  --trace               print verbose parsing data (only available in coconut-develop)
+  --profile             collect and print timing info (only available in coconut-develop)
+```
 
 ### Coconut Scripts
 

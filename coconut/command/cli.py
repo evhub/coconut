@@ -282,3 +282,9 @@ if DEVELOP:
         action="store_true",
         help="print verbose parsing data (only available in coconut-develop)",
     )
+
+    arguments.add_argument(
+        "--profile",
+        action="store_true",
+        help="collect and print timing info (only available in coconut-develop)",
+    )
