@@ -797,7 +797,9 @@ class counter:
 
 # Typing
 if TYPE_CHECKING:
-    from typing import List, Dict, Any
+    from typing import List, Dict, Any, cast
+else:
+    def cast(typ, value) = value
 
 def args_kwargs_func(args: List[Any]=[], kwargs: Dict[Any, Any]={}) -> typing.Literal[True] =
     True
@@ -806,6 +808,9 @@ def int_func(*args: int, **kwargs: int) -> int =
     0
 
 def one_int_or_str(x: int | str) -> int | str = x
+
+def must_be_int(x is int) -> int = cast(int, x)
+def must_be_int_(x is int) -> int: return cast(int, x)
 
 # Enhanced Pattern-Matching
 

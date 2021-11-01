@@ -67,6 +67,7 @@ from coconut.constants import (
     reserved_vars,
     none_coalesce_var,
     func_var,
+    untcoable_funcs,
 )
 from coconut.compiler.util import (
     combine,
@@ -431,22 +432,23 @@ def tco_return_handle(tokens):
 
 def join_match_funcdef(tokens):
     """Join the pieces of a pattern-matching function together."""
-    if len(tokens) == 2:
-        (func, insert_after_docstring), body = tokens
+    if len(tokens) == 3:
+        (before_colon, after_docstring), colon, body = tokens
         docstring = None
-    elif len(tokens) == 3:
-        (func, insert_after_docstring), docstring, body = tokens
+    elif len(tokens) == 4:
+        (before_colon, after_docstring), colon, docstring, body = tokens
     else:
         raise CoconutInternalException("invalid docstring insertion tokens", tokens)
-    # insert_after_docstring and body are their own self-contained suites, but we
+    # after_docstring and body are their own self-contained suites, but we
     # expect them to both be one suite, so we have to join them together
-    insert_after_docstring, dedent = split_trailing_indent(insert_after_docstring)
+    after_docstring, dedent = split_trailing_indent(after_docstring)
     indent, body = split_leading_indent(body)
     indentation = collapse_indents(dedent + indent)
     return (
-        func
-        + (docstring if docstring is not None else "")
-        + insert_after_docstring
+        before_colon
+        + colon + "\n"
+        + (openindent + docstring + closeindent if docstring is not None else "")
+        + after_docstring
         + indentation
         + body
     )
@@ -1581,10 +1583,7 @@ class Grammar(object):
     def_match_funcdef = trace(
         attach(
             base_match_funcdef
-            + (
-                colon.suppress()
-                | invalid_syntax(arrow, "pattern-matching function definition doesn't support return type annotations")
-            )
+            + end_func_colon
             + (
                 attach(simple_stmt, make_suite_handle)
                 | (
@@ -1644,10 +1643,7 @@ class Grammar(object):
             match_def_modifiers
             + attach(
                 base_match_funcdef
-                + (
-                    equals.suppress()
-                    | invalid_syntax(arrow, "pattern-matching function definition doesn't support return type annotations")
-                )
+                + end_func_equals
                 + (
                     attach(implicit_return_stmt, make_suite_handle)
                     | (
@@ -1850,7 +1846,7 @@ class Grammar(object):
         + keyword("return").suppress()
         + maybeparens(
             lparen,
-            ~(keyword("super", explicit_prefix=False) + lparen + rparen)  # TCO can't handle super()
+            disallow_keywords(untcoable_funcs, with_suffix=lparen)
             + condense(
                 (base_name | parens | brackets | braces | string)
                 + ZeroOrMore(

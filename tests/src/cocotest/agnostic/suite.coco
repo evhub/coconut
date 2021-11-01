@@ -691,6 +691,7 @@ def suite_test() -> bool:
     assert empty_it() |> list == [] == empty_it_of_int(1) |> list
     assert just_it(1) |> list == [1]
     assert just_it_of_int(1) |> list == [1] == just_it_of_int_(1) |> list
+    assert must_be_int(4) == 4 == must_be_int_(4)
 
     # must come at end
     assert fibs_calls[0] == 1
