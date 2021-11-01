@@ -876,7 +876,6 @@ def main_test() -> bool:
     assert x == 3
     class int() as x = 3
     assert x == 3
-    10 `isinstance` int `isinstance` object = 10
     return True
 
 def test_asyncio() -> bool:
