@@ -404,7 +404,6 @@ def getheader(which, target, use_hash, no_tco, strict, no_wrap):
 
     target_startswith = one_num_ver(target)
     target_info = get_target_info(target)
-    # pycondition = partial(base_pycondition, target)
 
     # initial, __coconut__, package:n, sys, code, file
 

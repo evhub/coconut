@@ -24,6 +24,7 @@ import os
 import shutil
 import json
 import traceback
+import ast
 from zlib import crc32
 from warnings import warn
 from types import MethodType
@@ -35,6 +36,7 @@ from coconut.constants import (
     icoconut_custom_kernel_install_loc,
     icoconut_custom_kernel_file_loc,
     WINDOWS,
+    reserved_prefix,
 )
 
 
@@ -198,3 +200,37 @@ def make_custom_kernel(executable=None):
         raw_json = json.dumps(kernel_dict, indent=1)
         kernel_file.write(raw_json.encode(encoding=default_encoding))
     return icoconut_custom_kernel_dir
+
+
+# -----------------------------------------------------------------------------------------------------------------------
+# PYTEST:
+# -----------------------------------------------------------------------------------------------------------------------
+
+
+class FixPytestNames(ast.NodeTransformer):
+    """Renames invalid names added by pytest assert rewriting."""
+
+    def fix_name(self, name):
+        """Make the given pytest name a valid but non-colliding identifier."""
+        return name.replace("@", reserved_prefix + "_pytest_")
+
+    def visit_Name(self, node):
+        """Special method to visit ast.Names."""
+        node.id = self.fix_name(node.id)
+        return node
+
+    def visit_alias(self, node):
+        """Special method to visit ast.aliases."""
+        node.asname = self.fix_name(node.asname)
+        return node
+
+
+def pytest_rewrite_asserts(code, module_name=reserved_prefix + "_pytest_module"):
+    """Uses pytest to rewrite the assert statements in the given code."""
+    from _pytest.assertion.rewrite import rewrite_asserts  # hidden since it's not always available
+
+    module_name = module_name.encode("utf-8")
+    tree = ast.parse(code)
+    rewrite_asserts(tree, module_name)
+    fixed_tree = ast.fix_missing_locations(FixPytestNames().visit(tree))
+    return ast.unparse(fixed_tree)
