@@ -85,6 +85,7 @@ from coconut.compiler.util import (
     get_target_info_smart,
 )
 from coconut.compiler.header import gethash
+from coconut.compiler.grammar import collect_timing_info, print_timing_info
 from coconut.command.cli import arguments, cli_version
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -165,6 +166,8 @@ class Command(object):
         logger.quiet, logger.verbose = args.quiet, args.verbose
         if DEVELOP:
             logger.tracing = args.trace
+            if args.profile:
+                collect_timing_info()
 
         logger.log(cli_version)
         if original_args is not None:
@@ -288,6 +291,8 @@ class Command(object):
         if args.watch:
             # src_dest_package_triples is always available here
             self.watch(src_dest_package_triples, args.run, args.force)
+        if args.profile:
+            print_timing_info()
 
     def process_source_dest(self, source, dest, args):
         """Determine the correct source, dest, package mode to use for the given source, dest, and args."""
