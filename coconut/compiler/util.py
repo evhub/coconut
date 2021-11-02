@@ -661,10 +661,8 @@ def disallow_keywords(kwds, with_suffix=None):
 
 
 def any_keyword_in(kwds):
-    item = keyword(kwds[0], explicit_prefix=False)
-    for k in kwds[1:]:
-        item |= keyword(k, explicit_prefix=False)
-    return item
+    """Match any of the given keywords."""
+    return regex_item(r"|".join(k + r"\b" for k in kwds))
 
 
 def keyword(name, explicit_prefix=None):

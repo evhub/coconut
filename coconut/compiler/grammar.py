@@ -1116,15 +1116,16 @@ class Grammar(object):
     infix_op = condense(backtick.suppress() + test_no_infix + backtick.suppress())
 
     infix_expr = Forward()
+    infix_item = attach(
+        Group(Optional(chain_expr))
+        + OneOrMore(
+            infix_op + Group(Optional(lambdef | chain_expr)),
+        ),
+        infix_handle,
+    )
     infix_expr <<= (
         chain_expr + ~backtick
-        | attach(
-            Group(Optional(chain_expr))
-            + OneOrMore(
-                infix_op + Group(Optional(lambdef | chain_expr)),
-            ),
-            infix_handle,
-        )
+        | infix_item
     )
 
     none_coalesce_expr = attach(tokenlist(infix_expr, dubquestion, allow_trailing=False), none_coalesce_handle)
@@ -1137,12 +1138,13 @@ class Grammar(object):
         | comp_dubstar_pipe
         | comp_back_dubstar_pipe
     )
+    comp_pipe_item = attach(
+        OneOrMore(none_coalesce_expr + comp_pipe_op) + (lambdef | none_coalesce_expr),
+        comp_pipe_handle,
+    )
     comp_pipe_expr = (
-        none_coalesce_expr + ~comp_pipe_op
-        | attach(
-            OneOrMore(none_coalesce_expr + comp_pipe_op) + (lambdef | none_coalesce_expr),
-            comp_pipe_handle,
-        )
+        comp_pipe_item
+        | none_coalesce_expr
     )
 
     pipe_op = (
@@ -1435,22 +1437,22 @@ class Grammar(object):
     )
 
     matchlist_isinstance = base_match + OneOrMore(keyword("is") + atom_item)  # match_trailer expects unsuppressed isinstance
-    isinstance_match = base_match + ~keyword("is") | labeled_group(matchlist_isinstance, "trailer")
+    isinstance_match = labeled_group(matchlist_isinstance, "trailer") | base_match
 
     matchlist_bar_or = isinstance_match + OneOrMore(bar.suppress() + isinstance_match)
-    bar_or_match = isinstance_match + ~bar | labeled_group(matchlist_bar_or, "or")
+    bar_or_match = labeled_group(matchlist_bar_or, "or") | isinstance_match
 
     matchlist_infix = bar_or_match + OneOrMore(infix_op + atom_item)
-    infix_match = bar_or_match + ~backtick | labeled_group(matchlist_infix, "infix")
+    infix_match = labeled_group(matchlist_infix, "infix") | bar_or_match
 
     matchlist_as = infix_match + OneOrMore(keyword("as") + name)  # match_trailer expects unsuppressed as
-    as_match = infix_match + ~keyword("as") | labeled_group(matchlist_as, "trailer")
+    as_match = labeled_group(matchlist_as, "trailer") | infix_match
 
     matchlist_and = as_match + OneOrMore(keyword("and").suppress() + as_match)
-    and_match = as_match + ~keyword("and") | labeled_group(matchlist_and, "and")
+    and_match = labeled_group(matchlist_and, "and") | as_match
 
     matchlist_kwd_or = and_match + OneOrMore(keyword("or").suppress() + and_match)
-    kwd_or_match = and_match + ~keyword("or") | labeled_group(matchlist_kwd_or, "or")
+    kwd_or_match = labeled_group(matchlist_kwd_or, "or") | and_match
 
     match <<= trace(kwd_or_match)
 
