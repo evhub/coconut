@@ -701,10 +701,10 @@ class TestCompilation(unittest.TestCase):
     def test_strict(self):
         run(["--strict"])
 
-    # # avoids a strange, unreproducable failure on appveyor
-    # if not (WINDOWS and sys.version_info[:2] == (3, 8)):
-    def test_run(self):
-        run(use_run_arg=True)
+    # avoids a strange, unreproducable failure on appveyor
+    if not (WINDOWS and sys.version_info[:2] == (3, 8)):
+        def test_run(self):
+            run(use_run_arg=True)
 
     if not PYPY and not PY26:
         def test_jobs_zero(self):
