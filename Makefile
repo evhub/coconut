@@ -215,10 +215,12 @@ profile-parser:
 	coconut tests/src/cocotest/agnostic tests/dest/cocotest --force --profile --verbose --recursion-limit 4096 2>&1 | tee ./profile.txt
 
 .PHONY: profile-lines
+profile-lines: export COCONUT_PURE_PYTHON=TRUE
 profile-lines:
 	vprof -c h "coconut tests/src/cocotest/agnostic tests/dest/cocotest --force" --output-file ./vprof.json
 
 .PHONY: profile-memory
+profile-memory: export COCONUT_PURE_PYTHON=TRUE
 profile-memory:
 	vprof -c m "coconut tests/src/cocotest/agnostic tests/dest/cocotest --force" --output-file ./vprof.json
 

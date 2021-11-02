@@ -28,7 +28,6 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 from coconut.root import *  # NOQA
 
 import re
-from functools import reduce
 
 from coconut._pyparsing import (
     CaselessLiteral,
@@ -95,6 +94,7 @@ from coconut.compiler.util import (
     skip_to_in_line,
     handle_indentation,
     labeled_group,
+    any_keyword_in,
 )
 
 # end: IMPORTS
@@ -610,13 +610,16 @@ class Grammar(object):
     test_no_chain, dubcolon = disable_inside(test, unsafe_dubcolon)
     test_no_infix, backtick = disable_inside(test, unsafe_backtick)
 
-    name = Forward()
+    base_name_regex = r""
+    for no_kwd in keyword_vars + const_vars:
+        base_name_regex += r"(?!" + no_kwd + r"\b)"
+    base_name_regex += r"(?![0-9])\w+\b"
     base_name = (
-        disallow_keywords(keyword_vars + const_vars)
-        + regex_item(r"(?![0-9])\w+\b")
+        regex_item(base_name_regex)
+        | backslash.suppress() + any_keyword_in(reserved_vars)
     )
-    for k in reserved_vars:
-        base_name |= backslash.suppress() + keyword(k, explicit_prefix=False)
+
+    name = Forward()
     dotted_name = condense(name + ZeroOrMore(dot + name))
     must_be_dotted_name = condense(name + OneOrMore(dot + name))
 
@@ -905,9 +908,9 @@ class Grammar(object):
     function_call_tokens = lparen.suppress() + (
         # everything here must end with rparen
         rparen.suppress()
-        | Group(op_item) + rparen.suppress()
-        | Group(attach(addspace(test + comp_for), add_paren_handle)) + rparen.suppress()
         | tokenlist(Group(call_item), comma) + rparen.suppress()
+        | Group(attach(addspace(test + comp_for), add_paren_handle)) + rparen.suppress()
+        | Group(op_item) + rparen.suppress()
     )
     function_call = Forward()
     questionmark_call_tokens = Group(
@@ -954,7 +957,7 @@ class Grammar(object):
     )
 
     op_atom = lparen.suppress() + op_item + rparen.suppress()
-    keyword_atom = reduce(lambda acc, x: acc | keyword(x), const_vars)
+    keyword_atom = any_keyword_in(const_vars)
     string_atom = attach(OneOrMore(string), string_atom_handle)
     passthrough_atom = trace(addspace(OneOrMore(passthrough)))
     set_literal = Forward()
@@ -979,31 +982,29 @@ class Grammar(object):
     )
     known_atom = trace(
         const_atom
-        | ellipsis
         | list_item
         | dict_comp
         | dict_literal
         | set_literal
         | set_letter_literal
-        | lazy_list,
-    )
-    func_atom = (
-        name
-        | op_atom
-        | paren_atom
+        | lazy_list
+        | ellipsis,
     )
     atom = (
+        # known_atom must come before name to properly parse string prefixes
         known_atom
+        | name
+        | paren_atom
+        | op_atom
         | passthrough_atom
-        | func_atom
     )
 
     typedef_atom = Forward()
     typedef_or_expr = Forward()
 
     simple_trailer = (
-        condense(lbrack + subscriptlist + rbrack)
-        | condense(dot + name)
+        condense(dot + name)
+        | condense(lbrack + subscriptlist + rbrack)
     )
     call_trailer = (
         function_call
@@ -1028,7 +1029,7 @@ class Grammar(object):
     no_partial_complex_trailer = call_trailer | known_trailer
     no_partial_trailer = simple_trailer | no_partial_complex_trailer
 
-    complex_trailer = partial_trailer | no_partial_complex_trailer
+    complex_trailer = no_partial_complex_trailer | partial_trailer
     trailer = simple_trailer | complex_trailer
 
     attrgetter_atom_tokens = dot.suppress() + dotted_name + Optional(
@@ -1321,11 +1322,11 @@ class Grammar(object):
     complex_raise_stmt_ref = keyword("raise").suppress() + test + keyword("from").suppress() - test
     raise_stmt = complex_raise_stmt | simple_raise_stmt
     flow_stmt = (
-        break_stmt
-        | continue_stmt
-        | return_stmt
+        return_stmt
         | raise_stmt
+        | break_stmt
         | yield_expr
+        | continue_stmt
     )
 
     dotted_as_name = Group(dotted_name - Optional(keyword("as").suppress() - name))
@@ -1767,13 +1768,13 @@ class Grammar(object):
     endline_semicolon = Forward()
     endline_semicolon_ref = semicolon.suppress() + newline
     keyword_stmt = trace(
-        del_stmt
-        | pass_stmt
-        | flow_stmt
+        flow_stmt
         | import_stmt
+        | assert_stmt
+        | pass_stmt
+        | del_stmt
         | global_stmt
         | nonlocal_stmt
-        | assert_stmt
         | exec_stmt,
     )
     special_stmt = (
@@ -1903,15 +1904,7 @@ class Grammar(object):
 
     unsafe_equals = Literal("=")
 
-    kwd_err_msg = attach(
-        reduce(
-            lambda a, b: a | b,
-            (
-                keyword(k)
-                for k in keyword_vars
-            ),
-        ), kwd_err_msg_handle,
-    )
+    kwd_err_msg = attach(any_keyword_in(keyword_vars), kwd_err_msg_handle)
     parse_err_msg = start_marker + (
         fixto(end_marker, "misplaced newline (maybe missing ':')")
         | fixto(Optional(keyword("if") + skip_to_in_line(unsafe_equals)) + equals, "misplaced assignment (maybe should be '==')")

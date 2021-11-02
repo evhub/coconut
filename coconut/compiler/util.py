@@ -660,6 +660,13 @@ def disallow_keywords(kwds, with_suffix=None):
     return item
 
 
+def any_keyword_in(kwds):
+    item = keyword(kwds[0], explicit_prefix=False)
+    for k in kwds[1:]:
+        item |= keyword(k, explicit_prefix=False)
+    return item
+
+
 def keyword(name, explicit_prefix=None):
     """Construct a grammar which matches name as a Python keyword."""
     if explicit_prefix is not False:
