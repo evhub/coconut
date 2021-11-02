@@ -174,7 +174,7 @@ docs: clean
 
 .PHONY: clean
 clean:
-	rm -rf ./docs ./dist ./build ./tests/dest ./pyprover ./pyston ./coconut-prelude index.rst vprof.json profile.txt
+	rm -rf ./docs ./dist ./build ./tests/dest ./pyprover ./pyston ./coconut-prelude index.rst vprof.json profile.log
 	-find . -name '*.pyc' -delete
 	-C:/GnuWin32/bin/find.exe . -name '*.pyc' -delete
 	-find . -name '__pycache__' -delete
@@ -212,7 +212,7 @@ check-reqs:
 .PHONY: profile-parser
 profile-parser: export COCONUT_PURE_PYTHON=TRUE
 profile-parser:
-	coconut tests/src/cocotest/agnostic tests/dest/cocotest --force --profile --verbose --recursion-limit 4096 2>&1 | tee ./profile.txt
+	coconut tests/src/cocotest/agnostic tests/dest/cocotest --force --profile --verbose --recursion-limit 4096 2>&1 | tee ./profile.log
 
 .PHONY: profile-lines
 profile-lines: export COCONUT_PURE_PYTHON=TRUE
