@@ -1889,13 +1889,21 @@ def __new__(_coconut_cls, {all_args}):
             '''
 __slots__ = ()
 __ne__ = _coconut.object.__ne__
+            ''',
+            add_newline=True,
+        )
+
+        if not inherit:
+            all_extra_stmts += handle_indentation(
+                '''
 def __eq__(self, other):
     return self.__class__ is other.__class__ and _coconut.tuple.__eq__(self, other)
 def __hash__(self):
     return _coconut.tuple.__hash__(self) ^ hash(self.__class__)
-            ''',
-            add_newline=True,
-        )
+                ''',
+                add_newline=True,
+            )
+
         if self.target_info < (3, 10):
             all_extra_stmts += "__match_args__ = " + tuple_str_of(match_args, add_quotes=True) + "\n"
         all_extra_stmts += extra_stmts

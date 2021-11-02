@@ -625,6 +625,9 @@ class C:
     c = 3
 class D:
     d = 4
+data E:
+    def __eq__(self, other) = "FOO"
+data inh_E from E
 
 # Nesting:
 class Nest:
