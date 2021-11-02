@@ -134,5 +134,6 @@ pyprover/
 pyston/
 coconut-prelude/
 index.rst
-profile.json
+vprof.json
+profile.txt
 coconut/icoconut/coconut/

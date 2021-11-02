@@ -248,7 +248,7 @@ parallel_map = concurrent_map = _coconut_map = map
 TYPE_CHECKING = _t.TYPE_CHECKING
 
 
-_coconut_sentinel: _t.Any = object()
+_coconut_sentinel: _t.Any = ...
 
 
 def scan(

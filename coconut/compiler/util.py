@@ -220,7 +220,6 @@ class ComputationNode(object):
 
 class CombineNode(Combine):
     """Modified Combine to work with the computation graph."""
-    __slots__ = ()
 
     def _combine(self, original, loc, tokens):
         """Implement the parse action for Combine."""
@@ -393,7 +392,6 @@ def get_target_info_smart(target, mode="lowest"):
 
 class Wrap(ParseElementEnhance):
     """PyParsing token that wraps the given item in the given context manager."""
-    __slots__ = ("errmsg", "wrapper", "name")
 
     def __init__(self, item, wrapper):
         super(Wrap, self).__init__(item)

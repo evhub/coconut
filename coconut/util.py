@@ -24,6 +24,7 @@ import os
 import shutil
 import json
 import traceback
+import time
 import ast
 from zlib import crc32
 from warnings import warn
@@ -64,6 +65,14 @@ def checksum(data):
     """Compute a checksum of the given data.
     Used for computing __coconut_hash__."""
     return crc32(data) & 0xffffffff  # necessary for cross-compatibility
+
+
+def get_clock_time():
+    """Get a time to use for performance metrics."""
+    if PY2:
+        return time.clock()
+    else:
+        return time.process_time()
 
 
 class override(object):
