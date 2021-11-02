@@ -22,7 +22,6 @@ from coconut.root import *  # NOQA
 import sys
 import traceback
 import logging
-import time
 from contextlib import contextmanager
 if sys.version_info < (2, 7):
     from StringIO import StringIO
@@ -44,7 +43,7 @@ from coconut.constants import (
     packrat_cache,
     embed_on_internal_exc,
 )
-from coconut.util import printerr
+from coconut.util import printerr, get_clock_time
 from coconut.exceptions import (
     CoconutWarning,
     CoconutException,
@@ -118,14 +117,6 @@ def get_name(expr):
     if name is None:
         name = displayable(expr)
     return name
-
-
-def get_clock_time():
-    """Get a time to use for performance metrics."""
-    if PY2:
-        return time.clock()
-    else:
-        return time.process_time()
 
 
 class LoggingStringIO(StringIO):

@@ -26,6 +26,12 @@ import shutil
 from contextlib import contextmanager
 from subprocess import CalledProcessError
 
+from coconut._pyparsing import (
+    unset_fast_pyparsing_reprs,
+    collect_timing_info,
+    print_timing_info,
+)
+
 from coconut.compiler import Compiler
 from coconut.exceptions import (
     CoconutException,
@@ -85,7 +91,6 @@ from coconut.compiler.util import (
     get_target_info_smart,
 )
 from coconut.compiler.header import gethash
-from coconut.compiler.grammar import collect_timing_info, print_timing_info
 from coconut.command.cli import arguments, cli_version
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -165,6 +170,8 @@ class Command(object):
         # set up logger
         logger.quiet, logger.verbose = args.quiet, args.verbose
         if DEVELOP:
+            if args.trace or args.profile:
+                unset_fast_pyparsing_reprs()
             logger.tracing = args.trace
             if args.profile:
                 collect_timing_info()
@@ -203,6 +210,10 @@ class Command(object):
             self.site_install()
         if args.argv is not None:
             self.argv_args = list(args.argv)
+
+        # additional validation after processing
+        if DEVELOP and args.profile and self.jobs != 0:
+            raise CoconutException("--profile incompatible with --jobs {jobs}".format(jobs=args.jobs))
 
         # process general compiler args
         self.setup(

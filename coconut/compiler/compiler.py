@@ -438,7 +438,7 @@ class Compiler(Grammar):
         """Binds reference objects to the proper parse actions."""
         # handle endlines, docstrings, names
         self.endline <<= attach(self.endline_ref, self.endline_handle)
-        self.moduledoc_item <<= attach(self.moduledoc, self.set_docstring)
+        self.moduledoc_item <<= attach(self.moduledoc, self.set_moduledoc)
         self.name <<= attach(self.base_name, self.name_check)
 
         # comments are evaluated greedily because we need to know about them even if we're going to suppress them
@@ -1515,9 +1515,9 @@ class Compiler(Grammar):
 
     item_handle.ignore_one_token = True
 
-    def set_docstring(self, tokens):
+    def set_moduledoc(self, tokens):
         """Set the docstring."""
-        internal_assert(len(tokens) == 2, "invalid docstring tokens", tokens)
+        internal_assert(len(tokens) == 2, "invalid moduledoc tokens", tokens)
         self.docstring = self.reformat(tokens[0]) + "\n\n"
         return tokens[1]
 

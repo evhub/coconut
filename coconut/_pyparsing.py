@@ -23,7 +23,9 @@ import os
 import sys
 import traceback
 import functools
+import inspect
 from warnings import warn
+from collections import defaultdict
 
 from coconut.constants import (
     PURE_PYTHON,
@@ -37,6 +39,7 @@ from coconut.constants import (
     left_recursion_over_packrat,
     enable_pyparsing_warnings,
 )
+from coconut.util import get_clock_time  # NOQA
 from coconut.util import (
     ver_str_to_tuple,
     ver_tuple_to_str,
@@ -130,7 +133,7 @@ Keyword.setDefaultKeywordChars(varchars)
 
 
 # -----------------------------------------------------------------------------------------------------------------------
-# FAST REPR:
+# FAST REPRS:
 # -----------------------------------------------------------------------------------------------------------------------
 
 if PY2:
@@ -140,13 +143,161 @@ if PY2:
 else:
     fast_repr = object.__repr__
 
-# makes pyparsing much faster if it doesn't have to compute expensive
-#  nested string representations
-if use_fast_pyparsing_reprs:
+
+_old_pyparsing_reprs = []
+
+
+def set_fast_pyparsing_reprs():
+    """Make pyparsing much faster by preventing it from computing expensive nested string representations."""
     for obj in vars(_pyparsing).values():
         try:
             if issubclass(obj, ParserElement):
+                _old_pyparsing_reprs.append((obj, (obj.__repr__, obj.__str__)))
                 obj.__repr__ = functools.partial(fast_repr, obj)
                 obj.__str__ = functools.partial(fast_repr, obj)
         except TypeError:
             pass
+
+
+def unset_fast_pyparsing_reprs():
+    """Restore pyparsing's default string representations for ease of debugging."""
+    for obj, (repr_method, str_method) in _old_pyparsing_reprs:
+        obj.__repr__ = repr_method
+        obj.__str__ = str_method
+
+
+if use_fast_pyparsing_reprs:
+    set_fast_pyparsing_reprs()
+
+
+# -----------------------------------------------------------------------------------------------------------------------
+# PROFILING:
+# -----------------------------------------------------------------------------------------------------------------------
+
+_timing_info = [{}]
+
+
+class _timing_sentinel(object):
+    pass
+
+
+def add_timing_to_method(cls, method_name, method):
+    """Add timing collection to the given method."""
+    from coconut.terminal import internal_assert  # hide to avoid circular import
+    args, varargs, keywords, defaults = inspect.getargspec(method)
+    internal_assert(args[:1] == ["self"], "cannot add timing to method", method_name)
+
+    if not defaults:
+        defaults = []
+    num_undefaulted_args = len(args) - len(defaults)
+    def_args = []
+    call_args = []
+    fix_arg_defaults = []
+    defaults_dict = {}
+    for i, arg in enumerate(args):
+        if i >= num_undefaulted_args:
+            default = defaults[i - num_undefaulted_args]
+            def_args.append(arg + "=_timing_sentinel")
+            defaults_dict[arg] = default
+            fix_arg_defaults.append(
+                """
+    if {arg} is _timing_sentinel:
+        {arg} = _exec_dict["defaults_dict"]["{arg}"]
+""".strip("\n").format(
+                    arg=arg,
+                ),
+            )
+        else:
+            def_args.append(arg)
+        call_args.append(arg)
+    if varargs:
+        def_args.append("*" + varargs)
+        call_args.append("*" + varargs)
+    if keywords:
+        def_args.append("**" + keywords)
+        call_args.append("**" + keywords)
+
+    new_method_name = "new_" + method_name + "_func"
+    _exec_dict = globals().copy()
+    _exec_dict.update(locals())
+    new_method_code = """
+def {new_method_name}({def_args}):
+{fix_arg_defaults}
+
+    _all_args = (lambda *args, **kwargs: args + tuple(kwargs.values()))({call_args})
+    _exec_dict["internal_assert"](not any(_arg is _timing_sentinel for _arg in _all_args), "error handling arguments in timed method {new_method_name}({def_args}); got", _all_args)
+
+    _start_time = _exec_dict["get_clock_time"]()
+    try:
+        return _exec_dict["method"]({call_args})
+    finally:
+        _timing_info[0][str(self)] += _exec_dict["get_clock_time"]() - _start_time
+{new_method_name}._timed = True
+    """.format(
+        fix_arg_defaults="\n".join(fix_arg_defaults),
+        new_method_name=new_method_name,
+        def_args=", ".join(def_args),
+        call_args=", ".join(call_args),
+    )
+    exec(new_method_code, _exec_dict)
+
+    setattr(cls, method_name, _exec_dict[new_method_name])
+    return True
+
+
+def collect_timing_info():
+    """Modifies pyparsing elements to time how long they're executed for."""
+    from coconut.terminal import logger  # hide to avoid circular imports
+    logger.log("adding timing collection to pyparsing elements:")
+    _timing_info[0] = defaultdict(float)
+    for obj in vars(_pyparsing).values():
+        if isinstance(obj, type) and issubclass(obj, ParserElement):
+            added_timing = False
+            for attr_name in dir(obj):
+                attr = getattr(obj, attr_name)
+                if (
+                    callable(attr)
+                    and not isinstance(attr, ParserElement)
+                    and not getattr(attr, "_timed", False)
+                    and attr_name not in (
+                        "__getattribute__",
+                        "__setattribute__",
+                        "__init_subclass__",
+                        "__subclasshook__",
+                        "__class__",
+                        "__setattr__",
+                        "__getattr__",
+                        "__new__",
+                        "__init__",
+                        "__str__",
+                        "__repr__",
+                        "__hash__",
+                        "__eq__",
+                        "_trim_traceback",
+                        "_ErrorStop",
+                        "enablePackrat",
+                        "inlineLiteralsUsing",
+                        "setDefaultWhitespaceChars",
+                        "setDefaultKeywordChars",
+                        "resetCache",
+                    )
+                ):
+                    added_timing |= add_timing_to_method(obj, attr_name, attr)
+            if added_timing:
+                logger.log("\tadded timing collection to", obj)
+
+
+def print_timing_info():
+    """Print timing_info collected by collect_timing_info()."""
+    print(
+        """
+=====================================
+Timing info:
+(timed {num} total pyparsing objects)
+=====================================""".format(
+            num=len(_timing_info[0]),
+        ),
+    )
+    sorted_timing_info = sorted(_timing_info[0].items(), key=lambda kv: kv[1])
+    for method_name, total_time in sorted_timing_info:
+        print("{method_name}:\t{total_time}".format(method_name=method_name, total_time=total_time))

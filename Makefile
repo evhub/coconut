@@ -174,7 +174,7 @@ docs: clean
 
 .PHONY: clean
 clean:
-	rm -rf ./docs ./dist ./build ./tests/dest ./pyprover ./pyston ./coconut-prelude index.rst profile.json
+	rm -rf ./docs ./dist ./build ./tests/dest ./pyprover ./pyston ./coconut-prelude index.rst vprof.json profile.txt
 	-find . -name '*.pyc' -delete
 	-C:/GnuWin32/bin/find.exe . -name '*.pyc' -delete
 	-find . -name '__pycache__' -delete
@@ -209,14 +209,19 @@ upload: clean dev just-upload
 check-reqs:
 	python ./coconut/requirements.py
 
-.PHONY: profile
-profile:
-	vprof -c h "coconut tests/src/cocotest/agnostic tests/dest/cocotest --force" --output-file ./profile.json
+.PHONY: profile-parser
+profile-parser: export COCONUT_PURE_PYTHON=TRUE
+profile-parser:
+	coconut tests/src/cocotest/agnostic tests/dest/cocotest --force --profile --verbose --recursion-limit 4096 2>&1 | tee ./profile.txt
+
+.PHONY: profile-lines
+profile-lines:
+	vprof -c h "coconut tests/src/cocotest/agnostic tests/dest/cocotest --force" --output-file ./vprof.json
 
 .PHONY: profile-memory
 profile-memory:
-	vprof -c m "coconut tests/src/cocotest/agnostic tests/dest/cocotest --force" --output-file ./profile.json
+	vprof -c m "coconut tests/src/cocotest/agnostic tests/dest/cocotest --force" --output-file ./vprof.json
 
 .PHONY: view-profile
 view-profile:
-	vprof --input-file ./profile.json
+	vprof --input-file ./vprof.json

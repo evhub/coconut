@@ -116,8 +116,8 @@ template_ext = ".py_template"
 
 default_encoding = "utf-8"
 
-minimum_recursion_limit = 100
-default_recursion_limit = 2000
+minimum_recursion_limit = 128
+default_recursion_limit = 2048
 
 if sys.getrecursionlimit() < default_recursion_limit:
     sys.setrecursionlimit(default_recursion_limit)
