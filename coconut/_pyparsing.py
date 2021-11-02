@@ -174,7 +174,7 @@ if use_fast_pyparsing_reprs:
 # PROFILING:
 # -----------------------------------------------------------------------------------------------------------------------
 
-_timing_info = [{}]
+_timing_info = [None]  # in list to allow reassignment
 
 
 class _timing_sentinel(object):
@@ -182,8 +182,10 @@ class _timing_sentinel(object):
 
 
 def add_timing_to_method(cls, method_name, method):
-    """Add timing collection to the given method."""
+    """Add timing collection to the given method.
+    It's a monstrosity, but it's only used for profiling."""
     from coconut.terminal import internal_assert  # hide to avoid circular import
+
     args, varargs, keywords, defaults = inspect.getargspec(method)
     internal_assert(args[:1] == ["self"], "cannot add timing to method", method_name)
 
@@ -246,9 +248,10 @@ def {new_method_name}({def_args}):
 
 
 def collect_timing_info():
-    """Modifies pyparsing elements to time how long they're executed for."""
+    """Modifies pyparsing elements to time how long they're executed for.
+    It's a monstrosity, but it's only used for profiling."""
     from coconut.terminal import logger  # hide to avoid circular imports
-    logger.log("adding timing collection to pyparsing elements:")
+    logger.log("adding timing to pyparsing elements:")
     _timing_info[0] = defaultdict(float)
     for obj in vars(_pyparsing).values():
         if isinstance(obj, type) and issubclass(obj, ParserElement):
@@ -284,7 +287,7 @@ def collect_timing_info():
                 ):
                     added_timing |= add_timing_to_method(obj, attr_name, attr)
             if added_timing:
-                logger.log("\tadded timing collection to", obj)
+                logger.log("\tadded timing to", obj)
 
 
 def print_timing_info():
@@ -294,7 +297,8 @@ def print_timing_info():
 =====================================
 Timing info:
 (timed {num} total pyparsing objects)
-=====================================""".format(
+=====================================
+        """.rstrip().format(
             num=len(_timing_info[0]),
         ),
     )
