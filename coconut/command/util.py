@@ -516,11 +516,9 @@ class Runner(object):
         if init:
             # put reserved_vars in for auto-completion purposes only at the very beginning
             for var in reserved_vars:
-                init_vars[var] = None
-            # but make sure to override with default Python built-ins, which can overlap with reserved_vars
-            for k, v in vars(builtins).items():
-                if not k.startswith("_"):
-                    init_vars[k] = v
+                # but don't override any default Python built-ins
+                if var not in dir(builtins):
+                    init_vars[var] = None
         return init_vars
 
     def store(self, line):
