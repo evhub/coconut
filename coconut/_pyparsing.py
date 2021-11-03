@@ -120,7 +120,10 @@ USE_COMPUTATION_GRAPH = (
 )
 
 if enable_pyparsing_warnings:
-    _pyparsing._enable_all_warnings()
+    if MODERN_PYPARSING:
+        _pyparsing.enable_all_warnings()
+    else:
+        _pyparsing._enable_all_warnings()
     _pyparsing.__diag__.warn_name_set_on_empty_Forward = False
 
 if MODERN_PYPARSING and use_left_recursion_if_available:

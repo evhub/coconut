@@ -69,6 +69,7 @@ from coconut.constants import (
     pseudo_targets,
     reserved_vars,
     use_packrat_parser,
+    packrat_cache_size,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -87,11 +88,7 @@ def evaluate_tokens(tokens, **kwargs):
     """Evaluate the given tokens in the computation graph."""
     # can't have this be a normal kwarg to make evaluate_tokens a valid parse action
     evaluated_toklists = kwargs.pop("evaluated_toklists", ())
-    final = kwargs.pop("final", False)
     internal_assert(not kwargs, "invalid keyword arguments to evaluate_tokens", kwargs)
-
-    if final and use_packrat_parser:
-        ParserElement.packrat_cache.clear()
 
     if isinstance(tokens, ParseResults):
 
@@ -226,6 +223,7 @@ class ComputationNode(object):
 
 class CombineNode(Combine):
     """Modified Combine to work with the computation graph."""
+    __slots__ = ()
 
     def _combine(self, original, loc, tokens):
         """Implement the parse action for Combine."""
@@ -268,10 +266,18 @@ def attach(item, action, ignore_no_tokens=None, ignore_one_token=None, **kwargs)
     return add_action(item, action)
 
 
+def final_evaluate_tokens(tokens):
+    """Same as evaluate_tokens but should only be used once a parse is assured."""
+    if use_packrat_parser:
+        # clear cache without resetting stats
+        ParserElement.packrat_cache.clear()
+    return evaluate_tokens(tokens)
+
+
 def final(item):
     """Collapse the computation graph upon parsing the given item."""
     if USE_COMPUTATION_GRAPH:
-        item = add_action(item, partial(evaluate_tokens, final=True))
+        item = add_action(item, final_evaluate_tokens)
     return item
 
 
@@ -289,8 +295,13 @@ def unpack(tokens):
 def parse_context(inner_parse):
     """Context to manage the packrat cache across parse calls."""
     if inner_parse and use_packrat_parser:
+        # store old packrat cache
         old_cache = ParserElement.packrat_cache
-        old_cache_stats = ParserElement.packrat_cache_stats
+        old_cache_stats = ParserElement.packrat_cache_stats[:]
+
+        # give inner parser a new packrat cache
+        ParserElement._packratEnabled = False
+        ParserElement.enablePackrat(packrat_cache_size)
     try:
         yield
     finally:
@@ -417,12 +428,13 @@ def get_target_info_smart(target, mode="lowest"):
 
 class Wrap(ParseElementEnhance):
     """PyParsing token that wraps the given item in the given context manager."""
+    __slots__ = ("errmsg", "wrapper")
 
     def __init__(self, item, wrapper):
         super(Wrap, self).__init__(item)
         self.errmsg = item.errmsg + " (Wrapped)"
         self.wrapper = wrapper
-        self.name = get_name(item)
+        self.setName(get_name(item))
 
     @property
     def _wrapper_name(self):
@@ -432,11 +444,13 @@ class Wrap(ParseElementEnhance):
     @override
     def parseImpl(self, instring, loc, *args, **kwargs):
         """Wrapper around ParseElementEnhance.parseImpl."""
-        logger.log_trace(self._wrapper_name, instring, loc)
+        if logger.tracing:  # avoid the overhead of the call if not tracing
+            logger.log_trace(self._wrapper_name, instring, loc)
         with logger.indent_tracing():
             with self.wrapper(self, instring, loc):
                 evaluated_toks = super(Wrap, self).parseImpl(instring, loc, *args, **kwargs)
-        logger.log_trace(self._wrapper_name, instring, loc, evaluated_toks)
+        if logger.tracing:  # avoid the overhead of the call if not tracing
+            logger.log_trace(self._wrapper_name, instring, loc, evaluated_toks)
         return evaluated_toks
 
 

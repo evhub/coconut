@@ -37,23 +37,23 @@ setup-pypy3:
 
 .PHONY: install
 install: setup
-	python -m pip install .[tests]
+	python -m pip install -e .[tests]
 
 .PHONY: install-py2
 install-py2: setup-py2
-	python2 -m pip install .[tests]
+	python2 -m pip install -e .[tests]
 
 .PHONY: install-py3
 install-py3: setup-py3
-	python3 -m pip install .[tests]
+	python3 -m pip install -e .[tests]
 
 .PHONY: install-pypy
 install-pypy:
-	pypy -m pip install .[tests]
+	pypy -m pip install -e .[tests]
 
 .PHONY: install-pypy3
 install-pypy3:
-	pypy3 -m pip install .[tests]
+	pypy3 -m pip install -e .[tests]
 
 .PHONY: format
 format: dev
