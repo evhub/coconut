@@ -713,7 +713,7 @@ class Compiler(Grammar):
         err_lineno = err.lineno if include_ln else None
 
         causes = []
-        for cause, _, _ in all_matches(self.parse_err_msg, err_line[err_index:]):
+        for cause, _, _ in all_matches(self.parse_err_msg, err_line[err_index:], inner=True):
             causes.append(cause)
         if causes:
             extra = "possible cause{s}: {causes}".format(
@@ -742,7 +742,7 @@ class Compiler(Grammar):
             parser = self.eval_parser
         with self.inner_environment():
             pre_procd = self.pre(inputstring, **preargs)
-            parsed = parse(parser, pre_procd)
+            parsed = parse(parser, pre_procd, inner=True)
             return self.post(parsed, **postargs)
 
     @contextmanager
@@ -2254,7 +2254,7 @@ if not {check_var}:
             pass
         else:
             raw_first_line = split_leading_trailing_indent(rem_comment(first_line))[1]
-            if match_in(self.just_a_string, raw_first_line):
+            if match_in(self.just_a_string, raw_first_line, inner=True):
                 return first_line, rest_of_lines
         return None, block
 
@@ -2381,7 +2381,7 @@ else:
 
             # check if there is anything that stores a scope reference, and if so,
             #  disable TRE, since it can't handle that
-            if attempt_tre and match_in(self.stores_scope, line):
+            if attempt_tre and match_in(self.stores_scope, line, inner=True):
                 attempt_tre = False
 
             # attempt tco/tre/async universalization
@@ -2464,7 +2464,7 @@ else:
         # extract information about the function
         with self.complain_on_err():
             try:
-                split_func_tokens = parse(self.split_func, def_stmt)
+                split_func_tokens = parse(self.split_func, def_stmt, inner=True)
 
                 internal_assert(len(split_func_tokens) == 2, "invalid function definition splitting tokens", split_func_tokens)
                 func_name, func_arg_tokens = split_func_tokens

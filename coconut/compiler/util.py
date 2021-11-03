@@ -42,6 +42,7 @@ from coconut._pyparsing import (
     Empty,
     Literal,
     Group,
+    ParserElement,
     _trim_arity,
     _ParseResultsWithOffset,
 )
@@ -67,6 +68,7 @@ from coconut.constants import (
     specific_targets,
     pseudo_targets,
     reserved_vars,
+    use_packrat_parser,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -85,7 +87,11 @@ def evaluate_tokens(tokens, **kwargs):
     """Evaluate the given tokens in the computation graph."""
     # can't have this be a normal kwarg to make evaluate_tokens a valid parse action
     evaluated_toklists = kwargs.pop("evaluated_toklists", ())
+    final = kwargs.pop("final", False)
     internal_assert(not kwargs, "invalid keyword arguments to evaluate_tokens", kwargs)
+
+    if final and use_packrat_parser:
+        ParserElement.packrat_cache.clear()
 
     if isinstance(tokens, ParseResults):
 
@@ -265,7 +271,7 @@ def attach(item, action, ignore_no_tokens=None, ignore_one_token=None, **kwargs)
 def final(item):
     """Collapse the computation graph upon parsing the given item."""
     if USE_COMPUTATION_GRAPH:
-        item = add_action(item, evaluate_tokens)
+        item = add_action(item, partial(evaluate_tokens, final=True))
     return item
 
 
@@ -279,29 +285,48 @@ def unpack(tokens):
     return tokens
 
 
-def parse(grammar, text):
-    """Parse text using grammar."""
-    return unpack(grammar.parseWithTabs().parseString(text))
-
-
-def try_parse(grammar, text):
-    """Attempt to parse text using grammar else None."""
+@contextmanager
+def parse_context(inner_parse):
+    """Context to manage the packrat cache across parse calls."""
+    if inner_parse and use_packrat_parser:
+        old_cache = ParserElement.packrat_cache
+        old_cache_stats = ParserElement.packrat_cache_stats
     try:
-        return parse(grammar, text)
-    except ParseBaseException:
-        return None
+        yield
+    finally:
+        if inner_parse and use_packrat_parser:
+            ParserElement.packrat_cache = old_cache
+            ParserElement.packrat_cache_stats[0] += old_cache_stats[0]
+            ParserElement.packrat_cache_stats[1] += old_cache_stats[1]
 
 
-def all_matches(grammar, text):
+def parse(grammar, text, inner=False):
+    """Parse text using grammar."""
+    with parse_context(inner):
+        return unpack(grammar.parseWithTabs().parseString(text))
+
+
+def try_parse(grammar, text, inner=False):
+    """Attempt to parse text using grammar else None."""
+    with parse_context(inner):
+        try:
+            return parse(grammar, text)
+        except ParseBaseException:
+            return None
+
+
+def all_matches(grammar, text, inner=False):
     """Find all matches for grammar in text."""
-    for tokens, start, stop in grammar.parseWithTabs().scanString(text):
-        yield unpack(tokens), start, stop
+    with parse_context(inner):
+        for tokens, start, stop in grammar.parseWithTabs().scanString(text):
+            yield unpack(tokens), start, stop
 
 
-def match_in(grammar, text):
+def match_in(grammar, text, inner=False):
     """Determine if there is a match for grammar in text."""
-    for result in grammar.parseWithTabs().scanString(text):
-        return True
+    with parse_context(inner):
+        for result in grammar.parseWithTabs().scanString(text):
+            return True
     return False
 
 

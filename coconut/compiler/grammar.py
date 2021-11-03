@@ -1463,7 +1463,7 @@ class Grammar(object):
     )
 
     else_stmt = condense(keyword("else") - suite)
-    full_suite = colon.suppress() + Group((newline.suppress() + indent.suppress() + OneOrMore(stmt) + dedent.suppress()) | simple_stmt)
+    full_suite = colon.suppress() - Group((newline.suppress() - indent.suppress() - OneOrMore(stmt) - dedent.suppress()) | simple_stmt)
     full_match = Forward()
     full_match_ref = (
         match_kwd.suppress()
@@ -1488,7 +1488,7 @@ class Grammar(object):
             + stores_loc_item
             + many_match
             + Optional(keyword("if").suppress() + namedexpr_test)
-            + full_suite,
+            - full_suite,
         ),
     )
     case_stmt_co_syntax = (
@@ -1502,7 +1502,7 @@ class Grammar(object):
             + stores_loc_item
             + many_match
             + Optional(keyword("if").suppress() + namedexpr_test)
-            + full_suite,
+            - full_suite,
         ),
     )
     case_stmt_py_syntax = (
@@ -1589,13 +1589,14 @@ class Grammar(object):
         attach(
             base_match_funcdef
             + end_func_colon
-            + (
+            - (
                 attach(simple_stmt, make_suite_handle)
                 | (
-                    newline.suppress() + indent.suppress()
-                    + Optional(docstring)
-                    + attach(condense(OneOrMore(stmt)), make_suite_handle)
-                    + dedent.suppress()
+                    newline.suppress()
+                    - indent.suppress()
+                    - Optional(docstring)
+                    - attach(condense(OneOrMore(stmt)), make_suite_handle)
+                    - dedent.suppress()
                 )
             ),
             join_match_funcdef,
@@ -1712,8 +1713,8 @@ class Grammar(object):
     ) + Optional(keyword("from").suppress() + testlist)
     data_suite = Group(
         colon.suppress() - (
-            (newline.suppress() + indent.suppress() + Optional(docstring) + Group(OneOrMore(stmt)) + dedent.suppress())("complex")
-            | (newline.suppress() + indent.suppress() + docstring + dedent.suppress() | docstring)("docstring")
+            (newline.suppress() + indent.suppress() + Optional(docstring) + Group(OneOrMore(stmt)) - dedent.suppress())("complex")
+            | (newline.suppress() + indent.suppress() + docstring - dedent.suppress() | docstring)("docstring")
             | simple_stmt("simple")
         ) | newline("empty"),
     )
