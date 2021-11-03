@@ -1877,23 +1877,24 @@ def __new__(_coconut_cls, {all_args}):
     def assemble_data(self, name, namedtuple_call, inherit, extra_stmts, stmts, match_args):
         # create class
         out = (
-            "class " + name + "(" + namedtuple_call + (
-                ", " + inherit if inherit is not None
-                else ", _coconut.object" if not self.target.startswith("3")
-                else ""
-            ) + "):\n" + openindent
+            "class " + name + "("
+            + namedtuple_call
+            + (", " + inherit if inherit is not None else "")
+            + (", _coconut.object" if not self.target.startswith("3") else "")
+            + "):\n"
+            + openindent
         )
 
         # add universal statements
         all_extra_stmts = handle_indentation(
-            '''
+            """
 __slots__ = ()
 __ne__ = _coconut.object.__ne__
 def __eq__(self, other):
     return self.__class__ is other.__class__ and _coconut.tuple.__eq__(self, other)
 def __hash__(self):
     return _coconut.tuple.__hash__(self) ^ hash(self.__class__)
-            ''',
+            """,
             add_newline=True,
         )
         if self.target_info < (3, 10):
