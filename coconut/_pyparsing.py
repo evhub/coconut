@@ -31,13 +31,14 @@ from coconut.constants import (
     PURE_PYTHON,
     PYPY,
     use_fast_pyparsing_reprs,
-    packrat_cache,
+    use_packrat_parser,
+    packrat_cache_size,
     default_whitespace_chars,
     varchars,
     min_versions,
     pure_python_env_var,
-    left_recursion_over_packrat,
     enable_pyparsing_warnings,
+    use_left_recursion_if_available,
 )
 from coconut.util import get_clock_time  # NOQA
 from coconut.util import (
@@ -122,10 +123,10 @@ if enable_pyparsing_warnings:
     _pyparsing._enable_all_warnings()
     _pyparsing.__diag__.warn_name_set_on_empty_Forward = False
 
-if left_recursion_over_packrat and MODERN_PYPARSING:
+if MODERN_PYPARSING and use_left_recursion_if_available:
     ParserElement.enable_left_recursion()
-elif packrat_cache:
-    ParserElement.enablePackrat(packrat_cache)
+elif use_packrat_parser:
+    ParserElement.enablePackrat(packrat_cache_size)
 
 ParserElement.setDefaultWhitespaceChars(default_whitespace_chars)
 

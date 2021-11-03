@@ -40,7 +40,7 @@ from coconut.constants import (
     info_tabulation,
     main_sig,
     taberrfmt,
-    packrat_cache,
+    use_packrat_parser,
     embed_on_internal_exc,
 )
 from coconut.util import printerr, get_clock_time
@@ -396,7 +396,7 @@ class Logger(object):
             finally:
                 elapsed_time = get_clock_time() - start_time
                 printerr("Time while parsing:", elapsed_time, "seconds")
-                if packrat_cache:
+                if use_packrat_parser:
                     hits, misses = ParserElement.packrat_cache_stats
                     printerr("Packrat parsing stats:", hits, "hits;", misses, "misses")
         else:
