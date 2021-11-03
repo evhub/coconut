@@ -876,6 +876,9 @@ def main_test() -> bool:
     assert x == 3
     class int() as x = 3
     assert x == 3
+    data XY(x, y)
+    data Z(z) from XY
+    assert Z(1).z == 1
     return True
 
 def test_asyncio() -> bool:
