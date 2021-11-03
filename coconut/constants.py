@@ -95,11 +95,10 @@ assert use_fast_pyparsing_reprs or DEVELOP, "use_fast_pyparsing_reprs disabled o
 
 enable_pyparsing_warnings = DEVELOP
 
-# experimentally determined to maximize speed
+# experimentally determined to maximize performance
 use_packrat_parser = True
 use_left_recursion_if_available = False
-
-packrat_cache_size = 1024
+packrat_cache_size = None  # only works because final() clears the cache
 
 # we don't include \r here because the compiler converts \r into \n
 default_whitespace_chars = " \t\f\v\xa0"

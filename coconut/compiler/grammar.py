@@ -744,9 +744,9 @@ class Grammar(object):
     testlist_has_comma = trace(addspace(OneOrMore(condense(test + comma)) + Optional(test)))
     new_namedexpr_testlist_has_comma = trace(addspace(OneOrMore(condense(new_namedexpr_test + comma)) + Optional(test)))
 
-    testlist_star_expr = trace(Forward())
+    testlist_star_expr = Forward()
     testlist_star_expr_ref = tokenlist(Group(test) | star_expr, comma, suppress=False)
-    testlist_star_namedexpr = trace(Forward())
+    testlist_star_namedexpr = Forward()
     testlist_star_namedexpr_tokens = tokenlist(Group(namedexpr_test) | star_expr, comma, suppress=False)
 
     yield_from = Forward()
@@ -1925,7 +1925,7 @@ def set_grammar_names():
     """Set names of grammar elements to their variable names."""
     for varname, val in vars(Grammar).items():
         if isinstance(val, ParserElement):
-            setattr(Grammar, varname, val.setName(varname))
+            val.setName(varname)
             if isinstance(val, Forward):
                 trace(val)
 

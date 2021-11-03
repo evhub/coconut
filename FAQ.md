@@ -72,7 +72,7 @@ I certainly hope not! Unlike most transpiled languages, all valid Python is vali
 
 ### I want to use Coconut in a production environment; how do I achieve maximum performance?
 
-First, you're going to want a fast compiler, so you should either use [`cPyparsing`](https://github.com/evhub/cpyparsing) or [`PyPy`](https://pypy.org/). Second, there are two simple things you can do to make Coconut produce faster Python: compile with `--no-tco` and compile with a `--target` specification for the exact version of Python you want to run your code on. Passing `--target` helps Coconut optimize the compiled code for the Python version you want, and, though [Tail Call Optimization](DOCS.html#tail-call-optimization) is useful, it will usually significantly slow down functions that use it, so disabling it will often provide a major performance boost.
+First, you're going to want a fast compiler, so you should make sure you're using [`cPyparsing`](https://github.com/evhub/cpyparsing). Second, there are two simple things you can do to make Coconut produce faster Python: compile with `--no-tco` and compile with a `--target` specification for the exact version of Python you want to run your code on. Passing `--target` helps Coconut optimize the compiled code for the Python version you want, and, though [Tail Call Optimization](DOCS.html#tail-call-optimization) is useful, it will usually significantly slow down functions that use it, so disabling it will often provide a major performance boost.
 
 ### I want to contribute to Coconut, how do I get started?
 
