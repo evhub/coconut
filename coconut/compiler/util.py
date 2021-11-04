@@ -56,6 +56,7 @@ from coconut.terminal import (
     get_name,
 )
 from coconut.constants import (
+    CPYTHON,
     opens,
     closes,
     openindent,
@@ -247,7 +248,7 @@ else:
 
 def add_action(item, action):
     """Add a parse action to the given item."""
-    item_ref_count = sys.getrefcount(item)
+    item_ref_count = sys.getrefcount(item) if CPYTHON else float("inf")
     internal_assert(item_ref_count >= temp_grammar_item_ref_count, "add_action got item with too low ref count", (item, type(item), item_ref_count))
     if item_ref_count > temp_grammar_item_ref_count:
         item = item.copy()
