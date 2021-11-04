@@ -113,9 +113,8 @@ varchars = string.ascii_letters + string.digits + "_"
 embed_on_internal_exc = False
 assert not embed_on_internal_exc or DEVELOP, "embed_on_internal_exc enabled on non-develop build"
 
-template_ext = ".py_template"
-
-default_encoding = "utf-8"
+# should be the minimal ref count observed by attach
+temp_grammar_item_ref_count = 5
 
 minimum_recursion_limit = 128
 default_recursion_limit = 2048
@@ -124,9 +123,6 @@ if sys.getrecursionlimit() < default_recursion_limit:
     sys.setrecursionlimit(default_recursion_limit)
 
 legal_indent_chars = " \t\xa0"
-
-hash_prefix = "# __coconut_hash__ = "
-hash_sep = "\x00"
 
 # both must be in ascending order
 supported_py2_vers = (
@@ -168,6 +164,13 @@ pseudo_targets = {
 }
 
 targets = ("",) + specific_targets
+
+template_ext = ".py_template"
+
+default_encoding = "utf-8"
+
+hash_prefix = "# __coconut_hash__ = "
+hash_sep = "\x00"
 
 openindent = "\u204b"  # reverse pilcrow
 closeindent = "\xb6"  # pilcrow
