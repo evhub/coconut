@@ -214,9 +214,9 @@ profile-parser: export COCONUT_PURE_PYTHON=TRUE
 profile-parser:
 	coconut tests/src/cocotest/agnostic tests/dest/cocotest --force --profile --verbose --recursion-limit 4096 2>&1 | tee ./profile.log
 
-.PHONY: profile-lines
-profile-lines: export COCONUT_PURE_PYTHON=TRUE
-profile-lines:
+.PHONY: profile-time
+profile-time: export COCONUT_PURE_PYTHON=TRUE
+profile-time:
 	vprof -c h "coconut tests/src/cocotest/agnostic tests/dest/cocotest --force" --output-file ./vprof.json
 
 .PHONY: profile-memory

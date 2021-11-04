@@ -70,6 +70,7 @@ from coconut.constants import (
     reserved_vars,
     use_packrat_parser,
     packrat_cache_size,
+    temp_grammar_item_ref_count,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -246,12 +247,19 @@ else:
 
 def add_action(item, action):
     """Add a parse action to the given item."""
-    return item.copy().addParseAction(action)
+    item_ref_count = sys.getrefcount(item)
+    internal_assert(item_ref_count >= temp_grammar_item_ref_count, "add_action got item with too low ref count", (item, type(item), item_ref_count))
+    if item_ref_count > temp_grammar_item_ref_count:
+        item = item.copy()
+    return item.addParseAction(action)
 
 
-def attach(item, action, ignore_no_tokens=None, ignore_one_token=None, **kwargs):
+def attach(item, action, ignore_no_tokens=None, ignore_one_token=None, ignore_tokens=None, **kwargs):
     """Set the parse action for the given item to create a node in the computation graph."""
-    if USE_COMPUTATION_GRAPH:
+    if ignore_tokens is None:
+        ignore_tokens = getattr(action, "ignore_tokens", False)
+    # if ignore_tokens, then we can just pass in the computation graph and have it be ignored
+    if not ignore_tokens and USE_COMPUTATION_GRAPH:
         # use the action's annotations to generate the defaults
         if ignore_no_tokens is None:
             ignore_no_tokens = getattr(action, "ignore_no_tokens", False)
@@ -271,14 +279,16 @@ def final_evaluate_tokens(tokens):
     if use_packrat_parser:
         # clear cache without resetting stats
         ParserElement.packrat_cache.clear()
-    return evaluate_tokens(tokens)
+    if USE_COMPUTATION_GRAPH:
+        return evaluate_tokens(tokens)
+    else:
+        return tokens
 
 
 def final(item):
     """Collapse the computation graph upon parsing the given item."""
-    if USE_COMPUTATION_GRAPH:
-        item = add_action(item, final_evaluate_tokens)
-    return item
+    # evaluate_tokens expects a computation graph, so we just call add_action directly
+    return add_action(item, final_evaluate_tokens)
 
 
 def unpack(tokens):
@@ -512,7 +522,7 @@ def invalid_syntax(item, msg, **kwargs):
 
     def invalid_syntax_handle(loc, tokens):
         raise CoconutDeferredSyntaxError(msg, loc)
-    return attach(item, invalid_syntax_handle, **kwargs)
+    return attach(item, invalid_syntax_handle, ignore_tokens=True, **kwargs)
 
 
 def multi_index_lookup(iterable, item, indexable_types, default=None):
@@ -616,7 +626,7 @@ def regex_item(regex, options=None):
 
 def fixto(item, output):
     """Force an item to result in a specific output."""
-    return add_action(item, replaceWith(output))
+    return attach(item, replaceWith(output), ignore_tokens=True)
 
 
 def addspace(item):
@@ -657,6 +667,10 @@ def add_list_spacing(tokens):
     return "".join(out)
 
 
+add_list_spacing.ignore_zero_tokens = True
+add_list_spacing.ignore_one_token = True
+
+
 def itemlist(item, sep, suppress_trailing=True):
     """Create a list of items separated by seps with comma-like spacing added.
     A trailing sep is allowed."""
@@ -678,6 +692,9 @@ def stores_loc_action(loc, tokens):
     """Action that just parses to loc."""
     internal_assert(len(tokens) == 0, "invalid store loc tokens", tokens)
     return str(loc)
+
+
+stores_loc_action.ignore_tokens = True
 
 
 stores_loc_item = attach(Empty(), stores_loc_action)

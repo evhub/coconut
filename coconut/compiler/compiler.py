@@ -2719,11 +2719,12 @@ __annotations__["{name}"] = {annotation}
             )
 
     def ellipsis_handle(self, tokens):
-        internal_assert(len(tokens) == 1, "invalid ellipsis tokens", tokens)
         if self.target.startswith("3"):
             return "..."
         else:
             return "_coconut.Ellipsis"
+
+    ellipsis_handle.ignore_tokens = True
 
     def match_case_tokens(self, match_var, check_var, style, original, tokens, top):
         """Build code for matching the given case."""
