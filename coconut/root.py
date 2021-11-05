@@ -23,10 +23,10 @@ import sys as _coconut_sys
 # VERSION:
 # -----------------------------------------------------------------------------------------------------------------------
 
-VERSION = "1.5.0"
-VERSION_NAME = "Fish License"
+VERSION = "1.6.0"
+VERSION_NAME = "Vocational Guidance Counsellor"
 # False for release, int >= 1 for develop
-DEVELOP = 107
+DEVELOP = False
 
 # -----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
