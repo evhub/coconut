@@ -383,6 +383,8 @@ In order of precedence, highest first, the operators supported in Coconut are:
 Symbol(s)             Associativity
 ===================== ==========================
 ..                    n/a
+f x                   n/a
+await x               n/a
 **                    right
 +, -, ~               unary
 *, /, //, %, @        left
@@ -405,7 +407,8 @@ a `b` c               left (captures lambda)
 not                   unary
 and                   left (short-circuits)
 or                    left (short-circuits)
-a if b else c         ternary left (short-circuits)
+x if c else y,        ternary left (short-circuits)
+  if c then x else y
 ->                    right
 ===================== ==========================
 ```
