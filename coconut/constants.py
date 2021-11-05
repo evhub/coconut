@@ -610,7 +610,7 @@ min_versions = {
     "sphinx_bootstrap_theme": (0, 8),
     "myst-parser": (0, 15),
     # don't upgrade this until https://github.com/jupyter/jupyter_console/issues/241 is fixed
-    ("jupyter-client", "py3"): (6, 1),
+    ("jupyter-client", "py3"): (6, 1, 12),
     # latest version supported on Python 2
     ("jupyter-client", "py2"): (5, 3),
     # don't upgrade these; they break on Python 3.5
@@ -668,6 +668,7 @@ pinned_reqs = (
 #  that the element corresponding to the last None should be incremented
 _ = None
 max_versions = {
+    ("jupyter-client", "py3"): _,
     "pyparsing": _,
     "cPyparsing": (_, _, _),
     "mypy[python2]": _,
@@ -675,6 +676,12 @@ max_versions = {
     "jedi": _,
     ("pywinpty", "py2;windows"): _,
 }
+
+allowed_constrained_but_unpinned_reqs = (
+    "cPyparsing",
+    "mypy[python2]",
+)
+assert set(max_versions) <= set(pinned_reqs) | set(allowed_constrained_but_unpinned_reqs), "found unlisted constrained but unpinned requirements"
 
 classifiers = (
     "Development Status :: 5 - Production/Stable",
