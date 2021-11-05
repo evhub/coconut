@@ -877,7 +877,7 @@ def main_test() -> bool:
     class int() as x = 3
     assert x == 3
     data XY(x, y)
-    data Z(z) from XY
+    data Z(z) from XY  # type: ignore
     assert Z(1).z == 1
     return True
 
