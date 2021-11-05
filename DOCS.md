@@ -797,7 +797,7 @@ Subclassing `data` types can be done easily by inheriting from them either in an
 ```coconut
 __slots__ = ()
 ```
-which will need to be put in the subclass body before any method or attribute definitions.
+which will need to be put in the subclass body before any method or attribute definitions. If you need to inherit magic methods from a base class in your `data` type, such subclassing is the recommended method, as the `data ... from ...` syntax will ovewrite any magic methods in the base class with magic methods built for the new `data` type.
 
 ##### Rationale
 

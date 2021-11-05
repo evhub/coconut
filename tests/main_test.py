@@ -633,18 +633,6 @@ class TestShell(unittest.TestCase):
                 assert kernel in stdout
 
         if not WINDOWS and not PYPY:
-            def test_eof_jupyter(self):
-                cmd = "coconut --jupyter console"
-                print("\n>", cmd)
-                p = pexpect.spawn(cmd)
-                p.expect("In", timeout=120)
-                p.sendeof()
-                p.expect("Do you really want to exit")
-                p.sendline("y")
-                p.expect("Shutting down kernel|shutting down")
-                if p.isalive():
-                    p.terminate()
-
             def test_exit_jupyter(self):
                 cmd = "coconut --jupyter console"
                 print("\n>", cmd)
