@@ -696,6 +696,7 @@ def suite_test() -> bool:
     assert must_be_int(4) == 4 == must_be_int_(4)
     assert typed_plus(1, 2) == 3
     class inh_A() `isinstance` A `isinstance` object = inh_A()
+    assert maxdiff([7,1,4,5]) == 4 == maxdiff_([7,1,4,5])
 
     # must come at end
     assert fibs_calls[0] == 1

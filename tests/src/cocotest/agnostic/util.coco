@@ -1120,3 +1120,22 @@ yield match def just_it_of_int(x is int):
 
 match yield def just_it_of_int_(x is int):
     yield x
+
+# maximum difference
+def maxdiff(ns) = (
+    ns
+    |> scan$(min)
+    |> zip$(ns)
+    |> starmap$(-)
+    |> filter$(->_ != 0)
+    |> reduce$(max, ?, -1)
+)
+
+def S(binop, unop) = x -> binop(x, unop(x))
+
+maxdiff_ = (
+    reduce$(max, ?, -1)
+    <.. filter$(->_ != 0)
+    <.. starmap$(-)
+    <.. S(zip, scan$(min))
+)
