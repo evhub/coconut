@@ -167,14 +167,16 @@ class Command(object):
 
     def use_args(self, args, interact=True, original_args=None):
         """Handle command-line arguments."""
+        # fix args
+        if not DEVELOP:
+            args.trace = args.profile = False
+
         # set up logger
-        logger.quiet, logger.verbose = args.quiet, args.verbose
-        if DEVELOP:
-            if args.trace or args.profile:
-                unset_fast_pyparsing_reprs()
-            logger.tracing = args.trace
-            if args.profile:
-                collect_timing_info()
+        logger.quiet, logger.verbose, logger.tracing = args.quiet, args.verbose, args.trace
+        if args.trace or args.profile:
+            unset_fast_pyparsing_reprs()
+        if args.profile:
+            collect_timing_info()
 
         logger.log(cli_version)
         if original_args is not None:
@@ -212,7 +214,7 @@ class Command(object):
             self.argv_args = list(args.argv)
 
         # additional validation after processing
-        if DEVELOP and args.profile and self.jobs != 0:
+        if args.profile and self.jobs != 0:
             raise CoconutException("--profile incompatible with --jobs {jobs}".format(jobs=args.jobs))
 
         # process general compiler args
