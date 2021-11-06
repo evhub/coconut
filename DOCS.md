@@ -1,3 +1,7 @@
+```{eval-rst}
+:tocdepth: 3
+```
+
 # Coconut Documentation
 
 ```{contents}
