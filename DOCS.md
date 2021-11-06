@@ -1538,7 +1538,7 @@ value = (
 ```
 
 **Python:**
-````coconut_python
+```coconut_python
 value = (
     a if should_use_a() else
     b if should_use_b() else
