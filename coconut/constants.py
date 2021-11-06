@@ -598,7 +598,7 @@ min_versions = {
     "backports.functools-lru-cache": (1, 6),
     "argparse": (1, 4),
     "pexpect": (4,),
-    ("trollius", "py2"): (2, 2),
+    ("trollius", "py2;cpy"): (2, 2),
     "requests": (2, 26),
     ("numpy", "py34"): (1,),
     ("numpy", "py2;cpy"): (1,),
