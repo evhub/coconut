@@ -30,8 +30,8 @@ from coconut.constants import (
 )
 from coconut.util import univ_open
 
+import sphinx_bootstrap_theme
 import myst_parser  # NOQA
-import sphinx_celery  # NOQA
 
 # -----------------------------------------------------------------------------------------------------------------------
 # README:
@@ -57,7 +57,8 @@ from coconut.constants import (  # NOQA
 version = VERSION
 release = version_str_tag
 
-html_theme = "sphinx_celery"
+html_theme = "bootstrap"
+html_theme_path = sphinx_bootstrap_theme.get_html_theme_path()
 html_theme_options = {
 }
 
