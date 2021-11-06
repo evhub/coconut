@@ -88,8 +88,8 @@ def get_reqs(which):
         if env_marker:
             markers = []
             for mark in env_marker.split(";"):
-                if mark.startswith("py") and mark.endswith("-only"):
-                    ver = mark[len("py"):-len("-only")]
+                if mark.startswith("py=="):
+                    ver = mark[len("py=="):]
                     if len(ver) == 1:
                         ver_tuple = (int(ver),)
                     else:
@@ -184,8 +184,7 @@ extras = {
     "watch": get_reqs("watch"),
     "jobs": get_reqs("jobs"),
     "mypy": get_reqs("mypy"),
-    "asyncio": get_reqs("asyncio"),
-    "enum": get_reqs("enum"),
+    "backports": get_reqs("backports"),
 }
 
 extras["all"] = everything_in(extras)
@@ -195,11 +194,10 @@ extras.update({
     "docs": unique_wrt(get_reqs("docs"), requirements),
     "tests": uniqueify_all(
         get_reqs("tests"),
-        extras["enum"],
+        extras["backports"],
         extras["jobs"] if not PYPY else [],
         extras["jupyter"] if IPY else [],
         extras["mypy"] if MYPY else [],
-        extras["asyncio"] if not PY34 and not PYPY else [],
     ),
 })
 
