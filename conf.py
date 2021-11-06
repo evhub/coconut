@@ -31,6 +31,7 @@ from coconut.constants import (
 from coconut.util import univ_open
 
 import myst_parser  # NOQA
+import sphinx_celery  # NOQA
 
 # -----------------------------------------------------------------------------------------------------------------------
 # README:
@@ -56,7 +57,7 @@ from coconut.constants import (  # NOQA
 version = VERSION
 release = version_str_tag
 
-html_theme = "python_docs_theme"
+html_theme = "sphinx_celery"
 html_theme_options = {
 }
 
