@@ -32,7 +32,7 @@ Information on every Coconut release is chronicled on the [GitHub releases page]
 
 ### Does Coconut support static type checking?
 
-Yes! Coconut compiles the [newest](https://www.python.org/dev/peps/pep-0526/), [fanciest](https://www.python.org/dev/peps/pep-0484/) type annotation syntax into version-independent type comments which can then by checked using Coconut's built-in [MyPy Integration](http://coconut.readthedocs.io/en/master/DOCS.html#mypy-integration).
+Yes! Coconut compiles the [newest](https://www.python.org/dev/peps/pep-0526/), [fanciest](https://www.python.org/dev/peps/pep-0484/) type annotation syntax into version-independent type comments which can then by checked using Coconut's built-in [MyPy Integration](DOCS.html#mypy-integration).
 
 ### Help! I tried to write a recursive iterator and my Python segfaulted!
 

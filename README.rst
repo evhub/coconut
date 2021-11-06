@@ -32,10 +32,10 @@ after which the entire world of Coconut will be at your disposal. To help you ge
 
 .. _Python: https://www.python.org/
 .. _PyPI: https://pypi.python.org/pypi/coconut
-.. _Tutorial: http://coconut.readthedocs.io/en/master/HELP.html
-.. _Documentation: http://coconut.readthedocs.io/en/master/DOCS.html
+.. _Tutorial: http://coconut.readthedocs.io/en/latest/HELP.html
+.. _Documentation: http://coconut.readthedocs.io/en/latest/DOCS.html
 .. _`Online Interpreter`: https://cs121-team-panda.github.io/coconut-interpreter
-.. _FAQ: http://coconut.readthedocs.io/en/master/FAQ.html
+.. _FAQ: http://coconut.readthedocs.io/en/latest/FAQ.html
 .. _GitHub: https://github.com/evhub/coconut
 .. _Gitter: https://gitter.im/evhub/coconut
 .. _Releases: https://github.com/evhub/coconut/releases
