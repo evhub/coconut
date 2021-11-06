@@ -77,3 +77,9 @@ myst_enable_extensions = [
 ]
 
 myst_heading_anchors = 4
+
+html_sidebars = {
+    "**": [
+        "localtoc.html",
+    ],
+}
