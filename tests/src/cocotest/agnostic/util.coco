@@ -7,7 +7,7 @@ if TYPE_CHECKING:
 
 # Random Number Helper:
 def rand_list(n):
-    '''Generates A Random List Of Length n.'''
+    '''Generate a random list of length n.'''
     return [random.randrange(10) for x in range(0, n)]
 
 # Infix Functions:
@@ -69,7 +69,7 @@ product = reduce$(*)
 def zipwith(f, *args) = map((items) -> f(*items), zip(*args))
 def zipwith_(f, *args) = starmap$(f)..zip <*| args
 zipsum = map$(sum)..zip  # type: ignore
-ident = (x) -> x
+ident_ = (x) -> x
 @ ident .. ident
 def plus1_(x: int) -> int = x + 1
 def sqrt(x: int) -> float = x**0.5
@@ -315,6 +315,9 @@ class methtest2:
     def inf_rec(self, x) = self.inf_rec(x)
     def inf_rec_(self, x) = self.inf_rec_(x)
 methtest2.inf_rec_ = returns_ten(methtest2.inf_rec_)  # type: ignore
+
+def ret_ret_func(func) = ret_args_kwargs(func=func)
+
 
 # Data Blocks:
 try:
@@ -1122,7 +1125,7 @@ match yield def just_it_of_int_(x is int):
     yield x
 
 # maximum difference
-def maxdiff(ns) = (
+def maxdiff1(ns) = (
     ns
     |> scan$(min)
     |> zip$(ns)
@@ -1131,11 +1134,28 @@ def maxdiff(ns) = (
     |> reduce$(max, ?, -1)
 )
 
-def S(binop, unop) = x -> binop(x, unop(x))
+def S(binop, unop) = lift(binop)(ident, unop)
+def ne_zero(x) = x != 0
+
+maxdiff2 = (
+    reduce$(max, ?, -1)
+    <.. filter$(ne_zero)
+    <.. starmap$(-)
+    <.. S(zip, scan$(min))
+)
+
+maxdiff3 = (
+    ident `lift(zip)` scan$(min)
+    ..> starmap$(-)
+    ..> filter$(ne_zero)
+    ..> reduce$(max, ?, -1)
+)
+
+def S_(binop, unop) = x -> binop(x, unop(x))
 
 maxdiff_ = (
     reduce$(max, ?, -1)
     <.. filter$(->_ != 0)
     <.. starmap$(-)
-    <.. S(zip, scan$(min))
+    <.. S_(zip, scan$(min))
 )

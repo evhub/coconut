@@ -879,6 +879,9 @@ def main_test() -> bool:
     data XY(x, y)
     data Z(z) from XY  # type: ignore
     assert Z(1).z == 1
+    assert const(5)(1, 2, x=3, a=4) == 5
+    assert "abc" |> reversed |> repr == "reversed('abc')"
+    assert "abc" |> enumerate |> repr == "enumerate('abc', 0)"
     return True
 
 def test_asyncio() -> bool:

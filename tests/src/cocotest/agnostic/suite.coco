@@ -154,7 +154,7 @@ def suite_test() -> bool:
     assert head_tail([1,2,3]) == (1, [2,3])
     assert init_last([1,2,3]) == ([1,2], 3)
     assert last_two([1,2,3]) == (2, 3) == last_two_([1,2,3])
-    assert expl_ident(5) == 5
+    assert expl_ident(5) == 5 == ident(5)
     assert mod$ <| 5 <| 3 == 2 == (%)$ <| 5 <| 3
     assert 5 |> dectest == 5
     try:
@@ -241,7 +241,7 @@ def suite_test() -> bool:
     assert SHOPeriodTerminate([-1, 0], 0, {"epsilon": 1})
     assert add_int_or_str_1(2) == 3 == coercive_add(2, "1")
     assert add_int_or_str_1("2") == "21" == coercive_add("2", 1)
-    assert still_ident(3) == 3
+    assert still_ident(3) == 3 == ident_(3)
     assert not_ident(3) == "bar"
     assert pattern_abs(4) == 4 == pattern_abs_(4)
     assert pattern_abs(0) == 0 == pattern_abs_(0)
@@ -696,7 +696,13 @@ def suite_test() -> bool:
     assert must_be_int(4) == 4 == must_be_int_(4)
     assert typed_plus(1, 2) == 3
     class inh_A() `isinstance` A `isinstance` object = inh_A()
-    assert maxdiff([7,1,4,5]) == 4 == maxdiff_([7,1,4,5])
+    for maxdiff in (maxdiff1, maxdiff2, maxdiff3, maxdiff_):
+        assert maxdiff([7,1,4,5]) == 4, "failed for " + repr(maxdiff)
+    assert all(r == 4 for r in parallel_map(of$(?, [7,1,4,5]), [maxdiff1, maxdiff2, maxdiff3]))
+    assert ret_ret_func(1) == ((), {"func": 1}) == ret_args_kwargs$(func=1)()
+    assert lift(ret_args_kwargs)(ident, plus1, times2, sq=square)(2, 3, 4, sq=5) == ((2, 4, 8), {"sq": 25})
+    assert plus1 `of` 2 == 3
+    assert of(ret_args_kwargs, 1, 2, a=1, b=3) == ((1, 2), {"a": 1, "b": 3})
 
     # must come at end
     assert fibs_calls[0] == 1
