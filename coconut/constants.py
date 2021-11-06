@@ -562,11 +562,10 @@ all_reqs = {
     "watch": (
         "watchdog",
     ),
-    "asyncio": (
-        ("trollius", "py2"),
-    ),
-    "enum": (
+    "backports": (
+        ("trollius", "py2;cpy"),
         ("aenum", "py<34"),
+        ("dataclasses", "py==36"),
     ),
     "dev": (
         ("pre-commit", "py3"),
@@ -584,7 +583,6 @@ all_reqs = {
         "pexpect",
         ("numpy", "py34"),
         ("numpy", "py2;cpy"),
-        ("dataclasses", "py36-only"),
     ),
 }
 
@@ -604,7 +602,7 @@ min_versions = {
     "requests": (2, 26),
     ("numpy", "py34"): (1,),
     ("numpy", "py2;cpy"): (1,),
-    ("dataclasses", "py36-only"): (0, 8),
+    ("dataclasses", "py==36"): (0, 8),
     ("aenum", "py<34"): (3,),
     "sphinx": (4, 2),
     "sphinx_bootstrap_theme": (0, 8),
