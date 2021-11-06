@@ -23,10 +23,11 @@ import sys as _coconut_sys
 # VERSION:
 # -----------------------------------------------------------------------------------------------------------------------
 
-VERSION = "1.6.0"
+VERSION = "2.0.0"
 VERSION_NAME = "Vocational Guidance Counsellor"
 # False for release, int >= 1 for develop
 DEVELOP = 1
+ALPHA = True
 
 # -----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
@@ -40,13 +41,14 @@ def _indent(code, by=1, tabsize=4, newline=False):
         for line in code.splitlines(True)
     ) + ("\n" if newline else "")
 
+
 # -----------------------------------------------------------------------------------------------------------------------
 # CONSTANTS:
 # -----------------------------------------------------------------------------------------------------------------------
 
-
+assert DEVELOP or not ALPHA, "alpha releases are only for develop"
 if DEVELOP:
-    VERSION += "-post_dev" + str(int(DEVELOP))
+    VERSION += "-" + ("a" if ALPHA else "post") + "_dev" + str(int(DEVELOP))
 VERSION_STR = VERSION + " [" + VERSION_NAME + "]"
 
 PY2 = _coconut_sys.version_info < (3,)
