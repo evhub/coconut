@@ -81,5 +81,3 @@ html_sidebars = {
         "localtoc.html",
     ],
 }
-
-html4_writer = True

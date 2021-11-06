@@ -172,7 +172,10 @@ After you've tested your changes locally, you'll want to add more permanent test
     3. Wait until everything is passing
 
 3. Release:
-    1. Release [`sublime-coconut`](https://github.com/evhub/sublime-coconut) first if applicable
+    1. Release a new version of [`sublime-coconut`](https://github.com/evhub/sublime-coconut) if applicable
+        1. Edit the [`package.json`](https://github.com/evhub/sublime-coconut/blob/master/package.json) with the new version
+        2. Run `make publish`
+        3. Release a new version on GitHub
     2. Merge pull request and mark as resolved
     3. Release `master` on GitHub
     4. `git fetch`, `git checkout master`, and `git pull`
@@ -180,7 +183,7 @@ After you've tested your changes locally, you'll want to add more permanent test
     6. `git checkout develop`, `git rebase master`, and `git push`
     7. Turn on `develop` in `root`
     8. Run `make dev`
-    9. Push to `develop`
+    9.  Push to `develop`
     10. Wipe all updated versions on [readthedocs](https://readthedocs.org/projects/coconut/versions/)
     11. Build all updated versions on [readthedocs](https://readthedocs.org/projects/coconut/builds/)
     12. Copy [PyPI](https://pypi.python.org/pypi/coconut) keywords to [readthedocs tags](https://readthedocs.org/dashboard/coconut/edit/)
