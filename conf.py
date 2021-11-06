@@ -31,7 +31,6 @@ from coconut.constants import (
 from coconut.util import univ_open
 
 import myst_parser  # NOQA
-from sphinx_bootstrap_theme import get_html_theme_path
 
 # -----------------------------------------------------------------------------------------------------------------------
 # README:
@@ -57,8 +56,7 @@ from coconut.constants import (  # NOQA
 version = VERSION
 release = version_str_tag
 
-html_theme = "bootstrap"
-html_theme_path = get_html_theme_path()
+html_theme = "python_docs_theme"
 html_theme_options = {
 }
 
