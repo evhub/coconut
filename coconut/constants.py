@@ -576,7 +576,7 @@ all_reqs = {
         "sphinx",
         "pygments",
         "myst-parser",
-        "sphinx_bootstrap_theme",
+        "pydata-sphinx-theme",
     ),
     "tests": (
         "pytest",
@@ -605,7 +605,7 @@ min_versions = {
     ("dataclasses", "py==36"): (0, 8),
     ("aenum", "py<34"): (3,),
     "sphinx": (4, 2),
-    "sphinx_bootstrap_theme": (0, 8),
+    "pydata-sphinx-theme": (0, 7, 1),
     "myst-parser": (0, 15),
     # don't upgrade this until https://github.com/jupyter/jupyter_console/issues/241 is fixed
     ("jupyter-client", "py3"): (6, 1, 12),
