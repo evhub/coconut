@@ -30,7 +30,7 @@ from coconut.constants import (
 )
 from coconut.util import univ_open
 
-import sphinx_bootstrap_theme
+import pydata_sphinx_theme  # NOQA
 import myst_parser  # NOQA
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -57,8 +57,7 @@ from coconut.constants import (  # NOQA
 version = VERSION
 release = version_str_tag
 
-html_theme = "bootstrap"
-html_theme_path = sphinx_bootstrap_theme.get_html_theme_path()
+html_theme = "pydata_sphinx_theme"
 html_theme_options = {
 }
 
