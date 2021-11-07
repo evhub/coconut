@@ -1191,7 +1191,9 @@ In Coconut, the following keywords are also valid variable names:
 - `then`
 - `λ` (a [Unicode alternative](#unicode-alternatives) for `lambda`)
 
-While Coconut can usually disambiguate these two use cases, special syntax is available for disambiguating these two use cases. To specify that you want a _variable_, prefix the name with a backslash as in `\data`, and to specify that you want a _keyword_, prefix the name with a colon as in `:match`. Note that, if what you're writing can be interpreted as valid Python 3, Coconut will always prefer that interpretation by default.
+While Coconut can usually disambiguate these two use cases, special syntax is available for disambiguating them if necessary. Note that, if what you're writing can be interpreted as valid Python 3, Coconut will always prefer that interpretation by default.
+
+To specify that you want a _variable_, prefix the name with a backslash as in `\data`, and to specify that you want a _keyword_, prefix the name with a colon as in `:match`.
 
 In addition to helping with cases where the two uses conflict, such disambiguation syntax can also be helpful for letting syntax highlighters know what you're doing.
 
@@ -1279,34 +1281,6 @@ Lazy lists, where sequences are only evaluated when their contents are requested
 **Python:**
 _Can't be done without a complicated iterator comprehension in place of the lazy list. See the compiled code for the Python syntax._
 
-### Implicit Partial Application
-
-Coconut supports a number of different syntactical aliases for common partial application use cases. These are:
-```coconut
-.attr           =>      operator.attrgetter("attr")
-.method(args)   =>      operator.methodcaller("method", args)
-obj.            =>      getattr$(obj)
-func$           =>      ($)$(func)
-seq[]           =>      operator.getitem$(seq)
-iter$[]         =>      # the equivalent of seq[] for iterators
-.[a:b:c]        =>      operator.itemgetter(slice(a, b, c))
-.$[a:b:c]       =>      # the equivalent of .[a:b:c] for iterators
-```
-
-##### Example
-
-**Coconut:**
-```coconut
-1 |> "123"[]
-mod$ <| 5 <| 3
-```
-
-**Python:**
-```coconut_python
-"123"[1]
-mod(5, 3)
-```
-
 ### Operator Functions
 
 Coconut uses a simple operator function short-hand: surround an operator with parentheses to retrieve its function. Similarly to iterator comprehensions, if the operator function is the only argument to a function, the parentheses of the function call can also serve as the parentheses for the operator function.
@@ -1377,6 +1351,43 @@ A very common thing to do in functional programming is to make use of function v
 ```coconut_python
 import operator
 print(list(map(operator.add, range(0, 5), range(5, 10))))
+```
+
+### Implicit Partial Application
+
+Coconut supports a number of different syntactical aliases for common partial application use cases. These are:
+```coconut
+.attr           =>      operator.attrgetter("attr")
+.method(args)   =>      operator.methodcaller("method", args)
+obj.            =>      getattr$(obj)
+func$           =>      ($)$(func)
+seq[]           =>      operator.getitem$(seq)
+iter$[]         =>      # the equivalent of seq[] for iterators
+.[a:b:c]        =>      operator.itemgetter(slice(a, b, c))
+.$[a:b:c]       =>      # the equivalent of .[a:b:c] for iterators
+```
+
+In addition, for every Coconut [operator function](#operator-functions), Coconut supports syntax for implicitly partially applying that operator function as
+```
+(. <op> <arg>)
+(<arg> <op> .)
+```
+where `<op>` is the operator function and `<arg>` is any atomic expression (i.e. no other operators). Note that, as with operator functions themselves, the parentheses are necessary for this type of implicit partial application.
+
+##### Example
+
+**Coconut:**
+```coconut
+1 |> "123"[]
+mod$ <| 5 <| 3
+3 |> (.*2) |> (.+1)
+```
+
+**Python:**
+```coconut_python
+"123"[1]
+mod(5, 3)
+(3 * 2) + 1
 ```
 
 ### Implicit Function Application

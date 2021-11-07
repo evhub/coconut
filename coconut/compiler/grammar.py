@@ -495,6 +495,19 @@ if False:
     ) + closeindent
 
 
+def partial_op_item_handle(tokens):
+    """Handle operator function implicit partials."""
+    tok_grp, = tokens
+    if "left partial" in tok_grp:
+        arg, op = tok_grp
+        return "_coconut.functools.partial(" + op + ", " + arg + ")"
+    elif "right partial" in tok_grp:
+        op, arg = tok_grp
+        return "_coconut_partial(" + op + ", {1: " + arg + "}, 2)"
+    else:
+        raise CoconutInternalException("invalid operator function implicit partial token group", tok_grp)
+
+
 # end: HANDLERS
 # -----------------------------------------------------------------------------------------------------------------------
 # MAIN GRAMMAR:
@@ -731,6 +744,7 @@ class Grammar(object):
         | keyword("is")
     )
 
+    atom_item = Forward()
     expr = Forward()
     star_expr = Forward()
     dubstar_expr = Forward()
@@ -771,7 +785,7 @@ class Grammar(object):
     )
     test_expr = yield_expr | testlist_star_expr
 
-    op_item = (
+    base_op_item = (
         # must go dubstar then star then no star
         fixto(dubstar_pipe, "_coconut_dubstar_pipe")
         | fixto(back_dubstar_pipe, "_coconut_back_dubstar_pipe")
@@ -822,6 +836,12 @@ class Grammar(object):
         | fixto(keyword("is"), "_coconut.operator.is_")
         | fixto(keyword("in"), "_coconut.operator.contains")
     )
+    partial_op_item = attach(
+        labeled_group(dot.suppress() + base_op_item + atom_item, "right partial")
+        | labeled_group(atom_item + base_op_item + dot.suppress(), "left partial"),
+        partial_op_item_handle,
+    )
+    op_item = trace(partial_op_item | base_op_item)
 
     typedef = Forward()
     typedef_default = Forward()
@@ -1046,7 +1066,7 @@ class Grammar(object):
 
     trailer_atom = Forward()
     trailer_atom_ref = atom + ZeroOrMore(trailer)
-    atom_item = (
+    atom_item <<= (
         trailer_atom
         | implicit_partial_atom
     )

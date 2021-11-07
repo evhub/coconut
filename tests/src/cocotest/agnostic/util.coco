@@ -19,9 +19,9 @@ def a `join_with` (b=""):
     return b.join(a)
 
 # Composable Functions:
-plus1 = plus$(1)
-square = (**)$(?, 2)
-times2 = (*)$(2)
+plus1 = (1+.)
+square = (.**2)
+times2 = (2*.)
 
 # Function Compositions:
 plus1sq_1 = square..plus1  # type: ignore
