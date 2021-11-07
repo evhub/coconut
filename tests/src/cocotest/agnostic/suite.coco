@@ -704,8 +704,8 @@ def suite_test() -> bool:
     assert lift(ret_args_kwargs)(ident, plus1, times2, sq=square)(3) == ((3, 4, 6), {"sq": 9})
     assert plus1 `of` 2 == 3
     assert of(ret_args_kwargs, 1, 2, a=1, b=3) == ((1, 2), {"a": 1, "b": 3})
-    x = y = a = b = 2
-    starsum$ x y .. starproduct$ a b <| 2 == 12
+    x = y = 2
+    starsum$ x y .. starproduct$ 2 2 <| 2 == 12
 
     # must come at end
     assert fibs_calls[0] == 1
