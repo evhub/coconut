@@ -372,12 +372,12 @@ class _coconut_partial(_t.Generic[_T]):
 
 
 @_t.overload
-def _coconut_igetitem(
+def _coconut_iter_getitem(
     iterable: _t.Iterable[_T],
     index: int,
     ) -> _T: ...
 @_t.overload
-def _coconut_igetitem(
+def _coconut_iter_getitem(
     iterable: _t.Iterable[_T],
     index: slice,
     ) -> _t.Iterable[_T]: ...

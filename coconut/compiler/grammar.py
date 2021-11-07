@@ -371,7 +371,7 @@ def itemgetter_handle(tokens):
         if op == "[":
             return "_coconut.operator.itemgetter((" + args + "))"
         elif op == "$[":
-            return "_coconut.functools.partial(_coconut_igetitem, index=(" + args + "))"
+            return "_coconut.functools.partial(_coconut_iter_getitem, index=(" + args + "))"
         else:
             raise CoconutInternalException("invalid implicit itemgetter type", op)
     elif len(tokens) > 2:
@@ -798,7 +798,6 @@ class Grammar(object):
         | fixto(minus, "_coconut_minus")
         | fixto(dot, "_coconut.getattr")
         | fixto(unsafe_dubcolon, "_coconut.itertools.chain")
-        | fixto(dollar + lbrack + rbrack, "_coconut_igetitem")
         | fixto(dollar, "_coconut.functools.partial")
         | fixto(exp_dubstar, "_coconut.operator.pow")
         | fixto(mul_star, "_coconut.operator.mul")
@@ -1038,7 +1037,12 @@ class Grammar(object):
     attrgetter_atom = attach(attrgetter_atom_tokens, attrgetter_atom_handle)
     itemgetter_atom_tokens = dot.suppress() + OneOrMore(condense(Optional(dollar) + lbrack) + subscriptgrouplist + rbrack.suppress())
     itemgetter_atom = attach(itemgetter_atom_tokens, itemgetter_handle)
-    implicit_partial_atom = attrgetter_atom | itemgetter_atom
+    implicit_partial_atom = (
+        attrgetter_atom
+        | itemgetter_atom
+        | fixto(dot + lbrack + rbrack, "_coconut.operator.getitem")
+        | fixto(dot + dollar + lbrack + rbrack, "_coconut_iter_getitem")
+    )
 
     trailer_atom = Forward()
     trailer_atom_ref = atom + ZeroOrMore(trailer)

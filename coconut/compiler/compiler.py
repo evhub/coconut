@@ -1423,7 +1423,7 @@ class Compiler(Grammar):
                         if op == "[":
                             fmtstr = "({x})[{args}]"
                         elif op == "$[":
-                            fmtstr = "_coconut_igetitem({x}, ({args}))"
+                            fmtstr = "_coconut_iter_getitem({x}, ({args}))"
                         else:
                             raise CoconutInternalException("pipe into invalid implicit itemgetter operation", op)
                         out = fmtstr.format(x=out, args=args)
@@ -1442,7 +1442,7 @@ class Compiler(Grammar):
                 out += trailer
             elif len(trailer) == 1:
                 if trailer[0] == "$[]":
-                    out = "_coconut.functools.partial(_coconut_igetitem, " + out + ")"
+                    out = "_coconut.functools.partial(_coconut_iter_getitem, " + out + ")"
                 elif trailer[0] == "$":
                     out = "_coconut.functools.partial(_coconut.functools.partial, " + out + ")"
                 elif trailer[0] == "[]":
@@ -1476,14 +1476,14 @@ class Compiler(Grammar):
                     raise CoconutInternalException("invalid trailer symbol", trailer[0])
             elif len(trailer) == 2:
                 if trailer[0] == "$[":
-                    out = "_coconut_igetitem(" + out + ", " + trailer[1] + ")"
+                    out = "_coconut_iter_getitem(" + out + ", " + trailer[1] + ")"
                 elif trailer[0] == "$(":
                     args = trailer[1][1:-1]
                     if not args:
                         raise CoconutDeferredSyntaxError("a partial application argument is required", loc)
                     out = "_coconut.functools.partial(" + out + ", " + args + ")"
                 elif trailer[0] == "$[":
-                    out = "_coconut_igetitem(" + out + ", " + trailer[1] + ")"
+                    out = "_coconut_iter_getitem(" + out + ", " + trailer[1] + ")"
                 elif trailer[0] == "$(?":
                     pos_args, star_args, kwd_args, dubstar_args = self.split_function_call(trailer[1], loc)
                     extra_args_str = join_args(star_args, kwd_args, dubstar_args)

@@ -1336,7 +1336,8 @@ A very common thing to do in functional programming is to make use of function v
 (.)         => (getattr)
 (::)        => (itertools.chain)  # will not evaluate its arguments lazily
 ($)         => (functools.partial)
-($[])       => # iterator slicing operator
+.[]         => (operator.getitem)
+.$[]        => # iterator slicing operator
 (+)         => (operator.add)
 (-)         => # 1 arg: operator.neg, 2 args: operator.sub
 (*)         => (operator.mul)

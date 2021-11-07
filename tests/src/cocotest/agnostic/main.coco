@@ -55,7 +55,7 @@ def main_test() -> bool:
         (reiter_range10, reiter_range10),
         (reiter_iter_range10, reiter_iter_range10),
     ]:
-        assert iter1$[2:8] |> list == [2, 3, 4, 5, 6, 7] == ($[])(iter2, slice(2, 8)) |> list, (iter1, iter2)
+        assert iter1$[2:8] |> list == [2, 3, 4, 5, 6, 7] == (.$[])(iter2, slice(2, 8)) |> list, (iter1, iter2)
     \data = 5
     assert \data == 5
     \\data = 3
@@ -234,14 +234,14 @@ def main_test() -> bool:
     assert len <| map((x) -> x, [1, 2]) == 2  # type: ignore
     assert repr("hello") == "'hello'" == ascii("hello")
     assert count(1,3) |> .index(1) == 0 == (.index(1))(count(1, 3))
-    assert count(1).__copy__()$[0] == 1 == ($[])(count(1), 0)
+    assert count(1).__copy__()$[0] == 1 == (.$[])(count(1), 0)
     assert tee(count()) |> map$((t) -> isinstance(t, count)) |> all
     assert tee(range(10)) |> map$((t) -> isinstance(t, range)) |> all
     assert tee([1, 2, 3]) |> map$((t) -> isinstance(t, list)) |> all
     assert (-> 5)() == 5  # type: ignore
     assert (-> _[0])([1, 2, 3]) == 1  # type: ignore
-    assert iter(range(10))$[-5:-8] |> list == [5, 6] == ($[])(iter(range(10)), slice(-5, -8)) |> list
-    assert iter(range(10))$[-2:] |> list == [8, 9] == ($[])(iter(range(10)), slice(-2, None)) |> list
+    assert iter(range(10))$[-5:-8] |> list == [5, 6] == (.$[])(iter(range(10)), slice(-5, -8)) |> list
+    assert iter(range(10))$[-2:] |> list == [8, 9] == (.$[])(iter(range(10)), slice(-2, None)) |> list
     assert (.[1])(range(1, 5)) == 2 == (.$[1])(range(1, 5))
     assert range(1, 5) |> .[1] == 2 == range(1, 5) |> .$[1]
     assert (.[:5])(range(10)) |> list == [0, 1, 2, 3, 4] == (.$[:5])(range(10)) |> list  # type: ignore
@@ -882,6 +882,7 @@ def main_test() -> bool:
     assert const(5)(1, 2, x=3, a=4) == 5
     assert "abc" |> reversed |> repr == "reversed('abc')"
     assert "abc" |> enumerate |> repr == "enumerate('abc', 0)"
+    assert [1,2,3] `.[]` 1 == 2
     return True
 
 def test_asyncio() -> bool:

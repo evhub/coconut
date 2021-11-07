@@ -523,7 +523,7 @@ class Matcher(object):
                 tail = item
             else:
                 self.add_def(tail + " = _coconut.iter(" + item + ")")
-            self.add_def(itervar + " = _coconut.tuple(_coconut_igetitem(" + tail + ", _coconut.slice(None, " + str(len(matches)) + ")))")
+            self.add_def(itervar + " = _coconut.tuple(_coconut_iter_getitem(" + tail + ", _coconut.slice(None, " + str(len(matches)) + ")))")
         else:
             itervar = None
             if tail != wildcard:

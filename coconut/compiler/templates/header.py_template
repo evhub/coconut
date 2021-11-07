@@ -80,13 +80,13 @@ def _coconut_tco(func):{COMMENT._coconut_tco_func_attr_is_used_in_main_coco}
     tail_call_optimized_func.__qualname__ = _coconut.getattr(func, "__qualname__", None)
     _coconut_tco_func_dict[_coconut.id(tail_call_optimized_func)] = _coconut.weakref.ref(tail_call_optimized_func)
     return tail_call_optimized_func
-def _coconut_igetitem(iterable, index):
-    obj_igetitem = _coconut.getattr(iterable, "__iter_getitem__", None)
-    if obj_igetitem is None:
-        obj_igetitem = _coconut.getattr(iterable, "__getitem__", None)
-    if obj_igetitem is not None:
+def _coconut_iter_getitem(iterable, index):
+    obj_iter_getitem = _coconut.getattr(iterable, "__iter_getitem__", None)
+    if obj_iter_getitem is None:
+        obj_iter_getitem = _coconut.getattr(iterable, "__getitem__", None)
+    if obj_iter_getitem is not None:
         try:
-            result = obj_igetitem(index)
+            result = obj_iter_getitem(index)
         except _coconut.NotImplementedError:
             pass
         else:
@@ -198,7 +198,7 @@ class reiterable(_coconut_base_hashable):
     def __iter__(self):
         return _coconut.iter(self.get_new_iter())
     def __getitem__(self, index):
-        return _coconut_igetitem(self.get_new_iter(), index)
+        return _coconut_iter_getitem(self.get_new_iter(), index)
     def __reversed__(self):
         return _coconut_reversed(self.get_new_iter())
     def __len__(self):
@@ -253,8 +253,8 @@ class reversed(_coconut_base_hashable):
         return _coconut.iter(_coconut.reversed(self.iter))
     def __getitem__(self, index):
         if _coconut.isinstance(index, _coconut.slice):
-            return _coconut_igetitem(self.iter, _coconut.slice(-(index.start + 1) if index.start is not None else None, -(index.stop + 1) if index.stop else None, -(index.step if index.step is not None else 1)))
-        return _coconut_igetitem(self.iter, -(index + 1))
+            return _coconut_iter_getitem(self.iter, _coconut.slice(-(index.start + 1) if index.start is not None else None, -(index.stop + 1) if index.stop else None, -(index.step if index.step is not None else 1)))
+        return _coconut_iter_getitem(self.iter, -(index + 1))
     def __reversed__(self):
         return self.iter
     def __len__(self):
@@ -315,8 +315,8 @@ class map(_coconut_base_hashable, _coconut.map):
         return new_map
     def __getitem__(self, index):
         if _coconut.isinstance(index, _coconut.slice):
-            return self.__class__(self.func, *(_coconut_igetitem(i, index) for i in self.iters))
-        return self.func(*(_coconut_igetitem(i, index) for i in self.iters))
+            return self.__class__(self.func, *(_coconut_iter_getitem(i, index) for i in self.iters))
+        return self.func(*(_coconut_iter_getitem(i, index) for i in self.iters))
     def __reversed__(self):
         return self.__class__(self.func, *(_coconut_reversed(i) for i in self.iters))
     def __len__(self):
@@ -447,8 +447,8 @@ class zip(_coconut_base_hashable, _coconut.zip):
         return new_zip
     def __getitem__(self, index):
         if _coconut.isinstance(index, _coconut.slice):
-            return self.__class__(*(_coconut_igetitem(i, index) for i in self.iters), strict=self.strict)
-        return _coconut.tuple(_coconut_igetitem(i, index) for i in self.iters)
+            return self.__class__(*(_coconut_iter_getitem(i, index) for i in self.iters), strict=self.strict)
+        return _coconut.tuple(_coconut_iter_getitem(i, index) for i in self.iters)
     def __reversed__(self):
         return self.__class__(*(_coconut_reversed(i) for i in self.iters), strict=self.strict)
     def __len__(self):
@@ -476,14 +476,14 @@ class zip_longest(zip):
     def __getitem__(self, index):
         if _coconut.isinstance(index, _coconut.slice):
             new_ind = _coconut.slice(index.start + self.__len__() if index.start is not None and index.start < 0 else index.start, index.stop + self.__len__() if index.stop is not None and index.stop < 0 else index.stop, index.step)
-            return self.__class__(*(_coconut_igetitem(i, new_ind) for i in self.iters))
+            return self.__class__(*(_coconut_iter_getitem(i, new_ind) for i in self.iters))
         if index < 0:
             index += self.__len__()
         result = []
         got_non_default = False
         for it in self.iters:
             try:
-                result.append(_coconut_igetitem(it, index))
+                result.append(_coconut_iter_getitem(it, index))
             except _coconut.IndexError:
                 result.append(self.fillvalue)
             else:
@@ -512,8 +512,8 @@ class enumerate(_coconut_base_hashable, _coconut.enumerate):
         return new_enumerate
     def __getitem__(self, index):
         if _coconut.isinstance(index, _coconut.slice):
-            return self.__class__(_coconut_igetitem(self.iter, index), self.start + (0 if index.start is None else index.start if index.start >= 0 else _coconut.len(self.iter) + index.start))
-        return (self.start + index, _coconut_igetitem(self.iter, index))
+            return self.__class__(_coconut_iter_getitem(self.iter, index), self.start + (0 if index.start is None else index.start if index.start >= 0 else _coconut.len(self.iter) + index.start))
+        return (self.start + index, _coconut_iter_getitem(self.iter, index))
     def __len__(self):
         return _coconut.len(self.iter)
     def __repr__(self):
@@ -795,8 +795,8 @@ class starmap(_coconut_base_hashable, _coconut.itertools.starmap):
         return new_map
     def __getitem__(self, index):
         if _coconut.isinstance(index, _coconut.slice):
-            return self.__class__(self.func, _coconut_igetitem(self.iter, index))
-        return self.func(*_coconut_igetitem(self.iter, index))
+            return self.__class__(self.func, _coconut_iter_getitem(self.iter, index))
+        return self.func(*_coconut_iter_getitem(self.iter, index))
     def __reversed__(self):
         return self.__class__(self.func, *_coconut_reversed(self.iter))
     def __len__(self):
