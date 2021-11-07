@@ -471,7 +471,6 @@ class Compiler(Grammar):
         self.name_match_funcdef <<= attach(self.name_match_funcdef_ref, self.name_match_funcdef_handle)
         self.op_match_funcdef <<= attach(self.op_match_funcdef_ref, self.op_match_funcdef_handle)
         self.yield_from <<= attach(self.yield_from_ref, self.yield_from_handle)
-        self.exec_stmt <<= attach(self.exec_stmt_ref, self.exec_stmt_handle)
         self.stmt_lambdef <<= attach(self.stmt_lambdef_ref, self.stmt_lambdef_handle)
         self.typedef <<= attach(self.typedef_ref, self.typedef_handle)
         self.typedef_default <<= attach(self.typedef_default_ref, self.typedef_handle)
@@ -2207,17 +2206,6 @@ if not {check_var}:
                 raise CoconutInternalException("invalid set type", set_type)
         else:
             raise CoconutInternalException("invalid set literal tokens", tokens)
-
-    def exec_stmt_handle(self, tokens):
-        """Process Python-3-style exec statements."""
-        internal_assert(1 <= len(tokens) <= 3, "invalid exec statement tokens", tokens)
-        if self.target.startswith("2"):
-            out = "exec " + tokens[0]
-            if len(tokens) > 1:
-                out += " in " + ", ".join(tokens[1:])
-            return out
-        else:
-            return "exec(" + ", ".join(tokens) + ")"
 
     def stmt_lambdef_handle(self, original, loc, tokens):
         """Process multi-line lambdef statements."""

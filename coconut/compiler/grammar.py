@@ -1545,15 +1545,6 @@ class Grammar(object):
     while_stmt = addspace(keyword("while") - condense(namedexpr_test - suite - Optional(else_stmt)))
     for_stmt = addspace(keyword("for") - assignlist - keyword("in") - condense(testlist - suite - Optional(else_stmt)))
 
-    exec_stmt = Forward()
-    exec_stmt_ref = keyword("exec").suppress() + lparen.suppress() + test + Optional(
-        comma.suppress() + test + Optional(
-            comma.suppress() + test + Optional(
-                comma.suppress(),
-            ),
-        ),
-    ) + rparen.suppress()
-
     except_item = (
         testlist_has_comma("list")
         | test("test")
@@ -1801,8 +1792,7 @@ class Grammar(object):
         | pass_stmt
         | del_stmt
         | global_stmt
-        | nonlocal_stmt
-        | exec_stmt,
+        | nonlocal_stmt,
     )
     special_stmt = (
         keyword_stmt
