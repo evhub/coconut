@@ -1236,7 +1236,9 @@ Statement lambdas also support implicit lambda syntax such that `def -> _` is eq
 
 **Coconut:**
 ```coconut
-L |> map$(def (x) -> y = 1/x; y*(1 - y))
+L |> map$(def (x) ->
+    y = 1/x;
+    y*(1 - y))
 ```
 
 **Python:**
