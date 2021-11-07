@@ -480,7 +480,7 @@ class Compiler(Grammar):
         self.datadef <<= attach(self.datadef_ref, self.datadef_handle)
         self.match_datadef <<= attach(self.match_datadef_ref, self.match_datadef_handle)
         self.with_stmt <<= attach(self.with_stmt_ref, self.with_stmt_handle)
-        self.await_item <<= attach(self.await_item_ref, self.await_item_handle)
+        self.await_expr <<= attach(self.await_expr_ref, self.await_expr_handle)
         self.ellipsis <<= attach(self.ellipsis_ref, self.ellipsis_handle)
         self.case_stmt <<= attach(self.case_stmt_ref, self.case_stmt_handle)
         self.f_string <<= attach(self.f_string_ref, self.f_string_handle)
@@ -2632,7 +2632,7 @@ if {store_var} is not _coconut_sentinel:
 
         return out
 
-    def await_item_handle(self, original, loc, tokens):
+    def await_expr_handle(self, original, loc, tokens):
         """Check for Python 3.5 await expression."""
         internal_assert(len(tokens) == 1, "invalid await statement tokens", tokens)
         if not self.target:

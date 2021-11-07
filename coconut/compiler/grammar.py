@@ -1071,8 +1071,6 @@ class Grammar(object):
     typed_assign_stmt_ref = simple_assign + colon.suppress() + typedef_test + Optional(equals.suppress() + test_expr)
     basic_stmt = trace(addspace(ZeroOrMore(assignlist + equals) + test_expr))
 
-    compose_item = attach(tokenlist(atom_item, dotdot, allow_trailing=False), compose_item_handle)
-
     impl_call_arg = disallow_keywords(reserved_vars) + (
         keyword_atom
         | number
@@ -1080,22 +1078,24 @@ class Grammar(object):
     )
     impl_call = attach(
         disallow_keywords(reserved_vars)
-        + compose_item
+        + atom_item
         + OneOrMore(impl_call_arg),
         impl_call_item_handle,
     )
     impl_call_item = (
-        compose_item + ~impl_call_arg
+        atom_item + ~impl_call_arg
         | impl_call
     )
 
-    await_item = Forward()
-    await_item_ref = await_kwd.suppress() + impl_call_item
-    power_item = await_item | impl_call_item
+    await_expr = Forward()
+    await_expr_ref = await_kwd.suppress() + impl_call_item
+    await_item = await_expr | impl_call_item
+
+    compose_item = attach(tokenlist(await_item, dotdot, allow_trailing=False), compose_item_handle)
 
     factor = Forward()
     unary = plus | neg_minus | tilde
-    power = trace(condense(power_item + Optional(exp_dubstar + factor)))
+    power = trace(condense(compose_item + Optional(exp_dubstar + factor)))
     factor <<= condense(ZeroOrMore(unary) + power)
 
     mulop = mul_star | div_dubslash | div_slash | percent | matrix_at

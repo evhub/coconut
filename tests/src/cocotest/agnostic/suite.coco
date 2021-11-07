@@ -20,7 +20,7 @@ def suite_test() -> bool:
     assert plus1(4) == 5 == plus1_(4)  # type: ignore
     assert 2 `plus1` == 3 == plus1(2)
     assert plus1(plus1(5)) == 7 == (plus1..plus1)(5)
-    assert plus1..plus1 5 == 7 == plus1 (plus1 5)
+    assert `plus1..plus1` 5 == 7 == plus1 (plus1 5)
     assert `sqrt` 16 == 4 == `sqrt_` 16
     assert `square` 3 == 9
     def test_sqplus1_plus1sq(sqplus1, plus1sq, parallel=True):
@@ -704,6 +704,8 @@ def suite_test() -> bool:
     assert lift(ret_args_kwargs)(ident, plus1, times2, sq=square)(3) == ((3, 4, 6), {"sq": 9})
     assert plus1 `of` 2 == 3
     assert of(ret_args_kwargs, 1, 2, a=1, b=3) == ((1, 2), {"a": 1, "b": 3})
+    x = y = a = b = 2
+    starsum$ x y .. starproduct$ a b <| 2 == 12
 
     # must come at end
     assert fibs_calls[0] == 1

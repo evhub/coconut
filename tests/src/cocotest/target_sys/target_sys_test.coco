@@ -52,8 +52,10 @@ def target_sys_test() -> bool:
             for async_map in (async_map_0, async_map_1, async_map_2, async_map_3, async_map_4):
                 assert (await ((pow$(2), range(5)) |> async_map)) |> tuple == (1, 2, 4, 8, 16)
             True
+        async def aplus(x) = y -> x + y
         async def main():
             assert await async_map_test()
+            assert `(+)$(1) .. await aplus 1` 1 == 3
         loop = asyncio.new_event_loop()
         loop.run_until_complete(main())
         loop.close()

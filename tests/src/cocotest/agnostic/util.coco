@@ -84,6 +84,8 @@ def chain2(a, b):
     yield from b
 def threeple(a, b, c) = (a, b, c)
 def toprint(*args) = " ".join(str(a) for a in args)
+def starsum(*args) = sum(args)
+def starproduct(*args) = product(args)
 
 # Partial Applications:
 sum_ = reduce$((+))
