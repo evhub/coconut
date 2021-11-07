@@ -70,7 +70,7 @@ def zipwith(f, *args) = map((items) -> f(*items), zip(*args))
 def zipwith_(f, *args) = starmap$(f)..zip <*| args
 zipsum = map$(sum)..zip  # type: ignore
 ident_ = (x) -> x
-@ ident .. ident
+@ ident .. ident  # type: ignore
 def plus1_(x: int) -> int = x + 1
 def sqrt(x: int) -> float = x**0.5
 def sqrt_(x) = x**0.5

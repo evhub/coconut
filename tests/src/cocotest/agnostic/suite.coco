@@ -17,7 +17,7 @@ def suite_test() -> bool:
     assert chain2((|1, 2|), (|3, 4|)) |> list == [1, 2, 3, 4]
     assert threeple$(1, 2)(3) == (1, 2, 3)
     assert 1 `range` 5 |> product == 24
-    assert plus1(4) == 5 == plus1_(4)
+    assert plus1(4) == 5 == plus1_(4)  # type: ignore
     assert 2 `plus1` == 3 == plus1(2)
     assert plus1(plus1(5)) == 7 == (plus1..plus1)(5)
     assert plus1..plus1 5 == 7 == plus1 (plus1 5)
@@ -34,7 +34,7 @@ def suite_test() -> bool:
     with parallel_map.multiple_sequential_calls(max_workers=2):  # type: ignore
         test_sqplus1_plus1sq(sqplus1_3, plus1sq_3)
         test_sqplus1_plus1sq(sqplus1_4, plus1sq_4)
-    assert 3 |> plus1 |> square == 16 == 3 |> plus1_ |> square
+    assert 3 |> plus1 |> square == 16 == 3 |> plus1_ |> square  # type: ignore
     assert reduce((|>), [3, plus1, square]) == 16 == pipe(pipe(3, plus1), square)  # type: ignore
     assert reduce((..), [sqrt, square, plus1])(3) == 4 == compose(compose(sqrt, square), plus1)(3)  # type: ignore
     assert sum_([1,7,3,5]) == 16
@@ -417,7 +417,7 @@ def suite_test() -> bool:
     assert [(1, 2)] |> starmap$(toprint) |> .[0] == "1 2"  # type: ignore
     assert [(1, 2), (2, 3), (3, 4)] |> starmap$(toprint) |> .[1:] |> list == ["2 3", "3 4"]  # type: ignore
     assert none_to_ten() == 10 == any_to_ten(1, 2, 3)
-    assert int_map(plus1_, range(5)) == [1, 2, 3, 4, 5]
+    assert int_map(plus1_, range(5)) == [1, 2, 3, 4, 5]  # type: ignore
     assert still_ident.__doc__ == "docstring"
     assert still_ident.__name__ == "still_ident"
     with (
@@ -699,8 +699,9 @@ def suite_test() -> bool:
     for maxdiff in (maxdiff1, maxdiff2, maxdiff3, maxdiff_):
         assert maxdiff([7,1,4,5]) == 4, "failed for " + repr(maxdiff)
     assert all(r == 4 for r in parallel_map(of$(?, [7,1,4,5]), [maxdiff1, maxdiff2, maxdiff3]))
-    assert ret_ret_func(1) == ((), {"func": 1}) == ret_args_kwargs$(func=1)()
-    assert lift(ret_args_kwargs)(ident, plus1, times2, sq=square)(2, 3, 4, sq=5) == ((2, 4, 8), {"sq": 25})
+    assert ret_ret_func(1) == ((), {"func": 1}) == ret_args_kwargs$(func=1)()  # type: ignore
+    assert ret_args_kwargs$(?, func=2)(1) == ((1,), {"func": 2})
+    assert lift(ret_args_kwargs)(ident, plus1, times2, sq=square)(3) == ((3, 4, 6), {"sq": 9})
     assert plus1 `of` 2 == 3
     assert of(ret_args_kwargs, 1, 2, a=1, b=3) == ((1, 2), {"a": 1, "b": 3})
 
