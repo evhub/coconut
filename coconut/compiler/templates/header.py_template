@@ -944,8 +944,8 @@ class _coconut_lifted(_coconut_base_hashable):
 class lift(_coconut_base_hashable):
     """The S' combinator. Lifts a function up so that all of its arguments are functions.
 
-    For a binary function f(x, y) and two unary functions g(x) and h(x), lift works as
-        lift(f)(g, h)(x) == f(g(x), h(x))
+    For a binary function f(x, y) and two unary functions g(z) and h(z), lift works as
+        lift(f)(g, h)(z) == f(g(z), h(z))
 
     In general, lift is requivalent to
         def lift(f) = ((*func_args, **func_kwargs) -> (*args, **kwargs) ->

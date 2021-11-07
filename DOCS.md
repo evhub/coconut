@@ -21,7 +21,7 @@ The Coconut compiler turns Coconut code into Python code. The primary method of 
 
 Thought Coconut syntax is primarily based on that of Python, Coconut also takes inspiration from [Haskell](https://www.haskell.org/), [CoffeeScript](http://coffeescript.org/), [F#](http://fsharp.org/), and [patterns.py](https://github.com/Suor/patterns).
 
-## Try It Out
+### Try It Out
 
 If you want to try Coconut in your browser, check out the [online interpreter](https://cs121-team-panda.github.io/coconut-interpreter).
 
@@ -2695,6 +2695,83 @@ import concurrent.futures
 with concurrent.futures.ThreadPoolExecutor() as executor:
     print(list(executor.map(get_data_for_user, get_all_users())))
 ```
+
+### `lift`
+
+Coconut's `lift` built-in is a higher-order function that takes in a function and “lifts” it up so that all of its arguments are functions.
+
+As a simple example, for a binary function `f(x, y)` and two unary functions `g(z)` and `h(z)`, `lift` works as
+```coconut
+lift(f)(g, h)(z) == f(g(z), h(z))
+```
+such that in this case `lift` implements the `S'` combinator (`liftA2` or `liftM2` in Haskell).
+
+In the general case, `lift` is equivalent to a pickleable version of
+```coconut
+def lift(f) = (
+    (*func_args, **func_kwargs) ->
+        (*args, **kwargs) ->
+            f(
+                *(g(*args, **kwargs) for g in func_args),
+                **{k: h(*args, **kwargs) for k, h in func_kwargs.items()}
+            )
+)
+```
+
+##### Example
+
+**Coconut:**
+```coconut
+xs_and_xsp1 = ident `lift(zip)` map$(->_+1)
+```
+
+**Python:**
+```coconut_python
+def xs_and_xsp1(xs):
+    return zip(xs, map(lambda x: x + 1, xs))
+```
+
+### `flip`
+
+Coconut's `flip` is a higher-order function that, given a function, returns a new function with inverse argument order.
+
+For the binary case, `flip` works as
+```coconut
+flip(f)(x, y) == f(y, x)
+```
+such that `flip` implements the `C` combinator (`flip` in Haskell).
+
+In the general case, `flip` is equivalent to a pickleable version of
+```coconut
+def flip(f) = (*args, **kwargs) -> f(*reversed(args), **kwargs)
+```
+
+### `of`
+
+Coconut's `of` simply implements function application. Thus, `of` is equivalent to
+```coconut
+def of(f, *args, **kwargs) = f(*args, **kwargs)
+```
+
+`of` is primarily useful as an [operator function](#operator-functions) for function application when writing in a point-free style.
+
+### `const`
+
+Coconut's `const` simply constructs a function that, whatever its arguments, just returns the given value. Thus, `const` is equivalent to a pickleable version of
+```coconut
+def const(x) = (*args, **kwargs) -> x
+```
+
+`const` is primarily useful when writing in a point-free style (e.g. in combination with [`lift`](#lift)).
+
+### `ident`
+
+Coconut's `ident` is the identity function, precisely equivalent to
+```coconut
+def ident(x) = x
+```
+
+`ident` is primarily useful when writing in a point-free style (e.g. in combination with [`lift`](#lift)).
 
 ### `MatchError`
 
