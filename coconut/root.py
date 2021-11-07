@@ -26,7 +26,7 @@ import sys as _coconut_sys
 VERSION = "2.0.0"
 VERSION_NAME = "Vocational Guidance Counsellor"
 # False for release, int >= 1 for develop
-DEVELOP = 1
+DEVELOP = 2
 ALPHA = True
 
 # -----------------------------------------------------------------------------------------------------------------------

@@ -512,7 +512,7 @@ def run(args=[], agnostic_target=None, use_run_arg=False, convert_to_import=Fals
 def comp_pyston(args=[], **kwargs):
     """Compiles evhub/pyston."""
     call(["git", "clone", pyston_git])
-    call_coconut(["pyston"] + args, **kwargs)
+    call_coconut(["pyston", "--force"] + args, **kwargs)
 
 
 def run_pyston(**kwargs):
@@ -523,8 +523,8 @@ def run_pyston(**kwargs):
 def comp_pyprover(args=[], **kwargs):
     """Compiles evhub/pyprover."""
     call(["git", "clone", pyprover_git])
-    call_coconut([os.path.join(pyprover, "setup.coco"), "--strict"] + args, **kwargs)
-    call_coconut([os.path.join(pyprover, "pyprover-source"), os.path.join(pyprover, "pyprover"), "--strict"] + args, **kwargs)
+    call_coconut([os.path.join(pyprover, "setup.coco"), "--strict", "--force"] + args, **kwargs)
+    call_coconut([os.path.join(pyprover, "pyprover-source"), os.path.join(pyprover, "pyprover"), "--strict", "--force"] + args, **kwargs)
 
 
 def run_pyprover(**kwargs):
@@ -539,8 +539,8 @@ def comp_prelude(args=[], **kwargs):
     if PY36 and not WINDOWS:
         args.extend(["--target", "3.6", "--mypy"])
         kwargs["check_errors"] = False
-    call_coconut([os.path.join(prelude, "setup.coco"), "--strict"] + args, **kwargs)
-    call_coconut([os.path.join(prelude, "prelude-source"), os.path.join(prelude, "prelude"), "--strict"] + args, **kwargs)
+    call_coconut([os.path.join(prelude, "setup.coco"), "--strict", "--force"] + args, **kwargs)
+    call_coconut([os.path.join(prelude, "prelude-source"), os.path.join(prelude, "prelude"), "--strict", "--force"] + args, **kwargs)
 
 
 def run_prelude(**kwargs):
