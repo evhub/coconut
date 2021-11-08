@@ -1506,7 +1506,7 @@ class Grammar(object):
 
     case_stmt = Forward()
     # both syntaxes here must be kept matching except for the keywords
-    cases_kwd = fixto(case_kwd, "cases") | cases_kwd
+    cases_kwd = cases_kwd | case_kwd
     case_match_co_syntax = trace(
         Group(
             match_kwd.suppress()

@@ -57,6 +57,14 @@ def non_strict_test() -> bool:
         pass
     else:
         assert False
+    match def kwd_only_x_is_int_def_0(*, x is int = 0) = x
+    assert kwd_only_x_is_int_def_0() == 0 == kwd_only_x_is_int_def_0(x=0)
+    try:
+        kwd_only_x_is_int_def_0(1)
+    except MatchError:
+        pass
+    else:
+        assert False
     return True
 
 if __name__ == "__main__":

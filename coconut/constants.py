@@ -194,6 +194,7 @@ reserved_prefix = "_coconut"
 none_coalesce_var = reserved_prefix + "_x"
 func_var = reserved_prefix + "_func"
 format_var = reserved_prefix + "_format"
+is_data_var = reserved_prefix + "_is_data"
 
 # prefer Matcher.get_temp_var to proliferating more vars here
 match_to_args_var = reserved_prefix + "_match_args"
@@ -202,7 +203,9 @@ match_temp_var = reserved_prefix + "_match_temp"
 function_match_error_var = reserved_prefix + "_FunctionMatchError"
 match_set_name_var = reserved_prefix + "_match_set_name"
 
-wildcard = "_"  # for pattern-matching
+# for pattern-matching
+default_matcher_style = "python warn on strict"
+wildcard = "_"
 
 keyword_vars = (
     "and",

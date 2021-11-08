@@ -840,6 +840,8 @@ match def must_pass_x(*xs, x) = (xs, x)
 
 def no_args_kwargs(*(), **{}) = True
 
+def x_and_y(x and y) = (x, y)
+
 # Alternative Class Notation
 
 class altclass:

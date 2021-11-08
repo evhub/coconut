@@ -706,6 +706,7 @@ def suite_test() -> bool:
     assert of(ret_args_kwargs, 1, 2, a=1, b=3) == ((1, 2), {"a": 1, "b": 3})
     x = y = 2
     starsum$ x y .. starproduct$ 2 2 <| 2 == 12
+    assert x_and_y(x=1) == (1, 1) == x_and_y(y=1)
 
     # must come at end
     assert fibs_calls[0] == 1

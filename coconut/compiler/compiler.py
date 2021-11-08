@@ -65,6 +65,7 @@ from coconut.constants import (
     format_var,
     replwrapper,
     none_coalesce_var,
+    is_data_var,
 )
 from coconut.util import checksum
 from coconut.exceptions import (
@@ -603,11 +604,9 @@ class Compiler(Grammar):
             return self.str_proc(inputstring)
         return inputstring
 
-    def get_matcher(self, original, loc, check_var, style=None, name_list=None):
+    def get_matcher(self, original, loc, check_var, name_list=None):
         """Get a Matcher object."""
-        if style is None:
-            style = "coconut"
-        return Matcher(self, original, loc, check_var, style=style, name_list=name_list)
+        return Matcher(self, original, loc, check_var, name_list=name_list)
 
     def add_ref(self, reftype, data):
         """Add a reference and return the identifier."""
@@ -1889,6 +1888,7 @@ def __new__(_coconut_cls, {all_args}):
         # add universal statements
         all_extra_stmts = handle_indentation(
             """
+{is_data_var} = True
 __slots__ = ()
 __ne__ = _coconut.object.__ne__
 def __eq__(self, other):
@@ -1897,6 +1897,8 @@ def __hash__(self):
     return _coconut.tuple.__hash__(self) ^ hash(self.__class__)
             """,
             add_newline=True,
+        ).format(
+            is_data_var=is_data_var,
         )
         if self.target_info < (3, 10):
             all_extra_stmts += "__match_args__ = " + tuple_str_of(match_args, add_quotes=True) + "\n"
@@ -2090,7 +2092,7 @@ if not {check_var}:
             line_wrap=line_wrap,
         )
 
-    def full_match_handle(self, original, loc, tokens, match_to_var=None, match_check_var=None, style=None):
+    def full_match_handle(self, original, loc, tokens, match_to_var=None, match_check_var=None):
         """Process match blocks."""
         if len(tokens) == 4:
             matches, match_type, item, stmts = tokens
@@ -2112,7 +2114,7 @@ if not {check_var}:
         if match_check_var is None:
             match_check_var = self.get_temp_var("match_check")
 
-        matching = self.get_matcher(original, loc, match_check_var, style)
+        matching = self.get_matcher(original, loc, match_check_var)
         matching.match(matches, match_to_var)
         if cond:
             matching.add_guard(cond)
@@ -2716,7 +2718,7 @@ __annotations__["{name}"] = {annotation}
 
     ellipsis_handle.ignore_tokens = True
 
-    def match_case_tokens(self, match_var, check_var, style, original, tokens, top):
+    def match_case_tokens(self, match_var, check_var, original, tokens, top):
         """Build code for matching the given case."""
         if len(tokens) == 3:
             loc, matches, stmts = tokens
@@ -2726,7 +2728,7 @@ __annotations__["{name}"] = {annotation}
         else:
             raise CoconutInternalException("invalid case match tokens", tokens)
         loc = int(loc)
-        matching = self.get_matcher(original, loc, check_var, style)
+        matching = self.get_matcher(original, loc, check_var)
         matching.match(matches, match_var)
         if cond:
             matching.add_guard(cond)
@@ -2742,29 +2744,21 @@ __annotations__["{name}"] = {annotation}
         else:
             raise CoconutInternalException("invalid case tokens", tokens)
 
-        if block_kwd == "cases":
-            if self.strict:
-                style = "coconut"
-            else:
-                style = "coconut warn"
-        elif block_kwd == "match":
-            if self.strict:
-                raise self.make_err(CoconutStyleError, "found Python-style 'match: case' syntax (use Coconut-style 'cases: match' syntax instead)", original, loc)
-            style = "python warn"
-        else:
-            raise CoconutInternalException("invalid case block keyword", block_kwd)
+        internal_assert(block_kwd in ("cases", "case", "match"), "invalid case statement keyword", block_kwd)
+        if block_kwd == "case":
+            self.strict_err_or_warn("found deprecated 'case:' syntax; use 'cases:' (with 'match' for each case) or 'match:' (with 'case' for each case) instead", original, loc)
 
         check_var = self.get_temp_var("case_match_check")
         match_var = self.get_temp_var("case_match_to")
 
         out = (
             match_var + " = " + item + "\n"
-            + self.match_case_tokens(match_var, check_var, style, original, cases[0], True)
+            + self.match_case_tokens(match_var, check_var, original, cases[0], True)
         )
         for case in cases[1:]:
             out += (
                 "if not " + check_var + ":\n" + openindent
-                + self.match_case_tokens(match_var, check_var, style, original, case, False) + closeindent
+                + self.match_case_tokens(match_var, check_var, original, case, False) + closeindent
             )
         if default is not None:
             out += "if not " + check_var + default

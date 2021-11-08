@@ -681,8 +681,8 @@ def main_test() -> bool:
     match {"a": a, **{}} = {"a": 1}
     assert a == 1
     big_d = {"a": 1, "b": 2}
-    match {"a": a} in big_d:
-        assert False
+    {"a": a} = big_d
+    assert a == 1
     match {"a": a, **{}} in big_d:
         assert False
     match {"a": a, **_} in big_d:
@@ -902,6 +902,13 @@ def main_test() -> bool:
         got = iter(rng_to_index)$[slice(*slice_args)] |> list
         want = rng_to_index[slice(*slice_args)]
         assert got == want, f"got {rng_to_index}$[{':'.join(slice_args)}] == {got}; wanted {want}"
+    class Empty
+    match Empty(x=1) in Empty():
+        assert False
+    class BadMatchArgs:
+        __match_args__ = ("x",)
+    match BadMatchArgs(1) in BadMatchArgs():
+        assert False
     return True
 
 def test_asyncio() -> bool:

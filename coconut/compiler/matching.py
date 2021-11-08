@@ -39,6 +39,8 @@ from coconut.constants import (
     const_vars,
     function_match_error_var,
     match_set_name_var,
+    is_data_var,
+    default_matcher_style,
 )
 from coconut.compiler.util import (
     paren_join,
@@ -53,17 +55,29 @@ from coconut.compiler.util import (
 def get_match_names(match):
     """Gets keyword names for the given match."""
     names = []
-    if "paren" in match:
-        (match,) = match
-        names += get_match_names(match)
-    elif "var" in match:
+    # these constructs directly contain top-level variable names
+    if "var" in match:
         (setvar,) = match
         if setvar != wildcard:
             names.append(setvar)
     elif "as" in match:
-        match, as_names = match[0], match[1:]
+        as_match, as_names = match[0], match[1:]
         names.extend(as_names)
+        names += get_match_names(as_match)
+    # these constructs continue matching on the entire original item,
+    #  meaning they can also contain top-level variable names
+    elif "paren" in match:
+        (match,) = match
         names += get_match_names(match)
+    elif "and" in match:
+        for and_match in match:
+            names += get_match_names(and_match)
+    elif "infix" in match:
+        infix_match = match[0]
+        names += get_match_names(infix_match)
+    elif "isinstance_is" in match:
+        isinstance_is_match = match[0]
+        names += get_match_names(isinstance_is_match)
     return names
 
 
@@ -119,11 +133,11 @@ class Matcher(object):
         "python",
         "coconut warn",
         "python warn",
-        "coconut strict",
-        "python strict",
+        "coconut warn on strict",
+        "python warn on strict",
     )
 
-    def __init__(self, comp, original, loc, check_var, style="coconut", name_list=None, checkdefs=None, parent_names={}, var_index_obj=None):
+    def __init__(self, comp, original, loc, check_var, style=default_matcher_style, name_list=None, checkdefs=None, parent_names={}, var_index_obj=None):
         """Creates the matcher."""
         self.comp = comp
         self.original = original
@@ -429,10 +443,8 @@ class Matcher(object):
 
         if rest is None:
             self.rule_conflict_warn(
-                "ambiguous pattern; could be Coconut-style len-checking dict match or Python-style len-ignoring dict match",
-                if_coconut='resolving to Coconut-style len-checking dict match by default',
-                if_python='resolving to Python-style len-ignoring dict match due to Python-style "match: case" block',
-                extra="use explicit '{..., **_}' or '{..., **{}}' syntax to dismiss",
+                "ambiguous pattern; could be old-style len-checking dict match or new-style len-ignoring dict match",
+                extra="use explicit '{..., **_}' or '{..., **{}}' syntax to resolve",
             )
             check_len = not self.using_python_rules
         elif rest == "{}":
@@ -683,6 +695,14 @@ class Matcher(object):
 
         return cls_name, pos_matches, name_matches, star_match
 
+    def match_class_attr(self, match, name, item):
+        """Match an attribute for a class match."""
+        attr_var = self.get_temp_var()
+        self.add_def(attr_var + " = _coconut.getattr(" + item + ", '" + name + "', _coconut_sentinel)")
+        with self.down_a_level():
+            self.add_check(attr_var + " is not _coconut_sentinel")
+            self.match(match, attr_var)
+
     def match_class(self, tokens, item):
         """Matches a class PEP-622-style."""
         cls_name, pos_matches, name_matches, star_match = self.split_data_or_class_match(tokens)
@@ -701,14 +721,17 @@ class Matcher(object):
 
         # handle all other classes
         other_cls_matcher.add_check("not _coconut.isinstance(" + item + ", _coconut_self_match_types)")
-        for i, match in enumerate(pos_matches):
-            other_cls_matcher.match(match, "_coconut.getattr(" + item + ", " + item + ".__match_args__[" + str(i) + "])")
+        match_args_var = other_cls_matcher.get_temp_var()
+        other_cls_matcher.add_def(match_args_var + " = _coconut.getattr(" + item + ", '__match_args__', ())")
+        with other_cls_matcher.down_a_level():
+            for i, match in enumerate(pos_matches):
+                other_cls_matcher.match_class_attr(match, match_args_var + "[" + str(i) + "]", item)
 
         # handle starred arg
         if star_match is not None:
             temp_var = self.get_temp_var()
             self.add_def(
-                "{temp_var} = _coconut.tuple(_coconut.getattr({item}, {item}.__match_args__[i]) for i in _coconut.range({min_ind}, _coconut.len({item}.__match_args__)))".format(
+                "{temp_var} = _coconut.tuple(_coconut.getattr({item}, _coconut.getattr({item}, '__match_args__', ())[i]) for i in _coconut.range({min_ind}, _coconut.len({item}.__match_args__)))".format(
                     temp_var=temp_var,
                     item=item,
                     min_ind=len(pos_matches),
@@ -719,7 +742,7 @@ class Matcher(object):
 
         # handle keyword args
         for name, match in name_matches.items():
-            self.match(match, item + "." + name)
+            self.match_class_attr(match, name, item)
 
     def match_data(self, tokens, item):
         """Matches a data type."""
@@ -753,16 +776,16 @@ class Matcher(object):
 
     def match_data_or_class(self, tokens, item):
         """Matches an ambiguous data or class match."""
-        self.rule_conflict_warn(
-            "ambiguous pattern; could be class match or data match",
-            if_coconut='resolving to Coconut data match by default',
-            if_python='resolving to Python-style class match due to Python-style "match: case" block',
-            extra="use explicit 'data data_name(patterns)' or 'class cls_name(patterns)' syntax to dismiss",
-        )
-        if self.using_python_rules:
-            return self.match_class(tokens, item)
-        else:
-            return self.match_data(tokens, item)
+        is_data_result_var = self.get_temp_var()
+        self.add_def(is_data_result_var + " = _coconut.getattr(" + item + ", '" + is_data_var + "', False)")
+
+        if_data, if_class = self.branches(2)
+
+        if_data.add_check(is_data_result_var)
+        if_data.match_data(tokens, item)
+
+        if_class.add_check("not " + is_data_result_var)
+        if_class.match_class(tokens, item)
 
     def match_paren(self, tokens, item):
         """Matches a paren."""
