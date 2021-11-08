@@ -46,6 +46,17 @@ def non_strict_test() -> bool:
         case _:
             assert False
     assert a == 1  # type: ignore
+    x is int = 10
+    assert x == 10
+    =x = 10
+    x is int is int = 5
+    assert x == 5
+    try:
+        x is int is str = x
+    except MatchError:
+        pass
+    else:
+        assert False
     return True
 
 if __name__ == "__main__":

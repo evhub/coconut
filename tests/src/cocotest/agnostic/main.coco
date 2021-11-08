@@ -183,7 +183,7 @@ def main_test() -> bool:
     match x = 12  # type: ignore
     assert x == 12
     get_int = () -> int
-    x is get_int() = 5  # type: ignore
+    x `isinstance` get_int() = 5  # type: ignore
     assert x == 5
     class a(get_int()): pass  # type: ignore
     assert isinstance(a(), int)  # type: ignore
@@ -886,6 +886,22 @@ def main_test() -> bool:
     one = 1
     two = 2
     assert ((.+one) .. .)(.*two)(3) == 7
+    assert f"{':'}" == ":"
+    assert f"{1 != 0}" == "True"
+    str_to_index = "012345"
+    indexes = list(range(-4, len(iterable) + 4)) + [None]
+    steps = [1, 2, 3, 4, -1, -2, -3, -4]
+    for slice_args in itertools.product(indexes, indexes, steps):
+        got = iter(str_to_index)$[slice(*slice_args)] |> list
+        want = str_to_index[slice(*slice_args)]
+        assert got == want, f"got {str_to_index}$[{':'.join(slice_args)}] == {got}; wanted {want}"
+    assert count() |> iter |> .$[10:] |> .$[:10] |> .$[::2] |> list == [10, 12, 14, 16, 18]
+    rng_to_index = range(10)
+    slice_opts = (None, 1, 2, 7, -1)
+    for slice_args in itertools.product(slice_opts, slice_opts, slice_opts):
+        got = iter(rng_to_index)$[slice(*slice_args)] |> list
+        want = rng_to_index[slice(*slice_args)]
+        assert got == want, f"got {rng_to_index}$[{':'.join(slice_args)}] == {got}; wanted {want}"
     return True
 
 def test_asyncio() -> bool:

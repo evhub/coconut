@@ -119,6 +119,7 @@ from coconut.compiler.util import (
     Wrap,
     tuple_str_of,
     join_args,
+    parse_where,
 )
 from coconut.compiler.header import (
     minify,
@@ -423,7 +424,7 @@ class Compiler(Grammar):
         """Version of transform for post-processing."""
         with self.complain_on_err():
             with self.disable_checks():
-                return transform(grammar, text)
+                return transform(grammar, text, inner=True)
         return None
 
     def get_temp_var(self, base_name="temp"):
@@ -2791,8 +2792,10 @@ __annotations__["{name}"] = {annotation}
         exprs = []
         saw_brace = False
         in_expr = False
-        expr_level = 0
-        for c in old_text:
+        paren_level = 0
+        i = 0
+        while i < len(old_text):
+            c = old_text[i]
             if saw_brace:
                 saw_brace = False
                 if c == "{":
@@ -2801,25 +2804,32 @@ __annotations__["{name}"] = {annotation}
                     raise CoconutDeferredSyntaxError("empty expression in format string", loc)
                 else:
                     in_expr = True
-                    expr_level = paren_change(c)
-                    exprs.append(c)
+                    exprs.append("")
+                    i -= 1
             elif in_expr:
-                if expr_level < 0:
-                    expr_level += paren_change(c)
+                remaining_text = old_text[i:]
+                str_start, str_stop = parse_where(self.string_start, remaining_text)
+                if str_start is not None:
+                    internal_assert(str_start == 0, "invalid string start location in f string", old_text)
+                    exprs[-1] += remaining_text[:str_stop]
+                    i += str_stop - 1
+                elif paren_level < 0:
+                    paren_level += paren_change(c)
                     exprs[-1] += c
-                elif expr_level > 0:
+                elif paren_level > 0:
                     raise CoconutDeferredSyntaxError("imbalanced parentheses in format string expression", loc)
-                elif c in "!:}":  # these characters end the expr
+                elif match_in(self.end_f_str_expr, remaining_text, inner=True):
                     in_expr = False
                     string_parts.append(c)
                 else:
-                    expr_level += paren_change(c)
+                    paren_level += paren_change(c)
                     exprs[-1] += c
             elif c == "{":
                 saw_brace = True
                 string_parts[-1] += c
             else:
                 string_parts[-1] += c
+            i += 1
 
         # handle dangling detections
         if saw_brace:

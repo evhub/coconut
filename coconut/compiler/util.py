@@ -303,7 +303,7 @@ def unpack(tokens):
 
 
 @contextmanager
-def parse_context(inner_parse):
+def parsing_context(inner_parse):
     """Context to manage the packrat cache across parse calls."""
     if inner_parse and use_packrat_parser:
         # store old packrat cache
@@ -324,13 +324,13 @@ def parse_context(inner_parse):
 
 def parse(grammar, text, inner=False):
     """Parse text using grammar."""
-    with parse_context(inner):
+    with parsing_context(inner):
         return unpack(grammar.parseWithTabs().parseString(text))
 
 
 def try_parse(grammar, text, inner=False):
     """Attempt to parse text using grammar else None."""
-    with parse_context(inner):
+    with parsing_context(inner):
         try:
             return parse(grammar, text)
         except ParseBaseException:
@@ -339,17 +339,29 @@ def try_parse(grammar, text, inner=False):
 
 def all_matches(grammar, text, inner=False):
     """Find all matches for grammar in text."""
-    with parse_context(inner):
+    with parsing_context(inner):
         for tokens, start, stop in grammar.parseWithTabs().scanString(text):
             yield unpack(tokens), start, stop
 
 
+def parse_where(grammar, text, inner=False):
+    """Determine where the first parse is."""
+    with parsing_context(inner):
+        for tokens, start, stop in grammar.parseWithTabs().scanString(text):
+            return start, stop
+    return None, None
+
+
 def match_in(grammar, text, inner=False):
     """Determine if there is a match for grammar in text."""
-    with parse_context(inner):
-        for result in grammar.parseWithTabs().scanString(text):
-            return True
-    return False
+    start, stop = parse_where(grammar, text, inner)
+    return start is not None
+
+
+def transform(grammar, text, inner=False):
+    """Transform text by replacing matches to grammar."""
+    with parsing_context(inner):
+        return grammar.parseWithTabs().transformString(text)
 
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -833,44 +845,6 @@ def final_indentation_level(code):
         leading_indent, _, trailing_indent = split_leading_trailing_indent(line)
         level += ind_change(leading_indent) + ind_change(trailing_indent)
     return level
-
-
-ignore_transform = object()
-
-
-def transform(grammar, text):
-    """Transform text by replacing matches to grammar."""
-    results = []
-    intervals = []
-    for result, start, stop in all_matches(grammar, text):
-        if result is not ignore_transform:
-            internal_assert(isinstance(result, str), "got non-string transform result", result)
-            if start == 0 and stop == len(text):
-                return result
-            results.append(result)
-            intervals.append((start, stop))
-
-    if not results:
-        return None
-
-    split_indices = [0]
-    split_indices.extend(start for start, _ in intervals)
-    split_indices.extend(stop for _, stop in intervals)
-    split_indices.sort()
-    split_indices.append(None)
-
-    out = []
-    for i in range(len(split_indices) - 1):
-        if i % 2 == 0:
-            start, stop = split_indices[i], split_indices[i + 1]
-            out.append(text[start:stop])
-        else:
-            out.append(results[i // 2])
-    if i // 2 < len(results) - 1:
-        raise CoconutInternalException("unused transform results", results[i // 2 + 1:])
-    if stop is not None:
-        raise CoconutInternalException("failed to properly split text to be transformed")
-    return "".join(out)
 
 
 def interleaved_join(first_list, second_list):

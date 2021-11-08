@@ -46,6 +46,7 @@ from coconut._pyparsing import (
     originalTextFor,
     nestedExpr,
     FollowedBy,
+    quotedString,
 )
 
 from coconut.exceptions import (
@@ -1829,6 +1830,7 @@ class Grammar(object):
     single_parser = start_marker - single_input - end_marker
     file_parser = start_marker - file_input - end_marker
     eval_parser = start_marker - eval_input - end_marker
+    some_eval_parser = start_marker + eval_input
 
 # end: MAIN GRAMMAR
 # -----------------------------------------------------------------------------------------------------------------------
@@ -1927,6 +1929,11 @@ class Grammar(object):
         | fixto(Optional(keyword("if") + skip_to_in_line(unsafe_equals)) + equals, "misplaced assignment (maybe should be '==')")
         | kwd_err_msg
     )
+
+    bang = ~ne + Literal("!")
+    end_f_str_expr = start_marker + (bang | colon | rbrace)
+
+    string_start = start_marker + quotedString
 
 
 # end: EXTRA GRAMMAR
