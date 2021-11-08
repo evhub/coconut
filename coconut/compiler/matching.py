@@ -60,16 +60,9 @@ def get_match_names(match):
         (setvar,) = match
         if setvar != wildcard:
             names.append(setvar)
-    elif "trailer" in match:
-        match, trailers = match[0], match[1:]
-        for i in range(0, len(trailers), 2):
-            op, arg = trailers[i], trailers[i + 1]
-            if op == "as":
-                names.append(arg)
-        names += get_match_names(match)
     elif "as" in match:
-        match, name = match
-        names.append(name)
+        match, as_names = match[0], match[1:]
+        names.extend(as_names)
         names += get_match_names(match)
     return names
 
@@ -112,13 +105,14 @@ class Matcher(object):
         "class": lambda self: self.match_class,
         "data_or_class": lambda self: self.match_data_or_class,
         "paren": lambda self: self.match_paren,
-        "trailer": lambda self: self.match_trailer,
+        "as": lambda self: self.match_as,
         "and": lambda self: self.match_and,
         "or": lambda self: self.match_or,
         "star": lambda self: self.match_star,
         "implicit_tuple": lambda self: self.match_implicit_tuple,
         "view": lambda self: self.match_view,
         "infix": lambda self: self.match_infix,
+        "isinstance_is": lambda self: self.match_isinstance_is,
     }
     valid_styles = (
         "coconut",
@@ -775,18 +769,37 @@ class Matcher(object):
         match, = tokens
         return self.match(match, item)
 
-    def match_trailer(self, tokens, item):
-        """Matches typedefs and as patterns."""
-        internal_assert(len(tokens) > 1 and len(tokens) % 2 == 1, "invalid trailer match tokens", tokens)
-        match, trailers = tokens[0], tokens[1:]
-        for i in range(0, len(trailers), 2):
-            op, arg = trailers[i], trailers[i + 1]
-            if op == "as":
-                self.match_var([arg], item, bind_wildcard=True)
-            elif op == "is":
-                self.add_check("_coconut.isinstance(" + item + ", " + arg + ")")
+    def match_as(self, tokens, item):
+        """Matches as patterns."""
+        internal_assert(len(tokens) > 1, "invalid as match tokens", tokens)
+        match, as_names = tokens[0], tokens[1:]
+        for varname in as_names:
+            self.match_var([varname], item, bind_wildcard=True)
+        self.match(match, item)
+
+    def match_isinstance_is(self, tokens, item):
+        """Matches old-style isinstance checks."""
+        internal_assert(len(tokens) > 1, "invalid isinstance is match tokens", tokens)
+        match, isinstance_checks = tokens[0], tokens[1:]
+
+        if "var" in match:
+            varname, = match
+            if len(isinstance_checks) == 1:
+                alt_syntax = isinstance_checks[0] + "() as " + varname
             else:
-                raise CoconutInternalException("invalid trailer match operation", op)
+                alt_syntax = "(" + " and ".join(s + "()" for s in isinstance_checks) + ") as " + varname
+        else:
+            varname = "..."
+            alt_syntax = "... `isinstance` " + " `isinstance` ".join(isinstance_checks)
+        isinstance_checks_str = varname + " is " + " is ".join(isinstance_checks)
+        self.comp.strict_err_or_warn(
+            "found deprecated isinstance-checking " + repr(isinstance_checks_str) + " pattern; use " + repr(alt_syntax) + " instead",
+            self.original,
+            self.loc,
+        )
+
+        for is_item in isinstance_checks:
+            self.add_check("_coconut.isinstance(" + item + ", " + is_item + ")")
         self.match(match, item)
 
     def match_and(self, tokens, item):

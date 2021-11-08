@@ -501,7 +501,6 @@ class Compiler(Grammar):
 
         # these handlers just do strict/target checking
         self.u_string <<= attach(self.u_string_ref, self.u_string_check)
-        self.matrix_at <<= attach(self.matrix_at_ref, self.matrix_at_check)
         self.nonlocal_stmt <<= attach(self.nonlocal_stmt_ref, self.nonlocal_check)
         self.star_assign_item <<= attach(self.star_assign_item_ref, self.star_assign_item_check)
         self.classic_lambdef <<= attach(self.classic_lambdef_ref, self.lambdef_check)
@@ -516,7 +515,9 @@ class Compiler(Grammar):
         self.new_namedexpr <<= attach(self.new_namedexpr_ref, self.new_namedexpr_check)
         self.match_dotted_name_const <<= attach(self.match_dotted_name_const_ref, self.match_dotted_name_const_check)
         self.except_star_clause <<= attach(self.except_star_clause_ref, self.except_star_clause_check)
-        self.match_check_equals <<= attach(self.match_check_equals_ref, self.match_check_equals_check)
+        # these checking handlers need to be greedy since they can be suppressed
+        self.matrix_at <<= attach(self.matrix_at_ref, self.matrix_at_check, greedy=True)
+        self.match_check_equals <<= attach(self.match_check_equals_ref, self.match_check_equals_check, greedy=True)
 
     def copy_skips(self):
         """Copy the line skips."""
@@ -2747,7 +2748,7 @@ __annotations__["{name}"] = {annotation}
                 style = "coconut warn"
         elif block_kwd == "match":
             if self.strict:
-                raise self.make_err(CoconutStyleError, "found Python-style 'match: case' syntax (use Coconut-style 'case: match' syntax instead)", original, loc)
+                raise self.make_err(CoconutStyleError, "found Python-style 'match: case' syntax (use Coconut-style 'cases: match' syntax instead)", original, loc)
             style = "python warn"
         else:
             raise CoconutInternalException("invalid case block keyword", block_kwd)
@@ -2992,7 +2993,7 @@ __annotations__["{name}"] = {annotation}
 # CHECKING HANDLERS:
 # -----------------------------------------------------------------------------------------------------------------------
 
-    def check_strict(self, name, original, loc, tokens, only_warn=False):
+    def check_strict(self, name, original, loc, tokens, only_warn=False, always_warn=False):
         """Check that syntax meets --strict requirements."""
         internal_assert(len(tokens) == 1, "invalid " + name + " tokens", tokens)
         if self.strict:
@@ -3000,6 +3001,8 @@ __annotations__["{name}"] = {annotation}
                 logger.warn_err(self.make_err(CoconutSyntaxWarning, "found " + name, original, loc, extra="remove --strict to dismiss"))
             else:
                 raise self.make_err(CoconutStyleError, "found " + name, original, loc)
+        elif always_warn:
+            logger.warn_err(self.make_err(CoconutSyntaxWarning, "found " + name, original, loc))
         return tokens[0]
 
     def lambdef_check(self, original, loc, tokens):
@@ -3016,11 +3019,11 @@ __annotations__["{name}"] = {annotation}
 
     def match_dotted_name_const_check(self, original, loc, tokens):
         """Check for Python-3.10-style implicit dotted name match check."""
-        return self.check_strict("Python-3.10-style dotted name in pattern-matching (Coconut style is to use '={name}' not '{name}')".format(name=tokens[0]), original, loc, tokens)
+        return self.check_strict("Python-3.10-style dotted name in pattern-matching (Coconut style is to use '=={name}' not '{name}')".format(name=tokens[0]), original, loc, tokens)
 
     def match_check_equals_check(self, original, loc, tokens):
         """Check for old-style =item in pattern-matching."""
-        return self.check_strict("old-style =<expr> instead of new-style ==<expr> in pattern-matching", original, loc, tokens, only_warn=True)
+        return self.check_strict("deprecated equality-checking '=...' pattern; use '==...' instead", original, loc, tokens, always_warn=True)
 
     def check_py(self, version, name, original, loc, tokens):
         """Check for Python-version-specific syntax."""

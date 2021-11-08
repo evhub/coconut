@@ -1412,7 +1412,7 @@ class Grammar(object):
     match_dotted_name_const = Forward()
     complex_number = condense(Optional(neg_minus) + number + (plus | sub_minus) + Optional(neg_minus) + imag_num)
     match_const = condense(
-        (match_check_equals | eq).suppress() + atom_item
+        (eq | match_check_equals).suppress() + atom_item
         | complex_number
         | Optional(neg_minus) + const_atom
         | match_dotted_name_const,
@@ -1460,8 +1460,8 @@ class Grammar(object):
         ),
     )
 
-    matchlist_isinstance = base_match + OneOrMore(keyword("is") + atom_item)  # match_trailer expects unsuppressed isinstance
-    isinstance_match = labeled_group(matchlist_isinstance, "trailer") | base_match
+    matchlist_isinstance = base_match + OneOrMore(keyword("is").suppress() + atom_item)
+    isinstance_match = labeled_group(matchlist_isinstance, "isinstance_is") | base_match
 
     matchlist_bar_or = isinstance_match + OneOrMore(bar.suppress() + isinstance_match)
     bar_or_match = labeled_group(matchlist_bar_or, "or") | isinstance_match
@@ -1469,8 +1469,8 @@ class Grammar(object):
     matchlist_infix = bar_or_match + OneOrMore(infix_op + atom_item)
     infix_match = labeled_group(matchlist_infix, "infix") | bar_or_match
 
-    matchlist_as = infix_match + OneOrMore(keyword("as") + name)  # match_trailer expects unsuppressed as
-    as_match = labeled_group(matchlist_as, "trailer") | infix_match
+    matchlist_as = infix_match + OneOrMore(keyword("as").suppress() + name)
+    as_match = labeled_group(matchlist_as, "as") | infix_match
 
     matchlist_and = as_match + OneOrMore(keyword("and").suppress() + as_match)
     and_match = labeled_group(matchlist_and, "and") | as_match

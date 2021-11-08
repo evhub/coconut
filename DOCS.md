@@ -286,12 +286,12 @@ The style issues which will cause `--strict` to throw an error are:
 
 - mixing of tabs and spaces (without `--strict` will show a warning),
 - use of `from __future__` imports (Coconut does these automatically) (without `--strict` will show a warning)
+- [Python 3.10/PEP-634-style `match ...: case ...:` syntax](#pep-634-support) (use [Coconut's `case ...: match ...:` syntax](#case) instead),
 - missing new line at end of file,
 - trailing whitespace at end of lines,
 - semicolons at end of lines,
 - use of the Python-style `lambda` statement (use [Coconut's lambda syntax](#lambdas) instead),
-- [Python 3.10/PEP-634-style `match ...: case ...:` syntax](#pep-634-support) (use [Coconut's `case ...: match ...:` syntax](#case) instead),
-- Python-3.10/PEP-634-style dotted names in pattern-matching (Coconut style is to preface these with an `=`),
+- Python-3.10/PEP-634-style dotted names in pattern-matching (Coconut style is to preface these with `==`),
 - inheriting from `object` in classes (Coconut does this automatically),
 - use of `u` to denote Unicode strings (all Coconut strings are Unicode strings), and
 - use of backslash continuation (use [parenthetical continuation](#enhanced-parenthetical-continuation) instead).
