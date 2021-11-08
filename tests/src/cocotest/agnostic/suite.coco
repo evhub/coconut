@@ -172,7 +172,7 @@ def suite_test() -> bool:
     try:
         strmul("a", "b")
     except MatchError as err:
-        assert err.pattern == "match def strmul(a is str, x is int):"
+        assert err.pattern == "match def strmul(str() as a, int() as x):"
         assert err.value == ("a", "b")
     else:
         assert False
@@ -508,7 +508,7 @@ def suite_test() -> bool:
     assert list_type((|1|)) == "at least 1"
     assert list_type((| |)) == "empty"
     cnt = counter()
-    case cnt.inc():
+    cases cnt.inc():
         match 1:
             assert False
         match ():
@@ -537,7 +537,7 @@ def suite_test() -> bool:
     assert return_in_loop(10)
     assert methtest().meth(5) == 5
     assert methtest().tail_call_meth(3) == 3
-    def test_match_error_addpattern(x is int):
+    def test_match_error_addpattern(int() as x):
         raise MatchError("pat", "val")
     @addpattern(test_match_error_addpattern)  # type: ignore
     def test_match_error_addpattern(x) = x
@@ -689,7 +689,7 @@ def suite_test() -> bool:
     only_match_abc -> _ = "abc"
     match only_match_abc -> _ in "def":
         assert False
-    (-> 3) -> _ is int = "a"  # type: ignore
+    (-> 3) -> _ `isinstance` int = "a"  # type: ignore
     assert empty_it() |> list == [] == empty_it_of_int(1) |> list
     assert just_it(1) |> list == [1]
     assert just_it_of_int(1) |> list == [1] == just_it_of_int_(1) |> list

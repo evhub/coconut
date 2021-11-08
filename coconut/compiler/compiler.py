@@ -483,7 +483,7 @@ class Compiler(Grammar):
         self.with_stmt <<= attach(self.with_stmt_ref, self.with_stmt_handle)
         self.await_expr <<= attach(self.await_expr_ref, self.await_expr_handle)
         self.ellipsis <<= attach(self.ellipsis_ref, self.ellipsis_handle)
-        self.case_stmt <<= attach(self.case_stmt_ref, self.case_stmt_handle)
+        self.cases_stmt <<= attach(self.cases_stmt_ref, self.cases_stmt_handle)
         self.f_string <<= attach(self.f_string_ref, self.f_string_handle)
         self.decorators <<= attach(self.decorators_ref, self.decorators_handle)
         self.unsafe_typedef_or_expr <<= attach(self.unsafe_typedef_or_expr_ref, self.unsafe_typedef_or_expr_handle)
@@ -2734,7 +2734,7 @@ __annotations__["{name}"] = {annotation}
             matching.add_guard(cond)
         return matching.build(stmts, set_check_var=top)
 
-    def case_stmt_handle(self, original, loc, tokens):
+    def cases_stmt_handle(self, original, loc, tokens):
         """Process case blocks."""
         if len(tokens) == 3:
             block_kwd, item, cases = tokens
@@ -2746,7 +2746,7 @@ __annotations__["{name}"] = {annotation}
 
         internal_assert(block_kwd in ("cases", "case", "match"), "invalid case statement keyword", block_kwd)
         if block_kwd == "case":
-            self.strict_err_or_warn("found deprecated 'case:' syntax; use 'cases:' (with 'match' for each case) or 'match:' (with 'case' for each case) instead", original, loc)
+            self.strict_err_or_warn("found deprecated 'case ...:' syntax; use 'cases ...:' or 'match ...:' (with 'case' for each case) instead", original, loc)
 
         check_var = self.get_temp_var("case_match_check")
         match_var = self.get_temp_var("case_match_to")

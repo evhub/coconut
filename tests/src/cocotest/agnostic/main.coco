@@ -480,12 +480,12 @@ def main_test() -> bool:
     assert 1or 2
     two = None
     cases False:
-        match False:
+        case False:
             match False in True:
                 two = 1
             else:
                 two = 2
-        match True:
+        case True:
             two = 3
     else:
         two = 4
@@ -493,7 +493,7 @@ def main_test() -> bool:
     assert makedata(list, 1, 2, 3) == [1, 2, 3]
     assert makedata(str, "a", "b", "c") == "abc"
     assert makedata(dict, ("a", 1), ("b", 2)) == {"a": 1, "b": 2}
-    [a] is list = [1]
+    [a] `isinstance` list = [1]
     assert a == 1
     assert makedata(type(iter(())), 1, 2) == (1, 2) == makedata(type(() :: ()), 1, 2)
     all_none = count(None, 0) |> reversed
@@ -526,7 +526,7 @@ def main_test() -> bool:
     match {"a": {"b": x }} or {"a": {"b": {"c": x}}} = {"a": {"b": {"c": "x"}}}
     assert x == {"c": "x"}
     assert py_repr("x") == ("u'x'" if sys.version_info < (3,) else "'x'")
-    def foo(x is int) = x
+    def foo(int() as x) = x
     try:
         foo(["foo"] * 100000)
     except MatchError as err:
@@ -592,9 +592,9 @@ def main_test() -> bool:
     assert exc.message == expected_msg
     assert exc._message == expected_msg
     try:
-        x is int = "a"
+        int() as x = "a"
     except MatchError as err:
-        assert str(err) == "pattern-matching failed for 'x is int = \"a\"' in 'a'"
+        assert str(err) == "pattern-matching failed for 'int() as x = \"a\"' in 'a'"
     else:
         assert False
     for base_it in [
@@ -656,7 +656,7 @@ def main_test() -> bool:
     assert f([1, 2]) == (2, 1)
     class a:  # type: ignore
         b = 1
-    def must_be_a_b(=a.b) = True
+    def must_be_a_b(==a.b) = True
     assert must_be_a_b(1)
     assert_raises(-> must_be_a_b(2), MatchError)
     a.b = 2
@@ -700,7 +700,14 @@ def main_test() -> bool:
     else:
         assert False
     try:
-        A(x=1) = a1
+        A(x=2) = a1
+    except MatchError:
+        pass
+    else:
+        assert False
+    x = 1
+    try:
+        x() = x
     except TypeError:
         pass
     else:
@@ -755,7 +762,7 @@ def main_test() -> bool:
     f2 = def (0) -> 0
     assert f1(0) == 0 == f2(0)
     assert \(f1._coconut_is_match) is True is \(f2._coconut_is_match)
-    f = match def (x is int) -> x + 1
+    f = match def (int() as x) -> x + 1
     assert f(1) == 2
     assert_raises(-> f("a"), MatchError)
     assert zip((|1, 2|), (|3, 4|), strict=True) |> list == [(1, 3), (2, 4)]
@@ -889,19 +896,19 @@ def main_test() -> bool:
     assert f"{':'}" == ":"
     assert f"{1 != 0}" == "True"
     str_to_index = "012345"
-    indexes = list(range(-4, len(iterable) + 4)) + [None]
+    indexes = list(range(-4, len(str_to_index) + 4)) + [None]
     steps = [1, 2, 3, 4, -1, -2, -3, -4]
     for slice_args in itertools.product(indexes, indexes, steps):
         got = iter(str_to_index)$[slice(*slice_args)] |> list
-        want = str_to_index[slice(*slice_args)]
-        assert got == want, f"got {str_to_index}$[{':'.join(slice_args)}] == {got}; wanted {want}"
+        want = str_to_index[slice(*slice_args)] |> list
+        assert got == want, f"got {str_to_index}$[{':'.join(str(i) for i in slice_args)}] == {got}; wanted {want}"
     assert count() |> iter |> .$[10:] |> .$[:10] |> .$[::2] |> list == [10, 12, 14, 16, 18]
     rng_to_index = range(10)
     slice_opts = (None, 1, 2, 7, -1)
     for slice_args in itertools.product(slice_opts, slice_opts, slice_opts):
         got = iter(rng_to_index)$[slice(*slice_args)] |> list
-        want = rng_to_index[slice(*slice_args)]
-        assert got == want, f"got {rng_to_index}$[{':'.join(slice_args)}] == {got}; wanted {want}"
+        want = rng_to_index[slice(*slice_args)] |> list
+        assert got == want, f"got {rng_to_index}$[{':'.join(str(i) for i in slice_args)}] == {got}; wanted {want}"
     class Empty
     match Empty(x=1) in Empty():
         assert False

@@ -723,6 +723,17 @@ class Matcher(object):
         other_cls_matcher.add_check("not _coconut.isinstance(" + item + ", _coconut_self_match_types)")
         match_args_var = other_cls_matcher.get_temp_var()
         other_cls_matcher.add_def(match_args_var + " = _coconut.getattr(" + item + ", '__match_args__', ())")
+        other_cls_matcher.add_def(
+            handle_indentation("""
+if not _coconut.isinstance({match_args_var}, _coconut.tuple):
+    raise _coconut.TypeError("__match_args__ must be a tuple")
+if _coconut.len({match_args_var}) < {num_pos_matches}:
+    raise _coconut.TypeError("not enough __match_args__ to match against positional patterns in class match (pattern requires {num_pos_matches})")
+        """).format(
+                match_args_var=match_args_var,
+                num_pos_matches=len(pos_matches),
+            ),
+        )
         with other_cls_matcher.down_a_level():
             for i, match in enumerate(pos_matches):
                 other_cls_matcher.match_class_attr(match, match_args_var + "[" + str(i) + "]", item)

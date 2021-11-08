@@ -65,6 +65,11 @@ def non_strict_test() -> bool:
         pass
     else:
         assert False
+    case 1:
+        match 1:
+            pass
+    else:
+        assert False
     return True
 
 if __name__ == "__main__":

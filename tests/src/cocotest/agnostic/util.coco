@@ -132,7 +132,7 @@ def qsort3(l: int$[]) -> int$[]:
         return iter(())
 def qsort4(l: int[]) -> int[]:
     """Match Quick Sort."""
-    case l:
+    cases l:
         match []:
             return l
         match [head] + tail:
@@ -248,7 +248,7 @@ def tco_chain(it) =
     consume(it :: ["last"], keep_last=1)
 
 def partition(items, pivot, lprefix=[], rprefix=[]):
-    case items:
+    cases items:
         match [head]::tail:
             if head < pivot:
                 return partition(tail, pivot, [head]::lprefix, rprefix)
@@ -346,7 +346,7 @@ data vector(x, y):
             raise TypeError()
     def __add__(self, vector(x_, y_)) =
         vector(self.x + x_, self.y + y_)
-    addpattern def __add__(self, n is int) =  # type: ignore
+    addpattern def __add__(self, int() as n) =  # type: ignore
         vector(self.x + n, self.y + n)
 data triangle(a, b, c):
     def is_right(self):
@@ -370,11 +370,11 @@ data typed_vector(x:int=0, y:int=0):
 # Factorial:
 def factorial1(value):
     match 0 in value: return 1
-    match n is int in value if n > 0: return n * factorial1(n-1)
+    match int() as n in value if n > 0: return n * factorial1(n-1)
 def factorial2(value):
     match (0) in value:
         return 1
-    else: match (n is int) in value if n > 0:
+    else: match (int() as n) in value if n > 0:
         return n * factorial2(n-1)
     else:
         return None
@@ -382,21 +382,21 @@ def factorial2(value):
 def factorial3(value):
     match 0 in value:
         return 1
-    match n is int in value if n > 0:
+    match int() as n in value if n > 0:
         return n * factorial3(n-1)
     match [] in value:
         return []
     match [head] + tail in value:
         return [factorial3(head)] + factorial3(tail)
 def factorial4(value):
-    case value:
+    cases value:
         match 0: return 1
-        match n is int if n > 0: return n * factorial4(n-1)
+        match int() as n if n > 0: return n * factorial4(n-1)
 def factorial5(value):
-    case value:
+    cases value:
         match 0:
             return 1
-        match n is int if n > 0:
+        match int() as n if n > 0:
             return n * factorial5(n-1)
     else:
         return None
@@ -407,13 +407,13 @@ match addpattern def fact(0, acc) = acc  # type: ignore
 addpattern match def fact(n, acc) = fact(n-1, acc*n)  # type: ignore
 
 def factorial(0, acc=1) = acc
-addpattern def factorial(n is int, acc=1 if n > 0) =  # type: ignore
+addpattern def factorial(int() as n, acc=1 if n > 0) =  # type: ignore
     """this is a docstring"""
     factorial(n-1, acc*n)
 
 # Match Functions:
 def classify(value):
-    match _ is tuple in value:
+    match tuple() in value:
         match () in value:
             return "empty tuple"
         match (_,) in value:
@@ -423,7 +423,7 @@ def classify(value):
         match (_,_) in value:
             return "pair tuple"
         return "tuple"
-    match _ is list in value:
+    match list() in value:
         match [] in value:
             return "empty list"
         match [_] in value:
@@ -433,12 +433,12 @@ def classify(value):
         match [_,_] in value:
             return "pair list"
         return "list"
-    match _ is dict in value:
+    match dict() in value:
         match {} in value:
             return "empty dict"
         else:
             return "dict"
-    match _ is (set, frozenset) in value:
+    match _ `isinstance` (set, frozenset) in value:
         match s{} in value:
             return "empty set"
         match {0} in value:
@@ -447,7 +447,7 @@ def classify(value):
     raise TypeError()
 def classify_sequence(value):
     out = ""
-    case value:
+    cases value:
         match ():
             out += "empty"
         match (_,):
@@ -462,7 +462,7 @@ def classify_sequence(value):
         raise TypeError()
     return out
 def dictpoint(value):
-    match {"x":x is int, "y":y is int} in value:
+    match {"x":int() as x, "y":int() as y} in value:
         return (x, y)
     else:
         raise TypeError()
@@ -479,7 +479,7 @@ def duplicate_first1(value):
     else:
         raise TypeError()
 def duplicate_first2(value):
-    match [x] :: xs is list as l in value:
+    match [x] :: xs `isinstance` list as l in value:
         return [x] :: l
     else:
         raise TypeError()
@@ -489,7 +489,7 @@ def one_to_five(l):
     else:
         return False
 def list_type(xs):
-    case reiterable(xs):
+    cases reiterable(xs):
         match [fst, snd] :: tail:
             return "at least 2"
         match [fst] :: tail:
@@ -567,9 +567,9 @@ def delist2_(l):
 # Optional Explicit Assignment:
 def expl_ident(x) = x
 def dictpoint_(value):
-    {"x":x is int, "y":y is int} = value
+    {"x":int() as x, "y":int() as y} = value
     return x, y
-def dictpoint__({"x":x is int, "y":y is int}):
+def dictpoint__({"x":int() as x, "y":int() as y}):
     return x, y
 def `tuple1` a = a,
 def a `tuple1_` = a,
@@ -585,13 +585,13 @@ def last_two_(_ + [a, b]):
     return a, b
 match def htsplit([head] + tail) = [head, tail]
 def htsplit_([head] + tail) = [head, tail]
-match def (x is int) `iadd` (y is int) =
+match def (int() as x) `iadd` (int() as y) =
     """this is a docstring"""
     x + y
-def (x is int) `iadd_` (y is int) = x + y
-match def strmul(a is str, x is int):
+def (int() as x) `iadd_` (int() as y) = x + y
+match def strmul(str() as a, int() as x):
     return a * x
-def strmul_(a is str, x is int):
+def strmul_(str() as a, int() as x):
     return a * x
 
 # Lazy Lists:
@@ -689,11 +689,11 @@ except NameError, TypeError:
             return addpattern(func, **kwargs)(base_func)
         return pattern_prepender
 
-def add_int_or_str_1(x is int) = x + 1
-addpattern def add_int_or_str_1(x is str) = x + "1"  # type: ignore
+def add_int_or_str_1(int() as x) = x + 1
+addpattern def add_int_or_str_1(str() as x) = x + "1"  # type: ignore
 
-def coercive_add(a is int, b) = a + int(b)
-addpattern def coercive_add(a is str, b) = a + str(b)  # type: ignore
+def coercive_add(int() as a, b) = a + int(b)
+addpattern def coercive_add(str() as a, b) = a + str(b)  # type: ignore
 
 @addpattern(ident, allow_any_func=True)
 def still_ident(x) =
@@ -814,27 +814,27 @@ def int_func(*args: int, **kwargs: int) -> int =
 
 def one_int_or_str(x: int | str) -> int | str = x
 
-def must_be_int(x is int) -> int = cast(int, x)
-def must_be_int_(x is int) -> int: return cast(int, x)
+def must_be_int(int() as x) -> int = cast(int, x)
+def must_be_int_(int() as x) -> int: return cast(int, x)
 
-def (x is int) `typed_plus` (y is int) -> int = x + y
+def (int() as x) `typed_plus` (int() as y) -> int = x + y
 
 # Enhanced Pattern-Matching
 
 def fact_(0, acc=1) = acc
-addpattern def fact_(n is int, acc=1 if n > 0) = fact_(n-1, acc*n)  # type: ignore
+addpattern def fact_(int() as n, acc=1 if n > 0) = fact_(n-1, acc*n)  # type: ignore
 
-def x_is_int(x is int) = x
+def x_is_int(int() as x) = x
 
 def x_as_y(x as y) = (x, y)
 
-def (x is int) `x_y_are_int_gt_0` (y is int) if x > 0 and y > 0 = (x, y)
+def (int() as x) `x_y_are_int_gt_0` (int() as y) if x > 0 and y > 0 = (x, y)
 
-def x_is_int_def_0(x is int = 0) = x
+def x_is_int_def_0(int() as x = 0) = x
 
 def head_tail_def_none([head] + tail = [None]) = (head, tail)
 
-match def kwd_only_x_is_int_def_0(*, x is int = 0) = x
+match def kwd_only_x_is_int_def_0(*, int() as x = 0) = x
 
 match def must_pass_x(*xs, x) = (xs, x)
 
@@ -983,21 +983,21 @@ addpattern def join_pairs2([(k, v)] + tail) =  # type: ignore
 # Match data
 match data data1(x)
 
-data data2(x is int)
+data data2(int() as x)
 
 match data data3(*xs)
 
 data data4(**kws)
 
-data data5(x, y is int, z is str):
+data data5(x, int() as y, str() as z):
     """docstring"""
     attr = 1
 
 class BaseClass
 
-data data6(x is int) from BaseClass
+data data6(int() as x) from BaseClass
 
-data namedpt(name is str, x is int, y is int):
+data namedpt(str() as name, int() as x, int() as y):
     def mag(self) = (self.x**2 + self.y**2)**0.5
 
 
@@ -1104,9 +1104,9 @@ class Meta(type):
         return super(Meta, self).__init__(*args)  # drop kwargs
 
 # View
-def only_match_if(x) = def (=x) -> x
+def only_match_if(x) = def (==x) -> x
 
-def only_match_int(x is int) = x
+def only_match_int(int() as x) = x
 
 def only_match_abc(x):
     if x == "abc":
@@ -1120,12 +1120,12 @@ yield def empty_it():
 
 yield def just_it(x): yield x
 
-yield def empty_it_of_int(x is int): pass
+yield def empty_it_of_int(int() as x): pass
 
-yield match def just_it_of_int(x is int):
+yield match def just_it_of_int(int() as x):
     yield x
 
-match yield def just_it_of_int_(x is int):
+match yield def just_it_of_int_(int() as x):
     yield x
 
 # maximum difference

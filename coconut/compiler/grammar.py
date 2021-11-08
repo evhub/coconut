@@ -1504,19 +1504,19 @@ class Grammar(object):
     base_destructuring_stmt = Optional(match_kwd.suppress()) + many_match + equals.suppress() + test_expr
     destructuring_stmt_ref, match_dotted_name_const_ref = disable_inside(base_destructuring_stmt, must_be_dotted_name)
 
-    case_stmt = Forward()
+    cases_stmt = Forward()
     # both syntaxes here must be kept matching except for the keywords
     cases_kwd = cases_kwd | case_kwd
     case_match_co_syntax = trace(
         Group(
-            match_kwd.suppress()
+            (match_kwd | case_kwd).suppress()
             + stores_loc_item
             + many_match
             + Optional(keyword("if").suppress() + namedexpr_test)
             - full_suite,
         ),
     )
-    case_stmt_co_syntax = (
+    cases_stmt_co_syntax = (
         cases_kwd + testlist_star_namedexpr + colon.suppress() + newline.suppress()
         + indent.suppress() + Group(OneOrMore(case_match_co_syntax))
         + dedent.suppress() + Optional(keyword("else").suppress() + suite)
@@ -1530,12 +1530,12 @@ class Grammar(object):
             - full_suite,
         ),
     )
-    case_stmt_py_syntax = (
+    cases_stmt_py_syntax = (
         match_kwd + testlist_star_namedexpr + colon.suppress() + newline.suppress()
         + indent.suppress() + Group(OneOrMore(case_match_py_syntax))
         + dedent.suppress() + Optional(keyword("else").suppress() - suite)
     )
-    case_stmt_ref = case_stmt_co_syntax | case_stmt_py_syntax
+    cases_stmt_ref = cases_stmt_co_syntax | cases_stmt_py_syntax
 
     assert_stmt = addspace(keyword("assert") - testlist)
     if_stmt = condense(
@@ -1815,7 +1815,7 @@ class Grammar(object):
         compound_stmt
         | simple_stmt
         # must come at end due to ambiguity with destructuring
-        | case_stmt,
+        | cases_stmt,
     )
     base_suite <<= condense(newline + indent - OneOrMore(stmt) - dedent)
     simple_suite = attach(stmt, make_suite_handle)
