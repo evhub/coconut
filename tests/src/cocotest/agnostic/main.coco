@@ -240,7 +240,7 @@ def main_test() -> bool:
     assert tee([1, 2, 3]) |> map$((t) -> isinstance(t, list)) |> all
     assert (-> 5)() == 5  # type: ignore
     assert (-> _[0])([1, 2, 3]) == 1  # type: ignore
-    assert iter(range(10))$[-5:-8] |> list == [5, 6] == (.$[])(iter(range(10)), slice(-5, -8)) |> list
+    assert iter(range(10))$[-8:-5] |> list == [2, 3, 4] == (.$[])(iter(range(10)), slice(-8, -5)) |> list
     assert iter(range(10))$[-2:] |> list == [8, 9] == (.$[])(iter(range(10)), slice(-2, None)) |> list
     assert (.[1])(range(1, 5)) == 2 == (.$[1])(range(1, 5))
     assert range(1, 5) |> .[1] == 2 == range(1, 5) |> .$[1]

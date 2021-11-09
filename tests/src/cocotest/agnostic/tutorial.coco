@@ -26,10 +26,10 @@ assert 3 |> factorial == 6
 
 def factorial(n):
     """Compute n! where n is an integer >= 0."""
-    case n:
-        match 0:
+    match n:
+        case 0:
             return 1
-        match x is int if x > 0:
+        case x `isinstance` int if x > 0:
             return x * factorial(x-1)
     else:
         raise TypeError("the argument to factorial must be an integer >= 0")
@@ -64,7 +64,7 @@ def factorial(n):
         # This attempts to assign n to x, which has been declared to be
         # an int; since only an int can be assigned to an int, this
         # fails if n is not an int.
-        x is int = n
+        x `isinstance` int = n
     except MatchError:
         pass
     else: if x > 0:  # in Coconut, statements can be nested on the same line
@@ -89,10 +89,36 @@ assert 3 |> factorial == 6
 
 def factorial(n):
     """Compute n! where n is an integer >= 0."""
-    case n:
-        match 0:
+    match n:
+        case 0:
             return 1
-        match _ is int if n > 0:
+        case _ `isinstance` int if n > 0:
+            return n * factorial(n-1)
+    else:
+        raise TypeError("the argument to factorial must be an integer >= 0")
+
+# Test cases:
+try:
+    -1 |> factorial
+except TypeError:
+    assert True
+else:
+    assert False
+try:
+    0.5 |> factorial
+except TypeError:
+    assert True
+else:
+    assert False
+assert 0 |> factorial == 1
+assert 3 |> factorial == 6
+
+def factorial(n):
+    """Compute n! where n is an integer >= 0."""
+    match n:
+        case 0:
+            return 1
+        case int() if n > 0:
             return n * factorial(n-1)
     else:
         raise TypeError("the argument to factorial must be an integer >= 0")
@@ -115,10 +141,10 @@ assert 3 |> factorial == 6
 
 def factorial(n, acc=1):
     """Compute n! where n is an integer >= 0."""
-    case n:
-        match 0:
+    match n:
+        case 0:
             return acc
-        match _ is int if n > 0:
+        case int() if n > 0:
             return factorial(n-1, acc*n)
     else:
         raise TypeError("the argument to factorial must be an integer >= 0")
@@ -141,10 +167,10 @@ assert 3 |> factorial == 6
 
 def factorial(n):
     """Compute n! where n is an integer >= 0."""
-    case n:
-        match 0:
+    match n:
+        case 0:
             return 1
-        match _ is int if n > 0:
+        case int() if n > 0:
             return range(1, n+1) |> reduce$(*)
     else:
         raise TypeError("the argument to factorial must be an integer >= 0")
@@ -167,7 +193,7 @@ assert 3 |> factorial == 6
 
 def factorial(0) = 1
 
-addpattern def factorial(n is int if n > 0) =
+addpattern def factorial(int() as n if n > 0) =
     """Compute n! where n is an integer >= 0."""
     range(1, n+1) |> reduce$(*)
 
@@ -189,7 +215,7 @@ assert 3 |> factorial == 6
 
 def factorial(0) = 1
 
-addpattern def factorial(n is int if n > 0) =
+addpattern def factorial(int() as n if n > 0) =
     """Compute n! where n is an integer >= 0."""
     n * factorial(n - 1)
 
@@ -262,7 +288,7 @@ data vector(*pts):
     """Immutable n-vector."""
     def __new__(cls, *pts):
         """Create a new vector from the given pts."""
-        match [v is vector] in pts:
+        match [v `isinstance` vector] in pts:
             return v  # vector(v) where v is a vector should return v
         else:
             return pts |*> makedata$(cls)  # accesses base constructor
@@ -275,7 +301,7 @@ data vector(*pts):
     """Immutable n-vector."""
     def __new__(cls, *pts):
         """Create a new vector from the given pts."""
-        match [v is vector] in pts:
+        match [v `isinstance` vector] in pts:
             return v  # vector(v) where v is a vector should return v
         else:
             return pts |*> makedata$(cls)  # accesses base constructor
@@ -341,7 +367,7 @@ data vector(*pts):
     """Immutable n-vector."""
     def __new__(cls, *pts):
         """Create a new vector from the given pts."""
-        match [v is vector] in pts:
+        match [v `isinstance` vector] in pts:
             return v  # vector(v) where v is a vector should return v
         else:
             return pts |*> makedata$(cls)  # accesses base constructor
@@ -389,7 +415,7 @@ data vector(*pts):
     """Immutable n-vector."""
     def __new__(cls, *pts):
         """Create a new vector from the given pts."""
-        match [v is vector] in pts:
+        match [v `isinstance` vector] in pts:
             return v  # vector(v) where v is a vector should return v
         else:
             return pts |*> makedata$(cls)  # accesses base constructor
@@ -420,7 +446,7 @@ data vector(*pts):
     # New one-line functions necessary for finding the angle between vectors:
     def __truediv__(self, other) = self.pts |> map$(x -> x/other) |*> vector
     def unit(self) = self / abs(self)
-    def angle(self, other is vector) = math.acos(self.unit() * other.unit())
+    def angle(self, other `isinstance` vector) = math.acos(self.unit() * other.unit())
 
 # Test cases:
 assert vector(3, 4) / 1 |> str == "vector(*pts=(3.0, 4.0))"

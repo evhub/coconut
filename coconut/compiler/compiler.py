@@ -2745,8 +2745,8 @@ __annotations__["{name}"] = {annotation}
             raise CoconutInternalException("invalid case tokens", tokens)
 
         internal_assert(block_kwd in ("cases", "case", "match"), "invalid case statement keyword", block_kwd)
-        if block_kwd == "case":
-            self.strict_err_or_warn("found deprecated 'case ...:' syntax; use 'cases ...:' or 'match ...:' (with 'case' for each case) instead", original, loc)
+        if self.strict and block_kwd == "case":
+            raise CoconutStyleError("found deprecated 'case ...:' syntax; use 'cases ...:' or 'match ...:' (with 'case' for each case) instead", original, loc)
 
         check_var = self.get_temp_var("case_match_check")
         match_var = self.get_temp_var("case_match_to")

@@ -818,14 +818,10 @@ if _coconut.len({match_args_var}) < {num_pos_matches}:
 
         if "var" in match:
             varname, = match
-            if len(isinstance_checks) == 1:
-                alt_syntax = isinstance_checks[0] + "() as " + varname
-            else:
-                alt_syntax = "(" + " and ".join(s + "()" for s in isinstance_checks) + ") as " + varname
         else:
             varname = "..."
-            alt_syntax = "... `isinstance` " + " `isinstance` ".join(isinstance_checks)
         isinstance_checks_str = varname + " is " + " is ".join(isinstance_checks)
+        alt_syntax = varname + " `isinstance` " + " `isinstance` ".join(isinstance_checks)
         self.comp.strict_err_or_warn(
             "found deprecated isinstance-checking " + repr(isinstance_checks_str) + " pattern; use " + repr(alt_syntax) + " instead",
             self.original,

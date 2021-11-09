@@ -191,10 +191,10 @@ The recursive approach is the first of the fundamentally functional approaches, 
 ```coconut
 def factorial(n):
     """Compute n! where n is an integer >= 0."""
-    case n:
-        match 0:
+    match n:
+        case 0:
             return 1
-        match x is int if x > 0:
+        case x `isinstance` int if x > 0:
             return x * factorial(x-1)
     else:
         raise TypeError("the argument to factorial must be an integer >= 0")
@@ -208,9 +208,9 @@ def factorial(n):
 
 Go ahead and copy and paste the code and tests into the interpreter. You should get the same test results as you got for the imperative version—but you can probably tell there's quite a lot more going on here than there. That's intentional: Coconut is intended for functional programming, not imperative programming, and so its new features are built to be most useful when programming in a functional style.
 
-Let's take a look at the specifics of the syntax in this example. The first thing we see is `case n`. This statement starts a `case` block, in which only `match` statements can occur. Each `match` statement will attempt to match its given pattern against the value in the `case` block. Only the first successful match inside of any given `case` block will be executed. When a match is successful, any variable bindings in that match will also be performed. Additionally, as is true in this case, `match` statements can also have `if` guards that will check the given condition before the match is considered final. Finally, after the `case` block, an `else` statement is allowed, which will only be executed if no `match` statement is.
+Let's take a look at the specifics of the syntax in this example. The first thing we see is `match n`. This statement starts a `case` block, in which only `case` statements can occur. Each `case` statement will attempt to match its given pattern against the value in the `case` block. Only the first successful match inside of any given `case` block will be executed. When a match is successful, any variable bindings in that match will also be performed. Additionally, as is true in this case, `case` statements can also have `if` guards that will check the given condition before the match is considered final. Finally, after the `case` block, an `else` statement is allowed, which will only be executed if no `case` statement is.
 
-Specifically, in this example, the first `match` statement checks whether `n` matches to `0`. If it does, it executes `return 1`. Then the second `match` statement checks whether `n` matches to `x is int`, which checks that `n` is an `int` (using `isinstance`) and assigns `x = n` if so, then checks whether `x > 0`, and if so, executes `return x * factorial(x-1)`. If neither of those two statements are executed, the `else` statement triggers and executes `raise TypeError("the argument to factorial must be an integer >= 0")`.
+Specifically, in this example, the first `case` statement checks whether `n` matches to `0`. If it does, it executes `return 1`. Then the second `case` statement checks whether `n` matches to `` x `isinstance` int ``, which checks that `n` is an `int` (using `isinstance`) and assigns `x = n` if so, then checks whether `x > 0`, and if so, executes `return x * factorial(x-1)`. If neither of those two statements are executed, the `else` statement triggers and executes `raise TypeError("the argument to factorial must be an integer >= 0")`.
 
 Although this example is very basic, pattern-matching is both one of Coconut's most powerful and most complicated features. As a general intuitive guide, it is helpful to think _assignment_ whenever you see the keyword `match`. A good way to showcase this is that all `match` statements can be converted into equivalent destructuring assignment statements, which are also valid Coconut. In this case, the destructuring assignment equivalent to the `factorial` function above would be:
 ```coconut
@@ -228,7 +228,7 @@ def factorial(n):
         # This attempts to assign n to x, which has been declared to be
         # an int; since only an int can be assigned to an int, this
         # fails if n is not an int.
-        x is int = n
+        x `isinstance` int = n
     except MatchError:
         pass
     else: if x > 0:  # in Coconut, statements can be nested on the same line
@@ -246,14 +246,14 @@ First, copy and paste! While this destructuring assignment equivalent should wor
 
 It will be helpful to, as we continue to use Coconut's pattern-matching and destructuring assignment statements in further examples, think _assignment_ whenever you see the keyword `match`.
 
-Next, one easy improvement we can make to our `factorial` function is to make use of the wildcard pattern `_`. We don't actually need to assign `x` as a new variable, since it has the same value as `n`, so if we use `_` instead of `x`, Coconut won't ever actually assign the variable. Thus, we can rewrite our `factorial` function as:
+Next, we can make a couple of simple improvements to our `factorial` function. First, we don't actually need to assign `x` as a new variable, since it has the same value as `n`, so if we use `_` instead of `x`, Coconut won't ever actually assign the variable. Thus, we can rewrite our `factorial` function as:
 ```coconut
 def factorial(n):
     """Compute n! where n is an integer >= 0."""
-    case n:
-        match 0:
+    match n:
+        case 0:
             return 1
-        match _ is int if n > 0:
+        case _ `isinstance` int if n > 0:
             return n * factorial(n-1)
     else:
         raise TypeError("the argument to factorial must be an integer >= 0")
@@ -267,14 +267,33 @@ def factorial(n):
 
 Copy, paste! This new `factorial` function should behave exactly the same as before.
 
+Second, we can replace the `` _ `isinstance` int `` pattern with the class pattern `int()`, which, when used with no arguments like that, is equivalent. Thus, we can again rewrite our `factorial` function to:
+```coconut
+def factorial(n):
+    """Compute n! where n is an integer >= 0."""
+    match n:
+        case 0:
+            return 1
+        case int() if n > 0:
+            return n * factorial(n-1)
+    else:
+        raise TypeError("the argument to factorial must be an integer >= 0")
+
+# Test cases:
+-1 |> factorial |> print  # TypeError
+0.5 |> factorial |> print  # TypeError
+0 |> factorial |> print  # 1
+3 |> factorial |> print  # 6
+```
+
 Up until now, for the recursive method, we have only dealt with pattern-matching, but there's actually another way that Coconut allows us to improve our `factorial` function. Coconut performs automatic tail call optimization, which means that whenever a function directly returns a call to another function, Coconut will optimize away the additional call. Thus, we can improve our `factorial` function by rewriting it to use a tail call:
 ```coconut
 def factorial(n, acc=1):
     """Compute n! where n is an integer >= 0."""
-    case n:
-        match 0:
+    match n:
+        case 0:
             return acc
-        match _ is int if n > 0:
+        case int() if n > 0:
             return factorial(n-1, acc*n)
     else:
         raise TypeError("the argument to factorial must be an integer >= 0")
@@ -294,10 +313,10 @@ The other main functional approach is the iterative one. Iterative approaches av
 ```coconut
 def factorial(n):
     """Compute n! where n is an integer >= 0."""
-    case n:
-        match 0:
+    match n:
+        case 0:
             return 1
-        match _ is int if n > 0:
+        case int() if n > 0:
             return range(1, n+1) |> reduce$(*)
     else:
         raise TypeError("the argument to factorial must be an integer >= 0")
@@ -350,10 +369,10 @@ While the iterative approach is very clean, there are still some bulky pieces—
 ```coconut
 def factorial(n):
     """Compute n! where n is an integer >= 0."""
-    case n:
-        match 0:
+    match n:
+        case 0:
             return 1
-        match _ is int if n > 0:
+        case int() if n > 0:
             return range(1, n+1) |> reduce$(*)
     else:
         raise TypeError("the argument to factorial must be an integer >= 0")
@@ -363,7 +382,7 @@ By making use of the [Coconut `addpattern` syntax](DOCS.html#addpattern), we can
 ```
 def factorial(0) = 1
 
-addpattern def factorial(n is int if n > 0) =
+addpattern def factorial(int() as n if n > 0) =
     """Compute n! where n is an integer >= 0."""
     range(1, n+1) |> reduce$(*)
 
@@ -377,7 +396,7 @@ Copy, paste! This should work exactly like before, except now it raises `MatchEr
 
 First, assignment function notation. This one's pretty straightforward. If a function is defined with an `=` instead of a `:`, the last line is required to be an expression, and is automatically returned.
 
-Second, pattern-matching function definition. Pattern-matching function definition does exactly that—pattern-matches against all the arguments that are passed to the function. Unlike normal function definition, however, if the pattern doesn't match (if for example the wrong number of arguments are passed), your function will raise a `MatchError`. Finally, like destructuring assignment, if you want to be more explicit about using pattern-matching function definition, you can add a `match` before the `def`.
+Second, pattern-matching function definition. Pattern-matching function definition does exactly that—pattern-matches against all the arguments that are passed to the function. Unlike normal function definition, however, if the pattern doesn't match (if for example the wrong number of arguments are passed), your function will raise a `MatchError`. Finally, like destructuring assignment, if you want to be more explicit about using pattern-matching function definition, you can add a `match` before the `def`. In this case, we're also using one new pattern-matching construct, the `as` match, which matches against the pattern on the left and assigns the result to the name on the right.
 
 Third, `addpattern`. `addpattern` creates a new pattern-matching function by adding the new pattern as an additional case to the old pattern-matching function it is replacing. Thus, `addpattern` can be thought of as doing exactly what it says—it adds a new pattern to an existing pattern-matching function.
 
@@ -385,7 +404,7 @@ Finally, not only can we rewrite the iterative approach using `addpattern`, as w
 ```coconut
 def factorial(0) = 1
 
-addpattern def factorial(n is int if n > 0) =
+addpattern def factorial(int() as n if n > 0) =
     """Compute n! where n is an integer >= 0."""
     n * factorial(n - 1)
 
@@ -459,8 +478,8 @@ else:
 ```
 is shorthand for
 ```coconut
-case item:
-    match pattern:
+match item:
+    case pattern:
         <body>
 else:
     <else>
@@ -524,7 +543,7 @@ data <name>(<attributes>):
 ```
 where `<name>` and `<body>` are the same as the equivalent `class` definition, but `<attributes>` are the different attributes of the data type, in order that the constructor should take them as arguments. In this case, `vector2` is a data type of two attributes, `x` and `y`, with one defined method, `__abs__`, that computes the magnitude. As the test cases show, we can then create, print, but _not modify_ instances of `vector2`.
 
-One other thing to call attention to here is the use of the [Coconut built-in `fmap`](DOCS.html#fmap). `fmap` allows you to map functions over algebraic data types. In fact, Coconut's `data` types support iteration, so the standard `map` works on them, but it doesn't return another object of the same data type. Thus, `fmap` is simply `map` plus a call to the object's constructor.
+One other thing to call attention to here is the use of the [Coconut built-in `fmap`](DOCS.html#fmap). `fmap` allows you to map functions over algebraic data types. Coconut's `data` types do support iteration, so the standard `map` works on them, but it doesn't return another object of the same data type. In this case, `fmap` is simply `map` plus a call to the object's constructor.
 
 ### n-Vector Constructor
 
@@ -534,7 +553,7 @@ data vector(*pts):
     """Immutable n-vector."""
     def __new__(cls, *pts):
         """Create a new vector from the given pts."""
-        match [v is vector] in pts:
+        match [v `isinstance` vector] in pts:
             return v  # vector(v) where v is a vector should return v
         else:
             return pts |*> makedata$(cls)  # accesses base constructor
@@ -547,6 +566,8 @@ vector(4, 5) |> vector |> print  # vector(*pts=(4, 5))
 Copy, paste! The big new thing here is how to write `data` constructors. Since `data` types are immutable, `__init__` construction won't work. Instead, a different special method `__new__` is used, which must return the newly constructed instance, and unlike most methods, takes the class not the object as the first argument. Since `__new__` needs to return a fully constructed instance, in almost all cases it will be necessary to access the underlying `data` constructor. To achieve this, Coconut provides the [built-in `makedata` function](DOCS.html/makedata), which takes a data type and calls its underlying `data` constructor with the rest of the arguments.
 
 In this case, the constructor checks whether nothing but another `vector` was passed, in which case it returns that, otherwise it returns the result of passing the arguments to the underlying constructor, the form of which is `vector(*pts)`, since that is how we declared the data type. We use sequence pattern-matching to determine whether we were passed a single vector, which is just a list or tuple of patterns to match against the contents of the sequence.
+
+One important pitfall that's worth pointing out here: in this case, you must use `` v `isinstance` vector `` rather than `vector() as v`, since, as we'll see later, patterns like `vector()` behave differently for `data` types than normal classes. In this case, `vector()` would only match a _zero-length_ vector, not just any vector.
 
 The other new construct used here is the `|*>`, or star-pipe, operator, which functions exactly like the normal pipe, except that instead of calling the function with one argument, it calls it with as many arguments as there are elements in the sequence passed into it. The difference between `|>` and `|*>` is exactly analogous to the difference between `f(args)` and `f(*args)`.
 
@@ -607,7 +628,7 @@ data vector(*pts):
     """Immutable n-vector."""
     def __new__(cls, *pts):
         """Create a new vector from the given pts."""
-        match [v is vector] in pts:
+        match [v `isinstance` vector] in pts:
             return v  # vector(v) where v is a vector should return v
         else:
             return pts |*> makedata$(cls)  # accesses base constructor
@@ -806,7 +827,7 @@ data vector(*pts):
     """Immutable n-vector."""
     def __new__(cls, *pts):
         """Create a new vector from the given pts."""
-        match [v is vector] in pts:
+        match [v `isinstance` vector] in pts:
             return v  # vector(v) where v is a vector should return v
         else:
             return pts |*> makedata$(cls)  # accesses base constructor
@@ -974,7 +995,7 @@ _Hint: Look back at how we checked whether the argument to `factorial` was an in
 
 Here's my solution—take a look:
 ```coconut
-    def angle(self, other is vector) = math.acos(self.unit() * other.unit())
+    def angle(self, other `isinstance` vector) = math.acos(self.unit() * other.unit())
 ```
 
 And now it's time to put it all together. Feel free to substitute in your own versions of the methods we just defined.
@@ -986,7 +1007,7 @@ data vector(*pts):
     """Immutable n-vector."""
     def __new__(cls, *pts):
         """Create a new vector from the given pts."""
-        match [v is vector] in pts:
+        match [v `isinstance` vector] in pts:
             return v  # vector(v) where v is a vector should return v
         else:
             return pts |*> makedata$(cls)  # accesses base constructor
@@ -1017,7 +1038,7 @@ data vector(*pts):
     # New one-line functions necessary for finding the angle between vectors:
     def __truediv__(self, other) = self.pts |> map$(x -> x/other) |*> vector
     def unit(self) = self / abs(self)
-    def angle(self, other is vector) = math.acos(self.unit() * other.unit())
+    def angle(self, other `isinstance` vector) = math.acos(self.unit() * other.unit())
 
 # Test cases:
 vector(3, 4) / 1 |> print  # vector(*pts=(3.0, 4.0))

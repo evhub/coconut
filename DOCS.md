@@ -285,8 +285,7 @@ If the `--strict` (`-s` for short) flag is enabled, Coconut will perform additio
 The style issues which will cause `--strict` to throw an error are:
 
 - mixing of tabs and spaces (without `--strict` will show a warning),
-- use of `from __future__` imports (Coconut does these automatically) (without `--strict` will show a warning)
-- [Python 3.10/PEP-634-style `match ...: case ...:` syntax](#pep-634-support) (use [Coconut's `case ...: match ...:` syntax](#case) instead),
+- use of `from __future__` imports (Coconut does these automatically) (without `--strict` will show a warning),
 - missing new line at end of file,
 - trailing whitespace at end of lines,
 - semicolons at end of lines,
@@ -897,14 +896,13 @@ base_pattern ::= (
     "(" pattern ")"                 # parentheses
     | "None" | "True" | "False"     # constants
     | ["as"] NAME                   # variable binding
-    | "=" EXPR                      # check
+    | "==" EXPR                     # check
     | DOTTED_NAME                   # implicit check (disabled in destructuring assignment)
     | NUMBER                        # numbers
     | STRING                        # strings
-    | NAME "(" patterns ")"         # data types (or classes if using PEP 634 syntax)
+    | NAME "(" patterns ")"         # classes or data types
     | "data" NAME "(" patterns ")"  # data types
     | "class" NAME "(" patterns ")" # classes
-    | pattern "is" exprs            # isinstance check
     | "{" pattern_pairs             # dictionaries
         ["," "**" (NAME | "{}")] "}"
     | ["s"] "{" pattern_consts "}"  # sets
@@ -950,10 +948,10 @@ base_pattern ::= (
   * If the same variable is used multiple times, a check will be performed that each use matches to the same value.
   * If the variable name `_` is used, nothing will be bound and everything will always match to it (`_` is Coconut's "wildcard").
 - Explicit Bindings (`<pattern> as <var>`): will bind `<var>` to `<pattern>`.
-- Checks (`=<expr>`): will check that whatever is in that position is `==` to the expression `<expr>`.
-- `isinstance` Checks (`<var> is <types>`): will check that whatever is in that position `isinstance` of `<types>` before binding the `<var>`.
-- Infix Checks (`` <pattern> `<op>` <expr> ``): will check that the operator `<op>$(<expr>)` returns a truthy value when called on whatever is in that position, then matches `<pattern>`.
-- Data Types (`<name>(<args>)`): will check that whatever is in that position is of data type `<name>` and will match the attributes to `<args>`. Includes support for positional arguments, named arguments, and starred arguments.
+- Checks (`==<expr>`): will check that whatever is in that position is `==` to the expression `<expr>`.
+- Infix Checks (`` <pattern> `<op>` <expr> ``): will check that the operator `<op>$(<expr>)` returns a truthy value when called on whatever is in that position, then matches `<pattern>`. For example, `` x `isinstance` int `` will check that whatever is in that position `isinstance$(?, int)` and bind it to `x`.
+- Classes or Data Types (`<name>(<args>)`): will match as a data type if given [a Coconut `data` type](#data) and a class otherwise.
+- Data Types (`data <name>(<args>)`): will check that whatever is in that position is of data type `<name>` and will match the attributes to `<args>`. Includes support for positional arguments, named arguments, and starred arguments.
 - Classes (`class <name>(<args>)`): does [PEP-634-style class matching](https://www.python.org/dev/peps/pep-0634/#class-patterns).
 - Lists (`[<patterns>]`), Tuples (`(<patterns>)`): will only match a sequence (`collections.abc.Sequence`) of the same length, and will check the contents against `<patterns>`.
 - Lazy lists (`(|<patterns>|)`): same as list or tuple matching, but checks for an Iterable (`collections.abc.Iterable`) instead of a Sequence.
@@ -978,7 +976,7 @@ When checking whether or not an object can be matched against in a particular fa
 def factorial(value):
     match 0 in value:
         return 1
-    else: match n is int in value if n > 0:  # Coconut allows nesting of statements on the same line
+    else: match n `isinstance` int in value if n > 0:  # Coconut allows nesting of statements on the same line
         return n * factorial(n-1)
     else:
         raise TypeError("invalid argument to factorial of: "+repr(value))
@@ -1038,31 +1036,11 @@ _Can't be done without a long series of checks for each `match` statement. See t
 
 ### `case`
 
-Coconut's `case` statement is an extension of Coconut's `match` statement for performing multiple `match` statements against the same value, where only one of them should succeed. Unlike lone `match` statements, only one match statement inside of a `case` block will ever succeed, and thus more general matches should be put below more specific ones.
+Coconut's `case` blocks serve as an extension of Coconut's `match` statement for performing multiple `match` statements against the same value, where only one of them should succeed. Unlike lone `match` statements, only one match statement inside of a `case` block will ever succeed, and thus more general matches should be put below more specific ones.
+
+Coconut's `case` blocks are an extension of Python 3.10's [`case` blocks](https://www.python.org/dev/peps/pep-0634) to support additional pattern-matching constructs added by Coconut (and Coconut will ensure that they work on all Python versions, not just 3.10+).
 
 Each pattern in a case block is checked until a match is found, and then the corresponding body is executed, and the case block terminated. The syntax for case blocks is
-```coconut
-case <value>:
-    match <pattern> [if <cond>]:
-        <body>
-    match <pattern> [if <cond>]:
-        <body>
-    ...
-[else:
-    <body>]
-```
-where `<pattern>` is any `match` pattern, `<value>` is the item to match against, `<cond>` is an optional additional check, and `<body>` is simply code that is executed if the header above it succeeds. Note the absence of an `in` in the `match` statements: that's because the `<value>` in `case <value>` is taking its place. If no `else` is present and no match succeeds, then the `case` statement is simply skipped over as with [`match` statements](#match) (though unlike [destructuring assignments](#destructuring-assignment)).
-
-Additionally, to help disambiguate Coconut's `case` syntax from Python 3.10's PEP 634 syntax (which Coconut also supports—see below), `cases` can be used as the top-level keyword instead of `case`, as in:
-```coconut
-cases <value>:
-    match <pattern>:
-        <body>
-```
-
-##### PEP 634 Support
-
-Additionally, since Coconut is a strict superset of Python, Coconut has full Python 3.10+ [PEP 634](https://www.python.org/dev/peps/pep-0634) support. Note that, when using PEP 634 match-case syntax, Coconut will use PEP 634 pattern-matching rules rather than Coconut pattern-matching rules, though a warning will always be issued when those rules conflict. To use PEP 634 pattern-matching, the syntax is:
 ```coconut
 match <value>:
     case <pattern> [if <cond>]:
@@ -1073,12 +1051,9 @@ match <value>:
 [else:
     <body>]
 ```
+where `<pattern>` is any `match` pattern, `<value>` is the item to match against, `<cond>` is an optional additional check, and `<body>` is simply code that is executed if the header above it succeeds. Note the absence of an `in` in the `match` statements: that's because the `<value>` in `case <value>` is taking its place. If no `else` is present and no match succeeds, then the `case` statement is simply skipped over as with [`match` statements](#match) (though unlike [destructuring assignments](#destructuring-assignment)).
 
-As Coconut's pattern-matching rules and the PEP 634 rules sometimes conflict (specifically for classes and dictionaries), it is recommended to just always use Coconut-style pattern-matching (e.g. `case ...: match ...:` instead of `match ...: case ...:`) and use the following provided special constructs for getting PEP-634-style behavior:
-- for matching dictionaries PEP-634-style, use `{..., **_}` to denote that the dictionary can contain extra unmatched items (to explicitly request the Coconut behavior, instead use `{..., **{}}`) and
-- for matching classes PEP-634-style, use `class cls_name(args)` to denote that a `class` match rather than a `data` match is desired (to explicitly request a Coconut-style `data` match, instead use `data data_name(args)`).
-
-_Note that `--strict` disables PEP-634-style pattern-matching syntax entirely._
+Additionally, `cases` can be used as the top-level keyword instead of `case`, and in such a `case` block `match` is allowed for each case rather than `case`.
 
 ##### Examples
 
@@ -1086,16 +1061,16 @@ _Note that `--strict` disables PEP-634-style pattern-matching syntax entirely._
 ```coconut
 def classify_sequence(value):
     out = ""        # unlike with normal matches, only one of the patterns
-    case value:     #  will match, and out will only get appended to once
-        match ():
+    match value:     #  will match, and out will only get appended to once
+        case ():
             out += "empty"
-        match (_,):
+        case (_,):
             out += "singleton"
-        match (x,x):
+        case (x,x):
             out += "duplicate pair of "+str(x)
-        match (_,_):
+        case (_,_):
             out += "pair"
-        match _ is (tuple, list):
+        case _ is (tuple, list):
             out += "sequence"
     else:
         raise TypeError()
@@ -1110,14 +1085,14 @@ def classify_sequence(value):
 ```
 _Example of using Coconut's `case` syntax._
 ```coconut
-match {"a": 1, "b": 2}:
-    case {"a": a}:
+cases {"a": 1, "b": 2}:
+    match {"a": a}:
         pass
-    case _:
+    match _:
         assert False
 assert a == 1
 ```
-_Example of Coconut's PEP 634 support._
+_Example of the `cases` keyword instead._
 
 **Python:**
 _Can't be done without a long series of checks for each `match` statement. See the compiled code for the Python syntax._
@@ -1145,7 +1120,7 @@ when iterated over will only give the single element `xs`.
 
 **Coconut:**
 ```
-data namedpt(name is str, x is int, y is int):
+data namedpt(name `isinstance` str, x `isinstance` int, y `isinstance` int):
     def mag(self) = (self.x**2 + self.y**2)**0.5
 ```
 
@@ -1580,10 +1555,10 @@ If you are encountering a `RuntimeError` due to maximum recursion depth, it is h
 ```coconut
 # unlike in Python, this function will never hit a maximum recursion depth error
 def factorial(n, acc=1):
-    case n:
-        match 0:
+    match n:
+        case 0:
             return acc
-        match _ is int if n > 0:
+        case int() if n > 0:
             return factorial(n-1, acc*n)
 ```
 _Showcases tail recursion elimination._
@@ -1591,11 +1566,11 @@ _Showcases tail recursion elimination._
 # unlike in Python, neither of these functions will ever hit a maximum recursion depth error
 def is_even(0) = True
 @addpattern(is_even)
-def is_even(n is int if n > 0) = is_odd(n-1)
+def is_even(n `isinstance` int if n > 0) = is_odd(n-1)
 
 def is_odd(0) = False
 @addpattern(is_odd)
-def is_odd(n is int if n > 0) = is_even(n-1)
+def is_odd(n `isinstance` int if n > 0) = is_even(n-1)
 ```
 _Showcases tail call optimization._
 
@@ -1684,7 +1659,7 @@ _Note: Pattern-matching function definition can be combined with assignment and/
 ```coconut
 def last_two(_ + [a, b]):
     return a, b
-def xydict_to_xytuple({"x":x is int, "y":y is int}):
+def xydict_to_xytuple({"x": x `isinstance` int, "y": y `isinstance` int}):
     return x, y
 
 range(5) |> last_two |> print
@@ -2030,7 +2005,7 @@ def print_type():
     print("Received no arguments.")
 
 @addpattern(print_type)
-def print_type(x is int):
+def print_type(int()):
     print("Received an int.")
 
 print_type()  # appears to work
@@ -2042,7 +2017,7 @@ This can be fixed by using either the `match` or `addpattern` keyword. For examp
 match def print_type():
     print("Received no arguments.")
 
-addpattern def print_type(x is int):
+addpattern def print_type(int()):
     print("Received an int.")
 
 print_type(1)  # Works as expected
@@ -2383,12 +2358,12 @@ Sometimes, when an iterator may need to be iterated over an arbitrary number of 
 **Coconut:**
 ```coconut
 def list_type(xs):
-    case reiterable(xs):
-        match [fst, snd] :: tail:
+    match reiterable(xs):
+        case [fst, snd] :: tail:
             return "at least 2"
-        match [fst] :: tail:
+        case [fst] :: tail:
             return "at least 1"
-        match (| |):
+        case (| |):
             return "empty"
 ```
 
