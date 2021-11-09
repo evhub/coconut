@@ -174,7 +174,7 @@ docs: clean
 
 .PHONY: clean
 clean:
-	rm -rf ./docs ./dist ./build ./tests/dest ./pyprover ./pyston ./coconut-prelude index.rst vprof.json profile.log
+	rm -rf ./docs ./dist ./build ./tests/dest ./bbopt ./pyprover ./pyston ./coconut-prelude index.rst vprof.json profile.log
 	-find . -name '*.pyc' -delete
 	-C:/GnuWin32/bin/find.exe . -name '*.pyc' -delete
 	-find . -name '__pycache__' -delete

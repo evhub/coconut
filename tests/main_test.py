@@ -74,10 +74,12 @@ runnable_py = os.path.join(src, "runnable.py")
 pyston = os.path.join(os.curdir, "pyston")
 pyprover = os.path.join(os.curdir, "pyprover")
 prelude = os.path.join(os.curdir, "coconut-prelude")
+bbopt = os.path.join(os.curdir, "bbopt")
 
 pyston_git = "https://github.com/evhub/pyston.git"
 pyprover_git = "https://github.com/evhub/pyprover.git"
 prelude_git = "https://github.com/evhub/coconut-prelude"
+bbopt_git = "https://github.com/evhub/bbopt.git"
 
 coconut_snip = r"msg = '<success>'; pmsg = print$(msg); `pmsg`"
 
@@ -523,8 +525,8 @@ def run_pyston(**kwargs):
 def comp_pyprover(args=[], **kwargs):
     """Compiles evhub/pyprover."""
     call(["git", "clone", pyprover_git])
-    call_coconut([os.path.join(pyprover, "setup.coco"), "--strict", "--force"] + args, **kwargs)
-    call_coconut([os.path.join(pyprover, "pyprover-source"), os.path.join(pyprover, "pyprover"), "--strict", "--force"] + args, **kwargs)
+    call_coconut([os.path.join(pyprover, "setup.coco"), "--force"] + args, **kwargs)
+    call_coconut([os.path.join(pyprover, "pyprover-source"), os.path.join(pyprover, "pyprover"), "--force"] + args, **kwargs)
 
 
 def run_pyprover(**kwargs):
@@ -539,14 +541,26 @@ def comp_prelude(args=[], **kwargs):
     if PY36 and not WINDOWS:
         args.extend(["--target", "3.6", "--mypy"])
         kwargs["check_errors"] = False
-    call_coconut([os.path.join(prelude, "setup.coco"), "--strict", "--force"] + args, **kwargs)
-    call_coconut([os.path.join(prelude, "prelude-source"), os.path.join(prelude, "prelude"), "--strict", "--force"] + args, **kwargs)
+    call_coconut([os.path.join(prelude, "setup.coco"), "--force"] + args, **kwargs)
+    call_coconut([os.path.join(prelude, "prelude-source"), os.path.join(prelude, "prelude"), "--force"] + args, **kwargs)
 
 
 def run_prelude(**kwargs):
     """Runs coconut-prelude."""
     call(["make", "base-install"], cwd=prelude)
-    call(["pytest", "--strict", "-s", os.path.join(prelude, "prelude")], assert_output="passed", **kwargs)
+    call(["pytest", "--strict-markers", "-s", os.path.join(prelude, "prelude")], assert_output="passed", **kwargs)
+
+
+def comp_bbopt(args=[], **kwargs):
+    """Compiles evhub/bbopt."""
+    call(["git", "clone", bbopt_git])
+    call_coconut([os.path.join(bbopt, "setup.coco"), "--force"] + args, **kwargs)
+    call_coconut([os.path.join(bbopt, "bbopt-source"), os.path.join(bbopt, "bbopt"), "--force"] + args, **kwargs)
+
+
+def install_bbopt():
+    """Runs bbopt."""
+    call(["pip", "install", "-Ue", bbopt])
 
 
 def comp_all(args=[], **kwargs):
@@ -726,7 +740,7 @@ class TestExternal(unittest.TestCase):
             comp_pyprover()
             run_pyprover()
 
-    if PY2 or not PYPY:
+    if not PYPY or PY2:
         def test_prelude(self):
             with using_path(prelude):
                 comp_prelude()
@@ -738,6 +752,11 @@ class TestExternal(unittest.TestCase):
             comp_pyston(["--no-tco"])
             if PYPY and PY2:
                 run_pyston()
+
+    def test_bbopt(self):
+        with using_path(bbopt):
+            comp_bbopt()
+            install_bbopt()
 
 
 # -----------------------------------------------------------------------------------------------------------------------

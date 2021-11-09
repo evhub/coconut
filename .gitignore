@@ -130,8 +130,9 @@ __pypackages__/
 # Coconut
 tests/dest/
 docs/
-pyprover/
 pyston/
+pyprover/
+bbopt/
 coconut-prelude/
 index.rst
 vprof.json
