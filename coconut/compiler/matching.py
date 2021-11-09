@@ -437,7 +437,7 @@ class Matcher(object):
 
         if rest is None:
             self.rule_conflict_warn(
-                "ambiguous pattern; could be old-style len-checking dict match or new-style len-ignoring dict match",
+                "found pattern with new behavior in Coconut v2; dict patterns now allow the dictionary being matched against to contain extra keys",
                 extra="use explicit '{..., **_}' or '{..., **{}}' syntax to resolve",
             )
             check_len = not self.using_python_rules
