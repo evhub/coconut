@@ -185,6 +185,7 @@ class _coconut:
     StopIteration = StopIteration
     RuntimeError = RuntimeError
     classmethod = staticmethod(classmethod)
+    all = staticmethod(all)
     any = staticmethod(any)
     bytes = bytes
     dict = staticmethod(dict)

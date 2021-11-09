@@ -137,7 +137,7 @@ class Matcher(object):
         "python warn on strict",
     )
 
-    def __init__(self, comp, original, loc, check_var, style=default_matcher_style, name_list=None, checkdefs=None, parent_names={}, var_index_obj=None):
+    def __init__(self, comp, original, loc, check_var, style=default_matcher_style, name_list=None, parent_names={}, var_index_obj=None):
         """Creates the matcher."""
         self.comp = comp
         self.original = original
@@ -148,24 +148,18 @@ class Matcher(object):
         self.name_list = name_list
         self.position = 0
         self.checkdefs = []
-        if checkdefs is None:
-            self.increment()
-        else:
-            for checks, defs in checkdefs:
-                self.checkdefs.append((checks[:], defs[:]))
-            self.set_position(-1)
         self.parent_names = parent_names
         self.names = OrderedDict()  # ensures deterministic ordering of name setting code
         self.var_index_obj = [0] if var_index_obj is None else var_index_obj
         self.guards = []
         self.child_groups = []
+        self.increment()
 
     def branches(self, num_branches):
         """Create num_branches child matchers, one of which must match for the parent match to succeed."""
         child_group = []
         for _ in range(num_branches):
-            new_matcher = Matcher(self.comp, self.original, self.loc, self.check_var, self.style, self.name_list, self.checkdefs, self.names, self.var_index_obj)
-            new_matcher.insert_check(0, "not " + self.check_var)
+            new_matcher = Matcher(self.comp, self.original, self.loc, self.check_var, self.style, self.name_list, self.names, self.var_index_obj)
             child_group.append(new_matcher)
 
         self.child_groups.append(child_group)
@@ -479,7 +473,7 @@ class Matcher(object):
 
     def assign_to_series(self, name, series_type, item):
         """Assign name to item converted to the given series_type."""
-        if self.using_python_rules or series_type == "[":
+        if series_type == "[":
             self.add_def(name + " = _coconut.list(" + item + ")")
         elif series_type == "(":
             self.add_def(name + " = _coconut.tuple(" + item + ")")
@@ -695,10 +689,10 @@ class Matcher(object):
 
         return cls_name, pos_matches, name_matches, star_match
 
-    def match_class_attr(self, match, name, item):
+    def match_class_attr(self, match, attr, item):
         """Match an attribute for a class match."""
         attr_var = self.get_temp_var()
-        self.add_def(attr_var + " = _coconut.getattr(" + item + ", '" + name + "', _coconut_sentinel)")
+        self.add_def(attr_var + " = _coconut.getattr(" + item + ", " + attr + ", _coconut_sentinel)")
         with self.down_a_level():
             self.add_check(attr_var + " is not _coconut_sentinel")
             self.match(match, attr_var)
@@ -715,21 +709,29 @@ class Matcher(object):
         self_match_matcher.add_check("_coconut.isinstance(" + item + ", _coconut_self_match_types)")
         if pos_matches:
             if len(pos_matches) > 1:
-                self_match_matcher.add_def('raise _coconut.TypeError("too many positional args in class match (got ' + str(len(pos_matches)) + '; type supports 1)")')
+                self_match_matcher.add_def(
+                    """
+                    raise _coconut.TypeError("too many positional args in class match (pattern requires {num_pos_matches}; '{cls_name}' only supports 1)")
+                """.strip().format(
+                        num_pos_matches=len(pos_matches),
+                        cls_name=cls_name,
+                    ),
+                )
             else:
                 self_match_matcher.match(pos_matches[0], item)
 
         # handle all other classes
         other_cls_matcher.add_check("not _coconut.isinstance(" + item + ", _coconut_self_match_types)")
         match_args_var = other_cls_matcher.get_temp_var()
-        other_cls_matcher.add_def(match_args_var + " = _coconut.getattr(" + item + ", '__match_args__', ())")
         other_cls_matcher.add_def(
             handle_indentation("""
+{match_args_var} = _coconut.getattr({cls_name}, '__match_args__', ())
 if not _coconut.isinstance({match_args_var}, _coconut.tuple):
-    raise _coconut.TypeError("__match_args__ must be a tuple")
+    raise _coconut.TypeError("{cls_name}.__match_args__ must be a tuple")
 if _coconut.len({match_args_var}) < {num_pos_matches}:
-    raise _coconut.TypeError("not enough __match_args__ to match against positional patterns in class match (pattern requires {num_pos_matches})")
+    raise _coconut.TypeError("too many positional args in class match (pattern requires {num_pos_matches}; '{cls_name}' only supports %s)" % (_coconut.len({match_args_var}),))
         """).format(
+                cls_name=cls_name,
                 match_args_var=match_args_var,
                 num_pos_matches=len(pos_matches),
             ),
@@ -753,7 +755,7 @@ if _coconut.len({match_args_var}) < {num_pos_matches}:
 
         # handle keyword args
         for name, match in name_matches.items():
-            self.match_class_attr(match, name, item)
+            self.match_class_attr(match, ascii(name), item)
 
     def match_data(self, tokens, item):
         """Matches a data type."""
@@ -787,8 +789,18 @@ if _coconut.len({match_args_var}) < {num_pos_matches}:
 
     def match_data_or_class(self, tokens, item):
         """Matches an ambiguous data or class match."""
+        cls_name, matches = tokens
+
         is_data_result_var = self.get_temp_var()
-        self.add_def(is_data_result_var + " = _coconut.getattr(" + item + ", '" + is_data_var + "', False)")
+        self.add_def(
+            """
+            {is_data_result_var} = _coconut.getattr({cls_name}, "{is_data_var}", False) or _coconut.isinstance({cls_name}, _coconut.tuple) and _coconut.all(_coconut.getattr(_coconut_x, "{is_data_var}", False) for _coconut_x in {cls_name})
+        """.strip().format(
+                is_data_result_var=is_data_result_var,
+                is_data_var=is_data_var,
+                cls_name=cls_name,
+            ),
+        )
 
         if_data, if_class = self.branches(2)
 
@@ -906,17 +918,28 @@ except _coconut.Exception as _coconut_view_func_exc:
 
         # handle children
         for children in self.child_groups:
+            child_checks = "\n".join(
+                handle_indentation(
+                    """
+if not {check_var}:
+    {child_out}
+                """,
+                ).format(
+                    check_var=self.check_var,
+                    child_out=child.out(),
+                ) for child in children
+            )
             out.append(
                 handle_indentation(
                     """
 if {check_var}:
     {check_var} = False
-    {children}
+    {child_checks}
                 """,
                     add_newline=True,
                 ).format(
                     check_var=self.check_var,
-                    children="".join(child.out() for child in children),
+                    child_checks=child_checks,
                 ),
             )
 

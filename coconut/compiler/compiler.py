@@ -490,6 +490,7 @@ class Compiler(Grammar):
         self.testlist_star_expr <<= attach(self.testlist_star_expr_ref, self.testlist_star_expr_handle)
         self.list_literal <<= attach(self.list_literal_ref, self.list_literal_handle)
         self.dict_literal <<= attach(self.dict_literal_ref, self.dict_literal_handle)
+        self.return_testlist <<= attach(self.return_testlist_ref, self.return_testlist_handle)
 
         # handle normal and async function definitions
         self.decoratable_normal_funcdef_stmt <<= attach(
@@ -2991,6 +2992,15 @@ __annotations__["{name}"] = {annotation}
                 else:
                     to_merge.append(g)
             return "_coconut_dict_merge(" + ", ".join(to_merge) + ")"
+
+    def return_testlist_handle(self, tokens):
+        """Handle the expression part of a return statement."""
+        item, = tokens
+        # add parens to support return x, *y on 3.5 - 3.7, which supports return (x, *y) but not return x, *y
+        if (3, 5) <= self.target_info <= (3, 7):
+            return "(" + item + ")"
+        else:
+            return item
 
 # end: COMPILER HANDLERS
 # -----------------------------------------------------------------------------------------------------------------------

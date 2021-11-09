@@ -30,7 +30,7 @@ and much more!
 
 ### Interactive Tutorial
 
-This tutorial is non-interactive. To get an interactive tutorial instead, check out [Coconut's interactive tutorial](https://hmcfabfive.github.io/coconut-tutorial).
+This tutorial is non-interactive. To get an interactive tutorial instead, check out [Coconut's interactive tutorial](https://hmcfabfive.github.io/coconut-tutorial). Note, however, that the interactive tutorial is less up-to-date and may contain old, deprecated syntax (though Coconut will let you know if you encounter such a situation).
 
 ### Installation
 

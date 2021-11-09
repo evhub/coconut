@@ -147,13 +147,16 @@ def test_extras():
     gen_func_def = """def f(x):
     yield x
     return x"""
-    gen_func_def_out = """def f(x):
+    gen_func_def_outs = (
+        gen_func_def,
+"""def f(x):
     yield x
-    return (x)"""
-    assert parse(gen_func_def, mode="any") == gen_func_def_out
+    return (x)""",
+    )
+    assert parse(gen_func_def, mode="any") in gen_func_def_outs
 
     setup(target="3.2")
-    assert parse(gen_func_def, mode="any") not in (gen_func_def, gen_func_def_out)
+    assert parse(gen_func_def, mode="any") not in gen_func_def_outs
 
     setup(target="3.6")
     assert parse("def f(*, x=None) = x")

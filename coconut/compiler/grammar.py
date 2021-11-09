@@ -163,8 +163,8 @@ def pipe_info(op):
 
 def add_paren_handle(tokens):
     """Add parentheses."""
-    internal_assert(len(tokens) == 1, "invalid tokens for parentheses adding", tokens)
-    return "(" + tokens[0] + ")"
+    item, = tokens
+    return "(" + item + ")"
 
 
 def comp_pipe_handle(loc, tokens):
@@ -1337,8 +1337,8 @@ class Grammar(object):
     comp_if = addspace(keyword("if") + test_no_cond + Optional(comp_iter))
     comp_iter <<= comp_for | comp_if
 
-    # add parens to support return x, *y on 3.5 - 3.7, which supports return (x, *y) but not return x, *y
-    return_testlist = attach(testlist_star_expr, add_paren_handle)
+    return_testlist = Forward()
+    return_testlist_ref = testlist_star_expr
     return_stmt = addspace(keyword("return") - Optional(return_testlist))
 
     complex_raise_stmt = Forward()
@@ -1852,6 +1852,7 @@ class Grammar(object):
     )
 
     def get_tre_return_grammar(self, func_name):
+        """the TRE return grammar is parameterized by the name of the function being optimized."""
         return (
             self.start_marker
             + keyword("return").suppress()

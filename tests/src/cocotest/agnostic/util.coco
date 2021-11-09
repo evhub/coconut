@@ -2,13 +2,23 @@
 import random
 from contextlib import contextmanager
 from functools import wraps
+from collections import defaultdict
 if TYPE_CHECKING:
     import typing
 
-# Random Number Helper:
+# Helpers:
 def rand_list(n):
     '''Generate a random list of length n.'''
     return [random.randrange(10) for x in range(0, n)]
+
+class AccessCounter():
+    '''A class that counts the number of times it is accessed.'''
+    def __init__(self):
+        self.counts = defaultdict(int)
+    def __getattribute__(self, attr):
+        if attr != "counts":
+            self.counts[attr] += 1
+        return super(AccessCounter, self).__getattribute__(attr)
 
 # Infix Functions:
 plus = (+)
@@ -433,8 +443,8 @@ def classify(value):
         match [_,_] in value:
             return "pair list"
         return "list"
-    match dict() in value:
-        match {} in value:
+    match {} in value:
+        match {**{}} in value:
             return "empty dict"
         else:
             return "dict"
@@ -558,10 +568,10 @@ def last_two(l):
     _ + [a, b] = l
     return a, b
 def delist2(l):
-    match list(a, b) = l
+    match data list(a, b) = l
     return a, b
 def delist2_(l):
-    list(a, b)  = l
+    data list(a, b)  = l
     return a, b
 
 # Optional Explicit Assignment:
@@ -838,7 +848,7 @@ match def kwd_only_x_is_int_def_0(*, int() as x = 0) = x
 
 match def must_pass_x(*xs, x) = (xs, x)
 
-def no_args_kwargs(*(), **{}) = True
+def no_args_kwargs(*(), **{**{}}) = True
 
 def x_and_y(x and y) = (x, y)
 

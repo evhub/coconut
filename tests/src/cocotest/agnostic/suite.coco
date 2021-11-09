@@ -590,6 +590,7 @@ def suite_test() -> bool:
     else:
         assert False
     assert issubclass(data6, BaseClass)
+    BaseClass() = data6(1)
     assert namedpt("a", 3, 4).mag() == 5
     dt = descriptor_test()
     assert dt.lam() == dt
@@ -646,9 +647,17 @@ def suite_test() -> bool:
     m = Matchable(1, 2, 3)
     class Matchable(newx, neqy, newz) = m
     assert (newx, newy, newz) == (1, 2, 3)
+    Matchable(newx, neqy, newz) = m
+    assert (newx, newy, newz) == (1, 2, 3)
     class Matchable(x=1, y=2, z=3) = m
+    Matchable(x=1, y=2, z=3) = m
     class Matchable(1, 2, 3) = m
+    Matchable(1, 2, 3) = m
     match class Matchable(1, y=2, z=3) in m:
+        pass
+    else:
+        assert False
+    match Matchable(1, y=2, z=3) in m:
         pass
     else:
         assert False
@@ -707,6 +716,21 @@ def suite_test() -> bool:
     x = y = 2
     starsum$ x y .. starproduct$ 2 2 <| 2 == 12
     assert x_and_y(x=1) == (1, 1) == x_and_y(y=1)
+    ac = AccessCounter()
+    ac.x = 1
+    assert not ac.counts
+    AccessCounter(x=1) = ac
+    assert ac.counts["x"] == 1
+    AccessCounter(x=1) or AccessCounter(x=1) = ac
+    assert ac.counts["x"] == 2
+    AccessCounter(x=2) or AccessCounter(x=1) = ac
+    assert ac.counts["x"] == 4
+    tree() = empty()
+    class tree() = leaf(1)
+    match data tree() in leaf(1):
+        assert False
+    match tree() in leaf(1):
+        assert False
 
     # must come at end
     assert fibs_calls[0] == 1

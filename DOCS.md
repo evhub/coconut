@@ -950,7 +950,7 @@ base_pattern ::= (
 - Explicit Bindings (`<pattern> as <var>`): will bind `<var>` to `<pattern>`.
 - Checks (`==<expr>`): will check that whatever is in that position is `==` to the expression `<expr>`.
 - Infix Checks (`` <pattern> `<op>` <expr> ``): will check that the operator `<op>$(<expr>)` returns a truthy value when called on whatever is in that position, then matches `<pattern>`. For example, `` x `isinstance` int `` will check that whatever is in that position `isinstance$(?, int)` and bind it to `x`.
-- Classes or Data Types (`<name>(<args>)`): will match as a data type if given [a Coconut `data` type](#data) and a class otherwise.
+- Classes or Data Types (`<name>(<args>)`): will match as a data type if given [a Coconut `data` type](#data) (or a tuple of Coconut data types) and a class otherwise.
 - Data Types (`data <name>(<args>)`): will check that whatever is in that position is of data type `<name>` and will match the attributes to `<args>`. Includes support for positional arguments, named arguments, and starred arguments.
 - Classes (`class <name>(<args>)`): does [PEP-634-style class matching](https://www.python.org/dev/peps/pep-0634/#class-patterns).
 - Lists (`[<patterns>]`), Tuples (`(<patterns>)`): will only match a sequence (`collections.abc.Sequence`) of the same length, and will check the contents against `<patterns>`.

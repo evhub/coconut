@@ -355,13 +355,17 @@ def parse_where(grammar, text, inner=False):
 def match_in(grammar, text, inner=False):
     """Determine if there is a match for grammar in text."""
     start, stop = parse_where(grammar, text, inner)
+    internal_assert((start is None) == (stop is None), "invalid parse_where results", (start, stop))
     return start is not None
 
 
 def transform(grammar, text, inner=False):
     """Transform text by replacing matches to grammar."""
     with parsing_context(inner):
-        return grammar.parseWithTabs().transformString(text)
+        result = add_action(grammar, unpack).parseWithTabs().transformString(text)
+        if result == text:
+            result = None
+        return result
 
 
 # -----------------------------------------------------------------------------------------------------------------------
