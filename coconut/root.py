@@ -24,9 +24,9 @@ import sys as _coconut_sys
 # -----------------------------------------------------------------------------------------------------------------------
 
 VERSION = "2.0.0"
-VERSION_NAME = "Vocational Guidance Counsellor"
+VERSION_NAME = "How Not to Be Seen"
 # False for release, int >= 1 for develop
-DEVELOP = 5
+DEVELOP = 6
 ALPHA = True
 
 # -----------------------------------------------------------------------------------------------------------------------

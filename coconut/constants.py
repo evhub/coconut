@@ -204,7 +204,7 @@ function_match_error_var = reserved_prefix + "_FunctionMatchError"
 match_set_name_var = reserved_prefix + "_match_set_name"
 
 # for pattern-matching
-default_matcher_style = "python warn on strict"
+default_matcher_style = "python warn"
 wildcard = "_"
 
 keyword_vars = (

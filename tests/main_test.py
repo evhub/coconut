@@ -756,7 +756,8 @@ class TestExternal(unittest.TestCase):
     def test_bbopt(self):
         with using_path(bbopt):
             comp_bbopt()
-            install_bbopt()
+            if not PYPY and (PY2 or PY36):
+                install_bbopt()
 
 
 # -----------------------------------------------------------------------------------------------------------------------
