@@ -712,9 +712,11 @@ class Matcher(object):
         if pos_matches:
             if len(pos_matches) > 1:
                 self_match_matcher.add_def(
-                    """
-                    raise _coconut.TypeError("too many positional args in class match (pattern requires {num_pos_matches}; '{cls_name}' only supports 1)")
-                """.strip().format(
+                    handle_indentation(
+                        """
+raise _coconut.TypeError("too many positional args in class match (pattern requires {num_pos_matches}; '{cls_name}' only supports 1)")
+                    """,
+                    ).format(
                         num_pos_matches=len(pos_matches),
                         cls_name=cls_name,
                     ),
@@ -744,16 +746,23 @@ if _coconut.len({match_args_var}) < {num_pos_matches}:
 
         # handle starred arg
         if star_match is not None:
-            temp_var = self.get_temp_var()
+            star_match_var = self.get_temp_var()
             self.add_def(
-                "{temp_var} = _coconut.tuple(_coconut.getattr({item}, _coconut.getattr({item}, '__match_args__', ())[i]) for i in _coconut.range({min_ind}, _coconut.len({item}.__match_args__)))".format(
-                    temp_var=temp_var,
+                handle_indentation(
+                    """
+{match_args_var} = _coconut.getattr({cls_name}, '__match_args__', ())
+{star_match_var} = _coconut.tuple(_coconut.getattr({item}, {match_args_var}[i]) for i in _coconut.range({num_pos_matches}, _coconut.len({match_args_var})))
+                """,
+                ).format(
+                    match_args_var=self.get_temp_var(),
+                    cls_name=cls_name,
+                    star_match_var=star_match_var,
                     item=item,
-                    min_ind=len(pos_matches),
+                    num_pos_matches=len(pos_matches),
                 ),
             )
             with self.down_a_level():
-                self.match(star_match, temp_var)
+                self.match(star_match, star_match_var)
 
         # handle keyword args
         for name, match in name_matches.items():
@@ -795,12 +804,15 @@ if _coconut.len({match_args_var}) < {num_pos_matches}:
 
         is_data_result_var = self.get_temp_var()
         self.add_def(
-            """
-            {is_data_result_var} = _coconut.getattr({cls_name}, "{is_data_var}", False) or _coconut.isinstance({cls_name}, _coconut.tuple) and _coconut.all(_coconut.getattr(_coconut_x, "{is_data_var}", False) for _coconut_x in {cls_name})
-        """.strip().format(
+            handle_indentation(
+                """
+{is_data_result_var} = _coconut.getattr({cls_name}, "{is_data_var}", False) or _coconut.isinstance({cls_name}, _coconut.tuple) and _coconut.all(_coconut.getattr(_coconut_x, "{is_data_var}", False) for _coconut_x in {cls_name})  {type_comment}
+            """,
+            ).format(
                 is_data_result_var=is_data_result_var,
                 is_data_var=is_data_var,
                 cls_name=cls_name,
+                type_comment=self.comp.type_ignore_comment(),
             ),
         )
 

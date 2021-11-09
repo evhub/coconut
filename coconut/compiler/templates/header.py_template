@@ -1,5 +1,5 @@
 class _coconut{object}:{COMMENT.EVERYTHING_HERE_MUST_BE_COPIED_TO_STUB_FILE}
-    import collections, copy, functools, types, itertools, operator, threading, os, warnings, contextlib, traceback, weakref, multiprocessing
+    import collections, copy, functools, types, itertools, operator, threading, os, warnings, contextlib, traceback, weakref, multiprocessing, math
     from multiprocessing import dummy as multiprocessing_dummy
 {maybe_bind_lru_cache}{import_asyncio}
 {import_pickle}
@@ -657,7 +657,7 @@ class groupsof(_coconut_base_hashable):
             if group:
                 yield _coconut.tuple(group)
     def __len__(self):
-        return _coconut.len(self.iter)
+        return _coconut.int(_coconut.math.ceil(_coconut.len(self.iter) / self.group_size))
     def __repr__(self):
         return "groupsof(%r)" % (self.iter,)
     def __reduce__(self):
@@ -1013,5 +1013,15 @@ class lift(_coconut_base_hashable):
         return _coconut_lifted(self.func, *funcs, **funcdict)
     def __repr__(self):
         return "lift(%r)" % (self.func,)
+def all_equal(iterable):
+    """For a given iterable, check whether all elements in that iterable are equal to each other.
+    Assumes transitivity and `x != y` being equivalent to `not (x == y)`."""
+    first_item = _coconut_sentinel
+    for item in iterable:
+        if first_item is _coconut_sentinel:
+            first_item = item
+        elif first_item != item:
+            return False
+    return True
 _coconut_self_match_types = (bool, bytearray, bytes, dict, float, frozenset, int, list, set, str, tuple)
 _coconut_MatchError, _coconut_count, _coconut_enumerate, _coconut_filter, _coconut_makedata, _coconut_map, _coconut_reiterable, _coconut_reversed, _coconut_starmap, _coconut_tee, _coconut_zip, TYPE_CHECKING, reduce, takewhile, dropwhile = MatchError, count, enumerate, filter, makedata, map, reiterable, reversed, starmap, tee, zip, False, _coconut.functools.reduce, _coconut.itertools.takewhile, _coconut.itertools.dropwhile

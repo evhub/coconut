@@ -924,6 +924,15 @@ def main_test() -> bool:
     is f = False
     match is f in True:
         assert False
+    assert range(10) |> groupsof$(3) |> len == 4
+    assert count(1, 0)$[:10] |> all_equal
+    assert all_equal([])
+    assert all_equal((| |))
+    assert all_equal((| 1 |))
+    assert all_equal((| 1, 1 |))
+    assert all_equal((| 1, 1, 1 |))
+    assert not all_equal((| 2, 1, 1 |))
+    assert not all_equal((| 1, 1, 2 |))
     return True
 
 def test_asyncio() -> bool:

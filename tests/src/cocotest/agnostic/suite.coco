@@ -645,24 +645,24 @@ def suite_test() -> bool:
     assert vector.__match_args__ == ("x", "y") == typed_vector.__match_args__  # type: ignore
     assert Pred.__match_args__ == ("name", "args") == Pred_.__match_args__  # type: ignore
     m = Matchable(1, 2, 3)
-    class Matchable(newx, neqy, newz) = m
+    class Matchable(newx, newy, newz) = m
     assert (newx, newy, newz) == (1, 2, 3)
-    Matchable(newx, neqy, newz) = m
+    Matchable(newx, newy, newz) = m  # type: ignore
     assert (newx, newy, newz) == (1, 2, 3)
     class Matchable(x=1, y=2, z=3) = m
     Matchable(x=1, y=2, z=3) = m
     class Matchable(1, 2, 3) = m
-    Matchable(1, 2, 3) = m
+    Matchable(1, 2, 3) = m  # type: ignore
     match class Matchable(1, y=2, z=3) in m:
         pass
     else:
         assert False
-    match Matchable(1, y=2, z=3) in m:
+    match Matchable(1, y=2, z=3) in m:  # type: ignore
         pass
     else:
         assert False
     try:
-        Matchable(1,2,3,4) = m
+        Matchable(1,2,3,4) = m  # type: ignore
     except TypeError:
         pass
     else:
@@ -723,7 +723,7 @@ def suite_test() -> bool:
     starsum$ x y .. starproduct$ 2 2 <| 2 == 12
     assert x_and_y(x=1) == (1, 1) == x_and_y(y=1)
     ac = AccessCounter()
-    ac.x = 1
+    ac.x = 1  # type: ignore
     assert not ac.counts
     AccessCounter(x=1) = ac
     assert ac.counts["x"] == 1

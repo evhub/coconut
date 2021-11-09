@@ -659,6 +659,9 @@ class Compiler(Grammar):
             text = self.reformat(text)
         return "#" + self.add_ref("comment", text) + unwrapper
 
+    def type_ignore_comment(self):
+        return self.wrap_comment("type: ignore")
+
     def wrap_line_number(self, ln):
         """Wrap a line number."""
         return "#" + self.add_ref("ln", ln) + lnwrapper

@@ -2591,6 +2591,33 @@ iter_of_iters = [[1, 2], [3, 4]]
 flat_it = iter_of_iters |> chain.from_iterable |> list
 ```
 
+### `all_equal`
+
+Coconut's `all_equal` built-in takes in an iterable and determines whether all of its elements are equal to each other. `all_equal` assumes transitivity of equality and that `!=` is the negation of `==`.
+
+##### Example
+
+**Coconut:**
+```coconut
+all_equal([1, 1, 1])
+all_equal([1, 1, 2])
+```
+
+**Python:**
+```coconut_python
+sentinel = object()
+def all_equal(iterable):
+    first_item = sentinel
+    for item in iterable:
+        if first_item is sentinel:
+            first_item = item
+        elif first_item != item:
+            return False
+    return True
+all_equal([1, 1, 1])
+all_equal([1, 1, 2])
+```
+
 ### `recursive_iterator`
 
 Coconut provides a `recursive_iterator` decorator that provides significant optimizations for any stateless, recursive function that returns an iterator. To use `recursive_iterator` on a function, it must meet the following criteria:
