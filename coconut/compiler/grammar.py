@@ -995,13 +995,10 @@ class Grammar(object):
     lazy_items = Optional(tokenlist(test, comma))
     lazy_list = attach(lbanana.suppress() + lazy_items + rbanana.suppress(), lazy_list_handle)
 
-    const_atom = (
-        keyword_atom
-        | number
-        | string_atom
-    )
     known_atom = trace(
-        const_atom
+        keyword_atom
+        | string_atom
+        | number
         | list_item
         | dict_comp
         | dict_literal
@@ -1414,8 +1411,9 @@ class Grammar(object):
     complex_number = condense(Optional(neg_minus) + number + (plus | sub_minus) + Optional(neg_minus) + imag_num)
     match_const = condense(
         (eq | match_check_equals).suppress() + atom_item
+        | string_atom
         | complex_number
-        | Optional(neg_minus) + const_atom
+        | Optional(neg_minus) + number
         | match_dotted_name_const,
     )
     match_string = (
@@ -1448,6 +1446,7 @@ class Grammar(object):
             (atom_item + arrow.suppress() + match)("view")
             | match_string
             | match_const("const")
+            | (keyword_atom | keyword("is").suppress() + atom_item)("is")
             | (lbrace.suppress() + matchlist_dict + Optional(dubstar.suppress() + (name | condense(lbrace + rbrace))) + rbrace.suppress())("dict")
             | (Optional(set_s.suppress()) + lbrace.suppress() + matchlist_set + rbrace.suppress())("set")
             | iter_match

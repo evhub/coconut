@@ -895,11 +895,12 @@ bar_or_pattern ::= pattern ("|" pattern)*  # match any
 base_pattern ::= (
     "(" pattern ")"                 # parentheses
     | "None" | "True" | "False"     # constants
-    | ["as"] NAME                   # variable binding
-    | "==" EXPR                     # check
-    | DOTTED_NAME                   # implicit check (disabled in destructuring assignment)
     | NUMBER                        # numbers
     | STRING                        # strings
+    | ["as"] NAME                   # variable binding
+    | "==" EXPR                     # equality check
+    | "is" EXPR                     # identity check
+    | DOTTED_NAME                   # implicit equality check (disabled in destructuring assignment)
     | NAME "(" patterns ")"         # classes or data types
     | "data" NAME "(" patterns ")"  # data types
     | "class" NAME "(" patterns ")" # classes
@@ -948,7 +949,8 @@ base_pattern ::= (
   * If the same variable is used multiple times, a check will be performed that each use matches to the same value.
   * If the variable name `_` is used, nothing will be bound and everything will always match to it (`_` is Coconut's "wildcard").
 - Explicit Bindings (`<pattern> as <var>`): will bind `<var>` to `<pattern>`.
-- Checks (`==<expr>`): will check that whatever is in that position is `==` to the expression `<expr>`.
+- Equality Checks (`==<expr>`): will check that whatever is in that position is `==` to the expression `<expr>`.
+- Identity Checks (`is <expr>`): will check that whatever is in that position `is` the expression `<expr>`.
 - Infix Checks (`` <pattern> `<op>` <expr> ``): will check that the operator `<op>$(<expr>)` returns a truthy value when called on whatever is in that position, then matches `<pattern>`. For example, `` x `isinstance` int `` will check that whatever is in that position `isinstance$(?, int)` and bind it to `x`.
 - Classes or Data Types (`<name>(<args>)`): will match as a data type if given [a Coconut `data` type](#data) (or a tuple of Coconut data types) and a class otherwise.
 - Data Types (`data <name>(<args>)`): will check that whatever is in that position is of data type `<name>` and will match the attributes to `<args>`. Includes support for positional arguments, named arguments, and starred arguments.

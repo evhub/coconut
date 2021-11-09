@@ -98,6 +98,7 @@ def test_extras():
     assert parse("def f(x):\\\n pass")
     assert parse("abc ")
     assert parse("abc # derp", "any") == "abc  # derp"
+    assert "==" not in parse("None = None")
 
     setup(line_numbers=True)
     assert parse("abc", "any") == "abc  #1 (line num in coconut source)"

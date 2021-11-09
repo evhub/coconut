@@ -913,8 +913,16 @@ def main_test() -> bool:
     match Empty(x=1) in Empty():
         assert False
     class BadMatchArgs:
-        __match_args__ = ("x",)
-    match BadMatchArgs(1) in BadMatchArgs():
+        __match_args__ = "x"
+    try:
+        BadMatchArgs(1) = BadMatchArgs()
+    except TypeError:
+        pass
+    else:
+        assert False
+    f = False
+    is f = False
+    match is f in True:
         assert False
     return True
 

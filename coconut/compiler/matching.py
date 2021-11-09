@@ -36,7 +36,6 @@ from coconut.constants import (
     wildcard,
     openindent,
     closeindent,
-    const_vars,
     function_match_error_var,
     match_set_name_var,
     is_data_var,
@@ -113,6 +112,7 @@ class Matcher(object):
         "rstring": lambda self: self.match_rstring,
         "mstring": lambda self: self.match_mstring,
         "const": lambda self: self.match_const,
+        "is": lambda self: self.match_is,
         "var": lambda self: self.match_var,
         "set": lambda self: self.match_set,
         "data": lambda self: self.match_data,
@@ -638,12 +638,14 @@ class Matcher(object):
             )
 
     def match_const(self, tokens, item):
-        """Matches a constant."""
+        """Matches an equality check."""
         match, = tokens
-        if match in const_vars:
-            self.add_check(item + " is " + match)
-        else:
-            self.add_check(item + " == " + match)
+        self.add_check(item + " == " + match)
+
+    def match_is(self, tokens, item):
+        """Matches an identity check."""
+        match, = tokens
+        self.add_check(item + " is " + match)
 
     def match_set(self, tokens, item):
         """Matches a set."""
