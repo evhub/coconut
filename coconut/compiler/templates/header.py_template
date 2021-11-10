@@ -1023,5 +1023,15 @@ def all_equal(iterable):
         elif first_item != item:
             return False
     return True
+def match_if(obj, predicate):
+    """Meant to be used in infix pattern-matching expressions to match the left-hand side only if the predicate on the right-hand side holds.
+
+    For example:
+        a `match_if` predicate or b = obj
+
+    The actual definition of match_if is extremely simple:
+        def match_if(obj, predicate) = predicate(obj)
+    """
+    return predicate(obj)
 _coconut_self_match_types = (bool, bytearray, bytes, dict, float, frozenset, int, list, set, str, tuple)
 _coconut_MatchError, _coconut_count, _coconut_enumerate, _coconut_filter, _coconut_makedata, _coconut_map, _coconut_reiterable, _coconut_reversed, _coconut_starmap, _coconut_tee, _coconut_zip, TYPE_CHECKING, reduce, takewhile, dropwhile = MatchError, count, enumerate, filter, makedata, map, reiterable, reversed, starmap, tee, zip, False, _coconut.functools.reduce, _coconut.itertools.takewhile, _coconut.itertools.dropwhile

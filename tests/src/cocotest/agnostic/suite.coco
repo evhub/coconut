@@ -737,6 +737,22 @@ def suite_test() -> bool:
         assert False
     match tree() in leaf(1):
         assert False
+    x = y = -1
+    x `flip(of)` is_even or y = 2
+    assert x == 2
+    assert y == -1
+    x `(x, f) -> f(x)` is_even or y = 3
+    assert x == 2
+    assert y == 3
+    ((def (x if is_even(x)) -> x) -> x) or y = 4
+    assert x == 4
+    assert y == 3
+    ((def (x if is_even(x)) -> x) -> x) or y = 5
+    assert x == 4
+    assert y == 5
+    x `match_if` is_even or y = 6
+    assert x == 6
+    assert y == 5
 
     # must come at end
     assert fibs_calls[0] == 1

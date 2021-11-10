@@ -434,6 +434,8 @@ coconut_specific_builtins = (
     "flip",
     "const",
     "lift",
+    "all_equal",
+    "match_if",
     "py_chr",
     "py_hex",
     "py_input",
@@ -777,6 +779,7 @@ search_terms = (
     "embed",
     "PEP 622",
     "overrides",
+    "islice",
 ) + coconut_specific_builtins + magic_methods + exceptions + reserved_vars
 
 exclude_install_dirs = (

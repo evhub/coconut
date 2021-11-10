@@ -766,3 +766,6 @@ def lift(func: _t.Callable[..., _W]) -> _t.Callable[..., _t.Callable[..., _W]]: 
 
 
 def all_equal(iterable: _Iterable) -> bool: ...
+
+
+def match_if(obj: _T, predicate: _t.Callable[[_T], bool]) -> bool: ...
