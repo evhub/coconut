@@ -753,6 +753,17 @@ def suite_test() -> bool:
     x `match_if` is_even or y = 6
     assert x == 6
     assert y == 5
+    for mp in (matching_parens_1, matching_parens_2, matching_parens_3, matching_parens_4):
+        assert mp(""), mp
+        assert mp("()"), mp
+        assert not mp(")("), mp
+        assert not mp("("), mp
+        assert not mp(")"), mp
+        assert mp("()()"), mp
+        assert mp("(())"), mp
+        assert mp("(a(b)c(d)e)f(g)"), mp
+        assert not mp("((())))()"), mp
+    assert min_and_max(range(10)) == (0, 9)
 
     # must come at end
     assert fibs_calls[0] == 1

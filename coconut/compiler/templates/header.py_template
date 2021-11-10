@@ -226,6 +226,7 @@ def _coconut_minus(a, *rest):
     for b in rest:
         a = a - b
     return a
+def _coconut_comma_op(*args): return args
 @_coconut.functools.wraps(_coconut.itertools.tee)
 def tee(iterable, n=2):
     if n >= 0 and _coconut.isinstance(iterable, (_coconut.tuple, _coconut.frozenset)):
@@ -995,12 +996,12 @@ class _coconut_lifted(_coconut_base_hashable):
     def __repr__(self):
         return "lift(%r)(%s%s)" % (self.func, ", ".join(_coconut.repr(g) for g in self.func_args), ", ".join(k + "=" + _coconut.repr(h) for k, h in self.func_kwargs.items()))
 class lift(_coconut_base_hashable):
-    """The S' combinator. Lifts a function up so that all of its arguments are functions.
+    """Lifts a function up so that all of its arguments are functions.
 
-    For a binary function f(x, y) and two unary functions g(z) and h(z), lift works as
+    For a binary function f(x, y) and two unary functions g(z) and h(z), lift works as the S' combinator:
         lift(f)(g, h)(z) == f(g(z), h(z))
 
-    In general, lift is requivalent to
+    In general, lift is requivalent to:
         def lift(f) = ((*func_args, **func_kwargs) -> (*args, **kwargs) ->
             f(*(g(*args, **kwargs) for g in func_args), **{lbrace}k: h(*args, **kwargs) for k, h in func_kwargs.items(){rbrace}))
     """

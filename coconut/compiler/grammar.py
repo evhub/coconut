@@ -809,6 +809,7 @@ class Grammar(object):
         | fixto(keyword("assert"), "_coconut_assert")
         | fixto(keyword("and"), "_coconut_bool_and")
         | fixto(keyword("or"), "_coconut_bool_or")
+        | fixto(comma, "_coconut_comma_op")
         | fixto(dubquestion, "_coconut_none_coalesce")
         | fixto(minus, "_coconut_minus")
         | fixto(dot, "_coconut.getattr")
@@ -1924,10 +1925,20 @@ class Grammar(object):
     unsafe_equals = Literal("=")
 
     kwd_err_msg = attach(any_keyword_in(keyword_vars), kwd_err_msg_handle)
-    parse_err_msg = start_marker + (
-        fixto(end_marker, "misplaced newline (maybe missing ':')")
-        | fixto(Optional(keyword("if") + skip_to_in_line(unsafe_equals)) + equals, "misplaced assignment (maybe should be '==')")
-        | kwd_err_msg
+    parse_err_msg = (
+        start_marker + (
+            fixto(end_marker, "misplaced newline (maybe missing ':')")
+            | fixto(Optional(keyword("if") + skip_to_in_line(unsafe_equals)) + equals, "misplaced assignment (maybe should be '==')")
+            | kwd_err_msg
+        )
+        | fixto(
+            questionmark
+            + ~dollar
+            + ~lparen
+            + ~lbrack
+            + ~dot,
+            "misplaced '?' (naked '?' is only supported inside partial application arguments)",
+        )
     )
 
     bang = ~ne + Literal("!")

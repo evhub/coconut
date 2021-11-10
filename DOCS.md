@@ -1284,11 +1284,12 @@ A very common thing to do in functional programming is to make use of function v
 (..*>)      => # multi-arg forward function composition
 (<**..)     => # keyword arg backward function composition
 (..**>)     => # keyword arg forward function composition
-(.)         => (getattr)
 (::)        => (itertools.chain)  # will not evaluate its arguments lazily
 ($)         => (functools.partial)
 .[]         => (operator.getitem)
 .$[]        => # iterator slicing operator
+(.)         => (getattr)
+(,)         => (*args) -> args  # (but pickleable)
 (+)         => (operator.add)
 (-)         => # 1 arg: operator.neg, 2 args: operator.sub
 (*)         => (operator.mul)
@@ -2739,12 +2740,15 @@ def lift(f) = (
 **Coconut:**
 ```coconut
 xs_and_xsp1 = ident `lift(zip)` map$(->_+1)
+min_and_max = min `lift(,)` max
 ```
 
 **Python:**
 ```coconut_python
 def xs_and_xsp1(xs):
     return zip(xs, map(lambda x: x + 1, xs))
+def min_and_max(xs):
+    return min(xs), max(xs)
 ```
 
 ### `flip`

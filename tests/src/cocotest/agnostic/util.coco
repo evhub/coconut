@@ -74,6 +74,8 @@ plus1_square_times2_all_ = (<*..)(times2_all, square_all, plus1_all)
 plus1sqsum_all = plus1_all ..*> square_all ..> sum
 plus1sqsum_all_ = sum <.. square_all <*.. plus1_all
 
+min_and_max = min `lift(,)` max
+
 # Basic Functions:
 product = reduce$(*)
 def zipwith(f, *args) = map((items) -> f(*items), zip(*args))
@@ -1172,4 +1174,59 @@ maxdiff_ = (
     <.. filter$(->_ != 0)
     <.. starmap$(-)
     <.. S_(zip, scan$(min))
+)
+
+# matching parens
+matching_parens_1 = (
+    map$(-> if _ == "(" then 1 else
+        if _ == ")" then -1 else 0)
+    ..> scan$(+)
+    ..> (::)$([0], ?)
+    ..> reiterable
+    ..> -> min(_) == 0 == _$[-1]
+)
+
+def multi_func(*funcs) = (*args, **kwargs) -> (f(*args, **kwargs) for f in funcs)
+
+matching_parens_2 = (
+    map$(->
+        if _ == "(" then 1 else
+        if _ == ")" then -1 else 0
+    ) ..> scan$(+)
+    ..> (::)$([0], ?)
+    ..> reiterable
+    ..> multi_func(min, .$[-1])
+    ..> map$(.==0)
+    ..> all
+)
+
+def join_args(*args) = args
+multi_func_ = lift(join_args)
+
+matching_parens_3 = (
+    map$(
+        multi_func_((.=="("), (.==")"))
+        ..> zip$((1, -1))
+        ..> starmap$(*)
+        ..> sum
+    ) ..> scan$(+)
+    ..> (::)$([0], ?)
+    ..> reiterable
+    ..> multi_func_(min, .$[-1])
+    ..> map$(.==0)
+    ..> all
+)
+
+matching_parens_4 = (
+    map$(
+        lift(,)((.=="("), (.==")"))
+        ..> zip$((1, -1))
+        ..> starmap$(*)
+        ..> sum
+    ) ..> scan$(+)
+    ..> (::)$([0], ?)
+    ..> reiterable
+    ..> lift(,)(min, .$[-1])
+    ..> map$(.==0)
+    ..> all
 )
