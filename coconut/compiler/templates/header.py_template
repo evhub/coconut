@@ -938,11 +938,11 @@ def _coconut_handle_cls_kwargs(**kwargs):
 def _coconut_handle_cls_stargs(*args):
     temp_names = ["_coconut_base_cls_%s" % (i,) for i in _coconut.range(_coconut.len(args))]
     ns = _coconut.dict(_coconut.zip(temp_names, args))
-    exec("class _coconut_cls_stargs_base(" + ", ".join(temp_names) + "): pass", ns)
+    _coconut_exec("class _coconut_cls_stargs_base(" + ", ".join(temp_names) + "): pass", ns)
     return ns["_coconut_cls_stargs_base"]
-def _coconut_dict_merge(*dicts, **options):
-    for_func = options.pop("for_func", False)
-    assert not options, "error with internal Coconut function _coconut_dict_merge {report_this_text}"
+def _coconut_dict_merge(*dicts, **kwargs):
+    for_func = kwargs.pop("for_func", False)
+    assert not kwargs, "error with internal Coconut function _coconut_dict_merge {report_this_text}"
     newdict = {empty_dict}
     prevlen = 0
     for d in dicts:

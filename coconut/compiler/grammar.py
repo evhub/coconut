@@ -755,6 +755,8 @@ class Grammar(object):
     # for namedexpr locations only supported in Python 3.10
     new_namedexpr_test = Forward()
 
+    negable_atom_item = condense(Optional(neg_minus) + atom_item)
+
     testlist = trace(itemlist(test, comma, suppress_trailing=False))
     testlist_has_comma = trace(addspace(OneOrMore(condense(test + comma)) + Optional(test)))
     new_namedexpr_testlist_has_comma = trace(addspace(OneOrMore(condense(new_namedexpr_test + comma)) + Optional(test)))
@@ -839,8 +841,8 @@ class Grammar(object):
         | fixto(keyword("in"), "_coconut.operator.contains")
     )
     partial_op_item = attach(
-        labeled_group(dot.suppress() + base_op_item + atom_item, "right partial")
-        | labeled_group(atom_item + base_op_item + dot.suppress(), "left partial"),
+        labeled_group(dot.suppress() + base_op_item + negable_atom_item, "right partial")
+        | labeled_group(negable_atom_item + base_op_item + dot.suppress(), "left partial"),
         partial_op_item_handle,
     )
     op_item = trace(partial_op_item | base_op_item)
@@ -962,13 +964,12 @@ class Grammar(object):
         namedexpr_test + comp_for
         | invalid_syntax(star_expr + comp_for, "iterable unpacking cannot be used in comprehension"),
     )
-    paren_atom = condense(
-        lparen + Optional(
-            yield_expr
-            | comprehension_expr
-            | testlist_star_namedexpr,
-        ) + rparen,
+    paren_contents = (
+        yield_expr
+        | comprehension_expr
+        | testlist_star_namedexpr
     )
+    paren_atom = condense(lparen + Optional(paren_contents) + rparen)
 
     list_literal = Forward()
     list_literal_ref = lbrack.suppress() + testlist_star_namedexpr_tokens + rbrack.suppress()
@@ -1272,7 +1273,7 @@ class Grammar(object):
 
     typedef_callable_params = (
         lparen.suppress() + Optional(testlist, default="") + rparen.suppress()
-        | Optional(atom_item)
+        | Optional(negable_atom_item)
     )
     unsafe_typedef_callable = attach(typedef_callable_params + arrow.suppress() + typedef_test, typedef_callable_handle)
     unsafe_typedef_atom = (  # use special type signifier for item_handle
@@ -1411,7 +1412,7 @@ class Grammar(object):
     match_dotted_name_const = Forward()
     complex_number = condense(Optional(neg_minus) + number + (plus | sub_minus) + Optional(neg_minus) + imag_num)
     match_const = condense(
-        (eq | match_check_equals).suppress() + atom_item
+        (eq | match_check_equals).suppress() + negable_atom_item
         | string_atom
         | complex_number
         | Optional(neg_minus) + number
@@ -1444,10 +1445,10 @@ class Grammar(object):
     )("star")
     base_match = trace(
         Group(
-            (atom_item + arrow.suppress() + match)("view")
+            (negable_atom_item + arrow.suppress() + match)("view")
             | match_string
             | match_const("const")
-            | (keyword_atom | keyword("is").suppress() + atom_item)("is")
+            | (keyword_atom | keyword("is").suppress() + negable_atom_item)("is")
             | (lbrace.suppress() + matchlist_dict + Optional(dubstar.suppress() + (name | condense(lbrace + rbrace))) + rbrace.suppress())("dict")
             | (Optional(set_s.suppress()) + lbrace.suppress() + matchlist_set + rbrace.suppress())("set")
             | iter_match
@@ -1461,13 +1462,13 @@ class Grammar(object):
         ),
     )
 
-    matchlist_isinstance = base_match + OneOrMore(keyword("is").suppress() + atom_item)
+    matchlist_isinstance = base_match + OneOrMore(keyword("is").suppress() + negable_atom_item)
     isinstance_match = labeled_group(matchlist_isinstance, "isinstance_is") | base_match
 
     matchlist_bar_or = isinstance_match + OneOrMore(bar.suppress() + isinstance_match)
     bar_or_match = labeled_group(matchlist_bar_or, "or") | isinstance_match
 
-    matchlist_infix = bar_or_match + OneOrMore(infix_op + atom_item)
+    matchlist_infix = bar_or_match + OneOrMore(infix_op + negable_atom_item)
     infix_match = labeled_group(matchlist_infix, "infix") | bar_or_match
 
     matchlist_as = infix_match + OneOrMore(keyword("as").suppress() + name)

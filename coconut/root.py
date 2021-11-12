@@ -26,7 +26,7 @@ import sys as _coconut_sys
 VERSION = "2.0.0"
 VERSION_NAME = "How Not to Be Seen"
 # False for release, int >= 1 for develop
-DEVELOP = 8
+DEVELOP = 9
 ALPHA = True
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -218,6 +218,7 @@ def xrange(*args):
     """Coconut uses Python 3 'range' instead of Python 2 'xrange'."""
     raise _coconut.NameError("Coconut uses Python 3 'range' instead of Python 2 'xrange'")
 def _coconut_exec(obj, globals=None, locals=None):
+    """Execute the given source in the context of globals and locals."""
     if locals is None:
         locals = _coconut_sys._getframe(1).f_locals if globals is None else globals
     if globals is None:
