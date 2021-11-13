@@ -1247,3 +1247,5 @@ truncate_sentence = (
     ..> .$[:k]
     ..> " ".join
 )
+
+maxcolsum = map$(sum) ..> max

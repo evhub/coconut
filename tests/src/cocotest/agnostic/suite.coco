@@ -767,6 +767,7 @@ def suite_test() -> bool:
     assert odd_digits_to_chars("a1c1e1") == "abcdef"
     assert odd_digits_to_chars("a1b2c3d4e") == "abbdcfdhe"
     assert truncate_sentence(2)("hello how are you") == "hello how"
+    assert maxcolsum([range(3), range(1,4)]) == 6 == range(1, 4) |> sum
 
     # must come at end
     assert fibs_calls[0] == 1
