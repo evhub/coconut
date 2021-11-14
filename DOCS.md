@@ -893,50 +893,50 @@ infix_pattern ::= bar_or_pattern ("`" EXPR "`" EXPR)*  # infix check
 bar_or_pattern ::= pattern ("|" pattern)*  # match any
 
 base_pattern ::= (
-    "(" pattern ")"                 # parentheses
-    | "None" | "True" | "False"     # constants
-    | NUMBER                        # numbers
-    | STRING                        # strings
-    | ["as"] NAME                   # variable binding
-    | "==" EXPR                     # equality check
-    | "is" EXPR                     # identity check
-    | DOTTED_NAME                   # implicit equality check (disabled in destructuring assignment)
-    | NAME "(" patterns ")"         # classes or data types
-    | "data" NAME "(" patterns ")"  # data types
-    | "class" NAME "(" patterns ")" # classes
-    | "{" pattern_pairs             # dictionaries
-        ["," "**" (NAME | "{}")] "}"
-    | ["s"] "{" pattern_consts "}"  # sets
-    | (EXPR) -> pattern             # view patterns
-    | "(" patterns ")"              # sequences can be in tuple form
-    | "[" patterns "]"              #  or in list form
-    | "(|" patterns "|)"            # lazy lists
-    | ("(" | "[")                   # star splits
+    "(" pattern ")"                  # parentheses
+    | "None" | "True" | "False"      # constants
+    | NUMBER                         # numbers
+    | STRING                         # strings
+    | ["as"] NAME                    # variable binding
+    | "==" EXPR                      # equality check
+    | "is" EXPR                      # identity check
+    | DOTTED_NAME                    # implicit equality check (disabled in destructuring assignment)
+    | NAME "(" patterns ")"          # classes or data types
+    | "data" NAME "(" patterns ")"   # data types
+    | "class" NAME "(" patterns ")"  # classes
+    | "{" pattern_pairs              # dictionaries
+        ["," "**" (NAME | "{}")] "}" #  (keys must be constants or equality checks)
+    | ["s"] "{" pattern_consts "}"   # sets
+    | (EXPR) -> pattern              # view patterns
+    | "(" patterns ")"               # sequences can be in tuple form
+    | "[" patterns "]"               #  or in list form
+    | "(|" patterns "|)"             # lazy lists
+    | ("(" | "[")                    # star splits
         patterns
         "*" middle
         patterns
       (")" | "]")
-    | (                             # head-tail splits
+    | (                              # head-tail splits
         "(" patterns ")"
         | "[" patterns "]"
       ) "+" pattern
-    | pattern "+" (                 # init-last splits
+    | pattern "+" (                  # init-last splits
         "(" patterns ")"
         | "[" patterns "]"
       )
-    | (                             # head-last splits
+    | (                              # head-last splits
         "(" patterns ")"
         | "[" patterns "]"
       ) "+" pattern "+" (
-        "(" patterns ")"                # this match must be the same
-        | "[" patterns "]"              #  construct as the first match
+        "(" patterns ")"                 # this match must be the same
+        | "[" patterns "]"               #  construct as the first match
       )
-    | (                             # iterator splits
+    | (                              # iterator splits
         "(" patterns ")"
         | "[" patterns "]"
         | "(|" patterns "|)"
       ) "::" pattern
-    | ([STRING "+"] NAME            # complex string matching
+    | ([STRING "+"] NAME             # complex string matching
         ["+" STRING])
 )
 ```
@@ -957,7 +957,7 @@ base_pattern ::= (
 - Classes (`class <name>(<args>)`): does [PEP-634-style class matching](https://www.python.org/dev/peps/pep-0634/#class-patterns).
 - Lists (`[<patterns>]`), Tuples (`(<patterns>)`): will only match a sequence (`collections.abc.Sequence`) of the same length, and will check the contents against `<patterns>`.
 - Lazy lists (`(|<patterns>|)`): same as list or tuple matching, but checks for an Iterable (`collections.abc.Iterable`) instead of a Sequence.
-- Dicts (`{<key>: <value>, ...}`): will match any mapping (`collections.abc.Mapping`) with the given keys and values that match the value patterns.
+- Dicts (`{<key>: <value>, ...}`): will match any mapping (`collections.abc.Mapping`) with the given keys and values that match the value patterns. Keys must be constants or equality checks.
 - Dicts With Rest (`{<pairs>, **<rest>}`): will match a mapping (`collections.abc.Mapping`) containing all the `<pairs>`, and will put a `dict` of everything else into `<rest>`. If `<rest>` is `{}`, will enforce that the mapping is exactly the same length as `<pairs>`.
 - Sets (`{<constants>}`): will only match a set (`collections.abc.Set`) of the same length and contents.
 - View Patterns (`(<expression>) -> <pattern>`): calls `<expression>` on the item being matched and matches the result to `<pattern>`. The match fails if a [`MatchError`](#matcherror) is raised. `<expression>` may be unparenthesized only when it is a single atom.

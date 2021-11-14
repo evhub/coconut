@@ -3,7 +3,10 @@ import sys
 import platform
 
 # Constants
-TEST_ASYNCIO = platform.python_implementation() != "PyPy" or os.name != "nt" and sys.version_info >= (3,)
+TEST_ASYNCIO = (
+    platform.python_implementation() != "PyPy"
+    or os.name != "nt" and sys.version_info >= (3,)
+)
 
 
 # Iterator returns
