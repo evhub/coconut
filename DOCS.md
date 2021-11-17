@@ -2592,6 +2592,52 @@ iter_of_iters = [[1, 2], [3, 4]]
 flat_it = iter_of_iters |> chain.from_iterable |> list
 ```
 
+### `collectby`
+
+`collectby(key_func, iterable)` collects the items in `iterable` into a dictionary of lists keyed by `key_func(item)`.
+
+If `value_func` is passed, `collectby(key_func, iterable, value_func=value_func)` instead collects value_func(item) into each list instead of item.
+
+If `reduce_func` is passed, `collectby(key_func, iterable, reduce_func=reduce_func)`, instead of collecting the items into lists, reduces over the items of each key with reduce_func, effectively implementing a MapReduce operation.
+
+`collectby` is effectively equivalent to:
+```coconut_python
+from collections import defaultdict
+
+def collectby(key_func, iterable, value_func=None, reduce_func=None):
+    collection = defaultdict(list) if reduce_func is None else {}
+    for item in iterable:
+        key = key_func(item)
+        if value_func is not None:
+            item = value_func(item)
+        if reduce_func is None:
+            collection[key].append(item)
+        else:
+            old_item = collection.get(key, sentinel)
+            if old_item is not sentinel:
+                item = reduce_func(old_item, item)
+            collection[key] = item
+    return collection
+```
+
+`collectby` is similar to [`itertools.groupby`](https://docs.python.org/3/library/itertools.html#itertools.groupby) except that `collectby` aggregates common elements regardless of their order in the input iterable, whereas `groupby` only aggregates common elements that are adjacent in the input iterable.
+
+##### Example
+
+**Coconut:**
+```coconut_python
+user_balances = balance_data |> collectby$(.user, value_func=.balance, reduce_func=(+))
+```
+
+**Python:**
+```coconut_python
+from collections import defaultdict
+
+user_balances = defaultdict(int)
+for item in balance_data:
+    user_balances[item.user] += item.balance
+```
+
 ### `all_equal`
 
 Coconut's `all_equal` built-in takes in an iterable and determines whether all of its elements are equal to each other. `all_equal` assumes transitivity of equality and that `!=` is the negation of `==`.
@@ -2734,6 +2780,8 @@ def lift(f) = (
             )
 )
 ```
+
+`lift` also supports a shortcut form such that `lift(f, *func_args, **func_kwargs)` is equivalent to `lift(f)(*func_args, **func_kwargs)`.
 
 ##### Example
 

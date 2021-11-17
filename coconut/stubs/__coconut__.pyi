@@ -781,3 +781,16 @@ def all_equal(iterable: _Iterable) -> bool: ...
 
 
 def match_if(obj: _T, predicate: _t.Callable[[_T], bool]) -> bool: ...
+
+
+@_t.overload
+def collectby(
+    key_func: _t.Callable[[_T], _U],
+    iterable: _t.Iterable[_T],
+) -> _t.DefaultDict[_U, _t.List[_T]]: ...
+@_t.overload
+def collectby(
+    key_func: _t.Callable[[_T], _U],
+    iterable: _t.Iterable[_T],
+    reduce_func: _t.Callable[[_T, _T], _V],
+) -> _t.DefaultDict[_U, _V]: ...

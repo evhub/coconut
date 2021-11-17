@@ -1004,19 +1004,25 @@ class lift(_coconut_base_hashable):
     In general, lift is requivalent to:
         def lift(f) = ((*func_args, **func_kwargs) -> (*args, **kwargs) ->
             f(*(g(*args, **kwargs) for g in func_args), **{lbrace}k: h(*args, **kwargs) for k, h in func_kwargs.items(){rbrace}))
+
+    lift also supports a shortcut form such that lift(f, *func_args, **func_kwargs) is equivalent to lift(f)(*func_args, **func_kwargs).
     """
     __slots__ = ("func",)
-    def __init__(self, func):
+    def __new__(cls, func, *func_args, **func_kwargs):
+        self = _coconut.object.__new__(cls)
         self.func = func
+        if func_args or func_kwargs:
+            self = self(*func_args, **func_kwargs)
+        return self
     def __reduce__(self):
         return (self.__class__, (self.func,))
-    def __call__(self, *funcs, **funcdict):
-        return _coconut_lifted(self.func, *funcs, **funcdict)
+    def __call__(self, *func_args, **func_kwargs):
+        return _coconut_lifted(self.func, *func_args, **func_kwargs)
     def __repr__(self):
         return "lift(%r)" % (self.func,)
 def all_equal(iterable):
     """For a given iterable, check whether all elements in that iterable are equal to each other.
-    Assumes transitivity and `x != y` being equivalent to `not (x == y)`."""
+    Assumes transitivity and 'x != y' being equivalent to 'not (x == y)'."""
     first_item = _coconut_sentinel
     for item in iterable:
         if first_item is _coconut_sentinel:
@@ -1034,5 +1040,26 @@ def match_if(obj, predicate):
         def match_if(obj, predicate) = predicate(obj)
     """
     return predicate(obj)
+def collectby(key_func, iterable, value_func=None, reduce_func=None):
+    """Collect the items in iterable into a dictionary of lists keyed by key_func(item).
+
+    if value_func is passed, collect value_func(item) into each list instead of item.
+
+    If reduce_func is passed, instead of collecting the items into lists,
+    reduce over the items of each key with reduce_func, effectively implementing a MapReduce operation.
+    """
+    collection = _coconut.collections.defaultdict(_coconut.list) if reduce_func is None else {empty_dict}
+    for item in iterable:
+        key = key_func(item)
+        if value_func is not None:
+            item = value_func(item)
+        if reduce_func is None:
+            collection[key].append(item)
+        else:
+            old_item = collection.get(key, _coconut_sentinel)
+            if old_item is not _coconut_sentinel:
+                item = reduce_func(old_item, item)
+            collection[key] = item
+    return collection
 _coconut_self_match_types = (bool, bytearray, bytes, dict, float, frozenset, int, list, set, str, tuple)
 _coconut_MatchError, _coconut_count, _coconut_enumerate, _coconut_filter, _coconut_makedata, _coconut_map, _coconut_reiterable, _coconut_reversed, _coconut_starmap, _coconut_tee, _coconut_zip, TYPE_CHECKING, reduce, takewhile, dropwhile = MatchError, count, enumerate, filter, makedata, map, reiterable, reversed, starmap, tee, zip, False, _coconut.functools.reduce, _coconut.itertools.takewhile, _coconut.itertools.dropwhile
