@@ -222,12 +222,10 @@ def _coconut_assert(cond, msg=None):
 def _coconut_bool_and(a, b): return a and b
 def _coconut_bool_or(a, b): return a or b
 def _coconut_none_coalesce(a, b): return a if a is not None else b
-def _coconut_minus(a, *rest):
-    if not rest:
+def _coconut_minus(a, b=_coconut_sentinel):
+    if b is _coconut_sentinel:
         return -a
-    for b in rest:
-        a = a - b
-    return a
+    return a - b
 def _coconut_comma_op(*args): return args
 @_coconut.functools.wraps(_coconut.itertools.tee)
 def tee(iterable, n=2):
