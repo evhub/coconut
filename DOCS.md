@@ -1,5 +1,5 @@
 ```{eval-rst}
-:tocdepth: 3
+:tocdepth: 2
 ```
 
 # Coconut Documentation
@@ -1361,6 +1361,8 @@ A very common thing to do in functional programming is to make use of function v
 (in)        => (operator.contains)
 (assert)    => def (cond, msg=None) -> assert cond, msg  # (but a better msg if msg is None)
 ```
+
+_For an operator function for function application, see [`of`](#of)._
 
 ##### Example
 
