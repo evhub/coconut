@@ -89,7 +89,7 @@ def _coconut_iter_getitem_special_case(iterable, start, stop, step):
             yield cached_item
         cache.append(item)
 def _coconut_iter_getitem(iterable, index):
-    """Some code taken from more_itertools under the terms of the MIT license."""
+    """Some code taken from more_itertools under the terms of its MIT license."""
     obj_iter_getitem = _coconut.getattr(iterable, "__iter_getitem__", None)
     if obj_iter_getitem is None:
         obj_iter_getitem = _coconut.getattr(iterable, "__getitem__", None)
@@ -136,11 +136,13 @@ def _coconut_iter_getitem(iterable, index):
             n = j - i
             if n <= 0:
                 return ()
-            return _coconut.map(_coconut.operator.itemgetter(1), _coconut.itertools.islice(cache, 0, n, step))
-        elif stop is not None and stop < 0:
-            return _coconut_iter_getitem_special_case(iterable, start, stop, step)
-        else:
+            if n < -start or step != 1:
+                cache = _coconut.itertools.islice(cache, 0, n, step)
+            return _coconut_map(_coconut.operator.itemgetter(1), cache)
+        elif stop is None or stop >= 0:
             return _coconut.itertools.islice(iterable, start, stop, step)
+        else:
+            return _coconut_iter_getitem_special_case(iterable, start, stop, step)
     else:
         start = -1 if start is None else start
         if stop is not None and stop < 0:
@@ -167,8 +169,7 @@ def _coconut_iter_getitem(iterable, index):
                 n = start - stop
                 if n <= 0:
                     return ()
-            cache = _coconut.tuple(_coconut.itertools.islice(iterable, n))
-            return cache[i::step]
+            return _coconut.tuple(_coconut.itertools.islice(iterable, 0, n))[i::step]
 class _coconut_base_compose(_coconut_base_hashable):
     __slots__ = ("func", "funcstars")
     def __init__(self, func, *funcstars):
@@ -923,7 +924,7 @@ def reveal_locals():
     At runtime, reveal_locals always returns None."""
     pass
 def _coconut_handle_cls_kwargs(**kwargs):
-    """Some code taken from six under the terms of the MIT license."""
+    """Some code taken from six under the terms of its MIT license."""
     metaclass = kwargs.pop("metaclass", None)
     if kwargs and metaclass is None:
         raise _coconut.TypeError("unexpected keyword argument(s) in class definition: %r" % (kwargs,))
