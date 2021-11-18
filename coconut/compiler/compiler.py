@@ -66,7 +66,6 @@ from coconut.constants import (
     replwrapper,
     none_coalesce_var,
     is_data_var,
-    anon_namedtuple_name,
 )
 from coconut.util import checksum
 from coconut.exceptions import (
@@ -1958,7 +1957,7 @@ def __hash__(self):
             names.append(name)
             items.append(item)
 
-        namedtuple_call = self.make_namedtuple_call(anon_namedtuple_name, names, types)
+        namedtuple_call = self.make_namedtuple_call("_namedtuple_of", names, types)
         return namedtuple_call + "(" + ", ".join(items) + ")"
 
     def single_import(self, path, imp_as):

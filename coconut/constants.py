@@ -207,8 +207,6 @@ match_set_name_var = reserved_prefix + "_match_set_name"
 default_matcher_style = "python warn"
 wildcard = "_"
 
-anon_namedtuple_name = "_"  # shows up in anon namedtuple reprs
-
 keyword_vars = (
     "and",
     "as",
@@ -460,6 +458,7 @@ coconut_specific_builtins = (
     "py_xrange",
     "py_repr",
     "py_breakpoint",
+    "_namedtuple_of",
 )
 
 magic_methods = (

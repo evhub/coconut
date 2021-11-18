@@ -1504,7 +1504,7 @@ def int_map(
     return list(map(f, xs))
 ```
 
-### Anonymous Named Tuples
+### Anonymous Namedtuples
 
 Coconut supports anonymous [`namedtuple`](https://docs.python.org/3/library/collections.html#collections.namedtuple) literals, such that `(a=1, b=2)` can be used just as `(1, 2)`, but with added names.
 
@@ -1513,6 +1513,10 @@ The syntax for anonymous namedtuple literals is:
 (<name> [: <type>] = <value>, ...)
 ```
 where, if `<type>` is given for any field, [`typing.NamedTuple`](https://docs.python.org/3/library/typing.html#typing.NamedTuple) is used instead of `collections.namedtuple`.
+
+##### `_namedtuple_of`
+
+On Python versions `>=3.6`, `_namedtuple_of` is provided as a built-in that can mimic the behavior of anonymous namedtuple literals such that `_namedtuple_of(a=1, b=2)` is equivalent to `(a=1, b=2)`. Since `_namedtuple_of` is only available on Python 3.6 and above, however, it is generally recommended to use anonymous namedtuple literals instead, as they work on any Python version.
 
 ##### Example
 

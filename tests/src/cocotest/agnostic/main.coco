@@ -946,6 +946,8 @@ def main_test() -> bool:
     assert int(1e9) in range(int(9e9))
     assert (a=1, b=2) == (1, 2) == (a:int=1, b=2)
     assert (a=1, b: int = 2) == (1, 2) == (a: int=1, b: int=2)
+    assert "_namedtuple_of" in repr((a=1,))
+    assert "b=2" in repr <| of$(?, a=1, b=2)
     return True
 
 def test_asyncio() -> bool:
