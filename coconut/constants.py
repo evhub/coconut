@@ -207,6 +207,8 @@ match_set_name_var = reserved_prefix + "_match_set_name"
 default_matcher_style = "python warn"
 wildcard = "_"
 
+anon_namedtuple_name = "_"  # shows up in anon namedtuple reprs
+
 keyword_vars = (
     "and",
     "as",

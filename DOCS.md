@@ -27,6 +27,13 @@ If you want to try Coconut in your browser, check out the [online interpreter](h
 
 ## Installation
 
+```{contents}
+---
+local:
+depth: 1
+---
+```
+
 ### Using Pip
 
 Since Coconut is hosted on the [Python Package Index](https://pypi.python.org/pypi/coconut), it can be installed easily using `pip`. Simply [install Python](https://www.python.org/downloads/), open up a command-line prompt, and enter
@@ -97,6 +104,13 @@ pip install coconut-develop
 which will install the most recent working version from Coconut's [`develop` branch](https://github.com/evhub/coconut/tree/develop). Optional dependency installation is supported in the same manner as above. For more information on the current development build, check out the [development version of this documentation](http://coconut.readthedocs.io/en/develop/DOCS.html). Be warned: `coconut-develop` is likely to be unstable—if you find a bug, please report it by [creating a new issue](https://github.com/evhub/coconut/issues/new).
 
 ## Compilation
+
+```{contents}
+---
+local:
+depth: 1
+---
+```
 
 ### Usage
 
@@ -297,6 +311,13 @@ The style issues which will cause `--strict` to throw an error are:
 
 ## Integrations
 
+```{contents}
+---
+local:
+depth: 1
+---
+```
+
 ### Syntax Highlighting
 
 Text editors with support for Coconut syntax highlighting are:
@@ -378,6 +399,15 @@ _For more information on `reveal_type`, see [`reveal_type` and `reveal_locals`](
 Sometimes, MyPy will not know how to handle certain Coconut constructs, such as `addpattern`. For the `addpattern` case, it is recommended to pass `--allow-redefinition` to MyPy (i.e. run `coconut <args> --mypy --allow-redefinition`), though in some cases `--allow-redefinition` may not be sufficient. In that case, either hide the offending code using [`TYPE_CHECKING`](#type-checking) or put a `# type: ignore` comment on the Coconut line which is generating the line MyPy is complaining about (you can figure out what line this is using `--line-numbers`) and the comment will be added to every generated line.
 
 ## Operators
+
+```{contents}
+---
+local:
+depth: 1
+---
+```
+
+### Precedence
 
 In order of precedence, highest first, the operators supported in Coconut are:
 ```
@@ -780,6 +810,13 @@ Coconut supports Unicode alternatives to many different operator symbols. The Un
 ```
 
 ## Keywords
+
+```{contents}
+---
+local:
+depth: 1
+---
+```
 
 ### `data`
 
@@ -1199,6 +1236,13 @@ x, y = input_list
 
 ## Expressions
 
+```{contents}
+---
+local:
+depth: 1
+---
+```
+
 ### Statement Lambdas
 
 The statement lambda syntax is an extension of the [normal lambda syntax](#lambdas) to support statements, not just expressions.
@@ -1460,6 +1504,36 @@ def int_map(
     return list(map(f, xs))
 ```
 
+### Anonymous Named Tuples
+
+Coconut supports anonymous [`namedtuple`](https://docs.python.org/3/library/collections.html#collections.namedtuple) literals, such that `(a=1, b=2)` can be used just as `(1, 2)`, but with added names.
+
+The syntax for anonymous namedtuple literals is:
+```coconut
+(<name> [: <type>] = <value>, ...)
+```
+where, if `<type>` is given for any field, [`typing.NamedTuple`](https://docs.python.org/3/library/typing.html#typing.NamedTuple) is used instead of `collections.namedtuple`.
+
+##### Example
+
+**Coconut:**
+```coconut
+users = [
+    (id=1, name="Alice"),
+    (id=2, name="Bob"),
+]
+```
+
+**Python:**
+```coconut_python
+from collections import namedtuple
+
+users = [
+    namedtuple("_", "id, name")(1, "Alice"),
+    namedtuple("_", "id, name")(2, "Bob"),
+]
+```
+
 ### Set Literals
 
 Coconut allows an optional `s` to be prepended in front of Python set literals. While in most cases this does nothing, in the case of the empty set it lets Coconut know that it is an empty set and not an empty dictionary. Additionally, an `f` is also supported, in which case a Python `frozenset` will be generated instead of a normal set.
@@ -1540,6 +1614,13 @@ value = (
 ```
 
 ## Function Definition
+
+```{contents}
+---
+local:
+depth: 1
+---
+```
 
 ### Tail Call Optimization
 
@@ -1770,6 +1851,13 @@ MyClass.my_method = my_method
 
 ## Statements
 
+```{contents}
+---
+local:
+depth: 1
+---
+```
+
 ### Destructuring Assignment
 
 Coconut supports significantly enhanced destructuring assignment, similar to Python's tuple/list destructuring, but much more powerful. The syntax for Coconut's destructuring assignment is
@@ -1953,6 +2041,13 @@ with open('/path/to/some/file/you/want/to/read') as file_1:
 ```
 
 ## Built-Ins
+
+```{contents}
+---
+local:
+depth: 1
+---
+```
 
 ### Enhanced Built-Ins
 
@@ -2975,6 +3070,13 @@ reveal_type(fmap)
 ```
 
 ## Coconut API
+
+```{contents}
+---
+local:
+depth: 1
+---
+```
 
 ### `coconut.embed`
 

@@ -944,6 +944,8 @@ def main_test() -> bool:
     def dub(xs) = xs :: xs
     assert collectby(.[0], dub <| zip(range(5), reversed(range(5))), value_func=.[1], reduce_func=(+)) == {0: 8, 1: 6, 2: 4, 3: 2, 4: 0}
     assert int(1e9) in range(int(9e9))
+    assert (a=1, b=2) == (1, 2) == (a:int=1, b=2)
+    assert (a=1, b: int = 2) == (1, 2) == (a: int=1, b: int=2)
     return True
 
 def test_asyncio() -> bool:

@@ -960,16 +960,31 @@ class Grammar(object):
     subscriptgroup = attach(slicetestgroup + sliceopgroup + Optional(sliceopgroup) | test, subscriptgroup_handle)
     subscriptgrouplist = itemlist(subscriptgroup, comma)
 
-    comprehension_expr = addspace(
-        namedexpr_test + comp_for
-        | invalid_syntax(star_expr + comp_for, "iterable unpacking cannot be used in comprehension"),
+    anon_namedtuple = Forward()
+    anon_namedtuple_ref = tokenlist(
+        Group(
+            name
+            + Optional(colon.suppress() + typedef_test)
+            + equals.suppress() + test,
+        ),
+        comma,
     )
-    paren_contents = (
-        yield_expr
-        | comprehension_expr
-        | testlist_star_namedexpr
+
+    comprehension_expr = (
+        addspace(namedexpr_test + comp_for)
+        | invalid_syntax(star_expr + comp_for, "iterable unpacking cannot be used in comprehension")
     )
-    paren_atom = condense(lparen + Optional(paren_contents) + rparen)
+    paren_atom = condense(
+        lparen + (
+            # everything here must end with rparen
+            yield_expr + rparen
+            | comprehension_expr + rparen
+            | testlist_star_namedexpr + rparen
+            | op_item + rparen
+            | anon_namedtuple + rparen
+            | rparen
+        ),
+    )
 
     list_literal = Forward()
     list_literal_ref = lbrack.suppress() + testlist_star_namedexpr_tokens + rbrack.suppress()
@@ -978,7 +993,6 @@ class Grammar(object):
         | list_literal
     )
 
-    op_atom = lparen.suppress() + op_item + rparen.suppress()
     keyword_atom = any_keyword_in(const_vars)
     string_atom = attach(OneOrMore(string), string_atom_handle)
     passthrough_atom = trace(addspace(OneOrMore(passthrough)))
@@ -1014,7 +1028,6 @@ class Grammar(object):
         known_atom
         | name
         | paren_atom
-        | op_atom
         | passthrough_atom
     )
 

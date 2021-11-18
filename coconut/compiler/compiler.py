@@ -66,6 +66,7 @@ from coconut.constants import (
     replwrapper,
     none_coalesce_var,
     is_data_var,
+    anon_namedtuple_name,
 )
 from coconut.util import checksum
 from coconut.exceptions import (
@@ -491,6 +492,7 @@ class Compiler(Grammar):
         self.list_literal <<= attach(self.list_literal_ref, self.list_literal_handle)
         self.dict_literal <<= attach(self.dict_literal_ref, self.dict_literal_handle)
         self.return_testlist <<= attach(self.return_testlist_ref, self.return_testlist_handle)
+        self.anon_namedtuple <<= attach(self.anon_namedtuple_ref, self.anon_namedtuple_handle)
 
         # handle normal and async function definitions
         self.decoratable_normal_funcdef_stmt <<= attach(
@@ -1728,9 +1730,7 @@ def __new__(_coconut_cls, *{match_to_args_var}, **{match_to_kwargs_var}):
             arg_tuple=tuple_str_of(matcher.name_list),
         )
 
-        namedtuple_args = tuple_str_of(matcher.name_list, add_quotes=True)
-        namedtuple_call = '_coconut.collections.namedtuple("' + name + '", ' + namedtuple_args + ')'
-
+        namedtuple_call = self.make_namedtuple_call(name, matcher.name_list)
         return self.assemble_data(name, namedtuple_call, inherit, extra_stmts, stmts, matcher.name_list)
 
     def datadef_handle(self, loc, tokens):
@@ -1868,17 +1868,22 @@ def __new__(_coconut_cls, {all_args}):
             )
 
         namedtuple_args = base_args + ([] if starred_arg is None else [starred_arg])
+        namedtuple_call = self.make_namedtuple_call(name, namedtuple_args, types)
+
+        return self.assemble_data(name, namedtuple_call, inherit, extra_stmts, stmts, namedtuple_args)
+
+    def make_namedtuple_call(self, name, namedtuple_args, types=None):
+        """Construct a namedtuple call."""
         if types:
-            namedtuple_call = '_coconut.typing.NamedTuple("' + name + '", [' + ", ".join(
+            return '_coconut.typing.NamedTuple("' + name + '", [' + ", ".join(
                 '("' + argname + '", ' + self.wrap_typedef(types.get(i, "_coconut.typing.Any")) + ")"
                 for i, argname in enumerate(namedtuple_args)
             ) + "])"
         else:
-            namedtuple_call = '_coconut.collections.namedtuple("' + name + '", ' + tuple_str_of(namedtuple_args, add_quotes=True) + ')'
-
-        return self.assemble_data(name, namedtuple_call, inherit, extra_stmts, stmts, namedtuple_args)
+            return '_coconut.collections.namedtuple("' + name + '", ' + tuple_str_of(namedtuple_args, add_quotes=True) + ')'
 
     def assemble_data(self, name, namedtuple_call, inherit, extra_stmts, stmts, match_args):
+        """Create a data class definition from the given components."""
         # create class
         out = (
             "class " + name + "("
@@ -1936,6 +1941,25 @@ def __hash__(self):
             out += "_coconut_call_set_names(" + name + ")\n"
 
         return out
+
+    def anon_namedtuple_handle(self, tokens):
+        """Handle anonymous named tuples."""
+        names = []
+        types = {}
+        items = []
+        for i, tok in enumerate(tokens):
+            if len(tok) == 2:
+                name, item = tok
+            elif len(tok) == 3:
+                name, typedef, item = tok
+                types[i] = typedef
+            else:
+                raise CoconutInternalException("invalid anonymous named item", tok)
+            names.append(name)
+            items.append(item)
+
+        namedtuple_call = self.make_namedtuple_call(anon_namedtuple_name, names, types)
+        return namedtuple_call + "(" + ", ".join(items) + ")"
 
     def single_import(self, path, imp_as):
         """Generate import statements from a fully qualified import and the name to bind it to."""
