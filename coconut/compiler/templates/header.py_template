@@ -235,7 +235,7 @@ def tee(iterable, n=2):
         return (iterable,) + _coconut.tuple(_coconut.copy.copy(iterable) for _ in _coconut.range(n - 1))
     return _coconut.itertools.tee(iterable, n)
 class reiterable(_coconut_base_hashable):
-    """Allows an iterator to be iterated over multiple times."""
+    """Allow an iterator to be iterated over multiple times with the same results."""
     __slots__ = ("lock", "iter")
     def __new__(cls, iterable):
         if _coconut.isinstance(iterable, _coconut_reiterable):
@@ -442,8 +442,8 @@ class _coconut_base_parallel_concurrent_map(map):
     def __iter__(self):
         return _coconut.iter(self.get_list())
 class parallel_map(_coconut_base_parallel_concurrent_map):
-    """
-    Multi-process implementation of map. Requires arguments to be pickleable.
+    """Multi-process implementation of map. Requires arguments to be pickleable.
+
     For multiple sequential calls, use:
         with parallel_map.multiple_sequential_calls():
             ...
@@ -456,8 +456,9 @@ class parallel_map(_coconut_base_parallel_concurrent_map):
     def __repr__(self):
         return "parallel_" + _coconut_map.__repr__(self)
 class concurrent_map(_coconut_base_parallel_concurrent_map):
-    """
-    Multi-thread implementation of map. For multiple sequential calls, use:
+    """Multi-thread implementation of map.
+
+    For multiple sequential calls, use:
         with concurrent_map.multiple_sequential_calls():
             ...
     """
@@ -579,7 +580,9 @@ class enumerate(_coconut_base_hashable, _coconut.enumerate):
         return _coconut_map(func, self)
 class count(_coconut_base_hashable):
     """count(start, step) returns an infinite iterator starting at start and increasing by step.
-    If step is set to 0, count will infinitely repeat its first argument."""
+
+    If step is set to 0, count will infinitely repeat its first argument.
+    """
     __slots__ = ("start", "step")
     def __init__(self, start=0, step=1):
         self.start = start
@@ -634,7 +637,9 @@ class count(_coconut_base_hashable):
         return _coconut_map(func, self)
 class groupsof(_coconut_base_hashable):
     """groupsof(n, iterable) splits iterable into groups of size n.
-    If the length of the iterable is not divisible by n, the last group may be of size < n."""
+
+    If the length of the iterable is not divisible by n, the last group may be of size < n.
+    """
     __slots__ = ("group_size", "iter")
     def __init__(self, n, iterable):
         self.iter = iterable
@@ -666,7 +671,7 @@ class groupsof(_coconut_base_hashable):
     def __fmap__(self, func):
         return _coconut_map(func, self)
 class recursive_iterator(_coconut_base_hashable):
-    """Decorator that optimizes a function for iterator recursion."""
+    """Decorator that optimizes a recursive function that returns an iterator (e.g. a recursive generator)."""
     __slots__ = ("func", "tee_store", "backup_tee_store")
     def __init__(self, func):
         self.func = func
@@ -782,8 +787,7 @@ def _coconut_mark_as_match(base_func):{COMMENT._coconut_is_match_is_used_above_a
     base_func._coconut_is_match = True
     return base_func
 def addpattern(base_func, **kwargs):
-    """Decorator to add a new case to a pattern-matching function,
-    where the new case is checked last."""
+    """Decorator to add a new case to a pattern-matching function (where the new case is checked last)."""
     allow_any_func = kwargs.pop("allow_any_func", False)
     if not allow_any_func and not _coconut.getattr(base_func, "_coconut_is_match", False):
         _coconut.warnings.warn("Possible misuse of addpattern with non-pattern-matching function " + _coconut.repr(base_func) + " (pass allow_any_func=True to dismiss)", stacklevel=2)
@@ -835,7 +839,7 @@ class _coconut_partial(_coconut_base_hashable):
             args.append(_coconut.repr(arg))
         return "%r$(%s)" % (self.func, ", ".join(args))
 def consume(iterable, keep_last=0):
-    """consume(iterable, keep_last) fully exhausts iterable and return the last keep_last elements."""
+    """consume(iterable, keep_last) fully exhausts iterable and returns the last keep_last elements."""
     return _coconut.collections.deque(iterable, maxlen=keep_last)
 class starmap(_coconut_base_hashable, _coconut.itertools.starmap):
     __slots__ = ("func", "iter")
@@ -874,7 +878,9 @@ def makedata(data_type, *args):
 {def_datamaker}
 def fmap(func, obj):
     """fmap(func, obj) creates a copy of obj with func applied to its contents.
-    Override by defining obj.__fmap__(func). For numpy arrays, uses np.vectorize."""
+
+    Override by defining obj.__fmap__(func). For numpy arrays, uses np.vectorize.
+    """
     obj_fmap = _coconut.getattr(obj, "__fmap__", None)
     if obj_fmap is not None:
         try:
@@ -889,8 +895,8 @@ def fmap(func, obj):
         return vectorize(func)(obj)
     return _coconut_makedata(obj.__class__, *(_coconut_starmap(func, obj.items()) if _coconut.isinstance(obj, _coconut.abc.Mapping) else _coconut_map(func, obj)))
 def memoize(maxsize=None, *args, **kwargs):
-    """Decorator that memoizes a function,
-    preventing it from being recomputed if it is called multiple times with the same arguments."""
+    """Decorator that memoizes a function, preventing it from being recomputed
+    if it is called multiple times with the same arguments."""
     return _coconut.functools.lru_cache(maxsize, *args, **kwargs)
 {def_call_set_names}
 class override(_coconut_base_hashable):
@@ -956,8 +962,11 @@ def ident(x):
     """The identity function. Equivalent to x -> x. Useful in point-free programming."""
     return x
 def of(_coconut_f, *args, **kwargs):
-    """Function application. Equivalent to:
-        def of(f, *args, **kwargs) = f(*args, **kwargs)."""
+    """Function application operator function.
+
+    Equivalent to:
+        def of(f, *args, **kwargs) = f(*args, **kwargs).
+    """
     return _coconut_f(*args, **kwargs)
 class flip(_coconut_base_hashable):
     """Given a function, return a new function with inverse argument order."""
@@ -1022,7 +1031,9 @@ class lift(_coconut_base_hashable):
         return "lift(%r)" % (self.func,)
 def all_equal(iterable):
     """For a given iterable, check whether all elements in that iterable are equal to each other.
-    Assumes transitivity and 'x != y' being equivalent to 'not (x == y)'."""
+
+    Assumes transitivity and 'x != y' being equivalent to 'not (x == y)'.
+    """
     first_item = _coconut_sentinel
     for item in iterable:
         if first_item is _coconut_sentinel:
@@ -1045,8 +1056,8 @@ def collectby(key_func, iterable, value_func=None, reduce_func=None):
 
     if value_func is passed, collect value_func(item) into each list instead of item.
 
-    If reduce_func is passed, instead of collecting the items into lists,
-    reduce over the items of each key with reduce_func, effectively implementing a MapReduce operation.
+    If reduce_func is passed, instead of collecting the items into lists, reduce over
+    the items of each key with reduce_func, effectively implementing a MapReduce operation.
     """
     collection = _coconut.collections.defaultdict(_coconut.list) if reduce_func is None else {empty_dict}
     for item in iterable:

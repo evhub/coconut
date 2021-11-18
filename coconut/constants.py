@@ -408,6 +408,8 @@ coconut_pth_file = os.path.join(base_dir, "command", "resources", "zcoconut.pth"
 shebang_regex = r'coconut(?:-run)?'
 
 coconut_specific_builtins = (
+    "breakpoint",
+    "help",
     "TYPE_CHECKING",
     "reduce",
     "takewhile",
@@ -776,7 +778,6 @@ search_terms = (
     "memoization",
     "backport",
     "typing",
-    "breakpoint",
     "embed",
     "PEP 622",
     "overrides",
