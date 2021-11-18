@@ -812,6 +812,11 @@ class counter:
     def inc(self):
         self.count += 1
 
+class unrepresentable:
+    class Fail(Exception)
+    def __repr__(self):
+        raise Fail("unrepresentable")
+
 # Typing
 if TYPE_CHECKING:
     from typing import List, Dict, Any, cast

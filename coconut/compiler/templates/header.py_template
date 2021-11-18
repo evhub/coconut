@@ -216,7 +216,9 @@ def _coconut_back_dubstar_pipe(f, kws): return f(**kws)
 def _coconut_none_pipe(x, f): return None if x is None else f(x)
 def _coconut_none_star_pipe(xs, f): return None if xs is None else f(*xs)
 def _coconut_none_dubstar_pipe(kws, f): return None if kws is None else f(**kws)
-def _coconut_assert(cond, msg=None): assert cond, msg if msg is not None else "(assert) got falsey value " + _coconut.repr(cond)
+def _coconut_assert(cond, msg=None):
+    if not cond:
+        assert False, msg if msg is not None else "(assert) got falsey value " + _coconut.repr(cond)
 def _coconut_bool_and(a, b): return a and b
 def _coconut_bool_or(a, b): return a or b
 def _coconut_none_coalesce(a, b): return a if a is not None else b
