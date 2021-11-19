@@ -167,9 +167,11 @@ def _coconut_iter_getitem(iterable, index):
             else:
                 i = None
                 n = start - stop
+            if n is not None:
                 if n <= 0:
                     return ()
-            return _coconut.tuple(_coconut.itertools.islice(iterable, 0, n))[i::step]
+                iterable = _coconut.itertools.islice(iterable, 0, n)
+            return _coconut.tuple(iterable)[i::step]
 class _coconut_base_compose(_coconut_base_hashable):
     __slots__ = ("func", "funcstars")
     def __init__(self, func, *funcstars):
