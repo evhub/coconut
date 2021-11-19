@@ -225,9 +225,9 @@ By default, if the `source` argument to the command-line utility is a file, it w
 
 ### Compatible Python Versions
 
-While Coconut syntax is based off of Python 3, Coconut code compiled in universal mode (the default `--target`), and the Coconut compiler, should run on any Python version `>= 2.6` on the `2.x` branch or `>= 3.2` on the `3.x` branch on either [CPython](https://www.python.org/) or [PyPy](http://pypy.org/).
+While Coconut syntax is based off of Python 3, Coconut code compiled in universal mode (the default `--target`)—and the Coconut compiler itself—should run on any Python version `>= 2.6` on the `2.x` branch or `>= 3.2` on the `3.x` branch (and on either [CPython](https://www.python.org/) or [PyPy](http://pypy.org/)).
 
-To make Coconut built-ins universal across Python versions, Coconut makes available on any Python version built-ins that only exist in later versions, including **automatically overwriting Python 2 built-ins with their Python 3 counterparts.** Additionally, Coconut also overwrites some Python 3 built-ins for optimization and enhancement purposes. If access to the original Python versions of any overwritten built-ins is desired, the old built-ins can be retrieved by prefixing them with `py_`. Specifically, the overwritten built-ins are:
+To make Coconut built-ins universal across Python versions, Coconut makes available on any Python version built-ins that only exist in later versions, including **automatically overwriting Python 2 built-ins with their Python 3 counterparts.** Additionally, Coconut also [overwrites some Python 3 built-ins for optimization and enhancement purposes](#enhanced-built-ins). If access to the original Python versions of any overwritten built-ins is desired, the old built-ins can be retrieved by prefixing them with `py_`. Specifically, the overwritten built-ins are:
 
 - `py_chr`,
 - `py_hex`,
@@ -251,7 +251,7 @@ To make Coconut built-ins universal across Python versions, Coconut makes availa
 
 _Note: Coconut's `repr` can be somewhat tricky, as it will attempt to remove the `u` before reprs of unicode strings, but will not always be able to do so if the unicode string is nested._
 
-For standard library compatibility, **Coconut automatically maps imports under Python 3 names to imports under Python 2 names**. Thus, Coconut will automatically take care of any standard library modules that were renamed from Python 2 to Python 3 if just the Python 3 name is used. For modules or objects that only exist in Python 3, however, Coconut has no way of maintaining compatibility.
+For standard library compatibility, **Coconut automatically maps imports under Python 3 names to imports under Python 2 names**. Thus, Coconut will automatically take care of any standard library modules that were renamed from Python 2 to Python 3 if just the Python 3 name is used. For modules or packages that only exist in Python 3, however, Coconut has no way of maintaining compatibility.
 
 Additionally, Coconut allows the [`__set_name__`](https://docs.python.org/3/reference/datamodel.html#object.__set_name__) magic method for descriptors to work on any Python version.
 
@@ -356,7 +356,7 @@ to Coconut's `conf.py`.
 
 ### IPython/Jupyter Support
 
-If you prefer [IPython](http://ipython.org/) (the python kernel for the [Jupyter](http://jupyter.org/) framework) to the normal Python shell, Coconut can be used as a Jupyter kernel or IPython extension.
+If you prefer [IPython](http://ipython.org/) (the Python kernel for the [Jupyter](http://jupyter.org/) framework) to the normal Python shell, Coconut can be used as a Jupyter kernel or IPython extension.
 
 #### Kernel
 
@@ -380,7 +380,7 @@ The line magic `%load_ext coconut` will load Coconut as an extension, providing 
 
 ### MyPy Integration
 
-Coconut has the ability to integrate with [MyPy](http://mypy-lang.org/) to provide optional static type-checking, including for all Coconut built-ins. Simply pass `--mypy` to `coconut` to enable MyPy integration, though be careful to pass it only as the last argument, since all arguments after `--mypy` are passed to `mypy`, not Coconut.
+Coconut has the ability to integrate with [MyPy](http://mypy-lang.org/) to provide optional static type_checking, including for all Coconut built-ins. Simply pass `--mypy` to `coconut` to enable MyPy integration, though be careful to pass it only as the last argument, since all arguments after `--mypy` are passed to `mypy`, not Coconut.
 
 You can also call `mypy` directly on the compiled Coconut if you run `coconut --mypy` at least once and then add `~/.coconut_stubs` to your [`MYPYPATH`](https://mypy.readthedocs.io/en/latest/running_mypy.html#how-imports-are-found). To install the stubs without launching the interpreter, you can also run `coconut --mypy install` instead of `coconut --mypy`.
 
@@ -394,9 +394,9 @@ Coconut even supports `--mypy` in the interpreter, which will intelligently scan
 0
 <string>:19: note: Revealed type is 'builtins.unicode'
 ```
-_For more information on `reveal_type`, see [`reveal_type` and `reveal_locals`](#reveal-type-and-reveal-locals)._
+_For more information on `reveal_type`, see [`reveal_type` and `reveal_locals`](#reveal_type-and-reveal_locals)._
 
-Sometimes, MyPy will not know how to handle certain Coconut constructs, such as `addpattern`. For the `addpattern` case, it is recommended to pass `--allow-redefinition` to MyPy (i.e. run `coconut <args> --mypy --allow-redefinition`), though in some cases `--allow-redefinition` may not be sufficient. In that case, either hide the offending code using [`TYPE_CHECKING`](#type-checking) or put a `# type: ignore` comment on the Coconut line which is generating the line MyPy is complaining about (you can figure out what line this is using `--line-numbers`) and the comment will be added to every generated line.
+Sometimes, MyPy will not know how to handle certain Coconut constructs, such as `addpattern`. For the `addpattern` case, it is recommended to pass `--allow-redefinition` to MyPy (i.e. run `coconut <args> --mypy --allow-redefinition`), though in some cases `--allow-redefinition` may not be sufficient. In that case, either hide the offending code using [`TYPE_CHECKING`](#type_checking) or put a `# type: ignore` comment on the Coconut line which is generating the line MyPy is complaining about (you can figure out what line this is using `--line-numbers`) and the comment will be added to every generated line.
 
 ## Operators
 
@@ -649,7 +649,7 @@ _Can't be done without a complicated iterator comprehension in place of the lazy
 
 ### Iterator Slicing
 
-Coconut uses a `$` sign right after an iterator before a slice to perform iterator slicing. Coconut's iterator slicing works much the same as Python's sequence slicing, and looks much the same as Coconut's partial application, but with brackets instead of parentheses.
+Coconut uses a `$` sign right after an iterator before a slice to perform iterator slicing, as in `it$[:5]`. Coconut's iterator slicing works much the same as Python's sequence slicing, and looks much the same as Coconut's partial application, but with brackets instead of parentheses.
 
 Iterator slicing works just like sequence slicing, including support for negative indices and slices, and support for `slice` objects in the same way as can be done with normal slicing. Iterator slicing makes no guarantee, however, that the original iterator passed to it be preserved (to preserve the iterator, use Coconut's [`tee`](#tee) or [`reiterable`](#reiterable) built-ins).
 
@@ -752,9 +752,9 @@ map((i->i*2), range(10))[2]  # 4
 **Python:**
 Can’t be done quickly without Coconut’s iterable indexing, which requires many complicated pieces. The necessary definitions in Python can be found in the Coconut header.
 
-##### Indexing into `filter`
+##### Indexing into other built-ins
 
-Coconut cannot index into `filter` directly, as there is no efficient way to do so.
+Coconut cannot index into built-ins like `filter`, `takewhile`, or `dropwhile` directly, as there is no efficient way to do so.
 
 ```coconut
 range(10) |> filter$(i->i>3) |> .[0]  # doesn't work
@@ -988,7 +988,7 @@ base_pattern ::= (
 - Explicit Bindings (`<pattern> as <var>`): will bind `<var>` to `<pattern>`.
 - Equality Checks (`==<expr>`): will check that whatever is in that position is `==` to the expression `<expr>`.
 - Identity Checks (`is <expr>`): will check that whatever is in that position `is` the expression `<expr>`.
-- Infix Checks (`` <pattern> `<op>` <expr> ``): will check that the operator `<op>$(<expr>)` returns a truthy value when called on whatever is in that position, then matches `<pattern>`. For example, `` x `isinstance` int `` will check that whatever is in that position `isinstance$(?, int)` and bind it to `x`. Can be used with [`match_if`](#match-if) to check if an arbitrary predicate holds.
+- Infix Checks (`` <pattern> `<op>` <expr> ``): will check that the operator `<op>$(<expr>)` returns a truthy value when called on whatever is in that position, then matches `<pattern>`. For example, `` x `isinstance` int `` will check that whatever is in that position `isinstance$(?, int)` and bind it to `x`. Can be used with [`match_if`](#match_if) to check if an arbitrary predicate holds.
 - Classes or Data Types (`<name>(<args>)`): will match as a data type if given [a Coconut `data` type](#data) (or a tuple of Coconut data types) and a class otherwise.
 - Data Types (`data <name>(<args>)`): will check that whatever is in that position is of data type `<name>` and will match the attributes to `<args>`. Includes support for positional arguments, named arguments, and starred arguments.
 - Classes (`class <name>(<args>)`): does [PEP-634-style class matching](https://www.python.org/dev/peps/pep-0634/#class-patterns).
@@ -1253,7 +1253,7 @@ def (arguments) -> statement; statement; ...
 ```
 where `arguments` can be standard function arguments or [pattern-matching function definition](#pattern-matching-functions) arguments and `statement` can be an assignment statement or a keyword statement. If the last `statement` (not followed by a semicolon) is an `expression`, it will automatically be returned.
 
-Statement lambdas also support implicit lambda syntax such that `def -> _` is equivalent to `def (_=None) -> _` as well as explicit pattern-matching syntax such that `match def (x) -> x` will be a pattern-matching function.
+Statement lambdas also support implicit lambda syntax such that `def -> _` is equivalent to `def (_=None) -> _` as well as explicitly marking them as pattern-matching such that `match def (x) -> x` will be a pattern-matching function.
 
 ##### Example
 
@@ -1281,6 +1281,8 @@ f = def (c: str) -> print(c)
 
 g = def (a: int, b: int) -> a ** b
 ```
+
+However, statement lambdas do not support return type annotations.
 
 ### Lazy Lists
 
@@ -1391,6 +1393,8 @@ iter$[]         =>      # the equivalent of seq[] for iterators
 .$[a:b:c]       =>      # the equivalent of .[a:b:c] for iterators
 ```
 
+Additionally, `.attr.method(args)`, `.[x][y]`, and `.$[x]$[y]` are also supported.
+
 In addition, for every Coconut [operator function](#operator-functions), Coconut supports syntax for implicitly partially applying that operator function as
 ```
 (. <op> <arg>)
@@ -1425,12 +1429,12 @@ Supported arguments to implicit function application are highly restricted, and 
 **Coconut:**
 ```coconut
 def f(x, y) = (x, y)
-print (f 5 10)
+print(f 5 10)
 ```
 
 ```coconut
 def p1(x) = x + 1
-print..p1 5
+print <| p1 5
 ```
 
 **Python:**
@@ -1448,7 +1452,7 @@ print(p1(5))
 
 Since Coconut syntax is a superset of Python 3 syntax, it supports [Python 3 function type annotation syntax](https://www.python.org/dev/peps/pep-0484/) and [Python 3.6 variable type annotation syntax](https://www.python.org/dev/peps/pep-0526/). By default, Coconut compiles all type annotations into Python-2-compatible type comments. If you want to keep the type annotations instead, simply pass a `--target` that supports them.
 
-Since not all supported Python versions support the [`typing`](https://docs.python.org/3/library/typing.html) module, Coconut provides the [`TYPE_CHECKING`](#type-checking) built-in for hiding your `typing` imports and `TypeVar` definitions from being executed at runtime. Furthermore, when compiling type annotations to Python 3 versions without [PEP 563](https://www.python.org/dev/peps/pep-0563/) support, Coconut wraps annotation in strings to prevent them from being evaluated at runtime (note that `--no-wrap` disables all wrapping, including via PEP 563 support).
+Since not all supported Python versions support the [`typing`](https://docs.python.org/3/library/typing.html) module, Coconut provides the [`TYPE_CHECKING`](#type_checking) built-in for hiding your `typing` imports and `TypeVar` definitions from being executed at runtime. Furthermore, when compiling type annotations to Python 3 versions without [PEP 563](https://www.python.org/dev/peps/pep-0563/) support, Coconut wraps annotation in strings to prevent them from being evaluated at runtime (note that `--no-wrap` disables all wrapping, including via PEP 563 support).
 
 Additionally, Coconut adds special syntax for making type annotations easier and simpler to write. When inside of a type annotation, Coconut treats certain syntax constructs differently, compiling them to type annotations instead of what they would normally represent. Specifically, Coconut applies the following transformations:
 ```coconut
@@ -1519,6 +1523,8 @@ where, if `<type>` is given for any field, [`typing.NamedTuple`](https://docs.py
 ##### `_namedtuple_of`
 
 On Python versions `>=3.6`, `_namedtuple_of` is provided as a built-in that can mimic the behavior of anonymous namedtuple literals such that `_namedtuple_of(a=1, b=2)` is equivalent to `(a=1, b=2)`. Since `_namedtuple_of` is only available on Python 3.6 and above, however, it is generally recommended to use anonymous namedtuple literals instead, as they work on any Python version.
+
+_`_namedtuple_of` is just provided to give namedtuple literals a representation that corresponds to an expression that can be used to recreate them._
 
 ##### Example
 
@@ -1669,7 +1675,7 @@ _Can't be done without rewriting the function(s)._
 
 #### `--no-tco` flag
 
-_Note: Tail call optimization will be turned off if you pass the `--no-tco` command-line option, which is useful if you are having trouble reading your tracebacks and/or need maximum performance._
+Tail call optimization will be turned off if you pass the `--no-tco` command-line option, which is useful if you are having trouble reading your tracebacks and/or need maximum performance.
 
 `--no-tco` does not disable tail recursion elimination.
 This is because tail recursion elimination is usually faster than doing nothing, while other types of tail call optimization are usually slower than doing nothing.
@@ -1678,8 +1684,10 @@ When the `--no-tco` flag is disabled, Coconut will attempt to do all types of ta
 
 #### Tail Recursion Elimination and Python lambdas
 
-Coconut does not perform tail recursion elimination in functions that utilize lambdas in their tail call. This is because of the way that Python handles lambdas.
+Coconut does not perform tail recursion elimination in functions that utilize lambdas or inner functions. This is because of the way that Python handles lambdas.
+
 Each lambda stores a pointer to the namespace enclosing it, rather than a copy of the namespace. Thus, if the Coconut compiler tries to recycle anything in the namespace that produced the lambda, which needs to be done for TRE, the lambda can be changed retroactively.
+
 A simple example demonstrating this behavior in Python:
 
 ```python
@@ -1690,7 +1698,7 @@ x = 2         # Directly alter the values in the namespace enclosing foo
 print(foo())  # 2 (!)
 ```
 
-Because this could have unintended and potentially damaging consequences, Coconut opts to not perform TRE on any function with a lambda in its tail call.
+Because this could have unintended and potentially damaging consequences, Coconut opts to not perform TRE on any function with a lambda or inner function.
 
 ### Assignment Functions
 
@@ -1935,7 +1943,7 @@ else:
 from collections.abc import Sequence
 if invalid(input_list):
     raise Exception()
-elif isinstance(input_list, Sequence):
+elif isinstance(input_list, Sequence) and len(input_list) >= 1:
     head, tail = inputlist[0], inputlist[1:]
     print(head, tail)
 else:
@@ -2535,7 +2543,7 @@ _Can't be done quickly without Coconut's iterator slicing, which requires many c
 
 ### `makedata`
 
-Coconut provides the `makedata` function to construct a container given the desired type and contents. This is particularly useful when writing alternative constructors for data types by overwriting `__new__`, since it allows direct access to the base constructor of the data type created with the Coconut `data` statement. `makedata` takes the data type to construct as the first argument, and the objects to put in that container as the rest of the arguments.
+Coconut provides the `makedata` function to construct a container given the desired type and contents. This is particularly useful when writing alternative constructors for [`data`](#data) types by overwriting `__new__`, since it allows direct access to the base constructor of the data type created with the Coconut `data` statement. `makedata` takes the data type to construct as the first argument, and the objects to put in that container as the rest of the arguments.
 
 **DEPRECATED:** Coconut also has a `datamaker` built-in, which partially applies `makedata`; `datamaker` is defined as:
 ```coconut
@@ -2726,8 +2734,11 @@ def collectby(key_func, iterable, value_func=None, reduce_func=None):
 ##### Example
 
 **Coconut:**
-```coconut_python
-user_balances = balance_data |> collectby$(.user, value_func=.balance, reduce_func=(+))
+```coconut
+user_balances = (
+    balance_data
+    |> collectby$(.user, value_func=.balance, reduce_func=(+))
+)
 ```
 
 **Python:**
@@ -2835,7 +2846,7 @@ with Pool() as pool:
 
 ### `concurrent_map`
 
-Coconut provides a concurrent version of [`parallel_map`](#parallel-map) under the name `concurrent_map`. `concurrent_map` behaves identically to `parallel_map` except that it uses multithreading instead of multiprocessing, and is therefore primarily useful for IO-bound tasks.
+Coconut provides a concurrent version of [`parallel_map`](#parallel_map) under the name `concurrent_map`. `concurrent_map` behaves identically to `parallel_map` (including support for `concurrent_map.multiple_sequential_calls`) except that it uses multithreading instead of multiprocessing, and is therefore primarily useful for IO-bound tasks.
 
 ##### Python Docs
 
@@ -2944,7 +2955,7 @@ def ident(x) = x
 
 ### `match_if`
 
-Coconut's `match_if` is a small helper function for making pattern-matching more readable. `match_if` is meant to be used in infix check patterns to match the left-hand size only if the predicate on the right-hand side is truthy. For exampple,
+Coconut's `match_if` is a small helper function for making pattern-matching more readable. `match_if` is meant to be used in infix check patterns to match the left-hand side only if the predicate on the right-hand side is truthy. For exampple,
 ```coconut
 a `match_if` predicate or b = obj
 ```
@@ -2979,13 +2990,13 @@ else:
 
 ### `MatchError`
 
-A `MatchError` is raised when a [destructuring assignment](#destructuring-assignment) statement fails, and thus `MatchError` is provided as a built-in for catching those errors. `MatchError` objects support three attributes: `pattern`, which is a string describing the failed pattern; `value`, which is the object that failed to match that pattern; and `message` which is the full error message. To avoid unnecessary `repr` calls, `MatchError` only computes the `message` once it is actually requested.
+A `MatchError` is raised when a [destructuring assignment](#destructuring-assignment) or [pattern-matching function](#pattern-matching-functions) fails, and thus `MatchError` is provided as a built-in for catching those errors. `MatchError` objects support three attributes: `pattern`, which is a string describing the failed pattern; `value`, which is the object that failed to match that pattern; and `message` which is the full error message. To avoid unnecessary `repr` calls, `MatchError` only computes the `message` once it is actually requested.
 
 Additionally, if you are using [view patterns](#match), you might need to raise your own `MatchError` (though you can also just use a destructuring assignment or pattern-matching function definition to do so). To raise your own `MatchError`, just `raise MatchError(pattern, value)` (both arguments are optional).
 
 ### `TYPE_CHECKING`
 
-The `TYPE_CHECKING` variable is set to `False` at runtime and `True` during type-checking, allowing you to prevent your `typing` imports and `TypeVar` definitions from being executed at runtime. By wrapping your `typing` imports in an `if TYPE_CHECKING:` block, you can even use the [`typing`](https://docs.python.org/3/library/typing.html) module on Python versions that don't natively support it. Furthermore, `TYPE_CHECKING` can also be used to hide code that is mistyped by default.
+The `TYPE_CHECKING` variable is set to `False` at runtime and `True` during type_checking, allowing you to prevent your `typing` imports and `TypeVar` definitions from being executed at runtime. By wrapping your `typing` imports in an `if TYPE_CHECKING:` block, you can even use the [`typing`](https://docs.python.org/3/library/typing.html) module on Python versions that don't natively support it. Furthermore, `TYPE_CHECKING` can also be used to hide code that is mistyped by default.
 
 ##### Python Docs
 
