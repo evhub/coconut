@@ -611,7 +611,7 @@ class Grammar(object):
     )
     sub_minus = (
         minus
-        | invalid_syntax("\u207b", "U+207b is only for subtraction, not negation")
+        | invalid_syntax("\u207b", "U+207b is only for negation, not subtraction")
     )
     div_slash = slash | fixto(Literal("\xf7") + ~slash, "/")
     div_dubslash = dubslash | fixto(combine(Literal("\xf7") + slash), "//")
