@@ -949,6 +949,13 @@ def main_test() -> bool:
     assert "_namedtuple_of" in repr((a=1,))
     assert "b=2" in repr <| of$(?, a=1, b=2)
     assert lift((,), (.*2), (.**2))(3) == (6, 9)
+    try:
+        (⁻)(1, 2)
+    except TypeError:
+        pass
+    else:
+        assert False
+    assert -1 == ⁻1
     return True
 
 def test_asyncio() -> bool:

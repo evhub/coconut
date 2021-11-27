@@ -793,7 +793,6 @@ Coconut supports Unicode alternatives to many different operator symbols. The Un
 <*∘ (<*\u2218)              => "<*.."
 ∘**> (\u2218**>)            => "..**>"
 <**∘ (<**\u2218)            => "<**.."
-− (\u2212)                  => "-" (only subtraction)
 ⁻ (\u207b)                  => "-" (only negation)
 ¬ (\xac)                    => "~"
 ≠ (\u2260) or ¬= (\xac=)    => "!="

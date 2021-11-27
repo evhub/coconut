@@ -608,11 +608,9 @@ class Grammar(object):
     neg_minus = (
         minus
         | fixto(Literal("\u207b"), "-")
-        | invalid_syntax("\u2212", "U+2212 is only for negation, not subtraction")
     )
     sub_minus = (
         minus
-        | fixto(Literal("\u2212"), "-")
         | invalid_syntax("\u207b", "U+207b is only for subtraction, not negation")
     )
     div_slash = slash | fixto(Literal("\xf7") + ~slash, "/")
@@ -808,12 +806,15 @@ class Grammar(object):
         | fixto(comp_pipe, "_coconut_forward_compose")
         | fixto(dotdot | comp_back_pipe, "_coconut_back_compose")
 
+        # neg_minus must come after minus
+        | fixto(minus, "_coconut_minus")
+        | fixto(neg_minus, "_coconut.operator.neg")
+
         | fixto(keyword("assert"), "_coconut_assert")
         | fixto(keyword("and"), "_coconut_bool_and")
         | fixto(keyword("or"), "_coconut_bool_or")
         | fixto(comma, "_coconut_comma_op")
         | fixto(dubquestion, "_coconut_none_coalesce")
-        | fixto(minus, "_coconut_minus")
         | fixto(dot, "_coconut.getattr")
         | fixto(unsafe_dubcolon, "_coconut.itertools.chain")
         | fixto(dollar, "_coconut.functools.partial")
