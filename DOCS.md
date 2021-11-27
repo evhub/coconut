@@ -841,6 +841,12 @@ __slots__ = ()
 ```
 which will need to be put in the subclass body before any method or attribute definitions. If you need to inherit magic methods from a base class in your `data` type, such subclassing is the recommended method, as the `data ... from ...` syntax will ovewrite any magic methods in the base class with magic methods built for the new `data` type.
 
+Compared to [`namedtuple`s](#anonymous-namedtuples), from which `data` types are derived, `data` types:
+
+- use typed equality,
+- support starred, typed, and [pattern-matching](#match-data) arguments, and
+- have special [pattern-matching](#match) behavior.
+
 ##### Rationale
 
 A mainstay of functional programming that Coconut improves in Python is the use of values, or immutable data types. Immutable data can be very useful because it guarantees that once you have some data it won't change, but in Python creating custom immutable data types is difficult. Coconut makes it very easy by providing `data` blocks.
