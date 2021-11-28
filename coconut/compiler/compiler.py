@@ -886,7 +886,7 @@ class Compiler(Grammar):
                     elif c == hold[_start][0]:
                         hold[_stop] += c
                     elif len(hold[_stop]) > len(hold[_start]):
-                        raise self.make_err(CoconutSyntaxError, "invalid number of string closes", inputstring, x, reformat=False)
+                        raise self.make_err(CoconutSyntaxError, "invalid number of closing " + repr(hold[_start][0]) + "s", inputstring, x, reformat=False)
                     elif hold[_stop] == hold[_start]:
                         out.append(self.wrap_str(hold[_contents], hold[_start][0], True))
                         hold = None
@@ -914,7 +914,7 @@ class Compiler(Grammar):
                         skips = addskip(skips, self.adjust(lineno(x, inputstring)))
                     hold[_contents] += c
             elif found is not None:
-                if len(found) < 3 and c == found[0]:
+                if c == found[0] and len(found) < 3:
                     found += c
                 elif len(found) == 1:  # found == "_"
                     hold = ["", found, None]  # [_contents, _start, _stop]
