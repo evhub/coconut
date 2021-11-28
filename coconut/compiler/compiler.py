@@ -914,24 +914,21 @@ class Compiler(Grammar):
                         skips = addskip(skips, self.adjust(lineno(x, inputstring)))
                     hold[_contents] += c
             elif found is not None:
-                if c == found[0]:
+                if len(found) < 3 and c == found[0]:
                     found += c
                 elif len(found) == 1:  # found == "_"
-                    if c == "\n":
-                        raise self.make_err(CoconutSyntaxError, "linebreak in non-multiline string", inputstring, x, reformat=False)
-                    hold = [c, found, None]  # [_contents, _start, _stop]
+                    hold = ["", found, None]  # [_contents, _start, _stop]
                     found = None
+                    x -= 1
                 elif len(found) == 2:  # found == "__"
                     out.append(self.wrap_str("", found[0], False))
                     found = None
                     x -= 1
-                elif len(found) == 3:  # found == "___"
-                    if c == "\n":
-                        skips = addskip(skips, self.adjust(lineno(x, inputstring)))
-                    hold = [c, found, None]  # [_contents, _start, _stop]
+                else:  # found == "___"
+                    internal_assert(len(found) == 3, "invalid number of string starts", found)
+                    hold = ["", found, None]  # [_contents, _start, _stop]
                     found = None
-                else:
-                    raise self.make_err(CoconutSyntaxError, "invalid number of string starts", inputstring, x, reformat=False)
+                    x -= 1
             elif c == "#":
                 hold = [""]  # [_comment]
             elif c in holds:

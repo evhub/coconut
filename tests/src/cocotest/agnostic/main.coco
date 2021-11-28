@@ -956,6 +956,13 @@ def main_test() -> bool:
     else:
         assert False
     assert -1 == ⁻1
+    \(
+    def ret_abc():
+        return "abc"
+    )
+    assert ret_abc() == "abc"
+    assert """" """ == '" '
+    assert "" == """"""
     return True
 
 def test_asyncio() -> bool:
