@@ -1297,9 +1297,13 @@ class Compiler(Grammar):
         for arg in tokens:
             argstr = "".join(arg)
             if len(arg) == 1:
-                if star_args or kwd_args or dubstar_args:
-                    raise CoconutDeferredSyntaxError("positional arguments must come first", loc)
-                pos_args.append(argstr)
+                if star_args:
+                    # if we've already seen a star arg, convert this pos arg to a star arg
+                    star_args.append("*(" + argstr + ",)")
+                elif kwd_args or dubstar_args:
+                    raise CoconutDeferredSyntaxError("positional arguments must come before keyword arguments", loc)
+                else:
+                    pos_args.append(argstr)
             elif len(arg) == 2:
                 if arg[0] == "*":
                     if kwd_args or dubstar_args:

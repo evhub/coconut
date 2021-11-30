@@ -963,6 +963,8 @@ def main_test() -> bool:
     assert ret_abc() == "abc"
     assert """" """ == '" '
     assert "" == """"""
+    assert (,)(*(1, 2), 3) == (1, 2, 3)
+    assert (,)(1, *(2, 3), 4, *(5, 6)) == (1, 2, 3, 4, 5, 6)
     return True
 
 def test_asyncio() -> bool:

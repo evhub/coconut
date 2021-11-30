@@ -129,7 +129,7 @@ def test_extras():
     assert_raises(-> cmd("-pa ."), SystemExit)
     assert_raises(-> cmd("-n . ."), SystemExit)
     assert_raises(-> parse("f$()"), CoconutSyntaxError, not_exc=CoconutParseError)
-    assert_raises(-> parse("f(*x, y)"), CoconutSyntaxError, not_exc=CoconutParseError)
+    assert_raises(-> parse("f(**x, y)"), CoconutSyntaxError, not_exc=CoconutParseError)
     assert_raises(-> parse("def f(x) = return x"), CoconutSyntaxError, not_exc=CoconutParseError)
     assert_raises(-> parse("def f(x) =\n return x"), CoconutSyntaxError, not_exc=CoconutParseError)
     assert_raises(-> parse("a := b"), CoconutParseError)
