@@ -769,6 +769,14 @@ def suite_test() -> bool:
     assert truncate_sentence(2)("hello how are you") == "hello how"
     assert maxcolsum([range(3), range(1,4)]) == 6 == range(1, 4) |> sum
     (assert)(unrepresentable(), unrepresentable())  # type: ignore
+    l = [199, 200, 208, 210, 200, 207, 240, 269, 260, 263]
+    assert l |> binary_reduce$(<) |> sum == 7 == l |> binary_reduce_$(<) |> sum
+    assert range(10)$[:last()] == range(10) == range(10)[:last()]
+    assert range(10)$[:last(0)] == range(10) == range(10)[:last(0)]
+    assert range(10)$[:last(1)] == range(10)[:-1] == range(10)[:last(1)]
+    assert range(10)$[:`end`] == range(10) == range(10)[:`end`]
+    assert range(10)$[:`end-0`] == range(10) == range(10)[:`end-0`]
+    assert range(10)$[:`end-1`] == range(10)[:-1] == range(10)[:`end-1`]
 
     # must come at end
     assert fibs_calls[0] == 1

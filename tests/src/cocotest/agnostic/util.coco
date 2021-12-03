@@ -1254,3 +1254,38 @@ truncate_sentence = (
 )
 
 maxcolsum = map$(sum) ..> max
+
+
+# n-ary reduction
+def binary_reduce(binop, it) = (
+    it
+    |> reiterable
+    |> lift(zip)(.$[:-1], .$[1:])
+    |> starmap$(binop)
+)
+
+def nary_reduce(n, op, it) = (
+    it
+    |> reiterable
+    |> lift(zip)(*(.$[i : (i+1-n) or None] for i in range(n)))
+    |> starmap$(op)
+)
+
+binary_reduce_ = nary_reduce$(2)
+
+
+# last/end
+import operator
+
+def last(n=0 if n >= 0) = -n or None
+
+data End(offset `isinstance` int = 0 if offset <= 0):
+    def __add__(self, other) =
+        End(self.offset + operator.index(other))
+    __radd__ = __add__
+    def __sub__(self, other) =
+        End(self.offset - operator.index(other))
+    def __index__(self if self.offset < 0) = self.offset
+    def __call__(self) = self.offset or None
+
+end = End()
