@@ -1405,7 +1405,7 @@ In addition, for every Coconut [operator function](#operator-functions), Coconut
 (. <op> <arg>)
 (<arg> <op> .)
 ```
-where `<op>` is the operator function and `<arg>` is any atomic expression (i.e. no other operators). Note that, as with operator functions themselves, the parentheses are necessary for this type of implicit partial application.
+where `<op>` is the operator function and `<arg>` is any expression. Note that, as with operator functions themselves, the parentheses are necessary for this type of implicit partial application.
 
 ##### Example
 
