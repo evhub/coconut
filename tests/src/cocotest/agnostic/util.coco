@@ -1289,3 +1289,36 @@ data End(offset `isinstance` int = 0 if offset <= 0):
     def __call__(self) = self.offset or None
 
 end = End()
+
+
+# advent of code
+def gam_eps_rate(bitarr) = (
+    bitarr
+    |*> zip
+    |> map$(map$(int))
+    |> map$(sum)
+    |> map$(.>len(bitarr)//2)
+    |> lift(,)(ident, map$(not))
+    |> map$(map$(int))
+    |> map$(map$(str))
+    |> map$("".join)
+    |> map$(int$(?, 2))
+    |*> (*)
+)
+
+def gam_eps_rate_(bitarr) = (
+    bitarr
+    |*> zip
+    |> map$(
+        map$(int)
+        ..> sum
+        ..> (.>len(bitarr)//2)
+    )
+    |> lift(,)(ident, map$(not))
+    |> map$(
+        map$(int ..> str)
+        ..> "".join
+        ..> int$(?, 2)
+    )
+    |*> (*)
+)

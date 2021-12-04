@@ -72,6 +72,7 @@ from coconut.constants import (
     use_packrat_parser,
     packrat_cache_size,
     temp_grammar_item_ref_count,
+    indchars,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -641,6 +642,9 @@ def regex_item(regex, options=None):
     return Regex(regex, options)
 
 
+any_char = regex_item(r".", re.DOTALL)
+
+
 def fixto(item, output):
     """Force an item to result in a specific output."""
     return attach(item, replaceWith(output), ignore_tokens=True)
@@ -800,9 +804,9 @@ def split_leading_indent(line, max_indents=None):
     indent = ""
     while (
         (max_indents is None or max_indents > 0)
-        and line.startswith((openindent, closeindent))
+        and line.startswith(indchars)
     ) or line.lstrip() != line:
-        if max_indents is not None and line.startswith((openindent, closeindent)):
+        if max_indents is not None and line.startswith(indchars):
             max_indents -= 1
         indent += line[0]
         line = line[1:]
@@ -814,9 +818,9 @@ def split_trailing_indent(line, max_indents=None):
     indent = ""
     while (
         (max_indents is None or max_indents > 0)
-        and line.endswith((openindent, closeindent))
+        and line.endswith(indchars)
     ) or line.rstrip() != line:
-        if max_indents is not None and (line.endswith(openindent) or line.endswith(closeindent)):
+        if max_indents is not None and line.endswith(indchars):
             max_indents -= 1
         indent = line[-1] + indent
         line = line[:-1]

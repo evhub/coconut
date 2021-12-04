@@ -117,7 +117,7 @@ assert not embed_on_internal_exc or DEVELOP, "embed_on_internal_exc enabled on n
 temp_grammar_item_ref_count = 5
 
 minimum_recursion_limit = 128
-default_recursion_limit = 2048
+default_recursion_limit = 4096
 
 if sys.getrecursionlimit() < default_recursion_limit:
     sys.setrecursionlimit(default_recursion_limit)
@@ -178,6 +178,9 @@ strwrapper = "\u25b6"  # black right-pointing triangle
 replwrapper = "\u25b7"  # white right-pointing triangle
 lnwrapper = "\u25c6"  # black diamond
 unwrapper = "\u23f9"  # stop square
+funcwrapper = "def:"
+
+indchars = (openindent, closeindent, "\n")
 
 opens = "([{"  # opens parenthetical
 closes = ")]}"  # closes parenthetical

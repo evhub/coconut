@@ -27,8 +27,6 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 from coconut.root import *  # NOQA
 
-import re
-
 from coconut._pyparsing import (
     CaselessLiteral,
     Forward,
@@ -96,6 +94,7 @@ from coconut.compiler.util import (
     handle_indentation,
     labeled_group,
     any_keyword_in,
+    any_char,
 )
 
 # end: IMPORTS
@@ -161,10 +160,17 @@ def pipe_info(op):
 # -----------------------------------------------------------------------------------------------------------------------
 
 
-def add_paren_handle(tokens):
+def add_parens_handle(tokens):
     """Add parentheses."""
     item, = tokens
     return "(" + item + ")"
+
+
+def strip_parens_handle(tokens):
+    """Strip parentheses."""
+    item, = tokens
+    internal_assert(item.startswith("(") and item.endswith(")"), "invalid strip_parens tokens", tokens)
+    return item[1:-1]
 
 
 def comp_pipe_handle(loc, tokens):
@@ -842,8 +848,8 @@ class Grammar(object):
         | fixto(keyword("in"), "_coconut.operator.contains")
     )
     partial_op_item = attach(
-        labeled_group(dot.suppress() + base_op_item + negable_atom_item, "right partial")
-        | labeled_group(negable_atom_item + base_op_item + dot.suppress(), "left partial"),
+        labeled_group(dot.suppress() + base_op_item + test, "right partial")
+        | labeled_group(test + base_op_item + dot.suppress(), "left partial"),
         partial_op_item_handle,
     )
     op_item = trace(partial_op_item | base_op_item)
@@ -933,7 +939,7 @@ class Grammar(object):
         # everything here must end with rparen
         rparen.suppress()
         | tokenlist(Group(call_item), comma) + rparen.suppress()
-        | Group(attach(addspace(test + comp_for), add_paren_handle)) + rparen.suppress()
+        | Group(attach(addspace(test + comp_for), add_parens_handle)) + rparen.suppress()
         | Group(op_item) + rparen.suppress()
     )
     function_call = Forward()
@@ -1198,21 +1204,21 @@ class Grammar(object):
     )
     pipe_item = (
         # we need the pipe_op since any of the atoms could otherwise be the start of an expression
-        Group(attrgetter_atom_tokens("attrgetter")) + pipe_op
-        | Group(itemgetter_atom_tokens("itemgetter")) + pipe_op
-        | Group(partial_atom_tokens("partial")) + pipe_op
-        | Group(comp_pipe_expr("expr")) + pipe_op
+        labeled_group(attrgetter_atom_tokens, "attrgetter") + pipe_op
+        | labeled_group(itemgetter_atom_tokens, "itemgetter") + pipe_op
+        | labeled_group(partial_atom_tokens, "partial") + pipe_op
+        | labeled_group(comp_pipe_expr, "expr") + pipe_op
     )
     pipe_augassign_item = trace(
         # should match pipe_item but with pipe_op -> end_simple_stmt_item and no expr
-        Group(attrgetter_atom_tokens("attrgetter")) + end_simple_stmt_item
-        | Group(itemgetter_atom_tokens("itemgetter")) + end_simple_stmt_item
-        | Group(partial_atom_tokens("partial")) + end_simple_stmt_item,
+        labeled_group(attrgetter_atom_tokens, "attrgetter") + end_simple_stmt_item
+        | labeled_group(itemgetter_atom_tokens, "itemgetter") + end_simple_stmt_item
+        | labeled_group(partial_atom_tokens, "partial") + end_simple_stmt_item,
     )
     last_pipe_item = Group(
         lambdef("expr")
+        # we need longest here because there's no following pipe_op we can use as above
         | longest(
-            # we need longest here because there's no following pipe_op we can use as above
             attrgetter_atom_tokens("attrgetter"),
             itemgetter_atom_tokens("itemgetter"),
             partial_atom_tokens("partial"),
@@ -1258,7 +1264,7 @@ class Grammar(object):
     closing_stmt = longest(testlist("tests"), unsafe_simple_stmt_item)
     stmt_lambdef_match_params = Group(lparen.suppress() + match_args_list + match_guard + rparen.suppress())
     stmt_lambdef_params = Optional(
-        attach(name, add_paren_handle)
+        attach(name, add_parens_handle)
         | parameters
         | stmt_lambdef_match_params,
         default="(_=None)",
@@ -1854,20 +1860,19 @@ class Grammar(object):
 
     just_non_none_atom = start_marker + ~keyword("None") + known_atom + end_marker
 
-    parens = originalTextFor(nestedExpr("(", ")"))
-    brackets = originalTextFor(nestedExpr("[", "]"))
-    braces = originalTextFor(nestedExpr("{", "}"))
-    any_char = regex_item(r".", re.DOTALL)
+    parens = originalTextFor(nestedExpr("(", ")", ignoreExpr=None))
+    brackets = originalTextFor(nestedExpr("[", "]", ignoreExpr=None))
+    braces = originalTextFor(nestedExpr("{", "}", ignoreExpr=None))
 
-    original_function_call_tokens = lparen.suppress() + (
-        rparen.suppress()
-        # we need to add parens here, since f(x for x in y) is fine but tail_call(f, x for x in y) is not
-        | attach(originalTextFor(test + comp_for), add_paren_handle) + rparen.suppress()
-        | originalTextFor(tokenlist(call_item, comma)) + rparen.suppress()
+    original_function_call_tokens = (
+        lparen.suppress() + rparen.suppress()
+        # we need to keep the parens here, since f(x for x in y) is fine but tail_call(f, x for x in y) is not
+        | condense(lparen + originalTextFor(test + comp_for) + rparen)
+        | attach(parens, strip_parens_handle)
     )
 
     def get_tre_return_grammar(self, func_name):
-        """the TRE return grammar is parameterized by the name of the function being optimized."""
+        """The TRE return grammar is parameterized by the name of the function being optimized."""
         return (
             self.start_marker
             + keyword("return").suppress()

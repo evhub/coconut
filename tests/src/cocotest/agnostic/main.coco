@@ -965,6 +965,13 @@ def main_test() -> bool:
     assert "" == """"""
     assert (,)(*(1, 2), 3) == (1, 2, 3)
     assert (,)(1, *(2, 3), 4, *(5, 6)) == (1, 2, 3, 4, 5, 6)
+    l = []
+    assert 10 |> ident$(side_effect=l.append) == 10
+    assert l == [10]
+    @ident
+    @(def f -> f)
+    def ret1() = 1
+    assert ret1() == 1
     return True
 
 def test_asyncio() -> bool:

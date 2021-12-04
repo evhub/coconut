@@ -37,7 +37,7 @@ from coconut.exceptions import (
     CoconutException,
     CoconutInternalException,
 )
-from coconut.terminal import logger
+from coconut.terminal import logger, format_error
 from coconut.constants import (
     fixpath,
     code_exts,
@@ -354,7 +354,7 @@ class Command(object):
             if self.errmsg is None:
                 self.errmsg = errmsg
             elif errmsg not in self.errmsg:
-                self.errmsg += ", " + errmsg
+                self.errmsg += "; " + errmsg
         if code is not None:
             self.exit_code = code or self.exit_code
 
@@ -375,7 +375,7 @@ class Command(object):
             elif not isinstance(err, KeyboardInterrupt):
                 logger.print_exc()
                 printerr(report_this_text)
-            self.register_error(errmsg=err.__class__.__name__)
+            self.register_error(errmsg=format_error(err.__class__, err))
 
     def compile_path(self, path, write=True, package=True, **kwargs):
         """Compile a path and returns paths to compiled files."""

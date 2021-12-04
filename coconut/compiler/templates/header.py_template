@@ -963,8 +963,14 @@ def _coconut_dict_merge(*dicts, **kwargs):
                 raise _coconut.TypeError("multiple values for the same keyword argument")
             prevlen = len(newdict)
     return newdict
-def ident(x):
-    """The identity function. Equivalent to x -> x. Useful in point-free programming."""
+def ident(x, **kwargs):
+    """The identity function. Generally equivalent to x -> x. Useful in point-free programming.
+    Accepts one keyword-only argument, side_effect, which specifies a function to call on the argument before it is returned."""
+    side_effect = kwargs.pop("side_effect", None)
+    if kwargs:
+        raise _coconut.TypeError("ident() got unexpected keyword arguments " + _coconut.repr(kwargs))
+    if side_effect is not None:
+        side_effect(x)
     return x
 def of(_coconut_f, *args, **kwargs):
     """Function application operator function.

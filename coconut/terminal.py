@@ -219,6 +219,15 @@ class Logger(object):
         if self.verbose:
             printerr(*messages)
 
+    def log_lambda(self, *msg_funcs):
+        if self.verbose:
+            messages = []
+            for msg in msg_funcs:
+                if callable(msg):
+                    msg = msg()
+                messages.append(msg)
+            printerr(*messages)
+
     def log_func(self, func):
         """Calls a function and logs the results if --verbose."""
         if self.verbose:

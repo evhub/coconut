@@ -66,6 +66,7 @@ from coconut.constants import (
     replwrapper,
     none_coalesce_var,
     is_data_var,
+    funcwrapper,
 )
 from coconut.util import checksum
 from coconut.exceptions import (
@@ -300,17 +301,17 @@ class Compiler(Grammar):
         lambda self: self.passthrough_proc,
         lambda self: self.ind_proc,
     ]
-    postprocs = [
-        lambda self: self.add_code_before_proc,
+
+    reformatprocs = [
+        lambda self: self.deferred_code_proc,
         lambda self: self.reind_proc,
-        lambda self: self.repl_proc,
-        lambda self: self.header_proc,
-        lambda self: self.polish,
-    ]
-    replprocs = [
         lambda self: self.endline_repl,
         lambda self: self.passthrough_repl,
         lambda self: self.str_repl,
+    ]
+    postprocs = reformatprocs + [
+        lambda self: self.header_proc,
+        lambda self: self.polish,
     ]
 
     def __init__(self, *args, **kwargs):
@@ -383,6 +384,7 @@ class Compiler(Grammar):
         self.temp_var_counts = defaultdict(int)
         self.stored_matches_of = defaultdict(list)
         self.add_code_before = {}
+        self.add_code_before_regexes = {}
         self.unused_imports = set()
         self.original_lines = []
         self.num_lines = 0
@@ -553,7 +555,7 @@ class Compiler(Grammar):
         """Post process a preprocessed snippet."""
         if index is None:
             with self.complain_on_err():
-                return self.repl_proc(snip, reformatting=True, log=False)
+                return self.apply_procs(self.reformatprocs, snip, reformatting=True, log=False)
             return snip
         else:
             return self.reformat(snip), len(self.reformat(snip[:index]))
@@ -667,7 +669,7 @@ class Compiler(Grammar):
         """Wrap a line number."""
         return "#" + self.add_ref("ln", ln) + lnwrapper
 
-    def apply_procs(self, procs, kwargs, inputstring, log=True):
+    def apply_procs(self, procs, inputstring, log=True, **kwargs):
         """Apply processors to inputstring."""
         for get_proc in procs:
             proc = get_proc(self)
@@ -678,14 +680,14 @@ class Compiler(Grammar):
 
     def pre(self, inputstring, **kwargs):
         """Perform pre-processing."""
-        out = self.apply_procs(self.preprocs, kwargs, str(inputstring))
+        out = self.apply_procs(self.preprocs, str(inputstring), **kwargs)
         logger.log_tag("skips", self.skips)
         return out
 
     def post(self, result, **kwargs):
         """Perform post-processing."""
         internal_assert(isinstance(result, str), "got non-string parse result", result)
-        return self.apply_procs(self.postprocs, kwargs, result)
+        return self.apply_procs(self.postprocs, result, **kwargs)
 
     def getheader(self, which, use_hash=None, polish=True):
         """Get a formatted header."""
@@ -1078,26 +1080,12 @@ class Compiler(Grammar):
         new.append(closeindent * len(levels))
         return "\n".join(new)
 
-    def add_code_before_proc(self, inputstring, **kwargs):
-        """Add definitions for names in self.add_code_before."""
-        regexes = {}
-        for name in self.add_code_before:
-            regexes[name] = compile_regex(r"\b%s\b" % (name,))
-        out = []
-        for line in inputstring.splitlines():
-            for name, regex in regexes.items():
-                if regex.search(line):
-                    indent, line = split_leading_indent(line)
-                    out.append(indent + self.add_code_before[name])
-            out.append(line)
-        return "\n".join(out)
-
     @property
     def tabideal(self):
         """Local tabideal."""
         return 1 if self.minify else tabideal
 
-    def reind_proc(self, inputstring, **kwargs):
+    def reind_proc(self, inputstring, reformatting=False, **kwargs):
         """Add back indentation."""
         out = []
         level = 0
@@ -1117,8 +1105,9 @@ class Compiler(Grammar):
             line = (line + comment).rstrip()
             out.append(line)
 
-        if level != 0:
-            complain(CoconutInternalException("non-zero final indentation level", level))
+        if not reformatting and level != 0:
+            logger.log_lambda(lambda: "failed to reindent:\n" + "\n".join(out))
+            complain(CoconutInternalException("non-zero final indentation level ", level))
         return "\n".join(out)
 
     def ln_comment(self, ln):
@@ -1267,9 +1256,429 @@ class Compiler(Grammar):
 
         return "".join(out)
 
-    def repl_proc(self, inputstring, log=True, **kwargs):
-        """Process using replprocs."""
-        return self.apply_procs(self.replprocs, kwargs, inputstring, log=log)
+    def split_docstring(self, block):
+        """Split a code block into a docstring and a body."""
+        try:
+            first_line, rest_of_lines = block.split("\n", 1)
+        except ValueError:
+            pass
+        else:
+            raw_first_line = split_leading_trailing_indent(rem_comment(first_line))[1]
+            if match_in(self.just_a_string, raw_first_line, inner=True):
+                return first_line, rest_of_lines
+        return None, block
+
+    def tre_return(self, func_name, func_args, func_store, mock_var=None):
+        """Generate grammar element that matches a string which is just a TRE return statement."""
+        def tre_return_handle(loc, tokens):
+            args = ", ".join(tokens)
+            if self.no_tco:
+                tco_recurse = "return " + func_name + "(" + args + ")"
+            else:
+                tco_recurse = "return _coconut_tail_call(" + func_name + (", " + args if args else "") + ")"
+            if not func_args or func_args == args:
+                tre_recurse = "continue"
+            elif mock_var is None:
+                tre_recurse = func_args + " = " + args + "\ncontinue"
+            else:
+                tre_recurse = func_args + " = " + mock_var + "(" + args + ")" + "\ncontinue"
+            tre_check_var = self.get_temp_var("tre_check")
+            return handle_indentation(
+                """
+try:
+    {tre_check_var} = {func_name} is {func_store}
+except _coconut.NameError:
+    {tre_check_var} = False
+if {tre_check_var}:
+    {tre_recurse}
+else:
+    {tco_recurse}
+                """,
+                add_newline=True,
+            ).format(
+                tre_check_var=tre_check_var,
+                func_name=func_name,
+                func_store=func_store,
+                tre_recurse=tre_recurse,
+                tco_recurse=tco_recurse,
+            )
+        return attach(
+            self.get_tre_return_grammar(func_name),
+            tre_return_handle,
+            greedy=True,
+        )
+
+    def_regex = compile_regex(r"(async\s+)?def\b")
+    yield_regex = compile_regex(r"\byield\b")
+
+    def detect_is_gen(self, raw_lines):
+        """Determine if the given function code is for a generator."""
+        level = 0  # indentation level
+        func_until_level = None  # whether inside of an inner function
+
+        for line in raw_lines:
+            indent, line = split_leading_indent(line)
+
+            level += ind_change(indent)
+
+            # update func_until_level
+            if func_until_level is not None and level <= func_until_level:
+                func_until_level = None
+
+            # detect inner functions
+            if func_until_level is None and self.def_regex.match(line):
+                func_until_level = level
+
+            # search for yields if not in an inner function
+            if func_until_level is None and self.yield_regex.search(line):
+                return True
+
+        return False
+
+    tco_disable_regex = compile_regex(r"(try|(async\s+)?(with|for)|while)\b")
+    return_regex = compile_regex(r"return\b")
+    no_tco_funcs_regex = compile_regex(r"\b(locals|globals)\b")
+
+    def transform_returns(self, original, loc, raw_lines, tre_return_grammar=None, is_async=False, is_gen=False):
+        """Apply TCO, TRE, async, and generator return universalization to the given function."""
+        lines = []  # transformed lines
+        tco = False  # whether tco was done
+        tre = False  # whether tre was done
+        level = 0  # indentation level
+        disabled_until_level = None  # whether inside of a disabled block
+        func_until_level = None  # whether inside of an inner function
+        attempt_tre = tre_return_grammar is not None  # whether to even attempt tre
+        normal_func = not (is_async or is_gen)  # whether this is a normal function
+        attempt_tco = normal_func and not self.no_tco  # whether to even attempt tco
+
+        # sanity checks
+        internal_assert(not (is_async and is_gen), "cannot mark as async and generator")
+        internal_assert(not (not normal_func and (attempt_tre or attempt_tco)), "cannot tail call optimize async/generator functions")
+
+        if (
+            # don't transform generator returns if they're supported
+            is_gen and self.target_info >= (3, 3)
+            # don't transform async returns if they're supported
+            or is_async and self.target_info >= (3, 5)
+        ):
+            func_code = "".join(raw_lines)
+            return func_code, tco, tre
+
+        for line in raw_lines:
+            indent, _body, dedent = split_leading_trailing_indent(line)
+            base, comment = split_comment(_body)
+
+            level += ind_change(indent)
+
+            # update disabled_until_level and func_until_level
+            if disabled_until_level is not None and level <= disabled_until_level:
+                disabled_until_level = None
+            if func_until_level is not None and level <= func_until_level:
+                func_until_level = None
+
+            # detect inner functions
+            if func_until_level is None and self.def_regex.match(base):
+                func_until_level = level
+                if disabled_until_level is None:
+                    disabled_until_level = level
+                # functions store scope so no TRE anywhere
+                attempt_tre = False
+
+            # tco and tre shouldn't touch scopes that depend on actual return statements
+            #  or scopes where we can't insert a continue
+            if normal_func and disabled_until_level is None and self.tco_disable_regex.match(base):
+                disabled_until_level = level
+
+            # check if there is anything that stores a scope reference, and if so,
+            #  disable TRE, since it can't handle that
+            if attempt_tre and match_in(self.stores_scope, line, inner=True):
+                attempt_tre = False
+
+            # attempt tco/tre/async universalization
+            if disabled_until_level is None:
+
+                # handle generator/async returns
+                if not normal_func and self.return_regex.match(base):
+                    to_return = base[len("return"):].strip()
+                    if to_return:
+                        to_return = "(" + to_return + ")"
+                    # only use trollius Return when trollius is imported
+                    if is_async and self.target_info < (3, 4):
+                        ret_err = "_coconut.asyncio.Return"
+                    else:
+                        ret_err = "_coconut.StopIteration"
+                        # warn about Python 3.7 incompatibility on any target with Python 3 support
+                        if not self.target.startswith("2"):
+                            logger.warn_err(
+                                self.make_err(
+                                    CoconutSyntaxWarning,
+                                    "compiled generator return to StopIteration error; this will break on Python >= 3.7 (pass --target sys to fix)",
+                                    original, loc,
+                                ),
+                            )
+                    line = indent + "raise " + ret_err + "(" + to_return + ")" + comment + dedent
+
+                # TRE
+                tre_base = None
+                if attempt_tre:
+                    tre_base = self.post_transform(tre_return_grammar, base)
+                    if tre_base is not None:
+                        line = indent + tre_base + comment + dedent
+                        tre = True
+                        # when tco is available, tre falls back on it if the function is changed
+                        tco = not self.no_tco
+
+                # TCO
+                if (
+                    attempt_tco
+                    # don't attempt tco if tre succeeded
+                    and tre_base is None
+                    # don't tco scope-dependent functions
+                    and not self.no_tco_funcs_regex.search(base)
+                ):
+                    tco_base = None
+                    tco_base = self.post_transform(self.tco_return, base)
+                    if tco_base is not None:
+                        line = indent + tco_base + comment + dedent
+                        tco = True
+
+            level += ind_change(dedent)
+            lines.append(line)
+
+        func_code = "".join(lines)
+        return func_code, tco, tre
+
+    def build_funcdef(self, original, loc, decorators, funcdef, is_async):
+        """Determines if TCO or TRE can be done and if so does it,
+        handles dotted function names, and universalizes async functions."""
+        # process tokens
+        raw_lines = funcdef.splitlines(True)
+        def_stmt = raw_lines.pop(0)
+
+        # detect addpattern functions
+        if def_stmt.startswith("addpattern def"):
+            def_stmt = def_stmt[len("addpattern "):]
+            addpattern = True
+        elif def_stmt.startswith("def"):
+            addpattern = False
+        else:
+            raise CoconutInternalException("invalid function definition statement", def_stmt)
+
+        # extract information about the function
+        with self.complain_on_err():
+            try:
+                split_func_tokens = parse(self.split_func, def_stmt, inner=True)
+
+                internal_assert(len(split_func_tokens) == 2, "invalid function definition splitting tokens", split_func_tokens)
+                func_name, func_arg_tokens = split_func_tokens
+
+                func_params = "(" + ", ".join("".join(arg) for arg in func_arg_tokens) + ")"
+
+                # arguments that should be used to call the function; must be in the order in which they're defined
+                func_args = []
+                for arg in func_arg_tokens:
+                    if len(arg) > 1 and arg[0] in ("*", "**"):
+                        func_args.append(arg[1])
+                    elif arg[0] != "*":
+                        func_args.append(arg[0])
+                func_args = ", ".join(func_args)
+            except BaseException:
+                func_name = None
+                raise
+
+        # run target checks if func info extraction succeeded
+        if func_name is not None:
+            # raises DeferredSyntaxErrors which shouldn't be complained
+            pos_only_args, req_args, def_args, star_arg, kwd_only_args, dubstar_arg = split_args_list(func_arg_tokens, loc)
+            if pos_only_args and self.target_info < (3, 8):
+                raise self.make_err(
+                    CoconutTargetError,
+                    "found Python 3.8 keyword-only argument{s} (use 'match def' to produce universal code)".format(
+                        s="s" if len(pos_only_args) > 1 else "",
+                    ),
+                    original,
+                    loc,
+                    target="38",
+                )
+            if kwd_only_args and self.target_info < (3,):
+                raise self.make_err(
+                    CoconutTargetError,
+                    "found Python 3 keyword-only argument{s} (use 'match def' to produce universal code)".format(
+                        s="s" if len(pos_only_args) > 1 else "",
+                    ),
+                    original,
+                    loc,
+                    target="3",
+                )
+
+        def_name = func_name  # the name used when defining the function
+
+        # handle dotted function definition
+        is_dotted = func_name is not None and "." in func_name
+        if is_dotted:
+            def_name = func_name.rsplit(".", 1)[-1]
+
+        # detect pattern-matching functions
+        is_match_func = func_params == "(*{match_to_args_var}, **{match_to_kwargs_var})".format(
+            match_to_args_var=match_to_args_var,
+            match_to_kwargs_var=match_to_kwargs_var,
+        )
+
+        # handle addpattern functions
+        if addpattern:
+            if func_name is None:
+                raise CoconutInternalException("could not find name in addpattern function definition", def_stmt)
+            # binds most tightly, except for TCO
+            decorators += "@_coconut_addpattern(" + func_name + ")\n"
+
+        # modify function definition to use def_name
+        if def_name != func_name:
+            def_stmt_pre_lparen, def_stmt_post_lparen = def_stmt.split("(", 1)
+            def_stmt_def, def_stmt_name = def_stmt_pre_lparen.rsplit(" ", 1)
+            def_stmt_name = def_stmt_name.replace(func_name, def_name)
+            def_stmt = def_stmt_def + " " + def_stmt_name + "(" + def_stmt_post_lparen
+
+        # handle async functions
+        if is_async:
+            if not self.target:
+                raise self.make_err(
+                    CoconutTargetError,
+                    "async function definition requires a specific target",
+                    original, loc,
+                    target="sys",
+                )
+            elif self.target_info >= (3, 5):
+                def_stmt = "async " + def_stmt
+            else:
+                decorators += "@_coconut.asyncio.coroutine\n"
+
+            func_code, _, _ = self.transform_returns(original, loc, raw_lines, is_async=True)
+
+        # handle normal functions
+        else:
+            # detect generators
+            is_gen = self.detect_is_gen(raw_lines)
+
+            attempt_tre = (
+                func_name is not None
+                and not is_gen
+                # tre does not work with decorators, though tco does
+                and not decorators
+            )
+            if attempt_tre:
+                if func_args and func_args != func_params[1:-1]:
+                    mock_var = self.get_temp_var("mock")
+                else:
+                    mock_var = None
+                func_store = self.get_temp_var("recursive_func")
+                tre_return_grammar = self.tre_return(func_name, func_args, func_store, mock_var)
+            else:
+                mock_var = func_store = tre_return_grammar = None
+
+            func_code, tco, tre = self.transform_returns(
+                original,
+                loc,
+                raw_lines,
+                tre_return_grammar,
+                is_gen=is_gen,
+            )
+
+            if tre:
+                comment, rest = split_leading_comment(func_code)
+                indent, base, dedent = split_leading_trailing_indent(rest, 1)
+                base, base_dedent = split_trailing_indent(base)
+                docstring, base = self.split_docstring(base)
+                func_code = (
+                    comment + indent
+                    + (docstring + "\n" if docstring is not None else "")
+                    + (
+                        "def " + mock_var + func_params + ": return " + func_args + "\n"
+                        if mock_var is not None else ""
+                    ) + "while True:\n"
+                        + openindent + base + base_dedent
+                        + ("\n" if "\n" not in base_dedent else "") + "return None"
+                        + ("\n" if "\n" not in dedent else "") + closeindent + dedent
+                    + func_store + " = " + def_name + "\n"
+                )
+            if tco:
+                decorators += "@_coconut_tco\n"  # binds most tightly (aside from below)
+
+        # add attribute to mark pattern-matching functions
+        if is_match_func:
+            decorators += "@_coconut_mark_as_match\n"  # binds most tightly
+
+        # handle dotted function definition
+        if is_dotted:
+            store_var = self.get_temp_var("name_store")
+            out = handle_indentation(
+                '''
+try:
+    {store_var} = {def_name}
+except _coconut.NameError:
+    {store_var} = _coconut_sentinel
+{decorators}{def_stmt}{func_code}{func_name} = {def_name}
+if {store_var} is not _coconut_sentinel:
+    {def_name} = {store_var}
+                ''',
+                add_newline=True,
+            ).format(
+                store_var=store_var,
+                def_name=def_name,
+                decorators=decorators,
+                def_stmt=def_stmt,
+                func_code=func_code,
+                func_name=func_name,
+            )
+        else:
+            out = decorators + def_stmt + func_code
+
+        return out
+
+    def deferred_code_proc(self, inputstring, add_code_at_start=False, ignore_names=(), **kwargs):
+        """Process code that was previously deferred, including functions and anything in self.add_code_before."""
+        # compile add_code_before regexes
+        for name in self.add_code_before:
+            if name not in self.add_code_before_regexes:
+                self.add_code_before_regexes[name] = compile_regex(r"\b%s\b" % (name,))
+
+        out = []
+        for raw_line in inputstring.splitlines(True):
+            bef_ind, line, aft_ind = split_leading_trailing_indent(raw_line)
+
+            # look for functions
+            if line.startswith(funcwrapper):
+                func_id = int(line[len(funcwrapper):])
+                original, loc, decorators, funcdef, is_async = self.get_ref("func", func_id)
+
+                # process inner code
+                decorators = self.deferred_code_proc(decorators, add_code_at_start=True, ignore_names=ignore_names, **kwargs)
+                funcdef = self.deferred_code_proc(funcdef, ignore_names=ignore_names, **kwargs)
+
+                out.append(bef_ind)
+                out.append(self.build_funcdef(original, loc, decorators, funcdef, is_async))
+                out.append(aft_ind)
+
+            # look for add_code_before regexes
+            else:
+                for name, regex in self.add_code_before_regexes.items():
+
+                    if name not in ignore_names and regex.search(line):
+                        # process inner code
+                        code_to_add = self.deferred_code_proc(self.add_code_before[name], ignore_names=ignore_names + (name,), **kwargs)
+
+                        # add code and update indents
+                        if add_code_at_start:
+                            out.insert(0, code_to_add)
+                            out.insert(1, "\n")
+                        else:
+                            out.append(bef_ind)
+                            out.append(code_to_add)
+                            out.append("\n")
+                            bef_ind = ""
+                            raw_line = line + aft_ind
+
+                out.append(raw_line)
+        return "".join(out)
 
     def header_proc(self, inputstring, header="file", initial="initial", use_hash=None, **kwargs):
         """Add the header."""
@@ -2251,8 +2660,10 @@ if not {check_var}:
                 stmts = stmts.asList() + [last]
         else:
             raise CoconutInternalException("invalid statement lambda tokens", tokens)
+
         name = self.get_temp_var("lambda")
-        body = openindent + self.add_code_before_proc("\n".join(stmts)) + closeindent
+        body = openindent + "\n".join(stmts) + closeindent
+
         if isinstance(params, str):
             self.add_code_before[name] = "def " + name + params + ":\n" + body
         else:
@@ -2265,392 +2676,18 @@ if not {check_var}:
                 + after_docstring
                 + body
             )
+
         return name
 
-    def split_docstring(self, block):
-        """Split a code block into a docstring and a body."""
-        try:
-            first_line, rest_of_lines = block.split("\n", 1)
-        except ValueError:
-            pass
-        else:
-            raw_first_line = split_leading_trailing_indent(rem_comment(first_line))[1]
-            if match_in(self.just_a_string, raw_first_line, inner=True):
-                return first_line, rest_of_lines
-        return None, block
-
-    def tre_return(self, func_name, func_args, func_store, mock_var=None):
-        """Generate grammar element that matches a string which is just a TRE return statement."""
-        def tre_return_handle(loc, tokens):
-            args = ", ".join(tokens)
-            if self.no_tco:
-                tco_recurse = "return " + func_name + "(" + args + ")"
-            else:
-                tco_recurse = "return _coconut_tail_call(" + func_name + (", " + args if args else "") + ")"
-            if not func_args or func_args == args:
-                tre_recurse = "continue"
-            elif mock_var is None:
-                tre_recurse = func_args + " = " + args + "\ncontinue"
-            else:
-                tre_recurse = func_args + " = " + mock_var + "(" + args + ")" + "\ncontinue"
-            tre_check_var = self.get_temp_var("tre_check")
-            return handle_indentation(
-                """
-try:
-    {tre_check_var} = {func_name} is {func_store}
-except _coconut.NameError:
-    {tre_check_var} = False
-if {tre_check_var}:
-    {tre_recurse}
-else:
-    {tco_recurse}
-                """,
-                add_newline=True,
-            ).format(
-                tre_check_var=tre_check_var,
-                func_name=func_name,
-                func_store=func_store,
-                tre_recurse=tre_recurse,
-                tco_recurse=tco_recurse,
-            )
-        return attach(
-            self.get_tre_return_grammar(func_name),
-            tre_return_handle,
-            greedy=True,
-        )
-
-    def_regex = compile_regex(r"(async\s+)?def\b")
-    yield_regex = compile_regex(r"\byield\b")
-
-    def detect_is_gen(self, raw_lines):
-        """Determine if the given function code is for a generator."""
-        level = 0  # indentation level
-        func_until_level = None  # whether inside of an inner function
-
-        for line in raw_lines:
-            indent, line = split_leading_indent(line)
-
-            level += ind_change(indent)
-
-            # update func_until_level
-            if func_until_level is not None and level <= func_until_level:
-                func_until_level = None
-
-            # detect inner functions
-            if func_until_level is None and self.def_regex.match(line):
-                func_until_level = level
-
-            # search for yields if not in an inner function
-            if func_until_level is None and self.yield_regex.search(line):
-                return True
-
-        return False
-
-    tco_disable_regex = compile_regex(r"(try|(async\s+)?(with|for)|while)\b")
-    return_regex = compile_regex(r"return\b")
-    no_tco_funcs_regex = compile_regex(r"\b(locals|globals)\b")
-
-    def transform_returns(self, original, loc, raw_lines, tre_return_grammar=None, is_async=False, is_gen=False):
-        """Apply TCO, TRE, async, and generator return universalization to the given function."""
-        lines = []  # transformed lines
-        tco = False  # whether tco was done
-        tre = False  # whether tre was done
-        level = 0  # indentation level
-        disabled_until_level = None  # whether inside of a disabled block
-        func_until_level = None  # whether inside of an inner function
-        attempt_tre = tre_return_grammar is not None  # whether to even attempt tre
-        normal_func = not (is_async or is_gen)  # whether this is a normal function
-        attempt_tco = normal_func and not self.no_tco  # whether to even attempt tco
-
-        # sanity checks
-        internal_assert(not (is_async and is_gen), "cannot mark as async and generator")
-        internal_assert(not (not normal_func and (attempt_tre or attempt_tco)), "cannot tail call optimize async/generator functions")
-
-        if (
-            # don't transform generator returns if they're supported
-            is_gen and self.target_info >= (3, 3)
-            # don't transform async returns if they're supported
-            or is_async and self.target_info >= (3, 5)
-        ):
-            func_code = "".join(raw_lines)
-            return func_code, tco, tre
-
-        for line in raw_lines:
-            indent, _body, dedent = split_leading_trailing_indent(line)
-            base, comment = split_comment(_body)
-
-            level += ind_change(indent)
-
-            # update disabled_until_level and func_until_level
-            if disabled_until_level is not None and level <= disabled_until_level:
-                disabled_until_level = None
-            if func_until_level is not None and level <= func_until_level:
-                func_until_level = None
-
-            # detect inner functions
-            if func_until_level is None and self.def_regex.match(base):
-                func_until_level = level
-                if disabled_until_level is None:
-                    disabled_until_level = level
-                # functions store scope so no TRE anywhere
-                attempt_tre = False
-
-            # tco and tre shouldn't touch scopes that depend on actual return statements
-            #  or scopes where we can't insert a continue
-            if normal_func and disabled_until_level is None and self.tco_disable_regex.match(base):
-                disabled_until_level = level
-
-            # check if there is anything that stores a scope reference, and if so,
-            #  disable TRE, since it can't handle that
-            if attempt_tre and match_in(self.stores_scope, line, inner=True):
-                attempt_tre = False
-
-            # attempt tco/tre/async universalization
-            if disabled_until_level is None:
-
-                # handle generator/async returns
-                if not normal_func and self.return_regex.match(base):
-                    to_return = base[len("return"):].strip()
-                    if to_return:
-                        to_return = "(" + to_return + ")"
-                    # only use trollius Return when trollius is imported
-                    if is_async and self.target_info < (3, 4):
-                        ret_err = "_coconut.asyncio.Return"
-                    else:
-                        ret_err = "_coconut.StopIteration"
-                        # warn about Python 3.7 incompatibility on any target with Python 3 support
-                        if not self.target.startswith("2"):
-                            logger.warn_err(
-                                self.make_err(
-                                    CoconutSyntaxWarning,
-                                    "compiled generator return to StopIteration error; this will break on Python >= 3.7 (pass --target sys to fix)",
-                                    original, loc,
-                                ),
-                            )
-                    line = indent + "raise " + ret_err + "(" + to_return + ")" + comment + dedent
-
-                # TRE
-                tre_base = None
-                if attempt_tre:
-                    tre_base = self.post_transform(tre_return_grammar, base)
-                    if tre_base is not None:
-                        line = indent + tre_base + comment + dedent
-                        tre = True
-                        # when tco is available, tre falls back on it if the function is changed
-                        tco = not self.no_tco
-
-                # TCO
-                if (
-                    attempt_tco
-                    # don't attempt tco if tre succeeded
-                    and tre_base is None
-                    # don't tco scope-dependent functions
-                    and not self.no_tco_funcs_regex.search(base)
-                ):
-                    tco_base = None
-                    tco_base = self.post_transform(self.tco_return, base)
-                    if tco_base is not None:
-                        line = indent + tco_base + comment + dedent
-                        tco = True
-
-            level += ind_change(dedent)
-            lines.append(line)
-
-        func_code = "".join(lines)
-        return func_code, tco, tre
-
     def decoratable_funcdef_stmt_handle(self, original, loc, tokens, is_async=False):
-        """Determines if TCO or TRE can be done and if so does it,
-        handles dotted function names, and universalizes async functions."""
+        """Wraps the given function for later processing"""
         if len(tokens) == 1:
             decorators, funcdef = "", tokens[0]
         elif len(tokens) == 2:
             decorators, funcdef = tokens
         else:
             raise CoconutInternalException("invalid function definition tokens", tokens)
-
-        # process tokens
-        raw_lines = funcdef.splitlines(True)
-        def_stmt = raw_lines.pop(0)
-
-        # detect addpattern functions
-        if def_stmt.startswith("addpattern def"):
-            def_stmt = def_stmt[len("addpattern "):]
-            addpattern = True
-        elif def_stmt.startswith("def"):
-            addpattern = False
-        else:
-            raise CoconutInternalException("invalid function definition statement", def_stmt)
-
-        # extract information about the function
-        with self.complain_on_err():
-            try:
-                split_func_tokens = parse(self.split_func, def_stmt, inner=True)
-
-                internal_assert(len(split_func_tokens) == 2, "invalid function definition splitting tokens", split_func_tokens)
-                func_name, func_arg_tokens = split_func_tokens
-
-                func_params = "(" + ", ".join("".join(arg) for arg in func_arg_tokens) + ")"
-
-                # arguments that should be used to call the function; must be in the order in which they're defined
-                func_args = []
-                for arg in func_arg_tokens:
-                    if len(arg) > 1 and arg[0] in ("*", "**"):
-                        func_args.append(arg[1])
-                    elif arg[0] != "*":
-                        func_args.append(arg[0])
-                func_args = ", ".join(func_args)
-            except BaseException:
-                func_name = None
-                raise
-
-        # run target checks if func info extraction succeeded
-        if func_name is not None:
-            # raises DeferredSyntaxErrors which shouldn't be complained
-            pos_only_args, req_args, def_args, star_arg, kwd_only_args, dubstar_arg = split_args_list(func_arg_tokens, loc)
-            if pos_only_args and self.target_info < (3, 8):
-                raise self.make_err(
-                    CoconutTargetError,
-                    "found Python 3.8 keyword-only argument{s} (use 'match def' to produce universal code)".format(
-                        s="s" if len(pos_only_args) > 1 else "",
-                    ),
-                    original,
-                    loc,
-                    target="38",
-                )
-            if kwd_only_args and self.target_info < (3,):
-                raise self.make_err(
-                    CoconutTargetError,
-                    "found Python 3 keyword-only argument{s} (use 'match def' to produce universal code)".format(
-                        s="s" if len(pos_only_args) > 1 else "",
-                    ),
-                    original,
-                    loc,
-                    target="3",
-                )
-
-        def_name = func_name  # the name used when defining the function
-
-        # handle dotted function definition
-        is_dotted = func_name is not None and "." in func_name
-        if is_dotted:
-            def_name = func_name.rsplit(".", 1)[-1]
-
-        # detect pattern-matching functions
-        is_match_func = func_params == "(*{match_to_args_var}, **{match_to_kwargs_var})".format(
-            match_to_args_var=match_to_args_var,
-            match_to_kwargs_var=match_to_kwargs_var,
-        )
-
-        # handle addpattern functions
-        if addpattern:
-            if func_name is None:
-                raise CoconutInternalException("could not find name in addpattern function definition", def_stmt)
-            # binds most tightly, except for TCO
-            decorators += "@_coconut_addpattern(" + func_name + ")\n"
-
-        # modify function definition to use def_name
-        if def_name != func_name:
-            def_stmt_pre_lparen, def_stmt_post_lparen = def_stmt.split("(", 1)
-            def_stmt_def, def_stmt_name = def_stmt_pre_lparen.rsplit(" ", 1)
-            def_stmt_name = def_stmt_name.replace(func_name, def_name)
-            def_stmt = def_stmt_def + " " + def_stmt_name + "(" + def_stmt_post_lparen
-
-        # handle async functions
-        if is_async:
-            if not self.target:
-                raise self.make_err(
-                    CoconutTargetError,
-                    "async function definition requires a specific target",
-                    original, loc,
-                    target="sys",
-                )
-            elif self.target_info >= (3, 5):
-                def_stmt = "async " + def_stmt
-            else:
-                decorators += "@_coconut.asyncio.coroutine\n"
-
-            func_code, _, _ = self.transform_returns(original, loc, raw_lines, is_async=True)
-
-        # handle normal functions
-        else:
-            # detect generators
-            is_gen = self.detect_is_gen(raw_lines)
-
-            attempt_tre = (
-                func_name is not None
-                and not is_gen
-                # tre does not work with decorators, though tco does
-                and not decorators
-            )
-            if attempt_tre:
-                if func_args and func_args != func_params[1:-1]:
-                    mock_var = self.get_temp_var("mock")
-                else:
-                    mock_var = None
-                func_store = self.get_temp_var("recursive_func")
-                tre_return_grammar = self.tre_return(func_name, func_args, func_store, mock_var)
-            else:
-                mock_var = func_store = tre_return_grammar = None
-
-            func_code, tco, tre = self.transform_returns(
-                original,
-                loc,
-                raw_lines,
-                tre_return_grammar,
-                is_gen=is_gen,
-            )
-
-            if tre:
-                comment, rest = split_leading_comment(func_code)
-                indent, base, dedent = split_leading_trailing_indent(rest, 1)
-                base, base_dedent = split_trailing_indent(base)
-                docstring, base = self.split_docstring(base)
-                func_code = (
-                    comment + indent
-                    + (docstring + "\n" if docstring is not None else "")
-                    + (
-                        "def " + mock_var + func_params + ": return " + func_args + "\n"
-                        if mock_var is not None else ""
-                    ) + "while True:\n"
-                        + openindent + base + base_dedent
-                        + ("\n" if "\n" not in base_dedent else "") + "return None"
-                        + ("\n" if "\n" not in dedent else "") + closeindent + dedent
-                    + func_store + " = " + def_name + "\n"
-                )
-            if tco:
-                decorators += "@_coconut_tco\n"  # binds most tightly (aside from below)
-
-        # add attribute to mark pattern-matching functions
-        if is_match_func:
-            decorators += "@_coconut_mark_as_match\n"  # binds most tightly
-
-        # handle dotted function definition
-        if is_dotted:
-            store_var = self.get_temp_var("name_store")
-            out = handle_indentation(
-                '''
-try:
-    {store_var} = {def_name}
-except _coconut.NameError:
-    {store_var} = _coconut_sentinel
-{decorators}{def_stmt}{func_code}{func_name} = {def_name}
-if {store_var} is not _coconut_sentinel:
-    {def_name} = {store_var}
-                ''',
-                add_newline=True,
-            ).format(
-                store_var=store_var,
-                def_name=def_name,
-                decorators=decorators,
-                def_stmt=def_stmt,
-                func_code=func_code,
-                func_name=func_name,
-            )
-        else:
-            out = decorators + def_stmt + func_code
-
-        return out
+        return funcwrapper + self.add_ref("func", (original, loc, decorators, funcdef, is_async)) + "\n"
 
     def await_expr_handle(self, original, loc, tokens):
         """Check for Python 3.5 await expression."""

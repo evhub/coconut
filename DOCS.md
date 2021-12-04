@@ -2951,12 +2951,17 @@ def const(x) = (*args, **kwargs) -> x
 
 ### `ident`
 
-Coconut's `ident` is the identity function, precisely equivalent to
+Coconut's `ident` is the identity function, generally equivalent to `x -> x`.
+
+`ident` does also accept one keyword-only argument, `side_effect`, which specifies a function to call on the argument before it is returned. Thus, `ident` is effectively equivalent to:
 ```coconut
-def ident(x) = x
+def ident(x, *, side_effect=None):
+    if side_effect is not None:
+        side_effect(x)
+    return x
 ```
 
-`ident` is primarily useful when writing in a point-free style (e.g. in combination with [`lift`](#lift)).
+`ident` is primarily useful when writing in a point-free style (e.g. in combination with [`lift`](#lift)) or for debugging [pipelines](#pipeline) where `ident$(side_effect=print)` can let you see what is being piped.
 
 ### `match_if`
 

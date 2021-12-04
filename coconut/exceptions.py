@@ -24,8 +24,6 @@ import sys
 from coconut._pyparsing import lineno
 
 from coconut.constants import (
-    openindent,
-    closeindent,
     taberrfmt,
     default_encoding,
     report_this_text,
@@ -43,12 +41,10 @@ def get_encoding(fileobj):
     return obj_encoding if obj_encoding is not None else default_encoding
 
 
-def clean(inputline, strip=True, rem_indents=True, encoding_errors="replace"):
+def clean(inputline, strip=True, encoding_errors="replace"):
     """Clean and strip a line."""
     stdout_encoding = get_encoding(sys.stdout)
     inputline = str(inputline)
-    if rem_indents:
-        inputline = inputline.replace(openindent, "").replace(closeindent, "")
     if strip:
         inputline = inputline.strip()
     return inputline.encode(stdout_encoding, encoding_errors).decode(stdout_encoding)
@@ -56,7 +52,7 @@ def clean(inputline, strip=True, rem_indents=True, encoding_errors="replace"):
 
 def displayable(inputstr, strip=True):
     """Make a string displayable with minimal loss of information."""
-    return clean(str(inputstr), strip, rem_indents=False, encoding_errors="backslashreplace")
+    return clean(str(inputstr), strip, encoding_errors="backslashreplace")
 
 
 # -----------------------------------------------------------------------------------------------------------------------

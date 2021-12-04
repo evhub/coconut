@@ -777,6 +777,21 @@ def suite_test() -> bool:
     assert range(10)$[:`end`] == range(10) == range(10)[:`end`]
     assert range(10)$[:`end-0`] == range(10) == range(10)[:`end-0`]
     assert range(10)$[:`end-1`] == range(10)[:-1] == range(10)[:`end-1`]
+    s = """
+00100
+11110
+10110
+10111
+10101
+01111
+00111
+11100
+10000
+11001
+00010
+01010
+    """.strip().split("\n")
+    assert gam_eps_rate(s) == 198 == gam_eps_rate_(s)
 
     # must come at end
     assert fibs_calls[0] == 1
