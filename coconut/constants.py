@@ -122,6 +122,12 @@ default_recursion_limit = 4096
 if sys.getrecursionlimit() < default_recursion_limit:
     sys.setrecursionlimit(default_recursion_limit)
 
+# modules that numpy-like arrays can live in
+numpy_modules = (
+    "numpy",
+    "pandas",
+)
+
 legal_indent_chars = " \t\xa0"
 
 # both must be in ascending order

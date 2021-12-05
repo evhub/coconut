@@ -28,7 +28,6 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 from coconut.root import *  # NOQA
 
 from collections import defaultdict
-from itertools import islice
 
 from coconut._pyparsing import (
     CaselessLiteral,
@@ -98,6 +97,7 @@ from coconut.compiler.util import (
     labeled_group,
     any_keyword_in,
     any_char,
+    tuple_str_of,
 )
 
 # end: IMPORTS
@@ -524,15 +524,17 @@ def partial_op_item_handle(tokens):
         raise CoconutInternalException("invalid operator function implicit partial token group", tok_grp)
 
 
-def array_literal_handle(tokens):
+def array_literal_handle(loc, tokens):
     """Handle multidimensional array literals."""
-    internal_assert(len(tokens) >= 2, "invalid array literal arguments", tokens)
+    internal_assert(len(tokens) >= 1, "invalid array literal tokens", tokens)
 
     # find highest-level array literal seperators
     sep_indices_by_level = defaultdict(list)
-    for i, sep in islice(enumerate(tokens), 1, None, 2):
-        internal_assert(sep.lstrip(";") == "", "invalid array literal separator", sep)
-        sep_indices_by_level[len(sep)].append(i)
+    for i, tok in enumerate(tokens):
+        if tok.lstrip(";") == "":
+            sep_indices_by_level[len(tok)].append(i)
+
+    internal_assert(sep_indices_by_level, "no array literal separators in", tokens)
 
     # split by highest-level seperators
     sep_level = max(sep_indices_by_level)
@@ -543,19 +545,24 @@ def array_literal_handle(tokens):
         prev_ind = sep_ind + 1
     pieces.append(tokens[prev_ind:])
 
-    # build multidimensional array
+    # get subarrays to stack
     array_elems = []
     for p in pieces:
         if p:
-            subarr_literal = (
-                "_coconut_lift_arr("
-                + (array_literal_handle(p) if len(p) > 1 else p[0]) + ", "
-                + str(sep_level)
-                + ")"
-            )
-            array_elems.append(subarr_literal)
-    return "[" + ", ".join(array_elems) + "]"
+            if len(p) > 1:
+                internal_assert(sep_level > 1, "failed to handle array literal tokens", tokens)
+                subarr_item = array_literal_handle(loc, p)
+            elif p[0].lstrip(";") == "":
+                raise CoconutDeferredSyntaxError("naked multidimensional array separators are not allowed", loc)
+            else:
+                subarr_item = p[0]
+            array_elems.append(subarr_item)
 
+    if not array_elems:
+        raise CoconutDeferredSyntaxError("multidimensional array literal cannot be only separators", loc)
+
+    # build multidimensional array
+    return "_coconut_multi_dim_arr(" + tuple_str_of(array_elems) + ", " + str(sep_level) + ")"
 
 # end: HANDLERS
 # -----------------------------------------------------------------------------------------------------------------------
@@ -1039,12 +1046,11 @@ class Grammar(object):
     list_expr = Forward()
     list_expr_ref = testlist_star_namedexpr_tokens
     array_literal = attach(
-        lbrack.suppress() + tokenlist(
-            attach(comprehension_expr, add_bracks_handle)
+        lbrack.suppress() + OneOrMore(
+            multisemicolon
+            | attach(comprehension_expr, add_bracks_handle)
             | namedexpr_test + ~comma
             | list_expr,
-            multisemicolon,
-            suppress=False,
         ) + rbrack.suppress(),
         array_literal_handle,
     )

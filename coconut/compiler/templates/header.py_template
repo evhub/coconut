@@ -1,19 +1,19 @@
 class _coconut{object}:{COMMENT.EVERYTHING_HERE_MUST_BE_COPIED_TO_STUB_FILE}
     import collections, copy, functools, types, itertools, operator, threading, os, warnings, contextlib, traceback, weakref, multiprocessing, math
     from multiprocessing import dummy as multiprocessing_dummy
-    try:
-        import numpy
-    except ImportError:
-        class you_need_to_install_numpy{object}: pass
-        numpy = you_need_to_install_numpy()
-    else:
-        collections.abc.Sequence.register(numpy.ndarray)
 {maybe_bind_lru_cache}{import_asyncio}
 {import_pickle}
 {import_OrderedDict}
 {import_collections_abc}
 {import_typing_NamedTuple}
 {set_zip_longest}
+    try:
+        import numpy
+    except ImportError:
+        class you_need_to_install_numpy{object}: pass
+        numpy = you_need_to_install_numpy()
+    else:
+        abc.Sequence.register(numpy.ndarray)
     Ellipsis, NotImplemented, NotImplementedError, Exception, AttributeError, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, RuntimeError, all, any, bytes, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, locals, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, type, vars, zip, repr, print{comma_bytearray} = Ellipsis, NotImplemented, NotImplementedError, Exception, AttributeError, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, RuntimeError, all, any, bytes, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, locals, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, type, vars, zip, {lstatic}repr{rstatic}, {lstatic}print{rstatic}{comma_bytearray}
 class _coconut_sentinel{object}: pass
 class _coconut_base_hashable{object}:
@@ -902,7 +902,7 @@ def fmap(func, obj):
         else:
             if result is not _coconut.NotImplemented:
                 return result
-    if obj.__class__.__module__ in ("numpy", "pandas"):
+    if obj.__class__.__module__ in {numpy_modules}:
         return _coconut.numpy.vectorize(func)(obj)
     return _coconut_makedata(obj.__class__, *(_coconut_starmap(func, obj.items()) if _coconut.isinstance(obj, _coconut.abc.Mapping) else _coconut_map(func, obj)))
 def memoize(maxsize=None, *args, **kwargs):
@@ -942,7 +942,7 @@ def _coconut_handle_cls_kwargs(**kwargs):
         orig_vars = cls.__dict__.copy()
         slots = orig_vars.get("__slots__")
         if slots is not None:
-            if _coconut.isinstance(slots, str):
+            if _coconut.isinstance(slots, _coconut.str):
                 slots = [slots]
             for slots_var in slots:
                 orig_vars.pop(slots_var)
@@ -965,9 +965,9 @@ def _coconut_dict_merge(*dicts, **kwargs):
     for d in dicts:
         newdict.update(d)
         if for_func:
-            if len(newdict) != prevlen + len(d):
+            if _coconut.len(newdict) != prevlen + _coconut.len(d):
                 raise _coconut.TypeError("multiple values for the same keyword argument")
-            prevlen = len(newdict)
+            prevlen = _coconut.len(newdict)
     return newdict
 def ident(x, **kwargs):
     """The identity function. Generally equivalent to x -> x. Useful in point-free programming.
@@ -1018,7 +1018,7 @@ class _coconut_lifted(_coconut_base_hashable):
     def __setstate__(self, func_kwargs):
         self.func_kwargs = func_kwargs
     def __call__(self, *args, **kwargs):
-        return self.func(*(g(*args, **kwargs) for g in self.func_args), **dict((k, h(*args, **kwargs)) for k, h in self.func_kwargs.items()))
+        return self.func(*(g(*args, **kwargs) for g in self.func_args), **_coconut.dict((k, h(*args, **kwargs)) for k, h in self.func_kwargs.items()))
     def __repr__(self):
         return "lift(%r)(%s%s)" % (self.func, ", ".join(_coconut.repr(g) for g in self.func_args), ", ".join(k + "=" + _coconut.repr(h) for k, h in self.func_kwargs.items()))
 class lift(_coconut_base_hashable):
@@ -1092,27 +1092,38 @@ def collectby(key_func, iterable, value_func=None, reduce_func=None):
 def _namedtuple_of(**kwargs):
     """Construct an anonymous namedtuple of the given keyword arguments."""
 {namedtuple_of_implementation}
-def _coconut_lift_arr(arr, level):
-    if not level:
-        return arr
-    elif not _coconut.isinstance(arr, _coconut.abc.Sequence):
-        for _ in _coconut.range(level):
-            arr = [arr]
-        return arr
-    elif _coconut.len(arr) == 0:
-        for _ in _coconut.range(level - 1):
-            arr = [arr]
-        return arr
-    else:
-        arr_level = 1
-        inner_arr = arr[0]
-        while _coconut.isinstance(inner_arr, _coconut.abc.Sequence):
-            arr_level += 1
-            if len(inner_arr) < 1:
-                break
-            inner_arr = inner_arr[0]
-        for _ in _coconut.range(level - arr_level):
-            arr = [arr]
-        return arr
+def _coconut_ndim(arr):
+    if arr.__class__.__module__ in {numpy_modules} and _coconut.isinstance(arr, _coconut.numpy.ndarray):
+        return arr.ndim
+    if not _coconut.isinstance(arr, _coconut.abc.Sequence):
+        return 0
+    if _coconut.len(arr) == 0:
+        return 1
+    arr_dim = 1
+    inner_arr = arr[0]
+    while _coconut.isinstance(inner_arr, _coconut.abc.Sequence):
+        arr_dim += 1
+        if _coconut.len(inner_arr) < 1:
+            break
+        inner_arr = inner_arr[0]
+    return arr_dim
+def _coconut_expand_arr(arr, new_dims):
+    if arr.__class__.__module__ in {numpy_modules} and _coconut.isinstance(arr, _coconut.numpy.ndarray):
+        return arr.reshape((1,) * new_dims + arr.shape)
+    for _ in _coconut.range(new_dims):
+        arr = [arr]
+    return arr
+def _coconut_concatenate(arrs, axis):
+    if _coconut.any(a.__class__.__module__ in {numpy_modules} for a in arrs):
+        return _coconut.numpy.concatenate(arrs, axis)
+    if not axis:
+        return _coconut.list(_coconut.itertools.chain.from_iterable(arrs))
+    return [_coconut_concatenate(rows, axis - 1) for rows in _coconut.zip(*arrs)]
+def _coconut_multi_dim_arr(arrs, dim):
+    arr_dims = [_coconut_ndim(a) for a in arrs]
+    arrs = [_coconut_expand_arr(a, dim - d) if d < dim else a for a, d in _coconut.zip(arrs, arr_dims)]
+    arr_dims.append(dim)
+    max_arr_dim = _coconut.max(arr_dims)
+    return _coconut_concatenate(arrs, max_arr_dim - dim)
 _coconut_self_match_types = (bool, bytearray, bytes, dict, float, frozenset, int, list, set, str, tuple)
 _coconut_MatchError, _coconut_count, _coconut_enumerate, _coconut_filter, _coconut_makedata, _coconut_map, _coconut_reiterable, _coconut_reversed, _coconut_starmap, _coconut_tee, _coconut_zip, TYPE_CHECKING, reduce, takewhile, dropwhile = MatchError, count, enumerate, filter, makedata, map, reiterable, reversed, starmap, tee, zip, False, _coconut.functools.reduce, _coconut.itertools.takewhile, _coconut.itertools.dropwhile

@@ -75,6 +75,7 @@ def test_extras():
     assert_raises(def -> raise CoconutException("derp").syntax_err(), SyntaxError)
     assert coconut_eval("x -> x + 1")(2) == 3
     assert coconut_eval("addpattern")
+
     assert parse("abc") == parse("abc", "sys")
     assert parse("abc", "file")
     assert parse("abc", "package")
@@ -85,14 +86,6 @@ def test_extras():
     assert "_coconut" not in parse("a |> .b |> .m() |> f$(x) |> .[0]", "block")
     assert "_coconut" not in parse("a |>= f$(x)", "block")
     assert parse("abc # derp", "any") == "abc  # derp"
-    assert_raises(-> parse(" abc", "file"), CoconutSyntaxError, not_exc=CoconutParseError)
-    assert_raises(-> parse("'"), CoconutSyntaxError, not_exc=CoconutParseError)
-    assert_raises(-> parse("("), CoconutSyntaxError, not_exc=CoconutParseError)
-    assert_raises(-> parse("\\("), CoconutSyntaxError, not_exc=CoconutParseError)
-    assert_raises(-> parse("if a:\n  b\n c"), CoconutSyntaxError, not_exc=CoconutParseError)
-    assert_raises(-> parse("$"), CoconutParseError)
-    assert_raises(-> parse("_coconut"), CoconutSyntaxError, not_exc=CoconutParseError)
-    assert_raises(-> parse("range(1,10) |> reduce$(*, initializer = 1000) |> print"), CoconutParseError)
     assert parse("def f(x):\n \t pass")
     assert parse("lambda x: x")
     assert parse("u''")
@@ -100,6 +93,18 @@ def test_extras():
     assert parse("abc ")
     assert parse("abc # derp", "any") == "abc  # derp"
     assert "==" not in parse("None = None")
+
+    assert_raises(-> parse(" abc", "file"), CoconutSyntaxError, not_exc=CoconutParseError)
+    assert_raises(-> parse("'"), CoconutSyntaxError, not_exc=CoconutParseError)
+    assert_raises(-> parse("("), CoconutSyntaxError, not_exc=CoconutParseError)
+    assert_raises(-> parse("\\("), CoconutSyntaxError, not_exc=CoconutParseError)
+    assert_raises(-> parse("if a:\n  b\n c"), CoconutSyntaxError, not_exc=CoconutParseError)
+    assert_raises(-> parse("_coconut"), CoconutSyntaxError, not_exc=CoconutParseError)
+    assert_raises(-> parse("[;]"), CoconutSyntaxError, not_exc=CoconutParseError)
+    assert_raises(-> parse("[; ;; ;]"), CoconutSyntaxError, not_exc=CoconutParseError)
+
+    assert_raises(-> parse("$"), CoconutParseError)
+    assert_raises(-> parse("range(1,10) |> reduce$(*, initializer = 1000) |> print"), CoconutParseError)
 
     setup(line_numbers=True)
     assert parse("abc", "any") == "abc  #1 (line num in coconut source)"
@@ -203,18 +208,28 @@ def test_numpy():
     import numpy as np
     assert isinstance(np.array([1, 2]) |> fmap$(.+1), np.ndarray)
     assert np.all(fmap(-> _ + 1, np.arange(3)) == np.array([1, 2, 3]))
-    assert np.array([1, 2; 3, 4]).shape == (2, 2)
-    assert np.array([
-        1, 2;
-        np.array([3, 4]);
-    ]).shape == (2, 2)
-    assert np.array([
-        np.array([1, 2; 3, 4]) ;;
-        np.array([5, 6; 7, 8]) ;;
-    ]).shape == (2, 2, 2)
+    assert np.array([1, 2;; 3, 4]).shape == (2, 2)
+    assert [
+        1, 2 ;;
+        np.array([3, 4]) ;;
+    ].shape == (2, 2)
+    assert [
+        np.array([1, 2;; 3, 4]) ;;;
+        np.array([5, 6;; 7, 8]) ;;;
+    ] `np.array_equal` np.array([1,2,3,4,5,6,7,8]).reshape((2, 2, 2))
     assert np.array([1, 2]) `isinstance` Sequence
     [1, two] = np.array([1, 2])
     assert two == 2
+    [] = np.array([])
+    assert [1,2 ;;; 3,4] |> np.array |> .shape == (2, 1, 2)
+    assert [1;2 ;;; 3;4] |> np.array |> .shape == (2, 1, 2)
+    assert [1;2 ;;;; 3;4] |> np.array |> .shape == (2, 1, 1, 2)
+    assert [1,2 ;;;; 3,4] |> np.array |> .shape == (2, 1, 1, 2)
+    assert np.array([1,2 ;; 3,4]) `np.array_equal` np.array([[1,2],[3,4]])
+    a = np.array([1,2 ;; 3,4])
+    assert [a ; a] `np.array_equal` np.array([1,2,1,2 ;; 3,4,3,4])
+    assert [a ;; a] `np.array_equal` np.array([1,2;; 3,4;; 1,2;; 3,4])
+    assert [a ;;; a].shape == (2, 2, 2)
     return True
 
 

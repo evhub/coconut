@@ -762,15 +762,14 @@ def tuple_str_of(items, add_quotes=False, add_parens=True):
     """Make a tuple repr of the given items."""
     item_tuple = tuple(items)
     if add_quotes:
-        out = str(item_tuple)
-        if not add_parens:
-            out = out[1:-1]
-        return out
+        # calling repr on each item ensures we strip unwanted u prefixes on Python 2
+        out = ", ".join(repr(x) for x in item_tuple)
     else:
-        out = ", ".join(item_tuple) + (", " if len(item_tuple) == 1 else "")
-        if add_parens:
-            out = "(" + out + ")"
-        return out
+        out = ", ".join(item_tuple)
+    out += ("," if len(item_tuple) == 1 else "")
+    if add_parens:
+        out = "(" + out + ")"
+    return out
 
 
 def rem_comment(line):
