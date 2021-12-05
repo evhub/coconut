@@ -23,6 +23,7 @@ import typing as _t
 _Callable = _t.Callable[..., _t.Any]
 _Iterable = _t.Iterable[_t.Any]
 _Tuple = _t.Tuple[_t.Any, ...]
+_Sequence = _t.Sequence[_t.Any]
 
 _T = _t.TypeVar("_T")
 _U = _t.TypeVar("_U")
@@ -812,19 +813,32 @@ def _namedtuple_of(**kwargs: _t.Dict[_t.Text, _T]) -> _t.Tuple[_T, ...]: ...
 def _namedtuple_of(**kwargs: _t.Dict[_t.Text, _t.Any]) -> _Tuple: ...
 
 
-# @_t.overload
-# def _coconut_expand_arr(arr: _t.Sequence[_T], min_dim: _t.Literal[1]) -> _t.Sequence[_T]: ...
-# @_t.overload
-# def _coconut_expand_arr(arr: _T, min_dim: _t.Literal[1]) -> _t.Sequence[_T]: ...
+@_t.overload
+def _coconut_multi_dim_arr(
+    arrs: _t.Tuple[_t.Sequence[_T], ...],
+    dim: _t.Literal[1],
+) -> _t.Sequence[_T]: ...
+@_t.overload
+def _coconut_multi_dim_arr(
+    arrs: _t.Tuple[_T, ...],
+    dim: _t.Literal[1],
+) -> _t.Sequence[_T]: ...
 
-# @_t.overload
-# def _coconut_expand_arr(arr: _t.Sequence[_t.Sequence[_T]], min_dim: _t.Literal[2]) -> _t.Sequence[_t.Sequence[_T]]: ...
-# @_t.overload
-# def _coconut_expand_arr(arr: _t.Sequence[_T], min_dim: _t.Literal[2]) -> _t.Sequence[_t.Sequence[_T]]: ...
-# @_t.overload
-# def _coconut_expand_arr(arr: _T, min_dim: _t.Literal[2]) -> _t.Sequence[_t.Sequence[_T]]: ...
+@_t.overload
+def _coconut_multi_dim_arr(
+    arrs: _t.Tuple[_t.Sequence[_t.Sequence[_T]], ...],
+    dim: _t.Literal[2],
+) -> _t.Sequence[_t.Sequence[_T]]: ...
+@_t.overload
+def _coconut_multi_dim_arr(
+    arrs: _t.Tuple[_t.Sequence[_T], ...],
+    dim: _t.Literal[2],
+) -> _t.Sequence[_t.Sequence[_T]]: ...
+@_t.overload
+def _coconut_multi_dim_arr(
+    arrs: _t.Tuple[_T, ...],
+    dim: _t.Literal[2],
+) -> _t.Sequence[_t.Sequence[_T]]: ...
 
-# @_t.overload
-# def _coconut_expand_arr(arr: _t.Any, min_dim: int) -> _t.Sequence[_t.Any]: ...
-
-def _coconut_multi_dim_arr(): TODO
+@_t.overload
+def _coconut_multi_dim_arr(arrs: _Tuple, dim: int) -> _Sequence: ...
