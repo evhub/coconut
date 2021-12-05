@@ -1,6 +1,13 @@
 class _coconut{object}:{COMMENT.EVERYTHING_HERE_MUST_BE_COPIED_TO_STUB_FILE}
     import collections, copy, functools, types, itertools, operator, threading, os, warnings, contextlib, traceback, weakref, multiprocessing, math
     from multiprocessing import dummy as multiprocessing_dummy
+    try:
+        import numpy
+    except ImportError:
+        class you_need_to_install_numpy{object}: pass
+        numpy = you_need_to_install_numpy()
+    else:
+        collections.abc.Sequence.register(numpy.ndarray)
 {maybe_bind_lru_cache}{import_asyncio}
 {import_pickle}
 {import_OrderedDict}
@@ -896,8 +903,7 @@ def fmap(func, obj):
             if result is not _coconut.NotImplemented:
                 return result
     if obj.__class__.__module__ in ("numpy", "pandas"):
-        from numpy import vectorize
-        return vectorize(func)(obj)
+        return _coconut.numpy.vectorize(func)(obj)
     return _coconut_makedata(obj.__class__, *(_coconut_starmap(func, obj.items()) if _coconut.isinstance(obj, _coconut.abc.Mapping) else _coconut_map(func, obj)))
 def memoize(maxsize=None, *args, **kwargs):
     """Decorator that memoizes a function, preventing it from being recomputed
@@ -1086,5 +1092,27 @@ def collectby(key_func, iterable, value_func=None, reduce_func=None):
 def _namedtuple_of(**kwargs):
     """Construct an anonymous namedtuple of the given keyword arguments."""
 {namedtuple_of_implementation}
+def _coconut_lift_arr(arr, level):
+    if not level:
+        return arr
+    elif not _coconut.isinstance(arr, _coconut.abc.Sequence):
+        for _ in _coconut.range(level):
+            arr = [arr]
+        return arr
+    elif _coconut.len(arr) == 0:
+        for _ in _coconut.range(level - 1):
+            arr = [arr]
+        return arr
+    else:
+        arr_level = 1
+        inner_arr = arr[0]
+        while _coconut.isinstance(inner_arr, _coconut.abc.Sequence):
+            arr_level += 1
+            if len(inner_arr) < 1:
+                break
+            inner_arr = inner_arr[0]
+        for _ in _coconut.range(level - arr_level):
+            arr = [arr]
+        return arr
 _coconut_self_match_types = (bool, bytearray, bytes, dict, float, frozenset, int, list, set, str, tuple)
 _coconut_MatchError, _coconut_count, _coconut_enumerate, _coconut_filter, _coconut_makedata, _coconut_map, _coconut_reiterable, _coconut_reversed, _coconut_starmap, _coconut_tee, _coconut_zip, TYPE_CHECKING, reduce, takewhile, dropwhile = MatchError, count, enumerate, filter, makedata, map, reiterable, reversed, starmap, tee, zip, False, _coconut.functools.reduce, _coconut.itertools.takewhile, _coconut.itertools.dropwhile

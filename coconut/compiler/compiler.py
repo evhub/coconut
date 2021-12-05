@@ -490,7 +490,7 @@ class Compiler(Grammar):
         self.decorators <<= attach(self.decorators_ref, self.decorators_handle)
         self.unsafe_typedef_or_expr <<= attach(self.unsafe_typedef_or_expr_ref, self.unsafe_typedef_or_expr_handle)
         self.testlist_star_expr <<= attach(self.testlist_star_expr_ref, self.testlist_star_expr_handle)
-        self.list_literal <<= attach(self.list_literal_ref, self.list_literal_handle)
+        self.list_expr <<= attach(self.list_expr_ref, self.list_expr_handle)
         self.dict_literal <<= attach(self.dict_literal_ref, self.dict_literal_handle)
         self.return_testlist <<= attach(self.return_testlist_ref, self.return_testlist_handle)
         self.anon_namedtuple <<= attach(self.anon_namedtuple_ref, self.anon_namedtuple_handle)
@@ -2977,10 +2977,10 @@ __annotations__["{name}"] = {annotation}
             groups.pop()
         return groups, has_star, has_comma
 
-    def testlist_star_expr_handle(self, original, loc, tokens, list_literal=False):
+    def testlist_star_expr_handle(self, original, loc, tokens, is_list=False):
         """Handle naked a, *b."""
         groups, has_star, has_comma = self.split_star_expr_tokens(tokens)
-        is_sequence = has_comma or list_literal
+        is_sequence = has_comma or is_list
 
         if not is_sequence:
             if has_star:
@@ -3011,20 +3011,20 @@ __annotations__["{name}"] = {annotation}
                 else:
                     to_chain.append(g)
 
-            # return immediately, since we handle list_literal here
-            if list_literal:
+            # return immediately, since we handle is_list here
+            if is_list:
                 return "_coconut.list(_coconut.itertools.chain(" + ", ".join(to_chain) + "))"
             else:
                 return "_coconut.tuple(_coconut.itertools.chain(" + ", ".join(to_chain) + "))"
 
-        if list_literal:
+        if is_list:
             return "[" + out + "]"
         else:
             return out  # the grammar wraps this in parens as needed
 
-    def list_literal_handle(self, original, loc, tokens):
+    def list_expr_handle(self, original, loc, tokens):
         """Handle non-comprehension list literals."""
-        return self.testlist_star_expr_handle(original, loc, tokens, list_literal=True)
+        return self.testlist_star_expr_handle(original, loc, tokens, is_list=True)
 
     def dict_literal_handle(self, original, loc, tokens):
         """Handle {**d1, **d2}."""

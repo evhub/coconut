@@ -1,5 +1,6 @@
-from coconut.__coconut__ import consume as coc_consume  # type: ignore
+from collections.abc import Sequence
 
+from coconut.__coconut__ import consume as coc_consume  # type: ignore
 from coconut.constants import (
     IPY,
     PY2,
@@ -195,16 +196,35 @@ def test_extras():
         assert "map" in keyword_complete_result["matches"]
         assert keyword_complete_result["cursor_start"] == 0
         assert keyword_complete_result["cursor_end"] == 1
-    if not PYPY and (PY2 or PY34):
-        import numpy as np
-        assert np.all(fmap(-> _ + 1, np.arange(3)) == np.array([1, 2, 3]))
-    print("<success>")
+    return True
+
+
+def test_numpy():
+    import numpy as np
+    assert isinstance(np.array([1, 2]) |> fmap$(.+1), np.ndarray)
+    assert np.all(fmap(-> _ + 1, np.arange(3)) == np.array([1, 2, 3]))
+    assert np.array([1, 2; 3, 4]).shape == (2, 2)
+    assert np.array([
+        1, 2;
+        np.array([3, 4]);
+    ]).shape == (2, 2)
+    assert np.array([
+        np.array([1, 2; 3, 4]) ;;
+        np.array([5, 6; 7, 8]) ;;
+    ]).shape == (2, 2, 2)
+    assert np.array([1, 2]) `isinstance` Sequence
+    [1, two] = np.array([1, 2])
+    assert two == 2
+    return True
 
 
 def main():
+    if not PYPY and (PY2 or PY34):
+        assert test_numpy()
     print("Expect Coconut errors below from running extras:")
     print("(but make sure you get a <success> after them)")
-    test_extras()
+    assert test_extras()
+    print("<success>")
     return True
 
 

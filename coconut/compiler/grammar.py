@@ -27,6 +27,9 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 from coconut.root import *  # NOQA
 
+from collections import defaultdict
+from itertools import islice
+
 from coconut._pyparsing import (
     CaselessLiteral,
     Forward,
@@ -164,6 +167,12 @@ def add_parens_handle(tokens):
     """Add parentheses."""
     item, = tokens
     return "(" + item + ")"
+
+
+def add_bracks_handle(tokens):
+    """Add brackets."""
+    item, = tokens
+    return "[" + item + "]"
 
 
 def strip_parens_handle(tokens):
@@ -515,6 +524,39 @@ def partial_op_item_handle(tokens):
         raise CoconutInternalException("invalid operator function implicit partial token group", tok_grp)
 
 
+def array_literal_handle(tokens):
+    """Handle multidimensional array literals."""
+    internal_assert(len(tokens) >= 2, "invalid array literal arguments", tokens)
+
+    # find highest-level array literal seperators
+    sep_indices_by_level = defaultdict(list)
+    for i, sep in islice(enumerate(tokens), 1, None, 2):
+        internal_assert(sep.lstrip(";") == "", "invalid array literal separator", sep)
+        sep_indices_by_level[len(sep)].append(i)
+
+    # split by highest-level seperators
+    sep_level = max(sep_indices_by_level)
+    pieces = []
+    prev_ind = 0
+    for sep_ind in sep_indices_by_level[sep_level]:
+        pieces.append(tokens[prev_ind:sep_ind])
+        prev_ind = sep_ind + 1
+    pieces.append(tokens[prev_ind:])
+
+    # build multidimensional array
+    array_elems = []
+    for p in pieces:
+        if p:
+            subarr_literal = (
+                "_coconut_lift_arr("
+                + (array_literal_handle(p) if len(p) > 1 else p[0]) + ", "
+                + str(sep_level)
+                + ")"
+            )
+            array_elems.append(subarr_literal)
+    return "[" + ", ".join(array_elems) + "]"
+
+
 # end: HANDLERS
 # -----------------------------------------------------------------------------------------------------------------------
 # MAIN GRAMMAR:
@@ -535,6 +577,7 @@ class Grammar(object):
     unsafe_colon = Literal(":")
     colon = ~unsafe_dubcolon + ~colon_eq + unsafe_colon
     semicolon = Literal(";") | invalid_syntax("\u037e", "invalid Greek question mark instead of semicolon", greedy=True)
+    multisemicolon = combine(OneOrMore(semicolon))
     eq = Literal("==")
     equals = ~eq + Literal("=")
     lbrack = Literal("[")
@@ -993,11 +1036,22 @@ class Grammar(object):
         ),
     )
 
-    list_literal = Forward()
-    list_literal_ref = lbrack.suppress() + testlist_star_namedexpr_tokens + rbrack.suppress()
+    list_expr = Forward()
+    list_expr_ref = testlist_star_namedexpr_tokens
+    array_literal = attach(
+        lbrack.suppress() + tokenlist(
+            attach(comprehension_expr, add_bracks_handle)
+            | namedexpr_test + ~comma
+            | list_expr,
+            multisemicolon,
+            suppress=False,
+        ) + rbrack.suppress(),
+        array_literal_handle,
+    )
     list_item = (
         condense(lbrack + Optional(comprehension_expr) + rbrack)
-        | list_literal
+        | lbrack.suppress() + list_expr + rbrack.suppress()
+        | array_literal
     )
 
     keyword_atom = any_keyword_in(const_vars)

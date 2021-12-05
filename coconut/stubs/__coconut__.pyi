@@ -148,7 +148,16 @@ else:
     from itertools import izip_longest as _zip_longest
 
 
+try:
+    import numpy as _numpy
+except ImportError:
+    _numpy = ...
+else:
+    _abc.Sequence.register(_numpy.ndarray)
+
+
 class _coconut:
+    typing = _t  # The real _coconut doesn't import typing, but we want type-checkers to treat it as if it does
     collections = _collections
     copy = _copy
     functools = _functools
@@ -166,7 +175,7 @@ class _coconut:
     abc = _abc
     multiprocessing = _multiprocessing
     multiprocessing_dummy = _multiprocessing_dummy
-    typing = _t  # The real _coconut doesn't import typing, but we want type-checkers to treat it as if it does
+    numpy = _numpy
     if sys.version_info >= (2, 7):
         OrderedDict = staticmethod(collections.OrderedDict)
     else:
@@ -801,3 +810,19 @@ def collectby(
 def _namedtuple_of(**kwargs: _t.Dict[_t.Text, _T]) -> _t.Tuple[_T, ...]: ...
 @_t.overload
 def _namedtuple_of(**kwargs: _t.Dict[_t.Text, _t.Any]) -> _Tuple: ...
+
+
+@_t.overload
+def _coconut_lift_arr(arr: _t.Sequence[_T], level: _t.Literal[1]) -> _t.Sequence[_T]: ...
+@_t.overload
+def _coconut_lift_arr(arr: _T, level: _t.Literal[1]) -> _t.Sequence[_T]: ...
+
+@_t.overload
+def _coconut_lift_arr(arr: _t.Sequence[_t.Sequence[_T]], level: _t.Literal[2]) -> _t.Sequence[_t.Sequence[_T]]: ...
+@_t.overload
+def _coconut_lift_arr(arr: _t.Sequence[_T], level: _t.Literal[2]) -> _t.Sequence[_t.Sequence[_T]]: ...
+@_t.overload
+def _coconut_lift_arr(arr: _T, level: _t.Literal[2]) -> _t.Sequence[_t.Sequence[_T]]: ...
+
+@_t.overload
+def _coconut_lift_arr(arr: _t.Any, level: int) -> _t.Sequence[_t.Any]: ...
