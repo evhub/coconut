@@ -387,14 +387,14 @@ You can also call `mypy` directly on the compiled Coconut if you run `coconut --
 To explicitly annotate your code with types for MyPy to check, Coconut supports [Python 3 function type annotations](https://www.python.org/dev/peps/pep-0484/), [Python 3.6 variable type annotations](https://www.python.org/dev/peps/pep-0526/), and even Coconut's own [enhanced type annotation syntax](#enhanced-type-annotation). By default, all type annotations are compiled to Python-2-compatible type comments, which means it all works on any Python version.
 
 Coconut even supports `--mypy` in the interpreter, which will intelligently scan each new line of code, in the context of previous lines, for newly-introduced MyPy errors. For example:
-```coconut
+```coconut_pycon
 >>> a: str = count()[0]
 <string>:14: error: Incompatible types in assignment (expression has type "int", variable has type "str")
 >>> reveal_type(a)
 0
 <string>:19: note: Revealed type is 'builtins.unicode'
 ```
-_For more information on `reveal_type`, see [`reveal_type` and `reveal_locals`](#reveal_type-and-reveal_locals)._
+_For more information on `reveal_type`, see [`reveal_type` and `reveal_locals`](#reveal-type-and-reveal-locals)._
 
 Sometimes, MyPy will not know how to handle certain Coconut constructs, such as `addpattern`. For the `addpattern` case, it is recommended to pass `--allow-redefinition` to MyPy (i.e. run `coconut <args> --mypy --allow-redefinition`), though in some cases `--allow-redefinition` may not be sufficient. In that case, either hide the offending code using [`TYPE_CHECKING`](#type_checking) or put a `# type: ignore` comment on the Coconut line which is generating the line MyPy is complaining about (you can figure out what line this is using `--line-numbers`) and the comment will be added to every generated line.
 
@@ -402,6 +402,7 @@ Sometimes, MyPy will not know how to handle certain Coconut constructs, such as 
 
 To allow for better use of [`numpy`](https://numpy.org/) objects in Coconut, all compiled Coconut code will do a number of special things to better integrate with `numpy` (if `numpy` is available to import when the code is run). Specifically:
 
+- Coconut's [multidimensional array literal and array concatenation syntax](#multidimensional-array-literals) supports `numpy` objects, including using fast `numpy` concatenation methods if given `numpy` arrays rather than Coconut's default much slower implementation built for Python lists of lists.
 - [`numpy.ndarray`](https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html) is registered as a [`collections.abc.Sequence`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence), enabling it to be used in [sequence patterns](#semantics-specification).
 - When a `numpy` object is passed to [`fmap`](#fmap), [`numpy.vectorize`](https://numpy.org/doc/stable/reference/generated/numpy.vectorize.html) is used instead of the default `fmap` implementation.
 
@@ -742,38 +743,6 @@ import functools
 (lambda result: None if result is None else result[0])(could_be_none())
 (lambda result: None if result is None else result.attr[index].method())(could_be_none())
 ```
-
-### Expanded Indexing for Iterables
-
-Beyond indexing standard Python sequences, Coconut supports indexing into a number of iterables, including `range` and `map`, which do not support random access in all Python versions but do in Coconut. In Coconut, indexing into an iterable of this type uses the same syntax as indexing into a sequence in vanilla Python.
-
-##### Example
-
-**Coconut:**
-```coconut
-range(0, 12, 2)[4]  # 8
-
-map((i->i*2), range(10))[2]  # 4
-```
-
-**Python:**
-Can’t be done quickly without Coconut’s iterable indexing, which requires many complicated pieces. The necessary definitions in Python can be found in the Coconut header.
-
-##### Indexing into other built-ins
-
-Coconut cannot index into built-ins like `filter`, `takewhile`, or `dropwhile` directly, as there is no efficient way to do so.
-
-```coconut
-range(10) |> filter$(i->i>3) |> .[0]  # doesn't work
-```
-
-In order to make this work, you can explicitly use iterator slicing, which is less efficient in the general case:
-
-```coconut
-range(10) |> filter$(i->i>3) |> .$[0]  # works
-```
-
-For more information on Coconut's iterator slicing, see [here](#iterator-slicing).
 
 ### Unicode Alternatives
 
@@ -1296,26 +1265,6 @@ g = def (a: int, b: int) -> a ** b
 
 However, statement lambdas do not support return type annotations.
 
-### Lazy Lists
-
-Coconut supports the creation of lazy lists, where the contents in the list will be treated as an iterator and not evaluated until they are needed. Unlike normal iterators, however, lazy lists can be iterated over multiple times and still return the same result. Lazy lists can be created in Coconut simply by surrounding a comma-separated list of items with `(|` and `|)` (so-called "banana brackets") instead of `[` and `]` for a list or `(` and `)` for a tuple.
-
-Lazy lists use [reiterable](#reiterable) under the hood to enable them to be iterated over multiple times.
-
-##### Rationale
-
-Lazy lists, where sequences are only evaluated when their contents are requested, are a mainstay of functional programming, allowing for dynamic evaluation of the list's contents.
-
-##### Example
-
-**Coconut:**
-```coconut
-(| print("hello,"), print("world!") |) |> consume
-```
-
-**Python:**
-_Can't be done without a complicated iterator comprehension in place of the lazy list. See the compiled code for the Python syntax._
-
 ### Operator Functions
 
 Coconut uses a simple operator function short-hand: surround an operator with parentheses to retrieve its function. Similarly to iterator comprehensions, if the operator function is the only argument to a function, the parentheses of the function call can also serve as the parentheses for the operator function.
@@ -1430,36 +1379,6 @@ mod(5, 3)
 (3 * 2) + 1
 ```
 
-### Implicit Function Application
-
-Coconut supports implicit function application of the form `f x y`, which is compiled to `f(x, y)` (note: **not** `f(x)(y)` as is common in many languages with automatic currying). Implicit function application has a lower precedence than attribute access, slices, normal function calls, etc. but a higher precedence than `await`.
-
-Supported arguments to implicit function application are highly restricted, and must be either variables/attributes or **non-string** constants (e.g. `f x 1` will work but `f x [1]`, `f x (1+2)`, and `f "abc"` will not). Strings are disallowed due to conflicting with [Python's implicit string concatenation](https://stackoverflow.com/questions/18842779/string-concatenation-without-operator). Implicit function application is only intended for simple use cases—for more complex cases, use either standard function application or [pipes](#pipeline).
-
-##### Examples
-
-**Coconut:**
-```coconut
-def f(x, y) = (x, y)
-print(f 5 10)
-```
-
-```coconut
-def p1(x) = x + 1
-print <| p1 5
-```
-
-**Python:**
-```coconut_python
-def f(x, y): return (x, y)
-print(f(100, 5+6))
-```
-
-```coconut_python
-def p1(x): return x + 1
-print(p1(5))
-```
-
 ### Enhanced Type Annotation
 
 Since Coconut syntax is a superset of Python 3 syntax, it supports [Python 3 function type annotation syntax](https://www.python.org/dev/peps/pep-0484/) and [Python 3.6 variable type annotation syntax](https://www.python.org/dev/peps/pep-0526/). By default, Coconut compiles all type annotations into Python-2-compatible type comments. If you want to keep the type annotations instead, simply pass a `--target` that supports them.
@@ -1496,7 +1415,7 @@ foo: int[] = [0, 1, 2, 3, 4, 5]
 foo[0] = 1   # MyPy error: "Unsupported target for indexed assignment"
 ```
 
-If you want to use `List` instead (if you want to support indexed assignment), use the standard Python 3.5 variable type annotation syntax: `foo: List[<type>]`.
+If you want to use `List` instead (e.g. if you want to support indexed assignment), use the standard Python 3.5 variable type annotation syntax: `foo: List[<type>]`.
 
 _Note: To easily view your defined types, see [`reveal_type` and `reveal_locals`](#reveal-type-and-reveal-locals)._
 
@@ -1520,6 +1439,129 @@ def int_map(
 ):
     # type: (...) -> typing.Sequence[int]
     return list(map(f, xs))
+```
+
+### Multidimensional Array Literals
+
+Coconut supports multidimensional array literal and array concatenate/stack syntax. By default, all multidimensional array syntax will simply operate on Python lists of lists. However, if [`numpy`](http://www.numpy.org/) objects are used, the appropriate `numpy` calls will be made instead.
+
+As a simple example, 2D matrices can be constructed by separating the rows with `;;` inside of a list literal
+```coconut_pycon
+>>> [1, 2 ;;
+     3, 4]
+
+[[1, 2], [3, 4]]
+>>> import numpy as np
+>>> np.array([1, 2 ;; 3, 4])
+array([[1, 2],
+       [3, 4]])
+```
+and as can be seen, `np.array` (or equivalent) can be used to turn the resulting list of lists into an actual array. This syntax works because `;;` inside of a list functions as a concatenation/stack along the `-2` axis, with the inner arrays being broadcast to `(1, 2)` arrays before concatenation. Note that this concatenation is done entirely in Python lists of lists here, since the `np.array` call comes only at the end.
+
+In general, the number of semicolons indicates the dimension from the end on which to concatenate. Thus, `;` indicates conatenation along the `-1` axis, `;;` along the `-2` axis, and so on. Before concatenation, arrays are always broadcast to a shape which is large enough to allow the concatenation.
+
+Thus, if `a` is a `numpy` array, `[a; a]` is equivalent to `np.concatenate((a, a), axis=-1)`, while `[a ;; a]` would be equivalent to a version of `np.concatenate((a, a), axis=-2)` that also ensures that `a` is at least two dimensional. For normal lists of lists, the behavior is the same, but is implemented without any `numpy` calls.
+
+If multiple different concatenation operators are used, the operators with the least number of semicolons will bind most tightly. Thus, you can write a 3D array literal as:
+```coconut_pycon
+>>> [1, 2 ;;
+     3, 4
+     ;;;
+     5, 6 ;;
+     7, 8]
+
+[[[1, 2], [3, 4]], [[5, 6], [7, 8]]]
+```
+
+##### Comparison to Julia
+
+Coconut's multidimensional array syntax is based on that of [Julia](https://docs.julialang.org/en/v1/manual/arrays/#man-array-literals). The primary difference between Coconut's syntax and Julia's syntax is that multidimensional arrays are row-first in Coconut (following `numpy`), but column-first in Julia. Thus, `;` is vertical concatenation in Julia but **horizontal concatenation** in Coconut and `;;` is horizontal concatenation in Julia but **vertical concatenation** in Coconut.
+
+##### Examples
+
+**Coconut:**
+```coconut_pycon
+>>> [[1;;2] ; [3;;4]]
+[[1, 3], [2, 4]]
+```
+_Array literals can be written in column-first order if the columns are first created via vertical concatenation (`;;`) and then joined via horizontal concatenation (`;`)._
+
+```coconut_pycon
+>>> [range(3) |> list ;; x+1 for x in range(3)]
+[[0, 1, 2], [1, 2, 3]]
+```
+_Arbitrary expressions, including comprehensions, are allowed in multidimensional array literals._
+
+```coconut_pycon
+>>> import numpy as np
+>>> a = np.array([1, 2 ;; 3, 4])
+>>> [a ; a]
+array([[1, 2, 1, 2],
+       [3, 4, 3, 4]])
+>>> [a ;; a]
+array([[1, 2],
+       [3, 4],
+       [1, 2],
+       [3, 4]])
+>>> [a ;;; a]
+array([[[1, 2],
+        [3, 4]],
+
+       [[1, 2],
+        [3, 4]]])
+```
+_General showcase of how the different concatenation operators work using `numpy` arrays._
+
+**Python:** _The equivalent Python array literals can be seen in the printed representations in each example._
+
+### Lazy Lists
+
+Coconut supports the creation of lazy lists, where the contents in the list will be treated as an iterator and not evaluated until they are needed. Unlike normal iterators, however, lazy lists can be iterated over multiple times and still return the same result. Lazy lists can be created in Coconut simply by surrounding a comma-separated list of items with `(|` and `|)` (so-called "banana brackets") instead of `[` and `]` for a list or `(` and `)` for a tuple.
+
+Lazy lists use [reiterable](#reiterable) under the hood to enable them to be iterated over multiple times.
+
+##### Rationale
+
+Lazy lists, where sequences are only evaluated when their contents are requested, are a mainstay of functional programming, allowing for dynamic evaluation of the list's contents.
+
+##### Example
+
+**Coconut:**
+```coconut
+(| print("hello,"), print("world!") |) |> consume
+```
+
+**Python:**
+_Can't be done without a complicated iterator comprehension in place of the lazy list. See the compiled code for the Python syntax._
+
+### Implicit Function Application
+
+Coconut supports implicit function application of the form `f x y`, which is compiled to `f(x, y)` (note: **not** `f(x)(y)` as is common in many languages with automatic currying). Implicit function application has a lower precedence than attribute access, slices, normal function calls, etc. but a higher precedence than `await`.
+
+Supported arguments to implicit function application are highly restricted, and must be either variables/attributes or **non-string** constants (e.g. `f x 1` will work but `f x [1]`, `f x (1+2)`, and `f "abc"` will not). Strings are disallowed due to conflicting with [Python's implicit string concatenation](https://stackoverflow.com/questions/18842779/string-concatenation-without-operator). Implicit function application is only intended for simple use cases—for more complex cases, use either standard function application or [pipes](#pipeline).
+
+##### Examples
+
+**Coconut:**
+```coconut
+def f(x, y) = (x, y)
+print(f 5 10)
+```
+
+```coconut
+def p1(x) = x + 1
+print <| p1 5
+```
+
+**Python:**
+```coconut_python
+def f(x, y): return (x, y)
+print(f(100, 5+6))
+```
+
+```coconut_python
+def p1(x): return x + 1
+print(p1(5))
 ```
 
 ### Anonymous Namedtuples
@@ -2084,6 +2126,38 @@ depth: 1
 ---
 ```
 
+### Expanded Indexing for Iterables
+
+Beyond indexing standard Python sequences, Coconut supports indexing into a number of built-in iterables, including `range` and `map`, which do not support random access in all Python versions but do in Coconut. In Coconut, indexing into an iterable of this type uses the same syntax as indexing into a sequence in vanilla Python.
+
+##### Example
+
+**Coconut:**
+```coconut
+range(0, 12, 2)[4]  # 8
+
+map((i->i*2), range(10))[2]  # 4
+```
+
+**Python:**
+Can’t be done quickly without Coconut’s iterable indexing, which requires many complicated pieces. The necessary definitions in Python can be found in the Coconut header.
+
+##### Indexing into other built-ins
+
+Coconut cannot index into built-ins like `filter`, `takewhile`, or `dropwhile` directly, as there is no efficient way to do so.
+
+```coconut
+range(10) |> filter$(i->i>3) |> .[0]  # doesn't work
+```
+
+In order to make this work, you can explicitly use iterator slicing, which is less efficient in the general case:
+
+```coconut
+range(10) |> filter$(i->i>3) |> .$[0]  # works
+```
+
+For more information on Coconut's iterator slicing, see [here](#iterator-slicing).
+
 ### Enhanced Built-Ins
 
 Coconut's `map`, `zip`, `filter`, `reversed`, and `enumerate` objects are enhanced versions of their Python equivalents that support:
@@ -2354,7 +2428,7 @@ The original underlying function is accessible through the `__wrapped__` attribu
 An LRU (least recently used) cache works best when the most recent calls are the best predictors of upcoming calls (for example, the most popular articles on a news server tend to change each day). The cache’s size limit assures that the cache does not grow without bound on long-running processes such as web servers.
 
 Example of an LRU cache for static web content:
-```coconut_python
+```coconut_pycon
 @memoize(maxsize=32)
 def get_pep(num):
     'Retrieve text of a Python Enhancement Proposal'

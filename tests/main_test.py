@@ -94,6 +94,7 @@ ignore_mypy_errs_with = (
     "Exiting with error: MyPy error",
     "tutorial.py",
     "unused 'type: ignore' comment",
+    "site-packages/numpy",
 )
 
 ignore_atexit_errors_with = (
