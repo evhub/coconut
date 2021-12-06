@@ -451,7 +451,7 @@ def get_target_info_smart(target, mode="lowest"):
 
 
 # -----------------------------------------------------------------------------------------------------------------------
-# WRAPPING:
+# PARSE ELEMENTS:
 # -----------------------------------------------------------------------------------------------------------------------
 
 class Wrap(ParseElementEnhance):
@@ -522,10 +522,6 @@ def disable_outside(item, *elems):
         yield wrapped
 
 
-# -----------------------------------------------------------------------------------------------------------------------
-# UTILITIES:
-# -----------------------------------------------------------------------------------------------------------------------
-
 def labeled_group(item, label):
     """A labeled pyparsing Group."""
     return Group(item(label))
@@ -543,41 +539,12 @@ def invalid_syntax(item, msg, **kwargs):
     return attach(item, invalid_syntax_handle, ignore_tokens=True, **kwargs)
 
 
-def multi_index_lookup(iterable, item, indexable_types, default=None):
-    """Nested lookup of item in iterable."""
-    for i, inner_iterable in enumerate(iterable):
-        if inner_iterable == item:
-            return (i,)
-        if isinstance(inner_iterable, indexable_types):
-            inner_indices = multi_index_lookup(inner_iterable, item, indexable_types)
-            if inner_indices is not None:
-                return (i,) + inner_indices
-    return default
-
-
-def append_it(iterator, last_val):
-    """Iterate through iterator then yield last_val."""
-    for x in iterator:
-        yield x
-    yield last_val
-
-
-def join_args(*arglists):
-    """Join split argument tokens."""
-    return ", ".join(arg for args in arglists for arg in args if arg)
-
-
-def paren_join(items, sep):
-    """Join items by sep with parens around individual items but not the whole."""
-    return items[0] if len(items) == 1 else "(" + (") " + sep + " (").join(items) + ")"
-
-
-skip_whitespace = SkipTo(CharsNotIn(default_whitespace_chars)).suppress()
-
-
 def skip_to_in_line(item):
     """Skip parsing to the next match of item in the current line."""
     return SkipTo(item, failOn=Literal("\n"))
+
+
+skip_whitespace = SkipTo(CharsNotIn(default_whitespace_chars)).suppress()
 
 
 def longest(*args):
@@ -587,41 +554,6 @@ def longest(*args):
     for elem in args[1:]:
         matcher ^= elem + skip_whitespace
     return matcher
-
-
-def addskip(skips, skip):
-    """Add a line skip to the skips."""
-    if skip < 1:
-        complain(CoconutInternalException("invalid skip of line " + str(skip)))
-    else:
-        skips.append(skip)
-    return skips
-
-
-def count_end(teststr, testchar):
-    """Count instances of testchar at end of teststr."""
-    count = 0
-    x = len(teststr) - 1
-    while x >= 0 and teststr[x] == testchar:
-        count += 1
-        x -= 1
-    return count
-
-
-def paren_change(inputstring, opens=opens, closes=closes):
-    """Determine the parenthetical change of level (num closes - num opens)."""
-    count = 0
-    for c in inputstring:
-        if c in opens:  # open parens/brackets/braces
-            count -= 1
-        elif c in closes:  # close parens/brackets/braces
-            count += 1
-    return count
-
-
-def ind_change(inputstring):
-    """Determine the change in indentation level (num opens - num closes)."""
-    return inputstring.count(openindent) - inputstring.count(closeindent)
 
 
 def compile_regex(regex, options=None):
@@ -756,6 +688,74 @@ def keyword(name, explicit_prefix=None):
         return base_kwd
     else:
         return Optional(explicit_prefix.suppress()) + base_kwd
+
+
+# -----------------------------------------------------------------------------------------------------------------------
+# UTILITIES:
+# -----------------------------------------------------------------------------------------------------------------------
+
+def multi_index_lookup(iterable, item, indexable_types, default=None):
+    """Nested lookup of item in iterable."""
+    for i, inner_iterable in enumerate(iterable):
+        if inner_iterable == item:
+            return (i,)
+        if isinstance(inner_iterable, indexable_types):
+            inner_indices = multi_index_lookup(inner_iterable, item, indexable_types)
+            if inner_indices is not None:
+                return (i,) + inner_indices
+    return default
+
+
+def append_it(iterator, last_val):
+    """Iterate through iterator then yield last_val."""
+    for x in iterator:
+        yield x
+    yield last_val
+
+
+def join_args(*arglists):
+    """Join split argument tokens."""
+    return ", ".join(arg for args in arglists for arg in args if arg)
+
+
+def paren_join(items, sep):
+    """Join items by sep with parens around individual items but not the whole."""
+    return items[0] if len(items) == 1 else "(" + (") " + sep + " (").join(items) + ")"
+
+
+def addskip(skips, skip):
+    """Add a line skip to the skips."""
+    if skip < 1:
+        complain(CoconutInternalException("invalid skip of line " + str(skip)))
+    else:
+        skips.append(skip)
+    return skips
+
+
+def count_end(teststr, testchar):
+    """Count instances of testchar at end of teststr."""
+    count = 0
+    x = len(teststr) - 1
+    while x >= 0 and teststr[x] == testchar:
+        count += 1
+        x -= 1
+    return count
+
+
+def paren_change(inputstring, opens=opens, closes=closes):
+    """Determine the parenthetical change of level (num closes - num opens)."""
+    count = 0
+    for c in inputstring:
+        if c in opens:  # open parens/brackets/braces
+            count -= 1
+        elif c in closes:  # close parens/brackets/braces
+            count += 1
+    return count
+
+
+def ind_change(inputstring):
+    """Determine the change in indentation level (num opens - num closes)."""
+    return inputstring.count(openindent) - inputstring.count(closeindent)
 
 
 def tuple_str_of(items, add_quotes=False, add_parens=True):
@@ -897,3 +897,39 @@ def handle_indentation(inputstr, add_newline=False):
     out = "\n".join(out_lines)
     internal_assert(lambda: out.count(openindent) == out.count(closeindent), "failed to properly handle indentation in", out)
     return out
+
+
+def get_func_closure(func):
+    """Get variables in func's closure."""
+    if PY2:
+        varnames = func.func_code.co_freevars
+        cells = func.func_closure
+    else:
+        varnames = func.__code__.co_freevars
+        cells = func.__closure__
+    return {v: c.cell_contents for v, c in zip(varnames, cells)}
+
+
+def get_highest_parse_loc():
+    """Get the highest observed parse location."""
+    try:
+        # extract the actual cache object (pyparsing does not make this easy)
+        packrat_cache = ParserElement.packrat_cache
+        if isinstance(packrat_cache, dict):  # if enablePackrat is never called
+            cache = packrat_cache
+        elif hasattr(packrat_cache, "cache"):  # cPyparsing adds this
+            cache = packrat_cache.cache
+        else:  # on pyparsing we have to do this
+            cache = get_func_closure(packrat_cache.get.__func__)["cache"]
+
+        # find the highest observed parse location
+        highest_loc = 0
+        for _, _, loc, _, _ in cache:
+            if loc > highest_loc:
+                highest_loc = loc
+        return highest_loc
+
+    # everything here is sketchy, so errors should only be complained
+    except Exception as err:
+        complain(err)
+        return 0

@@ -1292,6 +1292,25 @@ end = End()
 
 
 # advent of code
+final_pos = (
+    .strip()
+    ..> .splitlines()
+    ..> map$(
+        .split()
+        ..*> (def (move, num) ->
+            n = int(num);
+            # (horizontal, vertical)
+            (n, 0) if move == "forward" else
+            (0, n) if move == "down" else
+            (0, -n) if move == "up" else
+            (assert)(False)
+        )
+    )
+    ..*> zip
+    ..> map$(sum)
+    ..*> (*)
+)
+
 def gam_eps_rate(bitarr) = (
     bitarr
     |*> zip

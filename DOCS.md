@@ -1443,9 +1443,9 @@ def int_map(
 
 ### Multidimensional Array Literals
 
-Coconut supports multidimensional array literal and array concatenate/stack syntax. By default, all multidimensional array syntax will simply operate on Python lists of lists. However, if [`numpy`](http://www.numpy.org/) objects are used, the appropriate `numpy` calls will be made instead.
+Coconut supports multidimensional array literal and array [concatenation](https://numpy.org/doc/stable/reference/generated/numpy.concatenate.html)/[stack](https://numpy.org/doc/stable/reference/generated/numpy.stack.html) syntax. By default, all multidimensional array syntax will simply operate on Python lists of lists. However, if [`numpy`](http://www.numpy.org/) objects are used, the appropriate `numpy` calls will be made instead.
 
-As a simple example, 2D matrices can be constructed by separating the rows with `;;` inside of a list literal
+As a simple example, 2D matrices can be constructed by separating the rows with `;;` inside of a list literal:
 ```coconut_pycon
 >>> [1, 2 ;;
      3, 4]
@@ -1456,7 +1456,7 @@ As a simple example, 2D matrices can be constructed by separating the rows with 
 array([[1, 2],
        [3, 4]])
 ```
-and as can be seen, `np.array` (or equivalent) can be used to turn the resulting list of lists into an actual array. This syntax works because `;;` inside of a list functions as a concatenation/stack along the `-2` axis, with the inner arrays being broadcast to `(1, 2)` arrays before concatenation. Note that this concatenation is done entirely in Python lists of lists here, since the `np.array` call comes only at the end.
+As can be seen, `np.array` (or equivalent) can be used to turn the resulting list of lists into an actual array. This syntax works because `;;` inside of a list literal functions as a concatenation/stack along the `-2` axis (with the inner arrays being broadcast to `(1, 2)` arrays before concatenation). Note that this concatenation is done entirely in Python lists of lists here, since the `np.array` call comes only at the end.
 
 In general, the number of semicolons indicates the dimension from the end on which to concatenate. Thus, `;` indicates conatenation along the `-1` axis, `;;` along the `-2` axis, and so on. Before concatenation, arrays are always broadcast to a shape which is large enough to allow the concatenation.
 

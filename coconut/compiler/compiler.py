@@ -67,6 +67,7 @@ from coconut.constants import (
     none_coalesce_var,
     is_data_var,
     funcwrapper,
+    non_syntactic_newline,
 )
 from coconut.util import checksum
 from coconut.exceptions import (
@@ -122,6 +123,7 @@ from coconut.compiler.util import (
     tuple_str_of,
     join_args,
     parse_where,
+    get_highest_parse_loc,
 )
 from coconut.compiler.header import (
     minify,
@@ -551,14 +553,14 @@ class Compiler(Grammar):
                 adj_ln = i
         return adj_ln + need_unskipped
 
-    def reformat(self, snip, index=None):
+    def reformat(self, snip, *indices):
         """Post process a preprocessed snippet."""
-        if index is None:
+        if not indices:
             with self.complain_on_err():
                 return self.apply_procs(self.reformatprocs, snip, reformatting=True, log=False)
             return snip
         else:
-            return self.reformat(snip), len(self.reformat(snip[:index]))
+            return (self.reformat(snip),) + tuple(len(self.reformat(snip[:index])) for index in indices)
 
     def eval_now(self, code):
         """Reformat and evaluate a code snippet and return code for the result."""
@@ -718,6 +720,7 @@ class Compiler(Grammar):
         err_line = err.line
         err_index = err.col - 1
         err_lineno = err.lineno if include_ln else None
+        endpoint = get_highest_parse_loc() + 1
 
         causes = []
         for cause, _, _ in all_matches(self.parse_err_msg, err_line[err_index:], inner=True):
@@ -731,11 +734,18 @@ class Compiler(Grammar):
             extra = None
 
         if reformat:
-            err_line, err_index = self.reformat(err_line, err_index)
+            err_line, err_index, endpoint = self.reformat(err_line, err_index, endpoint)
             if err_lineno is not None:
                 err_lineno = self.adjust(err_lineno)
 
-        return CoconutParseError(msg, err_line, err_index, err_lineno, extra)
+        return CoconutParseError(
+            msg,
+            err_line,
+            err_index,
+            err_lineno,
+            extra,
+            endpoint,
+        )
 
     def inner_parse_eval(
         self,
@@ -1034,10 +1044,10 @@ class Compiler(Grammar):
                 if self.strict:
                     raise self.make_err(CoconutStyleError, "found backslash continuation", last, len(last), self.adjust(ln - 1))
                 skips = addskip(skips, self.adjust(ln))
-                new[-1] = last[:-1] + " " + line
+                new[-1] = last[:-1] + non_syntactic_newline + line
             elif opens:  # inside parens
                 skips = addskip(skips, self.adjust(ln))
-                new[-1] = last + " " + line
+                new[-1] = last + non_syntactic_newline + line
             else:
                 check = self.leading_whitespace(line)
                 if current is None:
@@ -1090,14 +1100,18 @@ class Compiler(Grammar):
         out = []
         level = 0
 
-        for line in inputstring.splitlines():
+        next_line_is_fake = False
+        for line in inputstring.splitlines(True):
+            is_fake = next_line_is_fake
+            next_line_is_fake = line.endswith("\f") and line.rstrip("\f") == line.rstrip()
+
             line, comment = split_comment(line.strip())
 
             indent, line = split_leading_indent(line)
             level += ind_change(indent)
 
             if line:
-                line = " " * self.tabideal * level + line
+                line = " " * self.tabideal * (level + int(is_fake)) + line
 
             line, indent = split_trailing_indent(line)
             level += ind_change(indent)

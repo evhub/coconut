@@ -101,8 +101,7 @@ use_packrat_parser = True
 use_left_recursion_if_available = False
 packrat_cache_size = None  # only works because final() clears the cache
 
-# we don't include \r here because the compiler converts \r into \n
-default_whitespace_chars = " \t\f\v\xa0"
+default_whitespace_chars = " \t\f"  # the only non-newline whitespace Python allows
 
 varchars = string.ascii_letters + string.digits + "_"
 
@@ -129,7 +128,9 @@ numpy_modules = (
     "pandas",
 )
 
-legal_indent_chars = " \t\xa0"
+legal_indent_chars = " \t"  # the only Python-legal indent chars
+
+non_syntactic_newline = "\f"
 
 # both must be in ascending order
 supported_py2_vers = (
@@ -611,7 +612,7 @@ all_reqs = {
 
 # min versions are inclusive
 min_versions = {
-    "cPyparsing": (2, 4, 7, 1, 0, 0),
+    "cPyparsing": (2, 4, 7, 1, 1, 0),
     ("pre-commit", "py3"): (2,),
     "psutil": (5,),
     "jupyter": (1, 0),

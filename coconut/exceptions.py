@@ -21,7 +21,10 @@ from coconut.root import *  # NOQA
 
 import sys
 
-from coconut._pyparsing import lineno
+from coconut._pyparsing import (
+    lineno,
+    col as getcol,
+)
 
 from coconut.constants import (
     taberrfmt,
@@ -53,6 +56,11 @@ def clean(inputline, strip=True, encoding_errors="replace"):
 def displayable(inputstr, strip=True):
     """Make a string displayable with minimal loss of information."""
     return clean(str(inputstr), strip, encoding_errors="backslashreplace")
+
+
+def clip(num, min, max):
+    """Clip num to live in [min, max]."""
+    return min if num < min else max if num > max else num
 
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -97,11 +105,11 @@ class CoconutException(Exception):
 class CoconutSyntaxError(CoconutException):
     """Coconut SyntaxError."""
 
-    def __init__(self, message, source=None, point=None, ln=None, extra=None):
+    def __init__(self, message, source=None, point=None, ln=None, extra=None, endpoint=None):
         """Creates the Coconut SyntaxError."""
-        self.args = (message, source, point, ln, extra)
+        self.args = (message, source, point, ln, extra, endpoint)
 
-    def message(self, message, source, point, ln, extra=None):
+    def message(self, message, source, point, ln, extra=None, endpoint=None):
         """Creates a SyntaxError-like message."""
         if message is None:
             message = "parsing failed"
@@ -113,14 +121,47 @@ class CoconutSyntaxError(CoconutException):
             if point is None:
                 message += "\n" + " " * taberrfmt + clean(source)
             else:
-                part = clean(source.splitlines()[lineno(point, source) - 1], False).lstrip()
-                point -= len(source) - len(part)  # adjust all points based on lstrip
-                part = part.rstrip()  # adjust only points that are too large based on rstrip
-                message += "\n" + " " * taberrfmt + part
-                if point > 0:
-                    if point >= len(part):
-                        point = len(part) - 1
-                    message += "\n" + " " * (taberrfmt + point) + "^"
+                if endpoint is None:
+                    endpoint = point + 1
+                else:
+                    endpoint = clip(endpoint, point + 1, len(source))
+
+                point_ln = lineno(point, source)
+                endpoint_ln = max((point_ln, lineno(endpoint, source)))
+
+                # single-line error message (endpoint maybe None)
+                if point_ln == endpoint_ln:
+                    part = clean(source.splitlines()[point_ln - 1], False).lstrip()
+
+                    # adjust all points based on lstrip
+                    point -= len(source) - len(part)
+                    endpoint -= len(source) - len(part)
+
+                    part = part.rstrip()
+
+                    # adjust only points that are too large based on rstrip
+                    point = clip(point, 0, len(part) - 1)
+                    endpoint = clip(endpoint, point + 1, len(part))
+
+                    message += "\n" + " " * taberrfmt + part
+
+                    if endpoint - point > 0:
+                        message += "\n" + " " * (taberrfmt + point) + "^"
+                        if endpoint - point > 1:
+                            message += "~" * (endpoint - point - 2) + "^"
+
+                # multi-line error message (endpoint not None)
+                else:
+                    lines = source.splitlines()[point_ln - 1:endpoint_ln]
+
+                    point_col = getcol(point, source)
+                    endpoint_col = getcol(endpoint, source)
+
+                    message += "\n" + " " * (taberrfmt + point_col - 1) + "|" + "~" * (len(lines[0]) - point_col) + "\n"
+                    for line in lines:
+                        message += "\n" + " " * taberrfmt + clean(line, False).rstrip()
+                    message += "\n\n" + " " * taberrfmt + "~" * (endpoint_col - 1) + "^"
+
         return message
 
     def syntax_err(self):
@@ -168,10 +209,6 @@ class CoconutTargetError(CoconutSyntaxError):
 
 class CoconutParseError(CoconutSyntaxError):
     """Coconut ParseError."""
-
-    def __init__(self, message=None, source=None, point=None, ln=None, extra=None):
-        """Creates the ParseError."""
-        self.args = (message, source, point, ln, extra)
 
 
 class CoconutWarning(CoconutException):

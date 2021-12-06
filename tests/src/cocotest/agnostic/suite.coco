@@ -777,6 +777,13 @@ def suite_test() -> bool:
     assert range(10)$[:`end`] == range(10) == range(10)[:`end`]
     assert range(10)$[:`end-0`] == range(10) == range(10)[:`end-0`]
     assert range(10)$[:`end-1`] == range(10)[:-1] == range(10)[:`end-1`]
+    assert final_pos("""
+forward 5
+down 5
+forward 8
+up 3
+down 8
+forward 2""") == 150
     s = """
 00100
 11110
