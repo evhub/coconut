@@ -231,7 +231,7 @@ def _coconut_assert(cond, msg=None):
         assert False, msg if msg is not None else "(assert) got falsey value " + _coconut.repr(cond)
 def _coconut_bool_and(a, b): return a and b
 def _coconut_bool_or(a, b): return a or b
-def _coconut_none_coalesce(a, b): return a if a is not None else b
+def _coconut_none_coalesce(a, b): return b if a is None else a
 def _coconut_minus(a, b=_coconut_sentinel):
     if b is _coconut_sentinel:
         return -a

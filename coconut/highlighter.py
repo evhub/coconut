@@ -56,7 +56,7 @@ class CoconutPythonLexer(Python3Lexer):
 
     def __init__(self, stripnl=False, stripall=False, ensurenl=True, tabsize=tabideal, encoding=default_encoding):
         """Initialize the Python syntax highlighter."""
-        Python3Lexer.__init__(self, stripnl=stripnl, stripall=stripall, ensurenl=ensurenl, tabsize=tabsize, encoding=default_encoding)
+        Python3Lexer.__init__(self, stripnl=stripnl, stripall=stripall, ensurenl=ensurenl, tabsize=tabsize, encoding=encoding)
         self.original_add_filter, self.add_filter = self.add_filter, lenient_add_filter
 
 
@@ -68,7 +68,7 @@ class CoconutPythonConsoleLexer(PythonConsoleLexer):
 
     def __init__(self, stripnl=False, stripall=False, ensurenl=True, tabsize=tabideal, encoding=default_encoding, python3=True):
         """Initialize the Python console syntax highlighter."""
-        PythonConsoleLexer.__init__(self, stripnl=stripnl, stripall=stripall, ensurenl=ensurenl, tabsize=tabsize, encoding=default_encoding, python3=python3)
+        PythonConsoleLexer.__init__(self, stripnl=stripnl, stripall=stripall, ensurenl=ensurenl, tabsize=tabsize, encoding=encoding, python3=python3)
         self.original_add_filter, self.add_filter = self.add_filter, lenient_add_filter
 
 
@@ -106,7 +106,7 @@ class CoconutLexer(Python3Lexer):
 
     def __init__(self, stripnl=False, stripall=False, ensurenl=True, tabsize=tabideal, encoding=default_encoding):
         """Initialize the Python syntax highlighter."""
-        Python3Lexer.__init__(self, stripnl=stripnl, stripall=stripall, ensurenl=ensurenl, tabsize=tabsize, encoding=default_encoding)
+        Python3Lexer.__init__(self, stripnl=stripnl, stripall=stripall, ensurenl=ensurenl, tabsize=tabsize, encoding=encoding)
         self.original_add_filter, self.add_filter = self.add_filter, lenient_add_filter
 
     def analyse_text(text):
