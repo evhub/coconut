@@ -112,3 +112,4 @@ ENV/
 # Coconut
 coconut/
 tests/
+docs/
