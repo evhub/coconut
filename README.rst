@@ -1,7 +1,7 @@
 |logo| Coconut
 ==============
 
-.. |logo| image:: todo.png
+.. |logo| image:: https://github.com/evhub/coconut/raw/gh-pages/favicon-32x32.png
 
 .. image:: https://opencollective.com/coconut/backers/badge.svg
     :alt: Backers on Open Collective
