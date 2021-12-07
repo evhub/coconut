@@ -69,7 +69,7 @@ from coconut.constants import (
     funcwrapper,
     non_syntactic_newline,
 )
-from coconut.util import checksum
+from coconut.util import checksum, clip
 from coconut.exceptions import (
     CoconutException,
     CoconutSyntaxError,
@@ -717,13 +717,25 @@ class Compiler(Grammar):
 
     def make_parse_err(self, err, reformat=True, include_ln=True, msg=None):
         """Make a CoconutParseError from a ParseBaseException."""
-        err_line = err.line
-        err_index = err.col - 1
+        # extract information from the error
+        err_original = err.pstr
+        err_loc = err.loc
         err_lineno = err.lineno if include_ln else None
-        endpoint = get_highest_parse_loc() + 1
+        err_endpt = clip(get_highest_parse_loc() + 1, min=err_loc)
 
+        # build the source snippet that the error is referring to
+        loc_line_ind = lineno(err_loc, err_original) - 1
+        endpt_line_ind = lineno(err_endpt, err_original) - 1
+        original_lines = err_original.splitlines(True)
+        snippet = "".join(original_lines[loc_line_ind:endpt_line_ind + 1])
+
+        # fix error locations to correspond to the snippet
+        loc_in_snip = getcol(err_loc, err_original) - 1
+        endpt_in_snip = err_endpt - sum(len(line) for line in original_lines[:loc_line_ind])
+
+        # determine possible causes
         causes = []
-        for cause, _, _ in all_matches(self.parse_err_msg, err_line[err_index:], inner=True):
+        for cause, _, _ in all_matches(self.parse_err_msg, snippet[loc_in_snip:], inner=True):
             causes.append(cause)
         if causes:
             extra = "possible cause{s}: {causes}".format(
@@ -733,18 +745,20 @@ class Compiler(Grammar):
         else:
             extra = None
 
+        # reformat the snippet and fix error locations to match
         if reformat:
-            err_line, err_index, endpoint = self.reformat(err_line, err_index, endpoint)
+            snippet, loc_in_snip, endpt_in_snip = self.reformat(snippet, loc_in_snip, endpt_in_snip)
             if err_lineno is not None:
                 err_lineno = self.adjust(err_lineno)
 
+        # build the error
         return CoconutParseError(
             msg,
-            err_line,
-            err_index,
+            snippet,
+            loc_in_snip,
             err_lineno,
             extra,
-            endpoint,
+            endpt_in_snip,
         )
 
     def inner_parse_eval(

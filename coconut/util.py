@@ -109,6 +109,15 @@ class override(object):
         return (self.__class__, (self.func,))
 
 
+def clip(num, min=None, max=None):
+    """Clip num to live in [min, max]."""
+    return (
+        min if min is not None and num < min else
+        max if max is not None and num > max else
+        num
+    )
+
+
 # -----------------------------------------------------------------------------------------------------------------------
 # VERSIONING:
 # -----------------------------------------------------------------------------------------------------------------------

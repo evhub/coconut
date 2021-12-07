@@ -31,6 +31,7 @@ from coconut.constants import (
     default_encoding,
     report_this_text,
 )
+from coconut.util import clip
 
 # -----------------------------------------------------------------------------------------------------------------------
 # FUNCTIONS:
@@ -56,11 +57,6 @@ def clean(inputline, strip=True, encoding_errors="replace"):
 def displayable(inputstr, strip=True):
     """Make a string displayable with minimal loss of information."""
     return clean(str(inputstr), strip, encoding_errors="backslashreplace")
-
-
-def clip(num, min, max):
-    """Clip num to live in [min, max]."""
-    return min if num < min else max if num > max else num
 
 
 # -----------------------------------------------------------------------------------------------------------------------

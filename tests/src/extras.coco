@@ -40,7 +40,7 @@ def assert_raises(c, exc, not_exc=None, err_has=None):
         if not_exc is not None:
             assert not isinstance(err, not_exc), f"{err} instance of {not_exc}"
         if err_has is not None:
-            assert err_has in str(err), f"{err_has!r} not in {err}"
+            assert err_has in str(err), f"{err_has!r} not in {err!r}"
     except BaseException as err:
         raise AssertionError(f"got wrong exception {err} (expected {exc})")
     else:
