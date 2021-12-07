@@ -354,7 +354,7 @@ class Command(object):
             if self.errmsg is None:
                 self.errmsg = errmsg
             elif errmsg not in self.errmsg:
-                self.errmsg += "; " + errmsg
+                self.errmsg += "\nAnd error: " + errmsg
         if code is not None:
             self.exit_code = code or self.exit_code
 

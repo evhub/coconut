@@ -40,7 +40,7 @@ def suite_test() -> bool:
     assert sum_([1,7,3,5]) == 16
     assert add([1,2,3], [10,20,30]) |> list == [11,22,33]
     assert add_([1,2,3], [10,20,30]) |> list == [11,22,33]
-    assert zipsum([1,2,3], [10,20,30]) |> list == [11,22,33]
+    assert zipsum([1,2,3], [10,20,30]) |> list == [11,22,33]  # type: ignore
     assert clean("   ab cd ef   ") == "ab cd ef" == "   ab cd ef   " |> clean
     assert add2 <| 2 <| 3 == 5
     qsorts = [qsort1, qsort2, qsort3, qsort4, qsort5, qsort6, qsort7, qsort8]

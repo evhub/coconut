@@ -46,7 +46,7 @@ _Note: If you have an old version of Coconut installed and you want to upgrade, 
 
 If you are encountering errors running `pip install coconut`, try adding `--user` or running
 ```
-pip install --no-deps --upgrade coconut pyparsing
+pip install --no-deps --upgrade coconut "pyparsing<3"
 ```
 which will force Coconut to use the pure-Python [`pyparsing`](https://github.com/pyparsing/pyparsing) module instead of the faster [`cPyparsing`](https://github.com/evhub/cpyparsing) module. If you are still getting errors, you may want to try [using conda](#using-conda) instead.
 

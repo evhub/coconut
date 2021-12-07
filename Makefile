@@ -65,6 +65,10 @@ format: dev
 test-all: clean
 	pytest --strict-markers -s ./tests
 
+# the main test command to use when developing rapidly
+.PHONY: test
+test: test-mypy
+
 # for quickly testing nearly everything locally, just use test-basic
 .PHONY: test-basic
 test-basic:

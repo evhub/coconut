@@ -80,7 +80,7 @@ min_and_max = min `lift(,)` max
 product = reduce$(*)
 def zipwith(f, *args) = map((items) -> f(*items), zip(*args))
 def zipwith_(f, *args) = starmap$(f)..zip <*| args
-zipsum = map$(sum)..zip  # type: ignore
+zipsum = zip ..> map$(sum)
 ident_ = (x) -> x
 @ ident .. ident  # type: ignore
 def plus1_(x: int) -> int = x + 1

@@ -307,7 +307,7 @@ data vector(*pts):
             return pts |*> makedata$(cls)  # accesses base constructor
     def __abs__(self) =
         """Return the magnitude of the vector."""
-        self.pts |> map$(pow$(?, 2)) |> sum |> pow$(?, 0.5)
+        self.pts |> map$(.**2) |> sum |> (.**0.5)
     def __add__(self, vector(*other_pts)
                 if len(other_pts) == len(self.pts)) =
         """Add two vectors together."""
@@ -325,7 +325,7 @@ data vector(*pts):
             assert len(other_pts) == len(self.pts)
             return map((*), self.pts, other_pts) |> sum  # dot product
         else:
-            return self.pts |> map$((*)$(other)) |*> vector  # scalar multiplication
+            return self.pts |> map$(.*other) |*> vector  # scalar multiplication
     def __rmul__(self, other) =
         """Necessary to make scalar multiplication commutative."""
         self * other
@@ -373,7 +373,7 @@ data vector(*pts):
             return pts |*> makedata$(cls)  # accesses base constructor
     def __abs__(self) =
         """Return the magnitude of the vector."""
-        self.pts |> map$(pow$(?, 2)) |> sum |> pow$(?, 0.5)
+        self.pts |> map$(.**2) |> sum |> (.**0.5)
     def __add__(self, vector(*other_pts)
                 if len(other_pts) == len(self.pts)) =
         """Add two vectors together."""
@@ -391,7 +391,7 @@ data vector(*pts):
             assert len(other_pts) == len(self.pts)
             return map((*), self.pts, other_pts) |> sum  # dot product
         else:
-            return self.pts |> map$((*)$(other)) |*> vector  # scalar multiplication
+            return self.pts |> map$(.*other) |*> vector  # scalar multiplication
     def __rmul__(self, other) =
         """Necessary to make scalar multiplication commutative."""
         self * other
@@ -421,7 +421,7 @@ data vector(*pts):
             return pts |*> makedata$(cls)  # accesses base constructor
     def __abs__(self) =
         """Return the magnitude of the vector."""
-        self.pts |> map$(pow$(?, 2)) |> sum |> pow$(?, 0.5)
+        self.pts |> map$(.**2) |> sum |> (.**0.5)
     def __add__(self, vector(*other_pts)
                 if len(other_pts) == len(self.pts)) =
         """Add two vectors together."""
@@ -439,7 +439,7 @@ data vector(*pts):
             assert len(other_pts) == len(self.pts)
             return map((*), self.pts, other_pts) |> sum  # dot product
         else:
-            return self.pts |> map$((*)$(other)) |*> vector  # scalar multiplication
+            return self.pts |> map$(.*other) |*> vector  # scalar multiplication
     def __rmul__(self, other) =
         """Necessary to make scalar multiplication commutative."""
         self * other

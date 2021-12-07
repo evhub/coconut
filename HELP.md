@@ -30,7 +30,9 @@ and much more!
 
 ### Interactive Tutorial
 
-This tutorial is non-interactive. To get an interactive tutorial instead, check out [Coconut's interactive tutorial](https://hmcfabfive.github.io/coconut-tutorial). Note, however, that the interactive tutorial is less up-to-date and may contain old, deprecated syntax (though Coconut will let you know if you encounter such a situation).
+This tutorial is non-interactive. To get an interactive tutorial instead, check out [Coconut's interactive tutorial](https://hmcfabfive.github.io/coconut-tutorial).
+
+Note, however, that the interactive tutorial is less up-to-date than this one and thus may contain old, deprecated syntax (though Coconut will let you know if you encounter such a situation) as well as outdated idioms (meaning that the example code in the interactive tutorial is likely to be much less elegant than the example code here).
 
 ### Installation
 
@@ -56,7 +58,7 @@ coconut -h
 ```
 which should display Coconut's command-line help.
 
-_Note: If you're having trouble installing Coconut, or if anything else mentioned in this tutorial doesn't seem to work for you, feel free to [ask for help on Gitter](https://gitter.im/evhub/coconut) and somebody will try to answer your question as soon as possible._
+_Note: If you're having trouble, or if anything mentioned in this tutorial doesn't seem to work for you, feel free to [ask for help on Gitter](https://gitter.im/evhub/coconut) and somebody will try to answer your question as soon as possible._
 
 ### No Installation
 
@@ -357,6 +359,8 @@ _Note: If Coconut's `--strict` mode is enabled, which will force your code to ob
 
 Second, the partial application. Think of partial application as _lazy function calling_, and `$` as the _lazy-ify_ operator, where lazy just means "don't evaluate this until you need to." In Coconut, if a function call is prefixed by a `$`, like in this example, instead of actually performing the function call, a new function is returned with the given arguments already provided to it, so that when it is then called, it will be called with both the partially-applied arguments and the new arguments, in that order. In this case, `reduce$(*)` is roughly equivalent to `(*args, **kwargs) -> reduce((*), *args, **kwargs)`.
 
+_You can partially apply arguments in any order using `?` in place of missing arguments, as in `to_binary = int$(?, 2)`._
+
 Putting it all together, we can see how the single line of code
 ```coconut
 range(1, n+1) |> reduce$(*)
@@ -577,9 +581,9 @@ Now that we have a constructor for our n-vector, it's time to write its methods.
 ```coconut
     def __abs__(self) =
         """Return the magnitude of the vector."""
-        self.pts |> map$(pow$(?, 2)) |> sum |> pow$(?, 0.5)
+        self.pts |> map$(.**2) |> sum |> (.**0.5)
 ```
-The basic algorithm here is map square over each element, sum them all, then square root the result. The one new construct used here is the use of a `?` in partial application, which simply allows skipping an argument from being partially applied and deferring it to when the function is called. In this case, the `?` lets us partially apply the exponent instead of the base in `pow` (we could also have equivalently used `(**)`).
+The basic algorithm here is map square over each element, sum them all, then square root the result. The one new construct here is the `(.**2)` and `(.**0.5)` syntax, which are effectively equivalent to `(x -> x**2)` and `(x -> x**0.5)`, respectively (though the `(.**2)` syntax produces a pickleable object). This syntax works for all [operator functions](DOCS.html#operator-functions), so you can do things like `(1-.)` or `(cond() or .)`.
 
 Next up is vector addition. The goal here is to add two vectors of equal length by adding their components. To do this, we're going to make use of Coconut's ability to perform pattern-matching, or in this case destructuring assignment, to data types, like so:
 ```coconut
@@ -614,7 +618,7 @@ The last method we'll implement is multiplication. This one is a little bit tric
             assert len(other_pts) == len(self.pts)
             return map((*), self.pts, other_pts) |> sum  # dot product
         else:
-            return self.pts |> map$((*)$(other)) |*> vector  # scalar multiple
+            return self.pts |> map$(.*other) |*> vector  # scalar multiple
     def __rmul__(self, other) =
         """Necessary to make scalar multiplication commutative."""
         self * other
@@ -634,7 +638,7 @@ data vector(*pts):
             return pts |*> makedata$(cls)  # accesses base constructor
     def __abs__(self) =
         """Return the magnitude of the vector."""
-        self.pts |> map$(pow$(?, 2)) |> sum |> pow$(?, 0.5)
+        self.pts |> map$(.**2) |> sum |> (.**0.5)
     def __add__(self, vector(*other_pts)
                 if len(other_pts) == len(self.pts)) =
         """Add two vectors together."""
@@ -652,7 +656,7 @@ data vector(*pts):
             assert len(other_pts) == len(self.pts)
             return map((*), self.pts, other_pts) |> sum  # dot product
         else:
-            return self.pts |> map$((*)$(other)) |*> vector  # scalar multiplication
+            return self.pts |> map$(.*other) |*> vector  # scalar multiplication
     def __rmul__(self, other) =
         """Necessary to make scalar multiplication commutative."""
         self * other
@@ -833,7 +837,7 @@ data vector(*pts):
             return pts |*> makedata$(cls)  # accesses base constructor
     def __abs__(self) =
         """Return the magnitude of the vector."""
-        self.pts |> map$(pow$(?, 2)) |> sum |> pow$(?, 0.5)
+        self.pts |> map$(.**2) |> sum |> (.**0.5)
     def __add__(self, vector(*other_pts)
                 if len(other_pts) == len(self.pts)) =
         """Add two vectors together."""
@@ -851,7 +855,7 @@ data vector(*pts):
             assert len(other_pts) == len(self.pts)
             return map((*), self.pts, other_pts) |> sum  # dot product
         else:
-            return self.pts |> map$((*)$(other)) |*> vector  # scalar multiplication
+            return self.pts |> map$(.*other) |*> vector  # scalar multiplication
     def __rmul__(self, other) =
         """Necessary to make scalar multiplication commutative."""
         self * other
@@ -1013,7 +1017,7 @@ data vector(*pts):
             return pts |*> makedata$(cls)  # accesses base constructor
     def __abs__(self) =
         """Return the magnitude of the vector."""
-        self.pts |> map$(pow$(?, 2)) |> sum |> pow$(?, 0.5)
+        self.pts |> map$(.**2) |> sum |> (.**0.5)
     def __add__(self, vector(*other_pts)
                 if len(other_pts) == len(self.pts)) =
         """Add two vectors together."""
@@ -1031,7 +1035,7 @@ data vector(*pts):
             assert len(other_pts) == len(self.pts)
             return map((*), self.pts, other_pts) |> sum  # dot product
         else:
-            return self.pts |> map$((*)$(other)) |*> vector  # scalar multiplication
+            return self.pts |> map$(.*other) |*> vector  # scalar multiplication
     def __rmul__(self, other) =
         """Necessary to make scalar multiplication commutative."""
         self * other
@@ -1064,7 +1068,9 @@ First up is lazy lists. Lazy lists are lazily-evaluated lists, similar in their 
 abc = (| a, b, c |)
 ```
 
-Unlike Python iterators, lazy lists can be iterated over multiple times and still return the same result. Unlike a Python list, however, using a lazy list, it is possible to define the values used in the following expressions as needed without raising a `NameError`:
+Unlike Python iterators, lazy lists can be iterated over multiple times and still return the same result.
+
+Unlike Python lists, however, using a lazy list, it is possible to define the values used in the following expressions as needed without raising a `NameError`:
 
 ```coconut
 abcd = (| d(a), d(b), d(c) |)  # a, b, c, and d are not defined yet
@@ -1080,17 +1086,19 @@ abcd$[2]
 
 ### Function Composition
 
-Next is function composition. In Coconut, this is accomplished through the `..` operator, which takes two functions and composes them, creating a new function equivalent to `(*args, **kwargs) -> f1(f2(*args, **kwargs))`. This can be useful in combination with partial application for piecing together multiple higher-order functions, like so:
+Next is function composition. In Coconut, this is primarily accomplished through the `f1 ..> f2` operator, which takes two functions and composes them, creating a new function equivalent to `(*args, **kwargs) -> f2(f1(*args, **kwargs))`. This can be useful in combination with partial application for piecing together multiple higher-order functions, like so:
 ```coconut
-zipsum = map$(sum)..zip
+zipsum = zip ..> map$(sum)
 ```
+
+_While `..>` is generally preferred, if you'd rather use the more traditional mathematical function composition ordering, you can get that with the `<..` operator._
 
 If the composed functions are wrapped in parentheses, arguments can be passed into them:
 ```coconut
 def plus1(x) = x + 1
 def square(x) = x * x
 
-(plus1..square)(3) == 10  # True
+(square ..> plus1)(3) == 10  # True
 ```
 
 Functions of different arities can be composed together, as long as they are in the correct order. If they are in the incorrect order, a `TypeError` will be raised. In this example we will compose a unary function with a binary function:
@@ -1098,8 +1106,8 @@ Functions of different arities can be composed together, as long as they are in 
 def add(n, m) = n + m  # binary function
 def square(n) = n * n  # unary function
 
-(add..square)(3, 1)    # Raises TypeError: square() takes exactly 1 argument (2 given)
-(square..add)(3, 1)    # 16
+(square ..> add)(3, 1)    # Raises TypeError: square() takes exactly 1 argument (2 given)
+(add ..> square)(3, 1)    # 16
 ```
 
 Another useful trick with function composition involves composing a function with a higher-order function:
@@ -1113,18 +1121,18 @@ def inc_or_dec(t):
 
 def square(n) = n * n
 
-square_inc = square..inc_or_dec(True)
-square_dec = square..inc_or_dec(False)
+square_inc = inc_or_dec(True) ..> square
+square_dec = inc_or_dec(False) ..> square
 square_inc(4)  # 25
 square_dec(4)  # 9
 
 ```
 
-_Note: Coconut also supports the function composition pipe operators `..>`, `<..`, `..*>`, and `<*..`._
+_Note: Coconut also supports the function composition operators `..`, `..*>`, `<*..`, `..**>`, and `<**..`._
 
 ### Implicit Partials
 
-Last is implicit partials. Coconut supports a number of different "incomplete" expressions that will evaluate to a function that takes in the part necessary to complete them, that is, an implicit partial application function. The different allowable expressions are:
+Another useful Coconut feature is implicit partials. Coconut supports a number of different "incomplete" expressions that will evaluate to a function that takes in the part necessary to complete them, that is, an implicit partial application function. The different allowable expressions are:
 ```coconut
 .attr
 .method(args)
@@ -1147,7 +1155,14 @@ def plus1(x: int) -> int:
 a: int = plus1(10)
 ```
 
-Unfortunately, in Python, such type annotation syntax only exists in Python 3. Not to worry in Coconut, however, which compiles Python-3-style type annotations to universally compatible type comments. Not only that, but Coconut has built-in [MyPy integration](DOCS.html#mypy-integration) for automatically type-checking your code, and its own [enhanced type annotation syntax](DOCS.html#enhanced-type-annotation) for more easily expressing complex types.
+Unfortunately, in Python, such type annotation syntax only exists in Python 3. Not to worry in Coconut, however, which compiles Python-3-style type annotations to universally compatible type comments. Not only that, but Coconut has built-in [MyPy integration](DOCS.html#mypy-integration) for automatically type-checking your code, and its own [enhanced type annotation syntax](DOCS.html#enhanced-type-annotation) for more easily expressing complex types, like so:
+```coconut
+def int_map(
+    f: int -> int,
+    xs: int[],
+) -> int[] =
+    xs |> map$(f) |> list
+```
 
 ### Further Reading
 
