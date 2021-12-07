@@ -1,5 +1,7 @@
-Coconut
-=======
+|logo| Coconut
+==============
+
+.. |logo| image:: todo.png
 
 .. image:: https://opencollective.com/coconut/backers/badge.svg
     :alt: Backers on Open Collective
