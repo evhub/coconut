@@ -122,14 +122,13 @@ class CoconutSyntaxError(CoconutException):
                 message += "\n" + " " * taberrfmt + clean(source)
             else:
                 if endpoint is None:
-                    endpoint = point + 1
-                else:
-                    endpoint = clip(endpoint, point + 1, len(source))
+                    endpoint = 0
+                endpoint = clip(endpoint, point, len(source))
 
                 point_ln = lineno(point, source)
-                endpoint_ln = max((point_ln, lineno(endpoint, source)))
+                endpoint_ln = lineno(endpoint, source)
 
-                # single-line error message (endpoint maybe None)
+                # single-line error message
                 if point_ln == endpoint_ln:
                     part = clean(source.splitlines()[point_ln - 1], False).lstrip()
 
@@ -141,16 +140,16 @@ class CoconutSyntaxError(CoconutException):
 
                     # adjust only points that are too large based on rstrip
                     point = clip(point, 0, len(part) - 1)
-                    endpoint = clip(endpoint, point + 1, len(part))
+                    endpoint = clip(endpoint, point, len(part))
 
                     message += "\n" + " " * taberrfmt + part
 
-                    if endpoint - point > 0:
+                    if point > 0 or endpoint > 0:
                         message += "\n" + " " * (taberrfmt + point) + "^"
                         if endpoint - point > 1:
                             message += "~" * (endpoint - point - 2) + "^"
 
-                # multi-line error message (endpoint not None)
+                # multi-line error message
                 else:
                     lines = source.splitlines()[point_ln - 1:endpoint_ln]
 

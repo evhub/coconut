@@ -97,7 +97,7 @@ assert use_fast_pyparsing_reprs or DEVELOP, "use_fast_pyparsing_reprs disabled o
 enable_pyparsing_warnings = DEVELOP
 
 # experimentally determined to maximize performance
-use_packrat_parser = True
+use_packrat_parser = True  # True also gives us better error messages
 use_left_recursion_if_available = False
 packrat_cache_size = None  # only works because final() clears the cache
 

@@ -924,7 +924,8 @@ def get_highest_parse_loc():
 
         # find the highest observed parse location
         highest_loc = 0
-        for _, _, loc, _, _ in cache:
+        for item in cache:
+            loc = item[2]
             if loc > highest_loc:
                 highest_loc = loc
         return highest_loc
