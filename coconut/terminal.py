@@ -43,12 +43,16 @@ from coconut.constants import (
     use_packrat_parser,
     embed_on_internal_exc,
 )
-from coconut.util import printerr, get_clock_time
+from coconut.util import (
+    printerr,
+    get_clock_time,
+    get_name,
+    displayable,
+)
 from coconut.exceptions import (
     CoconutWarning,
     CoconutException,
     CoconutInternalException,
-    displayable,
 )
 
 
@@ -107,16 +111,6 @@ def internal_assert(condition, message=None, item=None, extra=None):
             embed(depth=1)
         else:
             raise error
-
-
-def get_name(expr):
-    """Get the name of an expression for displaying."""
-    name = expr if isinstance(expr, str) else None
-    if name is None:
-        name = getattr(expr, "name", None)
-    if name is None:
-        name = displayable(expr)
-    return name
 
 
 class LoggingStringIO(StringIO):

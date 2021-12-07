@@ -40,7 +40,7 @@ def assert_raises(c, exc, not_exc=None, err_has=None):
         if not_exc is not None:
             assert not isinstance(err, not_exc), f"{err} instance of {not_exc}"
         if err_has is not None:
-            assert err_has in str(err), f"{err_has!r} not in {err!r}"
+            assert err_has in str(err), f"{err_has!r} not in {str(err)!r}"
     except BaseException as err:
         raise AssertionError(f"got wrong exception {err} (expected {exc})")
     else:
@@ -62,9 +62,7 @@ def unwrap_future(event_loop, maybe_future):
         return maybe_future
 
 
-def test_extras():
-    if IPY:
-        import coconut.highlighter  # type: ignore
+def test_setup_none():
     assert consume(range(10), keep_last=1)[0] == 9 == coc_consume(range(10), keep_last=1)[0]
     assert version() == version("num")
     assert version("name")
@@ -81,7 +79,7 @@ def test_extras():
     assert parse("abc", "package")
     assert parse("abc", "block") == "abc\n" == parse("abc", "single")
     assert parse("abc", "eval") == "abc" == parse(" abc", "eval")
-    assert parse("abc", "any") == "abc"
+    assert parse("abc", "any") == "abc" == parse(" abc", "any")
     assert parse("x |> map$(f)", "any") == "(map)(f, x)"
     assert "_coconut" not in parse("a |> .b |> .m() |> f$(x) |> .[0]", "block")
     assert "_coconut" not in parse("a |>= f$(x)", "block")
@@ -93,6 +91,9 @@ def test_extras():
     assert parse("abc ")
     assert parse("abc # derp", "any") == "abc  # derp"
     assert "==" not in parse("None = None")
+    assert parse("(1\f+\f2)", "any") == "(1 + 2)" == parse("(1\f+\f2)", "eval")
+
+    assert_raises(-> parse("(a := b)"), CoconutTargetError)
 
     assert_raises(-> parse(" abc", "file"), CoconutSyntaxError, not_exc=CoconutParseError)
     assert_raises(-> parse("'"), CoconutSyntaxError, not_exc=CoconutParseError)
@@ -102,9 +103,87 @@ def test_extras():
     assert_raises(-> parse("_coconut"), CoconutSyntaxError, not_exc=CoconutParseError)
     assert_raises(-> parse("[;]"), CoconutSyntaxError, not_exc=CoconutParseError)
     assert_raises(-> parse("[; ;; ;]"), CoconutSyntaxError, not_exc=CoconutParseError)
+    assert_raises(-> parse("f$()"), CoconutSyntaxError, not_exc=CoconutParseError)
+    assert_raises(-> parse("f(**x, y)"), CoconutSyntaxError, not_exc=CoconutParseError)
+    assert_raises(-> parse("def f(x) = return x"), CoconutSyntaxError, not_exc=CoconutParseError)
+    assert_raises(-> parse("def f(x) =\n return x"), CoconutSyntaxError, not_exc=CoconutParseError)
+    assert_raises(-> parse('f"Black holes {*all_black_holes} and revelations"'), CoconutSyntaxError, not_exc=CoconutParseError, err_has="format string")
 
-    assert_raises(-> parse("$"), CoconutParseError)
-    assert_raises(-> parse("range(1,10) |> reduce$(*, initializer = 1000) |> print"), CoconutParseError)
+    assert_raises(-> parse("$"), CoconutParseError, err_has=" ^")
+    assert_raises(-> parse("range(1,10) |> reduce$(*, initializer = 1000) |> print"), CoconutParseError, err_has=" ~~~~~~~~~~~~~~~~~~~~~~~~^")
+    assert_raises(-> parse("a := b"), CoconutParseError, err_has=" ~~^")
+    assert_raises(-> parse("1 + return"), CoconutParseError, err_has=" ~~~~~^")
+    assert_raises(-> parse("""
+def f() =
+    assert 1
+    assert 2
+    """.strip()), CoconutParseError, err_has="""
+  |~~~~~~~~
+
+  def f() =
+      assert 1
+      assert 2
+    """.strip())
+    assert_raises(-> parse("return = 1"), CoconutParseError, err_has="invalid use of the keyword")
+    assert_raises(-> parse("if a = b: pass"), CoconutParseError, err_has="misplaced assignment")
+    assert_raises(-> parse("while a == b"), CoconutParseError, err_has="misplaced newline")
+
+    try:
+        parse("""
+def gam_eps_rate(bitarr) = (
+    bitarr
+    |*> zip
+    |> map$(map$(int))
+    |> map$(sum)
+    |> map$(.>len(bitarr)//2)
+    |> lift(,)(ident, map$(not))
+    |> map$(map$(int))
+    |> map$(map$(str))
+    |> map$("".join)
+    |> map$(int(?, 2))
+    |*> (*)
+)
+        """.strip())
+    except CoconutParseError as err:
+        err_str = str(err)
+        assert "misplaced '?'" in err_str
+        assert """
+|~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  def gam_eps_rate(bitarr) = (
+      bitarr
+      |*> zip
+      |> map$(map$(int))
+      |> map$(sum)
+      |> map$(.>len(bitarr)//2)
+      |> lift(,)(ident, map$(not))
+      |> map$(map$(int))
+      |> map$(map$(str))
+      |> map$("".join)
+      |> map$(int(?, 2))
+
+  ~~~~~~~~~~~~~~~~~^
+        """.strip() in err_str
+    else:
+        assert False
+
+    return True
+
+
+def test_extras():
+    # other tests
+    if IPY:
+        import coconut.highlighter  # type: ignore
+
+    if not PYPY and (PY2 or PY34):
+        assert test_numpy() is True
+
+    assert test_setup_none() is True
+
+    # main tests
+    assert_raises(-> cmd("-f"), SystemExit)
+    assert_raises(-> cmd("-pa ."), SystemExit)
+    assert_raises(-> cmd("-n . ."), SystemExit)
 
     setup(line_numbers=True)
     assert parse("abc", "any") == "abc  #1 (line num in coconut source)"
@@ -120,6 +199,7 @@ def test_extras():
     setup(strict=True)
     assert "Deprecated feature 'prepattern' disabled by --strict compilation" in parse("\n", mode="file")
     assert "Deprecated feature 'datamaker' disabled by --strict compilation" in parse("\n", mode="file")
+
     assert_raises(-> parse("def f(x):\n \t pass"), CoconutStyleError)
     assert_raises(-> parse("lambda x: x"), CoconutStyleError)
     assert_raises(-> parse("u''"), CoconutStyleError)
@@ -129,22 +209,6 @@ def test_extras():
     assert_raises(-> parse("a=1;"), CoconutStyleError)
     assert_raises(-> parse("class derp(object)"), CoconutStyleError)
     assert_raises(-> parse("def f(a.b) = True"), CoconutStyleError)
-
-    setup()
-    assert_raises(-> cmd("-f"), SystemExit)
-    assert_raises(-> cmd("-pa ."), SystemExit)
-    assert_raises(-> cmd("-n . ."), SystemExit)
-    assert_raises(-> parse("f$()"), CoconutSyntaxError, not_exc=CoconutParseError)
-    assert_raises(-> parse("f(**x, y)"), CoconutSyntaxError, not_exc=CoconutParseError)
-    assert_raises(-> parse("def f(x) = return x"), CoconutSyntaxError, not_exc=CoconutParseError)
-    assert_raises(-> parse("def f(x) =\n return x"), CoconutSyntaxError, not_exc=CoconutParseError)
-    assert_raises(-> parse("a := b"), CoconutParseError)
-    assert_raises(-> parse("(a := b)"), CoconutTargetError)
-    assert_raises(-> parse("1 + return"), CoconutParseError)
-    assert_raises(-> parse("return = 1"), CoconutParseError, err_has="invalid use of the keyword")
-    assert_raises(-> parse("if a = b: pass"), CoconutParseError, err_has="misplaced assignment")
-    assert_raises(-> parse("while a == b"), CoconutParseError, err_has="misplaced newline")
-    assert_raises(-> parse('f"Black holes {*all_black_holes} and revelations"'), CoconutSyntaxError, err_has="format string")
 
     setup(target="2.7")
     assert parse("from io import BytesIO", mode="any") == "from io import BytesIO"
@@ -173,6 +237,7 @@ def test_extras():
     assert parse("print(a := 1, b := 2)")
     assert parse("def f(a, /, b) = a, b")
     assert "(b)(a)" in b"a |> b".decode("coconut")
+
     if CoconutKernel is not None:
         if PY35:
             loop = asyncio.new_event_loop()
@@ -201,6 +266,7 @@ def test_extras():
         assert "map" in keyword_complete_result["matches"]
         assert keyword_complete_result["cursor_start"] == 0
         assert keyword_complete_result["cursor_end"] == 1
+
     return True
 
 
@@ -234,11 +300,9 @@ def test_numpy():
 
 
 def main():
-    if not PYPY and (PY2 or PY34):
-        assert test_numpy()
     print("Expect Coconut errors below from running extras:")
     print("(but make sure you get a <success> after them)")
-    assert test_extras()
+    assert test_extras() is True
     print("<success>")
     return True
 

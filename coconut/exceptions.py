@@ -19,8 +19,6 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 from coconut.root import *  # NOQA
 
-import sys
-
 from coconut._pyparsing import (
     lineno,
     col as getcol,
@@ -28,36 +26,13 @@ from coconut._pyparsing import (
 
 from coconut.constants import (
     taberrfmt,
-    default_encoding,
     report_this_text,
 )
-from coconut.util import clip
-
-# -----------------------------------------------------------------------------------------------------------------------
-# FUNCTIONS:
-# -----------------------------------------------------------------------------------------------------------------------
-
-
-def get_encoding(fileobj):
-    """Get encoding of a file."""
-    # sometimes fileobj.encoding is undefined, but sometimes it is None; we need to handle both cases
-    obj_encoding = getattr(fileobj, "encoding", None)
-    return obj_encoding if obj_encoding is not None else default_encoding
-
-
-def clean(inputline, strip=True, encoding_errors="replace"):
-    """Clean and strip a line."""
-    stdout_encoding = get_encoding(sys.stdout)
-    inputline = str(inputline)
-    if strip:
-        inputline = inputline.strip()
-    return inputline.encode(stdout_encoding, encoding_errors).decode(stdout_encoding)
-
-
-def displayable(inputstr, strip=True):
-    """Make a string displayable with minimal loss of information."""
-    return clean(str(inputstr), strip, encoding_errors="backslashreplace")
-
+from coconut.util import (
+    clip,
+    logical_lines,
+    clean,
+)
 
 # -----------------------------------------------------------------------------------------------------------------------
 # EXCEPTIONS:
@@ -124,9 +99,11 @@ class CoconutSyntaxError(CoconutException):
                 point_ln = lineno(point, source)
                 endpoint_ln = lineno(endpoint, source)
 
+                source_lines = tuple(logical_lines(source))
+
                 # single-line error message
                 if point_ln == endpoint_ln:
-                    part = clean(source.splitlines()[point_ln - 1], False).lstrip()
+                    part = clean(source_lines[point_ln - 1], False).lstrip()
 
                     # adjust all points based on lstrip
                     point -= len(source) - len(part)
@@ -141,13 +118,15 @@ class CoconutSyntaxError(CoconutException):
                     message += "\n" + " " * taberrfmt + part
 
                     if point > 0 or endpoint > 0:
-                        message += "\n" + " " * (taberrfmt + point) + "^"
+                        message += "\n" + " " * (taberrfmt + point)
                         if endpoint - point > 1:
-                            message += "~" * (endpoint - point - 2) + "^"
+                            message += "~" * (endpoint - point - 1) + "^"
+                        else:
+                            message += "^"
 
                 # multi-line error message
                 else:
-                    lines = source.splitlines()[point_ln - 1:endpoint_ln]
+                    lines = source_lines[point_ln - 1:endpoint_ln]
 
                     point_col = getcol(point, source)
                     endpoint_col = getcol(endpoint, source)
@@ -219,10 +198,11 @@ class CoconutInternalException(CoconutException):
 
     def message(self, message, item, extra):
         """Creates the Coconut internal exception message."""
-        return (
-            super(CoconutInternalException, self).message(message, item, extra)
-            + " " + report_this_text
-        )
+        base_msg = super(CoconutInternalException, self).message(message, item, extra)
+        if "\n" in base_msg:
+            return base_msg + "\n" + report_this_text
+        else:
+            return base_msg + " " + report_this_text
 
 
 class CoconutDeferredSyntaxError(CoconutException):

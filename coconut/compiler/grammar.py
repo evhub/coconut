@@ -2007,7 +2007,7 @@ class Grammar(object):
     kwd_err_msg = attach(any_keyword_in(keyword_vars), kwd_err_msg_handle)
     parse_err_msg = (
         start_marker + (
-            fixto(end_marker, "misplaced newline (maybe missing ':')")
+            fixto(end_of_line, "misplaced newline (maybe missing ':')")
             | fixto(Optional(keyword("if") + skip_to_in_line(unsafe_equals)) + equals, "misplaced assignment (maybe should be '==')")
             | kwd_err_msg
         )

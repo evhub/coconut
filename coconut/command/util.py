@@ -37,10 +37,8 @@ from coconut.terminal import (
     complain,
     internal_assert,
 )
-from coconut.exceptions import (
-    CoconutException,
-    get_encoding,
-)
+from coconut.exceptions import CoconutException
+from coconut.util import get_encoding
 from coconut.constants import (
     WINDOWS,
     PY34,

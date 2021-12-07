@@ -48,12 +48,11 @@ from coconut._pyparsing import (
 )
 
 from coconut import embed
-from coconut.util import override
+from coconut.util import override, get_name
 from coconut.terminal import (
     logger,
     complain,
     internal_assert,
-    get_name,
 )
 from coconut.constants import (
     CPYTHON,

@@ -118,6 +118,62 @@ def clip(num, min=None, max=None):
     )
 
 
+def logical_lines(text, keep_newlines=False):
+    """Iterate over the logical code lines in text."""
+    prev_content = None
+    for line in text.splitlines(True):
+        real_line = True
+        if line.endswith("\r\n"):
+            if not keep_newlines:
+                line = line[:-2]
+        elif line.endswith(("\n", "\r")):
+            if not keep_newlines:
+                line = line[:-1]
+        else:
+            if prev_content is None:
+                prev_content = ""
+            prev_content += line
+            real_line = False
+        if real_line:
+            if prev_content is not None:
+                line = prev_content + line
+                prev_content = None
+            yield line
+    if prev_content is not None:
+        yield prev_content
+
+
+def get_encoding(fileobj):
+    """Get encoding of a file."""
+    # sometimes fileobj.encoding is undefined, but sometimes it is None; we need to handle both cases
+    obj_encoding = getattr(fileobj, "encoding", None)
+    return obj_encoding if obj_encoding is not None else default_encoding
+
+
+def clean(inputline, strip=True, encoding_errors="replace"):
+    """Clean and strip a line."""
+    stdout_encoding = get_encoding(sys.stdout)
+    inputline = str(inputline)
+    if strip:
+        inputline = inputline.strip()
+    return inputline.encode(stdout_encoding, encoding_errors).decode(stdout_encoding)
+
+
+def displayable(inputstr, strip=True):
+    """Make a string displayable with minimal loss of information."""
+    return clean(str(inputstr), strip, encoding_errors="backslashreplace")
+
+
+def get_name(expr):
+    """Get the name of an expression for displaying."""
+    name = expr if isinstance(expr, str) else None
+    if name is None:
+        name = getattr(expr, "name", None)
+    if name is None:
+        name = displayable(expr)
+    return name
+
+
 # -----------------------------------------------------------------------------------------------------------------------
 # VERSIONING:
 # -----------------------------------------------------------------------------------------------------------------------

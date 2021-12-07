@@ -69,7 +69,12 @@ from coconut.constants import (
     funcwrapper,
     non_syntactic_newline,
 )
-from coconut.util import checksum, clip
+from coconut.util import (
+    checksum,
+    clip,
+    logical_lines,
+    clean,
+)
 from coconut.exceptions import (
     CoconutException,
     CoconutSyntaxError,
@@ -79,7 +84,6 @@ from coconut.exceptions import (
     CoconutInternalException,
     CoconutSyntaxWarning,
     CoconutDeferredSyntaxError,
-    clean,
 )
 from coconut.terminal import (
     logger,
@@ -723,10 +727,11 @@ class Compiler(Grammar):
         err_lineno = err.lineno if include_ln else None
         err_endpt = clip(get_highest_parse_loc() + 1, min=err_loc)
 
+        original_lines = tuple(logical_lines(err_original, True))
+
         # build the source snippet that the error is referring to
         loc_line_ind = lineno(err_loc, err_original) - 1
         endpt_line_ind = lineno(err_endpt, err_original) - 1
-        original_lines = err_original.splitlines(True)
         snippet = "".join(original_lines[loc_line_ind:endpt_line_ind + 1])
 
         # fix error locations to correspond to the snippet
@@ -1033,7 +1038,7 @@ class Compiler(Grammar):
 
     def ind_proc(self, inputstring, **kwargs):
         """Process indentation."""
-        lines = inputstring.splitlines()
+        lines = tuple(logical_lines(inputstring))
         new = []  # new lines
         opens = []  # (line, col, adjusted ln) at which open parens were seen, newest first
         current = None  # indentation level of previous line
@@ -1176,7 +1181,7 @@ class Compiler(Grammar):
         """Add end of line comments."""
         out = []
         ln = 1  # line number
-        for line in inputstring.splitlines():
+        for line in logical_lines(inputstring):
             add_one_to_ln = False
             try:
                 has_ln_comment = line.endswith(lnwrapper)
