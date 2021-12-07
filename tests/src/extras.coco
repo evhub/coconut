@@ -148,7 +148,7 @@ def gam_eps_rate(bitarr) = (
         err_str = str(err)
         assert "misplaced '?'" in err_str
         assert """
-|~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  |~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   def gam_eps_rate(bitarr) = (
       bitarr

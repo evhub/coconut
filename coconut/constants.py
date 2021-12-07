@@ -92,7 +92,7 @@ py_version_str = sys.version.split()[0]
 
 # set this to False only ever temporarily for ease of debugging
 use_fast_pyparsing_reprs = True
-assert use_fast_pyparsing_reprs or DEVELOP, "use_fast_pyparsing_reprs disabled on non-develop build"
+assert use_fast_pyparsing_reprs or DEVELOP, "use_fast_pyparsing_reprs should never be disabled on non-develop build"
 
 enable_pyparsing_warnings = DEVELOP
 
@@ -111,7 +111,7 @@ varchars = string.ascii_letters + string.digits + "_"
 
 # set this to True only ever temporarily for ease of debugging
 embed_on_internal_exc = False
-assert not embed_on_internal_exc or DEVELOP, "embed_on_internal_exc enabled on non-develop build"
+assert not embed_on_internal_exc or DEVELOP, "embed_on_internal_exc should never be enabled on non-develop build"
 
 # should be the minimal ref count observed by attach
 temp_grammar_item_ref_count = 5
