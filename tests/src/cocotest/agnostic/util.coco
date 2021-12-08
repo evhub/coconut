@@ -1292,7 +1292,7 @@ end = End()
 
 
 # advent of code
-final_pos = (
+proc_moves = (
     .strip()
     ..> .splitlines()
     ..> map$(
@@ -1306,8 +1306,25 @@ final_pos = (
             (assert)(False)
         )
     )
+)
+
+final_pos = (
+    proc_moves
     ..*> zip
     ..> map$(sum)
+    ..*> (*)
+)
+
+final_aim = (
+    proc_moves
+    ..> reduce$(
+        (def ((hpos, vpos, aim), (hmov, amov)) ->
+            (hpos + hmov, vpos + hmov * aim, aim + amov)
+        ),
+        ?,
+        (0, 0, 0),
+    )
+    ..> .[:-1]
     ..*> (*)
 )
 

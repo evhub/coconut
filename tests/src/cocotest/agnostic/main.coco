@@ -1026,6 +1026,8 @@ def main_test() -> bool:
         assert False
     assert consume(range(10)) `isinstance` collections.abc.Sequence
     assert consume(range(10), keep_last=5) `isinstance` collections.abc.Sequence
+    assert range(5) |> reduce$((+), ?, 10) == 20
+    assert range(5) |> scan$((+), initial=10) |> list == [10, 10, 11, 13, 16, 20] == range(5) |> itertools.accumulate$(?, (+), initial=10) |> list
     return True
 
 def test_asyncio() -> bool:

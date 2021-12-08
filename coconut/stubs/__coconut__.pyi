@@ -269,7 +269,7 @@ _coconut_sentinel: _t.Any = ...
 def scan(
     func: _t.Callable[[_T, _Uco], _T],
     iterable: _t.Iterable[_Uco],
-    initializer: _T = ...,
+    initial: _T = ...,
 ) -> _t.Iterable[_T]: ...
 
 

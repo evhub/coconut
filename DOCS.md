@@ -2297,9 +2297,9 @@ Coconut re-introduces Python 2's `reduce` built-in, using the `functools.reduce`
 
 ##### Python Docs
 
-**reduce**(_function, iterable_**[**_, initializer_**]**)
+**reduce**(_function, iterable_**[**_, initial_**]**)
 
-Apply _function_ of two arguments cumulatively to the items of _sequence_, from left to right, so as to reduce the sequence to a single value. For example, `reduce((x, y) -> x+y, [1, 2, 3, 4, 5])` calculates `((((1+2)+3)+4)+5)`. The left argument, _x_, is the accumulated value and the right argument, _y_, is the update value from the _sequence_. If the optional _initializer_ is present, it is placed before the items of the sequence in the calculation, and serves as a default when the sequence is empty. If _initializer_ is not given and _sequence_ contains only one item, the first item is returned.
+Apply _function_ of two arguments cumulatively to the items of _sequence_, from left to right, so as to reduce the sequence to a single value. For example, `reduce((x, y) -> x+y, [1, 2, 3, 4, 5])` calculates `((((1+2)+3)+4)+5)`. The left argument, _x_, is the accumulated value and the right argument, _y_, is the update value from the _sequence_. If the optional _initial_ is present, it is placed before the items of the sequence in the calculation, and serves as a default when the sequence is empty. If _initial_ is not given and _sequence_ contains only one item, the first item is returned.
 
 ##### Example
 
@@ -2748,15 +2748,15 @@ collections.deque(itertools.starmap(print, map(range, range(1, 5))), maxlen=0)
 
 ### `scan`
 
-Coconut provides a modified version of `itertools.accumulate` with opposite argument order as `scan` that also supports `repr`, `len`, and `func`/`iter`/`initializer` attributes. `scan` works exactly like [`reduce`](#reduce), except that instead of only returning the last accumulated value, it returns an iterator of all the intermediate values.
+Coconut provides a modified version of `itertools.accumulate` with opposite argument order as `scan` that also supports `repr`, `len`, and `func`/`iter`/`initial` attributes. `scan` works exactly like [`reduce`](#reduce), except that instead of only returning the last accumulated value, it returns an iterator of all the intermediate values.
 
 ##### Python Docs
 
-**scan**(_function, iterable_**[**_, initializer_**]**)
+**scan**(_function, iterable_**[**_, initial_**]**)
 
 Make an iterator that returns accumulated results of some function of two arguments. Elements of the input iterable may be any type that can be accepted as arguments to _function_. (For example, with the operation of addition, elements may be any addable type including Decimal or Fraction.) If the input iterable is empty, the output iterable will also be empty.
 
-If no _initializer_ is given, roughly equivalent to:
+If no _initial_ is given, roughly equivalent to:
 ```coconut_python
 def scan(function, iterable):
     'Return running totals'

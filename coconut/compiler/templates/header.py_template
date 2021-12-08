@@ -276,14 +276,14 @@ class reiterable(_coconut_base_hashable):
         return _coconut_map(func, self)
 class scan(_coconut_base_hashable):
     """Reduce func over iterable, yielding intermediate results,
-    optionally starting from initializer."""
-    __slots__ = ("func", "iter", "initializer")
-    def __init__(self, function, iterable, initializer=_coconut_sentinel):
+    optionally starting from initial."""
+    __slots__ = ("func", "iter", "initial")
+    def __init__(self, function, iterable, initial=_coconut_sentinel):
         self.func = function
         self.iter = iterable
-        self.initializer = initializer
+        self.initial = initial
     def __iter__(self):
-        acc = self.initializer
+        acc = self.initial
         if acc is not _coconut_sentinel:
             yield acc
         for item in self.iter:
@@ -295,9 +295,9 @@ class scan(_coconut_base_hashable):
     def __len__(self):
         return _coconut.len(self.iter)
     def __repr__(self):
-        return "scan(%r, %s%s)" % (self.func, _coconut.repr(self.iter), "" if self.initializer is _coconut_sentinel else ", " + _coconut.repr(self.initializer))
+        return "scan(%r, %s%s)" % (self.func, _coconut.repr(self.iter), "" if self.initial is _coconut_sentinel else ", " + _coconut.repr(self.initial))
     def __reduce__(self):
-        return (self.__class__, (self.func, self.iter, self.initializer))
+        return (self.__class__, (self.func, self.iter, self.initial))
     def __fmap__(self, func):
         return _coconut_map(func, self)
 class reversed(_coconut_base_hashable):
