@@ -778,8 +778,8 @@ def rem_comment(line):
 
 def should_indent(code):
     """Determines whether the next line should be indented."""
-    last = rem_comment(code.splitlines()[-1])
-    return last.endswith((":", "=", "\\")) or paren_change(last) < 0
+    last_line = rem_comment(code.splitlines()[-1])
+    return last_line.endswith((":", "=", "\\")) or paren_change(last_line) < 0
 
 
 def split_comment(line):

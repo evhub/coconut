@@ -1,5 +1,7 @@
 import sys
 import itertools
+import collections
+import collections.abc
 
 
 def assert_raises(c, exc):
@@ -156,8 +158,6 @@ def main_test() -> bool:
     assert doc.__doc__ == "doc" == doc_.__doc__
     assert 10000000.0 == 10_000_000.0
     assert (||) |> tuple == ()
-    import collections
-    import collections.abc
     assert isinstance([], collections.abc.Sequence)
     assert isinstance(range(1), collections.abc.Sequence)
     assert collections.defaultdict(int)[5] == 0  # type: ignore
@@ -1014,6 +1014,18 @@ def main_test() -> bool:
     assert [a ;;; a] == [[[1,2],[3,4]], [[1,2],[3,4]]] == [a, a]
     assert [a ;;;; a] == [[a], [a]]
     assert [a ;;; a ;;;;] == [[a, a]]
+    intlist = []
+    match for int(x) in range(10):
+        intlist.append(x)
+    assert intlist == range(10) |> list
+    try:
+        for str(x) in range(10): pass
+    except MatchError:
+        pass
+    else:
+        assert False
+    assert consume(range(10)) `isinstance` collections.abc.Sequence
+    assert consume(range(10), keep_last=5) `isinstance` collections.abc.Sequence
     return True
 
 def test_asyncio() -> bool:
@@ -1044,7 +1056,7 @@ def tco_func() = tco_func()
 
 def print_dot() = print(".", end="", flush=True)
 
-def run_main(test_easter_eggs=False):
+def run_main(test_easter_eggs=False) -> bool:
     """Asserts arguments and executes tests."""
     using_tco = "_coconut_tco" in globals() or "_coconut_tco" in locals()
 

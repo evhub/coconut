@@ -23,6 +23,11 @@ import sys
 
 from coconut.exceptions import CoconutException
 from coconut.terminal import logger
+from coconut.constants import (
+    mypy_err_infixes,
+    mypy_silent_err_prefixes,
+    mypy_silent_non_err_prefixes,
+)
 
 try:
     from mypy.api import run
@@ -45,7 +50,20 @@ def mypy_run(args):
     except BaseException:
         logger.print_exc()
     else:
-        for line in stdout.splitlines():
+
+        for line in stdout.splitlines(True):
             yield line, False
-        for line in stderr.splitlines():
-            yield line, True
+
+        running_error = None
+        for line in stderr.splitlines(True):
+            if (
+                line.startswith(mypy_silent_err_prefixes + mypy_silent_non_err_prefixes)
+                or any(infix in line for infix in mypy_err_infixes)
+            ):
+                if running_error:
+                    yield running_error, True
+                running_error = line
+            if running_error is None:
+                yield line, True
+            else:
+                running_error += line

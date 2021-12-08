@@ -324,6 +324,7 @@ class Compiler(Grammar):
         """Creates a new compiler with the given parsing parameters."""
         self.setup(*args, **kwargs)
 
+    # changes here should be reflected in stubs.coconut.convenience.setup
     def setup(self, target=None, strict=False, minify=False, line_numbers=False, keep_lines=False, no_tco=False, no_wrap=False):
         """Initializes parsing parameters."""
         if target is None:
@@ -500,6 +501,7 @@ class Compiler(Grammar):
         self.dict_literal <<= attach(self.dict_literal_ref, self.dict_literal_handle)
         self.return_testlist <<= attach(self.return_testlist_ref, self.return_testlist_handle)
         self.anon_namedtuple <<= attach(self.anon_namedtuple_ref, self.anon_namedtuple_handle)
+        self.base_match_for_stmt <<= attach(self.base_match_for_stmt_ref, self.base_match_for_stmt_handle)
 
         # handle normal and async function definitions
         self.decoratable_normal_funcdef_stmt <<= attach(
@@ -731,6 +733,8 @@ class Compiler(Grammar):
 
         # build the source snippet that the error is referring to
         loc_line_ind = lineno(err_loc, err_original) - 1
+        if original_lines[loc_line_ind].startswith((openindent, closeindent)):
+            loc_line_ind -= 1
         endpt_line_ind = lineno(err_endpt, err_original) - 1
         snippet = "".join(original_lines[loc_line_ind:endpt_line_ind + 1])
 
@@ -3098,6 +3102,35 @@ __annotations__["{name}"] = {annotation}
             return "(" + item + ")"
         else:
             return item
+
+    def base_match_for_stmt_handle(self, original, loc, tokens):
+        """Handle match for loops."""
+        matches, item, body = tokens
+
+        match_to_var = self.get_temp_var("match_to")
+        match_check_var = self.get_temp_var("match_check")
+
+        matcher = self.get_matcher(original, loc, match_check_var)
+        matcher.match(matches, match_to_var)
+
+        match_code = matcher.build()
+        match_error = self.pattern_error(original, loc, match_to_var, match_check_var)
+
+        return handle_indentation(
+            """
+for {match_to_var} in {item}:
+    {match_code}
+    {match_error}
+{body}
+            """,
+            add_newline=True,
+        ).format(
+            match_to_var=match_to_var,
+            item=item,
+            match_code=match_code,
+            match_error=match_error,
+            body=body,
+        )
 
 # end: COMPILER HANDLERS
 # -----------------------------------------------------------------------------------------------------------------------

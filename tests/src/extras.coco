@@ -62,7 +62,7 @@ def unwrap_future(event_loop, maybe_future):
         return maybe_future
 
 
-def test_setup_none():
+def test_setup_none() -> bool:
     assert consume(range(10), keep_last=1)[0] == 9 == coc_consume(range(10), keep_last=1)[0]
     assert version() == version("num")
     assert version("name")
@@ -170,7 +170,7 @@ def gam_eps_rate(bitarr) = (
     return True
 
 
-def test_extras():
+def test_extras() -> bool:
     # other tests
     if IPY:
         import coconut.highlighter  # type: ignore
@@ -243,7 +243,7 @@ def test_extras():
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
         else:
-            loop = None
+            loop = None  # type: ignore
         k = CoconutKernel()
         exec_result = k.do_execute("derp = pow$(?, 2)", False, True, {"two": "(+)(1, 1)"}, True) |> unwrap_future$(loop)
         assert exec_result["status"] == "ok"
@@ -270,15 +270,15 @@ def test_extras():
     return True
 
 
-def test_numpy():
+def test_numpy() -> bool:
     import numpy as np
     assert isinstance(np.array([1, 2]) |> fmap$(.+1), np.ndarray)
-    assert np.all(fmap(-> _ + 1, np.arange(3)) == np.array([1, 2, 3]))
+    assert np.all(fmap(-> _ + 1, np.arange(3)) == np.array([1, 2, 3]))  # type: ignore
     assert np.array([1, 2;; 3, 4]).shape == (2, 2)
     assert [
         1, 2 ;;
         np.array([3, 4]) ;;
-    ].shape == (2, 2)
+    ].shape == (2, 2)  # type: ignore
     assert [
         np.array([1, 2;; 3, 4]) ;;;
         np.array([5, 6;; 7, 8]) ;;;
@@ -295,11 +295,11 @@ def test_numpy():
     a = np.array([1,2 ;; 3,4])
     assert [a ; a] `np.array_equal` np.array([1,2,1,2 ;; 3,4,3,4])
     assert [a ;; a] `np.array_equal` np.array([1,2;; 3,4;; 1,2;; 3,4])
-    assert [a ;;; a].shape == (2, 2, 2)
+    assert [a ;;; a].shape == (2, 2, 2)  # type: ignore
     return True
 
 
-def main():
+def main() -> bool:
     print("Expect Coconut errors below from running extras:")
     print("(but make sure you get a <success> after them)")
     assert test_extras() is True

@@ -1147,6 +1147,35 @@ data namedpt(name `isinstance` str, x `isinstance` int, y `isinstance` int):
 **Python:**
 _Can't be done without a series of method definitions for each data type. See the compiled code for the Python syntax._
 
+### `match for`
+
+Coconut supports pattern-matching in for loops, where the pattern is matched against each item in the iterable. The syntax is
+```coconut
+[match] for <pattern> in <iterable>:
+    <body>
+```
+which is equivalent to the [destructuring assignment](#destructuring-assignment)
+```coconut
+for elem in <iterable>:
+    match <pattern> = elem
+    <body>
+```
+
+##### Example
+
+**Coconut:**
+```
+for {"user": uid, **_} in get_data():
+    print(uid)
+```
+
+**Python:**
+```
+for user_data in get_data():
+    uid = user_data["user"]
+    print(uid)
+```
+
 ### `where`
 
 Coconut's `where` statement is extremely straightforward. The syntax for a `where` statement is just
@@ -2579,7 +2608,7 @@ _Can't be done without a long series of checks for each `match` statement. See t
 
 ### `consume`
 
-Coconut provides the `consume` function to efficiently exhaust an iterator and thus perform any lazy evaluation contained within it. `consume` takes one optional argument, `keep_last`, that defaults to 0 and specifies how many, if any, items from the end to return as an iterable (`None` will keep all elements).
+Coconut provides the `consume` function to efficiently exhaust an iterator and thus perform any lazy evaluation contained within it. `consume` takes one optional argument, `keep_last`, that defaults to 0 and specifies how many, if any, items from the end to return as a sequence (`None` will keep all elements).
 
 Equivalent to:
 ```coconut

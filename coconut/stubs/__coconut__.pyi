@@ -641,7 +641,7 @@ def datamaker(data_type: _t.Type[_T]) -> _t.Callable[..., _T]:
 def consume(
     iterable: _t.Iterable[_T],
     keep_last: _t.Optional[int] = ...,
-    ) -> _t.Iterable[_T]: ...
+    ) -> _t.Sequence[_T]: ...
 
 
 def fmap(func: _t.Callable[[_Tco], _Uco], obj: _t.Iterable[_Tco]) -> _t.Iterable[_Uco]: ...
@@ -812,6 +812,12 @@ def _namedtuple_of(**kwargs: _t.Dict[_t.Text, _T]) -> _t.Tuple[_T, ...]: ...
 @_t.overload
 def _namedtuple_of(**kwargs: _t.Dict[_t.Text, _t.Any]) -> _Tuple: ...
 
+
+# @_t.overload
+# def _coconut_multi_dim_arr(
+#     arrs: _t.Tuple[_numpy.typing.NDArray[_t.Any], ...],
+#     dim: int,
+# ) -> _numpy.typing.NDArray[_t.Any]: ...
 
 @_t.overload
 def _coconut_multi_dim_arr(

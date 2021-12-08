@@ -3,7 +3,7 @@ import sys
 
 success = "<success>"
 
-def main():
+def main() -> bool:
     assert sys.argv[1] == "--arg"
     success |> print
     return True

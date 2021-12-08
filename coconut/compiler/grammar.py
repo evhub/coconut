@@ -1625,7 +1625,12 @@ class Grammar(object):
         - Optional(else_stmt),
     )
     while_stmt = addspace(keyword("while") - condense(namedexpr_test - suite - Optional(else_stmt)))
-    for_stmt = addspace(keyword("for") - assignlist - keyword("in") - condense(testlist - suite - Optional(else_stmt)))
+
+    for_stmt = addspace(keyword("for") + assignlist + keyword("in") - condense(testlist - suite - Optional(else_stmt)))
+
+    base_match_for_stmt = Forward()
+    base_match_for_stmt_ref = keyword("for").suppress() + many_match + keyword("in").suppress() - testlist - colon.suppress() - condense(nocolon_suite - Optional(else_stmt))
+    match_for_stmt = Optional(match_kwd.suppress()) + base_match_for_stmt
 
     except_item = (
         testlist_has_comma("list")
@@ -1762,7 +1767,10 @@ class Grammar(object):
     )
 
     async_stmt = Forward()
-    async_stmt_ref = addspace(async_kwd + (with_stmt | for_stmt))
+    async_stmt_ref = addspace(
+        async_kwd + (with_stmt | for_stmt | match_for_stmt)  # handles async [match] for
+        | match_kwd.suppress() + async_kwd + base_match_for_stmt,  # handles match async for
+    )
 
     async_funcdef = async_kwd.suppress() + (funcdef | math_funcdef)
     async_match_funcdef = trace(
@@ -1862,6 +1870,7 @@ class Grammar(object):
         | while_stmt
         | with_stmt
         | async_stmt
+        | match_for_stmt
         | simple_compound_stmt
         | where_stmt,
     )
@@ -2040,10 +2049,6 @@ def set_grammar_names():
             val.setName(varname)
             if isinstance(val, Forward):
                 trace(val)
-
-
-if DEVELOP:
-    set_grammar_names()
 
 
 # end: TRACING

@@ -91,6 +91,7 @@ from coconut.compiler.util import (
     get_target_info_smart,
 )
 from coconut.compiler.header import gethash
+from coconut.compiler.grammar import set_grammar_names
 from coconut.command.cli import arguments, cli_version
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -173,6 +174,8 @@ class Command(object):
 
         # set up logger
         logger.quiet, logger.verbose, logger.tracing = args.quiet, args.verbose, args.trace
+        if args.verbose or args.trace or args.profile:
+            set_grammar_names()
         if args.trace or args.profile:
             unset_fast_pyparsing_reprs()
         if args.profile:
@@ -751,6 +754,7 @@ class Command(object):
             if code is not None:  # interpreter
                 args += ["-c", code]
             for line, is_err in mypy_run(args):
+                line = line.rstrip()
                 logger.log("[MyPy]", line)
                 if line.startswith(mypy_silent_err_prefixes):
                     if code is None:  # file

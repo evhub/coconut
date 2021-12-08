@@ -35,13 +35,13 @@ class CoconutException(Exception):
 CLI: Command = ...
 
 
-def cmd(args: Union[Text, bytes, Iterable], interact: bool) -> None: ...
+def cmd(args: Union[Text, bytes, Iterable], interact: bool=False) -> None: ...
 
 
 VERSIONS: Dict[Text, Text] = ...
 
 
-def version(which: Text) -> Text: ...
+def version(which: Optional[Text]=None) -> Text: ...
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -49,19 +49,27 @@ def version(which: Text) -> Text: ...
 #-----------------------------------------------------------------------------------------------------------------------
 
 
-setup: Callable[[Optional[str], bool, bool, bool, bool, bool], None] = ...
+def setup(
+    target: Optional[str]=None,
+    strict: bool=False,
+    minify: bool=False,
+    line_numbers: bool=False,
+    keep_lines: bool=False,
+    no_tco: bool=False,
+    no_wrap: bool=False,
+) -> None: ...
 
 
 PARSERS: Dict[Text, Callable] = ...
 
 
-def parse(code: Text, mode: Text) -> Text: ...
+def parse(code: Text, mode: Text=...) -> Text: ...
 
 
 def coconut_eval(
     expression: Text,
-    globals: Dict[Text, Any]=None,
-    locals: Dict[Text, Any]=None,
+    globals: Optional[Dict[Text, Any]]=None,
+    locals: Optional[Dict[Text, Any]]=None,
 ) -> Any: ...
 
 
@@ -79,10 +87,13 @@ class CoconutImporter:
     @staticmethod
     def run_compiler(path: str) -> None: ...
 
-    def find_module(self, fullname: str, path: str=None) -> None: ...
+    def find_module(self, fullname: str, path: Optional[str]=None) -> None: ...
 
 
 coconut_importer = CoconutImporter()
 
 
 def auto_compilation(on: bool=True) -> None: ...
+
+
+def get_coconut_encoding(encoding: str=...) -> Any: ...
