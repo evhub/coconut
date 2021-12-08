@@ -215,6 +215,14 @@ def test_extras() -> bool:
     assert parse("from io import BytesIO", mode="any") == "from io import BytesIO"
     assert_raises(-> parse("def f(*, x=None) = x"), CoconutTargetError)
 
+    setup(target="3")
+    assert parse("""
+async def async_map_test() =
+    for async_map in (async_map_0, async_map_1, async_map_2, async_map_3, async_map_4):
+        assert (await ((pow$(2), range(5)) |> async_map)) |> tuple == (1, 2, 4, 8, 16)
+    True
+    """.strip())
+
     setup(target="3.3")
     gen_func_def = """def f(x):
     yield x

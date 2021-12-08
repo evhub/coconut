@@ -1346,7 +1346,7 @@ else:
         )
 
     def_regex = compile_regex(r"(async\s+)?def\b")
-    yield_regex = compile_regex(r"\byield\b")
+    yield_regex = compile_regex(r"\byield(?!\s+_coconut\.asyncio\.From)\b")
 
     def detect_is_gen(self, raw_lines):
         """Determine if the given function code is for a generator."""
@@ -2745,8 +2745,10 @@ if not {check_var}:
         elif self.target_info >= (3, 5):
             return "await " + tokens[0]
         elif self.target_info >= (3, 3):
-            return "(yield from " + tokens[0] + ")"
+            # we have to wrap the yield here so it doesn't cause the function to be detected as an async generator
+            return self.wrap_passthrough("(yield from " + tokens[0] + ")")
         else:
+            # this yield is fine because we can detect the _coconut.asyncio.From
             return "(yield _coconut.asyncio.From(" + tokens[0] + "))"
 
     def unsafe_typedef_handle(self, tokens):
