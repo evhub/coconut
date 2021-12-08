@@ -74,6 +74,7 @@ from coconut.util import (
     clip,
     logical_lines,
     clean,
+    get_target_info,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -101,7 +102,6 @@ from coconut.compiler.grammar import (
     itemgetter_handle,
 )
 from coconut.compiler.util import (
-    get_target_info,
     sys_target,
     addskip,
     count_end,
@@ -1389,7 +1389,6 @@ else:
         attempt_tco = normal_func and not self.no_tco  # whether to even attempt tco
 
         # sanity checks
-        internal_assert(not (is_async and is_gen), "cannot mark as async and generator")
         internal_assert(not (not normal_func and (attempt_tre or attempt_tco)), "cannot tail call optimize async/generator functions")
 
         if (
@@ -1485,7 +1484,7 @@ else:
         func_code = "".join(lines)
         return func_code, tco, tre
 
-    def build_funcdef(self, original, loc, decorators, funcdef, is_async):
+    def proc_funcdef(self, original, loc, decorators, funcdef, is_async):
         """Determines if TCO or TRE can be done and if so does it,
         handles dotted function names, and universalizes async functions."""
         # process tokens
@@ -1575,6 +1574,9 @@ else:
             def_stmt_name = def_stmt_name.replace(func_name, def_name)
             def_stmt = def_stmt_def + " " + def_stmt_name + "(" + def_stmt_post_lparen
 
+        # detect generators
+        is_gen = self.detect_is_gen(raw_lines)
+
         # handle async functions
         if is_async:
             if not self.target:
@@ -1584,18 +1586,22 @@ else:
                     original, loc,
                     target="sys",
                 )
+            elif is_gen and self.target_info < (3, 6):
+                raise self.make_err(
+                    CoconutTargetError,
+                    "found Python 3.6 async generator",
+                    original, loc,
+                    target="36",
+                )
             elif self.target_info >= (3, 5):
                 def_stmt = "async " + def_stmt
             else:
                 decorators += "@_coconut.asyncio.coroutine\n"
 
-            func_code, _, _ = self.transform_returns(original, loc, raw_lines, is_async=True)
+            func_code, _, _ = self.transform_returns(original, loc, raw_lines, is_async=True, is_gen=is_gen)
 
         # handle normal functions
         else:
-            # detect generators
-            is_gen = self.detect_is_gen(raw_lines)
-
             attempt_tre = (
                 func_name is not None
                 and not is_gen
@@ -1692,7 +1698,7 @@ if {store_var} is not _coconut_sentinel:
                 funcdef = self.deferred_code_proc(funcdef, ignore_names=ignore_names, **kwargs)
 
                 out.append(bef_ind)
-                out.append(self.build_funcdef(original, loc, decorators, funcdef, is_async))
+                out.append(self.proc_funcdef(original, loc, decorators, funcdef, is_async))
                 out.append(aft_ind)
 
             # look for add_code_before regexes

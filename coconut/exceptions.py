@@ -32,6 +32,7 @@ from coconut.util import (
     clip,
     logical_lines,
     clean,
+    get_displayable_target,
 )
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -170,7 +171,8 @@ class CoconutTargetError(CoconutSyntaxError):
 
     def __init__(self, message, source=None, point=None, ln=None, target=None):
         """Creates the --target Coconut error."""
-        self.args = (message, source, point, ln, target)
+        norm_target = get_displayable_target(target)
+        self.args = (message, source, point, ln, norm_target)
 
     def message(self, message, source, point, ln, target):
         """Creates the --target Coconut error message."""

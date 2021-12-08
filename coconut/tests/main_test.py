@@ -514,6 +514,30 @@ def run(args=[], agnostic_target=None, use_run_arg=False, convert_to_import=Fals
                 run_extras(convert_to_import=convert_to_import)  # **kwargs are for comp, not run
 
 
+def comp_all(args=[], agnostic_target=None, **kwargs):
+    """Compile Coconut tests."""
+    if agnostic_target is None:
+        agnostic_args = args
+    else:
+        agnostic_args = ["--target", str(agnostic_target)] + args
+
+    try:
+        os.mkdir(dest)
+    except Exception:
+        pass
+
+    comp_2(args, **kwargs)
+    comp_3(args, **kwargs)
+    comp_35(args, **kwargs)
+    comp_36(args, **kwargs)
+    comp_sys(args, **kwargs)
+    comp_non_strict(args, **kwargs)
+
+    comp_agnostic(agnostic_args, **kwargs)
+    comp_runner(agnostic_args, **kwargs)
+    comp_extras(agnostic_args, **kwargs)
+
+
 def comp_pyston(args=[], **kwargs):
     """Compiles evhub/pyston."""
     call(["git", "clone", pyston_git])
@@ -564,23 +588,6 @@ def comp_bbopt(args=[], **kwargs):
 def install_bbopt():
     """Runs bbopt."""
     call(["pip", "install", "-Ue", bbopt])
-
-
-def comp_all(args=[], **kwargs):
-    """Compile Coconut tests."""
-    try:
-        os.mkdir(dest)
-    except Exception:
-        pass
-    comp_2(args, **kwargs)
-    comp_3(args, **kwargs)
-    comp_35(args, **kwargs)
-    comp_36(args, **kwargs)
-    comp_agnostic(args, **kwargs)
-    comp_sys(args, **kwargs)
-    comp_non_strict(args, **kwargs)
-    comp_runner(args, **kwargs)
-    comp_extras(args, **kwargs)
 
 
 def run_runnable(args=[]):

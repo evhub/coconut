@@ -48,7 +48,11 @@ from coconut._pyparsing import (
 )
 
 from coconut import embed
-from coconut.util import override, get_name
+from coconut.util import (
+    override,
+    get_name,
+    get_target_info,
+)
 from coconut.terminal import (
     logger,
     complain,
@@ -371,15 +375,6 @@ def transform(grammar, text, inner=False):
 # -----------------------------------------------------------------------------------------------------------------------
 # TARGETS:
 # -----------------------------------------------------------------------------------------------------------------------
-
-def get_target_info(target):
-    """Return target information as a version tuple."""
-    if not target:
-        return ()
-    elif len(target) == 1:
-        return (int(target),)
-    else:
-        return (int(target[0]), int(target[1:]))
 
 
 raw_sys_target = str(sys.version_info[0]) + str(sys.version_info[1])

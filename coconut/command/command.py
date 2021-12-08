@@ -37,7 +37,11 @@ from coconut.exceptions import (
     CoconutException,
     CoconutInternalException,
 )
-from coconut.terminal import logger, format_error
+from coconut.terminal import (
+    logger,
+    format_error,
+    internal_assert,
+)
 from coconut.constants import (
     fixpath,
     code_exts,
@@ -351,13 +355,22 @@ class Command(object):
 
         return processed_source, processed_dest, package
 
-    def register_error(self, code=1, errmsg=None):
+    def register_exit_code(self, code=1, errmsg=None, err=None):
         """Update the exit code."""
+        if err is not None:
+            internal_assert(errmsg is None, "register_exit_code accepts only one of errmsg or err")
+            if logger.verbose:
+                errmsg = format_error(err.__class__, err)
+            else:
+                errmsg = err.__class__.__name__
         if errmsg is not None:
             if self.errmsg is None:
                 self.errmsg = errmsg
             elif errmsg not in self.errmsg:
-                self.errmsg += "\nAnd error: " + errmsg
+                if logger.verbose:
+                    self.errmsg += "\nAnd error: " + errmsg
+                else:
+                    self.errmsg += "; " + errmsg
         if code is not None:
             self.exit_code = code or self.exit_code
 
@@ -371,14 +384,14 @@ class Command(object):
             else:
                 yield
         except SystemExit as err:
-            self.register_error(err.code)
+            self.register_exit_code(err.code)
         except BaseException as err:
             if isinstance(err, CoconutException):
                 logger.print_exc()
             elif not isinstance(err, KeyboardInterrupt):
                 logger.print_exc()
                 printerr(report_this_text)
-            self.register_error(errmsg=format_error(err.__class__, err))
+            self.register_exit_code(err=err)
 
     def compile_path(self, path, write=True, package=True, **kwargs):
         """Compile a path and returns paths to compiled files."""
@@ -635,7 +648,7 @@ class Command(object):
 
     def exit_runner(self, exit_code=0):
         """Exit the interpreter."""
-        self.register_error(exit_code)
+        self.register_exit_code(exit_code)
         self.running = False
 
     def handle_input(self, code):
@@ -759,12 +772,12 @@ class Command(object):
                 if line.startswith(mypy_silent_err_prefixes):
                     if code is None:  # file
                         printerr(line)
-                        self.register_error(errmsg="MyPy error")
+                        self.register_exit_code(errmsg="MyPy error")
                 elif not line.startswith(mypy_silent_non_err_prefixes):
                     if code is None:  # file
                         printerr(line)
                         if any(infix in line for infix in mypy_err_infixes):
-                            self.register_error(errmsg="MyPy error")
+                            self.register_exit_code(errmsg="MyPy error")
                     if line not in self.mypy_errs:
                         if code is not None:  # interpreter
                             printerr(line)
@@ -785,7 +798,7 @@ class Command(object):
                 self.run_silent_cmd(user_install_args)
             except CalledProcessError:
                 logger.warn("kernel install failed on command", " ".join(install_args))
-                self.register_error(errmsg="Jupyter kernel error")
+                self.register_exit_code(errmsg="Jupyter kernel error")
                 return False
         return True
 
@@ -796,7 +809,7 @@ class Command(object):
             self.run_silent_cmd(remove_args)
         except CalledProcessError:
             logger.warn("kernel removal failed on command", " ".join(remove_args))
-            self.register_error(errmsg="Jupyter kernel error")
+            self.register_exit_code(errmsg="Jupyter kernel error")
             return False
         return True
 
@@ -888,7 +901,7 @@ class Command(object):
 
         # run the Jupyter command
         if run_args is not None:
-            self.register_error(run_cmd(run_args, raise_errs=False), errmsg="Jupyter error")
+            self.register_exit_code(run_cmd(run_args, raise_errs=False), errmsg="Jupyter error")
 
     def watch(self, src_dest_package_triples, run=False, force=False):
         """Watch a source and recompile on change."""

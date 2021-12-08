@@ -23,6 +23,7 @@ import os.path
 from functools import partial
 
 from coconut.root import _indent
+from coconut.terminal import internal_assert
 from coconut.constants import (
     hash_prefix,
     tabideal,
@@ -32,10 +33,11 @@ from coconut.constants import (
     report_this_text,
     numpy_modules,
 )
-from coconut.util import univ_open
-from coconut.terminal import internal_assert
-from coconut.compiler.util import (
+from coconut.util import (
+    univ_open,
     get_target_info,
+)
+from coconut.compiler.util import (
     split_comment,
     get_vers_for_target,
     tuple_str_of,

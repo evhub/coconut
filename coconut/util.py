@@ -201,6 +201,24 @@ def get_next_version(req_ver, point_to_increment=-1):
     return req_ver[:point_to_increment] + (req_ver[point_to_increment] + 1,)
 
 
+def get_target_info(target):
+    """Return target information as a version tuple."""
+    if not target:
+        return ()
+    elif len(target) == 1:
+        return (int(target),)
+    else:
+        return (int(target[0]), int(target[1:]))
+
+
+def get_displayable_target(target):
+    """Get a displayable version of the target."""
+    try:
+        return ver_tuple_to_str(get_target_info(target))
+    except ValueError:
+        return target
+
+
 # -----------------------------------------------------------------------------------------------------------------------
 # JUPYTER KERNEL INSTALL:
 # -----------------------------------------------------------------------------------------------------------------------

@@ -94,6 +94,7 @@ def test_setup_none() -> bool:
     assert parse("(1\f+\f2)", "any") == "(1 + 2)" == parse("(1\f+\f2)", "eval")
 
     assert_raises(-> parse("(a := b)"), CoconutTargetError)
+    assert_raises(-> parse("async def f() = 1"), CoconutTargetError)
 
     assert_raises(-> parse(" abc", "file"), CoconutSyntaxError, not_exc=CoconutParseError)
     assert_raises(-> parse("'"), CoconutSyntaxError, not_exc=CoconutParseError)
@@ -229,8 +230,12 @@ def test_extras() -> bool:
     setup(target="3.2")
     assert parse(gen_func_def, mode="any") not in gen_func_def_outs
 
+    setup(target="3.5")
+    assert_raises(-> parse("async def f(): yield 1"), CoconutTargetError)
+
     setup(target="3.6")
     assert parse("def f(*, x=None) = x")
+    assert parse("async def f(): yield 1")
 
     setup(target="3.8")
     assert parse("(a := b)")

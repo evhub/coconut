@@ -1,5 +1,3 @@
-import asyncio
-
 def py35_test() -> bool:
     """Performs Python-3.5-specific tests."""
     try:
@@ -12,33 +10,4 @@ def py35_test() -> bool:
     assert .method(1) |> repr == "operator.methodcaller('method', 1)"
     assert pow$(1) |> repr == "functools.partial(<built-in function pow>, 1)"
     assert .[1] |> repr == "operator.itemgetter(1)"
-
-    async def ayield(x) = x
-    async def arange(n):
-        for i in range(n):
-            yield await ayield(i)
-    async def afor_test():
-        # syntax 1
-        got = []
-        async for int(i) in arange(5):
-            got.append(i)
-        assert got == range(5) |> list
-
-        # syntax 2
-        got = []
-        async match for int(i) in arange(5):
-            got.append(i)
-        assert got == range(5) |> list
-
-        # syntax 3
-        got = []
-        match async for int(i) in arange(5):
-            got.append(i)
-        assert got == range(5) |> list
-
-        return True
-
-    loop = asyncio.new_event_loop()
-    loop.run_until_complete(afor_test())
-    loop.close()
     return True
