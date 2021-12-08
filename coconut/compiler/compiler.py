@@ -726,15 +726,17 @@ class Compiler(Grammar):
         # extract information from the error
         err_original = err.pstr
         err_loc = err.loc
-        err_lineno = err.lineno if include_ln else None
         err_endpt = clip(get_highest_parse_loc() + 1, min=err_loc)
+        src_lineno = self.adjust(err.lineno) if include_ln else None
 
+        # get adjusted line index for the error loc
         original_lines = tuple(logical_lines(err_original, True))
+        loc_line_ind = lineno(err_loc, err_original) - 1
+        if loc_line_ind > 0 and original_lines[loc_line_ind].startswith((openindent, closeindent)):
+            loc_line_ind -= 1
+            err_loc = len(original_lines[loc_line_ind]) - 1
 
         # build the source snippet that the error is referring to
-        loc_line_ind = lineno(err_loc, err_original) - 1
-        if original_lines[loc_line_ind].startswith((openindent, closeindent)):
-            loc_line_ind -= 1
         endpt_line_ind = lineno(err_endpt, err_original) - 1
         snippet = "".join(original_lines[loc_line_ind:endpt_line_ind + 1])
 
@@ -757,15 +759,13 @@ class Compiler(Grammar):
         # reformat the snippet and fix error locations to match
         if reformat:
             snippet, loc_in_snip, endpt_in_snip = self.reformat(snippet, loc_in_snip, endpt_in_snip)
-            if err_lineno is not None:
-                err_lineno = self.adjust(err_lineno)
 
         # build the error
         return CoconutParseError(
             msg,
             snippet,
             loc_in_snip,
-            err_lineno,
+            src_lineno,
             extra,
             endpt_in_snip,
         )
