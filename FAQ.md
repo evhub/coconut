@@ -14,13 +14,13 @@ Yes and yes! Coconut compiles to Python, so Coconut modules are accessible from 
 
 ### What versions of Python does Coconut support?
 
-Coconut supports any Python version `>= 2.6` on the `2.x` branch or `>= 3.2` on the `3.x` branch. In fact, Coconut code is compiled to run the same on every one of those supported versions! See [compatible Python versions](DOCS.html#compatible-python-versions) for more information.
+Coconut supports any Python version `>= 2.6` on the `2.x` branch or `>= 3.2` on the `3.x` branch. In fact, Coconut code is compiled to run the same on every one of those supported versions! See [compatible Python versions](./DOCS.md#compatible-python-versions) for more information.
 
 ### Can Coconut be used to convert Python from one version to another?
 
 Yes! But only in the backporting direction: Coconut can convert Python 3 to Python 2, but not the other way around. Coconut really can, though, turn Python 3 code into version-independent Python. Coconut will compile Python 3 syntax, built-ins, and even imports to code that will work on any supported Python version (`2.6`, `2.7`, `>=3.2`).
 
-There a couple of caveats to this, however: Coconut can't magically make all your other third-party packages version-independent, and some constructs will require a particular `--target` to make them work (for a full list, see [compatible Python versions](DOCS.html#compatible-python-versions)).
+There a couple of caveats to this, however: Coconut can't magically make all your other third-party packages version-independent, and some constructs will require a particular `--target` to make them work (for a full list, see [compatible Python versions](./DOCS.md#compatible-python-versions)).
 
 ### How do I release a Coconut package on PyPI?
 
@@ -32,15 +32,15 @@ Information on every Coconut release is chronicled on the [GitHub releases page]
 
 ### Does Coconut support static type checking?
 
-Yes! Coconut compiles the [newest](https://www.python.org/dev/peps/pep-0526/), [fanciest](https://www.python.org/dev/peps/pep-0484/) type annotation syntax into version-independent type comments which can then by checked using Coconut's built-in [MyPy Integration](DOCS.html#mypy-integration).
+Yes! Coconut compiles the [newest](https://www.python.org/dev/peps/pep-0526/), [fanciest](https://www.python.org/dev/peps/pep-0484/) type annotation syntax into version-independent type comments which can then by checked using Coconut's built-in [MyPy Integration](./DOCS.md#mypy-integration).
 
 ### Help! I tried to write a recursive iterator and my Python segfaulted!
 
-No problem—just use Coconut's [`recursive_iterator`](DOCS.html#recursive-iterator) decorator and you should be fine. This is a [known Python issue](http://bugs.python.org/issue14010) but `recursive_iterator` will fix it for you.
+No problem—just use Coconut's [`recursive_iterator`](./DOCS.md#recursive-iterator) decorator and you should be fine. This is a [known Python issue](http://bugs.python.org/issue14010) but `recursive_iterator` will fix it for you.
 
 ### How do I split an expression across multiple lines in Coconut?
 
-Since Coconut syntax is a superset of Python 3 syntax, Coconut supports the same line continuation syntax as Python. That means both backslash line continuation and implied line continuation inside of parentheses, brackets, or braces will all work. Parenthetical continuation is the recommended method, and Coconut even supports an [enhanced version of it](DOCS.html#enhanced-parenthetical-continuation).
+Since Coconut syntax is a superset of Python 3 syntax, Coconut supports the same line continuation syntax as Python. That means both backslash line continuation and implied line continuation inside of parentheses, brackets, or braces will all work. Parenthetical continuation is the recommended method, and Coconut even supports an [enhanced version of it](./DOCS.md#enhanced-parenthetical-continuation).
 
 ### If I'm already perfectly happy with Python, why should I learn Coconut?
 
@@ -56,7 +56,7 @@ Definitely! While Coconut is great for functional programming, it also has a bun
 
 ### I don't know functional programming, should I still learn Coconut?
 
-Yes, absolutely! Coconut's [tutorial](HELP.html) assumes absolutely no prior knowledge of functional programming, only Python. Because Coconut is not a purely functional programming language, and all valid Python is valid Coconut, Coconut is a great introduction to functional programming. If you learn Coconut, you'll be able to try out a new functional style of programming without having to abandon all the Python you already know and love.
+Yes, absolutely! Coconut's [tutorial](./HELP.md) assumes absolutely no prior knowledge of functional programming, only Python. Because Coconut is not a purely functional programming language, and all valid Python is valid Coconut, Coconut is a great introduction to functional programming. If you learn Coconut, you'll be able to try out a new functional style of programming without having to abandon all the Python you already know and love.
 
 ### I don't know Python very well, should I still learn Coconut?
 
@@ -72,11 +72,11 @@ I certainly hope not! Unlike most transpiled languages, all valid Python is vali
 
 ### I want to use Coconut in a production environment; how do I achieve maximum performance?
 
-First, you're going to want a fast compiler, so you should make sure you're using [`cPyparsing`](https://github.com/evhub/cpyparsing). Second, there are two simple things you can do to make Coconut produce faster Python: compile with `--no-tco` and compile with a `--target` specification for the exact version of Python you want to run your code on. Passing `--target` helps Coconut optimize the compiled code for the Python version you want, and, though [Tail Call Optimization](DOCS.html#tail-call-optimization) is useful, it will usually significantly slow down functions that use it, so disabling it will often provide a major performance boost.
+First, you're going to want a fast compiler, so you should make sure you're using [`cPyparsing`](https://github.com/evhub/cpyparsing). Second, there are two simple things you can do to make Coconut produce faster Python: compile with `--no-tco` and compile with a `--target` specification for the exact version of Python you want to run your code on. Passing `--target` helps Coconut optimize the compiled code for the Python version you want, and, though [Tail Call Optimization](./DOCS.md#tail-call-optimization) is useful, it will usually significantly slow down functions that use it, so disabling it will often provide a major performance boost.
 
 ### I want to contribute to Coconut, how do I get started?
 
-That's great! Coconut is completely open-source, and new contributors are always welcome. Check out Coconut's [contributing guidelines](CONTRIBUTING.html) for more information.
+That's great! Coconut is completely open-source, and new contributors are always welcome. Check out Coconut's [contributing guidelines](./CONTRIBUTING.md) for more information.
 
 ### Why the name Coconut?
 

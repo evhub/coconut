@@ -1,6 +1,9 @@
 |logo| Coconut
 ==============
 
+..
+    <insert toctree here>
+
 .. |logo| image:: https://github.com/evhub/coconut/raw/gh-pages/favicon-32x32.png
 
 .. image:: https://opencollective.com/coconut/backers/badge.svg

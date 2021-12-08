@@ -50,7 +50,7 @@ Installing Coconut, including all the features above, is drop-dead simple. Just
 pip install coconut
 ```
 
-_Note: If you are having trouble installing Coconut, try following the debugging steps in the [installation section of Coconut's documentation](DOCS.html#installation)._
+_Note: If you are having trouble installing Coconut, try following the debugging steps in the [installation section of Coconut's documentation](./DOCS.md#installation)._
 
 To check that your installation is functioning properly, try entering into the command line
 ```
@@ -94,7 +94,7 @@ That means that if you're familiar with Python, you're already familiar with a g
 
 Of course, while being able to interpret Coconut code on-the-fly is a great thing, it wouldn't be very useful without the ability to write and compile larger programs. To that end, it's time to write our first Coconut program: "hello, world!" Coconut-style.
 
-First, we're going to need to create a file to put our code into. The file extension for Coconut source files is `.coco`, so let's create the new file `hello_world.coco`. After you do that, you should take the time now to set up your text editor to properly highlight Coconut code. For instructions on how to do that, see the documentation on [Coconut syntax highlighting](DOCS.html#syntax-highlighting).
+First, we're going to need to create a file to put our code into. The file extension for Coconut source files is `.coco`, so let's create the new file `hello_world.coco`. After you do that, you should take the time now to set up your text editor to properly highlight Coconut code. For instructions on how to do that, see the documentation on [Coconut syntax highlighting](./DOCS.md#syntax-highlighting).
 
 Now let's put some code in our `hello_world.coco` file. Unlike in Python, where headers like
 ```coconut_python
@@ -137,13 +137,13 @@ Compiling single files is not the only way to use the Coconut command-line utili
 
 The Coconut  compiler supports a large variety of different compilation options, the help for which can always be accessed by entering `coconut -h` into the command line. One of the most useful of these is `--line-numbers` (or `-l` for short). Using `--line-numbers` will add the line numbers of your source code as comments in the compiled code, allowing you to see what line in your source code corresponds to a line in the compiled code where an error occurred, for ease of debugging.
 
-_Note: If you don't need the full control of the Coconut compiler, you can also [access your Coconut code just by importing it](DOCS.html#automatic-compilation), either from the Coconut interpreter, or in any Python file where you import [`coconut.convenience`](DOCS.html#coconut-convenience)._
+_Note: If you don't need the full control of the Coconut compiler, you can also [access your Coconut code just by importing it](./DOCS.md#automatic-compilation), either from the Coconut interpreter, or in any Python file where you import [`coconut.convenience`](./DOCS.md#coconut-convenience)._
 
 ### Using IPython/Jupyter
 
 Although all different types of programming can benefit from using more functional techniques, scientific computing, perhaps more than any other field, lends itself very well to functional programming, an observation the case studies in this tutorial are very good examples of. That's why Coconut aims to provide extensive support for the established tools of scientific computing in Python.
 
-To that end, Coconut provides [built-in IPython/Jupyter support](DOCS.html#ipython-jupyter-support). To launch a Jupyter notebook with Coconut, just enter the command
+To that end, Coconut provides [built-in IPython/Jupyter support](./DOCS.md#ipython-jupyter-support). To launch a Jupyter notebook with Coconut, just enter the command
 ```
 coconut --jupyter notebook
 ```
@@ -154,7 +154,7 @@ _Alternatively, to launch the Jupyter interpreter with Coconut as the kernel, ru
 
 Because Coconut is built to be useful, the best way to demo it is to show it in action. To that end, the majority of this tutorial will be showing how to apply Coconut to solve particular problems, which we'll call case studies.
 
-These case studies are not intended to provide a complete picture of all of Coconut's features. For that, see Coconut's [documentation](DOCS.html). Instead, they are intended to show how Coconut can actually be used to solve practical programming problems.
+These case studies are not intended to provide a complete picture of all of Coconut's features. For that, see Coconut's [documentation](./DOCS.md). Instead, they are intended to show how Coconut can actually be used to solve practical programming problems.
 
 ## Case Study 1: `factorial`
 
@@ -382,7 +382,7 @@ def factorial(n):
         raise TypeError("the argument to factorial must be an integer >= 0")
 ```
 
-By making use of the [Coconut `addpattern` syntax](DOCS.html#addpattern), we can take that from three indentation levels down to one. Take a look:
+By making use of the [Coconut `addpattern` syntax](./DOCS.md#addpattern), we can take that from three indentation levels down to one. Take a look:
 ```
 def factorial(0) = 1
 
@@ -490,7 +490,7 @@ else:
 ```
 that avoids the need for an additional level of indentation when only one `match` is being performed.
 
-The third new construct is the [Coconut built-in `reiterable`](DOCS.html#reiterable). There is a problem in doing immutable functional programming with Python iterators: whenever an element of an iterator is accessed, it's lost. `reiterable` solves this problem by allowing the iterable it's called on to be iterated over multiple times while still yielding the same result each time
+The third new construct is the [Coconut built-in `reiterable`](./DOCS.md#reiterable). There is a problem in doing immutable functional programming with Python iterators: whenever an element of an iterator is accessed, it's lost. `reiterable` solves this problem by allowing the iterable it's called on to be iterated over multiple times while still yielding the same result each time
 
 Finally, although it's not a new construct, since it exists in Python 3, the use of `yield from` here deserves a mention. In Python, `yield` is the statement used to construct iterators, functioning much like `return`, with the exception that multiple `yield`s can be encountered, and each one will produce another element. `yield from` is very similar, except instead of adding a single element to the produced iterator, it adds another whole iterator.
 
@@ -547,7 +547,7 @@ data <name>(<attributes>):
 ```
 where `<name>` and `<body>` are the same as the equivalent `class` definition, but `<attributes>` are the different attributes of the data type, in order that the constructor should take them as arguments. In this case, `vector2` is a data type of two attributes, `x` and `y`, with one defined method, `__abs__`, that computes the magnitude. As the test cases show, we can then create, print, but _not modify_ instances of `vector2`.
 
-One other thing to call attention to here is the use of the [Coconut built-in `fmap`](DOCS.html#fmap). `fmap` allows you to map functions over algebraic data types. Coconut's `data` types do support iteration, so the standard `map` works on them, but it doesn't return another object of the same data type. In this case, `fmap` is simply `map` plus a call to the object's constructor.
+One other thing to call attention to here is the use of the [Coconut built-in `fmap`](./DOCS.md#fmap). `fmap` allows you to map functions over algebraic data types. Coconut's `data` types do support iteration, so the standard `map` works on them, but it doesn't return another object of the same data type. In this case, `fmap` is simply `map` plus a call to the object's constructor.
 
 ### n-Vector Constructor
 
@@ -567,7 +567,7 @@ vector(1, 2, 3) |> print  # vector(*pts=(1, 2, 3))
 vector(4, 5) |> vector |> print  # vector(*pts=(4, 5))
 ```
 
-Copy, paste! The big new thing here is how to write `data` constructors. Since `data` types are immutable, `__init__` construction won't work. Instead, a different special method `__new__` is used, which must return the newly constructed instance, and unlike most methods, takes the class not the object as the first argument. Since `__new__` needs to return a fully constructed instance, in almost all cases it will be necessary to access the underlying `data` constructor. To achieve this, Coconut provides the [built-in `makedata` function](DOCS.html/makedata), which takes a data type and calls its underlying `data` constructor with the rest of the arguments.
+Copy, paste! The big new thing here is how to write `data` constructors. Since `data` types are immutable, `__init__` construction won't work. Instead, a different special method `__new__` is used, which must return the newly constructed instance, and unlike most methods, takes the class not the object as the first argument. Since `__new__` needs to return a fully constructed instance, in almost all cases it will be necessary to access the underlying `data` constructor. To achieve this, Coconut provides the [built-in `makedata` function](./DOCS.md/makedata), which takes a data type and calls its underlying `data` constructor with the rest of the arguments.
 
 In this case, the constructor checks whether nothing but another `vector` was passed, in which case it returns that, otherwise it returns the result of passing the arguments to the underlying constructor, the form of which is `vector(*pts)`, since that is how we declared the data type. We use sequence pattern-matching to determine whether we were passed a single vector, which is just a list or tuple of patterns to match against the contents of the sequence.
 
@@ -583,7 +583,7 @@ Now that we have a constructor for our n-vector, it's time to write its methods.
         """Return the magnitude of the vector."""
         self.pts |> map$(.**2) |> sum |> (.**0.5)
 ```
-The basic algorithm here is map square over each element, sum them all, then square root the result. The one new construct here is the `(.**2)` and `(.**0.5)` syntax, which are effectively equivalent to `(x -> x**2)` and `(x -> x**0.5)`, respectively (though the `(.**2)` syntax produces a pickleable object). This syntax works for all [operator functions](DOCS.html#operator-functions), so you can do things like `(1-.)` or `(cond() or .)`.
+The basic algorithm here is map square over each element, sum them all, then square root the result. The one new construct here is the `(.**2)` and `(.**0.5)` syntax, which are effectively equivalent to `(x -> x**2)` and `(x -> x**0.5)`, respectively (though the `(.**2)` syntax produces a pickleable object). This syntax works for all [operator functions](./DOCS.md#operator-functions), so you can do things like `(1-.)` or `(cond() or .)`.
 
 Next up is vector addition. The goal here is to add two vectors of equal length by adding their components. To do this, we're going to make use of Coconut's ability to perform pattern-matching, or in this case destructuring assignment, to data types, like so:
 ```coconut
@@ -794,7 +794,7 @@ vector_field()$[0] |> print  # vector(*pts=(0, 0))
 vector_field()$[2:3] |> list |> print  # [vector(*pts=(1, 0))]
 ```
 
-_Hint: Remember, the way we defined vector it takes the components as separate arguments, not a single tuple. You may find the [Coconut built-in `starmap`](DOCS.html#starmap) useful in dealing with that._
+_Hint: Remember, the way we defined vector it takes the components as separate arguments, not a single tuple. You may find the [Coconut built-in `starmap`](./DOCS.md#starmap) useful in dealing with that._
 
 <br>
 <br>
@@ -1144,7 +1144,7 @@ iter$[]
 .$[slice]
 ```
 
-For a full explanation of what each implicit partial does, see Coconut's documentation on [implicit partials](DOCS.html#implicit-partial-application).
+For a full explanation of what each implicit partial does, see Coconut's documentation on [implicit partials](./DOCS.md#implicit-partial-application).
 
 ### Type Annotations
 
@@ -1155,7 +1155,7 @@ def plus1(x: int) -> int:
 a: int = plus1(10)
 ```
 
-Unfortunately, in Python, such type annotation syntax only exists in Python 3. Not to worry in Coconut, however, which compiles Python-3-style type annotations to universally compatible type comments. Not only that, but Coconut has built-in [MyPy integration](DOCS.html#mypy-integration) for automatically type-checking your code, and its own [enhanced type annotation syntax](DOCS.html#enhanced-type-annotation) for more easily expressing complex types, like so:
+Unfortunately, in Python, such type annotation syntax only exists in Python 3. Not to worry in Coconut, however, which compiles Python-3-style type annotations to universally compatible type comments. Not only that, but Coconut has built-in [MyPy integration](./DOCS.md#mypy-integration) for automatically type-checking your code, and its own [enhanced type annotation syntax](./DOCS.md#enhanced-type-annotation) for more easily expressing complex types, like so:
 ```coconut
 def int_map(
     f: int -> int,
@@ -1166,8 +1166,8 @@ def int_map(
 
 ### Further Reading
 
-And that's it for this tutorial! But that's hardly it for Coconut. All of the features examined in this tutorial, as well as a bunch of others, are detailed in Coconut's [documentation](DOCS.html).
+And that's it for this tutorial! But that's hardly it for Coconut. All of the features examined in this tutorial, as well as a bunch of others, are detailed in Coconut's [documentation](./DOCS.md).
 
 Also, if you have any other questions not covered in this tutorial, feel free to ask around at Coconut's [Gitter](https://gitter.im/evhub/coconut), a GitHub-integrated chat room for Coconut developers.
 
-Finally, Coconut is a new, growing language, and if you'd like to get involved in the development of Coconut, all the code is available completely open-source on Coconut's [GitHub](https://github.com/evhub/coconut). Contributing is a simple as forking the code, making your changes, and proposing a pull request! See Coconuts [contributing guidelines](CONTRIBUTING.html) for more information.
+Finally, Coconut is a new, growing language, and if you'd like to get involved in the development of Coconut, all the code is available completely open-source on Coconut's [GitHub](https://github.com/evhub/coconut). Contributing is a simple as forking the code, making your changes, and proposing a pull request! See Coconuts [contributing guidelines](./CONTRIBUTING.md) for more information.

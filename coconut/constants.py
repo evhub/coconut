@@ -803,6 +803,10 @@ exclude_install_dirs = (
     "bbopt",
     "coconut-prelude",
 )
+exclude_docs_dirs = (
+    ".pytest_cache",
+    "README.*",
+)
 
 script_names = (
     "coconut",
@@ -860,12 +864,11 @@ conda_build_env_var = "CONDA_BUILD"
 # -----------------------------------------------------------------------------------------------------------------------
 
 without_toc = """
-=======
+..
+    <insert toctree here>
 """
 
 with_toc = """
-=======
-
 .. toctree::
    :maxdepth: 2
 

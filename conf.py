@@ -27,6 +27,7 @@ from coconut.constants import (
     version_str_tag,
     without_toc,
     with_toc,
+    exclude_docs_dirs,
 )
 from coconut.util import univ_open
 
@@ -62,9 +63,10 @@ html_theme_options = {
 }
 
 master_doc = "index"
-exclude_patterns = ["README.*"]
 
 source_suffix = [".rst", ".md"]
+
+exclude_patterns = list(exclude_docs_dirs)
 
 default_role = "code"
 
