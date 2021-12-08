@@ -1027,7 +1027,7 @@ def main_test() -> bool:
     assert consume(range(10)) `isinstance` collections.abc.Sequence
     assert consume(range(10), keep_last=5) `isinstance` collections.abc.Sequence
     assert range(5) |> reduce$((+), ?, 10) == 20
-    assert range(5) |> scan$((+), initial=10) |> list == [10, 10, 11, 13, 16, 20] == range(5) |> itertools.accumulate$(?, (+), initial=10) |> list
+    assert range(5) |> scan$((+), initial=10) |> list == [10, 10, 11, 13, 16, 20]
     return True
 
 def test_asyncio() -> bool:
@@ -1078,6 +1078,9 @@ def run_main(test_easter_eggs=False) -> bool:
     if sys.version_info >= (3, 7):
         from .specific import py37_spec_test
         assert py37_spec_test() is True
+    if sys.version_info >= (3, 8):
+        from .specific import py38_spec_test
+        assert py38_spec_test() is True
 
     print_dot()  # ....
     from .suite import suite_test, tco_test

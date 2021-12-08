@@ -796,8 +796,12 @@ search_terms = (
 ) + coconut_specific_builtins + magic_methods + exceptions + reserved_vars
 
 exclude_install_dirs = (
+    os.path.join("coconut", "tests", "dest"),
     "docs",
-    "tests",
+    "pyston",
+    "pyprover",
+    "bbopt",
+    "coconut-prelude",
 )
 
 script_names = (

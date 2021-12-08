@@ -7,8 +7,13 @@ global-include *.rst
 global-include *.md
 global-include *.json
 global-include *.toml
-prune tests
+global-include *.coco
+prune coconut/tests/dest
 prune docs
+prune pyston
+prune pyprover
+prune bbopt
+prune coconut-prelude
 prune .mypy_cache
 prune coconut/stubs/.mypy_cache
 prune *.egg-info

@@ -128,7 +128,7 @@ dmypy.json
 __pypackages__/
 
 # Coconut
-tests/dest/
+coconut/tests/dest/
 docs/
 pyston/
 pyprover/

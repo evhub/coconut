@@ -1,3 +1,4 @@
+from itertools import accumulate
 from io import StringIO  # type: ignore
 
 from .util import mod  # NOQA
@@ -85,4 +86,10 @@ def py36_spec_test(tco: bool) -> bool:
 def py37_spec_test() -> bool:
     """Tests for any py37+ version."""
     assert py_breakpoint
+    return True
+
+
+def py38_spec_test() -> bool:
+    """Tests for any py38+ version."""
+    assert range(5) |> accumulate$(?, (+), initial=10) |> list == [10, 10, 11, 13, 16, 20]
     return True

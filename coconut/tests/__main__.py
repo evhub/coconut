@@ -20,10 +20,8 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 from coconut.root import *  # NOQA
 
 import sys
-import os.path
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from tests.main_test import comp_all
+from coconut.tests.main_test import comp_all
 
 # -----------------------------------------------------------------------------------------------------------------------
 # MAIN:

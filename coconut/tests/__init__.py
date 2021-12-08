@@ -17,4 +17,4 @@ Description: Coconut test suite.
 
 from __future__ import print_function, absolute_import, unicode_literals, division
 
-from tests.main_test import *  # NOQA
+from coconut.tests.main_test import *  # NOQA
