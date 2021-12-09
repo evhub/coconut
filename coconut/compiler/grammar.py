@@ -1384,7 +1384,12 @@ class Grammar(object):
     test_no_cond <<= lambdef_no_cond | test_item
 
     namedexpr = Forward()
-    namedexpr_ref = addspace(name + colon_eq + test)
+    namedexpr_ref = addspace(
+        name + colon_eq + (
+            test + ~colon_eq
+            | attach(namedexpr, add_parens_handle)
+        ),
+    )
     namedexpr_test <<= (
         test + ~colon_eq
         | namedexpr

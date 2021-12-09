@@ -1161,6 +1161,8 @@ for elem in <iterable>:
     <body>
 ```
 
+Pattern-matching can also be used in `async for` loops, with both `async match for` and `match async for` allowed as explicit syntaxes.
+
 ##### Example
 
 **Coconut:**
@@ -2144,6 +2146,22 @@ with (open('/path/to/some/file/you/want/to/read') as file_1,
 with open('/path/to/some/file/you/want/to/read') as file_1:
     with open('/path/to/some/file/being/written', 'w') as file_2:
         file_2.write(file_1.read())
+```
+
+### Assignment Expression Chaining
+
+Unlike Python, Coconut allows assignment expressions to be chained, as in `a := b := c`. Note, however, that assignment expressions in general are currently only supported on `--target 3.8` or higher.
+
+##### Example
+
+**Coconut:**
+```coconut
+(a := b := 1)
+```
+
+**Python:**
+```coconut_python
+(a := (b := 1))
 ```
 
 ## Built-Ins

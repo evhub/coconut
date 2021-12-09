@@ -1105,6 +1105,9 @@ def run_main(test_easter_eggs=False) -> bool:
         if sys.version_info >= (3, 6):
             from .py36_test import py36_test
             assert py36_test() is True
+        if sys.version_info >= (3, 8):
+            from .py38_test import py38_test
+            assert py38_test() is True
 
     print_dot()  # .......
     from .target_sys_test import TEST_ASYNCIO, target_sys_test

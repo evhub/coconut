@@ -26,7 +26,7 @@ import sys as _coconut_sys
 VERSION = "2.0.0"
 VERSION_NAME = "How Not to Be Seen"
 # False for release, int >= 1 for develop
-DEVELOP = 24
+DEVELOP = 25
 ALPHA = True
 
 # -----------------------------------------------------------------------------------------------------------------------

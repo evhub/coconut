@@ -1,0 +1,8 @@
+def py38_test() -> bool:
+    """Performs Python-3.8-specific tests."""
+    a = 1
+    assert (a := 2) == 2
+    b = a
+    assert (a := b := 3) == 3
+    assert a == 3 == b
+    return True
