@@ -68,6 +68,8 @@ from coconut.constants import (
     is_data_var,
     funcwrapper,
     non_syntactic_newline,
+    indchars,
+    default_whitespace_chars,
 )
 from coconut.util import (
     checksum,
@@ -580,19 +582,6 @@ class Compiler(Grammar):
         else:
             return None
 
-    def make_err(self, errtype, message, original, loc, ln=None, line=None, col=None, reformat=True, *args, **kwargs):
-        """Generate an error of the specified type."""
-        if ln is None:
-            ln = self.adjust(lineno(loc, original))
-        if line is None:
-            line = getline(loc, original)
-        if col is None:
-            col = getcol(loc, original)
-        errstr, index = line, col - 1
-        if reformat:
-            errstr, index = self.reformat(errstr, index)
-        return errtype(message, errstr, index, ln, *args, **kwargs)
-
     def strict_err_or_warn(self, *args, **kwargs):
         """Raises an error if in strict mode, otherwise raises a warning."""
         if self.strict:
@@ -716,59 +705,63 @@ class Compiler(Grammar):
         """Return information on the current target as a version tuple."""
         return get_target_info(self.target)
 
-    def make_syntax_err(self, err, original):
-        """Make a CoconutSyntaxError from a CoconutDeferredSyntaxError."""
-        msg, loc = err.args
-        return self.make_err(CoconutSyntaxError, msg, original, loc)
+    def make_err(self, errtype, message, original, loc, ln=None, extra=None, reformat=True, include_endpoint=False, include_causes=False, **kwargs):
+        """Generate an error of the specified type."""
+        # move loc back to end of most recent actual text
+        while loc >= 2 and original[loc - 1:loc + 1].rstrip("".join(indchars) + default_whitespace_chars) == "":
+            loc -= 1
 
-    def make_parse_err(self, err, reformat=True, include_ln=True, msg=None):
-        """Make a CoconutParseError from a ParseBaseException."""
-        # extract information from the error
-        err_original = err.pstr
-        err_loc = err.loc
-        err_endpt = clip(get_highest_parse_loc() + 1, min=err_loc)
-        src_lineno = self.adjust(err.lineno) if include_ln else None
+        # get endpoint and line number
+        endpoint = clip(get_highest_parse_loc() + 1, min=loc) if include_endpoint else loc
+        if ln is None:
+            ln = self.adjust(lineno(loc, original))
 
-        # get adjusted line index for the error loc
-        original_lines = tuple(logical_lines(err_original, True))
-        loc_line_ind = lineno(err_loc, err_original) - 1
-        if loc_line_ind > 0 and original_lines[loc_line_ind].startswith((openindent, closeindent)):
-            loc_line_ind -= 1
-            err_loc = len(original_lines[loc_line_ind]) - 1
+        # get line indices for the error locs
+        original_lines = tuple(logical_lines(original, True))
+        loc_line_ind = clip(lineno(loc, original) - 1, max=len(original_lines) - 1)
 
         # build the source snippet that the error is referring to
-        endpt_line_ind = lineno(err_endpt, err_original) - 1
+        endpt_line_ind = lineno(endpoint, original) - 1
         snippet = "".join(original_lines[loc_line_ind:endpt_line_ind + 1])
 
         # fix error locations to correspond to the snippet
-        loc_in_snip = getcol(err_loc, err_original) - 1
-        endpt_in_snip = err_endpt - sum(len(line) for line in original_lines[:loc_line_ind])
+        loc_in_snip = getcol(loc, original) - 1
+        endpt_in_snip = endpoint - sum(len(line) for line in original_lines[:loc_line_ind])
 
         # determine possible causes
-        causes = []
-        for cause, _, _ in all_matches(self.parse_err_msg, snippet[loc_in_snip:], inner=True):
-            causes.append(cause)
-        if causes:
-            extra = "possible cause{s}: {causes}".format(
-                s="s" if len(causes) > 1 else "",
-                causes=", ".join(causes),
-            )
-        else:
-            extra = None
+        if include_causes:
+            internal_assert(extra is None, "make_err cannot include causes with extra")
+            causes = []
+            for cause, _, _ in all_matches(self.parse_err_msg, snippet[loc_in_snip:], inner=True):
+                causes.append(cause)
+            if causes:
+                extra = "possible cause{s}: {causes}".format(
+                    s="s" if len(causes) > 1 else "",
+                    causes=", ".join(causes),
+                )
+            else:
+                extra = None
 
         # reformat the snippet and fix error locations to match
         if reformat:
             snippet, loc_in_snip, endpt_in_snip = self.reformat(snippet, loc_in_snip, endpt_in_snip)
 
-        # build the error
-        return CoconutParseError(
-            msg,
-            snippet,
-            loc_in_snip,
-            src_lineno,
-            extra,
-            endpt_in_snip,
-        )
+        if extra is not None:
+            kwargs["extra"] = extra
+        return errtype(message, snippet, loc_in_snip, ln, endpoint=endpt_in_snip, **kwargs)
+
+    def make_syntax_err(self, err, original):
+        """Make a CoconutSyntaxError from a CoconutDeferredSyntaxError."""
+        msg, loc = err.args
+        return self.make_err(CoconutSyntaxError, msg, original, loc, include_endpoint=True)
+
+    def make_parse_err(self, err, msg=None, include_ln=True, **kwargs):
+        """Make a CoconutParseError from a ParseBaseException."""
+        original = err.pstr
+        loc = err.loc
+        ln = self.adjust(err.lineno) if include_ln else None
+
+        return self.make_err(CoconutParseError, msg, original, loc, ln, include_endpoint=True, include_causes=True, **kwargs)
 
     def inner_parse_eval(
         self,
@@ -3186,7 +3179,7 @@ for {match_to_var} in {item}:
         else:
             return tokens[0]
 
-    def name_check(self, original, loc, tokens):
+    def name_check(self, loc, tokens):
         """Check the given base name."""
         name, = tokens  # avoid the overhead of an internal_assert call here
 
@@ -3201,7 +3194,7 @@ for {match_to_var} in {item}:
             else:
                 return "_coconut_exec"
         elif name.startswith(reserved_prefix):
-            raise self.make_err(CoconutSyntaxError, "variable names cannot start with reserved prefix " + reserved_prefix, original, loc)
+            raise CoconutDeferredSyntaxError("variable names cannot start with reserved prefix " + reserved_prefix, loc)
         else:
             return name
 

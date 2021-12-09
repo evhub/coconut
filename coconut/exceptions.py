@@ -151,11 +151,11 @@ class CoconutSyntaxError(CoconutException):
 class CoconutStyleError(CoconutSyntaxError):
     """Coconut --strict error."""
 
-    def __init__(self, message, source=None, point=None, ln=None):
+    def __init__(self, message, source=None, point=None, ln=None, endpoint=None):
         """Creates the --strict Coconut error."""
-        self.args = (message, source, point, ln)
+        self.args = (message, source, point, ln, endpoint)
 
-    def message(self, message, source, point, ln):
+    def message(self, message, source, point, ln, endpoint):
         """Creates the --strict Coconut error message."""
         return super(CoconutStyleError, self).message(
             message,
@@ -163,24 +163,24 @@ class CoconutStyleError(CoconutSyntaxError):
             point,
             ln,
             extra="remove --strict to dismiss",
+            endpoint=endpoint,
         )
 
 
 class CoconutTargetError(CoconutSyntaxError):
     """Coconut --target error."""
 
-    def __init__(self, message, source=None, point=None, ln=None, target=None):
+    def __init__(self, message, source=None, point=None, ln=None, target=None, endpoint=None):
         """Creates the --target Coconut error."""
-        norm_target = get_displayable_target(target)
-        self.args = (message, source, point, ln, norm_target)
+        self.args = (message, source, point, ln, target, endpoint)
 
-    def message(self, message, source, point, ln, target):
+    def message(self, message, source, point, ln, target, endpoint):
         """Creates the --target Coconut error message."""
         if target is None:
             extra = None
         else:
-            extra = "pass --target " + target + " to fix"
-        return super(CoconutTargetError, self).message(message, source, point, ln, extra)
+            extra = "pass --target " + get_displayable_target(target) + " to fix"
+        return super(CoconutTargetError, self).message(message, source, point, ln, extra, endpoint)
 
 
 class CoconutParseError(CoconutSyntaxError):

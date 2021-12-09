@@ -188,6 +188,7 @@ lnwrapper = "\u25c6"  # black diamond
 unwrapper = "\u23f9"  # stop square
 funcwrapper = "def:"
 
+# must be a tuple for .startswith / .endswith purposes
 indchars = (openindent, closeindent, "\n")
 
 opens = "([{"  # opens parenthetical

@@ -34,6 +34,8 @@ else:
 
 def assert_raises(c, exc, not_exc=None, err_has=None):
     """Test whether callable c raises an exception of type exc."""
+    if not_exc is None and exc is CoconutSyntaxError:
+        not_exc = CoconutParseError
     try:
         c()
     except exc as err:
@@ -96,19 +98,19 @@ def test_setup_none() -> bool:
     assert_raises(-> parse("(a := b)"), CoconutTargetError)
     assert_raises(-> parse("async def f() = 1"), CoconutTargetError)
 
-    assert_raises(-> parse(" abc", "file"), CoconutSyntaxError, not_exc=CoconutParseError)
-    assert_raises(-> parse("'"), CoconutSyntaxError, not_exc=CoconutParseError)
-    assert_raises(-> parse("("), CoconutSyntaxError, not_exc=CoconutParseError)
-    assert_raises(-> parse("\\("), CoconutSyntaxError, not_exc=CoconutParseError)
-    assert_raises(-> parse("if a:\n  b\n c"), CoconutSyntaxError, not_exc=CoconutParseError)
-    assert_raises(-> parse("_coconut"), CoconutSyntaxError, not_exc=CoconutParseError)
-    assert_raises(-> parse("[;]"), CoconutSyntaxError, not_exc=CoconutParseError)
-    assert_raises(-> parse("[; ;; ;]"), CoconutSyntaxError, not_exc=CoconutParseError)
-    assert_raises(-> parse("f$()"), CoconutSyntaxError, not_exc=CoconutParseError)
-    assert_raises(-> parse("f(**x, y)"), CoconutSyntaxError, not_exc=CoconutParseError)
-    assert_raises(-> parse("def f(x) = return x"), CoconutSyntaxError, not_exc=CoconutParseError)
-    assert_raises(-> parse("def f(x) =\n return x"), CoconutSyntaxError, not_exc=CoconutParseError)
-    assert_raises(-> parse('f"Black holes {*all_black_holes} and revelations"'), CoconutSyntaxError, not_exc=CoconutParseError, err_has="format string")
+    assert_raises(-> parse(" abc", "file"), CoconutSyntaxError)
+    assert_raises(-> parse("'"), CoconutSyntaxError)
+    assert_raises(-> parse("("), CoconutSyntaxError)
+    assert_raises(-> parse("\\("), CoconutSyntaxError)
+    assert_raises(-> parse("if a:\n  b\n c"), CoconutSyntaxError)
+    assert_raises(-> parse("_coconut"), CoconutSyntaxError)
+    assert_raises(-> parse("[;]"), CoconutSyntaxError)
+    assert_raises(-> parse("[; ;; ;]"), CoconutSyntaxError)
+    assert_raises(-> parse("f$()"), CoconutSyntaxError)
+    assert_raises(-> parse("f(**x, y)"), CoconutSyntaxError)
+    assert_raises(-> parse("def f(x) = return x"), CoconutSyntaxError)
+    assert_raises(-> parse("def f(x) =\n return x"), CoconutSyntaxError)
+    assert_raises(-> parse('f"Black holes {*all_black_holes} and revelations"'), CoconutSyntaxError, err_has="format string")
 
     assert_raises(-> parse("$"), CoconutParseError, err_has=" ^")
     assert_raises(-> parse("range(1,10) |> reduce$(*, initializer = 1000) |> print"), CoconutParseError, err_has=" ~~~~~~~~~~~~~~~~~~~~~~~~^")
@@ -205,15 +207,28 @@ def test_extras() -> bool:
     assert_raises(-> parse("lambda x: x"), CoconutStyleError)
     assert_raises(-> parse("u''"), CoconutStyleError)
     assert_raises(-> parse("def f(x):\\\n pass"), CoconutStyleError)
-    assert_raises(-> parse("abc "), CoconutStyleError)
+    assert_raises(-> parse("abc "), CoconutStyleError, err_has="\n    ^")
     assert_raises(-> parse("abc", "file"), CoconutStyleError)
-    assert_raises(-> parse("a=1;"), CoconutStyleError)
+    assert_raises(-> parse("a=1;"), CoconutStyleError, err_has="\n     ^")
     assert_raises(-> parse("class derp(object)"), CoconutStyleError)
-    assert_raises(-> parse("def f(a.b) = True"), CoconutStyleError)
+    assert_raises(-> parse("def f(a.b) = True"), CoconutStyleError, err_has="\n        ^")
+    assert_raises(-> parse("match def kwd_only_x_is_int_def_0(*, x is int = 0) = x"), CoconutStyleError, err_has="\n       ^")
+    try:
+        parse("""
+try:
+    x is int is str = x
+except MatchError:
+    pass
+else:
+    assert False
+        """.strip())
+    except CoconutStyleError as err:
+        assert str(err) == """found deprecated isinstance-checking 'x is int is str' pattern; use 'x `isinstance` int `isinstance` str' instead (remove --strict to dismiss) (line 2)
+  x is int is str = x"""
 
     setup(target="2.7")
     assert parse("from io import BytesIO", mode="any") == "from io import BytesIO"
-    assert_raises(-> parse("def f(*, x=None) = x"), CoconutTargetError)
+    assert_raises(-> parse("def f(*, x=None) = x"), CoconutTargetError, err_has="\n        ^")
 
     setup(target="3")
     assert parse("""
