@@ -1202,15 +1202,25 @@ class Grammar(object):
     power = trace(condense(compose_item + Optional(exp_dubstar + factor)))
     factor <<= condense(ZeroOrMore(unary) + power)
 
-    mulop = mul_star | div_dubslash | div_slash | percent | matrix_at
+    mulop = mul_star | div_slash | div_dubslash | percent | matrix_at
     addop = plus | sub_minus
     shift = lshift | rshift
 
-    term = exprlist(factor, mulop)
-    arith_expr = exprlist(term, addop)
-    shift_expr = exprlist(arith_expr, shift)
-    and_expr = exprlist(shift_expr, amp)
-    xor_expr = exprlist(and_expr, caret)
+    # we condense all of these down, since Python handles the precedence, not Coconut
+    # term = exprlist(factor, mulop)
+    # arith_expr = exprlist(term, addop)
+    # shift_expr = exprlist(arith_expr, shift)
+    # and_expr = exprlist(shift_expr, amp)
+    # xor_expr = exprlist(and_expr, caret)
+    xor_expr = exprlist(
+        factor,
+        mulop
+        | addop
+        | shift
+        | amp
+        | caret,
+    )
+
     or_expr = typedef_or_expr | exprlist(xor_expr, bar)
 
     chain_expr = attach(tokenlist(or_expr, dubcolon, allow_trailing=False), chain_handle)
@@ -1300,8 +1310,10 @@ class Grammar(object):
 
     comparison = exprlist(expr, comp_op)
     not_test = addspace(ZeroOrMore(keyword("not")) + comparison)
-    and_test = exprlist(not_test, keyword("and"))
-    test_item = trace(exprlist(and_test, keyword("or")))
+    # we condense "and" and "or" into one, since Python handles the precedence, not Coconut
+    # and_test = exprlist(not_test, keyword("and"))
+    # test_item = trace(exprlist(and_test, keyword("or")))
+    test_item = trace(exprlist(not_test, keyword("and") | keyword("or")))
 
     simple_stmt_item = Forward()
     unsafe_simple_stmt_item = Forward()
