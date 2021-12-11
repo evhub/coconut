@@ -565,19 +565,21 @@ all_reqs = {
     "jobs": (
         "psutil",
     ),
-    "jupyter": (
-        "jupyter",
-        ("jupyter-console", "py2"),
-        ("jupyter-console", "py3"),
+    "kernel": (
         ("ipython", "py2"),
         ("ipython", "py3"),
         ("ipykernel", "py2"),
         ("ipykernel", "py3"),
-        ("jupyterlab", "py35"),
-        ("jupytext", "py3"),
         ("jupyter-client", "py2"),
         ("jupyter-client", "py3"),
         "jedi",
+    ),
+    "jupyter": (
+        "jupyter",
+        ("jupyter-console", "py2"),
+        ("jupyter-console", "py3"),
+        ("jupyterlab", "py35"),
+        ("jupytext", "py3"),
         ("pywinpty", "py2;windows"),
     ),
     "mypy": (

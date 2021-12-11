@@ -180,12 +180,17 @@ def everything_in(req_dict):
 requirements = get_reqs("main")
 
 extras = {
-    "jupyter": get_reqs("jupyter"),
+    "kernel": get_reqs("kernel"),
     "watch": get_reqs("watch"),
     "jobs": get_reqs("jobs"),
     "mypy": get_reqs("mypy"),
     "backports": get_reqs("backports"),
 }
+
+extras["jupyter"] = uniqueify_all(
+    extras["kernel"],
+    get_reqs("jupyter"),
+)
 
 extras["all"] = everything_in(extras)
 
