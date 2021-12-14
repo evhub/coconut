@@ -1918,11 +1918,14 @@ class Grammar(object):
         + ZeroOrMore(fixto(semicolon, "\n") + simple_stmt_item)
         + (newline | endline_semicolon),
     )
+    anything_stmt = Forward()
     stmt <<= final(
         compound_stmt
         | simple_stmt
-        # must come at end due to ambiguity with destructuring
-        | cases_stmt,
+        # must be after destructuring due to ambiguity
+        | cases_stmt
+        # at the very end as a fallback case for the anything parser
+        | anything_stmt,
     )
     base_suite <<= condense(newline + indent - OneOrMore(stmt) - dedent)
     simple_suite = attach(stmt, make_suite_handle)
@@ -1938,6 +1941,10 @@ class Grammar(object):
     file_parser = start_marker - file_input - end_marker
     eval_parser = start_marker - eval_input - end_marker
     some_eval_parser = start_marker + eval_input
+
+    unsafe_anything_stmt = originalTextFor(regex_item("[^\n]+\n+"))
+    anything_parser, _anything_stmt = disable_outside(file_parser, unsafe_anything_stmt)
+    anything_stmt <<= _anything_stmt
 
 # end: MAIN GRAMMAR
 # -----------------------------------------------------------------------------------------------------------------------
@@ -2051,7 +2058,6 @@ class Grammar(object):
     end_f_str_expr = start_marker + (bang | colon | rbrace)
 
     string_start = start_marker + quotedString
-
 
 # end: EXTRA GRAMMAR
 # -----------------------------------------------------------------------------------------------------------------------

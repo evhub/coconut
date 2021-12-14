@@ -3280,13 +3280,17 @@ for {match_to_var} in {item}:
         """Parse eval code."""
         return self.parse(inputstring, self.eval_parser, {"strip": True}, {"header": "none", "initial": "none", "final_endline": False})
 
-    def parse_any(self, inputstring):
+    def parse_lenient(self, inputstring):
         """Parse any code."""
         return self.parse(inputstring, self.file_parser, {"strip": True}, {"header": "none", "initial": "none", "final_endline": False})
 
+    def parse_anything(self, inputstring):
+        """Parse anything, passing through non-syntactically valid lines."""
+        return self.parse(inputstring, self.anything_parser, {}, {"header": "none", "initial": "none"})
+
     def warm_up(self):
         """Warm up the compiler by running something through it."""
-        result = self.parse_any("")
+        result = self.parse_lenient("")
         internal_assert(result == "", "compiler warm-up should produce no code; instead got", result)
 
 # end: ENDPOINTS

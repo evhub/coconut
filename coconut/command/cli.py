@@ -50,7 +50,7 @@ cli_version_str = main_sig + cli_version
 
 arguments = argparse.ArgumentParser(
     prog="coconut",
-    description=documentation_url,
+    description="docs: " + documentation_url,
 )
 
 # any changes made to these arguments must be reflected in DOCS.md

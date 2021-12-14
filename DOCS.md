@@ -3308,9 +3308,13 @@ Each _mode_ has two components: what parser it uses, and what header it prepends
     + parser: eval
         * Can only parse a Coconut expression, not a statement.
     + header: none
-- `"any"`:
-    + parser: any
+- `"lenient"`:
+    + parser: lenient
         * Can parse any Coconut code, allows leading whitespace, and has no trailing newline.
+    + header: none
+- `"anything"`:
+    + parser: anything
+        * Passes through most syntactically invalid lines unchanged as if they were wrapped in a [passthrough](#code-passthrough).
     + header: none
 
 ##### Example

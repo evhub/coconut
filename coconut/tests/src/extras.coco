@@ -81,19 +81,19 @@ def test_setup_none() -> bool:
     assert parse("abc", "package")
     assert parse("abc", "block") == "abc\n" == parse("abc", "single")
     assert parse("abc", "eval") == "abc" == parse(" abc", "eval")
-    assert parse("abc", "any") == "abc" == parse(" abc", "any")
-    assert parse("x |> map$(f)", "any") == "(map)(f, x)"
+    assert parse("abc", "lenient") == "abc" == parse(" abc", "lenient")
+    assert parse("x |> map$(f)", "lenient") == "(map)(f, x)"
     assert "_coconut" not in parse("a |> .b |> .m() |> f$(x) |> .[0]", "block")
     assert "_coconut" not in parse("a |>= f$(x)", "block")
-    assert parse("abc # derp", "any") == "abc  # derp"
+    assert parse("abc # derp", "lenient") == "abc  # derp"
     assert parse("def f(x):\n \t pass")
     assert parse("lambda x: x")
     assert parse("u''")
     assert parse("def f(x):\\\n pass")
     assert parse("abc ")
-    assert parse("abc # derp", "any") == "abc  # derp"
+    assert parse("abc # derp", "lenient") == "abc  # derp"
     assert "==" not in parse("None = None")
-    assert parse("(1\f+\f2)", "any") == "(1 + 2)" == parse("(1\f+\f2)", "eval")
+    assert parse("(1\f+\f2)", "lenient") == "(1 + 2)" == parse("(1\f+\f2)", "eval")
 
     assert_raises(-> parse("(a := b)"), CoconutTargetError)
     assert_raises(-> parse("async def f() = 1"), CoconutTargetError)
@@ -170,6 +170,9 @@ def gam_eps_rate(bitarr) = (
     else:
         assert False
 
+    assert parse("def f(x):\n ${var}", "anything") == "def f(x):\n    ${var}\n"
+    assert "data ABC" not in parse("data ABC:\n ${var}", "anything")
+
     return True
 
 
@@ -189,11 +192,11 @@ def test_extras() -> bool:
     assert_raises(-> cmd("-n . ."), SystemExit)
 
     setup(line_numbers=True)
-    assert parse("abc", "any") == "abc  #1 (line num in coconut source)"
+    assert parse("abc", "lenient") == "abc  #1 (line num in coconut source)"
     setup(keep_lines=True)
-    assert parse("abc", "any") == "abc  # abc"
+    assert parse("abc", "lenient") == "abc  # abc"
     setup(line_numbers=True, keep_lines=True)
-    assert parse("abc", "any") == "abc  #1: abc"
+    assert parse("abc", "lenient") == "abc  #1: abc"
 
     setup()
     assert "Deprecated feature 'prepattern' disabled by --strict compilation" not in parse("\n", mode="file")
@@ -227,7 +230,7 @@ else:
   x is int is str = x"""
 
     setup(target="2.7")
-    assert parse("from io import BytesIO", mode="any") == "from io import BytesIO"
+    assert parse("from io import BytesIO", mode="lenient") == "from io import BytesIO"
     assert_raises(-> parse("def f(*, x=None) = x"), CoconutTargetError, err_has="\n        ^")
 
     setup(target="3")
@@ -248,10 +251,10 @@ async def async_map_test() =
     yield x
     return (x)""",
     )
-    assert parse(gen_func_def, mode="any") in gen_func_def_outs
+    assert parse(gen_func_def, mode="lenient") in gen_func_def_outs
 
     setup(target="3.2")
-    assert parse(gen_func_def, mode="any") not in gen_func_def_outs
+    assert parse(gen_func_def, mode="lenient") not in gen_func_def_outs
 
     setup(target="3.5")
     assert_raises(-> parse("async def f(): yield 1"), CoconutTargetError)

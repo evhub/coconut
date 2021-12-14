@@ -85,8 +85,12 @@ PARSERS = {
     "block": lambda comp: comp.parse_block,
     "single": lambda comp: comp.parse_single,
     "eval": lambda comp: comp.parse_eval,
-    "any": lambda comp: comp.parse_any,
+    "lenient": lambda comp: comp.parse_lenient,
+    "anything": lambda comp: comp.parse_anything,
 }
+
+# deprecated aliases
+PARSERS["any"] = PARSERS["debug"] = PARSERS["lenient"]
 
 
 def parse(code="", mode="sys"):
