@@ -413,7 +413,7 @@ To allow for better use of [`numpy`](https://numpy.org/) objects in Coconut, all
 Coconut integrates with [`xonsh`](https://xon.sh/) to allow the use of Coconut code directly from your command line. To use Coconut in `xonsh`, simply `pip install coconut` and then run `xontrib load coconut` from `xonsh` or add `xontrib load coconut` to your [`xonshrc`](https://xon.sh/xonshrc.html) file.
 
 For an example of using Coconut from `xonsh`:
-```coconut_pycon
+```
 user@computer ~ $ xontrib load coconut
 user@computer ~ $ cd ./files
 user@computer ~ $ $(ls -la) |> .splitlines() |> len
