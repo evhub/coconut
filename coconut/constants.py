@@ -635,7 +635,6 @@ min_versions = {
     "sphinx": (4, 2),
     "pydata-sphinx-theme": (0, 7, 1),
     "myst-parser": (0, 15),
-    "xonsh": (0, 11),
     # don't upgrade this until https://github.com/jupyter/jupyter_console/issues/241 is fixed
     ("jupyter-client", "py3"): (6, 1, 12),
     # latest version supported on Python 2
@@ -646,6 +645,7 @@ min_versions = {
     ("jupyter-console", "py3"): (6, 1),
     ("jupytext", "py3"): (1, 8),
     ("jupyterlab", "py35"): (2, 2),
+    "xonsh": (0, 9),
     # don't upgrade this to allow all versions
     ("prompt_toolkit", "mark3"): (1,),
     # don't upgrade this; it breaks on Python 2.6
@@ -676,6 +676,7 @@ pinned_reqs = (
     ("jupyter-console", "py3"),
     ("jupytext", "py3"),
     ("jupyterlab", "py35"),
+    "xonsh",
     ("prompt_toolkit", "mark3"),
     "pytest",
     "vprof",
