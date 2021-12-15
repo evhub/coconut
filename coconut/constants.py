@@ -378,8 +378,6 @@ coconut_run_args = ("--run", "--target=sys", "--line-numbers", "--quiet")
 coconut_run_verbose_args = ("--run", "--target=sys", "--line-numbers")
 coconut_import_hook_args = ("--target=sys", "--line-numbers", "--quiet")
 
-coconut_encoding_kwargs = dict(target="sys", line_numbers=True)
-
 default_mypy_args = (
     "--pretty",
 )
@@ -589,6 +587,9 @@ all_reqs = {
     "watch": (
         "watchdog",
     ),
+    "xonsh": (
+        "xonsh",
+    ),
     "backports": (
         ("trollius", "py2;cpy"),
         ("aenum", "py<34"),
@@ -634,6 +635,7 @@ min_versions = {
     "sphinx": (4, 2),
     "pydata-sphinx-theme": (0, 7, 1),
     "myst-parser": (0, 15),
+    "xonsh": (0, 11),
     # don't upgrade this until https://github.com/jupyter/jupyter_console/issues/241 is fixed
     ("jupyter-client", "py3"): (6, 1, 12),
     # latest version supported on Python 2
@@ -831,6 +833,8 @@ requests_sleep_times = (0, 0.1, 0.2, 0.3, 0.4, 1)
 # -----------------------------------------------------------------------------------------------------------------------
 # ICOCONUT CONSTANTS:
 # -----------------------------------------------------------------------------------------------------------------------
+
+coconut_kernel_kwargs = dict(target="sys", line_numbers=True, keep_lines=True)
 
 icoconut_dir = os.path.join(base_dir, "icoconut")
 

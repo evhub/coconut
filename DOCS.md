@@ -85,12 +85,13 @@ pip install coconut[opt_dep_1,opt_dep_2]
 
 The full list of optional dependencies is:
 
-- `all`: alias for `jupyter,watch,jobs,mypy,backports` (this is the recommended way to install a feature-complete version of Coconut).
+- `all`: alias for `jupyter,watch,jobs,mypy,backports,xonsh` (this is the recommended way to install a feature-complete version of Coconut).
 - `jupyter`/`ipython`: enables use of the `--jupyter` / `--ipython` flag.
 - `watch`: enables use of the `--watch` flag.
 - `jobs`: improves use of the `--jobs` flag.
 - `mypy`: enables use of the `--mypy` flag.
 - `backports`: enables use of the [`asyncio`](https://docs.python.org/3/library/asyncio.html) library on older Python versions by making use of [`trollius`](https://pypi.python.org/pypi/trollius), the [`enum`](https://docs.python.org/3/library/enum.html) library by making use of [`aenum`](https://pypi.org/project/aenum), and other similar backports.
+- `xonsh`: enables use of Coconut's [`xonsh` support](#xonsh-support).
 - `kernel`: lightweight subset of `jupyter` that only includes the dependencies that are strictly necessary for Coconut's [Jupyter kernel](#kernel).
 - `tests`: everything necessary to test the Coconut language itself.
 - `docs`: everything necessary to build Coconut's documentation.
@@ -406,6 +407,20 @@ To allow for better use of [`numpy`](https://numpy.org/) objects in Coconut, all
 - Coconut's [multidimensional array literal and array concatenation syntax](#multidimensional-array-literals) supports `numpy` objects, including using fast `numpy` concatenation methods if given `numpy` arrays rather than Coconut's default much slower implementation built for Python lists of lists.
 - [`numpy.ndarray`](https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html) is registered as a [`collections.abc.Sequence`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence), enabling it to be used in [sequence patterns](#semantics-specification).
 - When a `numpy` object is passed to [`fmap`](#fmap), [`numpy.vectorize`](https://numpy.org/doc/stable/reference/generated/numpy.vectorize.html) is used instead of the default `fmap` implementation.
+
+### `xonsh` Support
+
+Coconut integrates with [`xonsh`](https://xon.sh/) to allow the use of Coconut code directly from your command line. To use Coconut in `xonsh`, simply `pip install coconut` and then run `xontrib load coconut` from `xonsh` or add `xontrib load coconut` to your [`xonshrc`](https://xon.sh/xonshrc.html) file.
+
+For an example of using Coconut from `xonsh`:
+```coconut_pycon
+user@computer ~ $ xontrib load coconut
+user@computer ~ $ cd ./files
+user@computer ~ $ $(ls -la) |> .splitlines() |> len
+30
+```
+
+Note that the way that Coconut integrates with `xonsh`, `@(<code>)` syntax will only work with Python code, not Coconut code. In all other situations, however, Coconut code is supported wherever you would normally use Python code.
 
 ## Operators
 
@@ -3312,9 +3327,9 @@ Each _mode_ has two components: what parser it uses, and what header it prepends
     + parser: lenient
         * Can parse any Coconut code, allows leading whitespace, and has no trailing newline.
     + header: none
-- `"anything"`:
-    + parser: anything
-        * Passes through most syntactically invalid lines unchanged as if they were wrapped in a [passthrough](#code-passthrough).
+- `"xonsh"`:
+    + parser: xonsh
+        * Parses Coconut [`xonsh`](https://xon.sh) code for use in [Coconut's `xonsh` support](#xonsh-support).
     + header: none
 
 ##### Example

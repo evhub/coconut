@@ -33,7 +33,7 @@ from coconut.constants import (
     version_tag,
     code_exts,
     coconut_import_hook_args,
-    coconut_encoding_kwargs,
+    coconut_kernel_kwargs,
 )
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -86,7 +86,7 @@ PARSERS = {
     "single": lambda comp: comp.parse_single,
     "eval": lambda comp: comp.parse_eval,
     "lenient": lambda comp: comp.parse_lenient,
-    "anything": lambda comp: comp.parse_anything,
+    "xonsh": lambda comp: comp.parse_xonsh,
 }
 
 # deprecated aliases
@@ -211,7 +211,7 @@ class CoconutStreamReader(encodings.utf_8.StreamReader, object):
     def compile_coconut(cls, source):
         """Compile the given Coconut source text."""
         if cls.coconut_compiler is None:
-            cls.coconut_compiler = Compiler(**coconut_encoding_kwargs)
+            cls.coconut_compiler = Compiler(**coconut_kernel_kwargs)
         return cls.coconut_compiler.parse_sys(source)
 
     @classmethod

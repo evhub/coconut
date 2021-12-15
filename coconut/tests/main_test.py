@@ -413,6 +413,12 @@ def add_test_func_names(cls):
     return cls
 
 
+def pexpect_spawn(cmd):
+    """Version of pexpect.spawn that prints the command being run."""
+    print("\n>", cmd)
+    return pexpect.spawn(cmd)
+
+
 # -----------------------------------------------------------------------------------------------------------------------
 # RUNNERS:
 # -----------------------------------------------------------------------------------------------------------------------
@@ -646,6 +652,18 @@ class TestShell(unittest.TestCase):
             for _ in range(2):  # make sure we can import it twice
                 call_python([runnable_py, "--arg"], assert_output=True, convert_to_import=True)
 
+    if PY35 and not WINDOWS:
+        def test_xontrib(self):
+            p = pexpect_spawn("xonsh")
+            p.expect("$")
+            p.sendline("xontrib load coconut")
+            p.expect("$")
+            p.sendline("!(ls -la) |> bool")
+            p.expect("True")
+            p.sendeof()
+            if p.isalive():
+                p.terminate()
+
     if IPY and (not WINDOWS or PY35):
         def test_ipython_extension(self):
             call(
@@ -666,9 +684,7 @@ class TestShell(unittest.TestCase):
 
         if not WINDOWS and not PYPY:
             def test_exit_jupyter(self):
-                cmd = "coconut --jupyter console"
-                print("\n>", cmd)
-                p = pexpect.spawn(cmd)
+                p = pexpect_spawn("coconut --jupyter console")
                 p.expect("In", timeout=120)
                 p.sendline("exit()")
                 p.expect("Shutting down kernel|shutting down")

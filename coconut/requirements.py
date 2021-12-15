@@ -26,6 +26,7 @@ from coconut.constants import (
     PYPY,
     CPYTHON,
     PY34,
+    PY35,
     IPY,
     MYPY,
     WINDOWS,
@@ -185,6 +186,7 @@ extras = {
     "jobs": get_reqs("jobs"),
     "mypy": get_reqs("mypy"),
     "backports": get_reqs("backports"),
+    "xonsh": get_reqs("xonsh"),
 }
 
 extras["jupyter"] = uniqueify_all(
@@ -203,6 +205,7 @@ extras.update({
         extras["jobs"] if not PYPY else [],
         extras["jupyter"] if IPY else [],
         extras["mypy"] if MYPY else [],
+        extras["xonsh"] if PY35 else [],
     ),
 })
 

@@ -636,6 +636,7 @@ class Grammar(object):
     backslash = ~dubbackslash + Literal("\\")
     dubquestion = Literal("??")
     questionmark = ~dubquestion + Literal("?")
+    bang = ~Literal("!=") + Literal("!")
 
     except_star_kwd = combine(keyword("except") + star)
     except_kwd = ~except_star_kwd + keyword("except")
@@ -726,7 +727,9 @@ class Grammar(object):
         combine(Literal(strwrapper) + integer + unwrap)
         | invalid_syntax(("\u201c", "\u201d", "\u2018", "\u2019"), "invalid unicode quotation mark; strings must use \" or '", greedy=True)
     )
-    passthrough = combine(backslash + integer + unwrap)
+
+    xonsh_command = Forward()
+    passthrough_item = combine(backslash + integer + unwrap) | xonsh_command
     passthrough_block = combine(fixto(dubbackslash, "\\") + integer + unwrap)
 
     endline = Forward()
@@ -1062,7 +1065,7 @@ class Grammar(object):
 
     keyword_atom = any_keyword_in(const_vars)
     string_atom = attach(OneOrMore(string), string_atom_handle)
-    passthrough_atom = trace(addspace(OneOrMore(passthrough)))
+    passthrough_atom = trace(addspace(OneOrMore(passthrough_item)))
     set_literal = Forward()
     set_letter_literal = Forward()
     set_s = fixto(CaselessLiteral("s"), "s")
@@ -1942,9 +1945,22 @@ class Grammar(object):
     eval_parser = start_marker - eval_input - end_marker
     some_eval_parser = start_marker + eval_input
 
+    parens = originalTextFor(nestedExpr("(", ")", ignoreExpr=None))
+    brackets = originalTextFor(nestedExpr("[", "]", ignoreExpr=None))
+    braces = originalTextFor(nestedExpr("{", "}", ignoreExpr=None))
+
     unsafe_anything_stmt = originalTextFor(regex_item("[^\n]+\n+"))
-    anything_parser, _anything_stmt = disable_outside(file_parser, unsafe_anything_stmt)
+    unsafe_xonsh_command = originalTextFor(
+        (Optional(at) + dollar | bang)
+        + (parens | brackets | braces | name),
+    )
+    xonsh_parser, _anything_stmt, _xonsh_command = disable_outside(
+        file_parser,
+        unsafe_anything_stmt,
+        unsafe_xonsh_command,
+    )
     anything_stmt <<= _anything_stmt
+    xonsh_command <<= _xonsh_command
 
 # end: MAIN GRAMMAR
 # -----------------------------------------------------------------------------------------------------------------------
@@ -1952,10 +1968,6 @@ class Grammar(object):
 # -----------------------------------------------------------------------------------------------------------------------
 
     just_non_none_atom = start_marker + ~keyword("None") + known_atom + end_marker
-
-    parens = originalTextFor(nestedExpr("(", ")", ignoreExpr=None))
-    brackets = originalTextFor(nestedExpr("[", "]", ignoreExpr=None))
-    braces = originalTextFor(nestedExpr("{", "}", ignoreExpr=None))
 
     original_function_call_tokens = (
         lparen.suppress() + rparen.suppress()
@@ -2011,8 +2023,8 @@ class Grammar(object):
                     | star - Optional(tfpdef_tokens)
                     | slash
                     | tfpdef_default_tokens,
-                ) + Optional(passthrough.suppress()),
-                comma + Optional(passthrough),  # implicitly suppressed
+                ) + Optional(passthrough_item.suppress()),
+                comma + Optional(passthrough_item),  # implicitly suppressed
             ),
         ),
     )
@@ -2054,7 +2066,6 @@ class Grammar(object):
         )
     )
 
-    bang = ~ne + Literal("!")
     end_f_str_expr = start_marker + (bang | colon | rbrace)
 
     string_start = start_marker + quotedString

@@ -41,6 +41,7 @@ from coconut.constants import (
     documentation_url,
     code_exts,
     conda_build_env_var,
+    coconut_kernel_kwargs,
 )
 from coconut.terminal import (
     logger,
@@ -80,11 +81,7 @@ else:
 # UTILITIES:
 # -----------------------------------------------------------------------------------------------------------------------
 
-COMPILER = Compiler(
-    target="sys",
-    line_numbers=True,
-    keep_lines=True,
-)
+COMPILER = Compiler(**coconut_kernel_kwargs)
 
 RUNNER = Runner(COMPILER)
 
@@ -124,6 +121,8 @@ def syntaxerr_memoized_parse_block(code):
 # -----------------------------------------------------------------------------------------------------------------------
 
 if LOAD_MODULE:
+
+    COMPILER.warm_up()
 
     class CoconutCompiler(CachingCompiler, object):
         """IPython compiler for Coconut."""

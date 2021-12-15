@@ -176,17 +176,10 @@ def gam_eps_rate(bitarr) = (
     return True
 
 
-def test_extras() -> bool:
-    # other tests
+def test_convenience() -> bool:
     if IPY:
         import coconut.highlighter  # type: ignore
 
-    if not PYPY and (PY2 or PY34):
-        assert test_numpy() is True
-
-    assert test_setup_none() is True
-
-    # main tests
     assert_raises(-> cmd("-f"), SystemExit)
     assert_raises(-> cmd("-pa ."), SystemExit)
     assert_raises(-> cmd("-n . ."), SystemExit)
@@ -269,35 +262,37 @@ async def async_map_test() =
     assert parse("def f(a, /, b) = a, b")
     assert "(b)(a)" in b"a |> b".decode("coconut")
 
-    if CoconutKernel is not None:
-        if PY35:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-        else:
-            loop = None  # type: ignore
-        k = CoconutKernel()
-        exec_result = k.do_execute("derp = pow$(?, 2)", False, True, {"two": "(+)(1, 1)"}, True) |> unwrap_future$(loop)
-        assert exec_result["status"] == "ok"
-        assert exec_result["user_expressions"]["two"]["data"]["text/plain"] == "2"
-        assert k.do_is_complete("if abc:")["status"] == "incomplete"
-        assert k.do_is_complete("f(")["status"] == "incomplete"
-        assert k.do_is_complete("abc")["status"] == "complete"
-        inspect_result = k.do_inspect("derp", 4, 0)
-        assert inspect_result["status"] == "ok"
-        assert inspect_result["found"]
-        assert inspect_result["data"]["text/plain"]
-        complete_result = k.do_complete("der", 1)
-        assert complete_result["status"] == "ok"
-        assert "derp" in complete_result["matches"]
-        assert complete_result["cursor_start"] == 0
-        assert complete_result["cursor_end"] == 1
-        keyword_complete_result = k.do_complete("ma", 1)
-        assert keyword_complete_result["status"] == "ok"
-        assert "match" in keyword_complete_result["matches"]
-        assert "map" in keyword_complete_result["matches"]
-        assert keyword_complete_result["cursor_start"] == 0
-        assert keyword_complete_result["cursor_end"] == 1
+    return True
 
+
+def test_kernel() -> bool:
+    if PY35:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+    else:
+        loop = None  # type: ignore
+    k = CoconutKernel()
+    exec_result = k.do_execute("derp = pow$(?, 2)", False, True, {"two": "(+)(1, 1)"}, True) |> unwrap_future$(loop)
+    assert exec_result["status"] == "ok"
+    assert exec_result["user_expressions"]["two"]["data"]["text/plain"] == "2"
+    assert k.do_is_complete("if abc:")["status"] == "incomplete"
+    assert k.do_is_complete("f(")["status"] == "incomplete"
+    assert k.do_is_complete("abc")["status"] == "complete"
+    inspect_result = k.do_inspect("derp", 4, 0)
+    assert inspect_result["status"] == "ok"
+    assert inspect_result["found"]
+    assert inspect_result["data"]["text/plain"]
+    complete_result = k.do_complete("der", 1)
+    assert complete_result["status"] == "ok"
+    assert "derp" in complete_result["matches"]
+    assert complete_result["cursor_start"] == 0
+    assert complete_result["cursor_end"] == 1
+    keyword_complete_result = k.do_complete("ma", 1)
+    assert keyword_complete_result["status"] == "ok"
+    assert "match" in keyword_complete_result["matches"]
+    assert "map" in keyword_complete_result["matches"]
+    assert keyword_complete_result["cursor_start"] == 0
+    assert keyword_complete_result["cursor_end"] == 1
     return True
 
 
@@ -327,6 +322,16 @@ def test_numpy() -> bool:
     assert [a ; a] `np.array_equal` np.array([1,2,1,2 ;; 3,4,3,4])
     assert [a ;; a] `np.array_equal` np.array([1,2;; 3,4;; 1,2;; 3,4])
     assert [a ;;; a].shape == (2, 2, 2)  # type: ignore
+    return True
+
+
+def test_extras() -> bool:
+    if not PYPY and (PY2 or PY34):
+        assert test_numpy() is True
+    if CoconutKernel is not None:
+        assert test_kernel() is True
+    assert test_setup_none() is True
+    assert test_convenience() is True
     return True
 
 

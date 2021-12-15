@@ -3284,9 +3284,9 @@ for {match_to_var} in {item}:
         """Parse any code."""
         return self.parse(inputstring, self.file_parser, {"strip": True}, {"header": "none", "initial": "none", "final_endline": False})
 
-    def parse_anything(self, inputstring):
-        """Parse anything, passing through non-syntactically valid lines."""
-        return self.parse(inputstring, self.anything_parser, {}, {"header": "none", "initial": "none"})
+    def parse_xonsh(self, inputstring):
+        """Parse xonsh code."""
+        return self.parse(inputstring, self.xonsh_parser, {"strip": True}, {"header": "none", "initial": "none"})
 
     def warm_up(self):
         """Warm up the compiler by running something through it."""
