@@ -52,6 +52,7 @@ from coconut.constants import (
     PY310,
     icoconut_default_kernel_names,
     icoconut_custom_kernel_name,
+    mypy_err_infixes,
 )
 
 from coconut.convenience import (
@@ -240,9 +241,17 @@ def call(raw_cmd, assert_output=False, check_mypy=False, check_errors=True, stde
             continue
 
         # combine mypy error lines
-        if line.rstrip().endswith("error:"):
+        if any(infix in line for infix in mypy_err_infixes):
+            # always add the next line, since it might be a continuation of the error message
             line += raw_lines[i + 1]
             i += 1
+            # then keep adding more lines if they start with whitespace, since they might be the referenced code
+            for j in range(i + 2, len(raw_lines)):
+                next_line = raw_lines[j]
+                if next_line.lstrip() == next_line:
+                    break
+                line += next_line
+                i += 1
 
         lines.append(line)
         i += 1
@@ -268,15 +277,12 @@ def call(raw_cmd, assert_output=False, check_mypy=False, check_errors=True, stde
             if not any(ignore in line for ignore in ignore_last_lines_with):
                 last_line = line
                 break
-        if not lines:
-            last_line = ""
-        else:
-            last_line = lines[-1]
         if assert_output is None:
             assert not last_line, "Expected nothing; got:\n" + "\n".join(repr(li) for li in raw_lines)
         else:
             assert any(x in last_line for x in assert_output), (
                 "Expected " + ", ".join(repr(s) for s in assert_output)
+                + " in " + repr(last_line)
                 + "; got:\n" + "\n".join(repr(li) for li in raw_lines)
             )
 
