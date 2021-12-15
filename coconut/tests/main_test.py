@@ -104,6 +104,11 @@ ignore_atexit_errors_with = (
     "OSError: handle is closed",
 )
 
+ignore_last_lines_with = (
+    "DeprecationWarning: The distutils package is deprecated",
+    "from distutils.version import LooseVersion",
+)
+
 kernel_installation_msg = (
     "Coconut: Successfully installed Jupyter kernels: '"
     + "', '".join((icoconut_custom_kernel_name,) + icoconut_default_kernel_names) + "'"
@@ -258,10 +263,13 @@ def call(raw_cmd, assert_output=False, check_mypy=False, check_errors=True, stde
         got_output = "\n".join(raw_lines) + "\n"
         assert assert_output in got_output, "Expected " + repr(assert_output) + "; got " + repr(got_output)
     else:
+        last_line = ""
+        for line in reversed(lines):
+            if not any(ignore in line for ignore in ignore_last_lines_with):
+                last_line = line
+                break
         if not lines:
             last_line = ""
-        elif "--mypy" in cmd:
-            last_line = " ".join(lines[-2:])
         else:
             last_line = lines[-1]
         if assert_output is None:
