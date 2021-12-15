@@ -170,8 +170,8 @@ def gam_eps_rate(bitarr) = (
     else:
         assert False
 
-    assert parse("def f(x):\n ${var}", "anything") == "def f(x):\n    ${var}\n"
-    assert "data ABC" not in parse("data ABC:\n ${var}", "anything")
+    assert parse("def f(x):\n ${var}", "xonsh") == "def f(x):\n    ${var}\n"
+    assert "data ABC" not in parse("data ABC:\n ${var}", "xonsh")
 
     return True
 

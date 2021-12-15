@@ -26,8 +26,6 @@ from coconut.exceptions import CoconutException
 from coconut.compiler import Compiler
 from coconut.command.util import Runner
 
-from xonsh.parser import Parser
-
 # -----------------------------------------------------------------------------------------------------------------------
 # MAIN:
 # -----------------------------------------------------------------------------------------------------------------------
@@ -44,7 +42,7 @@ def new_parse(self, s, *args, **kwargs):
         compiled_python = COMPILER.parse_xonsh(s)
     except CoconutException:
         compiled_python = s
-    return Parser.parse(self, compiled_python, *args, **kwargs)
+    return self.__class__.parse(self, compiled_python, *args, **kwargs)
 
 
 main_parser = __xonsh__.execer.parser
