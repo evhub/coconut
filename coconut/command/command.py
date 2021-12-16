@@ -360,7 +360,7 @@ class Command(object):
         if err is not None:
             internal_assert(errmsg is None, "register_exit_code accepts only one of errmsg or err")
             if logger.verbose:
-                errmsg = format_error(err.__class__, err)
+                errmsg = format_error(err)
             else:
                 errmsg = err.__class__.__name__
         if errmsg is not None:

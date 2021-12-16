@@ -1155,6 +1155,7 @@ class Compiler(Grammar):
                 lni = -1
             else:
                 lni = ln - 1
+
         if self.line_numbers and self.keep_lines:
             if self.minify:
                 comment = str(ln) + " " + self.original_lines[lni]
@@ -1172,6 +1173,7 @@ class Compiler(Grammar):
                 comment = str(ln) + " (line num in coconut source)"
         else:
             return ""
+
         return self.wrap_comment(comment, reformat=False)
 
     def endline_repl(self, inputstring, reformatting=False, **kwargs):

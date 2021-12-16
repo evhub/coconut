@@ -60,8 +60,10 @@ from coconut.exceptions import (
 # UTILITIES:
 # -----------------------------------------------------------------------------------------------------------------------
 
-def format_error(err_type, err_value, err_trace=None):
+def format_error(err_value, err_type=None, err_trace=None):
     """Properly formats the specified error."""
+    if err_type is None:
+        err_type = err_value.__class__
     if err_trace is None:
         err_parts = "".join(traceback.format_exception_only(err_type, err_value)).strip().split(": ", 1)
         if len(err_parts) == 1:
@@ -267,7 +269,7 @@ class Logger(object):
                 )
             if show_tb and len(exc_info) > 2:
                 err_trace = exc_info[2]
-            return format_error(err_type, err_value, err_trace)
+            return format_error(err_value, err_type, err_trace)
 
     @contextmanager
     def in_path(self, new_path, old_path=None):

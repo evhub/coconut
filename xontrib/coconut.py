@@ -23,6 +23,7 @@ from types import MethodType
 
 from coconut.constants import coconut_kernel_kwargs
 from coconut.exceptions import CoconutException
+from coconut.terminal import format_error
 from coconut.compiler import Compiler
 from coconut.command.util import Runner
 
@@ -40,8 +41,9 @@ RUNNER.update_vars(__xonsh__.ctx)
 def new_parse(self, s, *args, **kwargs):
     try:
         compiled_python = COMPILER.parse_xonsh(s)
-    except CoconutException:
-        compiled_python = s
+    except CoconutException as err:
+        err_str = format_error(err).splitlines()[0]
+        compiled_python = s + " # " + err_str
     return self.__class__.parse(self, compiled_python, *args, **kwargs)
 
 
