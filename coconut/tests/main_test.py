@@ -86,9 +86,9 @@ bbopt_git = "https://github.com/evhub/bbopt.git"
 
 coconut_snip = r"msg = '<success>'; pmsg = print$(msg); `pmsg`"
 
-mypy_snip = r"a: str = count()[0]"
-mypy_snip_err_2 = r'''error: Incompatible types in assignment (expression has type\n"int", variable has type "unicode")'''
-mypy_snip_err_3 = r'''error: Incompatible types in assignment (expression has type\n"int", variable has type "str")'''
+mypy_snip = "a: str = count()[0]"
+mypy_snip_err_2 = '''error: Incompatible types in assignment (expression has type\n"int", variable has type "unicode")'''
+mypy_snip_err_3 = '''error: Incompatible types in assignment (expression has type\n"int", variable has type "str")'''
 
 mypy_args = ["--follow-imports", "silent", "--ignore-missing-imports", "--allow-redefinition"]
 
