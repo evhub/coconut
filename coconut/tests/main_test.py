@@ -87,8 +87,8 @@ bbopt_git = "https://github.com/evhub/bbopt.git"
 coconut_snip = r"msg = '<success>'; pmsg = print$(msg); `pmsg`"
 
 mypy_snip = r"a: str = count()[0]"
-mypy_snip_err_2 = r'''error: Incompatible types in assignment (expression has type "int", variable has type "unicode")'''
-mypy_snip_err_3 = r'''error: Incompatible types in assignment (expression has type "int", variable has type "str")'''
+mypy_snip_err_2 = r'''error: Incompatible types in assignment (expression has type\n"int", variable has type "unicode")'''
+mypy_snip_err_3 = r'''error: Incompatible types in assignment (expression has type\n"int", variable has type "str")'''
 
 mypy_args = ["--follow-imports", "silent", "--ignore-missing-imports", "--allow-redefinition"]
 
@@ -243,14 +243,14 @@ def call(raw_cmd, assert_output=False, check_mypy=False, check_errors=True, stde
         # combine mypy error lines
         if any(infix in line for infix in mypy_err_infixes):
             # always add the next line, since it might be a continuation of the error message
-            line += raw_lines[i + 1]
+            line += "\n" + raw_lines[i + 1]
             i += 1
             # then keep adding more lines if they start with whitespace, since they might be the referenced code
             for j in range(i + 2, len(raw_lines)):
                 next_line = raw_lines[j]
                 if next_line.lstrip() == next_line:
                     break
-                line += next_line
+                line += "\n" + next_line
                 i += 1
 
         lines.append(line)
