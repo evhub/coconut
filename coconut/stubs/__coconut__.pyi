@@ -705,6 +705,11 @@ class _coconut_lifted_1(_t.Generic[_T, _W]):
         self,
         _g: _t.Callable[..., _T],
     ) -> _t.Callable[..., _W]: ...
+    @_t.overload
+    def __call__(
+        self,
+        **kwargs: _t.Dict[_t.Text, _t.Callable[..., _T]],
+    ) -> _t.Callable[..., _W]: ...
 
 # lift((_T, _U) -> _W)
 class _coconut_lifted_2(_t.Generic[_T, _U, _W]):
@@ -737,6 +742,12 @@ class _coconut_lifted_2(_t.Generic[_T, _U, _W]):
         self,
         _g: _t.Callable[..., _T],
         _h: _t.Callable[..., _U],
+    ) -> _t.Callable[..., _W]: ...
+    @_t.overload
+    def __call__(
+        self,
+        _g: _t.Callable[..., _T] = ...,
+        **kwargs: _t.Dict[_t.Text, _t.Any],
     ) -> _t.Callable[..., _W]: ...
 
 # lift((_T, _U, _V) -> _W)
@@ -775,6 +786,13 @@ class _coconut_lifted_3(_t.Generic[_T, _U, _V, _W]):
         _g: _t.Callable[..., _T],
         _h: _t.Callable[..., _U],
         _i: _t.Callable[..., _V],
+    ) -> _t.Callable[..., _W]: ...
+    @_t.overload
+    def __call__(
+        self,
+        _g: _t.Callable[..., _T] = ...,
+        _h: _t.Callable[..., _U] = ...,
+        **kwargs: _t.Dict[_t.Text, _t.Any],
     ) -> _t.Callable[..., _W]: ...
 
 

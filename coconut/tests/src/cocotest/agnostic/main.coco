@@ -288,7 +288,7 @@ def main_test() -> bool:
         assert False
     else:
         assert True
-    a = 1; b = 1
+    a = 1; b = 1  # type: ignore
     assert a == 1 == b
     assert count(5) == count(5)
     assert count(5) != count(3)
@@ -405,8 +405,8 @@ def main_test() -> bool:
     from io import StringIO, BytesIO
     s = StringIO("derp")  # type: ignore
     assert s.read() == "derp"  # type: ignore
-    b = BytesIO(b"herp")
-    assert b.read() == b"herp"
+    b = BytesIO(b"herp")  # type: ignore
+    assert b.read() == b"herp"  # type: ignore
     assert 1 ?? 2 == 1 == (??)(1, 2)
     assert None ?? 2 == 2 == (??)(None, 2)
     one = 1

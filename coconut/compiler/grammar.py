@@ -734,7 +734,7 @@ class Grammar(object):
 
     endline = Forward()
     endline_ref = condense(OneOrMore(Literal("\n")))
-    lineitem = combine(Optional(comment) + endline)
+    lineitem = ZeroOrMore(comment) + endline
     newline = condense(OneOrMore(lineitem))
     end_simple_stmt_item = FollowedBy(semicolon | newline)
 

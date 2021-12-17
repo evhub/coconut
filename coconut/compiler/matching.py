@@ -32,7 +32,6 @@ from coconut.exceptions import (
     CoconutSyntaxWarning,
 )
 from coconut.constants import (
-    match_temp_var,
     wildcard,
     openindent,
     closeindent,
@@ -96,7 +95,6 @@ class Matcher(object):
         "position",
         "checkdefs",
         "names",
-        "var_index_obj",
         "name_list",
         "child_groups",
         "guards",
@@ -137,7 +135,7 @@ class Matcher(object):
         "python warn on strict",
     )
 
-    def __init__(self, comp, original, loc, check_var, style=default_matcher_style, name_list=None, parent_names={}, var_index_obj=None):
+    def __init__(self, comp, original, loc, check_var, style=default_matcher_style, name_list=None, parent_names={}):
         """Creates the matcher."""
         self.comp = comp
         self.original = original
@@ -150,7 +148,6 @@ class Matcher(object):
         self.checkdefs = []
         self.parent_names = parent_names
         self.names = OrderedDict()  # ensures deterministic ordering of name setting code
-        self.var_index_obj = [0] if var_index_obj is None else var_index_obj
         self.guards = []
         self.child_groups = []
         self.increment()
@@ -159,7 +156,7 @@ class Matcher(object):
         """Create num_branches child matchers, one of which must match for the parent match to succeed."""
         child_group = []
         for _ in range(num_branches):
-            new_matcher = Matcher(self.comp, self.original, self.loc, self.check_var, self.style, self.name_list, self.names, self.var_index_obj)
+            new_matcher = Matcher(self.comp, self.original, self.loc, self.check_var, self.style, self.name_list, self.names)
             child_group.append(new_matcher)
 
         self.child_groups.append(child_group)
@@ -258,10 +255,8 @@ class Matcher(object):
             self.decrement(by)
 
     def get_temp_var(self):
-        """Gets the next match_temp_var."""
-        tempvar = match_temp_var + "_" + str(self.var_index_obj[0])
-        self.var_index_obj[0] += 1
-        return tempvar
+        """Gets the next match_temp var."""
+        return self.comp.get_temp_var("match_temp")
 
     def get_set_name_var(self, name):
         """Gets the var for checking whether a name should be set."""

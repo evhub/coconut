@@ -247,7 +247,7 @@ def suite_test() -> bool:
     assert pattern_abs(0) == 0 == pattern_abs_(0)
     assert pattern_abs(-4) == 4 == pattern_abs_(-4)
     assert vector(1, 2) |> (==)$(vector(1, 2))
-    assert vector(1, 2) |> .__eq__(other=vector(1, 2))
+    assert vector(1, 2) |> .__eq__(other=vector(1, 2))  # type: ignore
     assert fibs()$[1:4] |> tuple == (1, 2, 3) == fibs_()$[1:4] |> tuple
     assert fibs() |> takewhile$((i) -> i < 4000000 ) |> filter$((i) -> i % 2 == 0 ) |> sum == 4613732 == fibs_() |> takewhile$((i) -> i < 4000000 ) |> filter$((i) -> i % 2 == 0 ) |> sum  # type: ignore
     assert loop([1,2])$[:4] |> list == [1, 2] * 2

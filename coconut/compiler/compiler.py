@@ -1049,21 +1049,21 @@ class Compiler(Grammar):
                 if self.strict:
                     raise self.make_err(CoconutStyleError, "found trailing whitespace", line, len(line), self.adjust(ln))
                 line = line_rstrip
-            last = rem_comment(new[-1]) if new else None
+            last_line, last_comment = split_comment(new[-1]) if new else (None, None)
 
             if not line or line.lstrip().startswith("#"):  # blank line or comment
                 if opens:  # inside parens
                     skips = addskip(skips, self.adjust(ln))
                 else:
                     new.append(line)
-            elif last is not None and last.endswith("\\"):  # backslash line continuation
+            elif last_line is not None and last_line.endswith("\\"):  # backslash line continuation
                 if self.strict:
-                    raise self.make_err(CoconutStyleError, "found backslash continuation", last, len(last), self.adjust(ln - 1))
+                    raise self.make_err(CoconutStyleError, "found backslash continuation", new[-1], len(last_line), self.adjust(ln - 1))
                 skips = addskip(skips, self.adjust(ln))
-                new[-1] = last[:-1] + non_syntactic_newline + line
+                new[-1] = last_line[:-1] + non_syntactic_newline + line + last_comment
             elif opens:  # inside parens
                 skips = addskip(skips, self.adjust(ln))
-                new[-1] = last + non_syntactic_newline + line
+                new[-1] = last_line + non_syntactic_newline + line + last_comment
             else:
                 check = self.leading_whitespace(line)
                 if current is None:
@@ -1097,12 +1097,12 @@ class Compiler(Grammar):
 
         self.set_skips(skips)
         if new:
-            last = rem_comment(new[-1])
-            if last.endswith("\\"):
-                raise self.make_err(CoconutSyntaxError, "illegal final backslash continuation", new[-1], len(new[-1]), self.adjust(len(new)))
+            last_line = rem_comment(new[-1])
+            if last_line.endswith("\\"):
+                raise self.make_err(CoconutSyntaxError, "illegal final backslash continuation", new[-1], len(last_line), self.adjust(len(new)))
             if opens:
-                line, adj_ln = opens[0]
-                raise self.make_err(CoconutSyntaxError, "unclosed open parenthesis", line, 0, adj_ln)
+                open_line, adj_ln = opens[0]
+                raise self.make_err(CoconutSyntaxError, "unclosed open parenthesis", open_line, 0, adj_ln)
         new.append(closeindent * len(levels))
         return "\n".join(new)
 
@@ -2017,12 +2017,10 @@ while True:
         """Store comment in comments."""
         internal_assert(len(tokens) == 1, "invalid comment tokens", tokens)
         ln = self.adjust(lineno(loc, original))
-        internal_assert(
-            lambda: ln not in self.comments or self.comments[ln] == tokens[0],
-            "multiple comments on line", ln,
-            extra=lambda: repr(self.comments[ln]) + " and " + repr(tokens[0]),
-        )
-        self.comments[ln] = tokens[0]
+        if ln in self.comments:
+            self.comments[ln] += " " + tokens[0]
+        else:
+            self.comments[ln] = tokens[0]
         return ""
 
     def kwd_augassign_handle(self, loc, tokens):

@@ -211,7 +211,6 @@ is_data_var = reserved_prefix + "_is_data"
 # prefer Matcher.get_temp_var to proliferating more vars here
 match_to_args_var = reserved_prefix + "_match_args"
 match_to_kwargs_var = reserved_prefix + "_match_kwargs"
-match_temp_var = reserved_prefix + "_match_temp"
 function_match_error_var = reserved_prefix + "_FunctionMatchError"
 match_set_name_var = reserved_prefix + "_match_set_name"
 
@@ -620,7 +619,6 @@ min_versions = {
     ("pre-commit", "py3"): (2,),
     "psutil": (5,),
     "jupyter": (1, 0),
-    "mypy[python2]": (0, 920),
     "types-backports": (0, 1),
     "futures": (3, 3),
     "backports.functools-lru-cache": (1, 6),
@@ -640,6 +638,7 @@ min_versions = {
     # latest version supported on Python 2
     ("jupyter-client", "py2"): (5, 3),
     # don't upgrade these; they break on Python 3.5
+    "mypy[python2]": (0, 910),
     ("ipykernel", "py3"): (5, 5),
     ("ipython", "py3"): (7, 9),
     ("jupyter-console", "py3"): (6, 1),
@@ -671,6 +670,7 @@ min_versions = {
 pinned_reqs = (
     ("jupyter-client", "py3"),
     ("jupyter-client", "py2"),
+    "mypy[python2]",
     ("ipykernel", "py3"),
     ("ipython", "py3"),
     ("jupyter-console", "py3"),
@@ -699,7 +699,6 @@ max_versions = {
     ("jupyter-client", "py3"): _,
     "pyparsing": _,
     "cPyparsing": (_, _, _),
-    "mypy[python2]": _,
     ("prompt_toolkit", "mark2"): _,
     "jedi": _,
     ("pywinpty", "py2;windows"): _,
@@ -707,7 +706,6 @@ max_versions = {
 
 allowed_constrained_but_unpinned_reqs = (
     "cPyparsing",
-    "mypy[python2]",
 )
 assert set(max_versions) <= set(pinned_reqs) | set(allowed_constrained_but_unpinned_reqs), "found unlisted constrained but unpinned requirements"
 

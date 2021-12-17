@@ -136,10 +136,10 @@ def qsort3(l: int$[]) -> int$[]:
         tail, tail_ = l |> iter |> tee
         # Since only iter is ever called on l, and next on tail, l only has to be an iterator
         head = next(tail)
-        return (qsort3((x for x in tail if x <= head))
+        return (qsort3((x for x in tail if x <= head))  # an extra comment
                 :: (head,) # The pivot is a tuple
                 :: qsort3((x for x in tail_ if x > head))
-                )  # type: ignore
+                )
     except StopIteration:
         return iter(())
 def qsort4(l: int[]) -> int[]:
@@ -148,9 +148,9 @@ def qsort4(l: int[]) -> int[]:
         match []:
             return l
         match [head] + tail:
-            return (list(qsort4([x for x in tail if x <= head]))
+            return (list(qsort4([x for x in tail if x <= head])) # an extra comment
                     + [head] # The pivot is a list
-                    + list(qsort4([x for x in tail if x > head]))
+                    + list(qsort4([x for x in tail if x > head])) # another extra comment
                     )
     return None  # type: ignore
 def qsort5(l: int$[]) -> int$[]:
@@ -159,8 +159,8 @@ def qsort5(l: int$[]) -> int$[]:
         tail, tail_ = tee(tail)
         return (qsort5((x for x in tail if x <= head))
             :: (head,) # The pivot is a tuple
-            :: qsort5((x for x in tail_ if x > head))
-            )  # type: ignore
+            :: qsort5((x for x in tail_ if x > head))  # an extra comment
+            )
     else:
         return iter(())
 def qsort6(l: int$[]) -> int$[]:
@@ -170,7 +170,7 @@ def qsort6(l: int$[]) -> int$[]:
             qsort6(x for x in tail if x <= head)
             :: (head,)
             :: qsort6(x for x in tail if x > head)
-        )  # type: ignore
+        )
 
 def empty_list_base_case([]) = []
 
@@ -1166,7 +1166,7 @@ maxdiff2 = (
 )
 
 maxdiff3 = (
-    ident `lift(zip)` scan$(min)
+    ident `lift(zip)` scan$(min)  # type: ignore
     ..> starmap$(-)
     ..> filter$(ne_zero)
     ..> reduce$(max, ?, -1)
