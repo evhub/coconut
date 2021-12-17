@@ -620,7 +620,7 @@ min_versions = {
     ("pre-commit", "py3"): (2,),
     "psutil": (5,),
     "jupyter": (1, 0),
-    "mypy[python2]": (0, 910),
+    "mypy[python2]": (0, 920),
     "types-backports": (0, 1),
     "futures": (3, 3),
     "backports.functools-lru-cache": (1, 6),
@@ -632,9 +632,9 @@ min_versions = {
     ("numpy", "py2;cpy"): (1,),
     ("dataclasses", "py==36"): (0, 8),
     ("aenum", "py<34"): (3,),
-    "sphinx": (4, 2),
-    "pydata-sphinx-theme": (0, 7, 1),
-    "myst-parser": (0, 15),
+    "sphinx": (4, 3),
+    "pydata-sphinx-theme": (0, 7, 2),
+    "myst-parser": (0, 16),
     # don't upgrade this until https://github.com/jupyter/jupyter_console/issues/241 is fixed
     ("jupyter-client", "py3"): (6, 1, 12),
     # latest version supported on Python 2

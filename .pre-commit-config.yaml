@@ -40,6 +40,6 @@ repos:
         - --experimental
         - --ignore=W503,E501,E722,E402
 -   repo: https://github.com/asottile/add-trailing-comma
-    rev: v2.2.0
+    rev: v2.2.1
     hooks:
     -   id: add-trailing-comma
