@@ -1169,7 +1169,11 @@ class Grammar(object):
 
     assignlist = Forward()
     star_assign_item = Forward()
-    base_assign_item = condense(simple_assign | lparen + assignlist + rparen | lbrack + assignlist + rbrack)
+    base_assign_item = condense(
+        simple_assign
+        | lparen + assignlist + rparen
+        | lbrack + assignlist + rbrack,
+    )
     star_assign_item_ref = condense(star + base_assign_item)
     assign_item = star_assign_item | base_assign_item
     assignlist <<= itemlist(assign_item, comma, suppress_trailing=False)

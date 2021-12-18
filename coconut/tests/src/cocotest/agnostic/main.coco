@@ -1029,6 +1029,9 @@ def main_test() -> bool:
     assert range(5) |> reduce$((+), ?, 10) == 20
     assert range(5) |> scan$((+), initial=10) |> list == [10, 10, 11, 13, 16, 20]
     assert 4.5 // 2 == 2 == (//)(4.5, 2)
+    x = 1
+    \(x) |>= (.+3)
+    assert x == 4
     return True
 
 def test_asyncio() -> bool:
