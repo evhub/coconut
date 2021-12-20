@@ -154,17 +154,18 @@ After you've tested your changes locally, you'll want to add more permanent test
 
 1. Preparation:
     1. Run `make check-reqs` and update dependencies as necessary
-    1. Run `make format`
-    1. Make sure `make test-basic`, `make test-py2`, and `make test-easter-eggs` are passing
-    1. Check changes in [`compiled-cocotest`](https://github.com/evhub/compiled-cocotest), [`pyprover`](https://github.com/evhub/pyprover), and [`coconut-prelude`](https://github.com/evhub/coconut-prelude)
-    1. Check [Codebeat](https://codebeat.co/a/evhub/projects) and [LGTM](https://lgtm.com/dashboard) for `coconut` and `compiled-cocotest`
-    1. Make sure [`coconut-develop`](https://pypi.python.org/pypi/coconut-develop) package looks good
-    1. Run `make docs` and ensure local documentation looks good
-    1. Make sure [develop documentation](http://coconut.readthedocs.io/en/develop/) looks good
-    2. Make sure [Github Actions](https://github.com/evhub/coconut/actions) and [AppVeyor](https://ci.appveyor.com/project/evhub/coconut) are passing
-    3. Turn off `develop` in `root.py`
-    4. Set `root.py` to new version number
-    5. If major release, set `root.py` to new version name
+    2. Run `make format`
+    3. Make sure `make test-basic`, `make test-py2`, and `make test-easter-eggs` are passing
+    4. Ensure that `coconut --watch` can successfully compile files when they're modified
+    5. Check changes in [`compiled-cocotest`](https://github.com/evhub/compiled-cocotest), [`pyprover`](https://github.com/evhub/pyprover), and [`coconut-prelude`](https://github.com/evhub/coconut-prelude)
+    6. Check [Codebeat](https://codebeat.co/a/evhub/projects) and [LGTM](https://lgtm.com/dashboard) for `coconut` and `compiled-cocotest`
+    7. Make sure [`coconut-develop`](https://pypi.python.org/pypi/coconut-develop) package looks good
+    8. Run `make docs` and ensure local documentation looks good
+    9.  Make sure [develop documentation](http://coconut.readthedocs.io/en/develop/) looks good
+    10. Make sure [Github Actions](https://github.com/evhub/coconut/actions) and [AppVeyor](https://ci.appveyor.com/project/evhub/coconut) are passing
+    11. Turn off `develop` in `root.py`
+    12. Set `root.py` to new version number
+    13. If major release, set `root.py` to new version name
 
 2. Pull Request:
     1. Create a pull request to merge `develop` into `master`

@@ -57,4 +57,4 @@ class RecompilationWatcher(FileSystemEventHandler):
         path = event.src_path
         if path not in self.saw:
             self.saw.add(path)
-            self.recompile(path, *args, **kwargs)
+            self.recompile(path, *self.args, **self.kwargs)
