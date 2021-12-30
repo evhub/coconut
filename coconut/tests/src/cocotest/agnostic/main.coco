@@ -1032,6 +1032,7 @@ def main_test() -> bool:
     x = 1
     \(x) |>= (.+3)
     assert x == 4
+    assert range(5) |> lift(zip, ident, ident) |> map$(ident ..*> (+)) |> list == [0, 2, 4, 6, 8]
     return True
 
 def test_asyncio() -> bool:

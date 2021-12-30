@@ -2286,7 +2286,7 @@ def _asdict(self):
 def __repr__(self):
     return "{name}(*{arg}=%r)" % (self[:],)
 def _replace(_self, **kwds):
-    result = self._make(kwds.pop("{arg}", _self))
+    result = _self._make(kwds.pop("{arg}", _self))
     if kwds:
         raise _coconut.ValueError("Got unexpected field names: " + _coconut.repr(kwds.keys()))
     return result

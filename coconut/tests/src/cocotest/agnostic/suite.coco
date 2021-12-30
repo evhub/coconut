@@ -806,6 +806,10 @@ forward 2""") == 900
 01010
     """.strip().split("\n")
     assert gam_eps_rate(s) == 198 == gam_eps_rate_(s)
+    assert vector(1, 2)._replace(x=3)._asdict() == {"x": 3, "y": 2} == typed_vector(1, 2)._replace(x=3)._asdict()
+    assert lenient_2vec("1", "2")._asdict() == {"x": 1, "y": 2} == Point(1, 2)._asdict()
+    assert lenient_2vec("1", 2.5)._asdict() == {"x": 1, "y": 2} == lenient_2vec(1.5, "2")._asdict()
+    assert manyvec(1, 2, 3)._asdict() == {"xs": (1, 2, 3)} == manyvec(4, 5)._replace(xs=(1, 2, 3))._asdict()
 
     # must come at end
     assert fibs_calls[0] == 1

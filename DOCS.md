@@ -838,6 +838,8 @@ Compared to [`namedtuple`s](#anonymous-namedtuples), from which `data` types are
 - support starred, typed, and [pattern-matching](#match-data) arguments, and
 - have special [pattern-matching](#match) behavior.
 
+Like [`namedtuple`s](https://docs.python.org/3/library/collections.html#namedtuple-factory-function-for-tuples-with-named-fields), `data` types also support a variety of extra methods, such as [`._asdict()`](https://docs.python.org/3/library/collections.html#collections.somenamedtuple._asdict) and [`._replace(**kwargs)`](https://docs.python.org/3/library/collections.html#collections.somenamedtuple._replace).
+
 ##### Rationale
 
 A mainstay of functional programming that Coconut improves in Python is the use of values, or immutable data types. Immutable data can be very useful because it guarantees that once you have some data it won't change, but in Python creating custom immutable data types is difficult. Coconut makes it very easy by providing `data` blocks.

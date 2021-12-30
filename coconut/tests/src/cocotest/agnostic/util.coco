@@ -910,6 +910,7 @@ class Vars:
                     del globs[name]
 
 # Complex Data
+data manyvec(*xs)
 
 data Tuple_(*elems)
 
@@ -927,6 +928,8 @@ data RadialVector_(mag:int, angle:int=0)
 
 data ABC(a, b=1, *c)
 data ABC_(a:int, b:int=1, *c)
+
+data lenient_2vec(int -> x, int -> y)
 
 # Type-Checking Tests
 
