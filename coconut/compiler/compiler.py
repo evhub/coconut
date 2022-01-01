@@ -132,7 +132,7 @@ from coconut.compiler.util import (
     get_highest_parse_loc,
 )
 from coconut.compiler.header import (
-    minify,
+    minify_header,
     getheader,
 )
 
@@ -896,14 +896,7 @@ class Compiler(Grammar):
             if hold is not None:
                 if len(hold) == 1:  # hold == [_comment]
                     if c == "\n":
-                        if self.minify:
-                            if out:
-                                lines = "".join(out).splitlines()
-                                lines[-1] = lines[-1].rstrip()
-                                out = ["\n".join(lines)]
-                            out.append(c)
-                        else:
-                            out.append(self.wrap_comment(hold[_comment], reformat=False) + c)
+                        out.append(self.wrap_comment(hold[_comment], reformat=False) + c)
                         hold = None
                     else:
                         hold[_comment] += c
@@ -1723,7 +1716,7 @@ if {store_var} is not _coconut_sentinel:
         pre_header = self.getheader(initial, use_hash=use_hash, polish=False)
         main_header = self.getheader(header, polish=False)
         if self.minify:
-            main_header = minify(main_header)
+            main_header = minify_header(main_header)
         return pre_header + self.docstring + main_header + inputstring
 
     def polish(self, inputstring, final_endline=True, **kwargs):

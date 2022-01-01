@@ -801,7 +801,7 @@ if _coconut.len({match_args_var}) < {num_pos_matches}:
         self.add_def(
             handle_indentation(
                 """
-{is_data_result_var} = _coconut.getattr({cls_name}, "{is_data_var}", False) or _coconut.isinstance({cls_name}, _coconut.tuple) and _coconut.all(_coconut.getattr(_coconut_x, "{is_data_var}", False) for _coconut_x in {cls_name})  {type_comment}
+{is_data_result_var} = _coconut.getattr({cls_name}, "{is_data_var}", False) or _coconut.isinstance({cls_name}, _coconut.tuple) and _coconut.all(_coconut.getattr(_coconut_x, "{is_data_var}", False) for _coconut_x in {cls_name}) {type_comment}
             """,
             ).format(
                 is_data_result_var=is_data_result_var,

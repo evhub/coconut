@@ -23,6 +23,7 @@ import os.path
 from functools import partial
 
 from coconut.root import _indent
+from coconut.exceptions import CoconutInternalException
 from coconut.terminal import internal_assert
 from coconut.constants import (
     hash_prefix,
@@ -57,7 +58,7 @@ def gethash(compiled):
         return lines[2][len(hash_prefix):]
 
 
-def minify(compiled):
+def minify_header(compiled):
     """Perform basic minification of the header.
 
     Fails on non-tabideal indentation, strings with #s, or multi-line strings.
@@ -462,7 +463,7 @@ def getheader(which, target, use_hash, no_tco, strict, no_wrap):
         return header + '''import sys as _coconut_sys, os as _coconut_os
 _coconut_file_dir = {coconut_file_dir}
 _coconut_cached_module = _coconut_sys.modules.get({__coconut__})
-if _coconut_cached_module is not None and _coconut_os.path.dirname(_coconut_cached_module.__file__) != _coconut_file_dir:
+if _coconut_cached_module is not None and _coconut_os.path.dirname(_coconut_cached_module.__file__) != _coconut_file_dir:  # type: ignore
     del _coconut_sys.modules[{__coconut__}]
 _coconut_sys.path.insert(0, _coconut_file_dir)
 _coconut_module_name = _coconut_os.path.splitext(_coconut_os.path.basename(_coconut_file_dir))[0]
