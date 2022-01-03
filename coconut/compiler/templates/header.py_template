@@ -987,16 +987,18 @@ def of(_coconut_f, *args, **kwargs):
     """
     return _coconut_f(*args, **kwargs)
 class flip(_coconut_base_hashable):
-    """Given a function, return a new function with inverse argument order."""
-    __slots__ = ("func",)
-    def __init__(self, func):
+    """Given a function, return a new function with inverse argument order.
+    If nargs is passed, only the first nargs arguments are reversed."""
+    __slots__ = ("func", "nargs")
+    def __init__(self, func, nargs=None):
         self.func = func
+        self.nargs = nargs
     def __reduce__(self):
-        return (self.__class__, (self.func,))
+        return (self.__class__, (self.func, self.nargs))
     def __call__(self, *args, **kwargs):
-        return self.func(*args[::-1], **kwargs)
+        return self.func(*args[::-1], **kwargs) if self.nargs is None else self.func(*(args[self.nargs-1::-1] + args[self.nargs:]), **kwargs)
     def __repr__(self):
-        return "flip(%r)" % (self.func,)
+        return "flip(%r%s)" % (self.func, "" if self.nargs is None else ", " + _coconut.repr(self.nargs))
 class const(_coconut_base_hashable):
     """Create a function that, whatever its arguments, just returns the given value."""
     __slots__ = ("value",)

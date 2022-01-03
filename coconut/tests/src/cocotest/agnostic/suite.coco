@@ -810,6 +810,13 @@ forward 2""") == 900
     assert lenient_2vec("1", "2")._asdict() == {"x": 1, "y": 2} == Point(1, 2)._asdict()
     assert lenient_2vec("1", 2.5)._asdict() == {"x": 1, "y": 2} == lenient_2vec(1.5, "2")._asdict()
     assert manyvec(1, 2, 3)._asdict() == {"xs": (1, 2, 3)} == manyvec(4, 5)._replace(xs=(1, 2, 3))._asdict()
+    def tup3(a: int, b: int, c: int?=None) = a, b, c
+    assert flip(tup3)(2, 1, 3) == (3, 1, 2)
+    assert flip(tup3, 2)(2, 1, 3) == (1, 2, 3)
+    assert flip2(tup3)(2, 1, 3) == (1, 2, 3) == flip2_(tup3)(2, 1, 3)  # type: ignore
+    assert flip(tup3)(2, 1, c=3) == (1, 2, 3) == flip(tup3, 2)(2, 1, c=3)
+    assert ", 2" in repr(flip2(tup3))
+    assert tup3 `of_data` (a=1, b=2, c=3) == (1, 2, 3)  # type: ignore
 
     # must come at end
     assert fibs_calls[0] == 1

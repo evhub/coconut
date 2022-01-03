@@ -98,6 +98,9 @@ def threeple(a, b, c) = (a, b, c)
 def toprint(*args) = " ".join(str(a) for a in args)
 def starsum(*args) = sum(args)
 def starproduct(*args) = product(args)
+flip2 = flip$(nargs=2)
+flip2_ = flip$(?, 2)
+def of_data(f, d) = f(**d._asdict())
 
 # Partial Applications:
 sum_ = reduce$((+))
@@ -787,6 +790,8 @@ def ret_none(n):
         return ret_none(n - 1)
 
 def ret_args_kwargs(*args, **kwargs) = (args, kwargs)
+
+def ret_args(*args) = args
 
 # Useful Classes
 

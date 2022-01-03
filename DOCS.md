@@ -567,7 +567,7 @@ expnums = map(lambda x: pow(x, 2), range(5))
 print(list(expnums))
 ```
 
-### Pipeline
+### Pipes
 
 Coconut uses pipe operators for pipeline-style function application. All the operators have a precedence in-between function composition pipes and comparisons, and are left-associative. All operators also support in-place versions. The different operators are:
 ```coconut
@@ -617,7 +617,7 @@ def sq(x): return x**2
 print(sq(operator.add(1, 2)))
 ```
 
-### Compose
+### Function Composition
 
 Coconut has three basic function composition operators: `..`, `..>`, and `<..`. Both `..` and `<..` use math-style "backwards" function composition, where the first function is called last, while `..>` uses "forwards" function composition, where the first function is called first. Forwards and backwards function composition pipes cannot be used together in the same expression (unlike normal pipes) and have precedence in-between `None`-coalescing and normal pipes. The `..>` and `<..` function composition pipe operators also have `..*>` and `<*..` forms which are, respectively, the equivalents of `|*>` and `<*|` as well as `..**>` and `<**..` forms which correspond to `|**>` and `<**|`.
 
@@ -640,7 +640,65 @@ fog = lambda *args, **kwargs: f(g(*args, **kwargs))
 f_into_g = lambda *args, **kwargs: g(f(*args, **kwargs))
 ```
 
-### Chain
+### Infix Functions
+
+Coconut allows for infix function calling, where an expression that evaluates to a function is surrounded by backticks and then can have arguments placed in front of or behind it. Infix calling has a precedence in-between chaining and `None`-coalescing, and is left-associative.
+
+The allowable notations for infix calls are:
+```coconut
+x `f` y  =>  f(x, y)
+`f` x    =>  f(x)
+x `f`    =>  f(x)
+`f`      =>  f()
+```
+Additionally, infix notation supports a lambda as the last argument, despite lambdas having a lower precedence. Thus, ``a `func` b -> c`` is equivalent to `func(a, b -> c)`.
+
+Coconut also supports infix function definition to make defining functions that are intended for infix usage simpler. The syntax for infix function definition is
+```coconut
+def <arg> `<name>` <arg>:
+    <body>
+```
+where `<name>` is the name of the function, the `<arg>`s are the function arguments, and `<body>` is the body of the function. If an `<arg>` includes a default, the `<arg>` must be surrounded in parentheses.
+
+_Note: Infix function definition can be combined with assignment and/or pattern-matching function definition._
+
+##### Rationale
+
+A common idiom in functional programming is to write functions that are intended to behave somewhat like operators, and to call and define them by placing them between their arguments. Coconut's infix syntax makes this possible.
+
+##### Example
+
+**Coconut:**
+```coconut
+def a `mod` b = a % b
+(x `mod` 2) `print`
+```
+
+**Python:**
+```coconut_python
+def mod(a, b): return a % b
+print(mod(x, 2))
+```
+
+### Iterator Slicing
+
+Coconut uses a `$` sign right after an iterator before a slice to perform iterator slicing, as in `it$[:5]`. Coconut's iterator slicing works much the same as Python's sequence slicing, and looks much the same as Coconut's partial application, but with brackets instead of parentheses.
+
+Iterator slicing works just like sequence slicing, including support for negative indices and slices, and support for `slice` objects in the same way as can be done with normal slicing. Iterator slicing makes no guarantee, however, that the original iterator passed to it be preserved (to preserve the iterator, use Coconut's [`tee`](#tee) or [`reiterable`](#reiterable) built-ins).
+
+Coconut's iterator slicing is very similar to Python's `itertools.islice`, but unlike `itertools.islice`, Coconut's iterator slicing supports negative indices, and will preferentially call an object's `__iter_getitem__` (Coconut-specific magic method, preferred) or `__getitem__` (general Python magic method), if they exist. Coconut's iterator slicing is also optimized to work well with all of Coconut's built-in objects, only computing the elements of each that are actually necessary to extract the desired slice.
+
+##### Example
+
+**Coconut:**
+```coconut
+map(x -> x*2, range(10**100))$[-1] |> print
+```
+
+**Python:**
+_Can't be done without a complicated iterator slicing function and inspection of custom objects. The necessary definitions in Python can be found in the Coconut header._
+
+### Iterator Chaining
 
 Coconut uses the `::` operator for iterator chaining. Coconut's iterator chaining is done lazily, in that the arguments are not evaluated until they are needed. It has a precedence in-between bitwise or and infix calls. The in-place operator is `::=`.
 
@@ -670,24 +728,6 @@ def N(n=0) = (n,) :: N(n+1)  # no infinite loop because :: is lazy
 
 **Python:**
 _Can't be done without a complicated iterator comprehension in place of the lazy chaining. See the compiled code for the Python syntax._
-
-### Iterator Slicing
-
-Coconut uses a `$` sign right after an iterator before a slice to perform iterator slicing, as in `it$[:5]`. Coconut's iterator slicing works much the same as Python's sequence slicing, and looks much the same as Coconut's partial application, but with brackets instead of parentheses.
-
-Iterator slicing works just like sequence slicing, including support for negative indices and slices, and support for `slice` objects in the same way as can be done with normal slicing. Iterator slicing makes no guarantee, however, that the original iterator passed to it be preserved (to preserve the iterator, use Coconut's [`tee`](#tee) or [`reiterable`](#reiterable) built-ins).
-
-Coconut's iterator slicing is very similar to Python's `itertools.islice`, but unlike `itertools.islice`, Coconut's iterator slicing supports negative indices, and will preferentially call an object's `__iter_getitem__` (Coconut-specific magic method, preferred) or `__getitem__` (general Python magic method), if they exist. Coconut's iterator slicing is also optimized to work well with all of Coconut's built-in objects, only computing the elements of each that are actually necessary to extract the desired slice.
-
-##### Example
-
-**Coconut:**
-```coconut
-map(x -> x*2, range(10**100))$[-1] |> print
-```
-
-**Python:**
-_Can't be done without a complicated iterator slicing function and inspection of custom objects. The necessary definitions in Python can be found in the Coconut header._
 
 ### None Coalescing
 
@@ -735,7 +775,7 @@ When using a `None`-aware operator for member access, either for a method or an 
 
 The `None`-aware indexing operator is used identically to normal indexing, using `?[]` instead of `[]`. `seq?[index]` is equivalent to the expression `seq[index] is seq is not None else seq`. Using this operator will not prevent an `IndexError` if `index` is outside the bounds of `seq`.
 
-Coconut also supports None-aware [pipe operators](#pipeline).
+Coconut also supports None-aware [pipe operators](#pipes).
 
 ##### Example
 
@@ -808,95 +848,6 @@ local:
 depth: 1
 ---
 ```
-
-### `data`
-
-Coconut's `data` keyword is used to create immutable, algebraic data types with built-in support for destructuring [pattern-matching](#match), [`fmap`](#fmap), and typed equality.
-
-The syntax for `data` blocks is a cross between the syntax for functions and the syntax for classes. The first line looks like a function definition, but the rest of the body looks like a class, usually containing method definitions. This is because while `data` blocks actually end up as classes in Python, Coconut automatically creates a special, immutable constructor based on the given arguments.
-
-Coconut data statement syntax looks like:
-```coconut
-data <name>(<args>) [from <inherits>]:
-    <body>
-```
-`<name>` is the name of the new data type, `<args>` are the arguments to its constructor as well as the names of its attributes, `<body>` contains the data type's methods, and `<inherits>` optionally contains any desired base classes.
-
-Coconut allows data fields in `<args>` to have defaults and/or [type annotations](#enhanced-type-annotation) attached to them, and supports a starred parameter at the end to collect extra arguments.
-
-Writing constructors for `data` types must be done using the `__new__` method instead of the `__init__` method. For helping to easily write `__new__` methods, Coconut provides the [makedata](#makedata) built-in.
-
-Subclassing `data` types can be done easily by inheriting from them either in another `data` statement or a normal Python `class`. If a normal `class` statement is used, making the new subclass immutable will require adding the line
-```coconut
-__slots__ = ()
-```
-which will need to be put in the subclass body before any method or attribute definitions. If you need to inherit magic methods from a base class in your `data` type, such subclassing is the recommended method, as the `data ... from ...` syntax will ovewrite any magic methods in the base class with magic methods built for the new `data` type.
-
-Compared to [`namedtuple`s](#anonymous-namedtuples), from which `data` types are derived, `data` types:
-
-- use typed equality,
-- support starred, typed, and [pattern-matching](#match-data) arguments, and
-- have special [pattern-matching](#match) behavior.
-
-Like [`namedtuple`s](https://docs.python.org/3/library/collections.html#namedtuple-factory-function-for-tuples-with-named-fields), `data` types also support a variety of extra methods, such as [`._asdict()`](https://docs.python.org/3/library/collections.html#collections.somenamedtuple._asdict) and [`._replace(**kwargs)`](https://docs.python.org/3/library/collections.html#collections.somenamedtuple._replace).
-
-##### Rationale
-
-A mainstay of functional programming that Coconut improves in Python is the use of values, or immutable data types. Immutable data can be very useful because it guarantees that once you have some data it won't change, but in Python creating custom immutable data types is difficult. Coconut makes it very easy by providing `data` blocks.
-
-##### Examples
-
-**Coconut:**
-```coconut
-data vector2(x:int=0, y:int=0):
-    def __abs__(self):
-        return (self.x**2 + self.y**2)**.5
-
-v = vector2(3, 4)
-v |> print  # all data types come with a built-in __repr__
-v |> abs |> print
-v.x = 2  # this will fail because data objects are immutable
-vector2() |> print
-```
-_Showcases the syntax, features, and immutable nature of `data` types, as well as the use of default arguments and type annotations._
-```coconut
-data Empty()
-data Leaf(n)
-data Node(l, r)
-
-def size(Empty()) = 0
-
-@addpattern(size)
-def size(Leaf(n)) = 1
-
-@addpattern(size)
-def size(Node(l, r)) = size(l) + size(r)
-
-size(Node(Empty(), Leaf(10))) == 1
-```
-_Showcases the algebraic nature of `data` types when combined with pattern-matching._
-```coconut
-data vector(*pts):
-    """Immutable arbitrary-length vector."""
-
-    def __abs__(self) =
-        self.pts |> map$(pow$(?, 2)) |> sum |> pow$(?, 0.5)
-
-    def __add__(self, other) =
-        vector(*other_pts) = other
-        assert len(other_pts) == len(self.pts)
-        map((+), self.pts, other_pts) |*> vector
-
-    def __neg__(self) =
-        self.pts |> map$((-)) |*> vector
-
-    def __sub__(self, other) =
-        self + -other
-```
-_Showcases starred `data` declaration._
-
-**Python:**
-_Can't be done without a series of method definitions for each data type. See the compiled code for the Python syntax._
 
 ### `match`
 
@@ -1135,36 +1086,6 @@ _Example of the `cases` keyword instead._
 **Python:**
 _Can't be done without a long series of checks for each `match` statement. See the compiled code for the Python syntax._
 
-### `match data`
-
-In addition to normal `data` statements, Coconut also supports pattern-matching data statements that enable the use of Coconut's pattern-matching syntax to define the data type's constructor. Pattern-matching data types look like
-```
-[match] data <name>(<patterns>) [from <base class>]:
-    <body>
-```
-where `<patterns>` are exactly as in [pattern-matching functions](#pattern-matching-functions).
-
-It is important to keep in mind that pattern-matching data types vary from normal data types in a variety of ways. First, like pattern-matching functions, they raise [`MatchError`](#matcherror) instead of `TypeError` when passed the wrong arguments. Second, pattern-matching data types will not do any special handling of starred arguments. Thus,
-```
-data vec(*xs)
-```
-when iterated over will iterate over all the elements of `xs`, but
-```
-match data vec(*xs)
-```
-when iterated over will only give the single element `xs`.
-
-##### Example
-
-**Coconut:**
-```
-data namedpt(name `isinstance` str, x `isinstance` int, y `isinstance` int):
-    def mag(self) = (self.x**2 + self.y**2)**0.5
-```
-
-**Python:**
-_Can't be done without a series of method definitions for each data type. See the compiled code for the Python syntax._
-
 ### `match for`
 
 Coconut supports pattern-matching in for loops, where the pattern is matched against each item in the iterable. The syntax is
@@ -1195,6 +1116,125 @@ for user_data in get_data():
     uid = user_data["user"]
     print(uid)
 ```
+
+### `data`
+
+Coconut's `data` keyword is used to create immutable, algebraic data types with built-in support for destructuring [pattern-matching](#match), [`fmap`](#fmap), and typed equality.
+
+The syntax for `data` blocks is a cross between the syntax for functions and the syntax for classes. The first line looks like a function definition, but the rest of the body looks like a class, usually containing method definitions. This is because while `data` blocks actually end up as classes in Python, Coconut automatically creates a special, immutable constructor based on the given arguments.
+
+Coconut data statement syntax looks like:
+```coconut
+data <name>(<args>) [from <inherits>]:
+    <body>
+```
+`<name>` is the name of the new data type, `<args>` are the arguments to its constructor as well as the names of its attributes, `<body>` contains the data type's methods, and `<inherits>` optionally contains any desired base classes.
+
+Coconut allows data fields in `<args>` to have defaults and/or [type annotations](#enhanced-type-annotation) attached to them, and supports a starred parameter at the end to collect extra arguments.
+
+Writing constructors for `data` types must be done using the `__new__` method instead of the `__init__` method. For helping to easily write `__new__` methods, Coconut provides the [makedata](#makedata) built-in.
+
+Subclassing `data` types can be done easily by inheriting from them either in another `data` statement or a normal Python `class`. If a normal `class` statement is used, making the new subclass immutable will require adding the line
+```coconut
+__slots__ = ()
+```
+which will need to be put in the subclass body before any method or attribute definitions. If you need to inherit magic methods from a base class in your `data` type, such subclassing is the recommended method, as the `data ... from ...` syntax will ovewrite any magic methods in the base class with magic methods built for the new `data` type.
+
+Compared to [`namedtuple`s](#anonymous-namedtuples), from which `data` types are derived, `data` types:
+
+- use typed equality,
+- support starred, typed, and [pattern-matching](#match-data) arguments, and
+- have special [pattern-matching](#match) behavior.
+
+Like [`namedtuple`s](https://docs.python.org/3/library/collections.html#namedtuple-factory-function-for-tuples-with-named-fields), `data` types also support a variety of extra methods, such as [`._asdict()`](https://docs.python.org/3/library/collections.html#collections.somenamedtuple._asdict) and [`._replace(**kwargs)`](https://docs.python.org/3/library/collections.html#collections.somenamedtuple._replace).
+
+##### Rationale
+
+A mainstay of functional programming that Coconut improves in Python is the use of values, or immutable data types. Immutable data can be very useful because it guarantees that once you have some data it won't change, but in Python creating custom immutable data types is difficult. Coconut makes it very easy by providing `data` blocks.
+
+##### Examples
+
+**Coconut:**
+```coconut
+data vector2(x:int=0, y:int=0):
+    def __abs__(self):
+        return (self.x**2 + self.y**2)**.5
+
+v = vector2(3, 4)
+v |> print  # all data types come with a built-in __repr__
+v |> abs |> print
+v.x = 2  # this will fail because data objects are immutable
+vector2() |> print
+```
+_Showcases the syntax, features, and immutable nature of `data` types, as well as the use of default arguments and type annotations._
+```coconut
+data Empty()
+data Leaf(n)
+data Node(l, r)
+
+def size(Empty()) = 0
+
+@addpattern(size)
+def size(Leaf(n)) = 1
+
+@addpattern(size)
+def size(Node(l, r)) = size(l) + size(r)
+
+size(Node(Empty(), Leaf(10))) == 1
+```
+_Showcases the algebraic nature of `data` types when combined with pattern-matching._
+```coconut
+data vector(*pts):
+    """Immutable arbitrary-length vector."""
+
+    def __abs__(self) =
+        self.pts |> map$(pow$(?, 2)) |> sum |> pow$(?, 0.5)
+
+    def __add__(self, other) =
+        vector(*other_pts) = other
+        assert len(other_pts) == len(self.pts)
+        map((+), self.pts, other_pts) |*> vector
+
+    def __neg__(self) =
+        self.pts |> map$((-)) |*> vector
+
+    def __sub__(self, other) =
+        self + -other
+```
+_Showcases starred `data` declaration._
+
+**Python:**
+_Can't be done without a series of method definitions for each data type. See the compiled code for the Python syntax._
+
+#### `match data`
+
+In addition to normal `data` statements, Coconut also supports pattern-matching data statements that enable the use of Coconut's pattern-matching syntax to define the data type's constructor. Pattern-matching data types look like
+```
+[match] data <name>(<patterns>) [from <base class>]:
+    <body>
+```
+where `<patterns>` are exactly as in [pattern-matching functions](#pattern-matching-functions).
+
+It is important to keep in mind that pattern-matching data types vary from normal data types in a variety of ways. First, like pattern-matching functions, they raise [`MatchError`](#matcherror) instead of `TypeError` when passed the wrong arguments. Second, pattern-matching data types will not do any special handling of starred arguments. Thus,
+```
+data vec(*xs)
+```
+when iterated over will iterate over all the elements of `xs`, but
+```
+match data vec(*xs)
+```
+when iterated over will only give the single element `xs`.
+
+##### Example
+
+**Coconut:**
+```
+data namedpt(name `isinstance` str, x `isinstance` int, y `isinstance` int):
+    def mag(self) = (self.x**2 + self.y**2)**0.5
+```
+
+**Python:**
+_Can't be done without a series of method definitions for each data type. See the compiled code for the Python syntax._
 
 ### `where`
 
@@ -1587,7 +1627,7 @@ _Can't be done without a complicated iterator comprehension in place of the lazy
 
 Coconut supports implicit function application of the form `f x y`, which is compiled to `f(x, y)` (note: **not** `f(x)(y)` as is common in many languages with automatic currying). Implicit function application has a lower precedence than attribute access, slices, normal function calls, etc. but a higher precedence than `await`.
 
-Supported arguments to implicit function application are highly restricted, and must be either variables/attributes or **non-string** constants (e.g. `f x 1` will work but `f x [1]`, `f x (1+2)`, and `f "abc"` will not). Strings are disallowed due to conflicting with [Python's implicit string concatenation](https://stackoverflow.com/questions/18842779/string-concatenation-without-operator). Implicit function application is only intended for simple use cases—for more complex cases, use either standard function application or [pipes](#pipeline).
+Supported arguments to implicit function application are highly restricted, and must be either variables/attributes or **non-string** constants (e.g. `f x 1` will work but `f x [1]`, `f x (1+2)`, and `f "abc"` will not). Strings are disallowed due to conflicting with [Python's implicit string concatenation](https://stackoverflow.com/questions/18842779/string-concatenation-without-operator). Implicit function application is only intended for simple use cases—for more complex cases, use either standard function application or [pipes](#pipes).
 
 ##### Examples
 
@@ -1893,46 +1933,6 @@ addpattern def factorial(n) = n * factorial(n - 1)
 **Python:**
 _Can't be done without a complicated decorator definition and a long series of checks for each pattern-matching. See the compiled code for the Python syntax._
 
-### Infix Functions
-
-Coconut allows for infix function calling, where an expression that evaluates to a function is surrounded by backticks and then can have arguments placed in front of or behind it. Infix calling has a precedence in-between chaining and `None`-coalescing, and is left-associative.
-
-The allowable notations for infix calls are:
-```coconut
-x `f` y  =>  f(x, y)
-`f` x    =>  f(x)
-x `f`    =>  f(x)
-`f`      =>  f()
-```
-Additionally, infix notation supports a lambda as the last argument, despite lambdas having a lower precedence. Thus, ``a `func` b -> c`` is equivalent to `func(a, b -> c)`.
-
-Coconut also supports infix function definition to make defining functions that are intended for infix usage simpler. The syntax for infix function definition is
-```coconut
-def <arg> `<name>` <arg>:
-    <body>
-```
-where `<name>` is the name of the function, the `<arg>`s are the function arguments, and `<body>` is the body of the function. If an `<arg>` includes a default, the `<arg>` must be surrounded in parentheses.
-
-_Note: Infix function definition can be combined with assignment and/or pattern-matching function definition._
-
-##### Rationale
-
-A common idiom in functional programming is to write functions that are intended to behave somewhat like operators, and to call and define them by placing them between their arguments. Coconut's infix syntax makes this possible.
-
-##### Example
-
-**Coconut:**
-```coconut
-def a `mod` b = a % b
-(x `mod` 2) `print`
-```
-
-**Python:**
-```coconut_python
-def mod(a, b): return a % b
-print(mod(x, 2))
-```
-
 ### Explicit Generators
 
 Coconut supports the syntax
@@ -2013,6 +2013,23 @@ print(a, b)
 **Python:**
 _Can't be done without a long series of checks in place of the destructuring assignment statement. See the compiled code for the Python syntax._
 
+### Implicit `pass`
+
+Coconut supports the simple `class name(base)` and `data name(args)` as aliases for `class name(base): pass` and `data name(args): pass`.
+
+##### Example
+
+**Coconut:**
+```coconut
+class Tree
+data Empty from Tree
+data Leaf(item) from Tree
+data Node(left, right) from Tree
+```
+
+**Python:**
+_Can't be done without a series of method definitions for each data type. See the compiled code for the Python syntax._
+
 ### Decorators
 
 Unlike Python, which only supports a single variable or function call in a decorator, Coconut supports any expression as in [PEP 614](https://www.python.org/dev/peps/pep-0614/).
@@ -2083,23 +2100,6 @@ try:
 except (SyntaxError, ValueError) as err:
     handle(err)
 ```
-
-### Implicit `pass`
-
-Coconut supports the simple `class name(base)` and `data name(args)` as aliases for `class name(base): pass` and `data name(args): pass`.
-
-##### Example
-
-**Coconut:**
-```coconut
-class Tree
-data Empty from Tree
-data Leaf(item) from Tree
-data Node(left, right) from Tree
-```
-
-**Python:**
-_Can't be done without a series of method definitions for each data type. See the compiled code for the Python syntax._
 
 ### In-line `global` And `nonlocal` Assignment
 
@@ -2873,19 +2873,18 @@ If `reduce_func` is passed, `collectby(key_func, iterable, reduce_func=reduce_fu
 ```coconut_python
 from collections import defaultdict
 
-def collectby(key_func, iterable, value_func=None, reduce_func=None):
+def collectby(key_func, iterable, value_func=ident, reduce_func=None):
     collection = defaultdict(list) if reduce_func is None else {}
     for item in iterable:
         key = key_func(item)
-        if value_func is not None:
-            item = value_func(item)
+        value = value_func(item)
         if reduce_func is None:
-            collection[key].append(item)
+            collection[key].append(value)
         else:
-            old_item = collection.get(key, sentinel)
-            if old_item is not sentinel:
-                item = reduce_func(old_item, item)
-            collection[key] = item
+            old_value = collection.get(key, sentinel)
+            if old_value is not sentinel:
+                value = reduce_func(old_value, value)
+            collection[key] = value
     return collection
 ```
 
@@ -3073,17 +3072,21 @@ def min_and_max(xs):
 
 ### `flip`
 
-Coconut's `flip` is a higher-order function that, given a function, returns a new function with inverse argument order.
+Coconut's `flip(f, nargs=None)` is a higher-order function that, given a function `f`, returns a new function with reversed argument order. If `nargs` is passed, only the first `nargs` arguments are reversed.
 
 For the binary case, `flip` works as
 ```coconut
-flip(f)(x, y) == f(y, x)
+flip(f, 2)(x, y) == f(y, x)
 ```
-such that `flip` implements the `C` combinator (`flip` in Haskell).
+such that `flip$(?, 2)` implements the `C` combinator (`flip` in Haskell).
 
 In the general case, `flip` is equivalent to a pickleable version of
 ```coconut
-def flip(f) = (*args, **kwargs) -> f(*reversed(args), **kwargs)
+def flip(f, nargs=None) =
+    (*args, **kwargs) -> (
+        f(*args[::-1], **kwargs) if nargs is None
+        else f(*(args[nargs-1::-1] + args[nargs:]), **kwargs)
+    )
 ```
 
 ### `of`
@@ -3108,7 +3111,7 @@ def const(x) = (*args, **kwargs) -> x
 
 Coconut's `ident` is the identity function, generally equivalent to `x -> x`.
 
-`ident` does also accept one keyword-only argument, `side_effect`, which specifies a function to call on the argument before it is returned. Thus, `ident` is effectively equivalent to:
+`ident` also accepts one keyword-only argument, `side_effect`, which specifies a function to call on the argument before it is returned. Thus, `ident` is effectively equivalent to:
 ```coconut
 def ident(x, *, side_effect=None):
     if side_effect is not None:
@@ -3116,7 +3119,7 @@ def ident(x, *, side_effect=None):
     return x
 ```
 
-`ident` is primarily useful when writing in a point-free style (e.g. in combination with [`lift`](#lift)) or for debugging [pipelines](#pipeline) where `ident$(side_effect=print)` can let you see what is being piped.
+`ident` is primarily useful when writing in a point-free style (e.g. in combination with [`lift`](#lift)) or for debugging [pipes](#pipes) where `ident$(side_effect=print)` can let you see what is being piped.
 
 ### `match_if`
 
@@ -3136,7 +3139,7 @@ The actual definition of `match_if` is extremely simple, being defined just as
 ```coconut
 def match_if(obj, predicate) = predicate(obj)
 ```
-which works because Coconut's infix pattern `` pat `op` val `` just calls `op$(val)` on the object being matched to determine if the match succeeds (and matches against `pat` if it does).
+which works because Coconut's infix pattern `` pat `op` val `` just calls `op$(?, val)` on the object being matched to determine if the match succeeds (and matches against `pat` if it does).
 
 ##### Example
 
