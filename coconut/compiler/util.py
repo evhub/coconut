@@ -21,6 +21,8 @@ from coconut.root import *  # NOQA
 
 import sys
 import re
+import ast
+import __future__
 from functools import partial, reduce
 from contextlib import contextmanager
 from pprint import pformat
@@ -964,3 +966,21 @@ def get_highest_parse_loc():
     except Exception as err:
         complain(err)
         return 0
+
+
+def literal_eval(py_code):
+    """Version of ast.literal_eval that attempts to be version-independent."""
+    try:
+        compiled = compile(
+            py_code,
+            "<string>",
+            "eval",
+            (
+                ast.PyCF_ONLY_AST
+                | __future__.unicode_literals.compiler_flag
+                | __future__.division.compiler_flag
+            ),
+        )
+        return ast.literal_eval(compiled)
+    except ValueError:
+        raise CoconutInternalException("failed to literal eval", code)

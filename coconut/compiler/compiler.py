@@ -29,8 +29,6 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 from coconut.root import *  # NOQA
 
 import sys
-import ast
-import __future__
 from contextlib import contextmanager
 from functools import partial
 from collections import defaultdict
@@ -133,6 +131,7 @@ from coconut.compiler.util import (
     join_args,
     parse_where,
     get_highest_parse_loc,
+    literal_eval,
 )
 from coconut.compiler.header import (
     minify_header,
@@ -576,29 +575,16 @@ class Compiler(Grammar):
 
     def literal_eval(self, code):
         """Version of ast.literal_eval that reformats first."""
-        reformatted = self.reformat(code)
-        try:
-            compiled = compile(
-                reformatted,
-                "<string>",
-                "eval",
-                (
-                    ast.PyCF_ONLY_AST
-                    | __future__.unicode_literals.compiler_flag
-                    | __future__.division.compiler_flag
-                ),
-            )
-            return ast.literal_eval(compiled)
-        except ValueError:
-            raise CoconutInternalException("failed to literal eval", code)
+        return literal_eval(self.reformat(code))
 
     def eval_now(self, code):
         """Reformat and evaluate a code snippet and return code for the result."""
+        reformatted = self.reformat(code)
         try:
-            result = self.literal_eval(code)
+            result = literal_eval(reformatted)
         except CoconutInternalException as err:
             complain(err)
-            return code
+            return reformatted
         if result is None or isinstance(result, (bool, int, float, complex)):
             return ascii(result)
         elif isinstance(result, bytes):

@@ -738,14 +738,15 @@ class Grammar(object):
     f_string = Forward()
 
     bit_b = CaselessLiteral("b")
-    raw_r = Optional(CaselessLiteral("r"))
+    raw_r = CaselessLiteral("r")
     unicode_u = CaselessLiteral("u").suppress()
     format_f = CaselessLiteral("f").suppress()
 
-    string = combine(raw_r + string_item)
-    b_string = combine((bit_b + raw_r | raw_r + bit_b) + string_item)
-    u_string_ref = combine((unicode_u + raw_r | raw_r + unicode_u) + string_item)
-    f_string_ref = combine((format_f + raw_r | raw_r + format_f) + string_item)
+    string = combine(Optional(raw_r) + string_item)
+    # Python 2 only supports br"..." not rb"..."
+    b_string = combine((bit_b + Optional(raw_r) | fixto(raw_r + bit_b, "br")) + string_item)
+    u_string_ref = combine((unicode_u + Optional(raw_r) | raw_r + unicode_u) + string_item)
+    f_string_ref = combine((format_f + Optional(raw_r) | raw_r + format_f) + string_item)
     nonbf_string = string | u_string
     nonb_string = nonbf_string | f_string
     any_string = nonb_string | b_string
