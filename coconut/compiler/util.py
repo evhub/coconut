@@ -11,6 +11,13 @@ License: Apache 2.0
 Description: Utilities for use in the compiler.
 """
 
+# Table of Contents:
+#   - Imports
+#   - Computation Graph
+#   - Targets
+#   - Parse Elements
+#   - Utilities
+
 # -----------------------------------------------------------------------------------------------------------------------
 # IMPORTS:
 # -----------------------------------------------------------------------------------------------------------------------

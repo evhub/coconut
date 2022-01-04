@@ -451,13 +451,13 @@ class Compiler(Grammar):
 
     def bind(self):
         """Binds reference objects to the proper parse actions."""
-        # handle endlines, docstrings, names
-        self.endline <<= trace_attach(self.endline_ref, self.endline_handle)
+        # handle docstrings, endlines, names
         self.moduledoc_item <<= trace_attach(self.moduledoc, self.set_moduledoc)
-        self.name <<= trace_attach(self.base_name, self.name_check)
+        self.endline <<= attach(self.endline_ref, self.endline_handle)
+        self.name <<= attach(self.base_name, self.name_check)
 
         # comments are evaluated greedily because we need to know about them even if we're going to suppress them
-        self.comment <<= trace_attach(self.comment_ref, self.comment_handle, greedy=True)
+        self.comment <<= attach(self.comment_ref, self.comment_handle, greedy=True)
 
         # handle all atom + trailers constructs with item_handle
         self.trailer_atom <<= trace_attach(self.trailer_atom_ref, self.item_handle)
@@ -3079,7 +3079,7 @@ __annotations__["{name}"] = {annotation}
         """Handle non-comprehension list literals."""
         return self.testlist_star_expr_handle(original, loc, tokens, is_list=True)
 
-    def dict_literal_handle(self, original, loc, tokens):
+    def dict_literal_handle(self, tokens):
         """Handle {**d1, **d2}."""
         if not tokens:
             return "{}"
@@ -3317,7 +3317,7 @@ for {match_to_var} in {item}:
 
     def warm_up(self):
         """Warm up the compiler by running something through it."""
-        result = self.parse_lenient("")
+        result = self.parse("", self.file_parser, {}, {"header": "none", "initial": "none", "final_endline": False})
         internal_assert(result == "", "compiler warm-up should produce no code; instead got", result)
 
 # end: ENDPOINTS
