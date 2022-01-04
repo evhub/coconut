@@ -982,5 +982,5 @@ def literal_eval(py_code):
             ),
         )
         return ast.literal_eval(compiled)
-    except ValueError:
-        raise CoconutInternalException("failed to literal eval", code)
+    except BaseException:
+        raise CoconutInternalException("failed to literal eval", py_code)
