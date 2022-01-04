@@ -579,12 +579,11 @@ class Compiler(Grammar):
 
     def eval_now(self, code):
         """Reformat and evaluate a code snippet and return code for the result."""
-        reformatted = self.reformat(code)
         try:
-            result = literal_eval(reformatted)
+            result = self.literal_eval(code)
         except CoconutInternalException as err:
             complain(err)
-            return reformatted
+            return code
         if result is None or isinstance(result, (bool, int, float, complex)):
             return ascii(result)
         elif isinstance(result, bytes):
