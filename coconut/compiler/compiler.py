@@ -29,6 +29,8 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 from coconut.root import *  # NOQA
 
 import sys
+import ast
+import __future__
 from contextlib import contextmanager
 from functools import partial
 from collections import defaultdict
@@ -112,6 +114,7 @@ from coconut.compiler.util import (
     rem_comment,
     split_comment,
     attach,
+    trace_attach,
     split_leading_indent,
     split_trailing_indent,
     split_leading_trailing_indent,
@@ -450,90 +453,91 @@ class Compiler(Grammar):
     def bind(self):
         """Binds reference objects to the proper parse actions."""
         # handle endlines, docstrings, names
-        self.endline <<= attach(self.endline_ref, self.endline_handle)
-        self.moduledoc_item <<= attach(self.moduledoc, self.set_moduledoc)
-        self.name <<= attach(self.base_name, self.name_check)
+        self.endline <<= trace_attach(self.endline_ref, self.endline_handle)
+        self.moduledoc_item <<= trace_attach(self.moduledoc, self.set_moduledoc)
+        self.name <<= trace_attach(self.base_name, self.name_check)
 
         # comments are evaluated greedily because we need to know about them even if we're going to suppress them
-        self.comment <<= attach(self.comment_ref, self.comment_handle, greedy=True)
+        self.comment <<= trace_attach(self.comment_ref, self.comment_handle, greedy=True)
 
         # handle all atom + trailers constructs with item_handle
-        self.trailer_atom <<= attach(self.trailer_atom_ref, self.item_handle)
-        self.no_partial_trailer_atom <<= attach(self.no_partial_trailer_atom_ref, self.item_handle)
-        self.simple_assign <<= attach(self.simple_assign_ref, self.item_handle)
+        self.trailer_atom <<= trace_attach(self.trailer_atom_ref, self.item_handle)
+        self.no_partial_trailer_atom <<= trace_attach(self.no_partial_trailer_atom_ref, self.item_handle)
+        self.simple_assign <<= trace_attach(self.simple_assign_ref, self.item_handle)
 
         # abnormally named handlers
-        self.normal_pipe_expr <<= attach(self.normal_pipe_expr_tokens, self.pipe_handle)
-        self.return_typedef <<= attach(self.return_typedef_ref, self.typedef_handle)
+        self.normal_pipe_expr <<= trace_attach(self.normal_pipe_expr_tokens, self.pipe_handle)
+        self.return_typedef <<= trace_attach(self.return_typedef_ref, self.typedef_handle)
 
-        # standard handlers of the form name <<= attach(name_tokens, name_handle) (implies name_tokens is reused)
-        self.function_call <<= attach(self.function_call_tokens, self.function_call_handle)
-        self.testlist_star_namedexpr <<= attach(self.testlist_star_namedexpr_tokens, self.testlist_star_expr_handle)
+        # standard handlers of the form name <<= trace_attach(name_tokens, name_handle) (implies name_tokens is reused)
+        self.function_call <<= trace_attach(self.function_call_tokens, self.function_call_handle)
+        self.testlist_star_namedexpr <<= trace_attach(self.testlist_star_namedexpr_tokens, self.testlist_star_expr_handle)
 
-        # standard handlers of the form name <<= attach(name_ref, name_handle)
-        self.set_literal <<= attach(self.set_literal_ref, self.set_literal_handle)
-        self.set_letter_literal <<= attach(self.set_letter_literal_ref, self.set_letter_literal_handle)
-        self.classdef <<= attach(self.classdef_ref, self.classdef_handle)
-        self.import_stmt <<= attach(self.import_stmt_ref, self.import_handle)
-        self.complex_raise_stmt <<= attach(self.complex_raise_stmt_ref, self.complex_raise_stmt_handle)
-        self.augassign_stmt <<= attach(self.augassign_stmt_ref, self.augassign_stmt_handle)
-        self.kwd_augassign <<= attach(self.kwd_augassign_ref, self.kwd_augassign_handle)
-        self.dict_comp <<= attach(self.dict_comp_ref, self.dict_comp_handle)
-        self.destructuring_stmt <<= attach(self.destructuring_stmt_ref, self.destructuring_stmt_handle)
-        self.full_match <<= attach(self.full_match_ref, self.full_match_handle)
-        self.name_match_funcdef <<= attach(self.name_match_funcdef_ref, self.name_match_funcdef_handle)
-        self.op_match_funcdef <<= attach(self.op_match_funcdef_ref, self.op_match_funcdef_handle)
-        self.yield_from <<= attach(self.yield_from_ref, self.yield_from_handle)
-        self.stmt_lambdef <<= attach(self.stmt_lambdef_ref, self.stmt_lambdef_handle)
-        self.typedef <<= attach(self.typedef_ref, self.typedef_handle)
-        self.typedef_default <<= attach(self.typedef_default_ref, self.typedef_handle)
-        self.unsafe_typedef_default <<= attach(self.unsafe_typedef_default_ref, self.unsafe_typedef_handle)
-        self.typed_assign_stmt <<= attach(self.typed_assign_stmt_ref, self.typed_assign_stmt_handle)
-        self.datadef <<= attach(self.datadef_ref, self.datadef_handle)
-        self.match_datadef <<= attach(self.match_datadef_ref, self.match_datadef_handle)
-        self.with_stmt <<= attach(self.with_stmt_ref, self.with_stmt_handle)
-        self.await_expr <<= attach(self.await_expr_ref, self.await_expr_handle)
-        self.ellipsis <<= attach(self.ellipsis_ref, self.ellipsis_handle)
-        self.cases_stmt <<= attach(self.cases_stmt_ref, self.cases_stmt_handle)
-        self.f_string <<= attach(self.f_string_ref, self.f_string_handle)
-        self.decorators <<= attach(self.decorators_ref, self.decorators_handle)
-        self.unsafe_typedef_or_expr <<= attach(self.unsafe_typedef_or_expr_ref, self.unsafe_typedef_or_expr_handle)
-        self.testlist_star_expr <<= attach(self.testlist_star_expr_ref, self.testlist_star_expr_handle)
-        self.list_expr <<= attach(self.list_expr_ref, self.list_expr_handle)
-        self.dict_literal <<= attach(self.dict_literal_ref, self.dict_literal_handle)
-        self.return_testlist <<= attach(self.return_testlist_ref, self.return_testlist_handle)
-        self.anon_namedtuple <<= attach(self.anon_namedtuple_ref, self.anon_namedtuple_handle)
-        self.base_match_for_stmt <<= attach(self.base_match_for_stmt_ref, self.base_match_for_stmt_handle)
+        # standard handlers of the form name <<= trace_attach(name_ref, name_handle)
+        self.set_literal <<= trace_attach(self.set_literal_ref, self.set_literal_handle)
+        self.set_letter_literal <<= trace_attach(self.set_letter_literal_ref, self.set_letter_literal_handle)
+        self.classdef <<= trace_attach(self.classdef_ref, self.classdef_handle)
+        self.import_stmt <<= trace_attach(self.import_stmt_ref, self.import_handle)
+        self.complex_raise_stmt <<= trace_attach(self.complex_raise_stmt_ref, self.complex_raise_stmt_handle)
+        self.augassign_stmt <<= trace_attach(self.augassign_stmt_ref, self.augassign_stmt_handle)
+        self.kwd_augassign <<= trace_attach(self.kwd_augassign_ref, self.kwd_augassign_handle)
+        self.dict_comp <<= trace_attach(self.dict_comp_ref, self.dict_comp_handle)
+        self.destructuring_stmt <<= trace_attach(self.destructuring_stmt_ref, self.destructuring_stmt_handle)
+        self.full_match <<= trace_attach(self.full_match_ref, self.full_match_handle)
+        self.name_match_funcdef <<= trace_attach(self.name_match_funcdef_ref, self.name_match_funcdef_handle)
+        self.op_match_funcdef <<= trace_attach(self.op_match_funcdef_ref, self.op_match_funcdef_handle)
+        self.yield_from <<= trace_attach(self.yield_from_ref, self.yield_from_handle)
+        self.stmt_lambdef <<= trace_attach(self.stmt_lambdef_ref, self.stmt_lambdef_handle)
+        self.typedef <<= trace_attach(self.typedef_ref, self.typedef_handle)
+        self.typedef_default <<= trace_attach(self.typedef_default_ref, self.typedef_handle)
+        self.unsafe_typedef_default <<= trace_attach(self.unsafe_typedef_default_ref, self.unsafe_typedef_handle)
+        self.typed_assign_stmt <<= trace_attach(self.typed_assign_stmt_ref, self.typed_assign_stmt_handle)
+        self.datadef <<= trace_attach(self.datadef_ref, self.datadef_handle)
+        self.match_datadef <<= trace_attach(self.match_datadef_ref, self.match_datadef_handle)
+        self.with_stmt <<= trace_attach(self.with_stmt_ref, self.with_stmt_handle)
+        self.await_expr <<= trace_attach(self.await_expr_ref, self.await_expr_handle)
+        self.ellipsis <<= trace_attach(self.ellipsis_ref, self.ellipsis_handle)
+        self.cases_stmt <<= trace_attach(self.cases_stmt_ref, self.cases_stmt_handle)
+        self.f_string <<= trace_attach(self.f_string_ref, self.f_string_handle)
+        self.decorators <<= trace_attach(self.decorators_ref, self.decorators_handle)
+        self.unsafe_typedef_or_expr <<= trace_attach(self.unsafe_typedef_or_expr_ref, self.unsafe_typedef_or_expr_handle)
+        self.testlist_star_expr <<= trace_attach(self.testlist_star_expr_ref, self.testlist_star_expr_handle)
+        self.list_expr <<= trace_attach(self.list_expr_ref, self.list_expr_handle)
+        self.dict_literal <<= trace_attach(self.dict_literal_ref, self.dict_literal_handle)
+        self.return_testlist <<= trace_attach(self.return_testlist_ref, self.return_testlist_handle)
+        self.anon_namedtuple <<= trace_attach(self.anon_namedtuple_ref, self.anon_namedtuple_handle)
+        self.base_match_for_stmt <<= trace_attach(self.base_match_for_stmt_ref, self.base_match_for_stmt_handle)
+        self.string_atom <<= trace_attach(self.string_atom_ref, self.string_atom_handle)
 
         # handle normal and async function definitions
-        self.decoratable_normal_funcdef_stmt <<= attach(
+        self.decoratable_normal_funcdef_stmt <<= trace_attach(
             self.decoratable_normal_funcdef_stmt_ref,
             self.decoratable_funcdef_stmt_handle,
         )
-        self.decoratable_async_funcdef_stmt <<= attach(
+        self.decoratable_async_funcdef_stmt <<= trace_attach(
             self.decoratable_async_funcdef_stmt_ref,
             partial(self.decoratable_funcdef_stmt_handle, is_async=True),
         )
 
         # these handlers just do strict/target checking
-        self.u_string <<= attach(self.u_string_ref, self.u_string_check)
-        self.nonlocal_stmt <<= attach(self.nonlocal_stmt_ref, self.nonlocal_check)
-        self.star_assign_item <<= attach(self.star_assign_item_ref, self.star_assign_item_check)
-        self.classic_lambdef <<= attach(self.classic_lambdef_ref, self.lambdef_check)
-        self.star_sep_arg <<= attach(self.star_sep_arg_ref, self.star_sep_check)
-        self.star_sep_vararg <<= attach(self.star_sep_vararg_ref, self.star_sep_check)
-        self.slash_sep_arg <<= attach(self.slash_sep_arg_ref, self.slash_sep_check)
-        self.slash_sep_vararg <<= attach(self.slash_sep_vararg_ref, self.slash_sep_check)
-        self.endline_semicolon <<= attach(self.endline_semicolon_ref, self.endline_semicolon_check)
-        self.async_stmt <<= attach(self.async_stmt_ref, self.async_stmt_check)
-        self.async_comp_for <<= attach(self.async_comp_for_ref, self.async_comp_check)
-        self.namedexpr <<= attach(self.namedexpr_ref, self.namedexpr_check)
-        self.new_namedexpr <<= attach(self.new_namedexpr_ref, self.new_namedexpr_check)
-        self.match_dotted_name_const <<= attach(self.match_dotted_name_const_ref, self.match_dotted_name_const_check)
-        self.except_star_clause <<= attach(self.except_star_clause_ref, self.except_star_clause_check)
+        self.u_string <<= trace_attach(self.u_string_ref, self.u_string_check)
+        self.nonlocal_stmt <<= trace_attach(self.nonlocal_stmt_ref, self.nonlocal_check)
+        self.star_assign_item <<= trace_attach(self.star_assign_item_ref, self.star_assign_item_check)
+        self.classic_lambdef <<= trace_attach(self.classic_lambdef_ref, self.lambdef_check)
+        self.star_sep_arg <<= trace_attach(self.star_sep_arg_ref, self.star_sep_check)
+        self.star_sep_vararg <<= trace_attach(self.star_sep_vararg_ref, self.star_sep_check)
+        self.slash_sep_arg <<= trace_attach(self.slash_sep_arg_ref, self.slash_sep_check)
+        self.slash_sep_vararg <<= trace_attach(self.slash_sep_vararg_ref, self.slash_sep_check)
+        self.endline_semicolon <<= trace_attach(self.endline_semicolon_ref, self.endline_semicolon_check)
+        self.async_stmt <<= trace_attach(self.async_stmt_ref, self.async_stmt_check)
+        self.async_comp_for <<= trace_attach(self.async_comp_for_ref, self.async_comp_check)
+        self.namedexpr <<= trace_attach(self.namedexpr_ref, self.namedexpr_check)
+        self.new_namedexpr <<= trace_attach(self.new_namedexpr_ref, self.new_namedexpr_check)
+        self.match_dotted_name_const <<= trace_attach(self.match_dotted_name_const_ref, self.match_dotted_name_const_check)
+        self.except_star_clause <<= trace_attach(self.except_star_clause_ref, self.except_star_clause_check)
         # these checking handlers need to be greedy since they can be suppressed
-        self.matrix_at <<= attach(self.matrix_at_ref, self.matrix_at_check, greedy=True)
-        self.match_check_equals <<= attach(self.match_check_equals_ref, self.match_check_equals_check, greedy=True)
+        self.matrix_at <<= trace_attach(self.matrix_at_ref, self.matrix_at_check, greedy=True)
+        self.match_check_equals <<= trace_attach(self.match_check_equals_ref, self.match_check_equals_check, greedy=True)
 
     def copy_skips(self):
         """Copy the line skips."""
@@ -570,13 +574,35 @@ class Compiler(Grammar):
         else:
             return (self.reformat(snip),) + tuple(len(self.reformat(snip[:index])) for index in indices)
 
+    def literal_eval(self, code):
+        """Version of ast.literal_eval that reformats first."""
+        reformatted = self.reformat(code)
+        try:
+            compiled = compile(
+                reformatted,
+                "<string>",
+                "eval",
+                (
+                    ast.PyCF_ONLY_AST
+                    | __future__.unicode_literals.compiler_flag
+                    | __future__.division.compiler_flag
+                ),
+            )
+            return ast.literal_eval(compiled)
+        except ValueError:
+            raise CoconutInternalException("failed to literal eval", code)
+
     def eval_now(self, code):
         """Reformat and evaluate a code snippet and return code for the result."""
-        result = eval(self.reformat(code), {})
+        try:
+            result = self.literal_eval(code)
+        except CoconutInternalException as err:
+            complain(err)
+            return code
         if result is None or isinstance(result, (bool, int, float, complex)):
             return ascii(result)
         elif isinstance(result, bytes):
-            return "b" + self.wrap_str_of(result)
+            return self.wrap_str_of(result, expect_bytes=True)
         elif isinstance(result, str):
             return self.wrap_str_of(result)
         else:
@@ -634,11 +660,14 @@ class Compiler(Grammar):
             strchar *= 3
         return strwrapper + self.add_ref("str", (text, strchar)) + unwrapper
 
-    def wrap_str_of(self, text):
+    def wrap_str_of(self, text, expect_bytes=False):
         """Wrap a string of a string."""
         text_repr = ascii(text)
+        if expect_bytes:
+            internal_assert(text_repr[0] == "b", "expected bytes but got str", text)
+            text_repr = text_repr[1:]
         internal_assert(text_repr[0] == text_repr[-1] and text_repr[0] in ("'", '"'), "cannot wrap str of", text)
-        return self.wrap_str(text_repr[1:-1], text_repr[-1])
+        return ("b" if expect_bytes else "") + self.wrap_str(text_repr[1:-1], text_repr[-1])
 
     def wrap_passthrough(self, text, multiline=True):
         """Wrap a passthrough."""
@@ -1176,6 +1205,7 @@ class Compiler(Grammar):
         for line in logical_lines(inputstring):
             add_one_to_ln = False
             try:
+
                 has_ln_comment = line.endswith(lnwrapper)
                 if has_ln_comment:
                     line, index = line[:-1].rsplit("#", 1)
@@ -1189,14 +1219,17 @@ class Compiler(Grammar):
                     line += self.comments.get(ln, "")
                 if not reformatting and line.rstrip() and not line.lstrip().startswith("#"):
                     line += self.ln_comment(ln)
+
             except CoconutInternalException as err:
-                complain(err)
+                if not reformatting:
+                    complain(err)
+
             out.append(line)
             if add_one_to_ln and ln <= self.num_lines - 1:
                 ln += 1
         return "\n".join(out)
 
-    def passthrough_repl(self, inputstring, **kwargs):
+    def passthrough_repl(self, inputstring, reformatting=False, **kwargs):
         """Add back passthroughs."""
         out = []
         index = None
@@ -1222,15 +1255,17 @@ class Compiler(Grammar):
                         out.append(c)
 
             except CoconutInternalException as err:
-                complain(err)
+                if not reformatting:
+                    complain(err)
                 if index is not None:
                     out.append(index)
                     index = None
-                out.append(c)
+                if c is not None:
+                    out.append(c)
 
         return "".join(out)
 
-    def str_repl(self, inputstring, **kwargs):
+    def str_repl(self, inputstring, reformatting=False, **kwargs):
         """Add back strings."""
         out = []
         comment = None
@@ -1270,14 +1305,16 @@ class Compiler(Grammar):
                         out.append(c)
 
             except CoconutInternalException as err:
-                complain(err)
+                if not reformatting:
+                    complain(err)
                 if comment is not None:
                     out.append(comment)
                     comment = None
                 if string is not None:
                     out.append(string)
                     string = None
-                out.append(c)
+                if c is not None:
+                    out.append(c)
 
         return "".join(out)
 
@@ -3125,6 +3162,18 @@ for {match_to_var} in {item}:
             match_error=match_error,
             body=body,
         )
+
+    def string_atom_handle(self, tokens):
+        """Handle concatenation of string literals."""
+        internal_assert(len(tokens) >= 1, "invalid string literal tokens", tokens)
+        if any(s.endswith(")") for s in tokens):  # has .format() calls
+            return "(" + " + ".join(tokens) + ")"
+        elif any(s.startswith(("f", "rf")) for s in tokens):  # has f-strings
+            return " ".join(tokens)
+        else:
+            return self.eval_now(" ".join(tokens))
+
+    string_atom_handle.ignore_one_token = True
 
 # end: COMPILER HANDLERS
 # -----------------------------------------------------------------------------------------------------------------------

@@ -57,6 +57,7 @@ from coconut.terminal import (
     logger,
     complain,
     internal_assert,
+    trace,
 )
 from coconut.constants import (
     CPYTHON,
@@ -277,6 +278,11 @@ def attach(item, action, ignore_no_tokens=None, ignore_one_token=None, ignore_to
             kwargs["ignore_one_token"] = ignore_one_token
         action = partial(ComputationNode, action, **kwargs)
     return add_action(item, action)
+
+
+def trace_attach(*args, **kwargs):
+    """trace_attach = trace .. attach"""
+    return trace(attach(*args, **kwargs))
 
 
 def final_evaluate_tokens(tokens):
@@ -599,6 +605,36 @@ def tokenlist(item, sep, suppress=True, allow_trailing=True, at_least_two=False)
     if suppress:
         sep = sep.suppress()
     out = item + (OneOrMore if at_least_two else ZeroOrMore)(sep + item)
+    if allow_trailing:
+        out += Optional(sep)
+    return out
+
+
+def interleaved_tokenlist(required_item, other_item, sep, allow_trailing=False, at_least_two=False):
+    """Create a grammar to match interleaved required_items and other_items,
+    where required_item must show up at least once."""
+    sep = sep.suppress()
+    if at_least_two:
+        out = (
+            # required sep other (sep other)*
+            Group(required_item)
+            + Group(OneOrMore(sep + other_item))
+            # other (sep other)* sep required (sep required)*
+            | Group(other_item + ZeroOrMore(sep + other_item))
+            + Group(OneOrMore(sep + required_item))
+            # required sep required (sep required)*
+            | Group(required_item + OneOrMore(sep + required_item))
+        )
+    else:
+        out = (
+            Optional(Group(OneOrMore(other_item + sep)))
+            + Group(required_item + ZeroOrMore(sep + required_item))
+            + Optional(Group(OneOrMore(sep + other_item)))
+        )
+    out += ZeroOrMore(
+        Group(OneOrMore(sep + required_item))
+        | Group(OneOrMore(sep + other_item)),
+    )
     if allow_trailing:
         out += Optional(sep)
     return out

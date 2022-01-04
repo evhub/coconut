@@ -22,6 +22,7 @@ from coconut.root import *  # NOQA
 from contextlib import contextmanager
 from collections import OrderedDict
 
+from coconut.util import noop_ctx
 from coconut.terminal import (
     internal_assert,
     logger,
@@ -102,13 +103,12 @@ class Matcher(object):
     )
     matchers = {
         "dict": lambda self: self.match_dict,
-        "iter": lambda self: self.match_iterator,
-        "series": lambda self: self.match_sequence,
-        "rseries": lambda self: self.match_rsequence,
-        "mseries": lambda self: self.match_msequence,
+        "sequence": lambda self: self.match_sequence,
+        "implicit_tuple": lambda self: self.match_implicit_tuple,
+        "lazy": lambda self: self.match_lazy,
+        "iter": lambda self: self.match_iter,
         "string": lambda self: self.match_string,
-        "rstring": lambda self: self.match_rstring,
-        "mstring": lambda self: self.match_mstring,
+        "star": lambda self: self.match_star,
         "const": lambda self: self.match_const,
         "is": lambda self: self.match_is,
         "var": lambda self: self.match_var,
@@ -120,8 +120,6 @@ class Matcher(object):
         "as": lambda self: self.match_as,
         "and": lambda self: self.match_and,
         "or": lambda self: self.match_or,
-        "star": lambda self: self.match_star,
-        "implicit_tuple": lambda self: self.match_implicit_tuple,
         "view": lambda self: self.match_view,
         "infix": lambda self: self.match_infix,
         "isinstance_is": lambda self: self.match_isinstance_is,
@@ -254,6 +252,15 @@ class Matcher(object):
         finally:
             self.decrement(by)
 
+    @contextmanager
+    def down_to(self, pos):
+        orig_pos = self.position
+        self.set_position(max(orig_pos, pos))
+        try:
+            yield
+        finally:
+            self.set_position(orig_pos)
+
     def get_temp_var(self):
         """Gets the next match_temp var."""
         return self.comp.get_temp_var("match_temp")
@@ -264,7 +271,7 @@ class Matcher(object):
 
     def register_name(self, name, value):
         """Register a new name and return its name set var."""
-        self.names[name] = value
+        self.names[name] = (self.position, value)
         if self.name_list is not None and name not in self.name_list:
             self.name_list.append(name)
         return self.get_set_name_var(name)
@@ -275,9 +282,13 @@ class Matcher(object):
         if varname == wildcard and not bind_wildcard:
             return
         if varname in self.parent_names:
-            self.add_check(self.parent_names[varname] + " == " + item)
+            var_pos, var_val = self.parent_names[varname]
+            # no need to increment if it's from the parent
+            self.add_check(var_val + " == " + item)
         elif varname in self.names:
-            self.add_check(self.names[varname] + " == " + item)
+            var_pos, var_val = self.names[varname]
+            with self.down_to(var_pos):
+                self.add_check(var_val + " == " + item)
         else:
             set_name_var = self.register_name(varname, item)
             self.add_def(set_name_var + " = " + item)
@@ -458,179 +469,243 @@ class Matcher(object):
 
         if rest is not None and rest != wildcard:
             match_keys = [k for k, v in matches]
+            rest_item = (
+                "dict((k, v) for k, v in "
+                + item + ".items() if k not in set(("
+                + ", ".join(match_keys) + ("," if len(match_keys) == 1 else "")
+                + ")))"
+            )
             with self.down_a_level():
-                self.add_def(
-                    rest + " = dict((k, v) for k, v in "
-                    + item + ".items() if k not in set(("
-                    + ", ".join(match_keys) + ("," if len(match_keys) == 1 else "")
-                    + ")))",
-                )
+                self.match_var([rest], rest_item)
 
-    def assign_to_series(self, name, series_type, item):
-        """Assign name to item converted to the given series_type."""
-        if series_type == "[":
-            self.add_def(name + " = _coconut.list(" + item + ")")
-        elif series_type == "(":
-            self.add_def(name + " = _coconut.tuple(" + item + ")")
+    def match_to_sequence(self, match, sequence_type, item):
+        """Match match against item converted to the given sequence_type."""
+        if sequence_type == "[":
+            self.match(match, "_coconut.list(" + item + ")")
+        elif sequence_type == "(":
+            self.match(match, "_coconut.tuple(" + item + ")")
+        elif sequence_type in (None, '"', 'b"', "(|"):
+            # if we know item is already the desired type, no conversion is needed
+            self.match(match, item)
+        elif sequence_type is False:
+            raise CoconutInternalException("attempted to match against sequence when seq_type was marked as False", (match, item))
         else:
-            raise CoconutInternalException("invalid series match type", series_type)
+            raise CoconutInternalException("invalid sequence match type", sequence_type)
+
+    def proc_sequence_match(self, tokens, iter_match=False):
+        """Processes sequence match tokens."""
+        seq_groups = []
+        seq_type = None
+        for group in tokens:
+            if "capture" in group:
+                group_type = "capture"
+                if len(group) > 1:
+                    raise CoconutDeferredSyntaxError("sequence/iterable patterns cannot contain multiple consecutive arbitrary-length captures", self.loc)
+                group_contents = group[0]
+            elif "literal" in group:
+                group_type = "elem_matches"
+                group_contents = []
+                for seq_literal in group:
+                    got_seq_type, matches = seq_literal
+                    if not iter_match:
+                        if seq_type is None:
+                            seq_type = got_seq_type
+                        elif got_seq_type != seq_type:
+                            raise CoconutDeferredSyntaxError("list literals and tuple literals cannot be mixed in sequence patterns", self.loc)
+                    group_contents.extend(matches)
+            elif "elem" in group:
+                group_type = "elem_matches"
+                group_contents = group
+            elif "string" in group:
+                group_type = "string"
+                for str_literal in group:
+                    if str_literal.startswith("b"):
+                        got_seq_type = 'b"'
+                    else:
+                        got_seq_type = '"'
+                    if seq_type is None:
+                        seq_type = got_seq_type
+                    elif got_seq_type != seq_type:
+                        raise CoconutDeferredSyntaxError("string literals and byte literals cannot be mixed in string patterns", self.loc)
+                if len(group) == 1:
+                    str_item = group[0]
+                else:
+                    str_item = self.comp.eval_now(" ".join(group))
+                group_contents = (str_item, len(self.comp.literal_eval(str_item)))
+            else:
+                raise CoconutInternalException("invalid sequence match group", group)
+            seq_groups.append((group_type, group_contents))
+        return seq_type, seq_groups
+
+    def handle_sequence(self, seq_type, seq_groups, item, iter_match=False):
+        """Handle a processed sequence match."""
+        # length check
+        if not iter_match:
+            min_len = 0
+            bounded = True
+            for gtype, gcontents in seq_groups:
+                if gtype == "capture":
+                    bounded = False
+                elif gtype == "elem_matches":
+                    min_len += len(gcontents)
+                elif gtype == "string":
+                    str_item, str_len = gcontents
+                    min_len += str_len
+                else:
+                    raise CoconutInternalException("invalid sequence match group type", gtype)
+            max_len = min_len if bounded else None
+            self.check_len_in(min_len, max_len, item)
+
+        # match head
+        start_ind = 0
+        iterable_var = None
+        if seq_groups[0][0] == "elem_matches":
+            _, matches = seq_groups.pop(0)
+            if not iter_match:
+                self.match_all_in(matches, item)
+            elif matches:
+                iterable_var = self.get_temp_var()
+                self.add_def(iterable_var + " = _coconut.iter(" + item + ")")
+                head_var = self.get_temp_var()
+                self.add_def(head_var + " = _coconut.tuple(_coconut_iter_getitem(" + iterable_var + ", _coconut.slice(None, " + str(len(matches)) + ")))")
+                with self.down_a_level():
+                    self.add_check("_coconut.len(" + head_var + ") == " + str(len(matches)))
+                    self.match_all_in(matches, head_var)
+            start_ind += len(matches)
+        elif seq_groups[0][0] == "string":
+            internal_assert(not iter_match, "cannot be both string and iter match")
+            _, (str_item, str_len) = seq_groups.pop(0)
+            self.add_check(item + ".startswith(" + str_item + ")")
+            start_ind += str_len
+        if not seq_groups:
+            return
+
+        # match tail
+        last_ind = -1
+        if seq_groups[-1][0] == "elem_matches":
+            internal_assert(not iter_match, "iter_match=True should not be passed for tail patterns")
+            _, matches = seq_groups.pop()
+            for i, match in enumerate(matches):
+                self.match(match, item + "[-" + str(len(matches) - i) + "]")
+            last_ind -= len(matches)
+        elif seq_groups[-1][0] == "string":
+            internal_assert(not iter_match, "cannot be both string and iter match")
+            _, (str_item, str_len) = seq_groups.pop()
+            self.add_check(item + ".endswith(" + str_item + ")")
+            last_ind -= str_len
+        if not seq_groups:
+            return
+
+        # extract middle
+        if iterable_var is None:
+            start_ind_str = "" if start_ind == 0 else str(start_ind)
+            last_ind_str = "" if last_ind == -1 else str(last_ind + 1)
+            if start_ind_str or last_ind_str:
+                mid_item = item + "[" + start_ind_str + ":" + last_ind_str + "]"
+            else:
+                mid_item = item
+        else:
+            mid_item = iterable_var
+
+        # handle single-capture middle
+        if len(seq_groups) == 1:
+            gtype, match = seq_groups[0]
+            internal_assert(gtype == "capture", "invalid sequence match middle groups", seq_groups)
+            with (self.down_a_level() if iterable_var is not None else noop_ctx()):
+                self.match_to_sequence(match, seq_type, mid_item)
+            return
+        internal_assert(len(seq_groups) >= 3, "invalid sequence match middle groups", seq_groups)
+
+        # raise on unsupported search matches
+        raise CoconutDeferredSyntaxError("nonlinear sequence search patterns are not supported", self.loc)
+
+    def match_sequence(self, tokens, item):
+        """Matches an arbitrary sequence pattern."""
+        internal_assert(len(tokens) >= 1, "invalid sequence match tokens", tokens)
+
+        # abc check
+        self.add_check("_coconut.isinstance(" + item + ", _coconut.abc.Sequence)")
+
+        # extract groups
+        seq_type, seq_groups = self.proc_sequence_match(tokens)
+
+        # match sequence
+        self.handle_sequence(seq_type, seq_groups, item)
+
+    def match_lazy(self, tokens, item):
+        """Matches lazy lists."""
+        (seq_type, matches), = tokens
+        internal_assert(seq_type == "(|", "invalid lazy list match tokens", tokens)
+
+        # abc check
+        self.add_check("_coconut.isinstance(" + item + ", _coconut.abc.Iterable)")
+
+        # match sequence
+        temp_item_var = self.get_temp_var()
+        self.add_def(temp_item_var + " = _coconut.tuple(" + item + ")")
+        with self.down_a_level():
+            self.handle_sequence(False, [["elem_matches", matches]], temp_item_var)
 
     def match_implicit_tuple(self, tokens, item):
         """Matches an implicit tuple."""
-        return self.match_sequence(["(", tokens], item)
+        internal_assert(len(tokens) >= 1, "invalid implicit tuple tokens", tokens)
 
-    def match_sequence(self, tokens, item):
-        """Matches a sequence."""
-        internal_assert(2 <= len(tokens) <= 3, "invalid sequence match tokens", tokens)
-        tail = None
-        if len(tokens) == 2:
-            series_type, matches = tokens
-        else:
-            series_type, matches, tail = tokens
-        self.add_check("_coconut.isinstance(" + item + ", _coconut.abc.Sequence)")
-        if tail is None:
-            self.add_check("_coconut.len(" + item + ") == " + str(len(matches)))
-        else:
-            self.add_check("_coconut.len(" + item + ") >= " + str(len(matches)))
-            if tail != wildcard:
-                if len(matches) > 0:
-                    splice = "[" + str(len(matches)) + ":]"
-                else:
-                    splice = ""
-                self.assign_to_series(tail, series_type, item + splice)
-        self.match_all_in(matches, item)
-
-    def match_iterator(self, tokens, item):
-        """Matches a lazy list or a chain."""
-        internal_assert(2 <= len(tokens) <= 3, "invalid iterator match tokens", tokens)
-        tail = None
-        if len(tokens) == 2:
-            _, matches = tokens
-        else:
-            _, matches, tail = tokens
+        # abc check
         self.add_check("_coconut.isinstance(" + item + ", _coconut.abc.Iterable)")
-        if tail is None:
-            itervar = self.get_temp_var()
-            self.add_def(itervar + " = _coconut.tuple(" + item + ")")
-        elif matches:
-            itervar = self.get_temp_var()
-            if tail == wildcard:
-                tail = item
-            else:
-                self.add_def(tail + " = _coconut.iter(" + item + ")")
-            self.add_def(itervar + " = _coconut.tuple(_coconut_iter_getitem(" + tail + ", _coconut.slice(None, " + str(len(matches)) + ")))")
-        else:
-            itervar = None
-            if tail != wildcard:
-                self.add_def(tail + " = " + item)
-        if itervar is not None:
-            with self.down_a_level():
-                self.add_check("_coconut.len(" + itervar + ") == " + str(len(matches)))
-                self.match_all_in(matches, itervar)
+
+        # match sequence
+        temp_item_var = self.get_temp_var()
+        self.add_def(temp_item_var + " = _coconut.tuple(" + item + ")")
+        with self.down_a_level():
+            self.handle_sequence(False, [["elem_matches", tokens]], temp_item_var)
 
     def match_star(self, tokens, item):
         """Matches starred assignment."""
-        internal_assert(1 <= len(tokens) <= 3, "invalid star match tokens", tokens)
-        head_matches, last_matches = None, None
-        if len(tokens) == 1:
-            middle = tokens[0]
-        elif len(tokens) == 2:
-            if isinstance(tokens[0], str):
-                middle, last_matches = tokens
-            else:
-                head_matches, middle = tokens
-        else:
-            head_matches, middle, last_matches = tokens
+        internal_assert(len(tokens) >= 1, "invalid star match tokens", tokens)
+
+        # abc check
         self.add_check("_coconut.isinstance(" + item + ", _coconut.abc.Iterable)")
-        if head_matches is None and last_matches is None:
-            if middle != wildcard:
-                self.add_def(middle + " = _coconut.list(" + item + ")")
-        else:
-            itervar = self.get_temp_var()
-            self.add_def(itervar + " = _coconut.list(" + item + ")")
-            with self.down_a_level():
-                req_length = (len(head_matches) if head_matches is not None else 0) + (len(last_matches) if last_matches is not None else 0)
-                self.add_check("_coconut.len(" + itervar + ") >= " + str(req_length))
-                if middle != wildcard:
-                    head_splice = str(len(head_matches)) if head_matches is not None else ""
-                    last_splice = "-" + str(len(last_matches)) if last_matches is not None else ""
-                    self.add_def(middle + " = " + itervar + "[" + head_splice + ":" + last_splice + "]")
-                if head_matches is not None:
-                    self.match_all_in(head_matches, itervar)
-                if last_matches is not None:
-                    for x in range(1, len(last_matches) + 1):
-                        self.match(last_matches[-x], itervar + "[-" + str(x) + "]")
 
-    def match_rsequence(self, tokens, item):
-        """Matches a reverse sequence."""
-        front, series_type, matches = tokens
-        self.add_check("_coconut.isinstance(" + item + ", _coconut.abc.Sequence)")
-        self.add_check("_coconut.len(" + item + ") >= " + str(len(matches)))
-        if front != wildcard:
-            if len(matches):
-                splice = "[:" + str(-len(matches)) + "]"
-            else:
-                splice = ""
-            self.assign_to_series(front, series_type, item + splice)
-        for i, match in enumerate(matches):
-            self.match(match, item + "[" + str(i - len(matches)) + "]")
+        # extract groups
+        _, seq_groups = self.proc_sequence_match(tokens)
 
-    def match_msequence(self, tokens, item):
-        """Matches a middle sequence."""
-        series_type, head_matches, middle, _, last_matches = tokens
-        self.add_check("_coconut.isinstance(" + item + ", _coconut.abc.Sequence)")
-        self.add_check("_coconut.len(" + item + ") >= " + str(len(head_matches) + len(last_matches)))
-        if middle != wildcard:
-            if len(head_matches) and len(last_matches):
-                splice = "[" + str(len(head_matches)) + ":" + str(-len(last_matches)) + "]"
-            elif len(head_matches):
-                splice = "[" + str(len(head_matches)) + ":]"
-            elif len(last_matches):
-                splice = "[:" + str(-len(last_matches)) + "]"
-            else:
-                splice = ""
-            self.assign_to_series(middle, series_type, item + splice)
-        self.match_all_in(head_matches, item)
-        for i, match in enumerate(last_matches):
-            self.match(match, item + "[" + str(i - len(last_matches)) + "]")
+        # match sequence
+        temp_item_var = self.get_temp_var()
+        self.add_def(temp_item_var + " = _coconut.list(" + item + ")")
+        with self.down_a_level():
+            self.handle_sequence(None, seq_groups, temp_item_var)
 
     def match_string(self, tokens, item):
-        """Match prefix string."""
-        prefix, name = tokens
-        return self.match_mstring((prefix, name, None), item)
+        """Match string sequence patterns."""
+        seq_type, seq_groups = self.proc_sequence_match(tokens)
 
-    def match_rstring(self, tokens, item):
-        """Match suffix string."""
-        name, suffix = tokens
-        return self.match_mstring((None, name, suffix), item)
-
-    def match_mstring(self, tokens, item):
-        """Match prefix and suffix string."""
-        prefix, name, suffix = tokens
-        if prefix is None:
-            use_bytes = suffix.startswith("b")
-        elif suffix is None:
-            use_bytes = prefix.startswith("b")
-        elif prefix.startswith("b") and suffix.startswith("b"):
-            use_bytes = True
-        elif prefix.startswith("b") or suffix.startswith("b"):
-            raise CoconutDeferredSyntaxError("string literals and byte literals cannot be added in patterns", self.loc)
-        else:
-            use_bytes = False
-        if use_bytes:
+        # type check
+        if seq_type == '"':
+            self.add_check("_coconut.isinstance(" + item + ", _coconut.str)")
+        elif seq_type == 'b"':
             self.add_check("_coconut.isinstance(" + item + ", _coconut.bytes)")
         else:
-            self.add_check("_coconut.isinstance(" + item + ", _coconut.str)")
-        if prefix is not None:
-            self.add_check(item + ".startswith(" + prefix + ")")
-        if suffix is not None:
-            self.add_check(item + ".endswith(" + suffix + ")")
-        if name != wildcard:
-            self.add_def(
-                name + " = " + item + "["
-                + ("" if prefix is None else self.comp.eval_now("len(" + prefix + ")")) + ":"
-                + ("" if suffix is None else self.comp.eval_now("-len(" + suffix + ")")) + "]",
-            )
+            raise CoconutInternalException("invalid string match type", seq_type)
+
+        # match sequence
+        self.handle_sequence(seq_type, seq_groups, item)
+
+    def match_iter(self, tokens, item):
+        """Matches a chain."""
+        internal_assert(len(tokens) >= 1, "invalid iterable match tokens", tokens)
+
+        # abc check
+        self.add_check("_coconut.isinstance(" + item + ", _coconut.abc.Iterable)")
+
+        # match iterable
+        _, seq_groups = self.proc_sequence_match(tokens, iter_match=True)
+        if seq_groups[-1][0] == "elem_matches":  # tail pattern
+            temp_item_var = self.get_temp_var()
+            self.add_def(temp_item_var + " = _coconut.tuple(" + item + ")")
+            with self.down_a_level():
+                self.handle_sequence(None, seq_groups, temp_item_var)
+        else:
+            self.handle_sequence(None, seq_groups, item, iter_match=True)
 
     def match_const(self, tokens, item):
         """Matches an equality check."""
@@ -954,7 +1029,7 @@ if {check_var}:
 
         # commit variable definitions
         name_set_code = []
-        for name, val in self.names.items():
+        for name, (pos, val) in self.names.items():
             name_set_code.append(
                 handle_indentation(
                     """

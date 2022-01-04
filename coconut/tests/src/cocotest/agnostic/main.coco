@@ -1035,6 +1035,35 @@ def main_test() -> bool:
     assert range(5) |> lift(zip, ident, ident) |> map$(ident ..*> (+)) |> list == [0, 2, 4, 6, 8]
     astr: str? = None
     assert astr?.join([]) is None
+    match (x, {"a": 1, **x}) in ({"b": 10}, {"a": 1, "b": 2}):
+        assert False
+    match (x, [1] + x) in ([10], [1, 2]):
+        assert False
+    ((.-1) -> (x and 10)) or x = 10
+    assert x == 10
+    match "abc" + x + "bcd" in "abcd":
+        assert False
+    match a, b, *c in (|1, 2, 3, 4|):
+        assert (a, b, c) == (1, 2, [3, 4])
+        assert c `isinstance` list
+    else:
+        assert False
+    match a, b in (|1, 2|):
+        assert (a, b) == (1, 2)
+    else:
+        assert False
+    init :: (3,) = (|1, 2, 3|)
+    assert init == (1, 2)
+    assert "a\"z""a"'"'"z" == 'a"za"z'
+    assert b"ab" b"cd" == b"abcd" == rb"ab" br"cd"
+    b"a" + b"c" = b"ac"
+    b"a" b"c" = b"ac"
+    (1, *xs, 4) = (|1, 2, 3, 4|)
+    assert xs == [2, 3]
+    assert xs `isinstance` list
+    (1, *(2, 3), 4) = (|1, 2, 3, 4|)
+    assert f"a" r"b" fr"c" rf"d" == "abcd"
+    assert "a" fr"b" == "ab" == "a" rf"b"
     return True
 
 def test_asyncio() -> bool:

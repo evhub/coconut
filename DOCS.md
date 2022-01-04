@@ -866,7 +866,7 @@ match <pattern> [not] in <value> [if <cond>]:
 [else:
     <body>]
 ```
-where `<value>` is the item to match against, `<cond>` is an optional additional check, and `<body>` is simply code that is executed if the header above it succeeds. `<pattern>` follows its own, special syntax, defined roughly like so:
+where `<value>` is the item to match against, `<cond>` is an optional additional check, and `<body>` is simply code that is executed if the header above it succeeds. `<pattern>` follows its own, special syntax, defined roughly as below. In the syntax specification below, brackets denote optional syntax and parentheses followed by a `*` denote that the syntax may appear zero or more times.
 
 ```coconut
 pattern ::= and_pattern ("or" and_pattern)*  # match any
@@ -899,32 +899,28 @@ base_pattern ::= (
     | "[" patterns "]"               #  or in list form
     | "(|" patterns "|)"             # lazy lists
     | ("(" | "[")                    # star splits
-        patterns
-        "*" middle
-        patterns
+        [patterns ","]
+        "*" pattern
+        ["," patterns]
       (")" | "]")
-    | (                              # head-tail splits
+    | [(                             # sequence splits
         "(" patterns ")"
         | "[" patterns "]"
-      ) "+" pattern
-    | pattern "+" (                  # init-last splits
-        "(" patterns ")"
-        | "[" patterns "]"
-      )
-    | (                              # head-last splits
-        "(" patterns ")"
-        | "[" patterns "]"
-      ) "+" pattern "+" (
+      ) "+"] NAME ["+" (
         "(" patterns ")"                 # this match must be the same
         | "[" patterns "]"               #  construct as the first match
-      )
-    | (                              # iterator splits
+      )]
+    | [(                             # iterator splits
         "(" patterns ")"
         | "[" patterns "]"
         | "(|" patterns "|)"
-      ) "::" pattern
+      ) "::"] NAME ["::" (
+        "(" patterns ")"
+        | "[" patterns "]"
+        | "(|" patterns "|)"
+      )]
     | ([STRING "+"] NAME             # complex string matching
-        ["+" STRING])
+        ["+" STRING])                #  (STRING cannot be an f-string here)
 )
 ```
 

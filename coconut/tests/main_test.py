@@ -33,6 +33,7 @@ else:
 import pytest
 import pexpect
 
+from coconut.util import noop_ctx
 from coconut.terminal import (
     logger,
     LoggingStringIO,
@@ -393,12 +394,6 @@ def using_sys_path(path, prepend=False):
         yield
     finally:
         sys.path[:] = old_sys_path
-
-
-@contextmanager
-def noop_ctx():
-    """A context manager that does nothing."""
-    yield
 
 
 def add_test_func_name(test_func, cls):

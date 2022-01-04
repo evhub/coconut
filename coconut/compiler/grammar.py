@@ -77,6 +77,7 @@ from coconut.compiler.util import (
     condense,
     maybeparens,
     tokenlist,
+    interleaved_tokenlist,
     itemlist,
     longest,
     exprlist,
@@ -481,18 +482,6 @@ def kwd_err_msg_handle(tokens):
     return 'invalid use of the keyword "' + tokens[0] + '"'
 
 
-def string_atom_handle(tokens):
-    """Handle concatenation of string literals."""
-    internal_assert(len(tokens) >= 1, "invalid string literal tokens", tokens)
-    if any(s.endswith(")") for s in tokens):  # has .format() calls
-        return "(" + " + ".join(tokens) + ")"
-    else:
-        return " ".join(tokens)
-
-
-string_atom_handle.ignore_one_token = True
-
-
 def alt_ternary_handle(tokens):
     """Handle if ... then ... else ternary operator."""
     cond, if_true, if_false = tokens
@@ -682,7 +671,8 @@ class Grammar(object):
     base_name_regex = r""
     for no_kwd in keyword_vars + const_vars:
         base_name_regex += r"(?!" + no_kwd + r"\b)"
-    base_name_regex += r"(?![0-9])\w+\b"
+    # we disallow '"{ after to not match the "b" in b"" or the "s" in s{}
+    base_name_regex += r"(?![0-9])\w+\b(?![{" + strwrapper + r"])"
     base_name = (
         regex_item(base_name_regex)
         | backslash.suppress() + any_keyword_in(reserved_vars)
@@ -746,15 +736,20 @@ class Grammar(object):
 
     u_string = Forward()
     f_string = Forward()
-    bit_b = Optional(CaselessLiteral("b"))
+
+    bit_b = CaselessLiteral("b")
     raw_r = Optional(CaselessLiteral("r"))
-    b_string = combine((bit_b + raw_r | raw_r + bit_b) + string_item)
     unicode_u = CaselessLiteral("u").suppress()
-    u_string_ref = combine((unicode_u + raw_r | raw_r + unicode_u) + string_item)
     format_f = CaselessLiteral("f").suppress()
+
+    string = combine(raw_r + string_item)
+    b_string = combine((bit_b + raw_r | raw_r + bit_b) + string_item)
+    u_string_ref = combine((unicode_u + raw_r | raw_r + unicode_u) + string_item)
     f_string_ref = combine((format_f + raw_r | raw_r + format_f) + string_item)
-    string = trace(b_string | u_string | f_string)
-    moduledoc = string + newline
+    nonbf_string = string | u_string
+    nonb_string = nonbf_string | f_string
+    any_string = nonb_string | b_string
+    moduledoc = any_string + newline
     docstring = condense(moduledoc)
 
     pipe_augassign = (
@@ -1063,9 +1058,13 @@ class Grammar(object):
         | array_literal
     )
 
+    string_atom = Forward()
+    string_atom_ref = OneOrMore(nonb_string) | OneOrMore(b_string)
+    fixed_len_string_atom = OneOrMore(nonbf_string) | OneOrMore(b_string)
+
     keyword_atom = any_keyword_in(const_vars)
-    string_atom = attach(OneOrMore(string), string_atom_handle)
     passthrough_atom = trace(addspace(OneOrMore(passthrough_item)))
+
     set_literal = Forward()
     set_letter_literal = Forward()
     set_s = fixto(CaselessLiteral("s"), "s")
@@ -1077,7 +1076,8 @@ class Grammar(object):
         | new_namedexpr_test("test"),
     )
     set_literal_ref = lbrace.suppress() + setmaker + rbrace.suppress()
-    set_letter_literal_ref = set_letter + lbrace.suppress() + Optional(setmaker) + rbrace.suppress()
+    set_letter_literal_ref = combine(set_letter + lbrace.suppress()) + Optional(setmaker) + rbrace.suppress()
+
     lazy_items = Optional(tokenlist(test, comma))
     lazy_list = attach(lbanana.suppress() + lazy_items + rbanana.suppress(), lazy_list_handle)
 
@@ -1495,18 +1495,6 @@ class Grammar(object):
 
     del_stmt = addspace(keyword("del") - simple_assignlist)
 
-    matchlist_tuple_items = (
-        match + OneOrMore(comma.suppress() + match) + Optional(comma.suppress())
-        | match + comma.suppress()
-    )
-    matchlist_tuple = Group(Optional(matchlist_tuple_items))
-    matchlist_list = Group(Optional(tokenlist(match, comma)))
-    matchlist_star = (
-        Optional(Group(OneOrMore(match + comma.suppress())))
-        + star.suppress() + name
-        + Optional(Group(OneOrMore(comma.suppress() + match)))
-        + Optional(comma.suppress())
-    )
     matchlist_data_item = Group(Optional(star | name + equals) + match)
     matchlist_data = Group(Optional(tokenlist(matchlist_data_item, comma)))
 
@@ -1522,31 +1510,50 @@ class Grammar(object):
         | Optional(neg_minus) + number
         | match_dotted_name_const,
     )
-    match_string = (
-        (string + plus.suppress() + name + plus.suppress() + string)("mstring")
-        | (string + plus.suppress() + name)("string")
-        | (name + plus.suppress() + string)("rstring")
-    )
+
     matchlist_set = Group(Optional(tokenlist(match_const, comma)))
     match_pair = Group(match_const + colon.suppress() + match)
     matchlist_dict = Group(Optional(tokenlist(match_pair, comma)))
-    match_list = lbrack + matchlist_list + rbrack.suppress()
-    match_tuple = lparen + matchlist_tuple + rparen.suppress()
-    match_lazy = lbanana + matchlist_list + rbanana.suppress()
-    series_match = (
-        (match_list + plus.suppress() + name + plus.suppress() + match_list)("mseries")
-        | (match_tuple + plus.suppress() + name + plus.suppress() + match_tuple)("mseries")
-        | ((match_list | match_tuple) + Optional(plus.suppress() + name))("series")
-        | (name + plus.suppress() + (match_list | match_tuple))("rseries")
+
+    matchlist_tuple_items = (
+        match + OneOrMore(comma.suppress() + match) + Optional(comma.suppress())
+        | match + comma.suppress()
     )
-    iter_match = (
-        ((match_list | match_tuple | match_lazy) + unsafe_dubcolon.suppress() + name)
-        | match_lazy
+    matchlist_tuple = Group(Optional(matchlist_tuple_items))
+    matchlist_list = Group(Optional(tokenlist(match, comma)))
+    match_list = Group(lbrack + matchlist_list + rbrack.suppress())
+    match_tuple = Group(lparen + matchlist_tuple + rparen.suppress())
+    match_lazy = Group(lbanana + matchlist_list + rbanana.suppress())
+
+    interior_name_match = labeled_group(name, "var")
+    match_string = interleaved_tokenlist(
+        fixed_len_string_atom("string"),
+        interior_name_match("capture"),
+        plus,
+        at_least_two=True,
+    )("string")
+    sequence_match = interleaved_tokenlist(
+        (match_list | match_tuple)("literal"),
+        interior_name_match("capture"),
+        plus,
+    )("sequence")
+    iter_match = interleaved_tokenlist(
+        (match_list | match_tuple | match_lazy)("literal"),
+        interior_name_match("capture"),
+        unsafe_dubcolon,
+        at_least_two=True,
     )("iter")
+    matchlist_star = interleaved_tokenlist(
+        star.suppress() + match("capture"),
+        match("elem"),
+        comma,
+        allow_trailing=True,
+    )
     star_match = (
         lbrack.suppress() + matchlist_star + rbrack.suppress()
         | lparen.suppress() + matchlist_star + rparen.suppress()
     )("star")
+
     base_match = trace(
         Group(
             (negable_atom_item + arrow.suppress() + match)("view")
@@ -1556,7 +1563,8 @@ class Grammar(object):
             | (lbrace.suppress() + matchlist_dict + Optional(dubstar.suppress() + (name | condense(lbrace + rbrace))) + rbrace.suppress())("dict")
             | (Optional(set_s.suppress()) + lbrace.suppress() + matchlist_set + rbrace.suppress())("set")
             | iter_match
-            | series_match
+            | match_lazy("lazy")
+            | sequence_match
             | star_match
             | (lparen.suppress() + match + rparen.suppress())("paren")
             | (data_kwd.suppress() + name + lparen.suppress() + matchlist_data + rparen.suppress())("data")
@@ -2000,7 +2008,7 @@ class Grammar(object):
             lparen,
             disallow_keywords(untcoable_funcs, with_suffix=lparen)
             + condense(
-                (base_name | parens | brackets | braces | string)
+                (base_name | parens | brackets | braces | string_atom)
                 + ZeroOrMore(
                     dot + base_name
                     | brackets
@@ -2047,7 +2055,7 @@ class Grammar(object):
         | ~indent + ~dedent + any_char + keyword("for") + base_name + keyword("in")
     )
 
-    just_a_string = start_marker + string + end_marker
+    just_a_string = start_marker + string_atom + end_marker
 
     end_of_line = end_marker | Literal("\n") | pound
 

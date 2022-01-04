@@ -1366,3 +1366,15 @@ def gam_eps_rate_(bitarr) = (
     )
     |*> (*)
 )
+
+
+# Nonlinear patterns
+# def first_twin1(_ :: (p, (.-2) -> p) :: _) = (p, p+2)
+# def first_twin2((*_, p, (.-2) -> p, *_)) = (p, p+2)
+# def first_twin3(_ + (p, (.-2) -> p) + _) = (p, p+2)
+
+# def has_abc(s):
+#     match _ + "abc" + _ in s:
+#         return True
+#     else:
+#         return False

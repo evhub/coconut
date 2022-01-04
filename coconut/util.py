@@ -29,6 +29,7 @@ import ast
 from zlib import crc32
 from warnings import warn
 from types import MethodType
+from contextlib import contextmanager
 
 from coconut.constants import (
     fixpath,
@@ -172,6 +173,12 @@ def get_name(expr):
     if name is None:
         name = displayable(expr)
     return name
+
+
+@contextmanager
+def noop_ctx():
+    """A context manager that does nothing."""
+    yield
 
 
 # -----------------------------------------------------------------------------------------------------------------------
