@@ -422,7 +422,7 @@ def add_test_func_names(cls):
     return cls
 
 
-def pexpect_spawn(cmd):
+def spawn_cmd(cmd):
     """Version of pexpect.spawn that prints the command being run."""
     print("\n>", cmd)
     return pexpect.spawn(cmd)
@@ -663,7 +663,7 @@ class TestShell(unittest.TestCase):
 
     if PY35 and not WINDOWS:
         def test_xontrib(self):
-            p = pexpect_spawn("xonsh")
+            p = spawn_cmd("xonsh")
             p.expect("$")
             p.sendline("xontrib load coconut")
             p.expect("$")
@@ -693,7 +693,7 @@ class TestShell(unittest.TestCase):
 
         if not WINDOWS and not PYPY:
             def test_exit_jupyter(self):
-                p = pexpect_spawn("coconut --jupyter console")
+                p = spawn_cmd("coconut --jupyter console")
                 p.expect("In", timeout=120)
                 p.sendline("exit()")
                 p.expect("Shutting down kernel|shutting down")

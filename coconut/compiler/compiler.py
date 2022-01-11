@@ -581,17 +581,17 @@ class Compiler(Grammar):
         """Reformat and evaluate a code snippet and return code for the result."""
         try:
             result = self.literal_eval(code)
+            if result is None or isinstance(result, (bool, int, float, complex)):
+                return ascii(result)
+            elif isinstance(result, bytes):
+                return self.wrap_str_of(result, expect_bytes=True)
+            elif isinstance(result, str):
+                return self.wrap_str_of(result)
+            else:
+                raise CoconutInternalException("failed to eval_now", code, extra="got: " + repr(result))
         except CoconutInternalException as err:
             complain(err)
             return code
-        if result is None or isinstance(result, (bool, int, float, complex)):
-            return ascii(result)
-        elif isinstance(result, bytes):
-            return self.wrap_str_of(result, expect_bytes=True)
-        elif isinstance(result, str):
-            return self.wrap_str_of(result)
-        else:
-            return None
 
     def strict_err_or_warn(self, *args, **kwargs):
         """Raises an error if in strict mode, otherwise raises a warning."""
