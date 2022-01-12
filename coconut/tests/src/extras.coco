@@ -127,7 +127,7 @@ def f() =
       assert 1
       assert 2
     """.strip())
-    assert_raises(-> parse('b"abc" "def"'), CoconutParseError, err_has=" ~~~~~~^")
+    assert_raises(-> parse('b"abc" "def"'), CoconutParseError, err_has=" ~~~~~~~^")
     assert_raises(-> parse('"abc" b"def"'), CoconutParseError, err_has=" ~~~~~~^")
 
     assert_raises(-> parse("return = 1"), CoconutParseError, err_has="invalid use of the keyword")

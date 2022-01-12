@@ -1251,7 +1251,7 @@ class Compiler(Grammar):
                 if not ignore_errors:
                     complain(err)
                 if index is not None:
-                    out.append(index)
+                    out.append("\\" + index)
                     index = None
                 if c is not None:
                     out.append(c)
@@ -1302,11 +1302,11 @@ class Compiler(Grammar):
                     complain(err)
                 if comment is not None:
                     internal_assert(string is None, "invalid detection of string and comment markers in", inputstring)
-                    out.append(comment)
+                    out.append("#" + comment)
                     comment = None
                 if string is not None:
                     internal_assert(comment is None, "invalid detection of string and comment markers in", inputstring)
-                    out.append(string)
+                    out.append(strwrapper + string)
                     string = None
                 if c is not None:
                     out.append(c)
