@@ -627,20 +627,24 @@ class Compiler(Grammar):
     def add_ref(self, reftype, data):
         """Add a reference and return the identifier."""
         ref = (reftype, data)
-        try:
-            index = self.refs.index(ref)
-        except ValueError:
-            self.refs.append(ref)
-            index = len(self.refs) - 1
-        return str(index)
+        self.refs.append(ref)
+        return str(len(self.refs) - 1)
 
     def get_ref(self, reftype, index):
         """Retrieve a reference."""
         try:
             got_reftype, data = self.refs[int(index)]
         except (IndexError, ValueError):
-            raise CoconutInternalException("no reference at invalid index", index)
-        internal_assert(got_reftype == reftype, "wanted " + reftype + " reference; got " + got_reftype + " reference")
+            raise CoconutInternalException(
+                "no reference at invalid index",
+                index,
+                extra="max index: {max_index}; wanted reftype: {reftype}".format(max_index=len(self.refs) - 1, reftype=reftype),
+            )
+        internal_assert(
+            got_reftype == reftype,
+            "wanted {reftype} reference; got {got_reftype} reference".format(reftype=reftype, got_reftype=got_reftype),
+            extra="index: {index}; data: {data!r}".format(index=index, data=data),
+        )
         return data
 
     def wrap_str(self, text, strchar, multiline=False):
