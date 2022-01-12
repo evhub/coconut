@@ -15,10 +15,18 @@ Description: MyPy stub file for __coconut__.py.
 import sys
 import typing as _t
 
-# -----------------------------------------------------------------------------------------------------------------------
-# STUB:
-# -----------------------------------------------------------------------------------------------------------------------
+import _coconut as __coconut  # we mock _coconut as a package since mypy doesn't handle namespace classes very well
+_coconut = __coconut
 
+if sys.version_info >= (3, 2):
+    from functools import lru_cache as _lru_cache
+else:
+    from backports.functools_lru_cache import lru_cache as _lru_cache  # `pip install -U coconut[mypy]` to fix errors on this line
+    _coconut.functools.lru_cache = _lru_cache  # type: ignore
+
+# -----------------------------------------------------------------------------------------------------------------------
+# TYPE VARS:
+# -----------------------------------------------------------------------------------------------------------------------
 
 _Callable = _t.Callable[..., _t.Any]
 _Iterable = _t.Iterable[_t.Any]
@@ -44,6 +52,9 @@ _T_iter_func = _t.TypeVar("_T_iter_func", bound=_t.Callable[..., _Iterable])
 
 # _P = _t.ParamSpec("_P")
 
+# -----------------------------------------------------------------------------------------------------------------------
+# STUB:
+# -----------------------------------------------------------------------------------------------------------------------
 
 if sys.version_info < (3,):
     from future_builtins import *
@@ -117,134 +128,7 @@ reversed = reversed
 enumerate = enumerate
 
 
-import collections as _collections
-import copy as _copy
-import functools as _functools
-import types as _types
-import itertools as _itertools
-import operator as _operator
-import threading as _threading
-import weakref as _weakref
-import os as _os
-import warnings as _warnings
-import contextlib as _contextlib
-import traceback as _traceback
-import pickle as _pickle
-import multiprocessing as _multiprocessing
-from multiprocessing import dummy as _multiprocessing_dummy
-
-if sys.version_info >= (3, 4):
-    import asyncio as _asyncio
-else:
-    import trollius as _asyncio  # type: ignore
-
-if sys.version_info < (3, 3):
-    _abc = _collections
-else:
-    from collections import abc as _abc
-
-if sys.version_info >= (3,):
-    from itertools import zip_longest as _zip_longest
-else:
-    from itertools import izip_longest as _zip_longest
-
-
-try:
-    import numpy as _numpy  # type: ignore
-except ImportError:
-    _numpy = ...
-else:
-    _abc.Sequence.register(_numpy.ndarray)
-
-
-class _coconut:
-    typing = _t  # The real _coconut doesn't import typing, but we want type-checkers to treat it as if it does
-    collections = _collections
-    copy = _copy
-    functools = _functools
-    types = _types
-    itertools = _itertools
-    operator = _operator
-    threading = _threading
-    weakref = _weakref
-    os = _os
-    warnings = _warnings
-    contextlib = _contextlib
-    traceback = _traceback
-    pickle = _pickle
-    asyncio = _asyncio
-    abc = _abc
-    multiprocessing = _multiprocessing
-    multiprocessing_dummy = _multiprocessing_dummy
-    numpy = _numpy
-    if sys.version_info >= (2, 7):
-        OrderedDict = staticmethod(collections.OrderedDict)
-    else:
-        OrderedDict = staticmethod(dict)
-    zip_longest = staticmethod(_zip_longest)
-    Ellipsis = Ellipsis
-    NotImplemented = NotImplemented
-    NotImplementedError = NotImplementedError
-    Exception = Exception
-    AttributeError = AttributeError
-    ImportError = ImportError
-    IndexError = IndexError
-    KeyError = KeyError
-    NameError = NameError
-    TypeError = TypeError
-    ValueError = ValueError
-    StopIteration = StopIteration
-    RuntimeError = RuntimeError
-    classmethod = _t.Union[classmethod]
-    all = staticmethod(all)
-    any = staticmethod(any)
-    bytes = bytes
-    dict = _t.Union[dict]
-    enumerate = staticmethod(enumerate)
-    filter = staticmethod(filter)
-    float = float
-    frozenset = _t.Union[frozenset]
-    getattr = staticmethod(getattr)
-    hasattr = staticmethod(hasattr)
-    hash = staticmethod(hash)
-    id = staticmethod(id)
-    int = int
-    isinstance = staticmethod(isinstance)
-    issubclass = staticmethod(issubclass)
-    iter = staticmethod(iter)
-    len = staticmethod(len)
-    list = _t.Union[list]
-    locals = staticmethod(locals)
-    map = staticmethod(map)
-    min = staticmethod(min)
-    max = staticmethod(max)
-    next = staticmethod(next)
-    object = _t.Union[object]
-    print = staticmethod(print)
-    property = staticmethod(property)
-    range = staticmethod(range)
-    reversed = staticmethod(reversed)
-    set = _t.Union[set]
-    slice = slice
-    str = str
-    sum = staticmethod(sum)
-    super = staticmethod(super)
-    tuple = _t.Union[tuple]
-    type = _t.Union[type]
-    zip = staticmethod(zip)
-    vars = staticmethod(vars)
-    repr = staticmethod(repr)
-    if sys.version_info >= (3,):
-        bytearray = bytearray
-
-
-if sys.version_info >= (3, 2):
-    from functools import lru_cache as _lru_cache
-else:
-    from backports.functools_lru_cache import lru_cache as _lru_cache  # `pip install -U coconut[mypy]` to fix errors on this line
-    _coconut.functools.lru_cache = _lru_cache  # type: ignore
-
-zip_longest = _zip_longest
+zip_longest = _coconut.zip_longest
 memoize = _lru_cache
 
 
@@ -839,9 +723,9 @@ def _namedtuple_of(**kwargs: _t.Dict[_t.Text, _t.Any]) -> _Tuple: ...
 
 # @_t.overload
 # def _coconut_multi_dim_arr(
-#     arrs: _t.Tuple[_numpy.typing.NDArray[_t.Any], ...],
+#     arrs: _t.Tuple[_coconut.numpy.typing.NDArray[_t.Any], ...],
 #     dim: int,
-# ) -> _numpy.typing.NDArray[_t.Any]: ...
+# ) -> _coconut.numpy.typing.NDArray[_t.Any]: ...
 
 @_t.overload
 def _coconut_multi_dim_arr(

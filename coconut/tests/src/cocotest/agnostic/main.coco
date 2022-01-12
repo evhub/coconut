@@ -1064,6 +1064,7 @@ def main_test() -> bool:
     (1, *(2, 3), 4) = (|1, 2, 3, 4|)
     assert f"a" r"b" fr"c" rf"d" == "abcd"
     assert "a" fr"b" == "ab" == "a" rf"b"
+    int(1) = 1
     return True
 
 def test_asyncio() -> bool:
