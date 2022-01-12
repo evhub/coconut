@@ -1,4 +1,5 @@
 # Imports:
+import sys
 import random
 from contextlib import contextmanager
 from functools import wraps
@@ -334,6 +335,10 @@ class methtest2:
 methtest2.inf_rec_ = returns_ten(methtest2.inf_rec_)  # type: ignore
 
 def ret_ret_func(func) = ret_args_kwargs(func=func)
+
+def get_frame() =
+    secret = "hidden"
+    sys._getframe()
 
 
 # Data Blocks:

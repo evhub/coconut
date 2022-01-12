@@ -682,7 +682,7 @@ class Compiler(Grammar):
         return "#" + self.add_ref("comment", text) + unwrapper
 
     def type_ignore_comment(self):
-        return self.wrap_comment("type: ignore", reformat=False)
+        return ("  " if not self.minify else "") + self.wrap_comment("type: ignore", reformat=False)
 
     def wrap_line_number(self, ln):
         """Wrap a line number."""
@@ -1305,7 +1305,6 @@ class Compiler(Grammar):
                     out.append("#" + comment)
                     comment = None
                 if string is not None:
-                    internal_assert(comment is None, "invalid detection of string and comment markers in", inputstring)
                     out.append(strwrapper + string)
                     string = None
                 if c is not None:
@@ -1394,7 +1393,6 @@ else:
 
     tco_disable_regex = compile_regex(r"(try|(async\s+)?(with|for)|while)\b")
     return_regex = compile_regex(r"return\b")
-    no_tco_funcs_regex = compile_regex(r"\b(locals|globals)\b")
 
     def transform_returns(self, original, loc, raw_lines, tre_return_grammar=None, is_async=False, is_gen=False):
         """Apply TCO, TRE, async, and generator return universalization to the given function."""
@@ -1489,8 +1487,6 @@ else:
                     attempt_tco
                     # don't attempt tco if tre succeeded
                     and tre_base is None
-                    # don't tco scope-dependent functions
-                    and not self.no_tco_funcs_regex.search(base)
                 ):
                     tco_base = None
                     tco_base = self.post_transform(self.tco_return, base)

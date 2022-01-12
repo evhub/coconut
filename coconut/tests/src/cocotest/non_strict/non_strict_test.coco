@@ -6,10 +6,10 @@ def non_strict_test() -> bool:
     assert u"abc" == "a" \
         "bc"
     found_x = None
-    match 1, 2:
+    match 1, 2:  # type: ignore
         case x, 1:
             assert False
-        case (x, 2) + tail:
+        case (x, 2) + tail:  # type: ignore
             assert not tail
             found_x = x
         case _:

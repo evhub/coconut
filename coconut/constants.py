@@ -270,10 +270,16 @@ reserved_vars = (  # can be backslash-escaped
     "\u03bb",  # lambda
 )
 
-# names that commonly refer to functions that can't be TCOd
+# regexes that commonly refer to functions that can't be TCOd
 untcoable_funcs = (
-    "super",
-    "cast",
+    r"locals",
+    r"globals",
+    r"super",
+    r"(typing\.)?cast",
+    r"(sys\.)?exc_info",
+    r"(sys\.)?_getframe",
+    r"(sys\.)?_current_frames",
+    r"(sys\.)?_current_exceptions",
 )
 
 py3_to_py2_stdlib = {
