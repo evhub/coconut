@@ -564,18 +564,22 @@ class Compiler(Grammar):
                 adj_ln = i
         return adj_ln + need_unskipped
 
-    def reformat(self, snip, *indices):
+    def reformat(self, snip, *indices, **kwargs):
         """Post process a preprocessed snippet."""
         if not indices:
             with self.complain_on_err():
-                return self.apply_procs(self.reformatprocs, snip, reformatting=True, log=False)
+                return self.apply_procs(self.reformatprocs, snip, reformatting=True, log=False, **kwargs)
             return snip
         else:
-            return (self.reformat(snip),) + tuple(len(self.reformat(snip[:index])) for index in indices)
+            internal_assert(kwargs.get("ignore_errors", False), "cannot reformat with indices and ignore_errors=False")
+            return (
+                (self.reformat(snip, **kwargs),)
+                + tuple(len(self.reformat(snip[:index], **kwargs)) for index in indices)
+            )
 
     def literal_eval(self, code):
         """Version of ast.literal_eval that reformats first."""
-        return literal_eval(self.reformat(code))
+        return literal_eval(self.reformat(code, ignore_errors=False))
 
     def eval_now(self, code):
         """Reformat and evaluate a code snippet and return code for the result."""
@@ -670,11 +674,11 @@ class Compiler(Grammar):
     def wrap_comment(self, text, reformat=True):
         """Wrap a comment."""
         if reformat:
-            text = self.reformat(text)
+            text = self.reformat(text, ignore_errors=False)
         return "#" + self.add_ref("comment", text) + unwrapper
 
     def type_ignore_comment(self):
-        return self.wrap_comment("type: ignore")
+        return self.wrap_comment("type: ignore", reformat=False)
 
     def wrap_line_number(self, ln):
         """Wrap a line number."""
@@ -758,7 +762,7 @@ class Compiler(Grammar):
 
         # reformat the snippet and fix error locations to match
         if reformat:
-            snippet, loc_in_snip, endpt_in_snip = self.reformat(snippet, loc_in_snip, endpt_in_snip)
+            snippet, loc_in_snip, endpt_in_snip = self.reformat(snippet, loc_in_snip, endpt_in_snip, ignore_errors=True)
 
         if extra is not None:
             kwargs["extra"] = extra
@@ -1118,7 +1122,7 @@ class Compiler(Grammar):
         """Local tabideal."""
         return 1 if self.minify else tabideal
 
-    def reind_proc(self, inputstring, reformatting=False, **kwargs):
+    def reind_proc(self, inputstring, ignore_errors=False, **kwargs):
         """Add back indentation."""
         out = []
         level = 0
@@ -1142,7 +1146,7 @@ class Compiler(Grammar):
             line = (line + comment).rstrip()
             out.append(line)
 
-        if not reformatting and level != 0:
+        if not ignore_errors and level != 0:
             logger.log_lambda(lambda: "failed to reindent:\n" + "\n".join(out))
             complain(CoconutInternalException("non-zero final indentation level ", level))
         return "\n".join(out)
@@ -1183,7 +1187,7 @@ class Compiler(Grammar):
 
         return self.wrap_comment(comment, reformat=False)
 
-    def endline_repl(self, inputstring, reformatting=False, **kwargs):
+    def endline_repl(self, inputstring, reformatting=False, ignore_errors=False, **kwargs):
         """Add end of line comments."""
         out = []
         ln = 1  # line number
@@ -1206,7 +1210,7 @@ class Compiler(Grammar):
                     line += self.ln_comment(ln)
 
             except CoconutInternalException as err:
-                if not reformatting:
+                if not ignore_errors:
                     complain(err)
 
             out.append(line)
@@ -1214,7 +1218,7 @@ class Compiler(Grammar):
                 ln += 1
         return "\n".join(out)
 
-    def passthrough_repl(self, inputstring, reformatting=False, **kwargs):
+    def passthrough_repl(self, inputstring, ignore_errors=False, **kwargs):
         """Add back passthroughs."""
         out = []
         index = None
@@ -1240,7 +1244,7 @@ class Compiler(Grammar):
                         out.append(c)
 
             except CoconutInternalException as err:
-                if not reformatting:
+                if not ignore_errors:
                     complain(err)
                 if index is not None:
                     out.append(index)
@@ -1250,7 +1254,7 @@ class Compiler(Grammar):
 
         return "".join(out)
 
-    def str_repl(self, inputstring, reformatting=False, **kwargs):
+    def str_repl(self, inputstring, ignore_errors=False, **kwargs):
         """Add back strings."""
         out = []
         comment = None
@@ -1290,12 +1294,14 @@ class Compiler(Grammar):
                         out.append(c)
 
             except CoconutInternalException as err:
-                if not reformatting:
+                if not ignore_errors:
                     complain(err)
                 if comment is not None:
+                    internal_assert(string is None, "invalid detection of string and comment markers in", inputstring)
                     out.append(comment)
                     comment = None
                 if string is not None:
+                    internal_assert(comment is None, "invalid detection of string and comment markers in", inputstring)
                     out.append(string)
                     string = None
                 if c is not None:
@@ -1986,7 +1992,7 @@ if {store_var} is not _coconut_sentinel:
     def set_moduledoc(self, tokens):
         """Set the docstring."""
         internal_assert(len(tokens) == 2, "invalid moduledoc tokens", tokens)
-        self.docstring = self.reformat(tokens[0]) + "\n\n"
+        self.docstring = self.reformat(tokens[0], ignore_errors=False) + "\n\n"
         return tokens[1]
 
     def yield_from_handle(self, tokens):
@@ -2565,7 +2571,7 @@ def __hash__(self):
 
     def pattern_error(self, original, loc, value_var, check_var, match_error_class='_coconut_MatchError'):
         """Construct a pattern-matching error message."""
-        base_line = clean(self.reformat(getline(loc, original)))
+        base_line = clean(self.reformat(getline(loc, original), ignore_errors=True))
         line_wrap = self.wrap_str_of(base_line)
         return handle_indentation(
             """
@@ -2768,7 +2774,7 @@ if not {check_var}:
         if self.no_wrap or not ignore_target and self.target_info >= (3, 7):
             return typedef
         else:
-            return self.wrap_str_of(self.reformat(typedef))
+            return self.wrap_str_of(self.reformat(typedef, ignore_errors=False))
 
     def typedef_handle(self, tokens):
         """Process Python 3 type annotations."""

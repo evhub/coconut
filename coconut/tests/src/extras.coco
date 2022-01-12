@@ -320,7 +320,7 @@ def test_numpy() -> bool:
     assert np.array([1, 2]) `isinstance` Sequence
     [1, two] = np.array([1, 2])
     assert two == 2
-    [] = np.array([])
+    [] = np.array([])  # type: ignore
     assert [1,2 ;;; 3,4] |> np.array |> .shape == (2, 1, 2)
     assert [1;2 ;;; 3;4] |> np.array |> .shape == (2, 1, 2)
     assert [1;2 ;;;; 3;4] |> np.array |> .shape == (2, 1, 1, 2)
