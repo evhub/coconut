@@ -29,6 +29,7 @@ from coconut.root import *  # NOQA
 import sys
 import re
 import ast
+import inspect
 import __future__
 from functools import partial, reduce
 from contextlib import contextmanager
@@ -172,9 +173,9 @@ def evaluate_tokens(tokens, **kwargs):
 
 class ComputationNode(object):
     """A single node in the computation graph."""
-    __slots__ = ("action", "loc", "tokens", "original") + (("been_called",) if DEVELOP else ())
+    __slots__ = ("action", "original", "loc", "tokens") + (("been_called",) if DEVELOP else ())
 
-    def __new__(cls, action, original, loc, tokens, ignore_no_tokens=False, ignore_one_token=False, greedy=False):
+    def __new__(cls, action, original, loc, tokens, ignore_no_tokens=False, ignore_one_token=False, greedy=False, trim_arity=True):
         """Create a ComputionNode to return from a parse action.
 
         If ignore_no_tokens, then don't call the action if there are no tokens.
@@ -186,7 +187,10 @@ class ComputationNode(object):
             return tokens[0]  # could be a ComputationNode, so we can't have an __init__
         else:
             self = super(ComputationNode, cls).__new__(cls)
-            self.action = action
+            if trim_arity:
+                self.action = _trim_arity(action)
+            else:
+                self.action = action
             self.original = original
             self.loc = loc
             self.tokens = tokens
@@ -213,7 +217,7 @@ class ComputationNode(object):
         if logger.tracing:  # avoid the overhead of the call if not tracing
             logger.log_trace(self.name, self.original, self.loc, evaluated_toks, self.tokens)
         try:
-            return _trim_arity(self.action)(
+            return self.action(
                 self.original,
                 self.loc,
                 evaluated_toks,
@@ -251,7 +255,7 @@ class CombineNode(Combine):
     @override
     def postParse(self, original, loc, tokens):
         """Create a ComputationNode for Combine."""
-        return ComputationNode(self._combine, original, loc, tokens, ignore_no_tokens=True, ignore_one_token=True)
+        return ComputationNode(self._combine, original, loc, tokens, ignore_no_tokens=True, ignore_one_token=True, trim_arity=False)
 
 
 if USE_COMPUTATION_GRAPH:
@@ -260,16 +264,18 @@ else:
     combine = Combine
 
 
-def add_action(item, action):
+def add_action(item, action, make_copy=None):
     """Add a parse action to the given item."""
-    item_ref_count = sys.getrefcount(item) if CPYTHON else float("inf")
-    internal_assert(item_ref_count >= temp_grammar_item_ref_count, "add_action got item with too low ref count", (item, type(item), item_ref_count))
-    if item_ref_count > temp_grammar_item_ref_count:
+    if make_copy is None:
+        item_ref_count = sys.getrefcount(item) if CPYTHON else float("inf")
+        internal_assert(item_ref_count >= temp_grammar_item_ref_count, "add_action got item with too low ref count", (item, type(item), item_ref_count))
+        make_copy = item_ref_count > temp_grammar_item_ref_count
+    if make_copy:
         item = item.copy()
     return item.addParseAction(action)
 
 
-def attach(item, action, ignore_no_tokens=None, ignore_one_token=None, ignore_tokens=None, **kwargs):
+def attach(item, action, ignore_no_tokens=None, ignore_one_token=None, ignore_tokens=None, trim_arity=None, **kwargs):
     """Set the parse action for the given item to create a node in the computation graph."""
     if ignore_tokens is None:
         ignore_tokens = getattr(action, "ignore_tokens", False)
@@ -280,11 +286,17 @@ def attach(item, action, ignore_no_tokens=None, ignore_one_token=None, ignore_to
             ignore_no_tokens = getattr(action, "ignore_no_tokens", False)
         if ignore_one_token is None:
             ignore_one_token = getattr(action, "ignore_one_token", False)
-        # only include True keyword arguments in the partial since False is the default
+        if trim_arity is None:
+            trim_arity = getattr(action, "trim_arity", None)
+            if trim_arity is None:
+                trim_arity = should_trim_arity(action)
+        # only include keyword arguments in the partial that are not the same as the default
         if ignore_no_tokens:
             kwargs["ignore_no_tokens"] = ignore_no_tokens
         if ignore_one_token:
             kwargs["ignore_one_token"] = ignore_one_token
+        if not trim_arity:
+            kwargs["trim_arity"] = trim_arity
         action = partial(ComputationNode, action, **kwargs)
     return add_action(item, action)
 
@@ -991,3 +1003,13 @@ def literal_eval(py_code):
         return ast.literal_eval(compiled)
     except BaseException:
         raise CoconutInternalException("failed to literal eval", py_code)
+
+
+def should_trim_arity(func):
+    """Determine if we need to call _trim_arity on func."""
+    func_args = inspect.getargspec(func)[0]
+    if func_args[:3] == ["original", "loc", "tokens"]:
+        return False
+    if func_args[:4] == ["self", "original", "loc", "tokens"]:
+        return False
+    return True

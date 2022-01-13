@@ -76,13 +76,16 @@ def get_clock_time():
         return time.process_time()
 
 
-class override(object):
-    """Implementation of Coconut's @override for use within Coconut."""
-    __slots__ = ("func",)
+class pickleable_obj(object):
+    """Version of object that binds __reduce_ex__ to __reduce__."""
 
-    # from _coconut_base_hashable
     def __reduce_ex__(self, _):
         return self.__reduce__()
+
+
+class override(pickleable_obj):
+    """Implementation of Coconut's @override for use within Coconut."""
+    __slots__ = ("func",)
 
     def __eq__(self, other):
         return self.__class__ is other.__class__ and self.__reduce__() == other.__reduce__()

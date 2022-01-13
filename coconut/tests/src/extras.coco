@@ -121,11 +121,8 @@ def f() =
     assert 1
     assert 2
     """.strip()), CoconutParseError, err_has="""
-  |~~~~~~~~
-
-  def f() =
-      assert 1
-      assert 2
+  assert 2
+          ^
     """.strip())
     assert_raises(-> parse('b"abc" "def"'), CoconutParseError, err_has=" ~~~~~~~^")
     assert_raises(-> parse('"abc" b"def"'), CoconutParseError, err_has=" ~~~~~~^")
@@ -153,23 +150,7 @@ def gam_eps_rate(bitarr) = (
     except CoconutParseError as err:
         err_str = str(err)
         assert "misplaced '?'" in err_str
-        assert """
-  |~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-  def gam_eps_rate(bitarr) = (
-      bitarr
-      |*> zip
-      |> map$(map$(int))
-      |> map$(sum)
-      |> map$(.>len(bitarr)//2)
-      |> lift(,)(ident, map$(not))
-      |> map$(map$(int))
-      |> map$(map$(str))
-      |> map$("".join)
-      |> map$(int(?, 2))
-
-  ~~~~~~~~~~~~~~~~~^
-        """.strip() in err_str
+        assert "\n  |> map$(int(?, 2))" in err_str
     else:
         assert False
 
@@ -208,7 +189,7 @@ def test_convenience() -> bool:
     assert_raises(-> parse("lambda x: x"), CoconutStyleError)
     assert_raises(-> parse("u''"), CoconutStyleError)
     assert_raises(-> parse("def f(x):\\\n pass"), CoconutStyleError)
-    assert_raises(-> parse("abc "), CoconutStyleError, err_has="\n    ^")
+    assert_raises(-> parse("abc "), CoconutStyleError, err_has="\n     ^")
     assert_raises(-> parse("abc", "file"), CoconutStyleError)
     assert_raises(-> parse("a=1;"), CoconutStyleError, err_has="\n     ^")
     assert_raises(-> parse("class derp(object)"), CoconutStyleError)

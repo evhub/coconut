@@ -38,7 +38,10 @@ from coconut.terminal import (
     internal_assert,
 )
 from coconut.exceptions import CoconutException
-from coconut.util import get_encoding
+from coconut.util import (
+    pickleable_obj,
+    get_encoding,
+)
 from coconut.constants import (
     WINDOWS,
     PY34,
@@ -601,16 +604,21 @@ class Runner(object):
             return self.stored[-1]
 
 
-class multiprocess_wrapper(object):
+class multiprocess_wrapper(pickleable_obj):
     """Wrapper for a method that needs to be multiprocessed."""
-    __slots__ = ("rec_limit", "logger", "argv", "base", "method")
+    __slots__ = ("base", "method", "rec_limit", "logger", "argv")
 
-    def __init__(self, base, method):
+    def __init__(self, base, method, _rec_limit=None, _logger=None, _argv=None):
         """Create new multiprocessable method."""
-        self.rec_limit = sys.getrecursionlimit()
-        self.logger = logger.copy()
-        self.argv = sys.argv
-        self.base, self.method = base, method
+        self.base = base
+        self.method = method
+        self.rec_limit = sys.getrecursionlimit() if _rec_limit is None else _rec_limit
+        self.logger = logger.copy() if _logger is None else _logger
+        self.argv = sys.argv if _argv is None else _argv
+
+    def __reduce__(self):
+        """Pickle for transfer across processes."""
+        return (self.__class__, (self.base, self.method, self.rec_limit, self.logger, self.argv))
 
     def __call__(self, *args, **kwargs):
         """Call the method."""

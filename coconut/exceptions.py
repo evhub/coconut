@@ -29,6 +29,7 @@ from coconut.constants import (
     report_this_text,
 )
 from coconut.util import (
+    pickleable_obj,
     clip,
     logical_lines,
     clean,
@@ -40,7 +41,7 @@ from coconut.util import (
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-class CoconutException(Exception):
+class CoconutException(Exception, pickleable_obj):
     """Base Coconut exception."""
 
     def __init__(self, message, item=None, extra=None):
@@ -100,7 +101,11 @@ class CoconutSyntaxError(CoconutException):
                 point_ln = lineno(point, source)
                 endpoint_ln = lineno(endpoint, source)
 
-                source_lines = tuple(logical_lines(source))
+                source_lines = tuple(logical_lines(source, keep_newlines=True))
+
+                # walk the endpoint line back until it points to real text
+                while endpoint_ln > point_ln and not "".join(source_lines[endpoint_ln - 1:endpoint_ln]).strip():
+                    endpoint_ln -= 1
 
                 # single-line error message
                 if point_ln == endpoint_ln:
@@ -113,7 +118,7 @@ class CoconutSyntaxError(CoconutException):
                     part = part.rstrip()
 
                     # adjust only points that are too large based on rstrip
-                    point = clip(point, 0, len(part) - 1)
+                    point = clip(point, 0, len(part))
                     endpoint = clip(endpoint, point, len(part))
 
                     message += "\n" + " " * taberrfmt + part

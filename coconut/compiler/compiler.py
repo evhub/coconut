@@ -19,6 +19,7 @@ Description: Compiles Coconut code into Python code.
 #   - Compiler Handlers
 #   - Checking Handlers
 #   - Endpoints
+#   - Binding
 
 # -----------------------------------------------------------------------------------------------------------------------
 # IMPORTS:
@@ -30,7 +31,7 @@ from coconut.root import *  # NOQA
 
 import sys
 from contextlib import contextmanager
-from functools import partial
+from functools import partial, wraps
 from collections import defaultdict
 from threading import Lock
 
@@ -41,6 +42,7 @@ from coconut._pyparsing import (
     line as getline,
     lineno,
     nums,
+    _trim_arity,
 )
 
 from coconut.constants import (
@@ -72,6 +74,7 @@ from coconut.constants import (
     default_whitespace_chars,
 )
 from coconut.util import (
+    pickleable_obj,
     checksum,
     clip,
     logical_lines,
@@ -132,6 +135,7 @@ from coconut.compiler.util import (
     parse_where,
     get_highest_parse_loc,
     literal_eval,
+    should_trim_arity,
 )
 from coconut.compiler.header import (
     minify_header,
@@ -301,9 +305,10 @@ def split_args_list(tokens, loc):
 # -----------------------------------------------------------------------------------------------------------------------
 
 
-class Compiler(Grammar):
+class Compiler(Grammar, pickleable_obj):
     """The Coconut compiler."""
     lock = Lock()
+    current_compiler = [None]  # list for mutability
 
     preprocs = [
         lambda self: self.prepare,
@@ -400,27 +405,26 @@ class Compiler(Grammar):
         self.original_lines = []
         self.num_lines = 0
         self.disable_name_check = False
-        self.bind()
 
     @contextmanager
     def inner_environment(self):
         """Set up compiler to evaluate inner expressions."""
+        line_numbers, self.line_numbers = self.line_numbers, False
+        keep_lines, self.keep_lines = self.keep_lines, False
         comments, self.comments = self.comments, {}
         skips, self.skips = self.skips, []
         docstring, self.docstring = self.docstring, ""
         original_lines, self.original_lines = self.original_lines, []
-        line_numbers, self.line_numbers = self.line_numbers, False
-        keep_lines, self.keep_lines = self.keep_lines, False
         num_lines, self.num_lines = self.num_lines, 0
         try:
             yield
         finally:
+            self.line_numbers = line_numbers
+            self.keep_lines = keep_lines
             self.comments = comments
             self.skips = skips
             self.docstring = docstring
             self.original_lines = original_lines
-            self.line_numbers = line_numbers
-            self.keep_lines = keep_lines
             self.num_lines = num_lines
 
     @contextmanager
@@ -449,94 +453,122 @@ class Compiler(Grammar):
         self.temp_var_counts[base_name] += 1
         return var_name
 
-    def bind(self):
+    @classmethod
+    def method(cls, method_name, **kwargs):
+        """Get a function that always dispatches to getattr(current_compiler, method_name)$(**kwargs)."""
+        cls_method = getattr(cls, method_name)
+        trim_arity = getattr(cls_method, "trim_arity", None)
+        if trim_arity is None:
+            trim_arity = should_trim_arity(cls_method)
+
+        @wraps(cls_method)
+        def method(original, loc, tokens):
+            self_method = getattr(cls.current_compiler[0], method_name)
+            if kwargs:
+                self_method = partial(self_method, **kwargs)
+            if trim_arity:
+                self_method = _trim_arity(self_method)
+            return self_method(original, loc, tokens)
+        internal_assert(
+            hasattr(cls_method, "ignore_tokens") is hasattr(method, "ignore_tokens")
+            and hasattr(cls_method, "ignore_no_tokens") is hasattr(method, "ignore_no_tokens")
+            and hasattr(cls_method, "ignore_one_token") is hasattr(method, "ignore_one_token"),
+            "failed to properly wrap method",
+            method_name,
+        )
+        method.trim_arity = False
+        return method
+
+    @classmethod
+    def bind(cls):
         """Binds reference objects to the proper parse actions."""
         # handle docstrings, endlines, names
-        self.moduledoc_item <<= trace_attach(self.moduledoc, self.set_moduledoc)
-        self.endline <<= attach(self.endline_ref, self.endline_handle)
-        self.name <<= attach(self.base_name, self.name_check)
+        cls.moduledoc_item <<= trace_attach(cls.moduledoc, cls.method("set_moduledoc"))
+        cls.endline <<= attach(cls.endline_ref, cls.method("endline_handle"))
+        cls.name <<= attach(cls.base_name, cls.method("name_check"))
 
         # comments are evaluated greedily because we need to know about them even if we're going to suppress them
-        self.comment <<= attach(self.comment_ref, self.comment_handle, greedy=True)
+        cls.comment <<= attach(cls.comment_ref, cls.method("comment_handle"), greedy=True)
 
         # handle all atom + trailers constructs with item_handle
-        self.trailer_atom <<= trace_attach(self.trailer_atom_ref, self.item_handle)
-        self.no_partial_trailer_atom <<= trace_attach(self.no_partial_trailer_atom_ref, self.item_handle)
-        self.simple_assign <<= trace_attach(self.simple_assign_ref, self.item_handle)
+        cls.trailer_atom <<= trace_attach(cls.trailer_atom_ref, cls.method("item_handle"))
+        cls.no_partial_trailer_atom <<= trace_attach(cls.no_partial_trailer_atom_ref, cls.method("item_handle"))
+        cls.simple_assign <<= trace_attach(cls.simple_assign_ref, cls.method("item_handle"))
 
         # abnormally named handlers
-        self.normal_pipe_expr <<= trace_attach(self.normal_pipe_expr_tokens, self.pipe_handle)
-        self.return_typedef <<= trace_attach(self.return_typedef_ref, self.typedef_handle)
+        cls.normal_pipe_expr <<= trace_attach(cls.normal_pipe_expr_tokens, cls.method("pipe_handle"))
+        cls.return_typedef <<= trace_attach(cls.return_typedef_ref, cls.method("typedef_handle"))
 
-        # standard handlers of the form name <<= trace_attach(name_tokens, name_handle) (implies name_tokens is reused)
-        self.function_call <<= trace_attach(self.function_call_tokens, self.function_call_handle)
-        self.testlist_star_namedexpr <<= trace_attach(self.testlist_star_namedexpr_tokens, self.testlist_star_expr_handle)
+        # standard handlers of the form name <<= trace_attach(name_tokens, method("name_handle")) (implies name_tokens is reused)
+        cls.function_call <<= trace_attach(cls.function_call_tokens, cls.method("function_call_handle"))
+        cls.testlist_star_namedexpr <<= trace_attach(cls.testlist_star_namedexpr_tokens, cls.method("testlist_star_expr_handle"))
 
-        # standard handlers of the form name <<= trace_attach(name_ref, name_handle)
-        self.set_literal <<= trace_attach(self.set_literal_ref, self.set_literal_handle)
-        self.set_letter_literal <<= trace_attach(self.set_letter_literal_ref, self.set_letter_literal_handle)
-        self.classdef <<= trace_attach(self.classdef_ref, self.classdef_handle)
-        self.import_stmt <<= trace_attach(self.import_stmt_ref, self.import_handle)
-        self.complex_raise_stmt <<= trace_attach(self.complex_raise_stmt_ref, self.complex_raise_stmt_handle)
-        self.augassign_stmt <<= trace_attach(self.augassign_stmt_ref, self.augassign_stmt_handle)
-        self.kwd_augassign <<= trace_attach(self.kwd_augassign_ref, self.kwd_augassign_handle)
-        self.dict_comp <<= trace_attach(self.dict_comp_ref, self.dict_comp_handle)
-        self.destructuring_stmt <<= trace_attach(self.destructuring_stmt_ref, self.destructuring_stmt_handle)
-        self.full_match <<= trace_attach(self.full_match_ref, self.full_match_handle)
-        self.name_match_funcdef <<= trace_attach(self.name_match_funcdef_ref, self.name_match_funcdef_handle)
-        self.op_match_funcdef <<= trace_attach(self.op_match_funcdef_ref, self.op_match_funcdef_handle)
-        self.yield_from <<= trace_attach(self.yield_from_ref, self.yield_from_handle)
-        self.stmt_lambdef <<= trace_attach(self.stmt_lambdef_ref, self.stmt_lambdef_handle)
-        self.typedef <<= trace_attach(self.typedef_ref, self.typedef_handle)
-        self.typedef_default <<= trace_attach(self.typedef_default_ref, self.typedef_handle)
-        self.unsafe_typedef_default <<= trace_attach(self.unsafe_typedef_default_ref, self.unsafe_typedef_handle)
-        self.typed_assign_stmt <<= trace_attach(self.typed_assign_stmt_ref, self.typed_assign_stmt_handle)
-        self.datadef <<= trace_attach(self.datadef_ref, self.datadef_handle)
-        self.match_datadef <<= trace_attach(self.match_datadef_ref, self.match_datadef_handle)
-        self.with_stmt <<= trace_attach(self.with_stmt_ref, self.with_stmt_handle)
-        self.await_expr <<= trace_attach(self.await_expr_ref, self.await_expr_handle)
-        self.ellipsis <<= trace_attach(self.ellipsis_ref, self.ellipsis_handle)
-        self.cases_stmt <<= trace_attach(self.cases_stmt_ref, self.cases_stmt_handle)
-        self.f_string <<= trace_attach(self.f_string_ref, self.f_string_handle)
-        self.decorators <<= trace_attach(self.decorators_ref, self.decorators_handle)
-        self.unsafe_typedef_or_expr <<= trace_attach(self.unsafe_typedef_or_expr_ref, self.unsafe_typedef_or_expr_handle)
-        self.testlist_star_expr <<= trace_attach(self.testlist_star_expr_ref, self.testlist_star_expr_handle)
-        self.list_expr <<= trace_attach(self.list_expr_ref, self.list_expr_handle)
-        self.dict_literal <<= trace_attach(self.dict_literal_ref, self.dict_literal_handle)
-        self.return_testlist <<= trace_attach(self.return_testlist_ref, self.return_testlist_handle)
-        self.anon_namedtuple <<= trace_attach(self.anon_namedtuple_ref, self.anon_namedtuple_handle)
-        self.base_match_for_stmt <<= trace_attach(self.base_match_for_stmt_ref, self.base_match_for_stmt_handle)
-        self.string_atom <<= trace_attach(self.string_atom_ref, self.string_atom_handle)
+        # standard handlers of the form name <<= trace_attach(name_ref, method("name_handle"))
+        cls.set_literal <<= trace_attach(cls.set_literal_ref, cls.method("set_literal_handle"))
+        cls.set_letter_literal <<= trace_attach(cls.set_letter_literal_ref, cls.method("set_letter_literal_handle"))
+        cls.classdef <<= trace_attach(cls.classdef_ref, cls.method("classdef_handle"))
+        cls.import_stmt <<= trace_attach(cls.import_stmt_ref, cls.method("import_handle"))
+        cls.complex_raise_stmt <<= trace_attach(cls.complex_raise_stmt_ref, cls.method("complex_raise_stmt_handle"))
+        cls.augassign_stmt <<= trace_attach(cls.augassign_stmt_ref, cls.method("augassign_stmt_handle"))
+        cls.kwd_augassign <<= trace_attach(cls.kwd_augassign_ref, cls.method("kwd_augassign_handle"))
+        cls.dict_comp <<= trace_attach(cls.dict_comp_ref, cls.method("dict_comp_handle"))
+        cls.destructuring_stmt <<= trace_attach(cls.destructuring_stmt_ref, cls.method("destructuring_stmt_handle"))
+        cls.full_match <<= trace_attach(cls.full_match_ref, cls.method("full_match_handle"))
+        cls.name_match_funcdef <<= trace_attach(cls.name_match_funcdef_ref, cls.method("name_match_funcdef_handle"))
+        cls.op_match_funcdef <<= trace_attach(cls.op_match_funcdef_ref, cls.method("op_match_funcdef_handle"))
+        cls.yield_from <<= trace_attach(cls.yield_from_ref, cls.method("yield_from_handle"))
+        cls.stmt_lambdef <<= trace_attach(cls.stmt_lambdef_ref, cls.method("stmt_lambdef_handle"))
+        cls.typedef <<= trace_attach(cls.typedef_ref, cls.method("typedef_handle"))
+        cls.typedef_default <<= trace_attach(cls.typedef_default_ref, cls.method("typedef_handle"))
+        cls.unsafe_typedef_default <<= trace_attach(cls.unsafe_typedef_default_ref, cls.method("unsafe_typedef_handle"))
+        cls.typed_assign_stmt <<= trace_attach(cls.typed_assign_stmt_ref, cls.method("typed_assign_stmt_handle"))
+        cls.datadef <<= trace_attach(cls.datadef_ref, cls.method("datadef_handle"))
+        cls.match_datadef <<= trace_attach(cls.match_datadef_ref, cls.method("match_datadef_handle"))
+        cls.with_stmt <<= trace_attach(cls.with_stmt_ref, cls.method("with_stmt_handle"))
+        cls.await_expr <<= trace_attach(cls.await_expr_ref, cls.method("await_expr_handle"))
+        cls.ellipsis <<= trace_attach(cls.ellipsis_ref, cls.method("ellipsis_handle"))
+        cls.cases_stmt <<= trace_attach(cls.cases_stmt_ref, cls.method("cases_stmt_handle"))
+        cls.f_string <<= trace_attach(cls.f_string_ref, cls.method("f_string_handle"))
+        cls.decorators <<= trace_attach(cls.decorators_ref, cls.method("decorators_handle"))
+        cls.unsafe_typedef_or_expr <<= trace_attach(cls.unsafe_typedef_or_expr_ref, cls.method("unsafe_typedef_or_expr_handle"))
+        cls.testlist_star_expr <<= trace_attach(cls.testlist_star_expr_ref, cls.method("testlist_star_expr_handle"))
+        cls.list_expr <<= trace_attach(cls.list_expr_ref, cls.method("list_expr_handle"))
+        cls.dict_literal <<= trace_attach(cls.dict_literal_ref, cls.method("dict_literal_handle"))
+        cls.return_testlist <<= trace_attach(cls.return_testlist_ref, cls.method("return_testlist_handle"))
+        cls.anon_namedtuple <<= trace_attach(cls.anon_namedtuple_ref, cls.method("anon_namedtuple_handle"))
+        cls.base_match_for_stmt <<= trace_attach(cls.base_match_for_stmt_ref, cls.method("base_match_for_stmt_handle"))
+        cls.string_atom <<= trace_attach(cls.string_atom_ref, cls.method("string_atom_handle"))
 
         # handle normal and async function definitions
-        self.decoratable_normal_funcdef_stmt <<= trace_attach(
-            self.decoratable_normal_funcdef_stmt_ref,
-            self.decoratable_funcdef_stmt_handle,
+        cls.decoratable_normal_funcdef_stmt <<= trace_attach(
+            cls.decoratable_normal_funcdef_stmt_ref,
+            cls.method("decoratable_funcdef_stmt_handle"),
         )
-        self.decoratable_async_funcdef_stmt <<= trace_attach(
-            self.decoratable_async_funcdef_stmt_ref,
-            partial(self.decoratable_funcdef_stmt_handle, is_async=True),
+        cls.decoratable_async_funcdef_stmt <<= trace_attach(
+            cls.decoratable_async_funcdef_stmt_ref,
+            cls.method("decoratable_funcdef_stmt_handle", is_async=True),
         )
 
         # these handlers just do strict/target checking
-        self.u_string <<= trace_attach(self.u_string_ref, self.u_string_check)
-        self.nonlocal_stmt <<= trace_attach(self.nonlocal_stmt_ref, self.nonlocal_check)
-        self.star_assign_item <<= trace_attach(self.star_assign_item_ref, self.star_assign_item_check)
-        self.classic_lambdef <<= trace_attach(self.classic_lambdef_ref, self.lambdef_check)
-        self.star_sep_arg <<= trace_attach(self.star_sep_arg_ref, self.star_sep_check)
-        self.star_sep_vararg <<= trace_attach(self.star_sep_vararg_ref, self.star_sep_check)
-        self.slash_sep_arg <<= trace_attach(self.slash_sep_arg_ref, self.slash_sep_check)
-        self.slash_sep_vararg <<= trace_attach(self.slash_sep_vararg_ref, self.slash_sep_check)
-        self.endline_semicolon <<= trace_attach(self.endline_semicolon_ref, self.endline_semicolon_check)
-        self.async_stmt <<= trace_attach(self.async_stmt_ref, self.async_stmt_check)
-        self.async_comp_for <<= trace_attach(self.async_comp_for_ref, self.async_comp_check)
-        self.namedexpr <<= trace_attach(self.namedexpr_ref, self.namedexpr_check)
-        self.new_namedexpr <<= trace_attach(self.new_namedexpr_ref, self.new_namedexpr_check)
-        self.match_dotted_name_const <<= trace_attach(self.match_dotted_name_const_ref, self.match_dotted_name_const_check)
-        self.except_star_clause <<= trace_attach(self.except_star_clause_ref, self.except_star_clause_check)
+        cls.u_string <<= trace_attach(cls.u_string_ref, cls.method("u_string_check"))
+        cls.nonlocal_stmt <<= trace_attach(cls.nonlocal_stmt_ref, cls.method("nonlocal_check"))
+        cls.star_assign_item <<= trace_attach(cls.star_assign_item_ref, cls.method("star_assign_item_check"))
+        cls.classic_lambdef <<= trace_attach(cls.classic_lambdef_ref, cls.method("lambdef_check"))
+        cls.star_sep_arg <<= trace_attach(cls.star_sep_arg_ref, cls.method("star_sep_check"))
+        cls.star_sep_vararg <<= trace_attach(cls.star_sep_vararg_ref, cls.method("star_sep_check"))
+        cls.slash_sep_arg <<= trace_attach(cls.slash_sep_arg_ref, cls.method("slash_sep_check"))
+        cls.slash_sep_vararg <<= trace_attach(cls.slash_sep_vararg_ref, cls.method("slash_sep_check"))
+        cls.endline_semicolon <<= trace_attach(cls.endline_semicolon_ref, cls.method("endline_semicolon_check"))
+        cls.async_stmt <<= trace_attach(cls.async_stmt_ref, cls.method("async_stmt_check"))
+        cls.async_comp_for <<= trace_attach(cls.async_comp_for_ref, cls.method("async_comp_check"))
+        cls.namedexpr <<= trace_attach(cls.namedexpr_ref, cls.method("namedexpr_check"))
+        cls.new_namedexpr <<= trace_attach(cls.new_namedexpr_ref, cls.method("new_namedexpr_check"))
+        cls.match_dotted_name_const <<= trace_attach(cls.match_dotted_name_const_ref, cls.method("match_dotted_name_const_check"))
+        cls.except_star_clause <<= trace_attach(cls.except_star_clause_ref, cls.method("except_star_clause_check"))
+
         # these checking handlers need to be greedy since they can be suppressed
-        self.matrix_at <<= trace_attach(self.matrix_at_ref, self.matrix_at_check, greedy=True)
-        self.match_check_equals <<= trace_attach(self.match_check_equals_ref, self.match_check_equals_check, greedy=True)
+        cls.matrix_at <<= trace_attach(cls.matrix_at_ref, cls.method("matrix_at_check"), greedy=True)
+        cls.match_check_equals <<= trace_attach(cls.match_check_equals_ref, cls.method("match_check_equals_check"), greedy=True)
 
     def copy_skips(self):
         """Copy the line skips."""
@@ -805,6 +837,7 @@ class Compiler(Grammar):
         """Acquire the lock and reset the parser."""
         with self.lock:
             self.reset()
+            self.current_compiler[0] = self
             yield
 
     def parse(self, inputstring, parser, preargs, postargs):
@@ -3327,3 +3360,11 @@ for {match_to_var} in {item}:
         internal_assert(result == "", "compiler warm-up should produce no code; instead got", result)
 
 # end: ENDPOINTS
+# -----------------------------------------------------------------------------------------------------------------------
+# BINDING:
+# -----------------------------------------------------------------------------------------------------------------------
+
+
+Compiler.bind()
+
+# end: BINDING
