@@ -1007,7 +1007,10 @@ def literal_eval(py_code):
 
 def should_trim_arity(func):
     """Determine if we need to call _trim_arity on func."""
-    func_args = inspect.getargspec(func)[0]
+    try:
+        func_args = inspect.getargspec(func)[0]
+    except TypeError:
+        return True
     if func_args[:3] == ["original", "loc", "tokens"]:
         return False
     if func_args[:4] == ["self", "original", "loc", "tokens"]:
