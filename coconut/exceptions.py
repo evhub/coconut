@@ -101,46 +101,56 @@ class CoconutSyntaxError(CoconutException):
                 point_ln = lineno(point, source)
                 endpoint_ln = lineno(endpoint, source)
 
+                point_ind = getcol(point, source) - 1
+                endpoint_ind = getcol(endpoint, source) - 1
+
                 source_lines = tuple(logical_lines(source, keep_newlines=True))
 
-                # walk the endpoint line back until it points to real text
+                # walk the endpoint back until it points to real text
                 while endpoint_ln > point_ln and not "".join(source_lines[endpoint_ln - 1:endpoint_ln]).strip():
                     endpoint_ln -= 1
+                    endpoint_ind = len(source_lines[endpoint_ln - 1])
 
                 # single-line error message
                 if point_ln == endpoint_ln:
-                    part = clean(source_lines[point_ln - 1], False).lstrip()
+                    part = source_lines[point_ln - 1]
+                    part_len = len(part)
 
-                    # adjust all points based on lstrip
-                    point -= len(source) - len(part)
-                    endpoint -= len(source) - len(part)
+                    part = part.lstrip()
 
-                    part = part.rstrip()
+                    # adjust all cols based on lstrip
+                    point_ind -= part_len - len(part)
+                    endpoint_ind -= part_len - len(part)
 
-                    # adjust only points that are too large based on rstrip
-                    point = clip(point, 0, len(part))
-                    endpoint = clip(endpoint, point, len(part))
+                    part = clean(part, False).rstrip("\n\r")
+
+                    # adjust only cols that are too large based on clean/rstrip
+                    point_ind = clip(point_ind, 0, len(part))
+                    endpoint_ind = clip(endpoint_ind, point_ind, len(part))
 
                     message += "\n" + " " * taberrfmt + part
 
-                    if point > 0 or endpoint > 0:
-                        message += "\n" + " " * (taberrfmt + point)
-                        if endpoint - point > 1:
-                            message += "~" * (endpoint - point - 1) + "^"
+                    if point_ind > 0 or endpoint_ind > 0:
+                        message += "\n" + " " * (taberrfmt + point_ind)
+                        if endpoint_ind - point_ind > 1:
+                            message += "~" * (endpoint_ind - point_ind - 1) + "^"
                         else:
                             message += "^"
 
                 # multi-line error message
                 else:
-                    lines = source_lines[point_ln - 1:endpoint_ln]
+                    lines = []
+                    for line in source_lines[point_ln - 1:endpoint_ln]:
+                        lines.append(clean(line, False).rstrip("\n\r"))
 
-                    point_col = getcol(point, source)
-                    endpoint_col = getcol(endpoint, source)
+                    # adjust cols that are too large based on clean/rstrip
+                    point_ind = clip(point_ind, 0, len(lines[0]))
+                    endpoint_ind = clip(endpoint_ind, 0, len(lines[-1]))
 
-                    message += "\n" + " " * (taberrfmt + point_col - 1) + "|" + "~" * (len(lines[0]) - point_col) + "\n"
+                    message += "\n" + " " * (taberrfmt + point_ind) + "|" + "~" * (len(lines[0]) - point_ind - 1) + "\n"
                     for line in lines:
-                        message += "\n" + " " * taberrfmt + clean(line, False).rstrip()
-                    message += "\n\n" + " " * taberrfmt + "~" * (endpoint_col - 1) + "^"
+                        message += "\n" + " " * taberrfmt + line
+                    message += "\n\n" + " " * taberrfmt + "~" * (endpoint_ind) + "^"
 
         return message
 

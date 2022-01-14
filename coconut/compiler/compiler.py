@@ -3359,11 +3359,11 @@ for {match_to_var} in {item}:
         result = self.parse("", self.file_parser, {}, {"header": "none", "initial": "none", "final_endline": False})
         internal_assert(result == "", "compiler warm-up should produce no code; instead got", result)
 
+
 # end: ENDPOINTS
 # -----------------------------------------------------------------------------------------------------------------------
 # BINDING:
 # -----------------------------------------------------------------------------------------------------------------------
-
 
 Compiler.bind()
 

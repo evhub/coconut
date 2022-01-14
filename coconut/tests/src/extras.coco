@@ -150,7 +150,9 @@ def gam_eps_rate(bitarr) = (
     except CoconutParseError as err:
         err_str = str(err)
         assert "misplaced '?'" in err_str
-        assert "\n  |> map$(int(?, 2))" in err_str
+        assert """
+  |> map$(int(?, 2))
+         ~~~~~^""" in err_str
     else:
         assert False
 
