@@ -3234,7 +3234,7 @@ for {match_to_var} in {item}:
 
     def match_check_equals_check(self, original, loc, tokens):
         """Check for old-style =item in pattern-matching."""
-        return self.check_strict("deprecated equality-checking '=...' pattern; use '==...' instead", original, loc, tokens, always_warn=True)
+        return self.check_strict("deprecated equality-checking '=...' pattern; use '==...' instead", original, loc, tokens)
 
     def check_py(self, version, name, original, loc, tokens):
         """Check for Python-version-specific syntax."""

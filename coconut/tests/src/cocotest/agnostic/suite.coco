@@ -818,12 +818,17 @@ forward 2""") == 900
     assert ", 2" in repr(flip2(tup3))
     assert tup3 `of_data` (a=1, b=2, c=3) == (1, 2, 3)  # type: ignore
     assert get_frame().f_locals["secret"] == "hidden"
-    # for first_twin in (first_twin1, first_twin2, first_twin3):
-    #     assert first_twin((2, 3, 5, 7, 11)) == (3, 5), first_twin
-    # assert has_abc("abc")
-    # assert has_abc("abcdef")
-    # assert has_abc("xyzabcdef")
-    # assert not has_abc("aabbcc")
+    assert first_twin((2, 3, 5, 7, 11)) == (3, 5) == first_twin_((2, 3, 5, 7, 11))
+    assert has_abc("abc")
+    assert has_abc("abcdef")
+    assert has_abc("xyzabcdef")
+    assert not has_abc("aabbcc")
+    assert split1_comma("1,2,3") == ("1", "2,3")
+    assert split1_comma("ab,cd,ef") == ("ab", "cd,ef")
+    assert split1_comma("1,") == ("1", "")
+    assert split1_comma(",2") == ("", "2")
+    assert split1_comma(",") == ("", "")
+    assert split1_comma("abcd") == ("abcd", "")
 
     # must come at end
     assert fibs_calls[0] == 1

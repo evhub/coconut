@@ -1067,6 +1067,24 @@ def main_test() -> bool:
     int(1) = 1
     [1] + [2] + m + [3] + [4] = [1,2,"?",3,4]
     assert m == ["?"]
+    [1, 2] + xs + [5, 6] + ys + [9, 10] = range(1, 11)
+    assert xs == [3, 4]
+    assert ys == [7, 8]
+    (1, 2, *(3, 4), 5, 6, *(7, 8), 9, 10) = range(1, 11)
+    "ab" + cd + "ef" + gh + "ij" = "abcdefghij"
+    assert cd == "cd"
+    assert gh == "gh"
+    b"ab" + b_cd + b"ef" + b_gh + b"ij" = b"abcdefghij"
+    assert b_cd == b"cd"
+    assert b_gh == b"gh"
+    "a:" + _1 + ",b:" + _1 = "a:1,b:1"
+    assert _1 == "1"
+    match "a:" + _1 + ",b:" + _1 in "a:1,b:2":
+        assert False
+    cs + [","] + cs = "12,12"
+    assert cs == ["1", "2"]
+    match cs + [","] + cs in "12,34":
+        assert False
     return True
 
 def test_asyncio() -> bool:

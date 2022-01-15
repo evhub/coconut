@@ -127,6 +127,9 @@ dmypy.json
 # PEP 582
 __pypackages__/
 
+# VSCode
+.vscode
+
 # Coconut
 coconut/tests/dest/
 docs/

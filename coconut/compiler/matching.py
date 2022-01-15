@@ -22,7 +22,7 @@ from coconut.root import *  # NOQA
 from contextlib import contextmanager
 from collections import OrderedDict
 
-from coconut.util import noop_ctx
+from coconut._pyparsing import ParseResults
 from coconut.terminal import (
     internal_assert,
     logger,
@@ -150,15 +150,25 @@ class Matcher(object):
         self.child_groups = []
         self.increment()
 
+    def make_child(self):
+        """Get an unregistered child matcher object."""
+        return Matcher(self.comp, self.original, self.loc, self.check_var, self.style, self.name_list, self.names)
+
     def branches(self, num_branches):
         """Create num_branches child matchers, one of which must match for the parent match to succeed."""
         child_group = []
         for _ in range(num_branches):
-            new_matcher = Matcher(self.comp, self.original, self.loc, self.check_var, self.style, self.name_list, self.names)
+            new_matcher = self.make_child()
             child_group.append(new_matcher)
 
         self.child_groups.append(child_group)
         return child_group
+
+    def parameterized_branch(self, parameterization):
+        """Create a pseudo-child-group parameterized by `for <parameterization>:`."""
+        parameterized_child = self.make_child()
+        self.child_groups.append((parameterization, parameterized_child))
+        return parameterized_child
 
     def get_checks(self, position=None):
         """Gets the checks at the position."""
@@ -254,8 +264,19 @@ class Matcher(object):
 
     @contextmanager
     def down_to(self, pos):
+        """Increment down to pos."""
         orig_pos = self.position
         self.set_position(max(orig_pos, pos))
+        try:
+            yield
+        finally:
+            self.set_position(orig_pos)
+
+    @contextmanager
+    def down_to_end(self):
+        """Increment down until a new set of checkdefs is reached."""
+        orig_pos = self.position
+        self.set_position(len(self.checkdefs))
         try:
             yield
         finally:
@@ -269,29 +290,30 @@ class Matcher(object):
         """Gets the var for checking whether a name should be set."""
         return match_set_name_var + "_" + name
 
-    def register_name(self, name, value):
-        """Register a new name and return its name set var."""
-        self.names[name] = (self.position, value)
+    def register_name(self, name):
+        """Register a new name at the current position."""
+        internal_assert(lambda: name not in self.parent_names and name not in self.names, "attempt to register duplicate name", name)
+        self.names[name] = self.position
         if self.name_list is not None and name not in self.name_list:
             self.name_list.append(name)
-        return self.get_set_name_var(name)
 
     def match_var(self, tokens, item, bind_wildcard=False):
         """Matches a variable."""
         varname, = tokens
         if varname == wildcard and not bind_wildcard:
             return
+        set_name_var = self.get_set_name_var(varname)
         if varname in self.parent_names:
-            var_pos, var_val = self.parent_names[varname]
             # no need to increment if it's from the parent
-            self.add_check(var_val + " == " + item)
+            self.add_check(set_name_var + " == " + item)
         elif varname in self.names:
-            var_pos, var_val = self.names[varname]
+            var_pos = self.names[varname]
             with self.down_to(var_pos):
-                self.add_check(var_val + " == " + item)
+                self.add_check(set_name_var + " == " + item)
         else:
-            set_name_var = self.register_name(varname, item)
             self.add_def(set_name_var + " = " + item)
+            with self.down_a_level():
+                self.register_name(varname)
 
     def match_all_in(self, matches, item):
         """Matches all matches to elements of item."""
@@ -323,7 +345,8 @@ class Matcher(object):
 
             self.match_in_kwargs(kwd_only_match_args, kwargs)
 
-            with self.down_a_level():
+            # go down to end to ensure that all popping from kwargs has been done
+            with self.down_to_end():
                 if dubstar_arg is None:
                     self.add_check("not " + kwargs)
                 else:
@@ -333,66 +356,71 @@ class Matcher(object):
         """Matches against args or kwargs."""
         req_len = 0
         arg_checks = {}
-        to_match = []  # [(move_down, match, against)]
-        for i, arg in enumerate(pos_only_match_args + match_args):
-            if isinstance(arg, tuple):
-                (match, default) = arg
-            else:
-                match, default = arg, None
-            if i < len(pos_only_match_args):  # faster if arg in pos_only_match_args
-                names = None
-            else:
-                names = get_match_names(match)
-            if default is None:
-                if not names:
-                    req_len = i + 1
-                    to_match.append((False, match, args + "[" + str(i) + "]"))
+        # go down a level to ensure we're after the length-checking we do later on
+        with self.down_a_level():
+            for i, arg in enumerate(pos_only_match_args + match_args):
+                if isinstance(arg, tuple):
+                    (match, default) = arg
                 else:
-                    arg_checks[i] = (
-                        # if i < req_len
-                        " and ".join('"' + name + '" not in ' + kwargs for name in names),
-                        # if i >= req_len
-                        "_coconut.sum((_coconut.len(" + args + ") > " + str(i) + ", "
-                        + ", ".join('"' + name + '" in ' + kwargs for name in names)
-                        + ")) == 1",
-                    )
-                    tempvar = self.get_temp_var()
-                    self.add_def(
-                        tempvar + " = "
-                        + args + "[" + str(i) + "] if _coconut.len(" + args + ") > " + str(i) + " else "
-                        + "".join(
-                            kwargs + '.pop("' + name + '") if "' + name + '" in ' + kwargs + " else "
-                            for name in names[:-1]
-                        )
-                        + kwargs + '.pop("' + names[-1] + '")',
-                    )
-                    to_match.append((True, match, tempvar))
-            else:
-                if not names:
-                    tempvar = self.get_temp_var()
-                    self.add_def(tempvar + " = " + args + "[" + str(i) + "] if _coconut.len(" + args + ") > " + str(i) + " else " + default)
-                    to_match.append((True, match, tempvar))
+                    match, default = arg, None
+                if i < len(pos_only_match_args):  # faster if arg in pos_only_match_args
+                    names = None
                 else:
-                    arg_checks[i] = (
-                        # if i < req_len
-                        None,
-                        # if i >= req_len
-                        "_coconut.sum((_coconut.len(" + args + ") > " + str(i) + ", "
-                        + ", ".join('"' + name + '" in ' + kwargs for name in names)
-                        + ")) <= 1",
-                    )
-                    tempvar = self.get_temp_var()
-                    self.add_def(
-                        tempvar + " = "
-                        + args + "[" + str(i) + "] if _coconut.len(" + args + ") > " + str(i) + " else "
-                        + "".join(
-                            kwargs + '.pop("' + name + '") if "' + name + '" in ' + kwargs + " else "
-                            for name in names
+                    names = get_match_names(match)
+                if default is None:
+                    if not names:
+                        req_len = i + 1
+                        self.match(match, args + "[" + str(i) + "]")
+                    else:
+                        arg_checks[i] = (
+                            # if i < req_len
+                            " and ".join('"' + name + '" not in ' + kwargs for name in names),
+                            # if i >= req_len
+                            "_coconut.sum((_coconut.len(" + args + ") > " + str(i) + ", "
+                            + ", ".join('"' + name + '" in ' + kwargs for name in names)
+                            + ")) == 1",
                         )
-                        + default,
-                    )
-                    to_match.append((True, match, tempvar))
+                        tempvar = self.get_temp_var()
+                        self.add_def(
+                            tempvar + " = "
+                            + args + "[" + str(i) + "] if _coconut.len(" + args + ") > " + str(i) + " else "
+                            + "".join(
+                                kwargs + '.pop("' + name + '") if "' + name + '" in ' + kwargs + " else "
+                                for name in names[:-1]
+                            )
+                            + kwargs + '.pop("' + names[-1] + '")',
+                        )
+                        with self.down_a_level():
+                            self.match(match, tempvar)
+                else:
+                    if not names:
+                        tempvar = self.get_temp_var()
+                        self.add_def(tempvar + " = " + args + "[" + str(i) + "] if _coconut.len(" + args + ") > " + str(i) + " else " + default)
+                        with self.down_a_level():
+                            self.match(match, tempvar)
+                    else:
+                        arg_checks[i] = (
+                            # if i < req_len
+                            None,
+                            # if i >= req_len
+                            "_coconut.sum((_coconut.len(" + args + ") > " + str(i) + ", "
+                            + ", ".join('"' + name + '" in ' + kwargs for name in names)
+                            + ")) <= 1",
+                        )
+                        tempvar = self.get_temp_var()
+                        self.add_def(
+                            tempvar + " = "
+                            + args + "[" + str(i) + "] if _coconut.len(" + args + ") > " + str(i) + " else "
+                            + "".join(
+                                kwargs + '.pop("' + name + '") if "' + name + '" in ' + kwargs + " else "
+                                for name in names
+                            )
+                            + default,
+                        )
+                        with self.down_a_level():
+                            self.match(match, tempvar)
 
+        # length checking
         max_len = None if allow_star_args else len(pos_only_match_args) + len(match_args)
         self.check_len_in(req_len, max_len, args)
         for i in sorted(arg_checks):
@@ -403,13 +431,6 @@ class Matcher(object):
             else:
                 if ge_check is not None:
                     self.add_check(ge_check)
-
-        for move_down, match, against in to_match:
-            if move_down:
-                with self.down_a_level():
-                    self.match(match, against)
-            else:
-                self.match(match, against)
 
     def match_in_kwargs(self, match_args, kwargs):
         """Matches against kwargs."""
@@ -477,20 +498,6 @@ class Matcher(object):
             )
             with self.down_a_level():
                 self.match_var([rest], rest_item)
-
-    def match_to_sequence(self, match, sequence_type, item):
-        """Match match against item converted to the given sequence_type."""
-        if sequence_type == "[":
-            self.match(match, "_coconut.list(" + item + ")")
-        elif sequence_type == "(":
-            self.match(match, "_coconut.tuple(" + item + ")")
-        elif sequence_type in (None, '"', 'b"', "(|"):
-            # if we know item is already the desired type, no conversion is needed
-            self.match(match, item)
-        elif sequence_type is False:
-            raise CoconutInternalException("attempted to match against sequence when seq_type was marked as False", (match, item))
-        else:
-            raise CoconutInternalException("invalid sequence match type", sequence_type)
 
     def proc_sequence_match(self, tokens, iter_match=False):
         """Processes sequence match tokens."""
@@ -596,28 +603,121 @@ class Matcher(object):
         if not seq_groups:
             return
 
-        # extract middle
-        if iterable_var is None:
-            start_ind_str = "" if start_ind == 0 else str(start_ind)
-            last_ind_str = "" if last_ind == -1 else str(last_ind + 1)
-            if start_ind_str or last_ind_str:
-                mid_item = item + "[" + start_ind_str + ":" + last_ind_str + "]"
+        # we need to go down a level to ensure we're below 'match head' above
+        with self.down_a_level():
+
+            # extract middle
+            cache_mid_item = False
+            if iterable_var is None:
+
+                # make middle by indexing into item
+                start_ind_str = "" if start_ind == 0 else str(start_ind)
+                last_ind_str = "" if last_ind == -1 else str(last_ind + 1)
+                if start_ind_str or last_ind_str:
+                    mid_item = item + "[" + start_ind_str + ":" + last_ind_str + "]"
+                    cache_mid_item = True
+                else:
+                    mid_item = item
+
+                # convert middle to proper sequence type if necessary
+                if seq_type == "[":
+                    mid_item = "_coconut.list(" + mid_item + ")"
+                    cache_mid_item = True
+                elif seq_type == "(":
+                    mid_item = "_coconut.tuple(" + mid_item + ")"
+                    cache_mid_item = True
+                elif seq_type in (None, '"', 'b"', "(|"):
+                    # if we know mid_item is already the desired type, no conversion is needed
+                    pass
+                elif seq_type is False:
+                    raise CoconutInternalException("attempted to convert with to_sequence when seq_type was marked as False", mid_item)
+                else:
+                    raise CoconutInternalException("invalid sequence match type", seq_type)
+
             else:
-                mid_item = item
-        else:
-            mid_item = iterable_var
+                mid_item = iterable_var
 
-        # handle single-capture middle
-        if len(seq_groups) == 1:
-            gtype, match = seq_groups[0]
-            internal_assert(gtype == "capture", "invalid sequence match middle groups", seq_groups)
-            with (self.down_a_level() if iterable_var is not None else noop_ctx()):
-                self.match_to_sequence(match, seq_type, mid_item)
-            return
-        internal_assert(len(seq_groups) >= 3, "invalid sequence match middle groups", seq_groups)
+            # cache middle
+            if cache_mid_item:
+                cached_mid_item = self.get_temp_var()
+                self.add_def(cached_mid_item + " = " + mid_item)
+                mid_item = cached_mid_item
 
-        # raise on unsupported search matches
-        raise CoconutDeferredSyntaxError("nonlinear sequence search patterns are not supported", self.loc)
+            # we need to go down a level to ensure we're below 'cache middle' above
+            with self.down_a_level():
+
+                # handle single-capture middle
+                if len(seq_groups) == 1:
+                    gtype, match = seq_groups[0]
+                    internal_assert(gtype == "capture", "invalid sequence match middle group", seq_groups)
+                    self.match(match, mid_item)
+                    return
+                internal_assert(len(seq_groups) >= 3, "invalid sequence match middle groups", seq_groups)
+
+                # handle linear search patterns
+                if len(seq_groups) == 3:
+                    (front_gtype, front_match), mid_group, (back_gtype, back_match) = seq_groups
+
+                    # sanity checks
+                    internal_assert(front_gtype == "capture" == back_gtype, "invalid sequence match middle groups", seq_groups)
+                    if iter_match:
+                        raise CoconutDeferredSyntaxError("linear sequence search patterns are not supported for iterable patterns", self.loc)
+
+                    mid_gtype, mid_contents = mid_group
+
+                    # short-circuit for strings
+                    if mid_gtype == "string":
+                        str_item, str_len = mid_contents
+                        found_loc = self.get_temp_var()
+                        self.add_def(found_loc + " = " + mid_item + ".find(" + str_item + ")")
+                        with self.down_a_level():
+                            self.add_check(found_loc + " != -1")
+                            # no need to make temp_vars here since these are guaranteed to be var matches
+                            self.match(front_match, "{mid_item}[:{found_loc}]".format(mid_item=mid_item, found_loc=found_loc))
+                            self.match(back_match, "{mid_item}[{found_loc} + {str_len}:]".format(mid_item=mid_item, found_loc=found_loc, str_len=str_len))
+                        return
+
+                    # extract the length of the middle match
+                    internal_assert(mid_gtype == "elem_matches", "invalid linear search group type", mid_gtype)
+                    mid_len = len(mid_contents)
+
+                    # construct a parameterized child to perform the search
+                    seq_ind_var = self.get_temp_var()
+                    parameterized_child = self.parameterized_branch(
+                        "for {seq_ind_var} in _coconut.range(_coconut.len({mid_item}))".format(
+                            seq_ind_var=seq_ind_var,
+                            mid_item=mid_item,
+                        ),
+                    )
+
+                    # get the items to search against
+                    front_item = "{mid_item}[:{seq_ind_var}]".format(
+                        mid_item=mid_item,
+                        seq_ind_var=seq_ind_var,
+                    )
+                    searching_through = "{mid_item}[{seq_ind_var}:{seq_ind_var} + {mid_len}]".format(
+                        mid_item=mid_item,
+                        seq_ind_var=seq_ind_var,
+                        mid_len=mid_len,
+                    )
+                    back_item = "{mid_item}[{seq_ind_var} + {mid_len}:]".format(
+                        mid_item=mid_item,
+                        seq_ind_var=seq_ind_var,
+                        mid_len=mid_len,
+                    )
+
+                    # perform the matches in the child
+                    search_item = parameterized_child.get_temp_var()
+                    parameterized_child.add_def(search_item + " = " + searching_through)
+                    with parameterized_child.down_a_level():
+                        parameterized_child.handle_sequence(seq_type, [mid_group], search_item)
+                        # no need for to_sequence here since we know front_item and mid_item are already the correct seq_type
+                        parameterized_child.match(front_match, front_item)
+                        parameterized_child.match(back_match, back_item)
+                    return
+
+                # raise on unsupported quadratic matches
+                raise CoconutDeferredSyntaxError("nonlinear sequence search patterns are not supported", self.loc)
 
     def match_sequence(self, tokens, item):
         """Matches an arbitrary sequence pattern."""
@@ -917,7 +1017,7 @@ if _coconut.len({match_args_var}) < {num_pos_matches}:
         else:
             varname = "..."
         isinstance_checks_str = varname + " is " + " is ".join(isinstance_checks)
-        alt_syntax = varname + " `isinstance` " + " `isinstance` ".join(isinstance_checks)
+        alt_syntax = " and ".join(varname + " `isinstance` " + is_item for is_item in isinstance_checks)
         self.comp.strict_err_or_warn(
             "found deprecated isinstance-checking " + repr(isinstance_checks_str) + " pattern; use " + repr(alt_syntax) + " instead",
             self.original,
@@ -975,6 +1075,10 @@ except _coconut.Exception as _coconut_view_func_exc:
             self.add_check("(" + op + ")(" + item + ", " + arg + ")")
         self.match(match, item)
 
+    def make_match(self, flag, tokens):
+        """Create an artificial match object."""
+        return ParseResults(tokens, flag)
+
     def match(self, tokens, item):
         """Performs pattern-matching processing."""
         for flag, get_handler in self.matchers.items():
@@ -1002,45 +1106,70 @@ except _coconut.Exception as _coconut_view_func_exc:
 
         # handle children
         for children in self.child_groups:
-            child_checks = "\n".join(
-                handle_indentation(
-                    """
-if not {check_var}:
-    {child_out}
-                """,
-                ).format(
-                    check_var=self.check_var,
-                    child_out=child.out(),
-                ) for child in children
-            )
-            out.append(
-                handle_indentation(
-                    """
+            internal_assert(children, "got child group with no children", self.child_groups)
+
+            # handle parameterized child groups
+            if isinstance(children[0], str):
+                parameterization, child = children
+                out.append(
+                    handle_indentation(
+                        """
 if {check_var}:
     {check_var} = False
-    {child_checks}
-                """,
-                    add_newline=True,
-                ).format(
-                    check_var=self.check_var,
-                    child_checks=child_checks,
-                ),
-            )
+    {parameterization}:
+        {child_checks}
+        if {check_var}:
+            break
+                        """,
+                        add_newline=True,
+                    ).format(
+                        check_var=self.check_var,
+                        parameterization=parameterization,
+                        child_checks=child.out().rstrip(),
+                    ),
+                )
+
+            # handle normal child groups
+            else:
+                children_checks = "".join(
+                    handle_indentation(
+                        """
+if not {check_var}:
+    {child_out}
+                        """,
+                        add_newline=True,
+                    ).format(
+                        check_var=self.check_var,
+                        child_out=child.out(),
+                    ) for child in children
+                )
+                out.append(
+                    handle_indentation(
+                        """
+if {check_var}:
+    {check_var} = False
+    {children_checks}
+                        """,
+                        add_newline=True,
+                    ).format(
+                        check_var=self.check_var,
+                        children_checks=children_checks,
+                    ),
+                )
 
         # commit variable definitions
         name_set_code = []
-        for name, (pos, val) in self.names.items():
+        for name in self.names:
             name_set_code.append(
                 handle_indentation(
                     """
 if {set_name_var} is not _coconut_sentinel:
-    {name} = {val}
-                """,
+    {name} = {set_name_var}
+                    """,
                     add_newline=True,
                 ).format(
                     set_name_var=self.get_set_name_var(name),
                     name=name,
-                    val=val,
                 ),
             )
         if name_set_code:
@@ -1049,7 +1178,7 @@ if {set_name_var} is not _coconut_sentinel:
                     """
 if {check_var}:
     {name_set_code}
-                """,
+                    """,
                 ).format(
                     check_var=self.check_var,
                     name_set_code="".join(name_set_code),
@@ -1063,7 +1192,7 @@ if {check_var}:
                     """
 if {check_var} and not ({guards}):
     {check_var} = False
-                """,
+                    """,
                     add_newline=True,
                 ).format(
                     check_var=self.check_var,

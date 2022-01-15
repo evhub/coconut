@@ -207,7 +207,7 @@ else:
     assert False
         """.strip())
     except CoconutStyleError as err:
-        assert str(err) == """found deprecated isinstance-checking 'x is int is str' pattern; use 'x `isinstance` int `isinstance` str' instead (remove --strict to dismiss) (line 2)
+        assert str(err) == """found deprecated isinstance-checking 'x is int is str' pattern; use 'x `isinstance` int and x `isinstance` str' instead (remove --strict to dismiss) (line 2)
   x is int is str = x"""
 
     setup(target="2.7")

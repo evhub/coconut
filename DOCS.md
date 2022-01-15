@@ -902,6 +902,8 @@ base_pattern ::= (
         [patterns ","]
         "*" pattern
         ["," patterns]
+        ["*" pattern
+        ["," patterns]]
       (")" | "]")
     | [(                             # sequence splits
         "(" patterns ")"
@@ -909,7 +911,10 @@ base_pattern ::= (
       ) "+"] NAME ["+" (
         "(" patterns ")"                 # this match must be the same
         | "[" patterns "]"               #  construct as the first match
-      )]
+      )] ["+" NAME ["+" (
+        "(" patterns ")"                 # and same here
+        | "[" patterns "]"
+      )]]
     | [(                             # iterator splits
         "(" patterns ")"
         | "[" patterns "]"
@@ -919,36 +924,45 @@ base_pattern ::= (
         | "[" patterns "]"
         | "(|" patterns "|)"
       )]
-    | ([STRING "+"] NAME             # complex string matching
-        ["+" STRING])                #  (STRING cannot be an f-string here)
+    | [STRING "+"] NAME              # complex string matching
+        ["+" STRING]                 #  (does not work with f-string literals)
+        ["+" NAME ["+" STRING]]
 )
 ```
 
 ##### Semantics Specification
 
 `match` statements will take their pattern and attempt to "match" against it, performing the checks and deconstructions on the arguments as specified by the pattern. The different constructs that can be specified in a pattern, and their function, are:
-- Constants, Numbers, and Strings: will only match to the same constant, number, or string in the same position in the arguments.
-- Variable Bindings: will match to anything, and will be bound to whatever they match to, with some exceptions:
-  * If the same variable is used multiple times, a check will be performed that each use matches to the same value.
-  * If the variable name `_` is used, nothing will be bound and everything will always match to it (`_` is Coconut's "wildcard").
-- Explicit Bindings (`<pattern> as <var>`): will bind `<var>` to `<pattern>`.
-- Equality Checks (`==<expr>`): will check that whatever is in that position is `==` to the expression `<expr>`.
-- Identity Checks (`is <expr>`): will check that whatever is in that position `is` the expression `<expr>`.
-- Infix Checks (`` <pattern> `<op>` <expr> ``): will check that the operator `<op>$(<expr>)` returns a truthy value when called on whatever is in that position, then matches `<pattern>`. For example, `` x `isinstance` int `` will check that whatever is in that position `isinstance$(?, int)` and bind it to `x`. Can be used with [`match_if`](#match_if) to check if an arbitrary predicate holds.
-- Classes or Data Types (`<name>(<args>)`): will match as a data type if given [a Coconut `data` type](#data) (or a tuple of Coconut data types) and a class otherwise.
-- Data Types (`data <name>(<args>)`): will check that whatever is in that position is of data type `<name>` and will match the attributes to `<args>`. Includes support for positional arguments, named arguments, and starred arguments.
-- Classes (`class <name>(<args>)`): does [PEP-634-style class matching](https://www.python.org/dev/peps/pep-0634/#class-patterns).
-- Lists (`[<patterns>]`), Tuples (`(<patterns>)`): will only match a sequence (`collections.abc.Sequence`) of the same length, and will check the contents against `<patterns>`.
-- Lazy lists (`(|<patterns>|)`): same as list or tuple matching, but checks for an Iterable (`collections.abc.Iterable`) instead of a Sequence.
-- Dicts (`{<key>: <value>, ...}`): will match any mapping (`collections.abc.Mapping`) with the given keys and values that match the value patterns. Keys must be constants or equality checks.
-- Dicts With Rest (`{<pairs>, **<rest>}`): will match a mapping (`collections.abc.Mapping`) containing all the `<pairs>`, and will put a `dict` of everything else into `<rest>`. If `<rest>` is `{}`, will enforce that the mapping is exactly the same length as `<pairs>`.
-- Sets (`{<constants>}`): will only match a set (`collections.abc.Set`) of the same length and contents.
-- View Patterns (`(<expression>) -> <pattern>`): calls `<expression>` on the item being matched and matches the result to `<pattern>`. The match fails if a [`MatchError`](#matcherror) is raised. `<expression>` may be unparenthesized only when it is a single atom.
-- Head-Tail Splits (`<list/tuple> + <var>`): will match the beginning of the sequence against the `<list/tuple>`, then bind the rest to `<var>`, and make it the type of the construct used.
-- Init-Last Splits (`<var> + <list/tuple>`): exactly the same as head-tail splits, but on the end instead of the beginning of the sequence.
-- Head-Last Splits (`<list/tuple> + <var> + <list/tuple>`): the combination of a head-tail and an init-last split.
-- Iterator Splits (`<list/tuple/lazy list> :: <var>`): will match the beginning of an iterable (`collections.abc.Iterable`) against the `<list/tuple/lazy list>`, then bind the rest to `<var>` or check that the iterable is done.
-- Complex String Matching (`<string> + <var> + <string>`): matches strings that start and end with the given substrings, binding the middle to `<var>`.
+- Variable Bindings:
+  - Implicit Bindings (`<var>`): will match to anything, and will be bound to whatever they match to, with some exceptions:
+    * If the same variable is used multiple times, a check will be performed that each use matches to the same value.
+    * If the variable name `_` is used, nothing will be bound and everything will always match to it (`_` is Coconut's "wildcard").
+  - Explicit Bindings (`<pattern> as <var>`): will bind `<var>` to `<pattern>`.
+- Basic Checks:
+  - Constants, Numbers, and Strings: will only match to the same constant, number, or string in the same position in the arguments.
+  - Equality Checks (`==<expr>`): will check that whatever is in that position is `==` to the expression `<expr>`.
+  - Identity Checks (`is <expr>`): will check that whatever is in that position `is` the expression `<expr>`.
+  - Sets (`{<constants>}`): will only match a set (`collections.abc.Set`) of the same length and contents.
+- Arbitrary Function Patterns:
+  - Infix Checks (`` <pattern> `<op>` <expr> ``): will check that the operator `<op>$(<expr>)` returns a truthy value when called on whatever is in that position, then matches `<pattern>`. For example, `` x `isinstance` int `` will check that whatever is in that position `isinstance$(?, int)` and bind it to `x`. Can be used with [`match_if`](#match_if) to check if an arbitrary predicate holds.
+  - View Patterns (`(<expression>) -> <pattern>`): calls `<expression>` on the item being matched and matches the result to `<pattern>`. The match fails if a [`MatchError`](#matcherror) is raised. `<expression>` may be unparenthesized only when it is a single atom.
+- Class and Data Type Matching:
+  - Classes or Data Types (`<name>(<args>)`): will match as a data type if given [a Coconut `data` type](#data) (or a tuple of Coconut data types) and a class otherwise.
+  - Data Types (`data <name>(<args>)`): will check that whatever is in that position is of data type `<name>` and will match the attributes to `<args>`. Includes support for positional arguments, named arguments, and starred arguments.
+  - Classes (`class <name>(<args>)`): does [PEP-634-style class matching](https://www.python.org/dev/peps/pep-0634/#class-patterns).
+- Mapping Destructuring:
+  - Dicts (`{<key>: <value>, ...}`): will match any mapping (`collections.abc.Mapping`) with the given keys and values that match the value patterns. Keys must be constants or equality checks.
+  - Dicts With Rest (`{<pairs>, **<rest>}`): will match a mapping (`collections.abc.Mapping`) containing all the `<pairs>`, and will put a `dict` of everything else into `<rest>`. If `<rest>` is `{}`, will enforce that the mapping is exactly the same length as `<pairs>`.
+- Sequence Destructuring:
+  - Lists (`[<patterns>]`), Tuples (`(<patterns>)`): will only match a sequence (`collections.abc.Sequence`) of the same length, and will check the contents against `<patterns>`.
+  - Lazy lists (`(|<patterns>|)`): same as list or tuple matching, but checks for an Iterable (`collections.abc.Iterable`) instead of a Sequence.
+  - Head-Tail Splits (`<list/tuple> + <var>` or `(<patterns>, *<var>)`): will match the beginning of the sequence against the `<list/tuple>`/`<patterns>`, then bind the rest to `<var>`, and make it the type of the construct used.
+  - Init-Last Splits (`<var> + <list/tuple>` or `(*<var>, <patterns>)`): exactly the same as head-tail splits, but on the end instead of the beginning of the sequence.
+  - Head-Last Splits (`<list/tuple> + <var> + <list/tuple>` or `(<patterns>, *<var>, <patterns>)`): the combination of a head-tail and an init-last split.
+  - Search Splits (`<var1> + <list/tuple> + <var2>` or `(*<var1>, <patterns>, *<var2>)`): searches for the first occurrence of the `<list/tuple>`/`<patterns>` in the sequence, then puts everything before into `<var1>` and everything after into `<var2>`.
+  - Head-Last Search Splits (`<list/tuple> + <var> + <list/tuple> + <var> + <list/tuple>` or `(<patterns>, *<var>, <patterns>, *<var>, <patterns>)`): the combination of a head-tail split and a search split.
+  - Iterator Splits (`<list/tuple/lazy list> :: <var>`): will match the beginning of an iterable (`collections.abc.Iterable`) against the `<list/tuple/lazy list>`, then bind the rest to `<var>`.
+  - Complex String Matching (`<string> + <var> + <string> + <var> + <string>`): string matching supports the same destructuring options as above.
 
 _Note: Like [iterator slicing](#iterator-slicing), iterator and lazy list matching make no guarantee that the original iterator matched against be preserved (to preserve the iterator, use Coconut's [`tee`](#tee) or [`reiterable`](#reiterable) built-ins)._
 
