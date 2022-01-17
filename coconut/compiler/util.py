@@ -1005,10 +1005,18 @@ def literal_eval(py_code):
         raise CoconutInternalException("failed to literal eval", py_code)
 
 
+def get_func_args(func):
+    """Inspect a function to determine its argument names."""
+    if PY2:
+        return inspect.getargspec(func)[0]
+    else:
+        return inspect.getfullargspec(func)[0]
+
+
 def should_trim_arity(func):
     """Determine if we need to call _trim_arity on func."""
     try:
-        func_args = inspect.getargspec(func)[0]
+        func_args = get_func_args(func)
     except TypeError:
         return True
     if func_args[:3] == ["original", "loc", "tokens"]:
