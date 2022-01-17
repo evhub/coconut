@@ -1388,3 +1388,15 @@ def split1_comma(s):
         return s1, s2
     else:
         return s, ""
+
+def odd_primes(p) =
+    (p,) :: filter(-> _ % p != 0, odd_primes(p + 2))
+
+def primes() =
+    (2,) :: odd_primes(3)
+
+def twin_primes(_ :: [p, (.-2) -> p] :: ps) =
+    [(p, p+2)] :: twin_primes([p + 2] :: ps)
+
+addpattern def twin_primes() =  # type: ignore
+    twin_primes(primes())

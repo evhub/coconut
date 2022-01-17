@@ -1085,6 +1085,15 @@ def main_test() -> bool:
     assert cs == ["1", "2"]
     match cs + [","] + cs in "12,34":
         assert False
+    [] + xs + [] + ys + [] = (1, 2, 3)
+    assert xs == ()
+    assert ys == (1, 2, 3)
+    [] :: ixs :: [] :: iys :: [] = (x for x in (1, 2, 3))
+    assert ixs |> list == []
+    assert iys |> list == [1, 2, 3]
+    "" + s_xs + "" + s_ys + "" = "123"
+    assert s_xs == ""
+    assert s_ys == "123"
     return True
 
 def test_asyncio() -> bool:

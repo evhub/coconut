@@ -582,7 +582,8 @@ class Matcher(object):
         elif seq_groups[0][0] == "string":
             internal_assert(not iter_match, "cannot be both string and iter match")
             _, (str_item, str_len) = seq_groups.pop(0)
-            self.add_check(item + ".startswith(" + str_item + ")")
+            if str_len > 0:
+                self.add_check(item + ".startswith(" + str_item + ")")
             start_ind += str_len
         if not seq_groups:
             return
@@ -598,7 +599,8 @@ class Matcher(object):
         elif seq_groups[-1][0] == "string":
             internal_assert(not iter_match, "cannot be both string and iter match")
             _, (str_item, str_len) = seq_groups.pop()
-            self.add_check(item + ".endswith(" + str_item + ")")
+            if str_len > 0:
+                self.add_check(item + ".endswith(" + str_item + ")")
             last_ind -= str_len
         if not seq_groups:
             return
@@ -657,16 +659,88 @@ class Matcher(object):
                 # handle linear search patterns
                 if len(seq_groups) == 3:
                     (front_gtype, front_match), mid_group, (back_gtype, back_match) = seq_groups
-
-                    # sanity checks
                     internal_assert(front_gtype == "capture" == back_gtype, "invalid sequence match middle groups", seq_groups)
-                    if iter_match:
-                        raise CoconutDeferredSyntaxError("linear sequence search patterns are not supported for iterable patterns", self.loc)
-
                     mid_gtype, mid_contents = mid_group
 
-                    # short-circuit for strings
-                    if mid_gtype == "string":
+                    if iter_match:
+                        internal_assert(mid_gtype == "elem_matches", "invalid iterable search match middle group", mid_group)
+                        mid_len = len(mid_contents)
+                        if mid_len == 0:
+                            raise CoconutDeferredSyntaxError("found empty iterable search pattern", self.loc)
+
+                        # ensure we have an iterable var to work with
+                        if iterable_var is None:
+                            iterable_var = self.get_temp_var()
+                            self.add_def(iterable_var + " = _coconut.iter(" + mid_item + ")")
+
+                        # create a cache variable to store elements so far
+                        iter_cache_var = self.get_temp_var()
+                        self.add_def(iter_cache_var + " = []")
+
+                        # construct a parameterized child to perform the search
+                        iter_item_var = self.get_temp_var()
+                        parameterized_child = self.parameterized_branch(
+                            "for {iter_item_var} in {iterable_var}".format(
+                                iter_item_var=iter_item_var,
+                                iterable_var=iterable_var,
+                            ),
+                        )
+                        parameterized_child.add_def(iter_cache_var + ".append(" + iter_item_var + ")")
+                        with parameterized_child.down_a_level():
+                            parameterized_child.add_check("_coconut.len(" + iter_cache_var + ") >= " + str(mid_len))
+
+                            # get the items to search against
+                            front_item = "{iter_cache_var}[:-{mid_len}]".format(iter_cache_var=iter_cache_var, mid_len=mid_len)
+                            searching_through = "{iter_cache_var}[-{mid_len}:]".format(iter_cache_var=iter_cache_var, mid_len=mid_len)
+                            back_item = iterable_var
+
+                            # perform the matches in the child
+                            search_item = parameterized_child.get_temp_var()
+                            parameterized_child.add_def(search_item + " = " + searching_through)
+                            with parameterized_child.down_a_level():
+                                parameterized_child.handle_sequence(seq_type, [mid_group], search_item)
+                                # no need to make temp_vars here since these are guaranteed to be var matches
+                                parameterized_child.match(front_match, front_item)
+                                parameterized_child.match(back_match, back_item)
+
+                    elif mid_gtype == "elem_matches":
+                        mid_len = len(mid_contents)
+
+                        # construct a parameterized child to perform the search
+                        seq_ind_var = self.get_temp_var()
+                        parameterized_child = self.parameterized_branch(
+                            "for {seq_ind_var} in _coconut.range(_coconut.len({mid_item}))".format(
+                                seq_ind_var=seq_ind_var,
+                                mid_item=mid_item,
+                            ),
+                        )
+
+                        # get the items to search against
+                        front_item = "{mid_item}[:{seq_ind_var}]".format(
+                            mid_item=mid_item,
+                            seq_ind_var=seq_ind_var,
+                        )
+                        searching_through = "{mid_item}[{seq_ind_var}:{seq_ind_var} + {mid_len}]".format(
+                            mid_item=mid_item,
+                            seq_ind_var=seq_ind_var,
+                            mid_len=mid_len,
+                        )
+                        back_item = "{mid_item}[{seq_ind_var} + {mid_len}:]".format(
+                            mid_item=mid_item,
+                            seq_ind_var=seq_ind_var,
+                            mid_len=mid_len,
+                        )
+
+                        # perform the matches in the child
+                        search_item = parameterized_child.get_temp_var()
+                        parameterized_child.add_def(search_item + " = " + searching_through)
+                        with parameterized_child.down_a_level():
+                            parameterized_child.handle_sequence(seq_type, [mid_group], search_item)
+                            # these are almost always var matches, so we don't bother to make new temp vars here
+                            parameterized_child.match(front_match, front_item)
+                            parameterized_child.match(back_match, back_item)
+
+                    elif mid_gtype == "string":
                         str_item, str_len = mid_contents
                         found_loc = self.get_temp_var()
                         self.add_def(found_loc + " = " + mid_item + ".find(" + str_item + ")")
@@ -675,45 +749,9 @@ class Matcher(object):
                             # no need to make temp_vars here since these are guaranteed to be var matches
                             self.match(front_match, "{mid_item}[:{found_loc}]".format(mid_item=mid_item, found_loc=found_loc))
                             self.match(back_match, "{mid_item}[{found_loc} + {str_len}:]".format(mid_item=mid_item, found_loc=found_loc, str_len=str_len))
-                        return
 
-                    # extract the length of the middle match
-                    internal_assert(mid_gtype == "elem_matches", "invalid linear search group type", mid_gtype)
-                    mid_len = len(mid_contents)
-
-                    # construct a parameterized child to perform the search
-                    seq_ind_var = self.get_temp_var()
-                    parameterized_child = self.parameterized_branch(
-                        "for {seq_ind_var} in _coconut.range(_coconut.len({mid_item}))".format(
-                            seq_ind_var=seq_ind_var,
-                            mid_item=mid_item,
-                        ),
-                    )
-
-                    # get the items to search against
-                    front_item = "{mid_item}[:{seq_ind_var}]".format(
-                        mid_item=mid_item,
-                        seq_ind_var=seq_ind_var,
-                    )
-                    searching_through = "{mid_item}[{seq_ind_var}:{seq_ind_var} + {mid_len}]".format(
-                        mid_item=mid_item,
-                        seq_ind_var=seq_ind_var,
-                        mid_len=mid_len,
-                    )
-                    back_item = "{mid_item}[{seq_ind_var} + {mid_len}:]".format(
-                        mid_item=mid_item,
-                        seq_ind_var=seq_ind_var,
-                        mid_len=mid_len,
-                    )
-
-                    # perform the matches in the child
-                    search_item = parameterized_child.get_temp_var()
-                    parameterized_child.add_def(search_item + " = " + searching_through)
-                    with parameterized_child.down_a_level():
-                        parameterized_child.handle_sequence(seq_type, [mid_group], search_item)
-                        # no need for to_sequence here since we know front_item and mid_item are already the correct seq_type
-                        parameterized_child.match(front_match, front_item)
-                        parameterized_child.match(back_match, back_item)
+                    else:
+                        raise CoconutInternalException("invalid linear search group type", mid_gtype)
                     return
 
                 # raise on unsupported quadratic matches

@@ -915,7 +915,7 @@ base_pattern ::= (
         "(" patterns ")"                 # and same here
         | "[" patterns "]"
       )]]
-    | [(                             # iterator splits
+    | [(                             # iterable splits
         "(" patterns ")"
         | "[" patterns "]"
         | "(|" patterns "|)"
@@ -923,7 +923,11 @@ base_pattern ::= (
         "(" patterns ")"
         | "[" patterns "]"
         | "(|" patterns "|)"
-      )]
+      )] [ "::" NAME [
+        "(" patterns ")"
+        | "[" patterns "]"
+        | "(|" patterns "|)"
+      ]]
     | [STRING "+"] NAME              # complex string matching
         ["+" STRING]                 #  (does not work with f-string literals)
         ["+" NAME ["+" STRING]]
@@ -961,7 +965,7 @@ base_pattern ::= (
   - Head-Last Splits (`<list/tuple> + <var> + <list/tuple>` or `(<patterns>, *<var>, <patterns>)`): the combination of a head-tail and an init-last split.
   - Search Splits (`<var1> + <list/tuple> + <var2>` or `(*<var1>, <patterns>, *<var2>)`): searches for the first occurrence of the `<list/tuple>`/`<patterns>` in the sequence, then puts everything before into `<var1>` and everything after into `<var2>`.
   - Head-Last Search Splits (`<list/tuple> + <var> + <list/tuple> + <var> + <list/tuple>` or `(<patterns>, *<var>, <patterns>, *<var>, <patterns>)`): the combination of a head-tail split and a search split.
-  - Iterator Splits (`<list/tuple/lazy list> :: <var>`): will match the beginning of an iterable (`collections.abc.Iterable`) against the `<list/tuple/lazy list>`, then bind the rest to `<var>`.
+  - Iterable Splits (`<list/tuple/lazy list> :: <var> :: <list/tuple/lazy list> :: <var> :: <list/tuple/lazy list>`): same as other sequence destructuring, but works on any iterable (`collections.abc.Iterable`), including infinite iterators (note that if an iterator is matched against it will be modified unless it is [`reiterable`](#reiterable)).
   - Complex String Matching (`<string> + <var> + <string> + <var> + <string>`): string matching supports the same destructuring options as above.
 
 _Note: Like [iterator slicing](#iterator-slicing), iterator and lazy list matching make no guarantee that the original iterator matched against be preserved (to preserve the iterator, use Coconut's [`tee`](#tee) or [`reiterable`](#reiterable) built-ins)._
@@ -983,6 +987,7 @@ def factorial(value):
 3 |> factorial |> print
 ```
 _Showcases `else` statements, which work much like `else` statements in Python: the code under an `else` statement is only executed if the corresponding match fails._
+
 ```coconut
 data point(x, y):
     def transform(self, other):
@@ -995,6 +1000,7 @@ point(1,2) |> point(3,4).transform |> print
 point(1,2) |> (==)$(point(1,2)) |> print
 ```
 _Showcases matching to data types and the default equality operator. Values defined by the user with the `data` statement can be matched against and their contents accessed by specifically referencing arguments to the data type's constructor._
+
 ```coconut
 class Tree
 data Empty() from Tree
@@ -1014,6 +1020,7 @@ Leaf(5) |> depth |> print
 Node(Leaf(2), Node(Empty(), Leaf(3))) |> depth |> print
 ```
 _Showcases how the combination of data types and match statements can be used to powerful effect to replicate the usage of algebraic data types in other functional programming languages._
+
 ```coconut
 def duplicate_first([x] + xs as l) =
     [x] + l
@@ -1021,6 +1028,7 @@ def duplicate_first([x] + xs as l) =
 [1,2,3] |> duplicate_first |> print
 ```
 _Showcases head-tail splitting, one of the most common uses of pattern-matching, where a `+ <var>` (or `:: <var>` for any iterable) at the end of a list or tuple literal can be used to match the rest of the sequence._
+
 ```
 def sieve([head] :: tail) =
     [head] :: sieve(n for n in tail if n % head)
@@ -1029,6 +1037,23 @@ def sieve([head] :: tail) =
 def sieve((||)) = []
 ```
 _Showcases how to match against iterators, namely that the empty iterator case (`(||)`) must come last, otherwise that case will exhaust the whole iterator before any other pattern has a chance to match against it._
+
+```
+def odd_primes(p) =
+    (p,) :: filter(-> _ % p != 0, odd_primes(p + 2))
+
+def primes() =
+    (2,) :: odd_primes(3)
+
+def twin_primes(_ :: [p, (.-2) -> p] :: ps) =
+    [(p, p+2)] :: twin_primes([p + 2] :: ps)
+
+addpattern def twin_primes() =  # type: ignore
+    twin_primes(primes())
+
+twin_primes()$[:5] |> list |> print
+```
+_Showcases the use of an iterable search pattern and a view pattern to construct an iterator of all twin primes._
 
 **Python:**
 _Can't be done without a long series of checks for each `match` statement. See the compiled code for the Python syntax._
@@ -1177,6 +1202,7 @@ v.x = 2  # this will fail because data objects are immutable
 vector2() |> print
 ```
 _Showcases the syntax, features, and immutable nature of `data` types, as well as the use of default arguments and type annotations._
+
 ```coconut
 data Empty()
 data Leaf(n)
@@ -1193,6 +1219,7 @@ def size(Node(l, r)) = size(l) + size(r)
 size(Node(Empty(), Leaf(10))) == 1
 ```
 _Showcases the algebraic nature of `data` types when combined with pattern-matching._
+
 ```coconut
 data vector(*pts):
     """Immutable arbitrary-length vector."""
@@ -1811,6 +1838,7 @@ def factorial(n, acc=1):
             return factorial(n-1, acc*n)
 ```
 _Showcases tail recursion elimination._
+
 ```coconut
 # unlike in Python, neither of these functions will ever hit a maximum recursion depth error
 def is_even(0) = True
@@ -2948,7 +2976,7 @@ all_equal([1, 1, 2])
 
 ### `recursive_iterator`
 
-Coconut provides a `recursive_iterator` decorator that provides significant optimizations for any stateless, recursive function that returns an iterator. To use `recursive_iterator` on a function, it must meet the following criteria:
+Coconut provides a `recursive_iterator` decorator that memoizes any stateless, recursive function that returns an iterator. To use `recursive_iterator` on a function, it must meet the following criteria:
 
 1. your function either always `return`s an iterator or generates an iterator using `yield`,
 2. when called multiple times with arguments that are equal, your function produces the same iterator (your function is stateless), and
