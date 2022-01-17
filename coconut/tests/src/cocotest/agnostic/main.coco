@@ -1086,8 +1086,8 @@ def main_test() -> bool:
     match cs + [","] + cs in "12,34":
         assert False
     [] + xs + [] + ys + [] = (1, 2, 3)
-    assert xs == ()
-    assert ys == (1, 2, 3)
+    assert xs == []
+    assert ys == [1, 2, 3]
     [] :: ixs :: [] :: iys :: [] = (x for x in (1, 2, 3))
     assert ixs |> list == []
     assert iys |> list == [1, 2, 3]

@@ -1039,11 +1039,11 @@ def sieve((||)) = []
 _Showcases how to match against iterators, namely that the empty iterator case (`(||)`) must come last, otherwise that case will exhaust the whole iterator before any other pattern has a chance to match against it._
 
 ```
-def odd_primes(p) =
+def odd_primes(p=3) =
     (p,) :: filter(-> _ % p != 0, odd_primes(p + 2))
 
 def primes() =
-    (2,) :: odd_primes(3)
+    (2,) :: odd_primes()
 
 def twin_primes(_ :: [p, (.-2) -> p] :: ps) =
     [(p, p+2)] :: twin_primes([p + 2] :: ps)
