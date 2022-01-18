@@ -68,6 +68,7 @@ from coconut.constants import (
     none_coalesce_var,
     func_var,
     untcoable_funcs,
+    early_passthrough_wrapper,
 )
 from coconut.compiler.util import (
     combine,
@@ -719,7 +720,7 @@ class Grammar(object):
     )
 
     xonsh_command = Forward()
-    passthrough_item = combine(backslash + integer + unwrap) | xonsh_command
+    passthrough_item = combine((backslash | Literal(early_passthrough_wrapper)) + integer + unwrap) | xonsh_command
     passthrough_block = combine(fixto(dubbackslash, "\\") + integer + unwrap)
 
     endline = Forward()
@@ -2025,9 +2026,28 @@ class Grammar(object):
         greedy=True,
     )
 
-    rest_of_arg = ZeroOrMore(parens | brackets | braces | ~comma + ~rparen + any_char)
-    tfpdef_tokens = base_name - Optional(originalTextFor(colon - rest_of_arg))
-    tfpdef_default_tokens = base_name - Optional(originalTextFor((equals | colon) - rest_of_arg))
+    rest_of_lambda = Forward()
+    lambdas = keyword("lambda") - rest_of_lambda - colon
+    rest_of_lambda <<= ZeroOrMore(
+        # handle anything that could capture colon
+        parens
+        | brackets
+        | braces
+        | lambdas
+        | ~colon + any_char,
+    )
+    rest_of_tfpdef = originalTextFor(
+        ZeroOrMore(
+            # handle anything that could capture comma, rparen, or equals
+            parens
+            | brackets
+            | braces
+            | lambdas
+            | ~comma + ~rparen + ~equals + any_char,
+        ),
+    )
+    tfpdef_tokens = base_name - Optional(colon.suppress() - rest_of_tfpdef.suppress())
+    tfpdef_default_tokens = tfpdef_tokens - Optional(equals.suppress() - rest_of_tfpdef)
     parameters_tokens = Group(
         Optional(
             tokenlist(

@@ -340,6 +340,26 @@ def get_frame() =
     secret = "hidden"
     sys._getframe()
 
+def stored_default(x, l=[]):
+    if not x:
+        return l
+    l.append(x)
+    return stored_default(x-1)
+
+class stored_default_cls:
+
+    def stored_default(x, l=stored_default(0)):
+        if not x:
+            return l
+        l.append(x)
+        return stored_default(x-1)
+
+    def __call__(self, x, l=[]):
+        if not x:
+            return l
+        l.append(x)
+        return self.__call__(x-1)
+
 
 # Data Blocks:
 try:

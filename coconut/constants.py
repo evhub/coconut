@@ -185,6 +185,7 @@ closeindent = "\xb6"  # pilcrow
 strwrapper = "\u25b6"  # black right-pointing triangle
 replwrapper = "\u25b7"  # white right-pointing triangle
 lnwrapper = "\u25c6"  # black diamond
+early_passthrough_wrapper = "\u2038"  # caret
 unwrapper = "\u23f9"  # stop square
 funcwrapper = "def:"
 

@@ -831,6 +831,9 @@ forward 2""") == 900
     assert split1_comma("abcd") == ("abcd", "")
     assert primes()$[:5] |> tuple == (2, 3, 5, 7, 11)
     assert twin_primes()$[:5] |> list == [(3, 5), (5, 7), (11, 13), (17, 19), (29, 31)]
+    assert stored_default(2) == [2, 1] == stored_default_cls()(2)
+    assert stored_default(2) == [2, 1, 2, 1] == stored_default_cls()(2)
+    assert stored_default_cls.stored_default(3) == [2, 1, 2, 1, 3, 2, 1]
 
     # must come at end
     assert fibs_calls[0] == 1

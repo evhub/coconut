@@ -72,6 +72,7 @@ from coconut.constants import (
     non_syntactic_newline,
     indchars,
     default_whitespace_chars,
+    early_passthrough_wrapper,
 )
 from coconut.util import (
     pickleable_obj,
@@ -240,7 +241,7 @@ def split_args_list(tokens, loc):
     """Splits function definition arguments."""
     pos_only_args = []
     req_args = []
-    def_args = []
+    default_args = []
     star_arg = None
     kwd_only_args = []
     dubstar_arg = None
@@ -289,14 +290,37 @@ def split_args_list(tokens, loc):
                 # def arg (pos = 1)
                 if pos <= 1:
                     pos = 1
-                    def_args.append((arg[0], arg[1]))
+                    default_args.append((arg[0], arg[1]))
                 # kwd only arg (pos = 2)
                 elif pos <= 2:
                     pos = 2
                     kwd_only_args.append((arg[0], arg[1]))
                 else:
                     raise CoconutDeferredSyntaxError("invalid default argument in function definition", loc)
-    return pos_only_args, req_args, def_args, star_arg, kwd_only_args, dubstar_arg
+    return pos_only_args, req_args, default_args, star_arg, kwd_only_args, dubstar_arg
+
+
+def reconstitute_paramdef(pos_only_args, req_args, default_args, star_arg, kwd_only_args, dubstar_arg):
+    """Convert the results of split_args_list back into a parameter defintion string."""
+    args_list = []
+    if pos_only_args:
+        args_list += pos_only_args
+        args_list.append("/")
+    args_list += req_args
+    for name, default in default_args:
+        args_list.append(name + "=" + default)
+    if star_arg is not None:
+        args_list.append("*" + star_arg)
+    elif kwd_only_args:
+        args_list.append("*")
+    for name, default in kwd_only_args:
+        if default is None:
+            args_list.append(name)
+        else:
+            args_list.append(name + "=" + default)
+    if dubstar_arg is not None:
+        args_list.append("**" + dubstar_arg)
+    return ", ".join(args_list)
 
 
 # end: HANDLERS
@@ -321,7 +345,7 @@ class Compiler(Grammar, pickleable_obj):
         lambda self: self.deferred_code_proc,
         lambda self: self.reind_proc,
         lambda self: self.endline_repl,
-        lambda self: self.passthrough_repl,
+        lambda self: partial(self.base_passthrough_repl, wrap_char="\\"),
         lambda self: self.str_repl,
     ]
     postprocs = reformatprocs + [
@@ -694,11 +718,13 @@ class Compiler(Grammar, pickleable_obj):
         internal_assert(text_repr[0] == text_repr[-1] and text_repr[0] in ("'", '"'), "cannot wrap str of", text)
         return ("b" if expect_bytes else "") + self.wrap_str(text_repr[1:-1], text_repr[-1])
 
-    def wrap_passthrough(self, text, multiline=True):
+    def wrap_passthrough(self, text, multiline=True, early=False):
         """Wrap a passthrough."""
         if not multiline:
             text = text.lstrip()
-        if multiline:
+        if early:
+            out = early_passthrough_wrapper
+        elif multiline:
             out = "\\"
         else:
             out = "\\\\"
@@ -714,7 +740,7 @@ class Compiler(Grammar, pickleable_obj):
         return "#" + self.add_ref("comment", text) + unwrapper
 
     def type_ignore_comment(self):
-        return ("  " if not self.minify else "") + self.wrap_comment("type: ignore", reformat=False)
+        return ("  " if not self.minify else "") + self.wrap_comment(" type: ignore", reformat=False)
 
     def wrap_line_number(self, ln):
         """Wrap a line number."""
@@ -726,7 +752,7 @@ class Compiler(Grammar, pickleable_obj):
             proc = get_proc(self)
             inputstring = proc(inputstring, **kwargs)
             if log:
-                logger.log_tag(proc.__name__, inputstring, multiline=True)
+                logger.log_tag(getattr(proc, "__name__", proc), inputstring, multiline=True)
         return inputstring
 
     def pre(self, inputstring, **kwargs):
@@ -1255,7 +1281,7 @@ class Compiler(Grammar, pickleable_obj):
                 ln += 1
         return "\n".join(out)
 
-    def passthrough_repl(self, inputstring, ignore_errors=False, **kwargs):
+    def base_passthrough_repl(self, inputstring, wrap_char, ignore_errors=False, **kwargs):
         """Add back passthroughs."""
         out = []
         index = None
@@ -1269,13 +1295,13 @@ class Compiler(Grammar, pickleable_obj):
                         ref = self.get_ref("passthrough", index)
                         out.append(ref)
                         index = None
-                    elif c != "\\" or index:
-                        out.append("\\" + index)
+                    elif c != wrap_char or index:
+                        out.append(wrap_char + index)
                         if c is not None:
                             out.append(c)
                         index = None
                 elif c is not None:
-                    if c == "\\":
+                    if c == wrap_char:
                         index = ""
                     else:
                         out.append(c)
@@ -1284,7 +1310,7 @@ class Compiler(Grammar, pickleable_obj):
                 if not ignore_errors:
                     complain(err)
                 if index is not None:
-                    out.append("\\" + index)
+                    out.append(wrap_char + index)
                     index = None
                 if c is not None:
                     out.append(c)
@@ -1361,16 +1387,20 @@ class Compiler(Grammar, pickleable_obj):
         """Generate grammar element that matches a string which is just a TRE return statement."""
         def tre_return_handle(loc, tokens):
             args = ", ".join(tokens)
+
+            # we have to use func_name not func_store here since we use this when we fail to verify that func_name is func_store
             if self.no_tco:
                 tco_recurse = "return " + func_name + "(" + args + ")"
             else:
                 tco_recurse = "return _coconut_tail_call(" + func_name + (", " + args if args else "") + ")"
+
             if not func_args or func_args == args:
                 tre_recurse = "continue"
             elif mock_var is None:
                 tre_recurse = func_args + " = " + args + "\ncontinue"
             else:
                 tre_recurse = func_args + " = " + mock_var + "(" + args + ")" + "\ncontinue"
+
             tre_check_var = self.get_temp_var("tre_check")
             return handle_indentation(
                 """
@@ -1537,7 +1567,7 @@ else:
         """Determines if TCO or TRE can be done and if so does it,
         handles dotted function names, and universalizes async functions."""
         # process tokens
-        raw_lines = funcdef.splitlines(True)
+        raw_lines = list(logical_lines(funcdef, True))
         def_stmt = raw_lines.pop(0)
 
         # detect addpattern functions
@@ -1557,14 +1587,14 @@ else:
                 internal_assert(len(split_func_tokens) == 2, "invalid function definition splitting tokens", split_func_tokens)
                 func_name, func_arg_tokens = split_func_tokens
 
-                func_params = "(" + ", ".join("".join(arg) for arg in func_arg_tokens) + ")"
+                func_paramdef = ", ".join("".join(arg) for arg in func_arg_tokens)
 
                 # arguments that should be used to call the function; must be in the order in which they're defined
                 func_args = []
                 for arg in func_arg_tokens:
                     if len(arg) > 1 and arg[0] in ("*", "**"):
                         func_args.append(arg[1])
-                    elif arg[0] != "*":
+                    elif arg[0] not in ("*", "/"):
                         func_args.append(arg[0])
                 func_args = ", ".join(func_args)
             except BaseException:
@@ -1574,7 +1604,7 @@ else:
         # run target checks if func info extraction succeeded
         if func_name is not None:
             # raises DeferredSyntaxErrors which shouldn't be complained
-            pos_only_args, req_args, def_args, star_arg, kwd_only_args, dubstar_arg = split_args_list(func_arg_tokens, loc)
+            pos_only_args, req_args, default_args, star_arg, kwd_only_args, dubstar_arg = split_args_list(func_arg_tokens, loc)
             if pos_only_args and self.target_info < (3, 8):
                 raise self.make_err(
                     CoconutTargetError,
@@ -1604,7 +1634,7 @@ else:
             def_name = func_name.rsplit(".", 1)[-1]
 
         # detect pattern-matching functions
-        is_match_func = func_params == "(*{match_to_args_var}, **{match_to_kwargs_var})".format(
+        is_match_func = func_paramdef == "*{match_to_args_var}, **{match_to_kwargs_var}".format(
             match_to_args_var=match_to_args_var,
             match_to_kwargs_var=match_to_kwargs_var,
         )
@@ -1658,7 +1688,7 @@ else:
                 and not decorators
             )
             if attempt_tre:
-                if func_args and func_args != func_params[1:-1]:
+                if func_args and func_args != func_paramdef:
                     mock_var = self.get_temp_var("mock")
                 else:
                     mock_var = None
@@ -1676,6 +1706,51 @@ else:
             )
 
             if tre:
+                # build mock to handle arg rebinding
+                if mock_var is None:
+                    mock_def = ""
+                else:
+                    # find defaults and replace them with sentinels
+                    #  (note that we can't put the original defaults in the actual defaults here,
+                    #  since we don't know if func_store will be available at mock definition)
+                    names_with_defaults = []
+                    mock_default_args = []
+                    for name, default in default_args:
+                        mock_default_args.append((name, "_coconut_sentinel"))
+                        names_with_defaults.append(name)
+                    mock_kwd_only_args = []
+                    for name, default in kwd_only_args:
+                        if default is None:
+                            mock_kwd_only_args.append((name, None))
+                        else:
+                            mock_kwd_only_args.append((name, "_coconut_sentinel"))
+                            names_with_defaults.append(name)
+
+                    # create mock def that uses original function defaults
+                    mock_paramdef = reconstitute_paramdef(pos_only_args, req_args, mock_default_args, star_arg, mock_kwd_only_args, dubstar_arg)
+                    mock_body_lines = []
+                    for i, name in enumerate(names_with_defaults):
+                        mock_body_lines.append(
+                            "if {name} is _coconut_sentinel: {name} = {orig_func}.__defaults__[{i}]".format(
+                                name=name,
+                                orig_func=func_store + ("._coconut_tco_func" if tco else ""),
+                                i=i,
+                            ),
+                        )
+                    mock_body_lines.append("return " + func_args)
+                    mock_def = handle_indentation(
+                        """
+def {mock_var}({mock_paramdef}):
+    {mock_body}
+                        """,
+                        add_newline=True,
+                    ).format(
+                        mock_var=mock_var,
+                        mock_paramdef=mock_paramdef,
+                        mock_body="\n".join(mock_body_lines),
+                    )
+
+                # assemble tre'd function
                 comment, rest = split_leading_comment(func_code)
                 indent, base, dedent = split_leading_trailing_indent(rest, 1)
                 base, base_dedent = split_trailing_indent(base)
@@ -1683,15 +1758,14 @@ else:
                 func_code = (
                     comment + indent
                     + (docstring + "\n" if docstring is not None else "")
-                    + (
-                        "def " + mock_var + func_params + ": return " + func_args + "\n"
-                        if mock_var is not None else ""
-                    ) + "while True:\n"
-                        + openindent + base + base_dedent
-                        + ("\n" if "\n" not in base_dedent else "") + "return None"
-                        + ("\n" if "\n" not in dedent else "") + closeindent + dedent
+                    + mock_def
+                    + "while True:\n"
+                    + openindent + base + base_dedent
+                    + ("\n" if "\n" not in base_dedent else "") + "return None"
+                    + ("\n" if "\n" not in dedent else "") + closeindent + dedent
                     + func_store + " = " + def_name + "\n"
                 )
+
             if tco:
                 decorators += "@_coconut_tco\n"  # binds most tightly (aside from below)
 
@@ -1727,7 +1801,7 @@ if {store_var} is not _coconut_sentinel:
         return out
 
     def deferred_code_proc(self, inputstring, add_code_at_start=False, ignore_names=(), **kwargs):
-        """Process code that was previously deferred, including functions and anything in self.add_code_before."""
+        """Process all forms of previously deferred code. All such deferred code needs to be handled here so we can properly handle nested deferred code."""
         # compile add_code_before regexes
         for name in self.add_code_before:
             if name not in self.add_code_before_regexes:
@@ -1736,6 +1810,9 @@ if {store_var} is not _coconut_sentinel:
         out = []
         for raw_line in inputstring.splitlines(True):
             bef_ind, line, aft_ind = split_leading_trailing_indent(raw_line)
+
+            # handle early passthroughs
+            line = self.base_passthrough_repl(line, wrap_char=early_passthrough_wrapper, **kwargs)
 
             # look for functions
             if line.startswith(funcwrapper):
@@ -1752,6 +1829,7 @@ if {store_var} is not _coconut_sentinel:
 
             # look for add_code_before regexes
             else:
+                full_line = bef_ind + line + aft_ind
                 for name, regex in self.add_code_before_regexes.items():
 
                     if name not in ignore_names and regex.search(line):
@@ -1767,9 +1845,9 @@ if {store_var} is not _coconut_sentinel:
                             out.append(code_to_add)
                             out.append("\n")
                             bef_ind = ""
-                            raw_line = line + aft_ind
+                            full_line = line + aft_ind
 
-                out.append(raw_line)
+                out.append(full_line)
         return "".join(out)
 
     def header_proc(self, inputstring, header="file", initial="initial", use_hash=None, **kwargs):
@@ -2205,8 +2283,8 @@ while True:
         check_var = self.get_temp_var("match_check")
         matcher = self.get_matcher(original, loc, check_var, name_list=[])
 
-        pos_only_args, req_args, def_args, star_arg, kwd_only_args, dubstar_arg = split_args_list(matches, loc)
-        matcher.match_function(match_to_args_var, match_to_kwargs_var, pos_only_args, req_args + def_args, star_arg, kwd_only_args, dubstar_arg)
+        pos_only_args, req_args, default_args, star_arg, kwd_only_args, dubstar_arg = split_args_list(matches, loc)
+        matcher.match_function(match_to_args_var, match_to_kwargs_var, pos_only_args, req_args + default_args, star_arg, kwd_only_args, dubstar_arg)
 
         if cond is not None:
             matcher.add_guard(cond)
@@ -2672,8 +2750,8 @@ if not {check_var}:
         check_var = self.get_temp_var("match_check")
         matcher = self.get_matcher(original, loc, check_var)
 
-        pos_only_args, req_args, def_args, star_arg, kwd_only_args, dubstar_arg = split_args_list(matches, loc)
-        matcher.match_function(match_to_args_var, match_to_kwargs_var, pos_only_args, req_args + def_args, star_arg, kwd_only_args, dubstar_arg)
+        pos_only_args, req_args, default_args, star_arg, kwd_only_args, dubstar_arg = split_args_list(matches, loc)
+        matcher.match_function(match_to_args_var, match_to_kwargs_var, pos_only_args, req_args + default_args, star_arg, kwd_only_args, dubstar_arg)
 
         if cond is not None:
             matcher.add_guard(cond)
@@ -2793,7 +2871,7 @@ if not {check_var}:
             return "await " + tokens[0]
         elif self.target_info >= (3, 3):
             # we have to wrap the yield here so it doesn't cause the function to be detected as an async generator
-            return self.wrap_passthrough("(yield from " + tokens[0] + ")")
+            return self.wrap_passthrough("(yield from " + tokens[0] + ")", early=True)
         else:
             # this yield is fine because we can detect the _coconut.asyncio.From
             return "(yield _coconut.asyncio.From(" + tokens[0] + "))"
@@ -2827,7 +2905,7 @@ if not {check_var}:
             if self.target.startswith("3"):
                 return varname + ": " + self.wrap_typedef(typedef) + default + comma
             else:
-                return varname + default + comma + self.wrap_passthrough(self.wrap_comment(" type: " + typedef) + "\n" + " " * self.tabideal)
+                return varname + default + comma + self.wrap_passthrough(self.wrap_comment(" type: " + typedef) + non_syntactic_newline, early=True)
 
     def typed_assign_stmt_handle(self, tokens):
         """Process Python 3.6 variable type annotations."""

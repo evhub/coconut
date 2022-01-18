@@ -5,4 +5,6 @@ def py38_test() -> bool:
     b = a
     assert (a := b := 3) == 3
     assert a == 3 == b
+    def f(x: int, /, y: int) -> int = x + y
+    assert f(1, y=2) == 3
     return True

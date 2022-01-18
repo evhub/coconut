@@ -70,6 +70,8 @@ def non_strict_test() -> bool:
             pass
     else:
         assert False
+    def weird_func(f:lambda g=->_:g=lambda h=->_:h) = f  # type: ignore
+    assert weird_func()()(5) == 5
     return True
 
 if __name__ == "__main__":
