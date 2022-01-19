@@ -1917,7 +1917,7 @@ print(binexp(5))
 
 ### Pattern-Matching Functions
 
-Coconut pattern-matching functions are just normal functions where the arguments are patterns to be matched against instead of variables to be assigned to. The syntax for pattern-matching function definition is
+Coconut pattern-matching functions are just normal functions, except where the arguments are patterns to be matched against instead of variables to be assigned to. The syntax for pattern-matching function definition is
 ```coconut
 [match] def <name>(<arg>, <arg>, ... [if <cond>]) [-> <return_type>]:
     <body>
@@ -1926,9 +1926,13 @@ where `<arg>` is defined as
 ```coconut
 [*|**] <pattern> [= <default>]
 ```
-where `<name>` is the name of the function, `<cond>` is an optional additional check, `<body>` is the body of the function, `<pattern>` is defined by Coconut's [`match` statement](#match), `<default>` is the optional default if no argument is passed, and `<return_type>` is the optional return type annotation (note that argument type annotations are not supported for pattern-matching functions). The `match` keyword at the beginning is optional, but is sometimes necessary to disambiguate pattern-matching function definition from normal function definition, which will always take precedence.
+where `<name>` is the name of the function, `<cond>` is an optional additional check, `<body>` is the body of the function, `<pattern>` is defined by Coconut's [`match` statement](#match), `<default>` is the optional default if no argument is passed, and `<return_type>` is the optional return type annotation (note that argument type annotations are not supported for pattern-matching functions). The `match` keyword at the beginning is optional, but is sometimes necessary to disambiguate pattern-matching function definition from normal function definition, since Python function definition will always take precedence.
 
-If `<pattern>` has a variable name (either directly or with `as`), the resulting pattern-matching function will support keyword arguments using that variable name. If pattern-matching function definition fails, it will raise a [`MatchError`](#matcherror) object just like [destructuring assignment](#destructuring-assignment).
+If `<pattern>` has a variable name (either directly or with `as`), the resulting pattern-matching function will support keyword arguments using that variable name.
+
+In addition to supporting pattern-matching in their arguments, pattern-matching function definitions also have a couple of notable differences compared to Python functions. Specifically:
+- If pattern-matching function definition fails, it will raise a [`MatchError`](#matcherror) (just like [destructuring assignment](#destructuring-assignment)) instead of a `TypeError`.
+- All defaults in pattern-matching function definition are late-bound rather than early-bound. Thus, `match def f(xs=[]) = xs` will instantiate a new list for each call where `xs` is not given, unlike `def f(xs=[]) = xs`, which will use the same list for all calls where `xs` is unspecified.
 
 _Note: Pattern-matching function definition can be combined with assignment and/or infix function definition._
 

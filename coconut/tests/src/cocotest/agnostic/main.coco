@@ -1094,6 +1094,12 @@ def main_test() -> bool:
     "" + s_xs + "" + s_ys + "" = "123"
     assert s_xs == ""
     assert s_ys == "123"
+    def early_bound(xs=[]) = xs
+    match def late_bound(xs=[]) = xs
+    early_bound().append(1)
+    assert early_bound() == [1]
+    late_bound().append(1)
+    assert late_bound() == []
     return True
 
 def test_asyncio() -> bool:
