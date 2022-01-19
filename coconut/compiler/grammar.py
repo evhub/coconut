@@ -713,7 +713,7 @@ class Grammar(object):
     moduledoc_item = Forward()
     unwrap = Literal(unwrapper)
     comment = Forward()
-    comment_ref = combine(pound + integer + unwrap)
+    comment_tokens = combine(pound + integer + unwrap)
     string_item = (
         combine(Literal(strwrapper) + integer + unwrap)
         | invalid_syntax(("\u201c", "\u201d", "\u2018", "\u2019"), "invalid unicode quotation mark; strings must use \" or '", greedy=True)
@@ -2048,6 +2048,10 @@ class Grammar(object):
     )
     tfpdef_tokens = base_name - Optional(colon.suppress() - rest_of_tfpdef.suppress())
     tfpdef_default_tokens = tfpdef_tokens - Optional(equals.suppress() - rest_of_tfpdef)
+    type_comment = Optional(
+        comment_tokens.suppress()
+        | passthrough_item.suppress(),
+    )
     parameters_tokens = Group(
         Optional(
             tokenlist(
@@ -2056,8 +2060,8 @@ class Grammar(object):
                     | star - Optional(tfpdef_tokens)
                     | slash
                     | tfpdef_default_tokens,
-                ) + Optional(passthrough_item.suppress()),
-                comma + Optional(passthrough_item),  # implicitly suppressed
+                ) + type_comment,
+                comma + type_comment,
             ),
         ),
     )

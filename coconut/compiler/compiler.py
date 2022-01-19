@@ -512,7 +512,7 @@ class Compiler(Grammar, pickleable_obj):
         cls.name <<= attach(cls.base_name, cls.method("name_check"))
 
         # comments are evaluated greedily because we need to know about them even if we're going to suppress them
-        cls.comment <<= attach(cls.comment_ref, cls.method("comment_handle"), greedy=True)
+        cls.comment <<= attach(cls.comment_tokens, cls.method("comment_handle"), greedy=True)
 
         # handle all atom + trailers constructs with item_handle
         cls.trailer_atom <<= trace_attach(cls.trailer_atom_ref, cls.method("item_handle"))
@@ -2682,7 +2682,7 @@ def __hash__(self):
 
     def pattern_error(self, original, loc, value_var, check_var, match_error_class='_coconut_MatchError'):
         """Construct a pattern-matching error message."""
-        base_line = clean(self.reformat(getline(loc, original), ignore_errors=True))
+        base_line = clean(self.reformat(getline(loc, original), ignore_errors=True)).strip()
         line_wrap = self.wrap_str_of(base_line)
         return handle_indentation(
             """

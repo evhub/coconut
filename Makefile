@@ -69,14 +69,14 @@ test-all: clean
 .PHONY: test
 test: test-mypy
 
-# for quickly testing nearly everything locally, just use test-basic
-.PHONY: test-basic
-test-basic:
+# basic testing for the universal target
+.PHONY: test-univ
+test-univ:
 	python ./coconut/tests --strict --line-numbers --force
 	python ./coconut/tests/dest/runner.py
 	python ./coconut/tests/dest/extras.py
 
-# same as test-basic, but doesn't recompile unchanged test files;
+# same as test-univ, but doesn't recompile unchanged test files;
 # should only be used when testing the tests not the compiler
 .PHONY: test-tests
 test-tests:
@@ -84,35 +84,35 @@ test-tests:
 	python ./coconut/tests/dest/runner.py
 	python ./coconut/tests/dest/extras.py
 
-# same as test-basic but uses Python 2
+# same as test-univ but uses Python 2
 .PHONY: test-py2
 test-py2:
 	python2 ./coconut/tests --strict --line-numbers --force
 	python2 ./coconut/tests/dest/runner.py
 	python2 ./coconut/tests/dest/extras.py
 
-# same as test-basic but uses Python 3
+# same as test-univ but uses Python 3
 .PHONY: test-py3
 test-py3:
 	python3 ./coconut/tests --strict --line-numbers --force
 	python3 ./coconut/tests/dest/runner.py
 	python3 ./coconut/tests/dest/extras.py
 
-# same as test-basic but uses PyPy
+# same as test-univ but uses PyPy
 .PHONY: test-pypy
 test-pypy:
 	pypy ./coconut/tests --strict --line-numbers --force
 	pypy ./coconut/tests/dest/runner.py
 	pypy ./coconut/tests/dest/extras.py
 
-# same as test-basic but uses PyPy3
+# same as test-univ but uses PyPy3
 .PHONY: test-pypy3
 test-pypy3:
 	pypy3 ./coconut/tests --strict --line-numbers --force
 	pypy3 ./coconut/tests/dest/runner.py
 	pypy3 ./coconut/tests/dest/extras.py
 
-# same as test-basic but also runs mypy
+# same as test-univ but also runs mypy
 .PHONY: test-mypy
 test-mypy:
 	python ./coconut/tests --strict --force --target sys --mypy --follow-imports silent --ignore-missing-imports --allow-redefinition
@@ -126,7 +126,7 @@ test-mypy-univ:
 	python ./coconut/tests/dest/runner.py
 	python ./coconut/tests/dest/extras.py
 
-# same as test-basic but includes verbose output for better debugging
+# same as test-univ but includes verbose output for better debugging
 .PHONY: test-verbose
 test-verbose:
 	python ./coconut/tests --strict --line-numbers --force --verbose --jobs 0
@@ -140,26 +140,26 @@ test-mypy-all:
 	python ./coconut/tests/dest/runner.py
 	python ./coconut/tests/dest/extras.py
 
-# same as test-basic but also tests easter eggs
+# same as test-univ but also tests easter eggs
 .PHONY: test-easter-eggs
 test-easter-eggs:
 	python ./coconut/tests --strict --line-numbers --force
 	python ./coconut/tests/dest/runner.py --test-easter-eggs
 	python ./coconut/tests/dest/extras.py
 
-# same as test-basic but uses python pyparsing
+# same as test-univ but uses python pyparsing
 .PHONY: test-pyparsing
 test-pyparsing: export COCONUT_PURE_PYTHON=TRUE
-test-pyparsing: test-basic
+test-pyparsing: test-univ
 
-# same as test-basic but uses --minify
+# same as test-univ but uses --minify
 .PHONY: test-minify
 test-minify:
 	python ./coconut/tests --strict --line-numbers --force --minify --jobs 0
 	python ./coconut/tests/dest/runner.py
 	python ./coconut/tests/dest/extras.py
 
-# same as test-basic but watches tests before running them
+# same as test-univ but watches tests before running them
 .PHONY: test-watch
 test-watch:
 	python ./coconut/tests --strict --line-numbers --force

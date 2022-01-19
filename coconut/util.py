@@ -39,6 +39,7 @@ from coconut.constants import (
     icoconut_custom_kernel_file_loc,
     WINDOWS,
     reserved_prefix,
+    non_syntactic_newline,
 )
 
 
@@ -147,6 +148,13 @@ def logical_lines(text, keep_newlines=False):
         yield prev_content
 
 
+def normalize_newlines(text):
+    """Normalize all newlines in text to \\n."""
+    norm_text = text.replace(non_syntactic_newline, "\n").replace("\r", "\n")
+    assert len(norm_text) == len(text), "failed to normalize newlines"
+    return norm_text
+
+
 def get_encoding(fileobj):
     """Get encoding of a file."""
     # sometimes fileobj.encoding is undefined, but sometimes it is None; we need to handle both cases
@@ -154,18 +162,21 @@ def get_encoding(fileobj):
     return obj_encoding if obj_encoding is not None else default_encoding
 
 
-def clean(inputline, strip=True, encoding_errors="replace"):
-    """Clean and strip a line."""
+def clean(inputline, rstrip=True, encoding_errors="replace"):
+    """Clean and strip trailing newlines."""
     stdout_encoding = get_encoding(sys.stdout)
     inputline = str(inputline)
-    if strip:
-        inputline = inputline.strip()
+    if rstrip:
+        inputline = inputline.rstrip("\n\r")
     return inputline.encode(stdout_encoding, encoding_errors).decode(stdout_encoding)
 
 
 def displayable(inputstr, strip=True):
     """Make a string displayable with minimal loss of information."""
-    return clean(str(inputstr), strip, encoding_errors="backslashreplace")
+    out = clean(str(inputstr), False, encoding_errors="backslashreplace")
+    if strip:
+        out = out.strip()
+    return out
 
 
 def get_name(expr):

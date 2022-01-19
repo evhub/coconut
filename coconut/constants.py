@@ -130,7 +130,7 @@ numpy_modules = (
 
 legal_indent_chars = " \t"  # the only Python-legal indent chars
 
-non_syntactic_newline = "\f"
+non_syntactic_newline = "\f"  # must be a single character
 
 # both must be in ascending order
 supported_py2_vers = (

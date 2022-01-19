@@ -19,6 +19,8 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 from coconut.root import *  # NOQA
 
+import traceback
+
 from coconut._pyparsing import (
     lineno,
     col as getcol,
@@ -34,6 +36,7 @@ from coconut.util import (
     logical_lines,
     clean,
     get_displayable_target,
+    normalize_newlines,
 )
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -62,7 +65,10 @@ class CoconutException(Exception, pickleable_obj):
 
     def __str__(self):
         """Get the exception message."""
-        return self.message(*self.args)
+        try:
+            return self.message(*self.args)
+        except BaseException:
+            return "error printing " + self.__class__.__name__ + ":\n" + traceback.format_exc()
 
     def __reduce__(self):
         """Get pickling information."""
@@ -92,8 +98,11 @@ class CoconutSyntaxError(CoconutException):
             message += " (line " + str(ln) + ")"
         if source:
             if point is None:
-                message += "\n" + " " * taberrfmt + clean(source)
+                for line in source.splitlines():
+                    message += "\n" + " " * taberrfmt + clean(line)
             else:
+                source = normalize_newlines(source)
+
                 if endpoint is None:
                     endpoint = 0
                 endpoint = clip(endpoint, point, len(source))
@@ -122,7 +131,7 @@ class CoconutSyntaxError(CoconutException):
                     point_ind -= part_len - len(part)
                     endpoint_ind -= part_len - len(part)
 
-                    part = clean(part, False).rstrip("\n\r")
+                    part = clean(part)
 
                     # adjust only cols that are too large based on clean/rstrip
                     point_ind = clip(point_ind, 0, len(part))
@@ -141,7 +150,7 @@ class CoconutSyntaxError(CoconutException):
                 else:
                     lines = []
                     for line in source_lines[point_ln - 1:endpoint_ln]:
-                        lines.append(clean(line, False).rstrip("\n\r"))
+                        lines.append(clean(line))
 
                     # adjust cols that are too large based on clean/rstrip
                     point_ind = clip(point_ind, 0, len(lines[0]))
