@@ -715,6 +715,9 @@ class Command(object):
         if self.runner is None:
             self.runner = Runner(self.comp, exit=self.exit_runner, store=self.mypy)
 
+        # pass runner to prompt
+        self.prompt.set_runner(self.runner)
+
     @property
     def mypy(self):
         """Whether using MyPy or not."""

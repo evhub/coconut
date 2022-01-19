@@ -89,16 +89,25 @@ try:
         # prompt_toolkit v2
         from prompt_toolkit.lexers.pygments import PygmentsLexer
         from prompt_toolkit.styles.pygments import style_from_pygments_cls
+        from prompt_toolkit.completion import FuzzyWordCompleter
+        from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
     except ImportError:
         # prompt_toolkit v1
         from prompt_toolkit.layout.lexers import PygmentsLexer
         from prompt_toolkit.styles import style_from_pygments as style_from_pygments_cls
+        from prompt_toolkit.contrib.completers import WordCompleter as FuzzyWordCompleter
+        from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 
     import pygments
     import pygments.styles
 
     from coconut.highlighter import CoconutLexer
 except ImportError:
+    complain(
+        ImportError(
+            "failed to import prompt_toolkit and/or pygments (run '{python} -m pip install --upgrade prompt_toolkit pygments' to fix)".format(python=sys.executable),
+        ),
+    )
     prompt_toolkit = None
 except KeyError:
     complain(
@@ -414,11 +423,16 @@ def invert_mypy_arg(arg):
 
 class Prompt(object):
     """Manages prompting for code on the command line."""
-    style = None
+    # config options
     multiline = prompt_multiline
     vi_mode = prompt_vi_mode
     wrap_lines = prompt_wrap_lines
     history_search = prompt_history_search
+
+    # default values
+    session = None
+    style = None
+    runner = None
 
     def __init__(self):
         """Set up the prompt."""
@@ -426,6 +440,7 @@ class Prompt(object):
             self.set_style(os.environ.get(style_env_var, default_style))
             self.set_history_file(prompt_histfile)
             self.lexer = PygmentsLexer(CoconutLexer)
+            self.suggester = AutoSuggestFromHistory()
 
     def set_style(self, style):
         """Set pygments syntax highlighting style."""
@@ -447,6 +462,15 @@ class Prompt(object):
             self.history = prompt_toolkit.history.FileHistory(fixpath(path))
         else:
             self.history = prompt_toolkit.history.InMemoryHistory()
+
+    def set_runner(self, runner):
+        """Specify the runner from which to extract completions."""
+        self.runner = runner
+
+    def get_completer(self):
+        """Get the autocompleter to use."""
+        internal_assert(self.runner is not None, "Prompt.set_runner must be called before Prompt.prompt")
+        return FuzzyWordCompleter(self.runner.vars)
 
     def input(self, more=False):
         """Prompt for code input."""
@@ -471,7 +495,9 @@ class Prompt(object):
         """Get input using prompt_toolkit."""
         try:
             # prompt_toolkit v2
-            prompt = prompt_toolkit.PromptSession(history=self.history).prompt
+            if self.session is None:
+                self.session = prompt_toolkit.PromptSession(history=self.history)
+            prompt = self.session.prompt
         except AttributeError:
             # prompt_toolkit v1
             prompt = partial(prompt_toolkit.prompt, history=self.history)
@@ -485,6 +511,8 @@ class Prompt(object):
             style=style_from_pygments_cls(
                 pygments.styles.get_style_by_name(self.style),
             ),
+            completer=self.get_completer(),
+            auto_suggest=self.suggester,
         )
 
 
