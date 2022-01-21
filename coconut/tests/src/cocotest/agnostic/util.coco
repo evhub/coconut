@@ -21,6 +21,17 @@ class AccessCounter():
             self.counts[attr] += 1
         return super(AccessCounter, self).__getattribute__(attr)
 
+def assert_raises(c, exc=Exception):
+    """Test whether callable c raises an exception of type exc."""
+    try:
+        c()
+    except exc:
+        pass
+    except BaseException as err:
+        raise AssertionError(f"got wrong exception {err} (expected {exc})")
+    else:
+        raise AssertionError(f"{c} failed to raise exception {exc}")
+
 # Infix Functions:
 plus = (+)
 mod: (int, int) -> int = (%)
@@ -384,10 +395,11 @@ data vector(x, y):
             return vector(self.x + x, self.y + y)
         else:
             raise TypeError()
-    def __add__(self, vector(x_, y_)) =
+    def __add__(self, vector(x_, y_)) =  # type: ignore
         vector(self.x + x_, self.y + y_)
     addpattern def __add__(self, int() as n) =  # type: ignore
         vector(self.x + n, self.y + n)
+    __radd__ = __add__
 data triangle(a, b, c):
     def is_right(self):
         return self.a**2 + self.b**2 == self.c**2
@@ -1312,8 +1324,9 @@ import operator
 
 def last(n=0 if n >= 0) = -n or None
 
-data End(offset `isinstance` int = 0 if offset <= 0):
-    def __add__(self, other) =
+# TODO: #645 to remove the below type: ignore
+data End(offset `isinstance` int = 0 if offset <= 0):  # type: ignore
+    def __add__(self, other) =  # type: ignore
         End(self.offset + operator.index(other))
     __radd__ = __add__
     def __sub__(self, other) =

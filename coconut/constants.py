@@ -184,13 +184,14 @@ openindent = "\u204b"  # reverse pilcrow
 closeindent = "\xb6"  # pilcrow
 strwrapper = "\u25b6"  # black right-pointing triangle
 replwrapper = "\u25b7"  # white right-pointing triangle
-lnwrapper = "\u25c6"  # black diamond
+lnwrapper = "\u2021"  # double dagger
 early_passthrough_wrapper = "\u2038"  # caret
 unwrapper = "\u23f9"  # stop square
 funcwrapper = "def:"
 
-# must be a tuple for .startswith / .endswith purposes
+# must be tuples for .startswith / .endswith purposes
 indchars = (openindent, closeindent, "\n")
+comment_chars = ("#", lnwrapper)
 
 opens = "([{"  # opens parenthetical
 closes = ")]}"  # closes parenthetical
@@ -416,6 +417,8 @@ interpreter_uses_auto_compilation = True
 interpreter_uses_coconut_breakpoint = True
 
 coconut_pth_file = os.path.join(base_dir, "command", "resources", "zcoconut.pth")
+
+interpreter_compiler_var = "__coconut_compiler__"
 
 # -----------------------------------------------------------------------------------------------------------------------
 # HIGHLIGHTER CONSTANTS:

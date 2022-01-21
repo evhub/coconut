@@ -1865,9 +1865,15 @@ class Grammar(object):
     ) + rparen.suppress() + Optional(keyword("from").suppress() + testlist)
     match_datadef_ref = Optional(match_kwd.suppress()) + data_kwd.suppress() + name + match_data_args + data_suite
 
-    simple_decorator = condense(dotted_name + Optional(function_call))("simple")
-    complex_decorator = namedexpr_test("complex")
-    decorators_ref = OneOrMore(at.suppress() - Group(longest(simple_decorator, complex_decorator)) - newline.suppress())
+    simple_decorator = condense(dotted_name + Optional(function_call) + newline)("simple")
+    complex_decorator = condense(namedexpr_test + newline)("complex")
+    decorators_ref = OneOrMore(
+        at.suppress()
+        - Group(
+            simple_decorator
+            | complex_decorator,
+        ),
+    )
     decorators = Forward()
 
     decoratable_normal_funcdef_stmt = Forward()

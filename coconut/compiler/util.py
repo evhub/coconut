@@ -87,6 +87,7 @@ from coconut.constants import (
     packrat_cache_size,
     temp_grammar_item_ref_count,
     indchars,
+    comment_chars,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -825,7 +826,10 @@ def tuple_str_of(items, add_quotes=False, add_parens=True):
 
 def rem_comment(line):
     """Remove a comment from a line."""
-    return line.split("#", 1)[0].rstrip()
+    for i, c in enumerate(append_it(line, None)):
+        if c in comment_chars:
+            break
+    return line[:i].rstrip()
 
 
 def should_indent(code):
@@ -842,7 +846,7 @@ def split_comment(line):
 
 def split_leading_comment(inputstring):
     """Split into leading comment and rest."""
-    if inputstring.startswith("#"):
+    if inputstring.startswith(comment_chars):
         comment, rest = inputstring.split("\n", 1)
         return comment + "\n", rest
     else:
@@ -884,16 +888,25 @@ def split_leading_trailing_indent(line, max_indents=None):
     return leading_indent, line, trailing_indent
 
 
+def rem_and_count_indents(inputstring):
+    """Removes and counts the ind_change (opens - closes)."""
+    no_opens = inputstring.replace(openindent, "")
+    num_opens = len(inputstring) - len(no_opens)
+    no_indents = no_opens.replace(closeindent, "")
+    num_closes = len(no_opens) - len(no_indents)
+    return no_indents, num_opens - num_closes
+
+
 def collapse_indents(indentation):
     """Removes all openindent-closeindent pairs."""
-    change_in_level = ind_change(indentation)
+    non_indent_chars, change_in_level = rem_and_count_indents(indentation)
     if change_in_level == 0:
         indents = ""
     elif change_in_level < 0:
         indents = closeindent * (-change_in_level)
     else:
         indents = openindent * change_in_level
-    return indentation.replace(openindent, "").replace(closeindent, "") + indents
+    return non_indent_chars + indents
 
 
 def final_indentation_level(code):
@@ -1024,3 +1037,11 @@ def should_trim_arity(func):
     if func_args[:4] == ["self", "original", "loc", "tokens"]:
         return False
     return True
+
+
+def sequential_split(inputstring, splits):
+    """Slice off parts of inputstring by sequential splits."""
+    out = [inputstring]
+    for s in splits:
+        out += out.pop().split(s, 1)
+    return out

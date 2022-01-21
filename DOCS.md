@@ -1154,7 +1154,7 @@ for user_data in get_data():
 
 ### `data`
 
-Coconut's `data` keyword is used to create immutable, algebraic data types with built-in support for destructuring [pattern-matching](#match), [`fmap`](#fmap), and typed equality.
+Coconut's `data` keyword is used to create immutable, algebraic data types, including built-in support for destructuring [pattern-matching](#match) and [`fmap`](#fmap).
 
 The syntax for `data` blocks is a cross between the syntax for functions and the syntax for classes. The first line looks like a function definition, but the rest of the body looks like a class, usually containing method definitions. This is because while `data` blocks actually end up as classes in Python, Coconut automatically creates a special, immutable constructor based on the given arguments.
 
@@ -1178,6 +1178,7 @@ which will need to be put in the subclass body before any method or attribute de
 Compared to [`namedtuple`s](#anonymous-namedtuples), from which `data` types are derived, `data` types:
 
 - use typed equality,
+- don't support tuple addition or multiplication (unless explicitly defined via special methods in the `data` body),
 - support starred, typed, and [pattern-matching](#match-data) arguments, and
 - have special [pattern-matching](#match) behavior.
 

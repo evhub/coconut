@@ -67,6 +67,7 @@ from coconut.constants import (
     installed_stub_dir,
     interpreter_uses_auto_compilation,
     interpreter_uses_coconut_breakpoint,
+    interpreter_compiler_var,
 )
 
 if PY26:
@@ -531,6 +532,7 @@ class Runner(object):
             self.store(comp.getheader("package:0"))
             self.run(comp.getheader("code"), store=False)
             self.fix_pickle()
+            self.vars[interpreter_compiler_var] = comp
 
     @staticmethod
     def build_vars(path=None, init=False):

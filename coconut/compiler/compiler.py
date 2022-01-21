@@ -13,10 +13,10 @@ Description: Compiles Coconut code into Python code.
 
 # Table of Contents:
 #   - Imports
-#   - Handlers
+#   - Utilities
 #   - Compiler
 #   - Processors
-#   - Compiler Handlers
+#   - Main Handlers
 #   - Checking Handlers
 #   - Endpoints
 #   - Binding
@@ -137,6 +137,7 @@ from coconut.compiler.util import (
     get_highest_parse_loc,
     literal_eval,
     should_trim_arity,
+    rem_and_count_indents,
 )
 from coconut.compiler.header import (
     minify_header,
@@ -145,7 +146,7 @@ from coconut.compiler.header import (
 
 # end: IMPORTS
 # -----------------------------------------------------------------------------------------------------------------------
-# HANDLERS:
+# UTILITIES:
 # -----------------------------------------------------------------------------------------------------------------------
 
 
@@ -323,7 +324,7 @@ def reconstitute_paramdef(pos_only_args, req_args, default_args, star_arg, kwd_o
     return ", ".join(args_list)
 
 
-# end: HANDLERS
+# end: UTILITIES
 # -----------------------------------------------------------------------------------------------------------------------
 # COMPILER:
 # -----------------------------------------------------------------------------------------------------------------------
@@ -744,7 +745,12 @@ class Compiler(Grammar, pickleable_obj):
 
     def wrap_line_number(self, ln):
         """Wrap a line number."""
-        return "#" + self.add_ref("ln", ln) + lnwrapper
+        return lnwrapper + self.add_ref("ln", ln) + unwrapper
+
+    def wrap_loc(self, original, loc):
+        """Wrap a location."""
+        ln = lineno(loc, original)
+        return self.wrap_line_number(self.adjust(ln))
 
     def apply_procs(self, procs, inputstring, log=True, **kwargs):
         """Apply processors to inputstring."""
@@ -1206,6 +1212,10 @@ class Compiler(Grammar, pickleable_obj):
             line, indent = split_trailing_indent(line)
             level += ind_change(indent)
 
+            # handle indentation markers interleaved with comment/endline markers
+            comment, change_in_level = rem_and_count_indents(comment)
+            level += change_in_level
+
             line = (line + comment).rstrip()
             out.append(line)
 
@@ -1258,16 +1268,18 @@ class Compiler(Grammar, pickleable_obj):
             add_one_to_ln = False
             try:
 
-                has_ln_comment = line.endswith(lnwrapper)
-                if has_ln_comment:
-                    line, index = line[:-1].rsplit("#", 1)
-                    new_ln = self.get_ref("ln", index)
+                wrapped_ln_split = line.rsplit(lnwrapper, 1)
+                has_wrapped_ln = len(wrapped_ln_split) > 1
+                if has_wrapped_ln:
+                    line, index = wrapped_ln_split
+                    internal_assert(index.endswith(unwrapper), "invalid wrapped line number in", line)
+                    new_ln = self.get_ref("ln", index[:-1])
                     if new_ln < ln:
-                        raise CoconutInternalException("line number decreased", (ln, new_ln))
+                        raise CoconutInternalException("line number decreased", (ln, new_ln), extra="in: " + ascii(inputstring))
                     ln = new_ln
                     line = line.rstrip()
                     add_one_to_ln = True
-                if not reformatting or has_ln_comment:
+                if not reformatting or has_wrapped_ln:
                     line += self.comments.get(ln, "")
                 if not reformatting and line.rstrip() and not line.lstrip().startswith("#"):
                     line += self.ln_comment(ln)
@@ -1838,8 +1850,7 @@ if {store_var} is not _coconut_sentinel:
 
                         # add code and update indents
                         if add_code_at_start:
-                            out.insert(0, code_to_add)
-                            out.insert(1, "\n")
+                            out.insert(0, code_to_add + "\n")
                         else:
                             out.append(bef_ind)
                             out.append(code_to_add)
@@ -1848,6 +1859,7 @@ if {store_var} is not _coconut_sentinel:
                             full_line = line + aft_ind
 
                 out.append(full_line)
+
         return "".join(out)
 
     def header_proc(self, inputstring, header="file", initial="initial", use_hash=None, **kwargs):
@@ -1864,7 +1876,7 @@ if {store_var} is not _coconut_sentinel:
 
 # end: PROCESSORS
 # -----------------------------------------------------------------------------------------------------------------------
-# COMPILER HANDLERS:
+# MAIN HANDLERS:
 # -----------------------------------------------------------------------------------------------------------------------
 
     def split_function_call(self, tokens, loc):
@@ -2476,6 +2488,9 @@ def __new__(_coconut_cls, {all_args}):
             """
 {is_data_var} = True
 __slots__ = ()
+def __add__(self, other): return _coconut.NotImplemented
+def __mul__(self, other): return _coconut.NotImplemented
+def __rmul__(self, other): return _coconut.NotImplemented
 __ne__ = _coconut.object.__ne__
 def __eq__(self, other):
     return self.__class__ is other.__class__ and _coconut.tuple.__eq__(self, other)
@@ -3113,10 +3128,10 @@ __annotations__["{name}"] = {annotation}
                 else:
                     varname = self.get_temp_var("decorator")
                     defs.append(varname + " = " + tok[0])
-                    decorators.append("@" + varname)
+                    decorators.append("@" + varname + "\n")
             else:
                 raise CoconutInternalException("invalid decorator tokens", tok)
-        return "\n".join(defs + decorators) + "\n"
+        return "".join(defs + decorators)
 
     def unsafe_typedef_or_expr_handle(self, tokens):
         """Handle Type | Type typedefs."""
@@ -3277,7 +3292,7 @@ for {match_to_var} in {item}:
 
     string_atom_handle.ignore_one_token = True
 
-# end: COMPILER HANDLERS
+# end: MAIN HANDLERS
 # -----------------------------------------------------------------------------------------------------------------------
 # CHECKING HANDLERS:
 # -----------------------------------------------------------------------------------------------------------------------
