@@ -745,7 +745,7 @@ class Compiler(Grammar, pickleable_obj):
 
     def wrap_line_number(self, ln):
         """Wrap a line number."""
-        return lnwrapper + self.add_ref("ln", ln) + unwrapper
+        return lnwrapper + str(ln) + unwrapper
 
     def wrap_loc(self, original, loc):
         """Wrap a location."""
@@ -1271,9 +1271,9 @@ class Compiler(Grammar, pickleable_obj):
                 wrapped_ln_split = line.rsplit(lnwrapper, 1)
                 has_wrapped_ln = len(wrapped_ln_split) > 1
                 if has_wrapped_ln:
-                    line, index = wrapped_ln_split
-                    internal_assert(index.endswith(unwrapper), "invalid wrapped line number in", line)
-                    new_ln = self.get_ref("ln", index[:-1])
+                    line, ln_str = wrapped_ln_split
+                    internal_assert(ln_str.endswith(unwrapper), "invalid wrapped line number in", line)
+                    new_ln = int(ln_str[:-1])
                     if new_ln < ln:
                         raise CoconutInternalException("line number decreased", (ln, new_ln), extra="in: " + ascii(inputstring))
                     ln = new_ln
