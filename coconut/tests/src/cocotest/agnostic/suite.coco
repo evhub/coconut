@@ -857,7 +857,7 @@ forward 2""") == 900
     bad(def -> tr_ = tr; tr_ *= 2)
     bad(def -> tv_ = tv; tv_ *= 2)
 
-    assert (x=1, y=2) + (3,) == (1, 2, 3)
+    assert (x=1, y=2) + (3,) == (1, 2, 3)  # type: ignore
 
     # must come at end
     assert fibs_calls[0] == 1
