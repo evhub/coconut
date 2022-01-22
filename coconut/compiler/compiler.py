@@ -1274,8 +1274,8 @@ class Compiler(Grammar, pickleable_obj):
                     line, ln_str = wrapped_ln_split
                     internal_assert(ln_str.endswith(unwrapper), "invalid wrapped line number in", line)
                     new_ln = int(ln_str[:-1])
-                    if new_ln < ln:
-                        raise CoconutInternalException("line number decreased", (ln, new_ln), extra="in: " + ascii(inputstring))
+                    # note that it is possible for this to decrease the line number,
+                    #  since there are circumstances where the compiler will reorder lines
                     ln = new_ln
                     line = line.rstrip()
                     add_one_to_ln = True
