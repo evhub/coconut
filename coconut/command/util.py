@@ -56,6 +56,7 @@ from coconut.constants import (
     prompt_vi_mode,
     prompt_wrap_lines,
     prompt_history_search,
+    prompt_use_suggester,
     style_env_var,
     mypy_path_env_var,
     tutorial_url,
@@ -435,13 +436,13 @@ class Prompt(object):
     style = None
     runner = None
 
-    def __init__(self):
+    def __init__(self, use_suggester=prompt_use_suggester):
         """Set up the prompt."""
         if prompt_toolkit is not None:
             self.set_style(os.environ.get(style_env_var, default_style))
             self.set_history_file(prompt_histfile)
             self.lexer = PygmentsLexer(CoconutLexer)
-            self.suggester = AutoSuggestFromHistory()
+            self.suggester = AutoSuggestFromHistory() if use_suggester else None
 
     def set_style(self, style):
         """Set pygments syntax highlighting style."""

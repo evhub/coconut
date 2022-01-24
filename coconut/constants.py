@@ -358,6 +358,7 @@ prompt_multiline = False
 prompt_vi_mode = str_to_bool(os.environ.get(vi_mode_env_var, ""))
 prompt_wrap_lines = True
 prompt_history_search = True
+prompt_use_suggester = False
 
 base_dir = os.path.dirname(os.path.abspath(fixpath(__file__)))
 

@@ -31,7 +31,9 @@ import re
 import ast
 import inspect
 import __future__
+import itertools
 from functools import partial, reduce
+from collections import defaultdict
 from contextlib import contextmanager
 from pprint import pformat
 
@@ -742,9 +744,61 @@ def keyword(name, explicit_prefix=None):
         return Optional(explicit_prefix.suppress()) + base_kwd
 
 
+def any_len_perm(*groups_and_elems):
+    """Matches any len permutation of elems that contains at least one of each group."""
+    elems = []
+    groups = defaultdict(list)
+    for item in groups_and_elems:
+        if isinstance(item, tuple):
+            g, e = item
+        else:
+            g, e = None, item
+        elems.append(e)
+        if g is not None:
+            groups[g].append(e)
+
+    out = None
+    allow_none = False
+    ordered_subsets = list(ordered_powerset(elems))
+    # reverse to ensure that prefixes are matched last
+    ordered_subsets.reverse()
+    for ord_subset in ordered_subsets:
+        allow = True
+        for grp in groups.values():
+            if not any(e in ord_subset for e in grp):
+                allow = False
+                break
+        if allow:
+            if ord_subset:
+                ord_subset_item = reduce(lambda x, y: x + y, ord_subset)
+                if out is None:
+                    out = ord_subset_item
+                else:
+                    out |= ord_subset_item
+            else:
+                allow_none = True
+    if allow_none:
+        out = Optional(out)
+    return out
+
+
 # -----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
 # -----------------------------------------------------------------------------------------------------------------------
+
+def powerset(items, min_len=0):
+    """Return the powerset of the given items."""
+    return itertools.chain.from_iterable(
+        itertools.combinations(items, comb_len) for comb_len in range(min_len, len(items) + 1)
+    )
+
+
+def ordered_powerset(items, min_len=0):
+    """Return the all orderings of each subset in the powerset of the given items."""
+    return itertools.chain.from_iterable(
+        itertools.permutations(items, perm_len) for perm_len in range(min_len, len(items) + 1)
+    )
+
 
 def multi_index_lookup(iterable, item, indexable_types, default=None):
     """Nested lookup of item in iterable."""

@@ -3332,11 +3332,19 @@ declaration which can be added to `.py` files to have them treated as Coconut fi
 
 In addition to enabling automatic compilation, `coconut.convenience` can also be used to call the Coconut compiler from code instead of from the command line. See below for specifications of the different convenience functions.
 
+#### `get_state`
+
+**coconut.convenience.get\_state**(_state_=`None`)
+
+Gets a state object which stores the current compilation parameters. State objects can be configured with [**setup**](#setup) or [**cmd**](#cmd) and then used in [**parse**](#parse) or [**coconut\_eval**](#coconut_eval).
+
+If _state_ is `None`, gets a new state object, whereas if _state_ is `False`, the global state object is returned.
+
 #### `parse`
 
-**coconut.convenience.parse**(**[**_code,_ **[**_mode_**]]**)
+**coconut.convenience.parse**(_code_=`""`, _mode_=`"sys"`, _state_=`False`)
 
-Likely the most useful of the convenience functions, `parse` takes Coconut code as input and outputs the equivalent compiled Python code. The second argument, _mode_, is used to indicate the context for the parsing.
+Likely the most useful of the convenience functions, `parse` takes Coconut code as input and outputs the equivalent compiled Python code. _mode_ is used to indicate the context for the parsing and _state_ is the state object storing the compilation parameters to use as obtained from [**get_state**](#get_state) (if `False`, uses the global state object).
 
 If _code_ is not passed, `parse` will output just the given _mode_'s header, which can be executed to set up an execution environment in which future code can be parsed and executed without a header.
 
@@ -3391,9 +3399,11 @@ while True:
 
 #### `setup`
 
-**coconut.convenience.setup**(_target, strict, minify, line\_numbers, keep\_lines, no\_tco_)
+**coconut.convenience.setup**(_target_=`None`, _strict_=`False`, _minify_=`False`, _line\_numbers_=`False`, _keep\_lines_=`False`, _no\_tco_=`False`, _no\_wrap_=`False`, *, _state_=`False`)
 
-`setup` can be used to pass command line flags for use in `parse`. The possible values for each flag argument are:
+`setup` can be used to set up the given state object with the given command-line flags. If _state_ is `False`, the global state object is used.
+
+The possible values for each flag argument are:
 
 - _target_: `None` (default), or any [allowable target](#allowable-targets)
 - _strict_: `False` (default) or `True`
@@ -3401,18 +3411,21 @@ while True:
 - _line\_numbers_: `False` (default) or `True`
 - _keep\_lines_: `False` (default) or `True`
 - _no\_tco_: `False` (default) or `True`
+- _no\_wrap_: `False` (default) or `True`
 
 #### `cmd`
 
-**coconut.convenience.cmd**(_args_, **[**_interact_**]**)
+**coconut.convenience.cmd**(_args_=`None`, *, _argv_=`None`, _interact_=`False`, _default\_target_=`None`, _state_=`False`)
 
-Executes the given _args_ as if they were fed to `coconut` on the command-line, with the exception that unless _interact_ is true or `-i` is passed, the interpreter will not be started. Additionally, since `parse` and `cmd` share the same convenience parsing object, any changes made to the parsing with `cmd` will work just as if they were made with `setup`.
+Executes the given _args_ as if they were fed to `coconut` on the command-line, with the exception that unless _interact_ is true or `-i` is passed, the interpreter will not be started. Additionally, _argv_ can be used to pass in arguments as in `--argv` and _default\_target_ can be used to set the default `--target`.
+
+Has the same effect of setting the command-line flags on the given _state_ object as `setup` (with the global `state` object used when _state_ is `False`).
 
 #### `coconut_eval`
 
-**coconut.convenience.coconut_eval**(_expression_, _globals_=`None`, _locals_=`None`)
+**coconut.convenience.coconut_eval**(_expression_, _globals_=`None`, _locals_=`None`, _state_=`False`)
 
-Version of [`eval`](https://docs.python.org/3/library/functions.html#eval) which can evaluate Coconut code. Uses the same convenience parsing object as the other functions and thus can be controlled by `setup`.
+Version of [`eval`](https://docs.python.org/3/library/functions.html#eval) which can evaluate Coconut code.
 
 #### `version`
 

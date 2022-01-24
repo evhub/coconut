@@ -40,14 +40,27 @@ from coconut.constants import (
 # COMMAND:
 # -----------------------------------------------------------------------------------------------------------------------
 
-CLI = Command()
+GLOBAL_STATE = None
 
 
-def cmd(args, interact=False):
+def get_state(state=None):
+    """Get a Coconut state object; None gets a new state, False gets the global state."""
+    global GLOBAL_STATE
+    if state is None:
+        return Command()
+    elif state is False:
+        if GLOBAL_STATE is None:
+            GLOBAL_STATE = Command()
+        return GLOBAL_STATE
+    else:
+        return state
+
+
+def cmd(cmd_args, interact=False, state=False, **kwargs):
     """Process command-line arguments."""
-    if isinstance(args, (str, bytes)):
-        args = args.split()
-    return CLI.cmd(args=args, interact=interact)
+    if isinstance(cmd_args, (str, bytes)):
+        cmd_args = cmd_args.split()
+    return get_state(state).cmd(cmd_args, interact=interact, **kwargs)
 
 
 VERSIONS = {
@@ -74,7 +87,10 @@ def version(which="num"):
 # COMPILER:
 # -----------------------------------------------------------------------------------------------------------------------
 
-setup = CLI.setup
+def setup(*args, **kwargs):
+    """Set up the given state object."""
+    state = kwargs.get("state", False)
+    return get_state(state).setup(*args, **kwargs)
 
 
 PARSERS = {
@@ -93,26 +109,28 @@ PARSERS = {
 PARSERS["any"] = PARSERS["debug"] = PARSERS["lenient"]
 
 
-def parse(code="", mode="sys"):
+def parse(code="", mode="sys", state=False):
     """Compile Coconut code."""
-    if CLI.comp is None:
-        setup()
+    command = get_state(state)
+    if command.comp is None:
+        command.setup()
     if mode not in PARSERS:
         raise CoconutException(
             "invalid parse mode " + repr(mode),
             extra="valid modes are " + ", ".join(PARSERS),
         )
-    return PARSERS[mode](CLI.comp)(code)
+    return PARSERS[mode](command.comp)(code)
 
 
-def coconut_eval(expression, globals=None, locals=None):
+def coconut_eval(expression, globals=None, locals=None, state=False):
     """Compile and evaluate Coconut code."""
-    if CLI.comp is None:
+    command = get_state(state)
+    if command.comp is None:
         setup()
-    CLI.check_runner(set_sys_vars=False)
+    command.check_runner(set_sys_vars=False)
     if globals is None:
         globals = {}
-    CLI.runner.update_vars(globals)
+    command.runner.update_vars(globals)
     return eval(parse(expression, "eval"), globals, locals)
 
 

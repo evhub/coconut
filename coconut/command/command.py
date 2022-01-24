@@ -138,7 +138,7 @@ class Command(object):
         else:
             self.cmd()
 
-    def cmd(self, args=None, argv=None, interact=True):
+    def cmd(self, args=None, argv=None, interact=True, default_target=None):
         """Process command-line arguments."""
         if args is None:
             parsed_args = arguments.parse_args()
@@ -148,6 +148,8 @@ class Command(object):
             if parsed_args.argv is not None:
                 raise CoconutException("cannot pass --argv/--args when using coconut-run (coconut-run interprets any arguments after the source file as --argv/--args)")
             parsed_args.argv = argv
+        if parsed_args.target is None:
+            parsed_args.target = default_target
         self.exit_code = 0
         with self.handling_exceptions():
             self.use_args(parsed_args, interact, original_args=args)

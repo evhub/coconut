@@ -31,6 +31,7 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 from coconut.root import *  # NOQA
 
 from coconut.constants import author as __author__  # NOQA
+from coconut.constants import coconut_kernel_kwargs
 
 __version__ = VERSION  # NOQA
 
@@ -64,8 +65,12 @@ def load_ipython_extension(ipython):
     ipython.push(newvars)
 
     # import here to avoid circular dependencies
-    from coconut.convenience import cmd, parse, CoconutException
+    from coconut import convenience
+    from coconut.exceptions import CoconutException
     from coconut.terminal import logger
+
+    magic_state = convenience.get_state()
+    convenience.setup(state=magic_state, **coconut_kernel_kwargs)
 
     # add magic function
     def magic(line, cell=None):
@@ -77,9 +82,9 @@ def load_ipython_extension(ipython):
                 # first line in block is cmd, rest is code
                 line = line.strip()
                 if line:
-                    cmd(line, interact=False)
+                    convenience.cmd(line, default_target="sys", state=magic_state)
                 code = cell
-            compiled = parse(code)
+            compiled = convenience.parse(code, state=magic_state)
         except CoconutException:
             logger.print_exc()
         else:

@@ -100,6 +100,7 @@ from coconut.compiler.util import (
     any_keyword_in,
     any_char,
     tuple_str_of,
+    any_len_perm,
 )
 
 # end: IMPORTS
@@ -1739,10 +1740,10 @@ class Grammar(object):
         ),
     )
     match_def_modifiers = trace(
-        Optional(
+        any_len_perm(
+            match_kwd.suppress(),
             # we don't suppress addpattern so its presence can be detected later
-            match_kwd.suppress() + Optional(addpattern_kwd)
-            | addpattern_kwd + Optional(match_kwd.suppress()),
+            addpattern_kwd,
         ),
     )
     match_funcdef = addspace(match_def_modifiers + def_match_funcdef)
@@ -1809,13 +1810,12 @@ class Grammar(object):
     async_funcdef = async_kwd.suppress() + (funcdef | math_funcdef)
     async_match_funcdef = trace(
         addspace(
-            (
+            any_len_perm(
+                match_kwd.suppress(),
                 # we don't suppress addpattern so its presence can be detected later
-                match_kwd.suppress() + addpattern_kwd + async_kwd.suppress()
-                | addpattern_kwd + match_kwd.suppress() + async_kwd.suppress()
-                | match_kwd.suppress() + async_kwd.suppress() + Optional(addpattern_kwd)
-                | addpattern_kwd + async_kwd.suppress() + Optional(match_kwd.suppress())
-                | async_kwd.suppress() + match_def_modifiers
+                addpattern_kwd,
+                # makes async required
+                (1, async_kwd.suppress()),
             ) + (def_match_funcdef | math_match_funcdef),
         ),
     )
@@ -1823,13 +1823,12 @@ class Grammar(object):
     yield_normal_funcdef = keyword("yield").suppress() + funcdef
     yield_match_funcdef = trace(
         addspace(
-            (
-                # must match async_match_funcdef above with async_kwd -> keyword("yield")
-                match_kwd.suppress() + addpattern_kwd + keyword("yield").suppress()
-                | addpattern_kwd + match_kwd.suppress() + keyword("yield").suppress()
-                | match_kwd.suppress() + keyword("yield").suppress() + Optional(addpattern_kwd)
-                | addpattern_kwd + keyword("yield").suppress() + Optional(match_kwd.suppress())
-                | keyword("yield").suppress() + match_def_modifiers
+            any_len_perm(
+                match_kwd.suppress(),
+                # we don't suppress addpattern so its presence can be detected later
+                addpattern_kwd,
+                # makes yield required
+                (1, keyword("yield").suppress()),
             ) + def_match_funcdef,
         ),
     )
