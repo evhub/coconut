@@ -89,7 +89,7 @@ def version(which="num"):
 
 def setup(*args, **kwargs):
     """Set up the given state object."""
-    state = kwargs.get("state", False)
+    state = kwargs.pop("state", False)
     return get_state(state).setup(*args, **kwargs)
 
 
