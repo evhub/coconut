@@ -110,13 +110,16 @@ def _coconut_iter_getitem(iterable, index):
             if result is not _coconut.NotImplemented:
                 return result
     if not _coconut.isinstance(index, _coconut.slice):
+        index = _coconut.operator.index(index)
         if index < 0:
             return _coconut.collections.deque(iterable, maxlen=-index)[0]
         result = _coconut.next(_coconut.itertools.islice(iterable, index, index + 1), _coconut_sentinel)
         if result is _coconut_sentinel:
             raise _coconut.IndexError("$[] index out of range")
         return result
-    start, stop, step = index.start, index.stop, 1 if index.step is None else index.step
+    start = _coconut.operator.index(index.start) if index.start is not None else None
+    stop = _coconut.operator.index(index.stop) if index.stop is not None else None
+    step = _coconut.operator.index(index.step) if index.step is not None else 1
     if step == 0:
         raise _coconut.ValueError("slice step cannot be zero")
     if start is None and stop is None and step == -1:
@@ -628,7 +631,7 @@ class count(_coconut_base_hashable):
         """Count the number of times elem appears in the count."""
         if not self.step:
             return _coconut.float("inf") if elem == self.start else 0
-        return int(elem in self)
+        return _coconut.int(elem in self)
     def index(self, elem):
         """Find the index of elem in the count."""
         if elem not in self:

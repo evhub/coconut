@@ -1096,6 +1096,10 @@ def main_test() -> bool:
     assert late_bound() == []
     assert groupsof(2, [1, 2, 3, 4]) |> list == [(1, 2), (3, 4)]
     assert_raises(-> groupsof(2.5, [1, 2, 3, 4]), TypeError)
+    assert_raises(-> (|1,2,3|)$[0.5], TypeError)
+    assert_raises(-> (|1,2,3|)$[0.5:], TypeError)
+    assert_raises(-> (|1,2,3|)$[:2.5], TypeError)
+    assert_raises(-> (|1,2,3|)$[::1.5], TypeError)
     return True
 
 def test_asyncio() -> bool:
