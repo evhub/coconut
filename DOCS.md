@@ -260,13 +260,13 @@ Additionally, Coconut allows the [`__set_name__`](https://docs.python.org/3/refe
 Finally, while Coconut will try to compile Python-3-specific syntax to its universal equivalent, the following constructs have no equivalent in Python 2, and require the specification of a target of at least `3` to be used:
 
 - the `nonlocal` keyword,
-- `exec` used in a context where it must be a function,
 - keyword-only function parameters (use pattern-matching function definition instead),
 - `@` as matrix multiplication (requires `--target 3.5`),
 - `async` and `await` statements (requires `--target 3.5`),
 - `:=` assignment expressions (requires `--target 3.8`),
-- positional-only function parameters (use pattern-matching function definition instead) (requires `--target 3.8`), and
-- `except*` multi-except statement (requires `--target 3.11`).
+- positional-only function parameters (use pattern-matching function definition instead) (requires `--target 3.8`),
+- `a[x, *y]` variadic generic syntax (requires `--target 3.11`), and
+- `except*` multi-except statements (requires `--target 3.11`).
 
 ### Allowable Targets
 

@@ -590,6 +590,7 @@ class Compiler(Grammar, pickleable_obj):
         cls.new_namedexpr <<= trace_attach(cls.new_namedexpr_ref, cls.method("new_namedexpr_check"))
         cls.match_dotted_name_const <<= trace_attach(cls.match_dotted_name_const_ref, cls.method("match_dotted_name_const_check"))
         cls.except_star_clause <<= trace_attach(cls.except_star_clause_ref, cls.method("except_star_clause_check"))
+        cls.subscript_star <<= trace_attach(cls.subscript_star_ref, cls.method("subscript_star_check"))
 
         # these checking handlers need to be greedy since they can be suppressed
         cls.matrix_at <<= trace_attach(cls.matrix_at_ref, cls.method("matrix_at_check"), greedy=True)
@@ -3390,12 +3391,16 @@ for {match_to_var} in {item}:
         return self.check_py("38", "assignment expression", original, loc, tokens)
 
     def new_namedexpr_check(self, original, loc, tokens):
-        """Check for Python-3.10-only assignment expressions."""
-        return self.check_py("310", "assignment expression in index or set literal", original, loc, tokens)
+        """Check for Python 3.10 assignment expressions."""
+        return self.check_py("310", "assignment expression in set literal or indexing", original, loc, tokens)
 
     def except_star_clause_check(self, original, loc, tokens):
-        """Check for Python-3.11-only except* statements."""
+        """Check for Python 3.11 except* statements."""
         return self.check_py("311", "except* statement", original, loc, tokens)
+
+    def subscript_star_check(self, original, loc, tokens):
+        """Check for Python 3.11 starred expressions in subscripts."""
+        return self.check_py("311", "starred expression in indexing", original, loc, tokens)
 
 # end: CHECKING HANDLERS
 # -----------------------------------------------------------------------------------------------------------------------

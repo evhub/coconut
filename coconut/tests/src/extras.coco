@@ -250,6 +250,9 @@ async def async_map_test() =
     assert parse("def f(a, /, b) = a, b")
     assert "(b)(a)" in b"a |> b".decode("coconut")
 
+    setup(target="3.11")
+    assert parse("a[x, *y]")
+
     setup(minify=True)
     assert parse("123  # derp", "lenient") == "123# derp"
 

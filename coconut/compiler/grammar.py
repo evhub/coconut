@@ -1008,14 +1008,23 @@ class Grammar(object):
         | op_item
     )
 
+    subscript_star = Forward()
+    subscript_star_ref = star
     slicetest = Optional(test_no_chain)
     sliceop = condense(unsafe_colon + slicetest)
-    subscript = condense(slicetest + sliceop + Optional(sliceop)) | test
+    subscript = condense(
+        slicetest + sliceop + Optional(sliceop)
+        | Optional(subscript_star) + test,
+    )
     subscriptlist = itemlist(subscript, comma, suppress_trailing=False) | new_namedexpr_test
 
     slicetestgroup = Optional(test_no_chain, default="")
     sliceopgroup = unsafe_colon.suppress() + slicetestgroup
-    subscriptgroup = attach(slicetestgroup + sliceopgroup + Optional(sliceopgroup) | test, subscriptgroup_handle)
+    subscriptgroup = attach(
+        slicetestgroup + sliceopgroup + Optional(sliceopgroup)
+        | test,
+        subscriptgroup_handle,
+    )
     subscriptgrouplist = itemlist(subscriptgroup, comma)
 
     anon_namedtuple = Forward()
@@ -1315,6 +1324,7 @@ class Grammar(object):
 
     expr <<= pipe_expr
 
+    # though 3.9 allows tests in the grammar here, they still raise a SyntaxError later
     star_expr <<= Group(star + expr)
     dubstar_expr <<= Group(dubstar + expr)
 
