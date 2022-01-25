@@ -332,7 +332,6 @@ def main_test() -> bool:
 
     assert range(1,11) |> groupsof$(1) |> list == [(1,),(2,),(3,),(4,),(5,),(6,),(7,),(8,),(9,),(10,)]
     assert range(1,11) |> groupsof$(2) |> list == [(1,2),(3,4),(5,6),(7,8),(9,10)]
-    assert range(1,11) |> groupsof$(2.5) |> list == [(1,2),(3,4),(5,6),(7,8),(9,10)]  # type: ignore
     assert range(1,11) |> groupsof$(3) |> list == [(1,2,3),(4,5,6),(7,8,9),(10,)]
     assert range(1,11) |> groupsof$(4) |> list == [(1,2,3,4),(5,6,7,8),(9,10)]
     assert_raises(() -> range(1,11) |> groupsof$("A"), TypeError)  # type: ignore
@@ -949,12 +948,7 @@ def main_test() -> bool:
     assert "_namedtuple_of" in repr((a=1,))
     assert "b=2" in repr <| of$(?, a=1, b=2)
     assert lift((,), (.*2), (.**2))(3) == (6, 9)
-    try:
-        (⁻)(1, 2)
-    except TypeError:
-        pass
-    else:
-        assert False
+    assert_raises(-> (⁻)(1, 2), TypeError)
     assert -1 == ⁻1
     \(
     def ret_abc():
@@ -1100,6 +1094,8 @@ def main_test() -> bool:
     assert early_bound() == [1]
     late_bound().append(1)
     assert late_bound() == []
+    assert groupsof(2, [1, 2, 3, 4]) |> list == [(1, 2), (3, 4)]
+    assert_raises(-> groupsof(2.5, [1, 2, 3, 4]), TypeError)
     return True
 
 def test_asyncio() -> bool:

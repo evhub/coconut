@@ -653,13 +653,10 @@ class groupsof(_coconut_base_hashable):
     """
     __slots__ = ("group_size", "iter")
     def __init__(self, n, iterable):
-        self.iter = iterable
-        try:
-            self.group_size = _coconut.int(n)
-        except _coconut.ValueError:
-            raise _coconut.TypeError("group size must be an int; not %r" % (n,))
+        self.group_size = _coconut.operator.index(n)
         if self.group_size <= 0:
             raise _coconut.ValueError("group size must be > 0; not %r" % (self.group_size,))
+        self.iter = iterable
     def __iter__(self):
         iterator = _coconut.iter(self.iter)
         loop = True
