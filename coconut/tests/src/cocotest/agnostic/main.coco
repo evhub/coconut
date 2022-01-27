@@ -1100,6 +1100,11 @@ def main_test() -> bool:
     assert_raises(-> (|1,2,3|)$[0.5:], TypeError)
     assert_raises(-> (|1,2,3|)$[:2.5], TypeError)
     assert_raises(-> (|1,2,3|)$[::1.5], TypeError)
+    def exec_rebind_test():
+        exec = 1
+        assert exec + 1 == 2
+        return True
+    assert exec_rebind_test() is True
     return True
 
 def test_asyncio() -> bool:

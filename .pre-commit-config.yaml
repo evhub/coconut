@@ -1,6 +1,6 @@
 repos:
 -   repo: git://github.com/pre-commit/pre-commit-hooks.git
-    rev: v4.0.1
+    rev: v4.1.0
     hooks:
     -   id: check-added-large-files
     -   id: fix-byte-order-marker
@@ -30,7 +30,7 @@ repos:
         args:
         - --ignore=W503,E501,E265,E402,F405,E305,E126
 -   repo: https://github.com/pre-commit/mirrors-autopep8
-    rev: v1.5.7
+    rev: v1.6.0
     hooks:
     -   id: autopep8
         args:
