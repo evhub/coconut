@@ -860,6 +860,30 @@ forward 2""") == 900
 
     assert (x=1, y=2) + (3,) == (1, 2, 3)  # type: ignore
     assert tricky_tco(-> True) is True
+    assert is_complex_tree(HasElems(
+        1,
+        2,
+        3,
+        HasVal(
+            HasThreeVals(
+                val1=[HasTwoVals("a", "b")],
+                val2=[],
+                val3=[],
+            )
+        ),
+    ))
+    assert not is_complex_tree(HasElems(
+        1,
+        2,
+        3,
+        HasVal(
+            HasThreeVals(
+                val1=[HasTwoVals("a", "c")],
+                val2=[],
+                val3=[],
+            )
+        ),
+    ))
 
     # must come at end
     assert fibs_calls[0] == 1

@@ -752,7 +752,7 @@ class Compiler(Grammar, pickleable_obj):
     def wrap_loc(self, original, loc):
         """Wrap a location."""
         ln = lineno(loc, original)
-        return self.wrap_line_number(self.adjust(ln))
+        return self.wrap_line_number(ln)
 
     def apply_procs(self, procs, inputstring, log=True, **kwargs):
         """Apply processors to inputstring."""
@@ -1265,11 +1265,12 @@ class Compiler(Grammar, pickleable_obj):
     def endline_repl(self, inputstring, reformatting=False, ignore_errors=False, **kwargs):
         """Add end of line comments."""
         out = []
-        ln = 1  # line number
+        ln = 1  # line number in pre-processed original
         for line in logical_lines(inputstring):
             add_one_to_ln = False
             try:
 
+                # extract line number information
                 lnwrapper_split = line.split(lnwrapper)
                 has_wrapped_ln = len(lnwrapper_split) > 1
                 if has_wrapped_ln:
@@ -1281,10 +1282,13 @@ class Compiler(Grammar, pickleable_obj):
                         #  since there are circumstances where the compiler will reorder lines
                         ln = new_ln
                         add_one_to_ln = True
+
+                # add comments based on source line number
+                src_ln = self.adjust(ln)
                 if not reformatting or has_wrapped_ln:
-                    line += self.comments.get(ln, "")
+                    line += self.comments.get(src_ln, "")
                 if not reformatting and line.rstrip() and not line.lstrip().startswith("#"):
-                    line += self.ln_comment(ln)
+                    line += self.ln_comment(src_ln)
 
             except CoconutInternalException as err:
                 if not ignore_errors:
@@ -2159,7 +2163,7 @@ while True:
         out = []
         ln = lineno(loc, original)
         for endline in lines:
-            out.append(self.wrap_line_number(self.adjust(ln)) + endline)
+            out.append(self.wrap_line_number(ln) + endline)
             ln += 1
         return "".join(out)
 

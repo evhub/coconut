@@ -1441,3 +1441,43 @@ def twin_primes(_ :: [p, (.-2) -> p] :: ps) =
 
 addpattern def twin_primes() =  # type: ignore
     twin_primes(primes())
+
+
+# class matching
+class HasElems:
+    def __init__(self, *elems):
+        self.elems = elems
+
+class HasVal:
+    def __init__(self, val):
+        self.val = val
+
+class HasTwoVals:
+    def __init__(self, val1, val2):
+        self.val1, self.val2 = val1, val2
+
+class HasThreeVals:
+    def __init__(self, val1, val2, val3):
+        self.val1, self.val2, self.val3 = val1, val2, val3
+
+match def is_complex_tree(
+    HasElems(
+        elems=[
+            *_,
+            _,
+            HasVal(
+                val=HasThreeVals(
+                    val1=[
+                        HasTwoVals(
+                            val1="a",
+                            val2="b",
+                        ),
+                    ],
+                    val2=[],
+                    val3=[],
+                )
+            ),
+        ]
+    )
+) = True
+addpattern def is_complex_tree(_) = False  # type: ignore
