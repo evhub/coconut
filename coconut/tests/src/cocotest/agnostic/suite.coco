@@ -859,6 +859,7 @@ forward 2""") == 900
     bad(def -> tv_ = tv; tv_ *= 2)
 
     assert (x=1, y=2) + (3,) == (1, 2, 3)  # type: ignore
+    assert tricky_tco(-> True) is True
 
     # must come at end
     assert fibs_calls[0] == 1
@@ -868,4 +869,6 @@ def tco_test() -> bool:
     """Executes suite tests that rely on TCO."""
     assert is_even(5000) and is_odd(5001)
     assert is_even_(5000) and is_odd_(5001)
+    assert hasattr(ret_none, "_coconut_tco_func")
+    assert hasattr(tricky_tco, "_coconut_tco_func")
     return True

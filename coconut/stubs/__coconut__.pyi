@@ -424,6 +424,9 @@ def _coconut_assert(cond: _t.Any, msg: _t.Optional[_t.Text] = None) -> None:
     assert cond, msg
 
 
+def _coconut_raise(exc: _t.Optional[Exception] = None, from_exc: _t.Optional[Exception] = None) -> None: ...
+
+
 @_t.overload
 def _coconut_bool_and(a: _t.Literal[True], b: _T) -> _T: ...
 @_t.overload

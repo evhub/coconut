@@ -1105,6 +1105,12 @@ def main_test() -> bool:
         assert exec + 1 == 2
         return True
     assert exec_rebind_test() is True
+    try:
+        (raise)(TypeError(), ValueError())
+    except TypeError as err:
+        assert err.__cause__ `isinstance` ValueError
+    else:
+        assert False
     return True
 
 def test_asyncio() -> bool:

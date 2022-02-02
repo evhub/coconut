@@ -138,6 +138,7 @@ from coconut.compiler.util import (
     literal_eval,
     should_trim_arity,
     rem_and_count_indents,
+    normalize_indent_markers,
 )
 from coconut.compiler.header import (
     minify_header,
@@ -1269,17 +1270,17 @@ class Compiler(Grammar, pickleable_obj):
             add_one_to_ln = False
             try:
 
-                wrapped_ln_split = line.rsplit(lnwrapper, 1)
-                has_wrapped_ln = len(wrapped_ln_split) > 1
+                lnwrapper_split = line.split(lnwrapper)
+                has_wrapped_ln = len(lnwrapper_split) > 1
                 if has_wrapped_ln:
-                    line, ln_str = wrapped_ln_split
-                    internal_assert(ln_str.endswith(unwrapper), "invalid wrapped line number in", line)
-                    new_ln = int(ln_str[:-1])
-                    # note that it is possible for this to decrease the line number,
-                    #  since there are circumstances where the compiler will reorder lines
-                    ln = new_ln
-                    line = line.rstrip()
-                    add_one_to_ln = True
+                    line = lnwrapper_split.pop(0).rstrip()
+                    for ln_str in lnwrapper_split:
+                        internal_assert(ln_str.endswith(unwrapper), "invalid wrapped line number in", line)
+                        new_ln = int(ln_str[:-1])
+                        # note that it is possible for this to decrease the line number,
+                        #  since there are circumstances where the compiler will reorder lines
+                        ln = new_ln
+                        add_one_to_ln = True
                 if not reformatting or has_wrapped_ln:
                     line += self.comments.get(ln, "")
                 if not reformatting and line.rstrip() and not line.lstrip().startswith("#"):
@@ -1448,8 +1449,9 @@ else:
         level = 0  # indentation level
         func_until_level = None  # whether inside of an inner function
 
-        for line in raw_lines:
-            indent, line = split_leading_indent(line)
+        # normalize_indent_markers is required for func_until_level to work
+        for line in normalize_indent_markers(raw_lines):
+            indent, line, dedent = split_leading_trailing_indent(line)
 
             level += ind_change(indent)
 
@@ -1465,9 +1467,11 @@ else:
             if func_until_level is None and self.yield_regex.search(line):
                 return True
 
+            level += ind_change(dedent)
+
         return False
 
-    tco_disable_regex = compile_regex(r"(try|(async\s+)?(with|for)|while)\b")
+    tco_disable_regex = compile_regex(r"try\b|(async\s+)?(with\b|for\b)|while\b")
     return_regex = compile_regex(r"return\b")
 
     def transform_returns(self, original, loc, raw_lines, tre_return_grammar=None, is_async=False, is_gen=False):
@@ -1494,7 +1498,8 @@ else:
             func_code = "".join(raw_lines)
             return func_code, tco, tre
 
-        for line in raw_lines:
+        # normalize_indent_markers is required for ..._until_level to work
+        for line in normalize_indent_markers(raw_lines):
             indent, _body, dedent = split_leading_trailing_indent(line)
             base, comment = split_comment(_body)
 

@@ -101,6 +101,7 @@ from coconut.compiler.util import (
     any_char,
     tuple_str_of,
     any_len_perm,
+    boundary,
 )
 
 # end: IMPORTS
@@ -868,6 +869,7 @@ class Grammar(object):
         | fixto(neg_minus, "_coconut.operator.neg")
 
         | fixto(keyword("assert"), "_coconut_assert")
+        | fixto(keyword("raise"), "_coconut_raise")
         | fixto(keyword("and"), "_coconut_bool_and")
         | fixto(keyword("or"), "_coconut_bool_or")
         | fixto(comma, "_coconut_comma_op")
@@ -2089,7 +2091,7 @@ class Grammar(object):
         - lparen.suppress() - parameters_tokens - rparen.suppress()
     )
 
-    stores_scope = (
+    stores_scope = boundary + (
         lambda_kwd
         # match comprehensions but not for loops
         | ~indent + ~dedent + any_char + keyword("for") + base_name + keyword("in")

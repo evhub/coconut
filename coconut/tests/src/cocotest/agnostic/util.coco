@@ -371,6 +371,14 @@ class stored_default_cls:
         l.append(x)
         return self.__call__(x-1)
 
+def tricky_tco(func):
+    try:
+        # a comment
+        return (raise)(TypeError())
+
+    except TypeError:
+        return func()
+
 
 # Data Blocks:
 try:

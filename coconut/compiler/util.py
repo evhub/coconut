@@ -744,6 +744,9 @@ def keyword(name, explicit_prefix=None):
         return Optional(explicit_prefix.suppress()) + base_kwd
 
 
+boundary = regex_item(r"\b")
+
+
 def any_len_perm(*groups_and_elems):
     """Matches any len permutation of elems that contains at least one of each group."""
     elems = []
@@ -848,10 +851,10 @@ def count_end(teststr, testchar):
     return count
 
 
-def paren_change(inputstring, opens=opens, closes=closes):
+def paren_change(inputstr, opens=opens, closes=closes):
     """Determine the parenthetical change of level (num closes - num opens)."""
     count = 0
-    for c in inputstring:
+    for c in inputstr:
         if c in opens:  # open parens/brackets/braces
             count -= 1
         elif c in closes:  # close parens/brackets/braces
@@ -859,9 +862,9 @@ def paren_change(inputstring, opens=opens, closes=closes):
     return count
 
 
-def ind_change(inputstring):
+def ind_change(inputstr):
     """Determine the change in indentation level (num opens - num closes)."""
-    return inputstring.count(openindent) - inputstring.count(closeindent)
+    return inputstr.count(openindent) - inputstr.count(closeindent)
 
 
 def tuple_str_of(items, add_quotes=False, add_parens=True):
@@ -878,12 +881,22 @@ def tuple_str_of(items, add_quotes=False, add_parens=True):
     return out
 
 
-def rem_comment(line):
-    """Remove a comment from a line."""
+def split_comment(line, move_indents=False):
+    """Split line into base and comment."""
+    if move_indents:
+        line, indent = split_trailing_indent(line, handle_comments=False)
+    else:
+        indent = ""
     for i, c in enumerate(append_it(line, None)):
         if c in comment_chars:
             break
-    return line[:i].rstrip()
+    return line[:i] + indent, line[i:]
+
+
+def rem_comment(line):
+    """Remove a comment from a line."""
+    base, comment = split_comment(line)
+    return base
 
 
 def should_indent(code):
@@ -892,47 +905,61 @@ def should_indent(code):
     return last_line.endswith((":", "=", "\\")) or paren_change(last_line) < 0
 
 
-def split_comment(line):
-    """Split line into base and comment."""
-    base = rem_comment(line)
-    return base, line[len(base):]
-
-
-def split_leading_comment(inputstring):
-    """Split into leading comment and rest."""
-    if inputstring.startswith(comment_chars):
-        comment, rest = inputstring.split("\n", 1)
-        return comment + "\n", rest
+def split_leading_comment(inputstr):
+    """Split into leading comment and rest.
+    Comment must be at very start of string."""
+    if inputstr.startswith(comment_chars):
+        comment_line, rest = inputstr.split("\n", 1)
+        comment, indent = split_trailing_indent(comment_line)
+        return comment + "\n", indent + rest
     else:
-        return "", inputstring
+        return "", inputstr
 
 
-def split_leading_indent(line, max_indents=None):
-    """Split line into leading indent and main."""
+def split_trailing_comment(inputstr):
+    """Split into rest and trailing comment."""
+    parts = inputstr.rsplit("\n", 1)
+    if len(parts) == 1:
+        return parts[0], ""
+    else:
+        rest, last_line = parts
+        last_line, comment = split_comment(last_line)
+        return rest + "\n" + last_line, comment
+
+
+def split_leading_indent(inputstr, max_indents=None):
+    """Split inputstr into leading indent and main."""
     indent = ""
     while (
         (max_indents is None or max_indents > 0)
-        and line.startswith(indchars)
-    ) or line.lstrip() != line:
-        if max_indents is not None and line.startswith(indchars):
+        and inputstr.startswith(indchars)
+    ) or inputstr.lstrip() != inputstr:
+        got_ind, inputstr = inputstr[0], inputstr[1:]
+        # max_indents only refers to openindents/closeindents, not all indchars
+        if max_indents is not None and got_ind in (openindent, closeindent):
             max_indents -= 1
-        indent += line[0]
-        line = line[1:]
-    return indent, line
+        indent += got_ind
+    return indent, inputstr
 
 
-def split_trailing_indent(line, max_indents=None):
-    """Split line into leading indent and main."""
+def split_trailing_indent(inputstr, max_indents=None, handle_comments=True):
+    """Split inputstr into leading indent and main."""
     indent = ""
     while (
         (max_indents is None or max_indents > 0)
-        and line.endswith(indchars)
-    ) or line.rstrip() != line:
-        if max_indents is not None and line.endswith(indchars):
+        and inputstr.endswith(indchars)
+    ) or inputstr.rstrip() != inputstr:
+        inputstr, got_ind = inputstr[:-1], inputstr[-1]
+        # max_indents only refers to openindents/closeindents, not all indchars
+        if max_indents is not None and got_ind in (openindent, closeindent):
             max_indents -= 1
-        indent = line[-1] + indent
-        line = line[:-1]
-    return line, indent
+        indent = got_ind + indent
+    if handle_comments:
+        inputstr, comment = split_trailing_comment(inputstr)
+        inputstr, inner_indent = split_trailing_indent(inputstr, max_indents, handle_comments=False)
+        inputstr = inputstr + comment
+        indent = inner_indent + indent
+    return inputstr, indent
 
 
 def split_leading_trailing_indent(line, max_indents=None):
@@ -942,25 +969,37 @@ def split_leading_trailing_indent(line, max_indents=None):
     return leading_indent, line, trailing_indent
 
 
-def rem_and_count_indents(inputstring):
+def rem_and_count_indents(inputstr):
     """Removes and counts the ind_change (opens - closes)."""
-    no_opens = inputstring.replace(openindent, "")
-    num_opens = len(inputstring) - len(no_opens)
+    no_opens = inputstr.replace(openindent, "")
+    num_opens = len(inputstr) - len(no_opens)
     no_indents = no_opens.replace(closeindent, "")
     num_closes = len(no_opens) - len(no_indents)
     return no_indents, num_opens - num_closes
 
 
-def collapse_indents(indentation):
-    """Removes all openindent-closeindent pairs."""
-    non_indent_chars, change_in_level = rem_and_count_indents(indentation)
+def rem_and_collect_indents(inputstr):
+    """Removes and collects all indents into (non_indent_chars, indents)."""
+    non_indent_chars, change_in_level = rem_and_count_indents(inputstr)
     if change_in_level == 0:
         indents = ""
     elif change_in_level < 0:
         indents = closeindent * (-change_in_level)
     else:
         indents = openindent * change_in_level
+    return non_indent_chars, indents
+
+
+def collapse_indents(indentation):
+    """Removes all openindent-closeindent pairs."""
+    non_indent_chars, indents = rem_and_collect_indents(indentation)
     return non_indent_chars + indents
+
+
+def is_blank(line):
+    """Determine whether a line is blank."""
+    line, _ = rem_and_count_indents(rem_comment(line))
+    return line.strip() == ""
 
 
 def final_indentation_level(code):
@@ -1093,9 +1132,27 @@ def should_trim_arity(func):
     return True
 
 
-def sequential_split(inputstring, splits):
-    """Slice off parts of inputstring by sequential splits."""
-    out = [inputstring]
+def sequential_split(inputstr, splits):
+    """Slice off parts of inputstr by sequential splits."""
+    out = [inputstr]
     for s in splits:
         out += out.pop().split(s, 1)
     return out
+
+
+def normalize_indent_markers(lines):
+    """Normalize the location of indent markers to the earliest equivalent location."""
+    new_lines = lines[:]
+    for i in range(1, len(new_lines)):
+        indent, line = split_leading_indent(new_lines[i])
+        if indent:
+            j = i - 1  # the index to move the initial indent to
+            while j > 0:
+                if is_blank(new_lines[j]):
+                    new_lines[j], indent = rem_and_collect_indents(new_lines[j] + indent)
+                    j -= 1
+                else:
+                    break
+            new_lines[j] += indent
+            new_lines[i] = line
+    return new_lines
