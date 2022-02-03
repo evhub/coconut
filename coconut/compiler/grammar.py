@@ -1510,7 +1510,7 @@ class Grammar(object):
 
     del_stmt = addspace(keyword("del") - simple_assignlist)
 
-    matchlist_data_item = Group(Optional(star | name + equals) + match)
+    matchlist_data_item = Group(Optional(star | Optional(dot) + name + equals) + match)
     matchlist_data = Group(Optional(tokenlist(matchlist_data_item, comma)))
 
     match_check_equals = Forward()

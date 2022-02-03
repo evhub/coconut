@@ -871,41 +871,58 @@ class Matcher(object):
         name_matches = {}
         star_match = None
         for match_arg in matches:
+            # positional arg
             if len(match_arg) == 1:
                 match, = match_arg
                 if star_match is not None:
                     raise CoconutDeferredSyntaxError("positional arg after starred arg in data/class match", self.loc)
                 if name_matches:
-                    raise CoconutDeferredSyntaxError("positional arg after named arg in data/class match", self.loc)
+                    raise CoconutDeferredSyntaxError("positional arg after keyword arg in data/class match", self.loc)
                 pos_matches.append(match)
+            # starred arg
             elif len(match_arg) == 2:
                 internal_assert(match_arg[0] == "*", "invalid starred data/class match arg tokens", match_arg)
                 _, match = match_arg
                 if star_match is not None:
                     raise CoconutDeferredSyntaxError("duplicate starred arg in data/class match", self.loc)
                 if name_matches:
-                    raise CoconutDeferredSyntaxError("both starred arg and named arg in data/class match", self.loc)
+                    raise CoconutDeferredSyntaxError("both starred arg and keyword arg in data/class match", self.loc)
                 star_match = match
-            elif len(match_arg) == 3:
-                internal_assert(match_arg[1] == "=", "invalid named data/class match arg tokens", match_arg)
-                name, _, match = match_arg
-                if star_match is not None:
-                    raise CoconutDeferredSyntaxError("both named arg and starred arg in data/class match", self.loc)
-                if name in name_matches:
-                    raise CoconutDeferredSyntaxError("duplicate named arg {name!r} in data/class match".format(name=name), self.loc)
-                name_matches[name] = match
+            # keyword arg
             else:
-                raise CoconutInternalException("invalid data/class match arg", match_arg)
+                if len(match_arg) == 3:
+                    internal_assert(match_arg[1] == "=", "invalid keyword data/class match arg tokens", match_arg)
+                    name, _, match = match_arg
+                    strict = False
+                elif len(match_arg) == 4:
+                    internal_assert(match_arg[0] == "." and match_arg[2] == "=", "invalid strict keyword data/class match arg tokens", match_arg)
+                    _, name, _, match = match_arg
+                    strict = True
+                else:
+                    raise CoconutInternalException("invalid data/class match arg", match_arg)
+                if star_match is not None:
+                    raise CoconutDeferredSyntaxError("both keyword arg and starred arg in data/class match", self.loc)
+                if name in name_matches:
+                    raise CoconutDeferredSyntaxError("duplicate keyword arg {name!r} in data/class match".format(name=name), self.loc)
+                name_matches[name] = (match, strict)
 
         return cls_name, pos_matches, name_matches, star_match
 
     def match_class_attr(self, match, attr, item):
-        """Match an attribute for a class match."""
+        """Match an attribute for a class match where attr is an expression that evaluates to the attribute name."""
         attr_var = self.get_temp_var()
         self.add_def(attr_var + " = _coconut.getattr(" + item + ", " + attr + ", _coconut_sentinel)")
         with self.down_a_level():
             self.add_check(attr_var + " is not _coconut_sentinel")
             self.match(match, attr_var)
+
+    def match_class_names(self, name_matches, item):
+        """Matches keyword class patterns."""
+        for name, (match, strict) in name_matches.items():
+            if strict:
+                self.match(match, item + "." + name)
+            else:
+                self.match_class_attr(match, ascii(name), item)
 
     def match_class(self, tokens, item):
         """Matches a class PEP-622-style."""
@@ -973,8 +990,7 @@ if _coconut.len({match_args_var}) < {num_pos_matches}:
                 self.match(star_match, star_match_var)
 
         # handle keyword args
-        for name, match in name_matches.items():
-            self.match_class_attr(match, ascii(name), item)
+        self.match_class_names(name_matches, item)
 
     def match_data(self, tokens, item):
         """Matches a data type."""
@@ -1003,8 +1019,8 @@ if _coconut.len({match_args_var}) < {num_pos_matches}:
         if star_match is not None:
             self.match(star_match, item + "[" + str(len(pos_matches)) + ":]")
 
-        for name, match in name_matches.items():
-            self.match(match, item + "." + name)
+        # handle keyword args
+        self.match_class_names(name_matches, item)
 
     def match_data_or_class(self, tokens, item):
         """Matches an ambiguous data or class match."""
