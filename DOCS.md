@@ -877,7 +877,7 @@ and_pattern ::= as_pattern ("and" as_pattern)*  # match all
 
 as_pattern ::= infix_pattern ("as" name)*  # explicit binding
 
-infix_pattern ::= bar_or_pattern ("`" EXPR "`" EXPR)*  # infix check
+infix_pattern ::= bar_or_pattern ("`" EXPR "`" [EXPR])*  # infix check
 
 bar_or_pattern ::= pattern ("|" pattern)*  # match any
 
@@ -950,7 +950,7 @@ base_pattern ::= (
   - Identity Checks (`is <expr>`): will check that whatever is in that position `is` the expression `<expr>`.
   - Sets (`{<constants>}`): will only match a set (`collections.abc.Set`) of the same length and contents.
 - Arbitrary Function Patterns:
-  - Infix Checks (`` <pattern> `<op>` <expr> ``): will check that the operator `<op>$(<expr>)` returns a truthy value when called on whatever is in that position, then matches `<pattern>`. For example, `` x `isinstance` int `` will check that whatever is in that position `isinstance$(?, int)` and bind it to `x`. Can be used with [`match_if`](#match_if) to check if an arbitrary predicate holds.
+  - Infix Checks (`` <pattern> `<op>` <expr> ``): will check that the operator `<op>$(?, <expr>)` returns a truthy value when called on whatever is in that position, then matches `<pattern>`. For example, `` x `isinstance` int `` will check that whatever is in that position `isinstance$(?, int)` and bind it to `x`. If `<expr>` is not given, will simply check `<op>` directly rather than `<op>$(<expr>)`.
   - View Patterns (`(<expression>) -> <pattern>`): calls `<expression>` on the item being matched and matches the result to `<pattern>`. The match fails if a [`MatchError`](#matcherror) is raised. `<expression>` may be unparenthesized only when it is a single atom.
 - Class and Data Type Matching:
   - Classes or Data Types (`<name>(<args>)`): will match as a data type if given [a Coconut `data` type](#data) (or a tuple of Coconut data types) and a class otherwise.
@@ -3166,41 +3166,6 @@ def ident(x, *, side_effect=None):
 ```
 
 `ident` is primarily useful when writing in a point-free style (e.g. in combination with [`lift`](#lift)) or for debugging [pipes](#pipes) where `ident$(side_effect=print)` can let you see what is being piped.
-
-### `match_if`
-
-Coconut's `match_if` is a small helper function for making pattern-matching more readable. `match_if` is meant to be used in infix check patterns to match the left-hand side only if the predicate on the right-hand side is truthy. For exampple,
-```coconut
-a `match_if` predicate or b = obj
-```
-is equivalent to the Python
-```coconut_python
-if predicate(obj):
-    a = obj
-else:
-    b = obj
-```
-
-The actual definition of `match_if` is extremely simple, being defined just as
-```coconut
-def match_if(obj, predicate) = predicate(obj)
-```
-which works because Coconut's infix pattern `` pat `op` val `` just calls `op$(?, val)` on the object being matched to determine if the match succeeds (and matches against `pat` if it does).
-
-##### Example
-
-**Coconut:**
-```coconut
-(x, y) `match_if` is_double or x and y = obj
-```
-
-**Python:**
-```coconut_python
-if is_double(obj):
-    x, y = obj
-else:
-    x = y = obj
-```
 
 ### `MatchError`
 

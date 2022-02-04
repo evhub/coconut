@@ -1113,6 +1113,11 @@ def main_test() -> bool:
         assert False
     [] = ()
     () = []
+    _ `isinstance$(?, int)` = 5
+    x = a = None
+    x `isinstance$(?, int)` or a = "abc"
+    assert x is None
+    assert a == "abc"
     return True
 
 def test_asyncio() -> bool:

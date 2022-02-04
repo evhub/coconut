@@ -454,7 +454,6 @@ class Matcher(object):
 
     def match_dict(self, tokens, item):
         """Matches a dictionary."""
-        internal_assert(1 <= len(tokens) <= 2, "invalid dict match tokens", tokens)
         if len(tokens) == 1:
             matches, rest = tokens[0], None
         else:
@@ -1055,7 +1054,6 @@ if _coconut.len({match_args_var}) < {num_pos_matches}:
 
     def match_as(self, tokens, item):
         """Matches as patterns."""
-        internal_assert(len(tokens) > 1, "invalid as match tokens", tokens)
         match, as_names = tokens[0], tokens[1:]
         for varname in as_names:
             self.match_var([varname], item, bind_wildcard=True)
@@ -1063,7 +1061,6 @@ if _coconut.len({match_args_var}) < {num_pos_matches}:
 
     def match_isinstance_is(self, tokens, item):
         """Matches old-style isinstance checks."""
-        internal_assert(len(tokens) > 1, "invalid isinstance is match tokens", tokens)
         match, isinstance_checks = tokens[0], tokens[1:]
 
         if "var" in match:
@@ -1122,11 +1119,20 @@ except _coconut.Exception as _coconut_view_func_exc:
 
     def match_infix(self, tokens, item):
         """Matches infix patterns."""
-        internal_assert(len(tokens) > 1 and len(tokens) % 2 == 1, "invalid infix match tokens", tokens)
-        match = tokens[0]
-        for i in range(1, len(tokens), 2):
-            op, arg = tokens[i], tokens[i + 1]
-            self.add_check("(" + op + ")(" + item + ", " + arg + ")")
+        match, infix_toks = tokens[0], tokens[1:]
+
+        for toks in infix_toks:
+            if len(toks) == 1:
+                op, arg = toks[0], None
+            else:
+                op, arg = toks
+
+            infix_check = "(" + op + ")(" + item
+            if arg is not None:
+                infix_check += ", " + arg
+            infix_check += ")"
+            self.add_check(infix_check)
+
         self.match(match, item)
 
     def make_match(self, flag, tokens):

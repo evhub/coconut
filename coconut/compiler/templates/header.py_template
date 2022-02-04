@@ -1067,16 +1067,6 @@ def all_equal(iterable):
         elif first_item != item:
             return False
     return True
-def match_if(obj, predicate):
-    """Meant to be used in infix pattern-matching expressions to match the left-hand side only if the predicate on the right-hand side holds.
-
-    For example:
-        a `match_if` predicate or b = obj
-
-    The actual definition of match_if is extremely simple:
-        def match_if(obj, predicate) = predicate(obj)
-    """
-    return predicate(obj)
 def collectby(key_func, iterable, value_func=None, reduce_func=None):
     """Collect the items in iterable into a dictionary of lists keyed by key_func(item).
 

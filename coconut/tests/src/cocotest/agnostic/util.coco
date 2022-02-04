@@ -39,6 +39,16 @@ def (a: int) `mod_` (b: int) -> int = a % b
 base = int
 def a `join_with` (b=""):
     return b.join(a)
+def obj `match_if` (predicate: -> bool) -> bool =
+    """Meant to be used in infix pattern-matching expressions to match the left-hand side only if the predicate on the right-hand side holds.
+
+    For example:
+        a `match_if` predicate or b = obj
+
+    The actual definition of match_if is extremely simple:
+        def match_if(obj, predicate) = predicate(obj)
+    """
+    predicate(obj)
 
 # Composable Functions:
 plus1 = (1+.)

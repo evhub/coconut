@@ -295,6 +295,7 @@ def infix_handle(tokens):
 
 def op_funcdef_handle(tokens):
     """Process infix defs."""
+    print(tokens)
     func, base_args = get_infix_items(tokens)
     args = []
     for arg in base_args[:-1]:
@@ -306,8 +307,9 @@ def op_funcdef_handle(tokens):
                 arg += " "
         args.append(arg)
     last_arg = base_args[-1]
-    if last_arg.rstrip().endswith(","):
-        last_arg = last_arg.rsplit(",")[0]
+    rstrip_last_arg = last_arg.rstrip()
+    if rstrip_last_arg.endswith(","):
+        last_arg = rstrip_last_arg[:-1].rstrip()
     args.append(last_arg)
     return func + "(" + "".join(args) + ")"
 
@@ -1595,7 +1597,7 @@ class Grammar(object):
     matchlist_bar_or = isinstance_match + OneOrMore(bar.suppress() + isinstance_match)
     bar_or_match = labeled_group(matchlist_bar_or, "or") | isinstance_match
 
-    matchlist_infix = bar_or_match + OneOrMore(infix_op + negable_atom_item)
+    matchlist_infix = bar_or_match + OneOrMore(Group(infix_op + Optional(negable_atom_item)))
     infix_match = labeled_group(matchlist_infix, "infix") | bar_or_match
 
     matchlist_as = infix_match + OneOrMore(keyword("as").suppress() + name)
