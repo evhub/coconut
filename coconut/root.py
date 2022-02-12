@@ -26,7 +26,7 @@ import sys as _coconut_sys
 VERSION = "2.0.0"
 VERSION_NAME = "How Not to Be Seen"
 # False for release, int >= 1 for develop
-DEVELOP = 43
+DEVELOP = 44
 ALPHA = True
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -216,7 +216,7 @@ def super(type=None, object_or_type=None):
     if type is None:
         if object_or_type is not None:
             raise _coconut.TypeError("invalid use of super()")
-        frame = sys._getframe(1)
+        frame = _coconut_sys._getframe(1)
         self = frame.f_locals[frame.f_code.co_varnames[0]]
         return _coconut_py_super(self.__class__, self)
     return _coconut_py_super(type, object_or_type)
