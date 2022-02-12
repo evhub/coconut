@@ -242,6 +242,7 @@ To make Coconut built-ins universal across Python versions, Coconut makes availa
 - `py_print`,
 - `py_range`,
 - `py_str`,
+- `py_super`,
 - `py_zip`,
 - `py_filter`,
 - `py_reversed`,

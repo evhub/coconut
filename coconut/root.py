@@ -26,7 +26,7 @@ import sys as _coconut_sys
 VERSION = "2.0.0"
 VERSION_NAME = "How Not to Be Seen"
 # False for release, int >= 1 for develop
-DEVELOP = 41
+DEVELOP = 42
 ALPHA = True
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -37,7 +37,7 @@ ALPHA = True
 def _indent(code, by=1, tabsize=4, newline=False):
     """Indents every nonempty line of the given code."""
     return "".join(
-        (" " * (tabsize * by) if line else "") + line
+        (" " * (tabsize * by) if line.strip() else "") + line
         for line in code.splitlines(True)
     ) + ("\n" if newline else "")
 
@@ -78,7 +78,7 @@ def breakpoint(*args, **kwargs):
 '''
 
 _base_py3_header = r'''from builtins import chr, filter, hex, input, int, map, object, oct, open, print, range, str, zip, filter, reversed, enumerate
-py_chr, py_hex, py_input, py_int, py_map, py_object, py_oct, py_open, py_print, py_range, py_str, py_zip, py_filter, py_reversed, py_enumerate, py_repr = chr, hex, input, int, map, object, oct, open, print, range, str, zip, filter, reversed, enumerate, repr
+py_chr, py_hex, py_input, py_int, py_map, py_object, py_oct, py_open, py_print, py_range, py_str, py_super, py_zip, py_filter, py_reversed, py_enumerate, py_repr = chr, hex, input, int, map, object, oct, open, print, range, str, super, zip, filter, reversed, enumerate, repr
 _coconut_py_str = str
 exec("_coconut_exec = exec")
 '''
@@ -92,8 +92,8 @@ PY3_HEADER = _base_py3_header + r'''if _coconut_sys.version_info < (3, 7):
 '''
 
 PY27_HEADER = r'''from __builtin__ import chr, filter, hex, input, int, map, object, oct, open, print, range, str, zip, filter, reversed, enumerate, raw_input, xrange
-py_chr, py_hex, py_input, py_int, py_map, py_object, py_oct, py_open, py_print, py_range, py_str, py_zip, py_filter, py_reversed, py_enumerate, py_raw_input, py_xrange, py_repr = chr, hex, input, int, map, object, oct, open, print, range, str, zip, filter, reversed, enumerate, raw_input, xrange, repr
-_coconut_py_raw_input, _coconut_py_xrange, _coconut_py_int, _coconut_py_long, _coconut_py_print, _coconut_py_str, _coconut_py_unicode, _coconut_py_repr = raw_input, xrange, int, long, print, str, unicode, repr
+py_chr, py_hex, py_input, py_int, py_map, py_object, py_oct, py_open, py_print, py_range, py_str, py_super, py_zip, py_filter, py_reversed, py_enumerate, py_raw_input, py_xrange, py_repr = chr, hex, input, int, map, object, oct, open, print, range, str, super, zip, filter, reversed, enumerate, raw_input, xrange, repr
+_coconut_py_raw_input, _coconut_py_xrange, _coconut_py_int, _coconut_py_long, _coconut_py_print, _coconut_py_str, _coconut_py_super, _coconut_py_unicode, _coconut_py_repr = raw_input, xrange, int, long, print, str, super, unicode, repr
 from future_builtins import *
 chr, str = unichr, unicode
 from io import open
@@ -211,6 +211,15 @@ def repr(obj):
     finally:
         __builtin__.repr = _coconut_py_repr
 ascii = _coconut_repr = repr
+@_coconut_wraps(_coconut_py_super)
+def super(type=None, object_or_type=None):
+    if type is None:
+        if object_or_type is not None:
+            raise _coconut.TypeError("invalid use of super()")
+        frame = sys._getframe(1)
+        self = frame.f_locals[frame.f_code.co_varnames[0]]
+        return _coconut_py_super(self.__class__, self)
+    return _coconut_py_super(type, object_or_type)
 def raw_input(*args):
     """Coconut uses Python 3 'input' instead of Python 2 'raw_input'."""
     raise _coconut.NameError("Coconut uses Python 3 'input' instead of Python 2 'raw_input'")

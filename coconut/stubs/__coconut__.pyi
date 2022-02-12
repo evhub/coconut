@@ -106,6 +106,7 @@ py_open = open
 py_print = print
 py_range = range
 py_str = str
+py_super = super
 py_zip = zip
 py_filter = filter
 py_reversed = reversed

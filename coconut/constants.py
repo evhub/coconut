@@ -469,6 +469,7 @@ coconut_specific_builtins = (
     "py_print",
     "py_range",
     "py_str",
+    "py_super",
     "py_zip",
     "py_filter",
     "py_reversed",

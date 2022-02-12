@@ -191,8 +191,12 @@ def suite_test() -> bool:
     assert not is_one([])
     assert is_one([1])
     assert trilen(3, 4).h == 5 == datamaker(trilen)(5).h
-    assert A().true()
-    assert inh_A().true()
+    assert A().true() is True
+    inh_a = inh_A()
+    assert inh_a.true() is True
+    assert inh_a.inh_true1() is True
+    assert inh_a.inh_true2() is True
+    assert inh_a.inh_true3() is True
     assert pt.__doc__
     out0 = grid() |> grid_trim$(xmax=5, ymax=5)
     assert out0 == [
