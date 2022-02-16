@@ -198,6 +198,7 @@ def suite_test() -> bool:
     assert inh_a.inh_true2() is True
     assert inh_a.inh_true3() is True
     assert inh_a.inh_true4() is True
+    assert inh_A.inh_cls_true() is True
     assert pt.__doc__
     out0 = grid() |> grid_trim$(xmax=5, ymax=5)
     assert out0 == [
