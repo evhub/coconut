@@ -273,10 +273,10 @@ reserved_vars = (
 )
 
 # names that trigger __class__ to be bound to local vars
-super_names = {
+super_names = (
     "super",
     "__class__",
-}
+)
 
 # regexes that commonly refer to functions that can't be TCOd
 untcoable_funcs = (
