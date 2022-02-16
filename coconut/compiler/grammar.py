@@ -102,6 +102,7 @@ from coconut.compiler.util import (
     tuple_str_of,
     any_len_perm,
     boundary,
+    compile_regex,
 )
 
 # end: IMPORTS
@@ -673,19 +674,20 @@ class Grammar(object):
     test_no_chain, dubcolon = disable_inside(test, unsafe_dubcolon)
     test_no_infix, backtick = disable_inside(test, unsafe_backtick)
 
-    base_name_regex = r""
+    unsafe_name_regex = r""
     for no_kwd in keyword_vars + const_vars:
-        base_name_regex += r"(?!" + no_kwd + r"\b)"
+        unsafe_name_regex += r"(?!" + no_kwd + r"\b)"
     # we disallow '"{ after to not match the "b" in b"" or the "s" in s{}
-    base_name_regex += r"(?![0-9])\w+\b(?![{" + strwrapper + r"])"
-    base_name = (
-        regex_item(base_name_regex)
+    unsafe_name_regex += r"(?![0-9])\w+\b(?![{" + strwrapper + r"])"
+    unsafe_name = (
+        regex_item(unsafe_name_regex)
         | backslash.suppress() + any_keyword_in(reserved_vars)
     )
 
     name = Forward()
-    dotted_name = condense(name + ZeroOrMore(dot + name))
-    must_be_dotted_name = condense(name + OneOrMore(dot + name))
+    # use unsafe_name for dotted components since name should only be used for base names
+    dotted_name = condense(name + ZeroOrMore(dot + unsafe_name))
+    must_be_dotted_name = condense(name + OneOrMore(dot + unsafe_name))
 
     integer = combine(Word(nums) + ZeroOrMore(underscore.suppress() + Word(nums)))
     binint = combine(Word("01") + ZeroOrMore(underscore.suppress() + Word("01")))
@@ -711,7 +713,7 @@ class Grammar(object):
             | imag_num
             | numitem
         )
-        + Optional(condense(dot + name)),
+        + Optional(condense(dot + unsafe_name)),
     )
 
     moduledoc_item = Forward()
@@ -1121,7 +1123,7 @@ class Grammar(object):
     typedef_or_expr = Forward()
 
     simple_trailer = (
-        condense(dot + name)
+        condense(dot + unsafe_name)
         | condense(lbrack + subscriptlist + rbrack)
     )
     call_trailer = (
@@ -1133,7 +1135,7 @@ class Grammar(object):
         Group(condense(dollar + lbrack) + subscriptgroup + rbrack.suppress())  # $[
         | Group(condense(dollar + lbrack + rbrack))  # $[]
         | Group(condense(lbrack + rbrack))  # []
-        | Group(dot + ~name + ~lbrack)  # .
+        | Group(dot + ~unsafe_name + ~lbrack)  # .
         | Group(questionmark)  # ?
     ) + ~questionmark
     partial_trailer = (
@@ -1356,6 +1358,7 @@ class Grammar(object):
     lambdef_base = classic_lambdef | new_lambdef | implicit_lambdef
 
     stmt_lambdef = Forward()
+    stmt_lambdef_body = Forward()
     match_guard = Optional(keyword("if").suppress() + namedexpr_test)
     closing_stmt = longest(testlist("tests"), unsafe_simple_stmt_item)
     stmt_lambdef_match_params = Group(lparen.suppress() + match_args_list + match_guard + rparen.suppress())
@@ -1365,7 +1368,7 @@ class Grammar(object):
         | stmt_lambdef_match_params,
         default="(_=None)",
     )
-    stmt_lambdef_body = (
+    stmt_lambdef_body_ref = (
         Group(OneOrMore(simple_stmt_item + semicolon.suppress())) + Optional(closing_stmt)
         | Group(ZeroOrMore(simple_stmt_item + semicolon.suppress())) + closing_stmt
     )
@@ -1438,14 +1441,17 @@ class Grammar(object):
         | new_namedexpr
     )
 
-    async_comp_for = Forward()
     classdef = Forward()
+    classname = Forward()
+    classname_ref = name
     classlist = Group(
         Optional(function_call_tokens)
         + ~equals,  # don't match class destructuring assignment
     )
     class_suite = suite | attach(newline, class_suite_handle)
-    classdef_ref = keyword("class").suppress() + name + classlist + class_suite
+    classdef_ref = keyword("class").suppress() + classname + classlist + class_suite
+
+    async_comp_for = Forward()
     comp_iter = Forward()
     comp_it_item = (
         invalid_syntax(maybeparens(lparen, namedexpr, rparen), "PEP 572 disallows assignment expressions in comprehension iterable expressions")
@@ -1512,7 +1518,7 @@ class Grammar(object):
 
     del_stmt = addspace(keyword("del") - simple_assignlist)
 
-    matchlist_data_item = Group(Optional(star | Optional(dot) + name + equals) + match)
+    matchlist_data_item = Group(Optional(star | Optional(dot) + unsafe_name + equals) + match)
     matchlist_data = Group(Optional(tokenlist(matchlist_data_item, comma)))
 
     match_check_equals = Forward()
@@ -1707,6 +1713,7 @@ class Grammar(object):
     with_stmt = Forward()
 
     return_typedef = Forward()
+    func_suite = Forward()
     name_funcdef = trace(condense(dotted_name + parameters))
     op_tfpdef = unsafe_typedef_default | condense(name + Optional(default))
     op_funcdef_arg = name | condense(lparen.suppress() + op_tfpdef + rparen.suppress())
@@ -1722,10 +1729,12 @@ class Grammar(object):
     return_typedef_ref = arrow.suppress() + typedef_test
     end_func_colon = return_typedef + colon.suppress() | colon
     base_funcdef = op_funcdef | name_funcdef
-    funcdef = trace(addspace(keyword("def") + condense(base_funcdef + end_func_colon + nocolon_suite)))
+    func_suite_ref = nocolon_suite
+    funcdef = trace(addspace(keyword("def") + condense(base_funcdef + end_func_colon + func_suite)))
 
     name_match_funcdef = Forward()
     op_match_funcdef = Forward()
+    func_suite_tokens = Forward()
     op_match_funcdef_arg = Group(
         Optional(
             lparen.suppress()
@@ -1736,20 +1745,21 @@ class Grammar(object):
     name_match_funcdef_ref = keyword("def").suppress() + dotted_name + lparen.suppress() + match_args_list + match_guard + rparen.suppress()
     op_match_funcdef_ref = keyword("def").suppress() + op_match_funcdef_arg + op_funcdef_name + op_match_funcdef_arg + match_guard
     base_match_funcdef = trace(op_match_funcdef | name_match_funcdef)
+    func_suite_tokens_ref = (
+        attach(simple_stmt, make_suite_handle)
+        | (
+            newline.suppress()
+            - indent.suppress()
+            - Optional(docstring)
+            - attach(condense(OneOrMore(stmt)), make_suite_handle)
+            - dedent.suppress()
+        )
+    )
     def_match_funcdef = trace(
         attach(
             base_match_funcdef
             + end_func_colon
-            - (
-                attach(simple_stmt, make_suite_handle)
-                | (
-                    newline.suppress()
-                    - indent.suppress()
-                    - Optional(docstring)
-                    - attach(condense(OneOrMore(stmt)), make_suite_handle)
-                    - dedent.suppress()
-                )
-            ),
+            - func_suite_tokens,
             join_match_funcdef,
         ),
     )
@@ -1769,6 +1779,7 @@ class Grammar(object):
         where_handle,
     )
 
+    math_funcdef_suite = Forward()
     implicit_return = (
         invalid_syntax(return_stmt, "expected expression but got return statement")
         | attach(return_testlist, implicit_return_handle)
@@ -1784,7 +1795,7 @@ class Grammar(object):
         | implicit_return_where
     )
     math_funcdef_body = condense(ZeroOrMore(~(implicit_return_stmt + dedent) + stmt) - implicit_return_stmt)
-    math_funcdef_suite = (
+    math_funcdef_suite_ref = (
         attach(implicit_return_stmt, make_suite_handle)
         | condense(newline - indent - math_funcdef_body - dedent)
     )
@@ -1870,13 +1881,13 @@ class Grammar(object):
             | simple_stmt("simple")
         ) | newline("empty"),
     )
-    datadef_ref = data_kwd.suppress() + name + data_args + data_suite
+    datadef_ref = data_kwd.suppress() + classname + data_args + data_suite
 
     match_datadef = Forward()
     match_data_args = lparen.suppress() + Group(
         match_args_list + match_guard,
     ) + rparen.suppress() + Optional(keyword("from").suppress() + testlist)
-    match_datadef_ref = Optional(match_kwd.suppress()) + data_kwd.suppress() + name + match_data_args + data_suite
+    match_datadef_ref = Optional(match_kwd.suppress()) + data_kwd.suppress() + classname + match_data_args + data_suite
 
     simple_decorator = condense(dotted_name + Optional(function_call) + newline)("simple")
     complex_decorator = condense(namedexpr_test + newline)("complex")
@@ -2000,6 +2011,12 @@ class Grammar(object):
 # EXTRA GRAMMAR:
 # -----------------------------------------------------------------------------------------------------------------------
 
+    def_regex = compile_regex(r"((async|addpattern)\s+)*def\b")
+    yield_regex = compile_regex(r"\byield(?!\s+_coconut\.asyncio\.From)\b")
+
+    tco_disable_regex = compile_regex(r"try\b|(async\s+)?(with\b|for\b)|while\b")
+    return_regex = compile_regex(r"return\b")
+
     just_non_none_atom = start_marker + ~keyword("None") + known_atom + end_marker
 
     original_function_call_tokens = (
@@ -2029,9 +2046,9 @@ class Grammar(object):
             lparen,
             disallow_keywords(untcoable_funcs, with_suffix=lparen)
             + condense(
-                (base_name | parens | brackets | braces | string_atom)
+                (unsafe_name | parens | brackets | braces | string_atom)
                 + ZeroOrMore(
-                    dot + base_name
+                    dot + unsafe_name
                     | brackets
                     # don't match the last set of parentheses
                     | parens + ~end_marker + ~rparen,
@@ -2065,7 +2082,7 @@ class Grammar(object):
             | ~comma + ~rparen + ~equals + any_char,
         ),
     )
-    tfpdef_tokens = base_name - Optional(colon.suppress() - rest_of_tfpdef.suppress())
+    tfpdef_tokens = unsafe_name - Optional(colon.suppress() - rest_of_tfpdef.suppress())
     tfpdef_default_tokens = tfpdef_tokens - Optional(equals.suppress() - rest_of_tfpdef)
     type_comment = Optional(
         comment_tokens.suppress()
@@ -2085,18 +2102,18 @@ class Grammar(object):
         ),
     )
 
-    dotted_base_name = condense(base_name + ZeroOrMore(dot + base_name))
+    dotted_unsafe_name = condense(unsafe_name + ZeroOrMore(dot + unsafe_name))
     split_func = (
         start_marker
         - keyword("def").suppress()
-        - dotted_base_name
+        - dotted_unsafe_name
         - lparen.suppress() - parameters_tokens - rparen.suppress()
     )
 
     stores_scope = boundary + (
         lambda_kwd
         # match comprehensions but not for loops
-        | ~indent + ~dedent + any_char + keyword("for") + base_name + keyword("in")
+        | ~indent + ~dedent + any_char + keyword("for") + unsafe_name + keyword("in")
     )
 
     just_a_string = start_marker + string_atom + end_marker

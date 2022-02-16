@@ -65,7 +65,6 @@ from coconut.constants import (
     function_match_error_var,
     legal_indent_chars,
     format_var,
-    replwrapper,
     none_coalesce_var,
     is_data_var,
     funcwrapper,
@@ -73,6 +72,7 @@ from coconut.constants import (
     indchars,
     default_whitespace_chars,
     early_passthrough_wrapper,
+    super_names,
 )
 from coconut.util import (
     pickleable_obj,
@@ -91,6 +91,7 @@ from coconut.exceptions import (
     CoconutInternalException,
     CoconutSyntaxWarning,
     CoconutDeferredSyntaxError,
+    CoconutInternalSyntaxError,
 )
 from coconut.terminal import (
     logger,
@@ -424,9 +425,10 @@ class Compiler(Grammar, pickleable_obj):
         self.skips = []
         self.docstring = ""
         self.temp_var_counts = defaultdict(int)
-        self.stored_matches_of = defaultdict(list)
+        self.parsing_context = defaultdict(list)
         self.add_code_before = {}
         self.add_code_before_regexes = {}
+        self.add_code_before_replacements = {}
         self.unused_imports = set()
         self.original_lines = []
         self.num_lines = 0
@@ -440,6 +442,7 @@ class Compiler(Grammar, pickleable_obj):
         comments, self.comments = self.comments, {}
         skips, self.skips = self.skips, []
         docstring, self.docstring = self.docstring, ""
+        parsing_context, self.parsing_context = self.parsing_context, defaultdict(list)
         original_lines, self.original_lines = self.original_lines, []
         num_lines, self.num_lines = self.num_lines, 0
         try:
@@ -450,6 +453,7 @@ class Compiler(Grammar, pickleable_obj):
             self.comments = comments
             self.skips = skips
             self.docstring = docstring
+            self.parsing_context = parsing_context
             self.original_lines = original_lines
             self.num_lines = num_lines
 
@@ -480,12 +484,12 @@ class Compiler(Grammar, pickleable_obj):
         return var_name
 
     @classmethod
-    def method(cls, method_name, **kwargs):
+    def method(cls, method_name, is_action=None, **kwargs):
         """Get a function that always dispatches to getattr(current_compiler, method_name)$(**kwargs)."""
         cls_method = getattr(cls, method_name)
-        trim_arity = getattr(cls_method, "trim_arity", None)
-        if trim_arity is None:
-            trim_arity = should_trim_arity(cls_method)
+        if is_action is None:
+            is_action = not method_name.endswith("_manage")
+        trim_arity = should_trim_arity(cls_method) if is_action else False
 
         @wraps(cls_method)
         def method(original, loc, tokens):
@@ -508,22 +512,37 @@ class Compiler(Grammar, pickleable_obj):
     @classmethod
     def bind(cls):
         """Binds reference objects to the proper parse actions."""
-        # handle docstrings, endlines, names
+        # parsing_context["class"] handling
+        new_classdef = Wrap(cls.classdef_ref, cls.method("class_manage"))
+        cls.classdef <<= trace_attach(new_classdef, cls.method("classdef_handle"))
+
+        new_datadef = Wrap(cls.datadef_ref, cls.method("class_manage"))
+        cls.datadef <<= trace_attach(new_datadef, cls.method("datadef_handle"))
+
+        new_match_datadef = Wrap(cls.match_datadef_ref, cls.method("class_manage"))
+        cls.match_datadef <<= trace_attach(new_match_datadef, cls.method("match_datadef_handle"))
+
+        cls.stmt_lambdef_body <<= Wrap(cls.stmt_lambdef_body_ref, cls.method("func_manage"))
+        cls.func_suite <<= Wrap(cls.func_suite_ref, cls.method("func_manage"))
+        cls.func_suite_tokens <<= Wrap(cls.func_suite_tokens_ref, cls.method("func_manage"))
+        cls.math_funcdef_suite <<= Wrap(cls.math_funcdef_suite_ref, cls.method("func_manage"))
+
+        cls.classname <<= trace_attach(cls.classname_ref, cls.method("classname_handle"), greedy=True)
+
+        # greedy handlers (we need to know about them even if suppressed and/or they use the parsing_context)
+        cls.name <<= attach(cls.unsafe_name, cls.method("name_handle"), greedy=True)
+        cls.comment <<= attach(cls.comment_tokens, cls.method("comment_handle"), greedy=True)
+
+        # abnormally named handlers
         cls.moduledoc_item <<= trace_attach(cls.moduledoc, cls.method("set_moduledoc"))
         cls.endline <<= attach(cls.endline_ref, cls.method("endline_handle"))
-        cls.name <<= attach(cls.base_name, cls.method("name_check"))
-
-        # comments are evaluated greedily because we need to know about them even if we're going to suppress them
-        cls.comment <<= attach(cls.comment_tokens, cls.method("comment_handle"), greedy=True)
+        cls.normal_pipe_expr <<= trace_attach(cls.normal_pipe_expr_tokens, cls.method("pipe_handle"))
+        cls.return_typedef <<= trace_attach(cls.return_typedef_ref, cls.method("typedef_handle"))
 
         # handle all atom + trailers constructs with item_handle
         cls.trailer_atom <<= trace_attach(cls.trailer_atom_ref, cls.method("item_handle"))
         cls.no_partial_trailer_atom <<= trace_attach(cls.no_partial_trailer_atom_ref, cls.method("item_handle"))
         cls.simple_assign <<= trace_attach(cls.simple_assign_ref, cls.method("item_handle"))
-
-        # abnormally named handlers
-        cls.normal_pipe_expr <<= trace_attach(cls.normal_pipe_expr_tokens, cls.method("pipe_handle"))
-        cls.return_typedef <<= trace_attach(cls.return_typedef_ref, cls.method("typedef_handle"))
 
         # standard handlers of the form name <<= trace_attach(name_tokens, method("name_handle")) (implies name_tokens is reused)
         cls.function_call <<= trace_attach(cls.function_call_tokens, cls.method("function_call_handle"))
@@ -532,7 +551,6 @@ class Compiler(Grammar, pickleable_obj):
         # standard handlers of the form name <<= trace_attach(name_ref, method("name_handle"))
         cls.set_literal <<= trace_attach(cls.set_literal_ref, cls.method("set_literal_handle"))
         cls.set_letter_literal <<= trace_attach(cls.set_letter_literal_ref, cls.method("set_letter_literal_handle"))
-        cls.classdef <<= trace_attach(cls.classdef_ref, cls.method("classdef_handle"))
         cls.import_stmt <<= trace_attach(cls.import_stmt_ref, cls.method("import_handle"))
         cls.complex_raise_stmt <<= trace_attach(cls.complex_raise_stmt_ref, cls.method("complex_raise_stmt_handle"))
         cls.augassign_stmt <<= trace_attach(cls.augassign_stmt_ref, cls.method("augassign_stmt_handle"))
@@ -548,8 +566,6 @@ class Compiler(Grammar, pickleable_obj):
         cls.typedef_default <<= trace_attach(cls.typedef_default_ref, cls.method("typedef_handle"))
         cls.unsafe_typedef_default <<= trace_attach(cls.unsafe_typedef_default_ref, cls.method("unsafe_typedef_handle"))
         cls.typed_assign_stmt <<= trace_attach(cls.typed_assign_stmt_ref, cls.method("typed_assign_stmt_handle"))
-        cls.datadef <<= trace_attach(cls.datadef_ref, cls.method("datadef_handle"))
-        cls.match_datadef <<= trace_attach(cls.match_datadef_ref, cls.method("match_datadef_handle"))
         cls.with_stmt <<= trace_attach(cls.with_stmt_ref, cls.method("with_stmt_handle"))
         cls.await_expr <<= trace_attach(cls.await_expr_ref, cls.method("await_expr_handle"))
         cls.ellipsis <<= trace_attach(cls.ellipsis_ref, cls.method("ellipsis_handle"))
@@ -851,6 +867,16 @@ class Compiler(Grammar, pickleable_obj):
 
         return self.make_err(CoconutParseError, msg, original, loc, ln, include_endpoint=True, include_causes=True, **kwargs)
 
+    def make_internal_syntax_err(self, original, loc, msg, item, extra):
+        """Make a CoconutInternalSyntaxError."""
+        message = msg + ": " + repr(item)
+        return self.make_err(CoconutInternalSyntaxError, message, original, loc, extra=extra, include_endpoint=True)
+
+    def internal_assert(self, cond, original, loc, msg=None, item=None):
+        """Version of internal_assert that raises CoconutInternalSyntaxErrors."""
+        if not cond or callable(cond):  # avoid the overhead of another call if we know the assert will pass
+            internal_assert(cond, msg, item, exc_maker=partial(self.make_internal_syntax_err, original, loc))
+
     def inner_parse_eval(
         self,
         inputstring,
@@ -896,50 +922,6 @@ class Compiler(Grammar, pickleable_obj):
         if self.strict:
             for name in self.unused_imports:
                 logger.warn("found unused import", name, extra="remove --strict to dismiss")
-        return out
-
-    def replace_matches_of_inside(self, name, elem, *items):
-        """Replace all matches of elem inside of items and include the
-        replacements in the resulting matches of items. Requires elem
-        to only match a single string.
-
-        Returns (new version of elem, *modified items)."""
-        @contextmanager
-        def manage_item(wrapper, instring, loc):
-            self.stored_matches_of[name].append([])
-            try:
-                yield
-            finally:
-                self.stored_matches_of[name].pop()
-
-        def handle_item(tokens):
-            if isinstance(tokens, ParseResults) and len(tokens) == 1:
-                tokens = tokens[0]
-            return (self.stored_matches_of[name][-1], tokens)
-
-        handle_item.__name__ = "handle_wrapping_" + name
-
-        def handle_elem(tokens):
-            internal_assert(len(tokens) == 1, "invalid elem tokens in replace_matches_of_inside", tokens)
-            if self.stored_matches_of[name]:
-                ref = self.add_ref("repl", tokens[0])
-                self.stored_matches_of[name][-1].append(ref)
-                return replwrapper + ref + unwrapper
-            else:
-                return tokens[0]
-
-        handle_elem.__name__ = "handle_" + name
-
-        yield attach(elem, handle_elem)
-
-        for item in items:
-            yield Wrap(attach(item, handle_item, greedy=True), manage_item)
-
-    def replace_replaced_matches(self, to_repl_str, ref_to_replacement):
-        """Replace refs in str generated by replace_matches_of_inside."""
-        out = to_repl_str
-        for ref, repl in ref_to_replacement.items():
-            out = out.replace(replwrapper + ref + unwrapper, repl)
         return out
 
 # end: COMPILER
@@ -1445,9 +1427,6 @@ else:
             greedy=True,
         )
 
-    def_regex = compile_regex(r"(async\s+)?def\b")
-    yield_regex = compile_regex(r"\byield(?!\s+_coconut\.asyncio\.From)\b")
-
     def detect_is_gen(self, raw_lines):
         """Determine if the given function code is for a generator."""
         level = 0  # indentation level
@@ -1475,9 +1454,6 @@ else:
 
         return False
 
-    tco_disable_regex = compile_regex(r"try\b|(async\s+)?(with\b|for\b)|while\b")
-    return_regex = compile_regex(r"return\b")
-
     def transform_returns(self, original, loc, raw_lines, tre_return_grammar=None, is_async=False, is_gen=False):
         """Apply TCO, TRE, async, and generator return universalization to the given function."""
         lines = []  # transformed lines
@@ -1491,7 +1467,7 @@ else:
         attempt_tco = normal_func and not self.no_tco  # whether to even attempt tco
 
         # sanity checks
-        internal_assert(not (not normal_func and (attempt_tre or attempt_tco)), "cannot tail call optimize async/generator functions")
+        self.internal_assert(not (not normal_func and (attempt_tre or attempt_tco)), original, loc, "cannot tail call optimize async/generator functions")
 
         if (
             # don't transform generator returns if they're supported
@@ -1599,14 +1575,14 @@ else:
         elif def_stmt.startswith("def"):
             addpattern = False
         else:
-            raise CoconutInternalException("invalid function definition statement", def_stmt)
+            raise CoconutInternalException("invalid function definition statement", funcdef)
 
         # extract information about the function
         with self.complain_on_err():
             try:
                 split_func_tokens = parse(self.split_func, def_stmt, inner=True)
 
-                internal_assert(len(split_func_tokens) == 2, "invalid function definition splitting tokens", split_func_tokens)
+                self.internal_assert(len(split_func_tokens) == 2, original, loc, "invalid function definition splitting tokens", split_func_tokens)
                 func_name, func_arg_tokens = split_func_tokens
 
                 func_paramdef = ", ".join("".join(arg) for arg in func_arg_tokens)
@@ -1845,18 +1821,39 @@ if {store_var} is not _coconut_sentinel:
                 decorators = self.deferred_code_proc(decorators, add_code_at_start=True, ignore_names=ignore_names, **kwargs)
                 funcdef = self.deferred_code_proc(funcdef, ignore_names=ignore_names, **kwargs)
 
+                # handle any non-function code that was added before the funcdef
+                pre_def_lines = []
+                post_def_lines = []
+                funcdef_lines = list(logical_lines(funcdef, True))
+                for i, line in enumerate(funcdef_lines):
+                    if self.def_regex.match(line):
+                        pre_def_lines = funcdef_lines[:i]
+                        post_def_lines = funcdef_lines[i:]
+                        break
+                internal_assert(post_def_lines, "no def statement found in funcdef", funcdef)
+
                 out.append(bef_ind)
-                out.append(self.proc_funcdef(original, loc, decorators, funcdef, is_async))
+                out.extend(pre_def_lines)
+                out.append(self.proc_funcdef(original, loc, decorators, "".join(post_def_lines), is_async))
                 out.append(aft_ind)
 
             # look for add_code_before regexes
             else:
-                full_line = bef_ind + line + aft_ind
-                for name, regex in self.add_code_before_regexes.items():
+                for name, raw_code in self.add_code_before.items():
+                    if name in ignore_names:
+                        continue
 
-                    if name not in ignore_names and regex.search(line):
+                    regex = self.add_code_before_regexes[name]
+                    replacement = self.add_code_before_replacements.get(name)
+
+                    if replacement is None:
+                        saw_name = regex.search(line)
+                    else:
+                        line, saw_name = regex.subn(replacement, line)
+
+                    if saw_name:
                         # process inner code
-                        code_to_add = self.deferred_code_proc(self.add_code_before[name], ignore_names=ignore_names + (name,), **kwargs)
+                        code_to_add = self.deferred_code_proc(raw_code, ignore_names=ignore_names + (name,), **kwargs)
 
                         # add code and update indents
                         if add_code_at_start:
@@ -1866,9 +1863,10 @@ if {store_var} is not _coconut_sentinel:
                             out.append(code_to_add)
                             out.append("\n")
                             bef_ind = ""
-                            full_line = line + aft_ind
 
-                out.append(full_line)
+                out.append(bef_ind)
+                out.append(line)
+                out.append(aft_ind)
 
         return "".join(out)
 
@@ -1954,9 +1952,9 @@ if {store_var} is not _coconut_sentinel:
         else:
             raise CoconutInternalException("invalid pipe item tokens", tokens)
 
-    def pipe_handle(self, loc, tokens, **kwargs):
+    def pipe_handle(self, original, loc, tokens, **kwargs):
         """Process pipe calls."""
-        internal_assert(set(kwargs) <= set(("top",)), "unknown pipe_handle keyword arguments", kwargs)
+        self.internal_assert(set(kwargs) <= set(("top",)), original, loc, "unknown pipe_handle keyword arguments", kwargs)
         top = kwargs.get("top", True)
         if len(tokens) == 1:
             item = tokens.pop()
@@ -1966,10 +1964,10 @@ if {store_var} is not _coconut_sentinel:
             # we've only been given one operand, so we can't do any optimization, so just produce the standard object
             name, split_item = self.pipe_item_split(item, loc)
             if name == "expr":
-                internal_assert(len(split_item) == 1)
+                self.internal_assert(len(split_item) == 1, original, loc)
                 return split_item[0]
             elif name == "partial":
-                internal_assert(len(split_item) == 3)
+                self.internal_assert(len(split_item) == 3, original, loc)
                 return "_coconut.functools.partial(" + join_args(split_item) + ")"
             elif name == "attrgetter":
                 return attrgetter_atom_handle(loc, item)
@@ -1985,14 +1983,14 @@ if {store_var} is not _coconut_sentinel:
 
             if direction == "backwards":
                 # for backwards pipes, we just reuse the machinery for forwards pipes
-                inner_item = self.pipe_handle(loc, tokens, top=False)
+                inner_item = self.pipe_handle(original, loc, tokens, top=False)
                 if isinstance(inner_item, str):
                     inner_item = [inner_item]  # artificial pipe item
-                return self.pipe_handle(loc, [item, "|" + ("?" if none_aware else "") + star_str + ">", inner_item])
+                return self.pipe_handle(original, loc, [item, "|" + ("?" if none_aware else "") + star_str + ">", inner_item])
 
             elif none_aware:
                 # for none_aware forward pipes, we wrap the normal forward pipe in a lambda
-                pipe_expr = self.pipe_handle(loc, [[none_coalesce_var], "|" + star_str + ">", item])
+                pipe_expr = self.pipe_handle(original, loc, [[none_coalesce_var], "|" + star_str + ">", item])
                 # := changes meaning inside lambdas, so we must disallow it when wrapping
                 #  user expressions in lambdas (and naive string analysis is safe here)
                 if ":=" in pipe_expr:
@@ -2000,13 +1998,13 @@ if {store_var} is not _coconut_sentinel:
                 return "(lambda {x}: None if {x} is None else {pipe})({subexpr})".format(
                     x=none_coalesce_var,
                     pipe=pipe_expr,
-                    subexpr=self.pipe_handle(loc, tokens),
+                    subexpr=self.pipe_handle(original, loc, tokens),
                 )
 
             elif direction == "forwards":
                 # if this is an implicit partial, we have something to apply it to, so optimize it
                 name, split_item = self.pipe_item_split(item, loc)
-                subexpr = self.pipe_handle(loc, tokens)
+                subexpr = self.pipe_handle(original, loc, tokens)
 
                 if name == "expr":
                     func, = split_item
@@ -2023,7 +2021,7 @@ if {store_var} is not _coconut_sentinel:
                 elif name == "itemgetter":
                     if stars:
                         raise CoconutDeferredSyntaxError("cannot star pipe into item getting", loc)
-                    internal_assert(len(split_item) % 2 == 0, "invalid itemgetter pipe tokens", split_item)
+                    self.internal_assert(len(split_item) % 2 == 0, original, loc, "invalid itemgetter pipe tokens", split_item)
                     out = subexpr
                     for i in range(0, len(split_item), 2):
                         op, args = split_item[i:i + 2]
@@ -2156,7 +2154,7 @@ while True:
 
     def endline_handle(self, original, loc, tokens):
         """Add line number information to end of line."""
-        internal_assert(len(tokens) == 1, "invalid endline tokens", tokens)
+        self.internal_assert(len(tokens) == 1, original, loc, "invalid endline tokens", tokens)
         lines = tokens[0].splitlines(True)
         if self.minify:
             lines = lines[0]
@@ -2169,7 +2167,7 @@ while True:
 
     def comment_handle(self, original, loc, tokens):
         """Store comment in comments."""
-        internal_assert(len(tokens) == 1, "invalid comment tokens", tokens)
+        self.internal_assert(len(tokens) == 1, original, loc, "invalid comment tokens", tokens)
         ln = self.adjust(lineno(loc, original))
         if ln in self.comments:
             self.comments[ln] += " " + tokens[0]
@@ -2177,21 +2175,21 @@ while True:
             self.comments[ln] = tokens[0]
         return ""
 
-    def kwd_augassign_handle(self, loc, tokens):
+    def kwd_augassign_handle(self, original, loc, tokens):
         """Process global/nonlocal augmented assignments."""
         name, _ = tokens
-        return name + "\n" + self.augassign_stmt_handle(loc, tokens)
+        return name + "\n" + self.augassign_stmt_handle(original, loc, tokens)
 
-    def augassign_stmt_handle(self, loc, tokens):
+    def augassign_stmt_handle(self, original, loc, tokens):
         """Process augmented assignments."""
         name, augassign = tokens
 
         if "pipe" in augassign:
             pipe_op, partial_item = augassign
             pipe_tokens = [ParseResults([name], name="expr"), pipe_op, partial_item]
-            return name + " = " + self.pipe_handle(loc, pipe_tokens)
+            return name + " = " + self.pipe_handle(original, loc, pipe_tokens)
 
-        internal_assert("simple" in augassign, "invalid augmented assignment rhs tokens", augassign)
+        self.internal_assert("simple" in augassign, original, loc, "invalid augmented assignment rhs tokens", augassign)
         op, item = augassign
 
         if op == "|>=":
@@ -2884,7 +2882,7 @@ if not {check_var}:
 
     def await_expr_handle(self, original, loc, tokens):
         """Check for Python 3.5 await expression."""
-        internal_assert(len(tokens) == 1, "invalid await statement tokens", tokens)
+        self.internal_assert(len(tokens) == 1, original, loc, "invalid await statement tokens", tokens)
         if not self.target:
             raise self.make_err(
                 CoconutTargetError,
@@ -3004,7 +3002,7 @@ __annotations__["{name}"] = {annotation}
         else:
             raise CoconutInternalException("invalid case tokens", tokens)
 
-        internal_assert(block_kwd in ("cases", "case", "match"), "invalid case statement keyword", block_kwd)
+        self.internal_assert(block_kwd in ("cases", "case", "match"), original, loc, "invalid case statement keyword", block_kwd)
         if self.strict and block_kwd == "case":
             raise CoconutStyleError("found deprecated 'case ...:' syntax; use 'cases ...:' or 'match ...:' (with 'case' for each case) instead", original, loc)
 
@@ -3180,11 +3178,11 @@ __annotations__["{name}"] = {annotation}
         if not is_sequence:
             if has_star:
                 raise CoconutDeferredSyntaxError("can't use starred expression here", loc)
-            internal_assert(len(groups) == 1 and len(groups[0]) == 1, "invalid single-item testlist_star_expr tokens", tokens)
+            self.internal_assert(len(groups) == 1 and len(groups[0]) == 1, original, loc, "invalid single-item testlist_star_expr tokens", tokens)
             out = groups[0][0]
 
         elif not has_star:
-            internal_assert(len(groups) == 1, "testlist_star_expr group splitting failed on", tokens)
+            self.internal_assert(len(groups) == 1, original, loc, "testlist_star_expr group splitting failed on", tokens)
             out = tuple_str_of(groups[0], add_parens=False)
 
         # naturally supported on 3.5+
@@ -3309,7 +3307,7 @@ for {match_to_var} in {item}:
 
     def check_strict(self, name, original, loc, tokens, only_warn=False, always_warn=False):
         """Check that syntax meets --strict requirements."""
-        internal_assert(len(tokens) == 1, "invalid " + name + " tokens", tokens)
+        self.internal_assert(len(tokens) == 1, original, loc, "invalid " + name + " tokens", tokens)
         if self.strict:
             if only_warn:
                 logger.warn_err(self.make_err(CoconutSyntaxWarning, "found " + name, original, loc, extra="remove --strict to dismiss"))
@@ -3341,15 +3339,61 @@ for {match_to_var} in {item}:
 
     def check_py(self, version, name, original, loc, tokens):
         """Check for Python-version-specific syntax."""
-        internal_assert(len(tokens) == 1, "invalid " + name + " tokens", tokens)
+        self.internal_assert(len(tokens) == 1, original, loc, "invalid " + name + " tokens", tokens)
         version_info = get_target_info(version)
         if self.target_info < version_info:
             raise self.make_err(CoconutTargetError, "found Python " + ".".join(str(v) for v in version_info) + " " + name, original, loc, target=version)
         else:
             return tokens[0]
 
-    def name_check(self, loc, tokens):
-        """Check the given base name."""
+    @contextmanager
+    def class_manage(self, item, original, loc):
+        """Manage the class parsing context."""
+        cls_stack = self.parsing_context["class"]
+        if cls_stack:
+            cls_context = cls_stack[-1]
+            if cls_context["name"] is None:  # this should only happen when the managed class item will fail to fully match
+                name_prefix = cls_context["name_prefix"]
+            elif cls_context["in_method"]:  # if we're in a function, we shouldn't use the prefix to look up the class
+                name_prefix = ""
+            else:
+                name_prefix = cls_context["name_prefix"] + cls_context["name"] + "."
+        else:
+            name_prefix = ""
+        cls_stack.append({
+            "name_prefix": name_prefix,
+            "name": None,
+            "in_method": False,
+        })
+        try:
+            yield
+        finally:
+            cls_stack.pop()
+
+    def classname_handle(self, tokens):
+        """Handle class names."""
+        cls_stack = self.parsing_context["class"]
+        internal_assert(cls_stack, "found classname outside of class", tokens)
+
+        name, = tokens
+        cls_stack[-1]["name"] = name
+        return name
+
+    @contextmanager
+    def func_manage(self, item, original, loc):
+        """Manage the function parsing context."""
+        cls_stack = self.parsing_context["class"]
+        if cls_stack:
+            in_method, cls_stack[-1]["in_method"] = cls_stack[-1]["in_method"], True
+            try:
+                yield
+            finally:
+                cls_stack[-1]["in_method"] = in_method
+        else:
+            yield
+
+    def name_handle(self, loc, tokens):
+        """Handle the given base name."""
         name, = tokens  # avoid the overhead of an internal_assert call here
 
         if self.disable_name_check:
@@ -3362,6 +3406,18 @@ for {match_to_var} in {item}:
                 return name
             else:
                 return "_coconut_exec"
+        elif name in super_names and not self.target.startswith("3"):
+            cls_stack = self.parsing_context["class"]
+            if cls_stack:
+                cls_context = cls_stack[-1]
+                if cls_context["name"] is not None and cls_context["in_method"]:
+                    enclosing_cls = cls_context["name_prefix"] + cls_context["name"]
+                    # temp_marker will be set back later, but needs to be a unique name until then for add_code_before
+                    temp_marker = self.get_temp_var("super")
+                    self.add_code_before[temp_marker] = "__class__ = " + enclosing_cls + "\n"
+                    self.add_code_before_replacements[temp_marker] = name
+                    return temp_marker
+            return name
         elif name.startswith(reserved_prefix):
             raise CoconutDeferredSyntaxError("variable names cannot start with reserved prefix " + reserved_prefix, loc)
         else:

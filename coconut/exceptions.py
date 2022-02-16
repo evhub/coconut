@@ -222,13 +222,17 @@ class CoconutSyntaxWarning(CoconutSyntaxError, CoconutWarning):
 class CoconutInternalException(CoconutException):
     """Internal Coconut exception."""
 
-    def message(self, message, item, extra):
+    def message(self, *args, **kwargs):
         """Creates the Coconut internal exception message."""
-        base_msg = super(CoconutInternalException, self).message(message, item, extra)
+        base_msg = super(CoconutInternalException, self).message(*args, **kwargs)
         if "\n" in base_msg:
             return base_msg + "\n" + report_this_text
         else:
             return base_msg + " " + report_this_text
+
+
+class CoconutInternalSyntaxError(CoconutInternalException, CoconutSyntaxError):
+    """Internal Coconut SyntaxError."""
 
 
 class CoconutDeferredSyntaxError(CoconutException):

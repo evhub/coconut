@@ -197,6 +197,7 @@ def suite_test() -> bool:
     assert inh_a.inh_true1() is True
     assert inh_a.inh_true2() is True
     assert inh_a.inh_true3() is True
+    assert inh_a.inh_true4() is True
     assert pt.__doc__
     out0 = grid() |> grid_trim$(xmax=5, ymax=5)
     assert out0 == [
@@ -892,6 +893,8 @@ forward 2""") == 900
     match A(.a=2) in A():
         assert False
     assert_raises((def -> A(.b=1) = A()), AttributeError)
+    assert MySubExc("derp") `isinstance` Exception
+    assert A().not_super() is True
 
     # must come at end
     assert fibs_calls[0] == 1

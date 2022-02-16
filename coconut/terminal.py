@@ -94,7 +94,7 @@ def complain(error):
         raise error
 
 
-def internal_assert(condition, message=None, item=None, extra=None):
+def internal_assert(condition, message=None, item=None, extra=None, exc_maker=None):
     """Raise InternalException if condition is False. Execute functions on DEVELOP only."""
     if DEVELOP and callable(condition):
         condition = condition()
@@ -107,7 +107,10 @@ def internal_assert(condition, message=None, item=None, extra=None):
             message = message()
         if callable(extra):
             extra = extra()
-        error = CoconutInternalException(message, item, extra)
+        if exc_maker is None:
+            error = CoconutInternalException(message, item, extra)
+        else:
+            error = exc_maker(message, item, extra)
         if embed_on_internal_exc:
             logger.warn_err(error)
             embed(depth=1)

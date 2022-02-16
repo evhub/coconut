@@ -183,7 +183,6 @@ hash_sep = "\x00"
 openindent = "\u204b"  # reverse pilcrow
 closeindent = "\xb6"  # pilcrow
 strwrapper = "\u25b6"  # black right-pointing triangle
-replwrapper = "\u25b7"  # white right-pointing triangle
 lnwrapper = "\u2021"  # double dagger
 early_passthrough_wrapper = "\u2038"  # caret
 unwrapper = "\u23f9"  # stop square
@@ -259,7 +258,8 @@ const_vars = (
     "None",
 )
 
-reserved_vars = (  # can be backslash-escaped
+# names that can be backslash-escaped
+reserved_vars = (
     "async",
     "await",
     "data",
@@ -271,6 +271,12 @@ reserved_vars = (  # can be backslash-escaped
     "then",
     "\u03bb",  # lambda
 )
+
+# names that trigger __class__ to be bound to local vars
+super_names = {
+    "super",
+    "__class__",
+}
 
 # regexes that commonly refer to functions that can't be TCOd
 untcoable_funcs = (

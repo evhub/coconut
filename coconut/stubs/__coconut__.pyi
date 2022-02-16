@@ -129,6 +129,10 @@ reversed = reversed
 enumerate = enumerate
 
 
+_coconut_py_str = py_str
+_coconut_super = super
+
+
 zip_longest = _coconut.zip_longest
 memoize = _lru_cache
 
@@ -140,7 +144,7 @@ tee = _coconut.itertools.tee
 starmap = _coconut.itertools.starmap
 
 
-_coconut_te = tee
+_coconut_tee = tee
 _coconut_starmap = starmap
 parallel_map = concurrent_map = _coconut_map = map
 

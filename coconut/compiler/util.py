@@ -290,9 +290,7 @@ def attach(item, action, ignore_no_tokens=None, ignore_one_token=None, ignore_to
         if ignore_one_token is None:
             ignore_one_token = getattr(action, "ignore_one_token", False)
         if trim_arity is None:
-            trim_arity = getattr(action, "trim_arity", None)
-            if trim_arity is None:
-                trim_arity = should_trim_arity(action)
+            trim_arity = should_trim_arity(action)
         # only include keyword arguments in the partial that are not the same as the default
         if ignore_no_tokens:
             kwargs["ignore_no_tokens"] = ignore_no_tokens
@@ -494,15 +492,15 @@ class Wrap(ParseElementEnhance):
         return self.name + " wrapper"
 
     @override
-    def parseImpl(self, instring, loc, *args, **kwargs):
+    def parseImpl(self, original, loc, *args, **kwargs):
         """Wrapper around ParseElementEnhance.parseImpl."""
         if logger.tracing:  # avoid the overhead of the call if not tracing
-            logger.log_trace(self._wrapper_name, instring, loc)
+            logger.log_trace(self._wrapper_name, original, loc)
         with logger.indent_tracing():
-            with self.wrapper(self, instring, loc):
-                evaluated_toks = super(Wrap, self).parseImpl(instring, loc, *args, **kwargs)
+            with self.wrapper(self, original, loc):
+                evaluated_toks = super(Wrap, self).parseImpl(original, loc, *args, **kwargs)
         if logger.tracing:  # avoid the overhead of the call if not tracing
-            logger.log_trace(self._wrapper_name, instring, loc, evaluated_toks)
+            logger.log_trace(self._wrapper_name, original, loc, evaluated_toks)
         return evaluated_toks
 
 
@@ -517,7 +515,7 @@ def disable_inside(item, *elems, **kwargs):
     level = [0]  # number of wrapped items deep we are; in a list to allow modification
 
     @contextmanager
-    def manage_item(self, instring, loc):
+    def manage_item(self, original, loc):
         level[0] += 1
         try:
             yield
@@ -527,11 +525,11 @@ def disable_inside(item, *elems, **kwargs):
     yield Wrap(item, manage_item)
 
     @contextmanager
-    def manage_elem(self, instring, loc):
+    def manage_elem(self, original, loc):
         if level[0] == 0 if not _invert else level[0] > 0:
             yield
         else:
-            raise ParseException(instring, loc, self.errmsg, self)
+            raise ParseException(original, loc, self.errmsg, self)
 
     for elem in elems:
         yield Wrap(elem, manage_elem)
@@ -1121,13 +1119,16 @@ def get_func_args(func):
 
 def should_trim_arity(func):
     """Determine if we need to call _trim_arity on func."""
+    annotation = getattr(func, "trim_arity", None)
+    if annotation is not None:
+        return annotation
     try:
         func_args = get_func_args(func)
     except TypeError:
         return True
+    if func_args[0] == "self":
+        func_args.pop(0)
     if func_args[:3] == ["original", "loc", "tokens"]:
-        return False
-    if func_args[:4] == ["self", "original", "loc", "tokens"]:
         return False
     return True
 

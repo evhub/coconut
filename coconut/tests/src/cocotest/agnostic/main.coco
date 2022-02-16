@@ -1103,6 +1103,8 @@ def main_test() -> bool:
     def exec_rebind_test():
         exec = 1
         assert exec + 1 == 2
+        def exec(x) = x
+        assert exec(1) == 1
         return True
     assert exec_rebind_test() is True
     try:
@@ -1118,6 +1120,28 @@ def main_test() -> bool:
     x `isinstance$(?, int)` or a = "abc"
     assert x is None
     assert a == "abc"
+    class HasSuper1:
+        super = 10
+    class HasSuper2:
+        def super(self) = 10
+    assert HasSuper1().super == 10 == HasSuper2().super()
+    class HasSuper3:
+        class super:
+            def __call__(self) = 10
+    class HasSuper4:
+        class HasSuper(HasSuper3.super):
+            def __call__(self) = super().__call__()
+    assert HasSuper3.super()() == 10 == HasSuper4.HasSuper()()
+    class HasSuper5:
+        class HasHasSuper:
+            class HasSuper(HasSuper3.super):
+                def __call__(self) = super().__call__()
+    class HasSuper6:
+        def get_HasSuper(self) =
+            class HasSuper(HasSuper5.HasHasSuper.HasSuper):
+                def __call__(self) = super().__call__()
+            HasSuper
+    assert HasSuper5.HasHasSuper.HasSuper()() == 10 == HasSuper6().get_HasSuper()()()
     return True
 
 def test_asyncio() -> bool:

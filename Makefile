@@ -155,7 +155,7 @@ test-pyparsing: test-univ
 # same as test-univ but uses --minify
 .PHONY: test-minify
 test-minify:
-	python ./coconut/tests --strict --line-numbers --force --minify --jobs 0
+	python ./coconut/tests --strict --line-numbers --force --minify
 	python ./coconut/tests/dest/runner.py
 	python ./coconut/tests/dest/extras.py
 
@@ -166,6 +166,11 @@ test-watch:
 	coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --watch --strict --line-numbers
 	python ./coconut/tests/dest/runner.py
 	python ./coconut/tests/dest/extras.py
+
+# mini test that just compiles agnostic tests with fully synchronous output
+.PHONY: test-mini
+test-mini:
+	coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --force --jobs 0
 
 .PHONY: diff
 diff:
@@ -216,17 +221,17 @@ check-reqs:
 .PHONY: profile-parser
 profile-parser: export COCONUT_PURE_PYTHON=TRUE
 profile-parser:
-	coconut tests/src/cocotest/agnostic tests/dest/cocotest --force --profile --verbose --recursion-limit 4096 2>&1 | tee ./profile.log
+	coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --force --profile --verbose --recursion-limit 4096 2>&1 | tee ./profile.log
 
 .PHONY: profile-time
 profile-time: export COCONUT_PURE_PYTHON=TRUE
 profile-time:
-	vprof -c h "coconut tests/src/cocotest/agnostic tests/dest/cocotest --force" --output-file ./vprof.json
+	vprof -c h "coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --force" --output-file ./vprof.json
 
 .PHONY: profile-memory
 profile-memory: export COCONUT_PURE_PYTHON=TRUE
 profile-memory:
-	vprof -c m "coconut tests/src/cocotest/agnostic tests/dest/cocotest --force" --output-file ./vprof.json
+	vprof -c m "coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --force" --output-file ./vprof.json
 
 .PHONY: view-profile
 view-profile:
