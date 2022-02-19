@@ -296,7 +296,6 @@ def infix_handle(tokens):
 
 def op_funcdef_handle(tokens):
     """Process infix defs."""
-    print(tokens)
     func, base_args = get_infix_items(tokens)
     args = []
     for arg in base_args[:-1]:
