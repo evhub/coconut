@@ -17,7 +17,6 @@ import typing as _t
 
 import collections as _collections
 import copy as _copy
-import copyreg as _copyreg
 import functools as _functools
 import types as _types
 import itertools as _itertools
@@ -31,6 +30,11 @@ import traceback as _traceback
 import pickle as _pickle
 import multiprocessing as _multiprocessing
 from multiprocessing import dummy as _multiprocessing_dummy
+
+if sys.version_info >= (3,):
+    import copyreg as _copyreg
+else:
+    import copy_reg as _copyreg
 
 if sys.version_info >= (3, 4):
     import asyncio as _asyncio

@@ -12,9 +12,10 @@ def _coconut_super(type=None, object_or_type=None):
         return _coconut_py_super(cls, self)
     return _coconut_py_super(type, object_or_type)
 {set_super}class _coconut{object}:{COMMENT.EVERYTHING_HERE_MUST_BE_COPIED_TO_STUB_FILE}
-    import collections, copy, copyreg, functools, types, itertools, operator, threading, os, warnings, contextlib, traceback, weakref, multiprocessing, math
+    import collections, copy, functools, types, itertools, operator, threading, os, warnings, contextlib, traceback, weakref, multiprocessing, math
     from multiprocessing import dummy as multiprocessing_dummy
-{maybe_bind_lru_cache}{import_asyncio}
+{maybe_bind_lru_cache}{import_copyreg}
+{import_asyncio}
 {import_pickle}
 {import_OrderedDict}
 {import_collections_abc}

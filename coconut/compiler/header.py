@@ -371,6 +371,12 @@ import typing
             ''',
                 indent=1,
             ),
+            import_copyreg=pycondition(
+                (3,),
+                if_lt="import copy_reg as copyreg",
+                if_ge="import copyreg",
+                indent=1,
+            ),
             import_asyncio=pycondition(
                 (3, 4),
                 if_lt='''
