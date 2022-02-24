@@ -17,6 +17,7 @@ import typing as _t
 
 import collections as _collections
 import copy as _copy
+import copyreg as _copyreg
 import functools as _functools
 import types as _types
 import itertools as _itertools
@@ -60,6 +61,7 @@ else:
 typing = _t  # The real _coconut doesn't import typing, but we want type-checkers to treat it as if it does
 collections = _collections
 copy = _copy
+copyreg = _copyreg
 functools = _functools
 types = _types
 itertools = _itertools

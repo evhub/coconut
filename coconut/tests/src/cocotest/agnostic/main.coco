@@ -1142,6 +1142,10 @@ def main_test() -> bool:
                 def __call__(self) = super().__call__()
             HasSuper
     assert HasSuper5.HasHasSuper.HasSuper()() == 10 == HasSuper6().get_HasSuper()()()
+    assert parallel_map((.+(10,)), [
+        (a=1, b=2),
+        (x=3, y=4),
+    ]) |> list == [(1, 2, 10), (3, 4, 10)]
     return True
 
 def test_asyncio() -> bool:

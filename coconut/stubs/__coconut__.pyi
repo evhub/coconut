@@ -726,6 +726,48 @@ def _namedtuple_of(**kwargs: _t.Dict[_t.Text, _T]) -> _t.Tuple[_T, ...]: ...
 def _namedtuple_of(**kwargs: _t.Dict[_t.Text, _t.Any]) -> _Tuple: ...
 
 
+@_t.overload
+def _coconut_mk_anon_namedtuple(
+    fields: _t.Tuple[_t.Text],
+    types: _t.Tuple[_t.Type[_T]],
+) -> _t.Callable[[_T], _t.Tuple[_T]]: ...
+@_t.overload
+def _coconut_mk_anon_namedtuple(
+    fields: _t.Tuple[_t.Text, _t.Text],
+    types: _t.Tuple[_t.Type[_T], _t.Type[_U]],
+) -> _t.Callable[[_T, _U], _t.Tuple[_T, _U]]: ...
+@_t.overload
+def _coconut_mk_anon_namedtuple(
+    fields: _t.Tuple[_t.Text, _t.Text, _t.Text],
+    types: _t.Tuple[_t.Type[_T], _t.Type[_U], _t.Type[_V]],
+) -> _t.Callable[[_T, _U, _V], _t.Tuple[_T, _U, _V]]: ...
+@_t.overload
+def _coconut_mk_anon_namedtuple(
+    fields: _t.Tuple[_t.Text, ...],
+    types: _t.Tuple[_t.Type[_T], ...],
+) -> _t.Callable[..., _t.Tuple[_T, ...]]: ...
+@_t.overload
+def _coconut_mk_anon_namedtuple(
+    fields: _t.Tuple[_t.Text],
+    types: None,
+) -> _t.Callable[[_T], _t.Tuple[_T]]: ...
+@_t.overload
+def _coconut_mk_anon_namedtuple(
+    fields: _t.Tuple[_t.Text, _t.Text],
+    types: None,
+) -> _t.Callable[[_T, _U], _t.Tuple[_T, _U]]: ...
+@_t.overload
+def _coconut_mk_anon_namedtuple(
+    fields: _t.Tuple[_t.Text, _t.Text, _t.Text],
+    types: None,
+) -> _t.Callable[[_T, _U, _V], _t.Tuple[_T, _U, _V]]: ...
+@_t.overload
+def _coconut_mk_anon_namedtuple(
+    fields: _t.Tuple[_t.Text, ...],
+    types: _t.Optional[_t.Tuple[_t.Any, ...]],
+) -> _t.Callable[..., _t.Tuple[_t.Any, ...]]: ...
+
+
 # @_t.overload
 # def _coconut_multi_dim_arr(
 #     arrs: _t.Tuple[_coconut.numpy.typing.NDArray[_t.Any], ...],

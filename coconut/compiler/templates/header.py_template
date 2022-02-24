@@ -12,7 +12,7 @@ def _coconut_super(type=None, object_or_type=None):
         return _coconut_py_super(cls, self)
     return _coconut_py_super(type, object_or_type)
 {set_super}class _coconut{object}:{COMMENT.EVERYTHING_HERE_MUST_BE_COPIED_TO_STUB_FILE}
-    import collections, copy, functools, types, itertools, operator, threading, os, warnings, contextlib, traceback, weakref, multiprocessing, math
+    import collections, copy, copyreg, functools, types, itertools, operator, threading, os, warnings, contextlib, traceback, weakref, multiprocessing, math
     from multiprocessing import dummy as multiprocessing_dummy
 {maybe_bind_lru_cache}{import_asyncio}
 {import_pickle}
@@ -1104,6 +1104,15 @@ def collectby(key_func, iterable, value_func=None, reduce_func=None):
 def _namedtuple_of(**kwargs):
     """Construct an anonymous namedtuple of the given keyword arguments."""
 {namedtuple_of_implementation}
+def _coconut_mk_anon_namedtuple(fields, types=None, of_kwargs=None):
+    if types is None:
+        NT = _coconut.collections.namedtuple("_namedtuple_of", fields)
+    else:
+        NT = _coconut.typing.NamedTuple("_namedtuple_of", [(f, t) for f, t in _coconut.zip(fields, types)])
+    _coconut.copyreg.pickle(NT, lambda nt: (_coconut_mk_anon_namedtuple, (nt._fields, types, nt._asdict())))
+    if of_kwargs is None:
+        return NT
+    return NT(**of_kwargs)
 def _coconut_ndim(arr):
     if arr.__class__.__module__ in {numpy_modules} and _coconut.isinstance(arr, _coconut.numpy.ndarray):
         return arr.ndim

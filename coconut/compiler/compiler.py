@@ -2472,12 +2472,19 @@ def __new__(_coconut_cls, {all_args}):
     def make_namedtuple_call(self, name, namedtuple_args, types=None):
         """Construct a namedtuple call."""
         if types:
-            return '_coconut.typing.NamedTuple("' + name + '", [' + ", ".join(
-                '("' + argname + '", ' + self.wrap_typedef(types.get(i, "_coconut.typing.Any")) + ")"
-                for i, argname in enumerate(namedtuple_args)
-            ) + "])"
+            wrapped_types = [self.wrap_typedef(types.get(i, "_coconut.typing.Any")) for i in range(len(namedtuple_args))]
+            if name is None:
+                return "_coconut_mk_anon_namedtuple(" + tuple_str_of(namedtuple_args, add_quotes=True) + ", " + tuple_str_of(wrapped_types) + ")"
+            else:
+                return '_coconut.typing.NamedTuple("' + name + '", [' + ", ".join(
+                    '("' + argname + '", ' + wrapped_type + ")"
+                    for argname, wrapped_type in zip(namedtuple_args, wrapped_types)
+                ) + "])"
         else:
-            return '_coconut.collections.namedtuple("' + name + '", ' + tuple_str_of(namedtuple_args, add_quotes=True) + ')'
+            if name is None:
+                return "_coconut_mk_anon_namedtuple(" + tuple_str_of(namedtuple_args, add_quotes=True) + ")"
+            else:
+                return '_coconut.collections.namedtuple("' + name + '", ' + tuple_str_of(namedtuple_args, add_quotes=True) + ')'
 
     def assemble_data(self, name, namedtuple_call, inherit, extra_stmts, stmts, match_args):
         """Create a data class definition from the given components."""
@@ -2558,7 +2565,7 @@ def __hash__(self):
             names.append(name)
             items.append(item)
 
-        namedtuple_call = self.make_namedtuple_call("_namedtuple_of", names, types)
+        namedtuple_call = self.make_namedtuple_call(None, names, types)
         return namedtuple_call + "(" + ", ".join(items) + ")"
 
     def single_import(self, path, imp_as):
