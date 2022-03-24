@@ -1589,9 +1589,9 @@ class Grammar(object):
             | sequence_match
             | star_match
             | (lparen.suppress() + match + rparen.suppress())("paren")
-            | (data_kwd.suppress() + name + lparen.suppress() + matchlist_data + rparen.suppress())("data")
-            | (keyword("class").suppress() + name + lparen.suppress() + matchlist_data + rparen.suppress())("class")
-            | (name + lparen.suppress() + matchlist_data + rparen.suppress())("data_or_class")
+            | (data_kwd.suppress() + dotted_name + lparen.suppress() + matchlist_data + rparen.suppress())("data")
+            | (keyword("class").suppress() + dotted_name + lparen.suppress() + matchlist_data + rparen.suppress())("class")
+            | (dotted_name + lparen.suppress() + matchlist_data + rparen.suppress())("data_or_class")
             | Optional(keyword("as").suppress()) + name("var"),
         ),
     )
@@ -1637,7 +1637,7 @@ class Grammar(object):
 
     destructuring_stmt = Forward()
     base_destructuring_stmt = Optional(match_kwd.suppress()) + many_match + equals.suppress() + test_expr
-    destructuring_stmt_ref, match_dotted_name_const_ref = disable_inside(base_destructuring_stmt, must_be_dotted_name)
+    destructuring_stmt_ref, match_dotted_name_const_ref = disable_inside(base_destructuring_stmt, must_be_dotted_name + ~lparen)
 
     cases_stmt = Forward()
     # both syntaxes here must be kept matching except for the keywords

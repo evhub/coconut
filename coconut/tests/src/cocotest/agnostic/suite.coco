@@ -896,6 +896,13 @@ forward 2""") == 900
     assert_raises((def -> A(.b=1) = A()), AttributeError)
     assert MySubExc("derp") `isinstance` Exception
     assert A().not_super() is True
+    match class store.A(1) = store.A(1)
+    match data store.A(1) = store.A(1)
+    match store.A(1) = store.A(1)
+    match store.A(1) in store.A(1):
+        pass
+    else:
+        assert False
 
     # must come at end
     assert fibs_calls[0] == 1

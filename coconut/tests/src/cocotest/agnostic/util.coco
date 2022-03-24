@@ -1131,6 +1131,7 @@ class store:
     one = 1
     two = 2
     plus1 = (+)$(1)
+    data A(x)
 
 
 # Locals and globals

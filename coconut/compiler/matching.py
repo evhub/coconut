@@ -932,7 +932,7 @@ class Matcher(object):
         self_match_matcher, other_cls_matcher = self.branches(2)
 
         # handle instances of _coconut_self_match_types
-        self_match_matcher.add_check("_coconut.isinstance(" + item + ", _coconut_self_match_types)")
+        self_match_matcher.add_check("_coconut.type(" + item + ") in _coconut_self_match_types")
         if pos_matches:
             if len(pos_matches) > 1:
                 self_match_matcher.add_def(
@@ -949,7 +949,7 @@ raise _coconut.TypeError("too many positional args in class match (pattern requi
                 self_match_matcher.match(pos_matches[0], item)
 
         # handle all other classes
-        other_cls_matcher.add_check("not _coconut.isinstance(" + item + ", _coconut_self_match_types)")
+        other_cls_matcher.add_check("not _coconut.type(" + item + ") in _coconut_self_match_types")
         match_args_var = other_cls_matcher.get_temp_var()
         other_cls_matcher.add_def(
             handle_indentation("""
