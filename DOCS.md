@@ -2302,8 +2302,12 @@ _Can't be done without defining a custom `map` type. The full definition of `map
 
 Takes one argument that is a [pattern-matching function](#pattern-matching-functions), and returns a decorator that adds the patterns in the existing function to the new function being decorated, where the existing patterns are checked first, then the new. Roughly equivalent to:
 ```
-def addpattern(base_func, *, allow_any_func=True):
-    """Decorator to add a new case to a pattern-matching function, where the new case is checked last."""
+def addpattern(base_func, new_pattern=None, *, allow_any_func=True):
+    """Decorator to add a new case to a pattern-matching function (where the new case is checked last).
+
+    Pass allow_any_func=True to allow any object as the base_func rather than just pattern-matching functions.
+    If new_pattern is passed, addpattern(base_func, new_pattern) is equivalent to addpattern(base_func)(new_pattern).
+    """
     def pattern_adder(func):
         def add_pattern_func(*args, **kwargs):
             try:
@@ -2311,6 +2315,8 @@ def addpattern(base_func, *, allow_any_func=True):
             except MatchError:
                 return func(*args, **kwargs)
         return add_pattern_func
+    if new_pattern is not None:
+        return pattern_adder(new_pattern)
     return pattern_adder
 ```
 

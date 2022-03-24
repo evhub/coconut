@@ -246,11 +246,20 @@ class _coconut_base_pattern_func:
     def add(self, func: _Callable) -> None: ...
     def __call__(self, *args: _t.Any, **kwargs: _t.Any) -> _t.Any: ...
 
+@_t.overload
 def addpattern(
-    func: _Callable,
+    base_func: _Callable,
+    new_pattern: None = None,
     *,
     allow_any_func: bool=False,
     ) -> _t.Callable[[_Callable], _Callable]: ...
+@_t.overload
+def addpattern(
+    base_func: _Callable,
+    new_pattern: _Callable,
+    *,
+    allow_any_func: bool=False,
+    ) -> _Callable: ...
 _coconut_addpattern = prepattern = addpattern
 
 

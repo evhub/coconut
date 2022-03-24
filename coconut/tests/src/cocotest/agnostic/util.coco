@@ -777,7 +777,7 @@ except NameError, TypeError:
         """Decorator to add a new case to a pattern-matching function,
         where the new case is checked first."""
         def pattern_prepender(func):
-            return addpattern(func, **kwargs)(base_func)
+            return addpattern(func, base_func, **kwargs)
         return pattern_prepender
 
 def add_int_or_str_1(int() as x) = x + 1
