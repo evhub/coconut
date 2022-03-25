@@ -554,7 +554,7 @@ def _coconut_handle_cls_kwargs(**kwargs: _t.Dict[_t.Text, _t.Any]) -> _t.Callabl
 def _coconut_handle_cls_stargs(*args: _t.Any) -> _t.Any: ...
 
 
-_coconut_self_match_types: _t.Tuple[_t.Type, ...] = (bool, bytearray, bytes, dict, float, frozenset, int, list, set, str, tuple)
+_coconut_self_match_types: _t.Tuple[_t.Type, ...] = (bool, bytearray, bytes, dict, float, frozenset, int, py_int, list, set, str, py_str, tuple)
 
 
 @_t.overload
