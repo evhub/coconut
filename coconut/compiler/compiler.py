@@ -3069,7 +3069,6 @@ __annotations__["{name}"] = {annotation}
                 remaining_text = old_text[i:]
                 str_start, str_stop = parse_where(self.string_start, remaining_text)
                 if str_start is not None:
-                    internal_assert(str_start == 0, "invalid string start location in f string", old_text)
                     exprs[-1] += remaining_text[:str_stop]
                     i += str_stop - 1
                 elif paren_level < 0:

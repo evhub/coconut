@@ -1146,6 +1146,7 @@ def main_test() -> bool:
         (a=1, b=2),
         (x=3, y=4),
     ]) |> list == [(1, 2, 10), (3, 4, 10)]
+    assert f"{'a' + 'b'}" == "ab"
     return True
 
 def test_asyncio() -> bool:
