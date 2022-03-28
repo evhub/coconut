@@ -20,6 +20,7 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 from coconut.root import *  # NOQA
 
 import sys
+import os
 import unittest
 if PY26:
     import_module = __import__
@@ -30,6 +31,7 @@ from coconut import constants
 from coconut.constants import (
     WINDOWS,
     PYPY,
+    fixpath,
 )
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -72,6 +74,9 @@ def is_importable(name):
 
 
 class TestConstants(unittest.TestCase):
+
+    def test_fixpath(self):
+        assert os.path.basename(fixpath("CamelCase.py")) == "CamelCase.py"
 
     def test_immutable(self):
         for name, value in vars(constants).items():

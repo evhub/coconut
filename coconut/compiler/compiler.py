@@ -3068,7 +3068,7 @@ __annotations__["{name}"] = {annotation}
             elif in_expr:
                 remaining_text = old_text[i:]
                 str_start, str_stop = parse_where(self.string_start, remaining_text)
-                if str_start is not None:
+                if str_start is not None:  # str_start >= 0; if > 0 means there is whitespace before the string
                     exprs[-1] += remaining_text[:str_stop]
                     i += str_stop - 1
                 elif paren_level < 0:
