@@ -76,6 +76,14 @@ except ImportError:
 else:
     LOAD_MODULE = True
 
+try:
+    from papermill.translators import (
+        papermill_translators,
+        PythonTranslator,
+    )
+except ImportError:
+    papermill_translators = None
+
 
 # -----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
@@ -289,3 +297,6 @@ def user_expressions(self, expressions):
         classes = IPKernelApp.classes + [CoconutKernel, CoconutShell]
         kernel_class = CoconutKernel
         subcommands = {}
+
+    if papermill_translators is not None:
+        papermill_translators.register("coconut", PythonTranslator)

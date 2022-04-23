@@ -594,6 +594,7 @@ all_reqs = {
         ("jupyter-console", "py3"),
         ("jupyterlab", "py35"),
         ("jupytext", "py3"),
+        "papermill",
         ("pywinpty", "py2;windows"),
     ),
     "mypy": (
@@ -647,9 +648,9 @@ min_versions = {
     ("numpy", "py2;cpy"): (1,),
     ("dataclasses", "py==36"): (0, 8),
     ("aenum", "py<34"): (3,),
-    "sphinx": (4, 4),
+    "sphinx": (4, 5),
     "pydata-sphinx-theme": (0, 8),
-    "myst-parser": (0, 16),
+    "myst-parser": (0, 17),
     # don't upgrade this until https://github.com/jupyter/jupyter_console/issues/241 is fixed
     ("jupyter-client", "py3"): (6, 1, 12),
     # latest version supported on Python 2
@@ -677,6 +678,7 @@ min_versions = {
     ("ipykernel", "py2"): (4, 10),
     ("prompt_toolkit", "mark2"): (1,),
     "watchdog": (0, 10),
+    "papermill": (1, 2),
     # don't upgrade this; it breaks with old IPython versions
     "jedi": (0, 17),
     # Coconut works best on pyparsing 2
@@ -704,6 +706,7 @@ pinned_reqs = (
     ("ipykernel", "py2"),
     ("prompt_toolkit", "mark2"),
     "watchdog",
+    "papermill",
     "jedi",
     "pyparsing",
 )
