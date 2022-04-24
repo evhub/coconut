@@ -184,19 +184,28 @@ class Logger(object):
         """Make a copy of the logger."""
         return Logger(self)
 
-    def display(self, messages, sig="", debug=False, **kwargs):
+    def display(self, messages, sig="", debug=False, end="\n", **kwargs):
         """Prints an iterator of messages."""
         full_message = "".join(
             sig + line for line in " ".join(
                 str(msg) for msg in messages
             ).splitlines(True)
-        )
+        ) + end
         if not full_message:
             full_message = sig.rstrip()
+        # we use end="" to ensure atomic printing
         if debug:
-            printerr(full_message, **kwargs)
+            printerr(full_message, end="", **kwargs)
         else:
-            print(full_message, **kwargs)
+            print(full_message, end="", **kwargs)
+
+    def print(self, *messages, **kwargs):
+        """Print messages to stdout."""
+        self.display(messages, **kwargs)
+
+    def printerr(self, *messages, **kwargs):
+        """Print messages to stderr."""
+        self.display(messages, debug=True, **kwargs)
 
     def show(self, *messages):
         """Prints messages if not --quiet."""
@@ -216,7 +225,7 @@ class Logger(object):
     def log(self, *messages):
         """Logs debug messages if --verbose."""
         if self.verbose:
-            printerr(*messages)
+            self.printerr(*messages)
 
     def log_lambda(self, *msg_funcs):
         if self.verbose:
@@ -225,16 +234,15 @@ class Logger(object):
                 if callable(msg):
                     msg = msg()
                 messages.append(msg)
-            printerr(*messages)
+            self.printerr(*messages)
 
     def log_func(self, func):
         """Calls a function and logs the results if --verbose."""
         if self.verbose:
             to_log = func()
-            if isinstance(to_log, tuple):
-                printerr(*to_log)
-            else:
-                printerr(to_log)
+            if not isinstance(to_log, tuple):
+                to_log = (to_log,)
+            self.printerr(*to_log)
 
     def log_prefix(self, prefix, *messages):
         """Logs debug messages with the given signature if --verbose."""
@@ -251,7 +259,7 @@ class Logger(object):
             new_vars = dict(variables)
             for v in rem_vars:
                 del new_vars[v]
-            printerr(message, new_vars)
+            self.printerr(message, new_vars)
 
     def get_error(self, err=None, show_tb=None):
         """Properly formats the current error."""
@@ -306,7 +314,7 @@ class Logger(object):
                         line = " " * taberrfmt + line
                     errmsg_lines.append(line)
                 errmsg = "\n".join(errmsg_lines)
-            printerr(errmsg)
+            self.printerr(errmsg)
 
     def log_exc(self, err=None):
         """Display an exception only if --verbose."""
@@ -334,7 +342,7 @@ class Logger(object):
     def print_trace(self, *args):
         """Print to stderr with tracing indent."""
         trace = " ".join(str(arg) for arg in args)
-        printerr(_indent(trace, self.trace_ind))
+        self.printerr(_indent(trace, self.trace_ind))
 
     def log_tag(self, tag, code, multiline=False):
         """Logs a tagged message if tracing."""
@@ -403,10 +411,10 @@ class Logger(object):
                 yield
             finally:
                 elapsed_time = get_clock_time() - start_time
-                printerr("Time while parsing:", elapsed_time, "seconds")
+                self.printerr("Time while parsing:", elapsed_time, "seconds")
                 if use_packrat_parser:
                     hits, misses = ParserElement.packrat_cache_stats
-                    printerr("Packrat parsing stats:", hits, "hits;", misses, "misses")
+                    self.printerr("Packrat parsing stats:", hits, "hits;", misses, "misses")
         else:
             yield
 
@@ -422,7 +430,7 @@ class Logger(object):
 
     def pylog(self, *args, **kwargs):
         """Display all available logging information."""
-        printerr(self.name, args, kwargs, traceback.format_exc())
+        self.printerr(self.name, args, kwargs, traceback.format_exc())
     debug = info = warning = error = critical = exception = pylog
 
 
