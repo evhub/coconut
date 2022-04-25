@@ -345,7 +345,7 @@ def set_env_var(name, value):
 def set_mypy_path():
     """Put Coconut stubs in MYPYPATH."""
     install_dir = install_mypy_stubs()
-    original = os.environ.get(mypy_path_env_var)
+    original = os.getenv(mypy_path_env_var)
     if original is None:
         new_mypy_path = install_dir
     elif not original.startswith(install_dir):
@@ -354,7 +354,7 @@ def set_mypy_path():
         new_mypy_path = None
     if new_mypy_path is not None:
         set_env_var(mypy_path_env_var, new_mypy_path)
-    logger.log_func(lambda: (mypy_path_env_var, "=", os.environ.get(mypy_path_env_var)))
+    logger.log_func(lambda: (mypy_path_env_var, "=", os.getenv(mypy_path_env_var)))
     return install_dir
 
 
@@ -439,7 +439,7 @@ class Prompt(object):
     def __init__(self, use_suggester=prompt_use_suggester):
         """Set up the prompt."""
         if prompt_toolkit is not None:
-            self.set_style(os.environ.get(style_env_var, default_style))
+            self.set_style(os.getenv(style_env_var, default_style))
             self.set_history_file(prompt_histfile)
             self.lexer = PygmentsLexer(CoconutLexer)
             self.suggester = AutoSuggestFromHistory() if use_suggester else None

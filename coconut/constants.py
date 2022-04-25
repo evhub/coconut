@@ -356,12 +356,12 @@ style_env_var = "COCONUT_STYLE"
 vi_mode_env_var = "COCONUT_VI_MODE"
 home_env_var = "COCONUT_HOME"
 
-coconut_home = fixpath(os.environ.get(home_env_var, "~"))
+coconut_home = fixpath(os.getenv(home_env_var, "~"))
 
 default_style = "default"
 prompt_histfile = os.path.join(coconut_home, ".coconut_history")
 prompt_multiline = False
-prompt_vi_mode = str_to_bool(os.environ.get(vi_mode_env_var, ""))
+prompt_vi_mode = str_to_bool(os.getenv(vi_mode_env_var, ""))
 prompt_wrap_lines = True
 prompt_history_search = True
 prompt_use_suggester = False
@@ -547,7 +547,7 @@ website_url = "http://coconut-lang.org"
 license_name = "Apache 2.0"
 
 pure_python_env_var = "COCONUT_PURE_PYTHON"
-PURE_PYTHON = str_to_bool(os.environ.get(pure_python_env_var, ""))
+PURE_PYTHON = str_to_bool(os.getenv(pure_python_env_var, ""))
 
 # the different categories here are defined in requirements.py,
 #  anything after a colon is ignored but allows different versions

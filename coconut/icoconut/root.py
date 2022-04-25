@@ -65,7 +65,7 @@ try:
     from ipykernel.kernelapp import IPKernelApp
 except ImportError:
     LOAD_MODULE = False
-    if os.environ.get(conda_build_env_var):
+    if os.getenv(conda_build_env_var):
         # conda tries to import coconut.icoconut as a test even when IPython isn't available
         logger.warn("Missing IPython but detected " + conda_build_env_var + "; skipping coconut.icoconut loading")
     else:

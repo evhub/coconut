@@ -51,7 +51,7 @@ from coconut.util import (
 try:
 
     if PURE_PYTHON:
-        raise ImportError("skipping cPyparsing check due to " + pure_python_env_var + " = " + os.environ.get(pure_python_env_var, ""))
+        raise ImportError("skipping cPyparsing check due to " + pure_python_env_var + " = " + os.getenv(pure_python_env_var, ""))
 
     import cPyparsing as _pyparsing
     from cPyparsing import *  # NOQA
