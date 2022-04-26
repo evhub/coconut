@@ -95,7 +95,7 @@ The full list of optional dependencies is:
 - `kernel`: lightweight subset of `jupyter` that only includes the dependencies that are strictly necessary for Coconut's [Jupyter kernel](#kernel).
 - `tests`: everything necessary to test the Coconut language itself.
 - `docs`: everything necessary to build Coconut's documentation.
-- `dev`: everything necessary to develop on Coconut, including all of the dependencies above.
+- `dev`: everything necessary to develop on the Coconut language itself, including all of the dependencies above.
 
 ### Develop Version
 
@@ -261,11 +261,11 @@ Additionally, Coconut allows the [`__set_name__`](https://docs.python.org/3/refe
 Finally, while Coconut will try to compile Python-3-specific syntax to its universal equivalent, the following constructs have no equivalent in Python 2, and require the specification of a target of at least `3` to be used:
 
 - the `nonlocal` keyword,
-- keyword-only function parameters (use pattern-matching function definition instead),
+- keyword-only function parameters (use pattern-matching function definition for universal code),
 - `@` as matrix multiplication (requires `--target 3.5`),
 - `async` and `await` statements (requires `--target 3.5`),
 - `:=` assignment expressions (requires `--target 3.8`),
-- positional-only function parameters (use pattern-matching function definition instead) (requires `--target 3.8`),
+- positional-only function parameters (use pattern-matching function definition for universal code) (requires `--target 3.8`),
 - `a[x, *y]` variadic generic syntax (requires `--target 3.11`), and
 - `except*` multi-except statements (requires `--target 3.11`).
 
@@ -331,9 +331,8 @@ Text editors with support for Coconut syntax highlighting are:
 - **Vim**: See [`coconut.vim`](https://github.com/manicmaniac/coconut.vim).
 - **Emacs**: See [`coconut-mode`](https://github.com/NickSeagull/coconut-mode).
 - **Atom**: See [`language-coconut`](https://github.com/enilsen16/language-coconut).
-- **IntelliJ IDEA**: See [registering file types](https://www.jetbrains.com/help/idea/creating-and-registering-file-types.html).
 
-Alternatively, if none of the above work for you, you can just treat Coconut as Python. Simply set up your editor so it interprets all `.coco` files as Python and that should highlight most of your code well enough.
+Alternatively, if none of the above work for you, you can just treat Coconut as Python. Simply set up your editor so it interprets all `.coco` files as Python and that should highlight most of your code well enough (e.g. for IntelliJ IDEA see [registering file types](https://www.jetbrains.com/help/idea/creating-and-registering-file-types.html)).
 
 #### SublimeText
 
@@ -359,7 +358,7 @@ to Coconut's `conf.py`.
 
 ### IPython/Jupyter Support
 
-If you prefer [IPython](http://ipython.org/) (the Python kernel for the [Jupyter](http://jupyter.org/) framework) to the normal Python shell, Coconut can be used as a Jupyter kernel or IPython extension.
+If you use [IPython](http://ipython.org/) (the Python kernel for the [Jupyter](http://jupyter.org/) framework) notebooks or console, Coconut can be used as a Jupyter kernel or IPython extension.
 
 #### Kernel
 
@@ -373,7 +372,7 @@ Coconut also provides the following convenience commands:
 - `coconut --jupyter console` will launch a Jupyter/IPython console using the Coconut kernel.
 - `coconut --jupyter lab` will ensure that the Coconut kernel is available and launch [JupyterLab](https://github.com/jupyterlab/jupyterlab).
 
-Additionally, [Jupytext](https://github.com/mwouts/jupytext) contains special support for the Coconut kernel.
+Additionally, [Jupytext](https://github.com/mwouts/jupytext) contains special support for the Coconut kernel and Coconut contains special support for [Papermill](https://papermill.readthedocs.io/en/latest/).
 
 #### Extension
 
