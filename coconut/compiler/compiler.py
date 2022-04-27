@@ -39,7 +39,6 @@ from coconut._pyparsing import (
     ParseBaseException,
     ParseResults,
     col as getcol,
-    line as getline,
     lineno,
     nums,
     _trim_arity,
@@ -110,6 +109,7 @@ from coconut.compiler.grammar import (
 )
 from coconut.compiler.util import (
     sys_target,
+    getline,
     addskip,
     count_end,
     paren_change,

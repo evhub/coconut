@@ -57,6 +57,7 @@ from coconut._pyparsing import (
     ParserElement,
     _trim_arity,
     _ParseResultsWithOffset,
+    line as _getline,
 )
 
 from coconut import embed
@@ -90,6 +91,7 @@ from coconut.constants import (
     temp_grammar_item_ref_count,
     indchars,
     comment_chars,
+    non_syntactic_newline,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -786,6 +788,11 @@ def any_len_perm(*groups_and_elems):
 # -----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
 # -----------------------------------------------------------------------------------------------------------------------
+
+def getline(loc, original):
+    """Get the line at loc in original."""
+    return _getline(loc, original.replace(non_syntactic_newline, "\n"))
+
 
 def powerset(items, min_len=0):
     """Return the powerset of the given items."""
