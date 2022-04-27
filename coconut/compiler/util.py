@@ -57,7 +57,7 @@ from coconut._pyparsing import (
     ParserElement,
     _trim_arity,
     _ParseResultsWithOffset,
-    line as _getline,
+    line as _line,
 )
 
 from coconut import embed
@@ -791,7 +791,7 @@ def any_len_perm(*groups_and_elems):
 
 def getline(loc, original):
     """Get the line at loc in original."""
-    return _getline(loc, original.replace(non_syntactic_newline, "\n"))
+    return _line(loc, original.replace(non_syntactic_newline, "\n"))
 
 
 def powerset(items, min_len=0):
