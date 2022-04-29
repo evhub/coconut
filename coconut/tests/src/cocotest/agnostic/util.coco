@@ -71,6 +71,13 @@ plus1sq_4 = plus1 ..> square
 sqplus1_4 = square
 sqplus1_4 ..>= plus1  # type: ignore
 
+def plus1sq_5(x) = z where:
+    y = x+1
+    z = y**2
+def sqplus1_5(x) = z where:
+    y = x**2
+    z = y+1
+
 square_times2_plus1 = square ..> times2 ..> plus1
 square_times2_plus1_ = plus1 <.. times2 <.. square
 plus1_cube = plus1 ..> x -> x**3

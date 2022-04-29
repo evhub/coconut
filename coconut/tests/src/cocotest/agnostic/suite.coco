@@ -34,6 +34,7 @@ def suite_test() -> bool:
     with parallel_map.multiple_sequential_calls(max_workers=2):  # type: ignore
         test_sqplus1_plus1sq(sqplus1_3, plus1sq_3)
         test_sqplus1_plus1sq(sqplus1_4, plus1sq_4)
+        test_sqplus1_plus1sq(sqplus1_5, plus1sq_5)
     assert 3 |> plus1 |> square == 16 == 3 |> plus1_ |> square  # type: ignore
     assert reduce((|>), [3, plus1, square]) == 16 == pipe(pipe(3, plus1), square)  # type: ignore
     assert reduce((..), [sqrt, square, plus1])(3) == 4 == compose(compose(sqrt, square), plus1)(3)  # type: ignore
