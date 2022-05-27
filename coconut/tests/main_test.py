@@ -449,6 +449,13 @@ def comp_agnostic(args=[], **kwargs):
 
 def comp_2(args=[], **kwargs):
     """Compiles target_2."""
+    # remove --mypy checking for target_2 to avoid numpy errors
+    try:
+        mypy_ind = args.index("--mypy")
+    except ValueError:
+        pass
+    else:
+        args = args[:mypy_ind]
     comp(path="cocotest", folder="target_2", args=["--target", "2"] + args, **kwargs)
 
 
