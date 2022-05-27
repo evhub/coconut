@@ -1147,6 +1147,7 @@ def main_test() -> bool:
         (x=3, y=4),
     ]) |> list == [(1, 2, 10), (3, 4, 10)]
     assert f"{'a' + 'b'}" == "ab"
+    int_str_tup: (int; str) = (1, "a")
     return True
 
 def test_asyncio() -> bool:

@@ -624,13 +624,20 @@ def maybeparens(lparen, item, rparen, prefer_parens=False):
         return item | lparen.suppress() + item + rparen.suppress()
 
 
-def tokenlist(item, sep, suppress=True, allow_trailing=True, at_least_two=False):
+def tokenlist(item, sep, suppress=True, allow_trailing=True, at_least_two=False, require_sep=False):
     """Create a list of tokens matching the item."""
     if suppress:
         sep = sep.suppress()
-    out = item + (OneOrMore if at_least_two else ZeroOrMore)(sep + item)
-    if allow_trailing:
-        out += Optional(sep)
+    if not require_sep:
+        out = item + (OneOrMore if at_least_two else ZeroOrMore)(sep + item)
+        if allow_trailing:
+            out += Optional(sep)
+    elif not allow_trailing:
+        out = item + OneOrMore(sep + item)
+    elif at_least_two:
+        out = item + OneOrMore(sep + item) + Optional(sep)
+    else:
+        out = OneOrMore(item + sep) + Optional(item)
     return out
 
 

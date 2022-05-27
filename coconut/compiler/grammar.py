@@ -914,6 +914,7 @@ class Grammar(object):
     typedef_default = Forward()
     unsafe_typedef_default = Forward()
     typedef_test = Forward()
+    typedef_tuple = Forward()
 
     # we include (var)arg_comma to ensure the pattern matches the whole arg
     arg_comma = comma | fixto(FollowedBy(rparen), "")
@@ -1049,12 +1050,16 @@ class Grammar(object):
     paren_atom = condense(
         lparen + (
             # everything here must end with rparen
-            yield_expr + rparen
+            rparen
+            | yield_expr + rparen
             | comprehension_expr + rparen
             | testlist_star_namedexpr + rparen
             | op_item + rparen
             | anon_namedtuple + rparen
-            | rparen
+        ) | (
+            lparen.suppress()
+            + typedef_tuple
+            + rparen.suppress()
         ),
     )
 
@@ -1118,7 +1123,7 @@ class Grammar(object):
         | passthrough_atom
     )
 
-    typedef_atom = Forward()
+    typedef_trailer = Forward()
     typedef_or_expr = Forward()
 
     simple_trailer = (
@@ -1130,7 +1135,7 @@ class Grammar(object):
         | invalid_syntax(dollar + questionmark, "'?' must come before '$' in None-coalescing partial application")
         | Group(dollar + ~lparen + ~lbrack)  # keep $ for item_handle
     )
-    known_trailer = typedef_atom | (
+    known_trailer = typedef_trailer | (
         Group(condense(dollar + lbrack) + subscriptgroup + rbrack.suppress())  # $[
         | Group(condense(dollar + lbrack + rbrack))  # $[]
         | Group(condense(lbrack + rbrack))  # []
@@ -1394,23 +1399,31 @@ class Grammar(object):
         | Optional(negable_atom_item)
     )
     unsafe_typedef_callable = attach(typedef_callable_params + arrow.suppress() + typedef_test, typedef_callable_handle)
-    unsafe_typedef_atom = (  # use special type signifier for item_handle
+
+    unsafe_typedef_trailer = (  # use special type signifier for item_handle
         Group(fixto(lbrack + rbrack, "type:[]"))
         | Group(fixto(dollar + lbrack + rbrack, "type:$[]"))
         | Group(fixto(questionmark + ~questionmark, "type:?"))
     )
+
     unsafe_typedef_or_expr = Forward()
     unsafe_typedef_or_expr_ref = tokenlist(xor_expr, bar, allow_trailing=False, at_least_two=True)
 
-    _typedef_test, typedef_callable, _typedef_atom, _typedef_or_expr = disable_outside(
+    unsafe_typedef_tuple = Forward()
+    # should mimic testlist_star_namedexpr but with require_sep=True
+    unsafe_typedef_tuple_ref = tokenlist(Group(namedexpr_test) | star_expr, fixto(semicolon, ","), suppress=False, require_sep=True)
+
+    _typedef_test, typedef_callable, _typedef_trailer, _typedef_or_expr, _typedef_tuple = disable_outside(
         test,
         unsafe_typedef_callable,
-        unsafe_typedef_atom,
+        unsafe_typedef_trailer,
         unsafe_typedef_or_expr,
+        unsafe_typedef_tuple,
     )
     typedef_test <<= _typedef_test
-    typedef_atom <<= _typedef_atom
+    typedef_trailer <<= _typedef_trailer
     typedef_or_expr <<= _typedef_or_expr
+    typedef_tuple <<= _typedef_tuple
 
     alt_ternary_expr = attach(keyword("if").suppress() + test_item + then_kwd.suppress() + test_item + keyword("else").suppress() + test, alt_ternary_handle)
     test <<= (

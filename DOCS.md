@@ -1531,6 +1531,8 @@ Additionally, Coconut adds special syntax for making type annotations easier and
     => typing.Callable[[<args>], <ret>]
 -> <ret>
     => typing.Callable[..., <ret>]
+(<type>; <type>)
+    => typing.Tuple[<type>, <type>]
 <type> | <type>
     => typing.Union[<type>, <type>]
 ```

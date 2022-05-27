@@ -16,7 +16,7 @@ Description: Compiles Coconut code into Python code.
 #   - Utilities
 #   - Compiler
 #   - Processors
-#   - Main Handlers
+#   - Handlers
 #   - Checking Handlers
 #   - Endpoints
 #   - Binding
@@ -580,6 +580,7 @@ class Compiler(Grammar, pickleable_obj):
         cls.anon_namedtuple <<= trace_attach(cls.anon_namedtuple_ref, cls.method("anon_namedtuple_handle"))
         cls.base_match_for_stmt <<= trace_attach(cls.base_match_for_stmt_ref, cls.method("base_match_for_stmt_handle"))
         cls.string_atom <<= trace_attach(cls.string_atom_ref, cls.method("string_atom_handle"))
+        cls.unsafe_typedef_tuple <<= trace_attach(cls.unsafe_typedef_tuple_ref, cls.method("unsafe_typedef_tuple_handle"))
 
         # handle normal and async function definitions
         cls.decoratable_normal_funcdef_stmt <<= trace_attach(
@@ -1884,7 +1885,7 @@ if {store_var} is not _coconut_sentinel:
 
 # end: PROCESSORS
 # -----------------------------------------------------------------------------------------------------------------------
-# MAIN HANDLERS:
+# HANDLERS:
 # -----------------------------------------------------------------------------------------------------------------------
 
     def split_function_call(self, tokens, loc):
@@ -3306,7 +3307,12 @@ for {match_to_var} in {item}:
 
     string_atom_handle.ignore_one_token = True
 
-# end: MAIN HANDLERS
+    def unsafe_typedef_tuple_handle(self, original, loc, tokens):
+        """Handle Tuples in typedefs."""
+        tuple_items = self.testlist_star_expr_handle(original, loc, tokens)
+        return "_coconut.typing.Tuple[" + tuple_items + "]"
+
+# end: HANDLERS
 # -----------------------------------------------------------------------------------------------------------------------
 # CHECKING HANDLERS:
 # -----------------------------------------------------------------------------------------------------------------------
