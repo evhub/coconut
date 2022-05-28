@@ -743,7 +743,7 @@ class Command(object):
             if not any(arg.startswith("--python-version") for arg in self.mypy_args):
                 self.mypy_args += [
                     "--python-version",
-                    ver_tuple_to_str(get_target_info_smart(self.comp.target, mode="highest")),
+                    ver_tuple_to_str(get_target_info_smart(self.comp.target, mode="nearest")),
                 ]
 
             if not any(arg.startswith("--python-executable") for arg in self.mypy_args):
