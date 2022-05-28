@@ -94,6 +94,7 @@ def test_setup_none() -> bool:
     assert parse("abc # derp", "lenient") == "abc  # derp"
     assert "==" not in parse("None = None")
     assert parse("(1\f+\f2)", "lenient") == "(1 + 2)" == parse("(1\f+\f2)", "eval")
+    assert "Ellipsis" not in parse("x: ...")
 
     assert_raises(-> parse("(a := b)"), CoconutTargetError)
     assert_raises(-> parse("async def f() = 1"), CoconutTargetError)

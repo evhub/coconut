@@ -547,6 +547,7 @@ class Compiler(Grammar, pickleable_obj):
         # standard handlers of the form name <<= trace_attach(name_tokens, method("name_handle")) (implies name_tokens is reused)
         cls.function_call <<= trace_attach(cls.function_call_tokens, cls.method("function_call_handle"))
         cls.testlist_star_namedexpr <<= trace_attach(cls.testlist_star_namedexpr_tokens, cls.method("testlist_star_expr_handle"))
+        cls.ellipsis <<= trace_attach(cls.ellipsis_tokens, cls.method("ellipsis_handle"))
 
         # standard handlers of the form name <<= trace_attach(name_ref, method("name_handle"))
         cls.set_literal <<= trace_attach(cls.set_literal_ref, cls.method("set_literal_handle"))
@@ -568,7 +569,6 @@ class Compiler(Grammar, pickleable_obj):
         cls.typed_assign_stmt <<= trace_attach(cls.typed_assign_stmt_ref, cls.method("typed_assign_stmt_handle"))
         cls.with_stmt <<= trace_attach(cls.with_stmt_ref, cls.method("with_stmt_handle"))
         cls.await_expr <<= trace_attach(cls.await_expr_ref, cls.method("await_expr_handle"))
-        cls.ellipsis <<= trace_attach(cls.ellipsis_ref, cls.method("ellipsis_handle"))
         cls.cases_stmt <<= trace_attach(cls.cases_stmt_ref, cls.method("cases_stmt_handle"))
         cls.f_string <<= trace_attach(cls.f_string_ref, cls.method("f_string_handle"))
         cls.decorators <<= trace_attach(cls.decorators_ref, cls.method("decorators_handle"))

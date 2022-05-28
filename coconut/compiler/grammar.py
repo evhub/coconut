@@ -646,7 +646,7 @@ class Grammar(object):
     then_kwd = keyword("then", explicit_prefix=colon)
 
     ellipsis = Forward()
-    ellipsis_ref = Literal("...") | Literal("\u2026")
+    ellipsis_tokens = Literal("...") | fixto(Literal("\u2026"), "...")
 
     lt = ~Literal("<<") + ~Literal("<=") + ~Literal("<|") + ~Literal("<..") + ~Literal("<*") + Literal("<")
     gt = ~Literal(">>") + ~Literal(">=") + Literal(">")
@@ -915,6 +915,7 @@ class Grammar(object):
     unsafe_typedef_default = Forward()
     typedef_test = Forward()
     typedef_tuple = Forward()
+    typedef_ellipsis = Forward()
 
     # we include (var)arg_comma to ensure the pattern matches the whole arg
     arg_comma = comma | fixto(FollowedBy(rparen), "")
@@ -1113,6 +1114,7 @@ class Grammar(object):
         | set_literal
         | set_letter_literal
         | lazy_list
+        | typedef_ellipsis
         | ellipsis,
     )
     atom = (
@@ -1413,17 +1415,21 @@ class Grammar(object):
     # should mimic testlist_star_namedexpr but with require_sep=True
     unsafe_typedef_tuple_ref = tokenlist(Group(namedexpr_test) | star_expr, fixto(semicolon, ","), suppress=False, require_sep=True)
 
-    _typedef_test, typedef_callable, _typedef_trailer, _typedef_or_expr, _typedef_tuple = disable_outside(
+    unsafe_typedef_ellipsis = ellipsis_tokens
+
+    _typedef_test, typedef_callable, _typedef_trailer, _typedef_or_expr, _typedef_tuple, _typedef_ellipsis = disable_outside(
         test,
         unsafe_typedef_callable,
         unsafe_typedef_trailer,
         unsafe_typedef_or_expr,
         unsafe_typedef_tuple,
+        unsafe_typedef_ellipsis,
     )
     typedef_test <<= _typedef_test
     typedef_trailer <<= _typedef_trailer
     typedef_or_expr <<= _typedef_or_expr
     typedef_tuple <<= _typedef_tuple
+    typedef_ellipsis <<= _typedef_ellipsis
 
     alt_ternary_expr = attach(keyword("if").suppress() + test_item + then_kwd.suppress() + test_item + keyword("else").suppress() + test, alt_ternary_handle)
     test <<= (
