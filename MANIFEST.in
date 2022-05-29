@@ -15,7 +15,7 @@ prune pyprover
 prune bbopt
 prune coconut-prelude
 prune .mypy_cache
-prune coconut/stubs/.mypy_cache
+prune coconut-stubs/.mypy_cache
 prune .pytest_cache
 prune *.egg-info
 exclude index.rst

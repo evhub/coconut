@@ -105,50 +105,50 @@ After you've tested your changes locally, you'll want to add more permanent test
             + Contains the main entry point for Coconut's Jupyter kernel.
         - `root.py`
             + Contains the implementation of Coconut's Jupyter kernel, made by subclassing the IPython kernel.
-    - stubs
-        - `__coconut__.pyi`
-            + A MyPy stub file for specifying the type of all the objects defined in Coconut's package header (which is saved as `__coconut__.py`).
-- tests
-    - `__init__.py`
-        + Imports everything in `main_test.py`.
-    - `__main__.py`
-        + When run, compiles all of the test source code, but _does not run any tests_. To run the tests, the command `make test`, or a  `pytest` command to run a specific test, is necessary.
-    - `main_test.py`
-        + Contains `TestCase` subclasses that run all of the commands for testing the Coconut files in `src`.
-    - src
-        - `extras.coco`
-            + Directly imports and calls functions in the Coconut package, including from `convenience.py` and icoconut.
-        - `runnable.coco`
-            + Makes sure the argument `--arg` was passed when running the file.
-        - `runner.coco`
-            + Runs `main` from `cocotest/agnostic/main.py`.
-        - cocotest
-            + _Note: Files in the folders below all get compiled into the top-level cocotest directory. The folders are only for differentiating what files to compile on what Python version._
-            - agnostic
-                - `__init__.coco`
-                    + Contains a docstring that `main.coco` asserts exists.
-                - `main.coco`
-                    + Contains the main test entry point as well as many simple, one-line tests.
-                - `specific.coco`
-                    + Tests to be run only on a specific Python version, but not necessarily only under a specific `--target`.
-                - `suite.coco`
-                    + Tests objects defined in `util.coco`.
-                - `tutorial.coco`
-                    + Tests all the examples in `TUTORIAL.md`.
-                - `util.coco`
-                    + Contains objects used in `suite.coco`.
-            - python2
-                - `py2_test.coco`
-                    + Tests to be run only on Python 2 with `--target 2`.
-            - python3
-                - `py3_test.coco`
-                    + Tests to be run only on Python 3 with `--target 3`.
-            - python35
-                - `py35_test.coco`
-                    + Tests to be run only on Python 3.5 with `--target 3.5`.
-            - python36
-                - `py36_test.coco`
-                    + Tests to be run only on Python 3.6 with `--target 3.6`.
+    - tests
+        - `__init__.py`
+            + Imports everything in `main_test.py`.
+        - `__main__.py`
+            + When run, compiles all of the test source code, but _does not run any tests_. To run the tests, the command `make test`, or a  `pytest` command to run a specific test, is necessary.
+        - `main_test.py`
+            + Contains `TestCase` subclasses that run all of the commands for testing the Coconut files in `src`.
+        - src
+            - `extras.coco`
+                + Directly imports and calls functions in the Coconut package, including from `convenience.py` and icoconut.
+            - `runnable.coco`
+                + Makes sure the argument `--arg` was passed when running the file.
+            - `runner.coco`
+                + Runs `main` from `cocotest/agnostic/main.py`.
+            - cocotest
+                + _Note: Files in the folders below all get compiled into the top-level cocotest directory. The folders are only for differentiating what files to compile on what Python version._
+                - agnostic
+                    - `__init__.coco`
+                        + Contains a docstring that `main.coco` asserts exists.
+                    - `main.coco`
+                        + Contains the main test entry point as well as many simple, one-line tests.
+                    - `specific.coco`
+                        + Tests to be run only on a specific Python version, but not necessarily only under a specific `--target`.
+                    - `suite.coco`
+                        + Tests objects defined in `util.coco`.
+                    - `tutorial.coco`
+                        + Tests all the examples in `TUTORIAL.md`.
+                    - `util.coco`
+                        + Contains objects used in `suite.coco`.
+                - python2
+                    - `py2_test.coco`
+                        + Tests to be run only on Python 2 with `--target 2`.
+                - python3
+                    - `py3_test.coco`
+                        + Tests to be run only on Python 3 with `--target 3`.
+                - python35
+                    - `py35_test.coco`
+                        + Tests to be run only on Python 3.5 with `--target 3.5`.
+                - python36
+                    - `py36_test.coco`
+                        + Tests to be run only on Python 3.6 with `--target 3.6`.
+- coconut-stubs
+    - `__coconut__.pyi`
+        + A MyPy stub file for specifying the type of all the objects defined in Coconut's package header (which is saved as `__coconut__.py`).
 
 ## Release Process
 

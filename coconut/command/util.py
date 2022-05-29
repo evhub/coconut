@@ -603,6 +603,7 @@ class Runner(object):
             run_func = eval
         else:
             run_func = exec_func
+        logger.log("Running " + repr(run_func) + "...")
         result = None
         with self.handling_errors(all_errors_exit):
             if path is None:
@@ -615,11 +616,13 @@ class Runner(object):
                     self.vars.update(use_vars)
             if store:
                 self.store(code)
+        logger.log("\tGot result back:", result)
         return result
 
     def run_file(self, path, all_errors_exit=True):
         """Execute a Python file."""
         path = fixpath(path)
+        logger.log("Running " + repr(path) + "...")
         with self.handling_errors(all_errors_exit):
             module_vars = run_file(path)
             self.vars.update(module_vars)
