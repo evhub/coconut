@@ -53,8 +53,10 @@ else:
 
 try:
     import numpy as _numpy  # type: ignore
+    import numpy.typing as _npt  # type: ignore
 except ImportError:
     _numpy = ...
+    _npt = ...
 else:
     _abc.Sequence.register(_numpy.ndarray)
 
@@ -82,6 +84,7 @@ abc = _abc
 multiprocessing = _multiprocessing
 multiprocessing_dummy = _multiprocessing_dummy
 numpy = _numpy
+npt = _npt  # Fake, like typing
 if sys.version_info >= (2, 7):
     OrderedDict = collections.OrderedDict
 else:

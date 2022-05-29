@@ -779,9 +779,14 @@ def _coconut_mk_anon_namedtuple(
 
 # @_t.overload
 # def _coconut_multi_dim_arr(
-#     arrs: _t.Tuple[_coconut.numpy.typing.NDArray[_t.Any], ...],
+#     arrs: _t.Tuple[_coconut.npt.NDArray[_DType], ...],
 #     dim: int,
-# ) -> _coconut.numpy.typing.NDArray[_t.Any]: ...
+# ) -> _coconut.npt.NDArray[_DType]: ...
+# @_t.overload
+# def _coconut_multi_dim_arr(
+#     arrs: _t.Tuple[_DType, ...],
+#     dim: int,
+# ) -> _coconut.npt.NDArray[_DType]: ...
 
 @_t.overload
 def _coconut_multi_dim_arr(
