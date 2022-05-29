@@ -146,9 +146,9 @@ After you've tested your changes locally, you'll want to add more permanent test
                 - python36
                     - `py36_test.coco`
                         + Tests to be run only on Python 3.6 with `--target 3.6`.
-- coconut-stubs
-    - `__coconut__.pyi`
-        + A MyPy stub file for specifying the type of all the objects defined in Coconut's package header (which is saved as `__coconut__.py`).
+    - coconut-stubs
+        - `__coconut__.pyi`
+            + A MyPy stub file for specifying the type of all the objects defined in Coconut's package header (which is saved as `__coconut__.py`).
 
 ## Release Process
 
