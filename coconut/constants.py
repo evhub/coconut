@@ -643,7 +643,7 @@ min_versions = {
     "argparse": (1, 4),
     "pexpect": (4,),
     ("trollius", "py2;cpy"): (2, 2),
-    "requests": (2, 27),
+    "requests": (2, 28),
     ("numpy", "py34"): (1,),
     ("numpy", "py2;cpy"): (1,),
     ("dataclasses", "py==36"): (0, 8),

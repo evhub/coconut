@@ -250,6 +250,9 @@ def split_args_list(tokens, loc):
     dubstar_arg = None
     pos = 0
     for arg in tokens:
+        # only the first two components matter; if there's a third it's a typedef
+        arg = arg[:2]
+
         if len(arg) == 1:
             if arg[0] == "*":
                 # star sep (pos = 2)
@@ -275,8 +278,10 @@ def split_args_list(tokens, loc):
                     kwd_only_args.append((arg[0], None))
                 else:
                     raise CoconutDeferredSyntaxError("non-default arguments must come first or after star argument/separator", loc)
+
         else:
-            # only the first two components matter; if there's a third it's a typedef
+            internal_assert(arg[1] is not None, "invalid arg[1] in split_args_list", arg)
+
             if arg[0] == "*":
                 # star arg (pos = 2)
                 if pos >= 2:
@@ -300,6 +305,7 @@ def split_args_list(tokens, loc):
                     kwd_only_args.append((arg[0], arg[1]))
                 else:
                     raise CoconutDeferredSyntaxError("invalid default argument in function definition", loc)
+
     return pos_only_args, req_args, default_args, star_arg, kwd_only_args, dubstar_arg
 
 
