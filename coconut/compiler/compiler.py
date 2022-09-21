@@ -2575,7 +2575,7 @@ def __hash__(self):
         namedtuple_call = self.make_namedtuple_call(None, names, types)
         return namedtuple_call + "(" + ", ".join(items) + ")"
 
-    def single_import(self, path, imp_as):
+    def single_import(self, path, imp_as, type_ignore=False):
         """Generate import statements from a fully qualified import and the name to bind it to."""
         out = []
 
@@ -2614,6 +2614,10 @@ def __hash__(self):
         else:
             out.append(import_stmt(imp_from, imp, imp_as))
 
+        if type_ignore:
+            for i, line in enumerate(out):
+                out[i] = line + self.type_ignore_comment()
+
         return out
 
     def universal_import(self, imports, imp_from=None):
@@ -2627,19 +2631,25 @@ def __hash__(self):
                 imp, imp_as = imps
             if imp_from is not None:
                 imp = imp_from + "./" + imp  # marker for from ... import ...
+
             old_imp = None
+            type_ignore = False
             path = imp.split(".")
             for i in reversed(range(1, len(path) + 1)):
                 base, exts = ".".join(path[:i]), path[i:]
                 clean_base = base.replace("/", "")
                 if clean_base in py3_to_py2_stdlib:
                     old_imp, version_check = py3_to_py2_stdlib[clean_base]
+                    if old_imp.endswith("#"):
+                        type_ignore = True
+                        old_imp = old_imp[:-1]
                     if exts:
                         old_imp += "."
                         if "/" in base and "/" not in old_imp:
                             old_imp += "/"  # marker for from ... import ...
                         old_imp += ".".join(exts)
                     break
+
             if old_imp is None:
                 paths = (imp,)
             elif not self.target:  # universal compatibility
@@ -2652,22 +2662,24 @@ def __hash__(self):
                 paths = (old_imp, imp, version_check)
             else:  # "35" and above can safely use new
                 paths = (imp,)
-            importmap.append((paths, imp_as))
+            importmap.append((paths, imp_as, type_ignore))
 
         stmts = []
-        for paths, imp_as in importmap:
+        for paths, imp_as, type_ignore in importmap:
             if len(paths) == 1:
                 more_stmts = self.single_import(paths[0], imp_as)
                 stmts.extend(more_stmts)
             else:
-                first, second, version_check = paths
-                stmts.append("if _coconut_sys.version_info < " + str(version_check) + ":")
-                first_stmts = self.single_import(first, imp_as)
+                old_imp, new_imp, version_check = paths
+                # need to do new_imp first for type-checking reasons
+                stmts.append("if _coconut_sys.version_info >= " + str(version_check) + ":")
+                first_stmts = self.single_import(new_imp, imp_as)
                 first_stmts[0] = openindent + first_stmts[0]
                 first_stmts[-1] += closeindent
                 stmts.extend(first_stmts)
                 stmts.append("else:")
-                second_stmts = self.single_import(second, imp_as)
+                # should only type: ignore the old import
+                second_stmts = self.single_import(old_imp, imp_as, type_ignore=type_ignore)
                 second_stmts[0] = openindent + second_stmts[0]
                 second_stmts[-1] += closeindent
                 stmts.extend(second_stmts)
