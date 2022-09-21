@@ -700,7 +700,6 @@ min_versions = {
     ("numpy", "py34"): (1,),
     ("numpy", "py2;cpy"): (1,),
     ("dataclasses", "py==36"): (0, 8),
-    ("typing_extensions", "py3"): (4, 3),
     ("aenum", "py<34"): (3,),
     "sphinx": (4, 5),
     "pydata-sphinx-theme": (0, 8),
@@ -717,6 +716,7 @@ min_versions = {
     ("jupytext", "py3"): (1, 8),
     ("jupyterlab", "py35"): (2, 2),
     "xonsh": (0, 9),
+    ("typing_extensions", "py3"): (4, 1),
     # don't upgrade this to allow all versions
     ("prompt_toolkit", "mark3"): (1,),
     # don't upgrade this; it breaks on Python 2.6
