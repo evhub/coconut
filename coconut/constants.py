@@ -700,6 +700,7 @@ min_versions = {
     ("numpy", "py34"): (1,),
     ("numpy", "py2;cpy"): (1,),
     ("dataclasses", "py==36"): (0, 8),
+    ("typing_extensions", "py3"): (4, 3),
     ("aenum", "py<34"): (3,),
     "sphinx": (4, 5),
     "pydata-sphinx-theme": (0, 8),
