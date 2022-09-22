@@ -716,7 +716,7 @@ min_versions = {
     ("jupytext", "py3"): (1, 8),
     ("jupyterlab", "py35"): (2, 2),
     "xonsh": (0, 9),
-    ("typing_extensions", "py3"): (4, 1),
+    ("typing_extensions", "py3"): (3, 10),
     # don't upgrade this to allow all versions
     ("prompt_toolkit", "mark3"): (1,),
     # don't upgrade this; it breaks on Python 2.6

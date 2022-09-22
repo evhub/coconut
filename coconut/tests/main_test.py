@@ -667,7 +667,9 @@ class TestShell(unittest.TestCase):
             for _ in range(2):  # make sure we can import it twice
                 call_python([runnable_py, "--arg"], assert_output=True, convert_to_import=True)
 
-    if PY35 and not WINDOWS:
+    # not py36 is only because newer Python versions require newer xonsh
+    #  versions that aren't always installed by pip install coconut[tests]
+    if not WINDOWS and PY35 and not PY36:
         def test_xontrib(self):
             p = spawn_cmd("xonsh")
             p.expect("$")
