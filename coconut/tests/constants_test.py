@@ -98,6 +98,8 @@ class TestConstants(unittest.TestCase):
                 or PYPY and new_imp.startswith("tkinter")
                 # don't test trollius on PyPy
                 or PYPY and old_imp == "trollius"
+                # don't test typing_extensions on Python 2
+                or PY2 and old_imp.startswith("typing_extensions")
             ):
                 pass
             elif sys.version_info >= ver_cutoff:
