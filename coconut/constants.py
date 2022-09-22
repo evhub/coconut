@@ -701,9 +701,12 @@ min_versions = {
     ("numpy", "py2;cpy"): (1,),
     ("dataclasses", "py==36"): (0, 8),
     ("aenum", "py<34"): (3,),
-    "sphinx": (4, 5),
-    "pydata-sphinx-theme": (0, 8),
-    "myst-parser": (0, 17),
+    "sphinx": (5, 1),
+    "pydata-sphinx-theme": (0, 10),
+    "myst-parser": (0, 18),
+
+    # pinned reqs: (must be added to pinned_reqs below)
+
     # don't upgrade this until https://github.com/jupyter/jupyter_console/issues/241 is fixed
     ("jupyter-client", "py3"): (6, 1, 12),
     # latest version supported on Python 2
@@ -750,6 +753,7 @@ pinned_reqs = (
     ("jupytext", "py3"),
     ("jupyterlab", "py35"),
     "xonsh",
+    ("typing_extensions", "py3"),
     ("prompt_toolkit", "mark3"),
     "pytest",
     "vprof",
