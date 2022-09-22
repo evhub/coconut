@@ -513,7 +513,7 @@ def partial_op_item_handle(tokens):
         return "_coconut.functools.partial(" + op + ", " + arg + ")"
     elif "right partial" in tok_grp:
         op, arg = tok_grp
-        return "_coconut_partial(" + op + ", {1: " + arg + "}, 2)"
+        return "_coconut_partial(" + op + ", {1: " + arg + "}, 2, ())"
     else:
         raise CoconutInternalException("invalid operator function implicit partial token group", tok_grp)
 
@@ -1005,6 +1005,7 @@ class Grammar(object):
         tokenlist(
             Group(
                 questionmark
+                | name + condense(equals + questionmark)
                 | call_item,
             ),
             comma,

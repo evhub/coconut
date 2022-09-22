@@ -275,6 +275,7 @@ class _coconut_partial(_t.Generic[_T]):
         _coconut_func: _t.Callable[..., _T],
         _coconut_argdict: _t.Dict[int, _t.Any],
         _coconut_arglen: int,
+        _coconut_pos_kwargs: _t.Sequence[_t.Text],
         *args: _t.Any,
         **kwargs: _t.Any,
         ) -> None: ...

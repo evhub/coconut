@@ -834,22 +834,26 @@ def addpattern(base_func, new_pattern=None, **kwargs):
 _coconut_addpattern = addpattern
 {def_prepattern}
 class _coconut_partial(_coconut_base_hashable):
-    __slots__ = ("func", "_argdict", "_arglen", "_stargs", "keywords")
+    __slots__ = ("func", "_argdict", "_arglen", "_pos_kwargs", "_stargs", "keywords")
     if hasattr(_coconut.functools.partial, "__doc__"):
         __doc__ = _coconut.functools.partial.__doc__
-    def __init__(self, _coconut_func, _coconut_argdict, _coconut_arglen, *args, **kwargs):
+    def __init__(self, _coconut_func, _coconut_argdict, _coconut_arglen, _coconut_pos_kwargs, *args, **kwargs):
         self.func = _coconut_func
         self._argdict = _coconut_argdict
         self._arglen = _coconut_arglen
+        self._pos_kwargs = _coconut_pos_kwargs
         self._stargs = args
         self.keywords = kwargs
     def __reduce__(self):
-        return (self.__class__, (self.func, self._argdict, self._arglen) + self._stargs, self.keywords)
+        return (self.__class__, (self.func, self._argdict, self._arglen, self._pos_kwargs) + self._stargs, self.keywords)
     def __setstate__(self, keywords):
         self.keywords = keywords
     @property
     def args(self):
         return _coconut.tuple(self._argdict.get(i) for i in _coconut.range(self._arglen)) + self._stargs
+    @property
+    def required_nargs(self):
+        return self._arglen - _coconut.len(self._argdict) + len(self._pos_kwargs)
     def __call__(self, *args, **kwargs):
         callargs = []
         argind = 0
@@ -857,14 +861,23 @@ class _coconut_partial(_coconut_base_hashable):
             if i in self._argdict:
                 callargs.append(self._argdict[i])
             elif argind >= _coconut.len(args):
-                raise _coconut.TypeError("expected at least " + _coconut.str(self._arglen - _coconut.len(self._argdict)) + " argument(s) to " + _coconut.repr(self))
+                raise _coconut.TypeError("expected at least " + _coconut.str(self.required_nargs) + " argument(s) to " + _coconut.repr(self))
             else:
                 callargs.append(args[argind])
                 argind += 1
+        for k in self._pos_kwargs:
+            if k in kwargs:
+                raise _coconut.TypeError(_coconut.repr(k) + " is an invalid keyword argument for " + _coconut.repr(self))
+            elif argind >= _coconut.len(args):
+                raise _coconut.TypeError("expected at least " + _coconut.str(self.required_nargs) + " argument(s) to " + _coconut.repr(self))
+            else:
+                kwargs[k] = args[argind]
+                argind += 1
         callargs += self._stargs
         callargs += args[argind:]
-        kwargs.update(self.keywords)
-        return self.func(*callargs, **kwargs)
+        callkwargs = self.keywords.copy()
+        callkwargs.update(kwargs)
+        return self.func(*callargs, **callkwargs)
     def __repr__(self):
         args = []
         for i in _coconut.range(self._arglen):
@@ -874,6 +887,8 @@ class _coconut_partial(_coconut_base_hashable):
                 args.append("?")
         for arg in self._stargs:
             args.append(_coconut.repr(arg))
+        for k in self._pos_kwargs:
+            args.append(k + "=?")
         for k, v in self.keywords.items():
             args.append(k + "=" + _coconut.repr(v))
         return "%r$(%s)" % (self.func, ", ".join(args))

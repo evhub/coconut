@@ -538,6 +538,13 @@ Coconut uses a `$` sign right after a function's name but before the open parent
 
 Coconut's partial application also supports the use of a `?` to skip partially applying an argument, deferring filling in that argument until the partially-applied function is called. This is useful if you want to partially apply arguments that aren't first in the argument order.
 
+Additionally, `?` can even be used as the value of keyword arguments to convert them into positional arguments. For example, `f$(x=?)` is effectively equivalent to
+```coconut_python
+def new_f(x, *args, **kwargs):
+    kwargs["x"] = x
+    return f(*args, **kwargs)
+```
+
 ##### Rationale
 
 Partial application, or currying, is a mainstay of functional programming, and for good reason: it allows the dynamic customization of functions to fit the needs of where they are being used. Partial application allows a new function to be created out of an old function with some of its arguments pre-specified.
