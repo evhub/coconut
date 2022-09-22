@@ -266,7 +266,6 @@ Finally, while Coconut will try to compile Python-3-specific syntax to its unive
 
 - the `nonlocal` keyword,
 - keyword-only function parameters (use pattern-matching function definition for universal code),
-- `@` as matrix multiplication (requires `--target 3.5`),
 - `async` and `await` statements (requires `--target 3.5`),
 - `:=` assignment expressions (requires `--target 3.8`),
 - positional-only function parameters (use pattern-matching function definition for universal code) (requires `--target 3.8`),
