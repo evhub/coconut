@@ -1157,6 +1157,12 @@ def main_test() -> bool:
     assert value == "123"
     "{" f"{key}" ": " + value + "}" = "{abc: aaa}"
     assert value == "aaa"
+    try:
+        2 @ 3  # type: ignore
+    except TypeError as err:
+        assert err
+    else:
+        assert False
     return True
 
 def test_asyncio() -> bool:

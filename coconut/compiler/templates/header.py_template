@@ -261,6 +261,7 @@ def _coconut_minus(a, b=_coconut_sentinel):
         return -a
     return a - b
 def _coconut_comma_op(*args): return args
+{def_coconut_matmul}
 @_coconut.functools.wraps(_coconut.itertools.tee)
 def tee(iterable, n=2):
     if n >= 0 and _coconut.isinstance(iterable, (_coconut.tuple, _coconut.frozenset)):

@@ -561,6 +561,7 @@ class Compiler(Grammar, pickleable_obj):
         cls.f_string <<= trace_attach(cls.f_string_tokens, cls.method("f_string_handle"))
 
         # standard handlers of the form name <<= trace_attach(name_ref, method("name_handle"))
+        cls.term <<= trace_attach(cls.term_ref, cls.method("term_handle"))
         cls.set_literal <<= trace_attach(cls.set_literal_ref, cls.method("set_literal_handle"))
         cls.set_letter_literal <<= trace_attach(cls.set_letter_literal_ref, cls.method("set_letter_literal_handle"))
         cls.import_stmt <<= trace_attach(cls.import_stmt_ref, cls.method("import_handle"))
@@ -620,7 +621,6 @@ class Compiler(Grammar, pickleable_obj):
         cls.subscript_star <<= trace_attach(cls.subscript_star_ref, cls.method("subscript_star_check"))
 
         # these checking handlers need to be greedy since they can be suppressed
-        cls.matrix_at <<= trace_attach(cls.matrix_at_ref, cls.method("matrix_at_check"), greedy=True)
         cls.match_check_equals <<= trace_attach(cls.match_check_equals_ref, cls.method("match_check_equals_check"), greedy=True)
 
     def copy_skips(self):
@@ -3346,6 +3346,17 @@ for {match_to_var} in {item}:
         tuple_items = self.testlist_star_expr_handle(original, loc, tokens)
         return "_coconut.typing.Tuple[" + tuple_items + "]"
 
+    def term_handle(self, tokens):
+        """Handle terms seperated by mul-like operators."""
+        out = [tokens[0]]
+        for i in range(1, len(tokens), 2):
+            op, term = tokens[i:i + 2]
+            if op == "@" and self.target_info < (3, 5):
+                out = ["_coconut_matmul(" + " ".join(out) + ", " + term + ")"]
+            else:
+                out += [op, term]
+        return " ".join(out)
+
 # end: HANDLERS
 # -----------------------------------------------------------------------------------------------------------------------
 # CHECKING HANDLERS:
@@ -3484,10 +3495,6 @@ for {match_to_var} in {item}:
     def slash_sep_check(self, original, loc, tokens):
         """Check for Python 3.8 positional-only arguments."""
         return self.check_py("38", "positional-only argument separator (use 'match' to produce universal code)", original, loc, tokens)
-
-    def matrix_at_check(self, original, loc, tokens):
-        """Check for Python 3.5 matrix multiplication."""
-        return self.check_py("35", "matrix multiplication", original, loc, tokens)
 
     def async_stmt_check(self, original, loc, tokens):
         """Check for Python 3.5 async for/with."""

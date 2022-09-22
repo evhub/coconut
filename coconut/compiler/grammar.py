@@ -666,8 +666,7 @@ class Grammar(object):
     )
     div_slash = slash | fixto(Literal("\xf7") + ~slash, "/")
     div_dubslash = dubslash | fixto(combine(Literal("\xf7") + slash), "//")
-    matrix_at_ref = at | fixto(Literal("\u22c5"), "@")
-    matrix_at = Forward()
+    matrix_at = at | fixto(Literal("\u22c5"), "@")
 
     test = Forward()
     test_no_chain, dubcolon = disable_inside(test, unsafe_dubcolon)
@@ -898,7 +897,7 @@ class Grammar(object):
         | fixto(ge, "_coconut.operator.ge")
         | fixto(ne, "_coconut.operator.ne")
         | fixto(tilde, "_coconut.operator.inv")
-        | fixto(matrix_at, "_coconut.operator.matmul")
+        | fixto(matrix_at, "_coconut_matmul")
         | fixto(keyword("not"), "_coconut.operator.not_")
         | fixto(keyword("is"), "_coconut.operator.is_")
         | fixto(keyword("in"), "_coconut.operator.contains")
@@ -1240,16 +1239,17 @@ class Grammar(object):
     addop = plus | sub_minus
     shift = lshift | rshift
 
+    term = Forward()
+    term_ref = tokenlist(factor, mulop, allow_trailing=False, suppress=False)
+
     # we condense all of these down, since Python handles the precedence, not Coconut
-    # term = exprlist(factor, mulop)
     # arith_expr = exprlist(term, addop)
     # shift_expr = exprlist(arith_expr, shift)
     # and_expr = exprlist(shift_expr, amp)
     # xor_expr = exprlist(and_expr, caret)
     xor_expr = exprlist(
-        factor,
-        mulop
-        | addop
+        term,
+        addop
         | shift
         | amp
         | caret,

@@ -1,11 +1,5 @@
 def py35_test() -> bool:
     """Performs Python-3.5-specific tests."""
-    try:
-        2 @ 3  # type: ignore
-    except TypeError as err:
-        assert err
-    else:
-        assert False
     assert .attr |> repr == "operator.attrgetter('attr')"
     assert .method(1) |> repr == "operator.methodcaller('method', 1)"
     assert pow$(1) |> repr == "functools.partial(<built-in function pow>, 1)"

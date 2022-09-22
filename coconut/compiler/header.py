@@ -347,6 +347,50 @@ raise _coconut.RuntimeError("_namedtuple_of is not available on Python < 3.6 (us
             ''',
             indent=1,
         ),
+        import_copyreg=pycondition(
+            (3,),
+            if_lt="import copy_reg as copyreg",
+            if_ge="import copyreg",
+            indent=1,
+        ),
+        def_coconut_matmul=pycondition(
+            (3, 5),
+            if_ge=r'''_coconut_matmul = _coconut.operator.matmul''',
+            if_lt='''
+def _coconut_matmul(a, b, **kwargs):
+    in_place = kwargs.pop("in_place", False)
+    if kwargs:
+        raise _coconut.TypeError("_coconut_matmul() got unexpected keyword arguments " + _coconut.repr(kwargs))
+    if in_place and _coconut.hasattr(a, "__imatmul__"):
+        try:
+            result = a.__imatmul__(b)
+        except _coconut.NotImplementedError:
+            pass
+        else:
+            if result is not _coconut.NotImplemented:
+                return result
+    if _coconut.hasattr(a, "__matmul__"):
+        try:
+            result = a.__matmul__(b)
+        except _coconut.NotImplementedError:
+            pass
+        else:
+            if result is not _coconut.NotImplemented:
+                return result
+    if _coconut.hasattr(b, "__rmatmul__"):
+        try:
+            result = b.__rmatmul__(a)
+        except _coconut.NotImplementedError:
+            pass
+        else:
+            if result is not _coconut.NotImplemented:
+                return result
+    if "numpy" in (a.__class__.__module__, b.__class__.__module__):
+        from numpy import matmul
+        return matmul(a, b)
+    raise _coconut.TypeError("unsupported operand type(s) for @: " + _coconut.repr(_coconut.type(a)) + " and " + _coconut.repr(_coconut.type(b)))
+            ''',
+        ),
         # used in the second round
         tco_comma="_coconut_tail_call, _coconut_tco, " if not no_tco else "",
         call_set_names_comma="_coconut_call_set_names, " if target_info < (3, 6) else "",
@@ -357,7 +401,7 @@ raise _coconut.RuntimeError("_namedtuple_of is not available on Python < 3.6 (us
     format_dict.update(
         dict(
             # when anything is added to this list it must also be added to *both* __coconut__.pyi stub files
-            underscore_imports="{tco_comma}{call_set_names_comma}{handle_cls_args_comma}_namedtuple_of, _coconut, _coconut_super, _coconut_MatchError, _coconut_iter_getitem, _coconut_base_compose, _coconut_forward_compose, _coconut_back_compose, _coconut_forward_star_compose, _coconut_back_star_compose, _coconut_forward_dubstar_compose, _coconut_back_dubstar_compose, _coconut_pipe, _coconut_star_pipe, _coconut_dubstar_pipe, _coconut_back_pipe, _coconut_back_star_pipe, _coconut_back_dubstar_pipe, _coconut_none_pipe, _coconut_none_star_pipe, _coconut_none_dubstar_pipe, _coconut_bool_and, _coconut_bool_or, _coconut_none_coalesce, _coconut_minus, _coconut_map, _coconut_partial, _coconut_get_function_match_error, _coconut_base_pattern_func, _coconut_addpattern, _coconut_sentinel, _coconut_assert, _coconut_raise, _coconut_mark_as_match, _coconut_reiterable, _coconut_self_match_types, _coconut_dict_merge, _coconut_exec, _coconut_comma_op, _coconut_multi_dim_arr, _coconut_mk_anon_namedtuple".format(**format_dict),
+            underscore_imports="{tco_comma}{call_set_names_comma}{handle_cls_args_comma}_namedtuple_of, _coconut, _coconut_super, _coconut_MatchError, _coconut_iter_getitem, _coconut_base_compose, _coconut_forward_compose, _coconut_back_compose, _coconut_forward_star_compose, _coconut_back_star_compose, _coconut_forward_dubstar_compose, _coconut_back_dubstar_compose, _coconut_pipe, _coconut_star_pipe, _coconut_dubstar_pipe, _coconut_back_pipe, _coconut_back_star_pipe, _coconut_back_dubstar_pipe, _coconut_none_pipe, _coconut_none_star_pipe, _coconut_none_dubstar_pipe, _coconut_bool_and, _coconut_bool_or, _coconut_none_coalesce, _coconut_minus, _coconut_map, _coconut_partial, _coconut_get_function_match_error, _coconut_base_pattern_func, _coconut_addpattern, _coconut_sentinel, _coconut_assert, _coconut_raise, _coconut_mark_as_match, _coconut_reiterable, _coconut_self_match_types, _coconut_dict_merge, _coconut_exec, _coconut_comma_op, _coconut_multi_dim_arr, _coconut_mk_anon_namedtuple, _coconut_matmul".format(**format_dict),
             import_typing_NamedTuple=pycondition(
                 (3, 6),
                 if_lt='''
@@ -369,12 +413,6 @@ class typing{object}:
                 if_ge='''
 import typing
             ''',
-                indent=1,
-            ),
-            import_copyreg=pycondition(
-                (3,),
-                if_lt="import copy_reg as copyreg",
-                if_ge="import copyreg",
                 indent=1,
             ),
             import_asyncio=pycondition(
