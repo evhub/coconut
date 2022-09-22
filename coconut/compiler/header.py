@@ -358,6 +358,7 @@ raise _coconut.RuntimeError("_namedtuple_of is not available on Python < 3.6 (us
             if_ge=r'''_coconut_matmul = _coconut.operator.matmul''',
             if_lt='''
 def _coconut_matmul(a, b, **kwargs):
+    """Matrix multiplication operator (@). Implements operator.matmul on any Python version."""
     in_place = kwargs.pop("in_place", False)
     if kwargs:
         raise _coconut.TypeError("_coconut_matmul() got unexpected keyword arguments " + _coconut.repr(kwargs))

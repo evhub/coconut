@@ -111,7 +111,12 @@ def _coconut_iter_getitem_special_case(iterable, start, stop, step):
             yield cached_item
         cache.append(item)
 def _coconut_iter_getitem(iterable, index):
-    """Some code taken from more_itertools under the terms of its MIT license."""
+    """Iterator slicing works just like sequence slicing, including support for negative indices and slices, and support for `slice` objects in the same way as can be done with normal slicing.
+
+    Coconut's iterator slicing is very similar to Python's `itertools.islice`, but unlike `itertools.islice`, Coconut's iterator slicing supports negative indices, and will preferentially call an object's `__iter_getitem__` (Coconut-specific magic method, preferred) or `__getitem__` (general Python magic method), if they exist. Coconut's iterator slicing is also optimized to work well with all of Coconut's built-in objects, only computing the elements of each that are actually necessary to extract the desired slice.
+
+    Some code taken from more_itertools under the terms of its MIT license.
+    """
     obj_iter_getitem = _coconut.getattr(iterable, "__iter_getitem__", None)
     if obj_iter_getitem is None:
         obj_iter_getitem = _coconut.getattr(iterable, "__getitem__", None)
@@ -229,38 +234,91 @@ class _coconut_base_compose(_coconut_base_hashable):
         if obj is None:
             return self
 {return_method_of_self}
-def _coconut_forward_compose(func, *funcs): return _coconut_base_compose(func, *((f, 0) for f in funcs))
-def _coconut_back_compose(*funcs): return _coconut_forward_compose(*_coconut.reversed(funcs))
-def _coconut_forward_star_compose(func, *funcs): return _coconut_base_compose(func, *((f, 1) for f in funcs))
-def _coconut_back_star_compose(*funcs): return _coconut_forward_star_compose(*_coconut.reversed(funcs))
-def _coconut_forward_dubstar_compose(func, *funcs): return _coconut_base_compose(func, *((f, 2) for f in funcs))
-def _coconut_back_dubstar_compose(*funcs): return _coconut_forward_dubstar_compose(*_coconut.reversed(funcs))
-def _coconut_pipe(x, f): return f(x)
-def _coconut_star_pipe(xs, f): return f(*xs)
-def _coconut_dubstar_pipe(kws, f): return f(**kws)
-def _coconut_back_pipe(f, x): return f(x)
-def _coconut_back_star_pipe(f, xs): return f(*xs)
-def _coconut_back_dubstar_pipe(f, kws): return f(**kws)
-def _coconut_none_pipe(x, f): return None if x is None else f(x)
-def _coconut_none_star_pipe(xs, f): return None if xs is None else f(*xs)
-def _coconut_none_dubstar_pipe(kws, f): return None if kws is None else f(**kws)
+def _coconut_forward_compose(func, *funcs):
+    """Forward composition operator (..>).
+
+    (..>)(f, g) is effectively equivalent to (*args, **kwargs) -> g(f(*args, **kwargs))."""
+    return _coconut_base_compose(func, *((f, 0) for f in funcs))
+def _coconut_back_compose(*funcs):
+    """Backward composition operator (<..).
+
+    (<..)(f, g) is effectively equivalent to (*args, **kwargs) -> f(g(*args, **kwargs))."""
+    return _coconut_forward_compose(*_coconut.reversed(funcs))
+def _coconut_forward_star_compose(func, *funcs):
+    """Forward star composition operator (..*>).
+
+    (..*>)(f, g) is effectively equivalent to (*args, **kwargs) -> g(*f(*args, **kwargs))."""
+    return _coconut_base_compose(func, *((f, 1) for f in funcs))
+def _coconut_back_star_compose(*funcs):
+    """Backward star composition operator (<*..).
+
+    (<*..)(f, g) is effectively equivalent to (*args, **kwargs) -> f(*g(*args, **kwargs))."""
+    return _coconut_forward_star_compose(*_coconut.reversed(funcs))
+def _coconut_forward_dubstar_compose(func, *funcs):
+    """Forward double star composition operator (..**>).
+
+    (..**>)(f, g) is effectively equivalent to (*args, **kwargs) -> g(**f(*args, **kwargs))."""
+    return _coconut_base_compose(func, *((f, 2) for f in funcs))
+def _coconut_back_dubstar_compose(*funcs):
+    """Backward double star composition operator (<**..).
+
+    (<**..)(f, g) is effectively equivalent to (*args, **kwargs) -> f(**g(*args, **kwargs))."""
+    return _coconut_forward_dubstar_compose(*_coconut.reversed(funcs))
+def _coconut_pipe(x, f):
+    """Pipe operator (|>). Equivalent to (x, f) -> f(x)."""
+    return f(x)
+def _coconut_star_pipe(xs, f):
+    """Star pipe operator (*|>). Equivalent to (xs, f) -> f(*xs)."""
+    return f(*xs)
+def _coconut_dubstar_pipe(kws, f):
+    """Double star pipe operator (**|>). Equivalent to (kws, f) -> f(**kws)."""
+    return f(**kws)
+def _coconut_back_pipe(f, x):
+    """Backward pipe operator (<|). Equivalent to (f, x) -> f(x)."""
+    return f(x)
+def _coconut_back_star_pipe(f, xs):
+    """Backward star pipe operator (<*|). Equivalent to (f, xs) -> f(*xs)."""
+    return f(*xs)
+def _coconut_back_dubstar_pipe(f, kws):
+    """Backward double star pipe operator (<**|). Equivalent to (f, kws) -> f(**kws)."""
+    return f(**kws)
+def _coconut_none_pipe(x, f):
+    """Nullable pipe operator (|?>). Equivalent to (x, f) -> f(x) if x is not None else None."""
+    return None if x is None else f(x)
+def _coconut_none_star_pipe(xs, f):
+    """Nullable star pipe operator (|?*>). Equivalent to (xs, f) -> f(*xs) if xs is not None else None."""
+    return None if xs is None else f(*xs)
+def _coconut_none_dubstar_pipe(kws, f):
+    """Nullable double star pipe operator (|?**>). Equivalent to (kws, f) -> f(**kws) if kws is not None else None."""
+    return None if kws is None else f(**kws)
 def _coconut_assert(cond, msg=None):
+    """Assert operator (assert). Asserts condition with optional message."""
     if not cond:
         assert False, msg if msg is not None else "(assert) got falsey value " + _coconut.repr(cond)
 def _coconut_raise(exc=None, from_exc=None):
+    """Raise operator (raise). Raises exception with optional cause."""
     if exc is None:
         raise
     if from_exc is not None:
         exc.__cause__ = from_exc
     raise exc
-def _coconut_bool_and(a, b): return a and b
-def _coconut_bool_or(a, b): return a or b
-def _coconut_none_coalesce(a, b): return b if a is None else a
+def _coconut_bool_and(a, b):
+    """Boolean and operator (and). Equivalent to (a, b) -> a and b."""
+    return a and b
+def _coconut_bool_or(a, b):
+    """Boolean or operator (or). Equivalent to (a, b) -> a or b."""
+    return a or b
+def _coconut_none_coalesce(a, b):
+    """None coalescing operator (??). Equivalent to (a, b) -> a if a is not None else b."""
+    return b if a is None else a
 def _coconut_minus(a, b=_coconut_sentinel):
+    """Minus operator (-). Effectively equivalent to (a, b=None) -> a - b if b is not None else -a."""
     if b is _coconut_sentinel:
         return -a
     return a - b
-def _coconut_comma_op(*args): return args
+def _coconut_comma_op(*args):
+    """Comma operator (,). Equivalent to (*args) -> args."""
+    return args
 {def_coconut_matmul}
 @_coconut.functools.wraps(_coconut.itertools.tee)
 def tee(iterable, n=2):
