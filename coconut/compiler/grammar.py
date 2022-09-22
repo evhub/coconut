@@ -752,7 +752,7 @@ class Grammar(object):
     # Python 2 only supports br"..." not rb"..."
     b_string = combine((bit_b + Optional(raw_r) | fixto(raw_r + bit_b, "br")) + string_item)
     u_string_ref = combine((unicode_u + Optional(raw_r) | raw_r + unicode_u) + string_item)
-    f_string_ref = combine((format_f + Optional(raw_r) | raw_r + format_f) + string_item)
+    f_string_tokens = combine((format_f + Optional(raw_r) | raw_r + format_f) + string_item)
     nonbf_string = string | u_string
     nonb_string = nonbf_string | f_string
     any_string = nonb_string | b_string
@@ -1083,7 +1083,9 @@ class Grammar(object):
 
     string_atom = Forward()
     string_atom_ref = OneOrMore(nonb_string) | OneOrMore(b_string)
-    fixed_len_string_atom = OneOrMore(nonbf_string) | OneOrMore(b_string)
+    fixed_len_string_tokens = OneOrMore(nonbf_string) | OneOrMore(b_string)
+    f_string_atom = Forward()
+    f_string_atom_ref = ZeroOrMore(nonbf_string) + f_string + ZeroOrMore(nonb_string)
 
     keyword_atom = any_keyword_in(const_vars)
     passthrough_atom = trace(addspace(OneOrMore(passthrough_item)))
@@ -1568,11 +1570,12 @@ class Grammar(object):
 
     interior_name_match = labeled_group(name, "var")
     match_string = interleaved_tokenlist(
-        fixed_len_string_atom("string"),
+        # f_string_atom must come first
+        f_string_atom("f_string") | fixed_len_string_tokens("string"),
         interior_name_match("capture"),
         plus,
         at_least_two=True,
-    )("string")
+    )("string_sequence")
     sequence_match = interleaved_tokenlist(
         (match_list | match_tuple)("literal"),
         interior_name_match("capture"),

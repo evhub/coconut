@@ -44,8 +44,8 @@ from coconut.util import (
 # ----------------------------------------------------------------------------------------------------------------------
 
 
-class CoconutException(Exception, pickleable_obj):
-    """Base Coconut exception."""
+class BaseCoconutException(BaseException, pickleable_obj):
+    """Coconut BaseException."""
 
     def __init__(self, message, item=None, extra=None):
         """Creates the Coconut exception."""
@@ -79,6 +79,10 @@ class CoconutException(Exception, pickleable_obj):
         return self.__class__.__name__ + "(" + ", ".join(
             repr(arg) for arg in self.args if arg is not None
         ) + ")"
+
+
+class CoconutException(BaseCoconutException, Exception):
+    """Coconut Exception."""
 
 
 class CoconutSyntaxError(CoconutException):

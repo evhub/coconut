@@ -37,7 +37,10 @@ from coconut.terminal import (
     complain,
     internal_assert,
 )
-from coconut.exceptions import CoconutException
+from coconut.exceptions import (
+    CoconutException,
+    BaseCoconutException,
+)
 from coconut.util import (
     pickleable_obj,
     get_encoding,
@@ -208,7 +211,7 @@ def handling_broken_process_pool():
             yield
         except BrokenProcessPool:
             logger.log_exc()
-            raise KeyboardInterrupt("broken process pool")
+            raise BaseCoconutException("broken process pool")
 
 
 def kill_children():

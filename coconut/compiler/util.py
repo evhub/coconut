@@ -1166,3 +1166,17 @@ def normalize_indent_markers(lines):
             new_lines[j] += indent
             new_lines[i] = line
     return new_lines
+
+
+def add_int_and_strs(int_part=0, str_parts=(), parens=False):
+    """Get an int/str that adds the int part and str parts."""
+    if not str_parts:
+        return int_part
+    if int_part:
+        str_parts.append(str(int_part))
+    if len(str_parts) == 1:
+        return str_parts[0]
+    out = " + ".join(str_parts)
+    if parens:
+        out = "(" + out + ")"
+    return out

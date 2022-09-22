@@ -44,6 +44,7 @@ from coconut.constants import (
 from coconut.compiler.util import (
     paren_join,
     handle_indentation,
+    add_int_and_strs,
 )
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -107,7 +108,7 @@ class Matcher(object):
         "implicit_tuple": lambda self: self.match_implicit_tuple,
         "lazy": lambda self: self.match_lazy,
         "iter": lambda self: self.match_iter,
-        "string": lambda self: self.match_string,
+        "string_sequence": lambda self: self.match_string_sequence,
         "star": lambda self: self.match_star,
         "const": lambda self: self.match_const,
         "is": lambda self: self.match_is,
@@ -538,6 +539,16 @@ class Matcher(object):
                 else:
                     str_item = self.comp.eval_now(" ".join(group))
                 group_contents = (str_item, len(self.comp.literal_eval(str_item)))
+            elif "f_string" in group:
+                group_type = "f_string"
+                # f strings are always unicode
+                if seq_type is None:
+                    seq_type = '"'
+                elif seq_type != '"':
+                    raise CoconutDeferredSyntaxError("string literals and byte literals cannot be mixed in string patterns", self.loc)
+                internal_assert(len(group) == 1, "invalid f string sequence match group", group)
+                str_item = group[0]
+                group_contents = (str_item, "_coconut.len(" + str_item + ")")
             else:
                 raise CoconutInternalException("invalid sequence match group", group)
             seq_groups.append((group_type, group_contents))
@@ -547,23 +558,29 @@ class Matcher(object):
         """Handle a processed sequence match."""
         # length check
         if not iter_match:
-            min_len = 0
+            min_len_int = 0
+            min_len_strs = []
             bounded = True
             for gtype, gcontents in seq_groups:
                 if gtype == "capture":
                     bounded = False
                 elif gtype == "elem_matches":
-                    min_len += len(gcontents)
+                    min_len_int += len(gcontents)
                 elif gtype == "string":
                     str_item, str_len = gcontents
-                    min_len += str_len
+                    min_len_int += str_len
+                elif gtype == "f_string":
+                    str_item, str_len = gcontents
+                    min_len_strs.append(str_len)
                 else:
                     raise CoconutInternalException("invalid sequence match group type", gtype)
+            min_len = add_int_and_strs(min_len_int, min_len_strs)
             max_len = min_len if bounded else None
             self.check_len_in(min_len, max_len, item)
 
         # match head
-        start_ind = 0
+        start_ind_int = 0
+        start_ind_strs = []
         iterable_var = None
         if seq_groups[0][0] == "elem_matches":
             _, matches = seq_groups.pop(0)
@@ -577,32 +594,45 @@ class Matcher(object):
                 with self.down_a_level():
                     self.add_check("_coconut.len(" + head_var + ") == " + str(len(matches)))
                     self.match_all_in(matches, head_var)
-            start_ind += len(matches)
+            start_ind_int += len(matches)
         elif seq_groups[0][0] == "string":
             internal_assert(not iter_match, "cannot be both string and iter match")
             _, (str_item, str_len) = seq_groups.pop(0)
             if str_len > 0:
                 self.add_check(item + ".startswith(" + str_item + ")")
-            start_ind += str_len
+            start_ind_int += str_len
+        elif seq_groups[0][0] == "f_string":
+            internal_assert(not iter_match, "cannot be both f string and iter match")
+            _, (str_item, str_len) = seq_groups.pop(0)
+            self.add_check(item + ".startswith(" + str_item + ")")
+            start_ind_strs.append(str_len)
         if not seq_groups:
             return
+        start_ind = add_int_and_strs(start_ind_int, start_ind_strs)
 
         # match tail
-        last_ind = -1
+        last_ind_int = -1
+        last_ind_strs = []
         if seq_groups[-1][0] == "elem_matches":
             internal_assert(not iter_match, "iter_match=True should not be passed for tail patterns")
             _, matches = seq_groups.pop()
             for i, match in enumerate(matches):
                 self.match(match, item + "[-" + str(len(matches) - i) + "]")
-            last_ind -= len(matches)
+            last_ind_int -= len(matches)
         elif seq_groups[-1][0] == "string":
             internal_assert(not iter_match, "cannot be both string and iter match")
             _, (str_item, str_len) = seq_groups.pop()
             if str_len > 0:
                 self.add_check(item + ".endswith(" + str_item + ")")
-            last_ind -= str_len
+            last_ind_int -= str_len
+        elif seq_groups[-1][0] == "f_string":
+            internal_assert(not iter_match, "cannot be both f string and iter match")
+            _, (str_item, str_len) = seq_groups.pop()
+            self.add_check(item + ".endswith(" + str_item + ")")
+            last_ind_strs.append("-" + str_len)
         if not seq_groups:
             return
+        last_ind = add_int_and_strs(last_ind_int, last_ind_strs)
 
         # we need to go down a level to ensure we're below 'match head' above
         with self.down_a_level():
@@ -613,7 +643,7 @@ class Matcher(object):
 
                 # make middle by indexing into item
                 start_ind_str = "" if start_ind == 0 else str(start_ind)
-                last_ind_str = "" if last_ind == -1 else str(last_ind + 1)
+                last_ind_str = "" if last_ind == -1 else str(last_ind + 1) if isinstance(last_ind, int) else last_ind + " + 1"
                 if start_ind_str or last_ind_str:
                     mid_item = item + "[" + start_ind_str + ":" + last_ind_str + "]"
                     cache_mid_item = True
@@ -739,7 +769,7 @@ class Matcher(object):
                             parameterized_child.match(front_match, front_item)
                             parameterized_child.match(back_match, back_item)
 
-                    elif mid_gtype == "string":
+                    elif mid_gtype in ("string", "f_string"):
                         str_item, str_len = mid_contents
                         found_loc = self.get_temp_var()
                         self.add_def(found_loc + " = " + mid_item + ".find(" + str_item + ")")
@@ -812,7 +842,7 @@ class Matcher(object):
         with self.down_a_level():
             self.handle_sequence(None, seq_groups, temp_item_var)
 
-    def match_string(self, tokens, item):
+    def match_string_sequence(self, tokens, item):
         """Match string sequence patterns."""
         seq_type, seq_groups = self.proc_sequence_match(tokens)
 

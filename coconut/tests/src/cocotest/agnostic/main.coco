@@ -1050,7 +1050,9 @@ def main_test() -> bool:
     assert init == (1, 2)
     assert "a\"z""a"'"'"z" == 'a"za"z'
     assert b"ab" b"cd" == b"abcd" == rb"ab" br"cd"
+    "a" + "c" = "ac"
     b"a" + b"c" = b"ac"
+    "a" "c" = "ac"
     b"a" b"c" = b"ac"
     (1, *xs, 4) = (|1, 2, 3, 4|)
     assert xs == [2, 3]
@@ -1148,6 +1150,13 @@ def main_test() -> bool:
     ]) |> list == [(1, 2, 10), (3, 4, 10)]
     assert f"{'a' + 'b'}" == "ab"
     int_str_tup: (int; str) = (1, "a")
+    key = "abc"
+    f"{key}: " + value = "abc: xyz"
+    assert value == "xyz"
+    f"{key}" ": " + value = "abc: 123"
+    assert value == "123"
+    "{" f"{key}" ": " + value + "}" = "{abc: aaa}"
+    assert value == "aaa"
     return True
 
 def test_asyncio() -> bool:
