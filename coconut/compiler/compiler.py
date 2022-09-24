@@ -1248,7 +1248,7 @@ class Compiler(Grammar, pickleable_obj):
             if self.minify:
                 comment = str(ln)
             else:
-                comment = str(ln) + " (line num in coconut source)"
+                comment = str(ln) + " (line in Coconut source)"
         else:
             return ""
 

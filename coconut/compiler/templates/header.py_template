@@ -1208,7 +1208,7 @@ def _coconut_mk_anon_namedtuple(fields, types=None, of_kwargs=None):
         return NT
     return NT(**of_kwargs)
 def _coconut_ndim(arr):
-    if arr.__class__.__module__ in _coconut.numpy_modules and _coconut.isinstance(arr, _coconut.numpy.ndarray):
+    if (arr.__class__.__module__ in _coconut.numpy_modules or _coconut.hasattr(arr.__class__, "__matconcat__")) and _coconut.hasattr(arr, "ndim"):
         return arr.ndim
     if not _coconut.isinstance(arr, _coconut.abc.Sequence):
         return 0
@@ -1223,14 +1223,22 @@ def _coconut_ndim(arr):
         inner_arr = inner_arr[0]
     return arr_dim
 def _coconut_expand_arr(arr, new_dims):
-    if arr.__class__.__module__ in _coconut.numpy_modules and _coconut.isinstance(arr, _coconut.numpy.ndarray):
+    if (arr.__class__.__module__ in _coconut.numpy_modules or _coconut.hasattr(arr.__class__, "__matconcat__")) and _coconut.hasattr(arr, "reshape"):
         return arr.reshape((1,) * new_dims + arr.shape)
     for _ in _coconut.range(new_dims):
         arr = [arr]
     return arr
 def _coconut_concatenate(arrs, axis):
-    if _coconut.any(a.__class__.__module__ in _coconut.numpy_modules for a in arrs):
-        return _coconut.numpy.concatenate(arrs, axis)
+    matconcat = None
+    for a in arrs:
+        if a.__class__.__module__ in _coconut.numpy_modules:
+            matconcat = _coconut.numpy.concatenate
+            break
+        if _coconut.hasattr(a.__class__, "__matconcat__"):
+            matconcat = a.__class__.__matconcat__
+            break
+    if matconcat is not None:
+        return matconcat(arrs, axis)
     if not axis:
         return _coconut.list(_coconut.itertools.chain.from_iterable(arrs))
     return [_coconut_concatenate(rows, axis - 1) for rows in _coconut.zip(*arrs)]

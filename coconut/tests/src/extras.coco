@@ -174,7 +174,7 @@ def test_convenience() -> bool:
     assert_raises(-> cmd("-n . ."), SystemExit)
 
     setup(line_numbers=True)
-    assert parse("abc", "lenient") == "abc  #1 (line num in coconut source)"
+    assert parse("abc", "lenient") == "abc  #1 (line in Coconut source)"
     setup(keep_lines=True)
     assert parse("abc", "lenient") == "abc  # abc"
     setup(line_numbers=True, keep_lines=True)

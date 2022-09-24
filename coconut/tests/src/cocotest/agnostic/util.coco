@@ -109,7 +109,8 @@ plus1sqsum_all_ = sum <.. square_all <*.. plus1_all
 min_and_max = min `lift(,)` max
 
 # Basic Functions:
-product = reduce$(*)
+product = reduce$((*), ?, 1)
+product_ = reduce$(*)
 def zipwith(f, *args) = map((items) -> f(*items), zip(*args))
 def zipwith_(f, *args) = starmap$(f)..zip <*| args
 zipsum = zip ..> map$(sum)
@@ -1523,3 +1524,58 @@ match def is_complex_tree(
     )
 ) = True
 addpattern def is_complex_tree(_) = False  # type: ignore
+
+
+# Custom multidim arrs
+def zeros(shape):
+    if not shape:
+        return 0
+    arr = []
+    for _ in range(shape[0]):
+        arr.append(zeros(shape[1:]))
+    return arr
+
+def indices(shape):
+    if not shape:
+        return [()]
+    inds = []
+    for i in range(shape[0]):
+        for ind in indices(shape[1:]):
+            inds.append((i,) + ind)
+    return inds
+
+def getind(arr, ind):
+    if not ind:
+        return arr
+    return getind(arr[ind[0]], ind[1:])
+
+def setind(arr, ind, val):
+    if not ind:
+        return val
+    arr[ind[0]] = setind(arr[ind[0]], ind[1:], val)
+    return arr
+
+data Arr(shape, arr):
+    @property  # type: ignore
+    def ndim(self) = len(self.shape)
+    def reshape(self, new_shape):
+        assert product(self.shape) == product(new_shape), (self.shape, new_shape)
+        new_arr = zeros(new_shape)
+        for old_ind, new_ind in zip(indices(self.shape), indices(new_shape), strict=True):
+            setind(new_arr, new_ind, getind(self.arr, old_ind))
+        return self.__class__(new_shape, new_arr)
+    @classmethod
+    def __matconcat__(cls, arrs, axis):
+        assert all(arr.shape[:axis] + arr.shape[axis:] == arrs[0].shape[:axis] + arrs[0].shape[axis:] for arr in arrs), (arrs, axis)
+        new_shape = arrs[0].shape[:axis] + (sum(arr.shape[axis] for arr in arrs),) + arrs[0].shape[axis+1:]
+        new_arr = zeros(new_shape)
+        for i, arr in enumerate(arrs):
+            for ind in indices(arr.shape):
+                setind(
+                    new_arr,
+                    ind[:axis] + (
+                        ind[axis] + sum(arr.shape[axis] for arr in arrs[:i]),
+                    ) + ind[axis+1:],
+                    getind(arr.arr, ind),
+                )
+        return cls(new_shape, new_arr)
