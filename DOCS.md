@@ -971,7 +971,7 @@ base_pattern ::= (
   - Dicts (`{<key>: <value>, ...}`): will match any mapping (`collections.abc.Mapping`) with the given keys and values that match the value patterns. Keys must be constants or equality checks.
   - Dicts With Rest (`{<pairs>, **<rest>}`): will match a mapping (`collections.abc.Mapping`) containing all the `<pairs>`, and will put a `dict` of everything else into `<rest>`. If `<rest>` is `{}`, will enforce that the mapping is exactly the same length as `<pairs>`.
 - Sequence Destructuring:
-  - Lists (`[<patterns>]`), Tuples (`(<patterns>)`): will only match a sequence (`collections.abc.Sequence`) of the same length, and will check the contents against `<patterns>`.
+  - Lists (`[<patterns>]`), Tuples (`(<patterns>)`): will only match a sequence (`collections.abc.Sequence`) of the same length, and will check the contents against `<patterns>` (Coconut automatically registers `numpy` arrays and `collections.deque` objects as sequences).
   - Lazy lists (`(|<patterns>|)`): same as list or tuple matching, but checks for an Iterable (`collections.abc.Iterable`) instead of a Sequence.
   - Head-Tail Splits (`<list/tuple> + <var>` or `(<patterns>, *<var>)`): will match the beginning of the sequence against the `<list/tuple>`/`<patterns>`, then bind the rest to `<var>`, and make it the type of the construct used.
   - Init-Last Splits (`<var> + <list/tuple>` or `(*<var>, <patterns>)`): exactly the same as head-tail splits, but on the end instead of the beginning of the sequence.
@@ -2807,7 +2807,7 @@ In functional programming, `fmap(func, obj)` takes a data type `obj` and returns
 
 For `dict`, or any other `collections.abc.Mapping`, `fmap` will map over the mapping's `.items()` instead of the default iteration through its `.keys()`, with the new mapping reconstructed from the mapped over items. Additionally, for backwards compatibility with old versions of Coconut, `fmap$(starmap_over_mappings=True)` will `starmap` over the `.items()` instead of `map` over them.
 
-For [`numpy`](http://www.numpy.org/) and [`pandas`](https://pandas.pydata.org/) objects, `fmap` will use [`np.vectorize`](https://docs.scipy.org/doc/numpy/reference/generated/numpy.vectorize.html) to produce the result.
+For [`numpy`](http://www.numpy.org/), [`pandas`](https://pandas.pydata.org/), and [`jax.numpy`](https://jax.readthedocs.io/en/latest/jax.numpy.html) objects, `fmap` will use [`np.vectorize`](https://docs.scipy.org/doc/numpy/reference/generated/numpy.vectorize.html) to produce the result.
 
 For asynchronous iterables, `fmap` will map asynchronously, making `fmap` equivalent in that case to:
 ```coconut_python

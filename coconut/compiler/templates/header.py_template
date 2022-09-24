@@ -28,6 +28,7 @@ def _coconut_super(type=None, object_or_type=None):
         numpy = you_need_to_install_numpy()
     else:
         abc.Sequence.register(numpy.ndarray)
+    numpy_modules = {numpy_modules}
     abc.Sequence.register(collections.deque)
     Ellipsis, NotImplemented, NotImplementedError, Exception, AttributeError, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, RuntimeError, all, any, bytes, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, locals, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, type, vars, zip, repr, print{comma_bytearray} = Ellipsis, NotImplemented, NotImplementedError, Exception, AttributeError, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, RuntimeError, all, any, bytes, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, locals, map, min, max, next, object, property, range, reversed, set, slice, str, sum, {lstatic}super{rstatic}, tuple, type, vars, zip, {lstatic}repr{rstatic}, {lstatic}print{rstatic}{comma_bytearray}
 class _coconut_sentinel{object}: pass
@@ -1010,7 +1011,7 @@ def fmap(func, obj, **kwargs):
         else:
             if result is not _coconut.NotImplemented:
                 return result
-    if obj.__class__.__module__ in {numpy_modules}:
+    if obj.__class__.__module__ in _coconut.numpy_modules:
         return _coconut.numpy.vectorize(func)(obj)
     if _coconut.hasattr(obj, "__aiter__") and _coconut_amap is not None:
         return _coconut_amap(func, obj)
@@ -1207,7 +1208,7 @@ def _coconut_mk_anon_namedtuple(fields, types=None, of_kwargs=None):
         return NT
     return NT(**of_kwargs)
 def _coconut_ndim(arr):
-    if arr.__class__.__module__ in {numpy_modules} and _coconut.isinstance(arr, _coconut.numpy.ndarray):
+    if arr.__class__.__module__ in _coconut.numpy_modules and _coconut.isinstance(arr, _coconut.numpy.ndarray):
         return arr.ndim
     if not _coconut.isinstance(arr, _coconut.abc.Sequence):
         return 0
@@ -1222,13 +1223,13 @@ def _coconut_ndim(arr):
         inner_arr = inner_arr[0]
     return arr_dim
 def _coconut_expand_arr(arr, new_dims):
-    if arr.__class__.__module__ in {numpy_modules} and _coconut.isinstance(arr, _coconut.numpy.ndarray):
+    if arr.__class__.__module__ in _coconut.numpy_modules and _coconut.isinstance(arr, _coconut.numpy.ndarray):
         return arr.reshape((1,) * new_dims + arr.shape)
     for _ in _coconut.range(new_dims):
         arr = [arr]
     return arr
 def _coconut_concatenate(arrs, axis):
-    if _coconut.any(a.__class__.__module__ in {numpy_modules} for a in arrs):
+    if _coconut.any(a.__class__.__module__ in _coconut.numpy_modules for a in arrs):
         return _coconut.numpy.concatenate(arrs, axis)
     if not axis:
         return _coconut.list(_coconut.itertools.chain.from_iterable(arrs))

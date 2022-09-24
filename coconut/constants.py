@@ -126,6 +126,7 @@ if sys.getrecursionlimit() < default_recursion_limit:
 numpy_modules = (
     "numpy",
     "pandas",
+    "jaxlib.xla_extension",
 )
 
 legal_indent_chars = " \t"  # the only Python-legal indent chars
