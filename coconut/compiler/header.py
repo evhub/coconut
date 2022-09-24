@@ -417,13 +417,17 @@ def __anext__(self):
             pycondition(
                 (3, 5),
                 if_ge=r'''
-_coconut_exec("async def __anext__(self): return self.func(await self.aiter.__anext__())")
+_coconut_anext_ns = {}
+_coconut_exec("""async def __anext__(self):
+    return self.func(await self.aiter.__anext__())""", _coconut_anext_ns)
+__anext__ = _coconut_anext_ns["__anext__"]
                 ''',
                 if_lt=r'''
-_coconut_exec("""@_coconut.asyncio.coroutine
-def __anext__(self):
+_coconut_anext_ns = {}
+_coconut_exec("""def __anext__(self):
     result = yield from self.aiter.__anext__()
-    return self.func(result)""")
+    return self.func(result)""", _coconut_anext_ns)
+__anext__ = _coconut.asyncio.coroutine(_coconut_anext_ns["__anext__"])
                 ''',
             ),
             by=1,
