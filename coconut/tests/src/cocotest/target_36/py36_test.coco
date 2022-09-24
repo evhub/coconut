@@ -1,9 +1,11 @@
-import asyncio
+import asyncio, typing
 
 def py36_test() -> bool:
     """Performs Python-3.6-specific tests."""
     assert f"{[] |> len}" == "0"
     assert (a=1, b=2) == _namedtuple_of(a=1, b=2) == (1, 2)  # type: ignore
+
+    loop = asyncio.new_event_loop()
 
     async def ayield(x) = x
     async def arange(n):
@@ -29,9 +31,24 @@ def py36_test() -> bool:
         assert got == range(5) |> list
 
         return True
-
-    loop = asyncio.new_event_loop()
     loop.run_until_complete(afor_test())
+
+    async yield def toa(it):
+        for x in it:
+            yield x
+    match yield async def arange_(int(n)):
+        for x in range(n):
+            yield x
+    async def aconsume(ait):
+        async for _ in ait:
+            pass
+    l: typing.List[int] = []
+    async def aiter_test():
+        await (range(10) |> toa |> fmap$(l.append) |> aconsume)
+        await (arange_(10) |> fmap$(l.append) |> aconsume)
+    loop.run_until_complete(aiter_test())
+    assert l == list(range(10)) + list(range(10))
+
     loop.close()
 
     return True
