@@ -114,8 +114,11 @@ def get_reqs(which):
                     elif PY2:
                         use_req = False
                         break
-                elif mark.startswith("py3"):
-                    ver = mark[len("py3"):]
+                elif mark.startswith("py3") or mark.startswith("py>=3"):
+                    mark = mark[len("py"):]
+                    if mark.startswith(">="):
+                        mark = mark[len(">="):]
+                    ver = mark[len("3"):]
                     if supports_env_markers:
                         markers.append("python_version>='3.{ver}'".format(ver=ver))
                     elif sys.version_info < (3, ver):

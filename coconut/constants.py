@@ -79,7 +79,7 @@ IPY = (
     and not PY310
 )
 MYPY = (
-    PY34
+    PY36
     and not WINDOWS
     and not PYPY
 )
@@ -704,6 +704,7 @@ min_versions = {
     "sphinx": (5, 1),
     "pydata-sphinx-theme": (0, 10),
     "myst-parser": (0, 18),
+    "mypy[python2]": (0, 971),
 
     # pinned reqs: (must be added to pinned_reqs below)
 
@@ -712,7 +713,6 @@ min_versions = {
     # latest version supported on Python 2
     ("jupyter-client", "py2"): (5, 3),
     # don't upgrade these; they break on Python 3.5
-    "mypy[python2]": (0, 910),
     ("ipykernel", "py3"): (5, 5),
     ("ipython", "py3"): (7, 9),
     ("jupyter-console", "py3"): (6, 1),
@@ -746,7 +746,6 @@ min_versions = {
 pinned_reqs = (
     ("jupyter-client", "py3"),
     ("jupyter-client", "py2"),
-    "mypy[python2]",
     ("ipykernel", "py3"),
     ("ipython", "py3"),
     ("jupyter-console", "py3"),
@@ -785,7 +784,6 @@ max_versions = {
 allowed_constrained_but_unpinned_reqs = (
     "cPyparsing",
 )
-assert set(max_versions) <= set(pinned_reqs) | set(allowed_constrained_but_unpinned_reqs), "found unlisted constrained but unpinned requirements"
 
 classifiers = (
     "Development Status :: 5 - Production/Stable",

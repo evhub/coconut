@@ -32,6 +32,9 @@ def assert_raises(c, exc=Exception):
     else:
         raise AssertionError(f"{c} failed to raise exception {exc}")
 
+# Old functions:
+old_fmap = fmap$(starmap_over_mappings=True)
+
 # Infix Functions:
 plus = (+)
 mod: (int, int) -> int = (%)

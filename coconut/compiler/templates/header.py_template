@@ -990,11 +990,14 @@ def makedata(data_type, *args):
     return data_type(args)
 {def_datamaker}
 {class_amap}
-def fmap(func, obj):
+def fmap(func, obj, **kwargs):
     """fmap(func, obj) creates a copy of obj with func applied to its contents.
 
     Override by defining obj.__fmap__(func). For numpy arrays, uses np.vectorize.
     """
+    starmap_over_mappings = kwargs.pop("starmap_over_mappings", False)
+    if kwargs:
+        raise _coconut.TypeError("fmap() got unexpected keyword arguments " + _coconut.repr(kwargs))
     obj_fmap = _coconut.getattr(obj, "__fmap__", None)
     if obj_fmap is not None:
         try:
@@ -1008,7 +1011,10 @@ def fmap(func, obj):
         return _coconut.numpy.vectorize(func)(obj)
     if _coconut.hasattr(obj, "__aiter__") and _coconut_amap is not None:
         return _coconut_amap(func, obj)
-    return _coconut_makedata(obj.__class__, *(_coconut_starmap(func, obj.items()) if _coconut.isinstance(obj, _coconut.abc.Mapping) else _coconut_map(func, obj)))
+    if starmap_over_mappings:
+        return _coconut_makedata(obj.__class__, *(_coconut_starmap(func, obj.items()) if _coconut.isinstance(obj, _coconut.abc.Mapping) else _coconut_map(func, obj)))
+    else:
+        return _coconut_makedata(obj.__class__, *_coconut_map(func, obj.items() if _coconut.isinstance(obj, _coconut.abc.Mapping) else obj))
 def memoize(maxsize=None, *args, **kwargs):
     """Decorator that memoizes a function, preventing it from being recomputed
     if it is called multiple times with the same arguments."""

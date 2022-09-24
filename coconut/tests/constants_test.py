@@ -107,6 +107,10 @@ class TestConstants(unittest.TestCase):
             else:
                 assert is_importable(old_imp), "Failed to import " + old_imp
 
+    def test_reqs(self):
+        assert set(constants.pinned_reqs) <= set(constants.min_versions), "found old pinned requirement"
+        assert set(constants.max_versions) <= set(constants.pinned_reqs) | set(constants.allowed_constrained_but_unpinned_reqs), "found unlisted constrained but unpinned requirements"
+
 
 # -----------------------------------------------------------------------------------------------------------------------
 # MAIN:

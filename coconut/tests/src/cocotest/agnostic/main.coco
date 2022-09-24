@@ -354,10 +354,9 @@ def main_test() -> bool:
     assert [1, 2, 3] |> fmap$(x -> x+1) == [2, 3, 4]
     assert (1, 2, 3) |> fmap$(x -> x+1) == (2, 3, 4)
     assert "abc" |> fmap$(x -> x+"!") == "a!b!c!"
-    assert {1:"2", 2:"3"} |> fmap$((k, v) -> (k+1, v+"!")) == {2:"2!", 3:"3!"}  # type: ignore
-    assert {1, 2, 3} |> fmap$(-> _+1) == {2, 3, 4}  # type: ignore
+    assert {1, 2, 3} |> fmap$(-> _+1) == {2, 3, 4}
     assert [[1, 2, 3]] |> fmap$((+)$([0])) == [[0, 1, 2, 3]]
-    assert range(3) |> fmap$(-> _+1) |> tuple == (1, 2, 3) == (|0, 1, 2|) |> iter |> fmap$(-> _+1) |> tuple  # type: ignore
+    assert range(3) |> fmap$(-> _+1) |> tuple == (1, 2, 3) == (|0, 1, 2|) |> iter |> fmap$(-> _+1) |> tuple
     assert issubclass(int, py_int)
     class pyobjsub(py_object)
     class objsub(\(object))
@@ -445,7 +444,7 @@ def main_test() -> bool:
     a: int[]? = None  # type: ignore
     assert a is None
     assert range(5) |> iter |> reiterable |> .[1] == 1
-    assert range(5) |> reiterable |> fmap$(-> _ + 1) |> list == [1, 2, 3, 4, 5]  # type: ignore
+    assert range(5) |> reiterable |> fmap$(-> _ + 1) |> list == [1, 2, 3, 4, 5]
 
     a: Iterable[int] = [1] :: [2] :: [3]  # type: ignore
     a = a |> reiterable

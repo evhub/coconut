@@ -345,7 +345,7 @@ def suite_test() -> bool:
     assert Nothing() |> map$(-> _*2) |*> Nothing == Nothing() == Nothing() |> fmap$(-> _*2)  # type: ignore
     assert Elems(1, 2, 3) != Elems(1, 2)
     assert map(plus1, (1, 2, 3)) |> fmap$(times2) |> repr == map(times2..plus1, (1, 2, 3)) |> repr
-    assert reversed((1, 2, 3)) |> fmap$(plus1) |> repr == map(plus1, (1, 2, 3)) |> reversed |> repr  # type: ignore
+    assert reversed((1, 2, 3)) |> fmap$(plus1) |> repr == map(plus1, (1, 2, 3)) |> reversed |> repr
     assert identity[1:2, 2:3] == (slice(1, 2), slice(2, 3))
     assert identity |> .[1:2, 2:3] == (slice(1, 2), slice(2, 3))
     assert (.[1:2, 2:3])(identity) == (slice(1, 2), slice(2, 3))
@@ -908,6 +908,8 @@ forward 2""") == 900
     assert ret_args_kwargs$(?, x=?, y=?)(1, 2, 3) == ((1,), {"x": 2, "y": 3})
     assert ret_args_kwargs$(x=?)(1, y=2) == ((), {"x": 1, "y": 2})
     assert ret_args_kwargs$(1, x=?)(2) == ((1,), {"x": 2})
+    assert {1:"2", 2:"3"} |> old_fmap$((k, v) -> (k+1, v+"!")) == {2:"2!", 3:"3!"}
+    assert {1:"2", 2:"3"} |> fmap$(def ((k, v)) -> (k+1, v+"!")) == {2:"2!", 3:"3!"}
 
     # must come at end
     assert fibs_calls[0] == 1
