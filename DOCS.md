@@ -2799,7 +2799,14 @@ In functional programming, `fmap(func, obj)` takes a data type `obj` and returns
 
 For `dict`, or any other `collections.abc.Mapping`, `fmap` will `starmap` over the mapping's `.items()` instead of the default iteration through its `.keys()`.
 
-As an additional special case, for [`numpy`](http://www.numpy.org/) and [`pandas`](https://pandas.pydata.org/) objects, `fmap` will use [`np.vectorize`](https://docs.scipy.org/doc/numpy/reference/generated/numpy.vectorize.html) to produce the result.
+For [`numpy`](http://www.numpy.org/) and [`pandas`](https://pandas.pydata.org/) objects, `fmap` will use [`np.vectorize`](https://docs.scipy.org/doc/numpy/reference/generated/numpy.vectorize.html) to produce the result.
+
+For asynchronous iterables, `fmap` will map asynchronously, making `fmap` equivalent in that case to:
+```coconut_python
+async def fmap_over_async_iters(func, async_iter):
+    async for item in async_iter:
+        yield func(item)
+```
 
 ##### Example
 

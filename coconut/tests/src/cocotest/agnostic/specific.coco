@@ -84,7 +84,20 @@ def py36_spec_test(tco: bool) -> bool:
 
 def py37_spec_test() -> bool:
     """Tests for any py37+ version."""
+    import asyncio, typing
     assert py_breakpoint
+    ns: typing.Dict[str, typing.Any] = {}
+    exec("""async def toa(it):
+    for x in it:
+        yield x""", ns)
+    toa = ns["toa"]
+    exec("""async def aconsume(it):
+    async for x in it:
+        pass""", ns)
+    aconsume = ns["aconsume"]
+    l: typing.List[int] = []
+    range(10) |> toa |> fmap$(l.append) |> aconsume |> asyncio.run
+    assert l == list(range(10))
     return True
 
 

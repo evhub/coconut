@@ -26,7 +26,7 @@ import sys as _coconut_sys
 VERSION = "2.0.0"
 VERSION_NAME = "How Not to Be Seen"
 # False for release, int >= 1 for develop
-DEVELOP = 61
+DEVELOP = 62
 ALPHA = True
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -34,11 +34,11 @@ ALPHA = True
 # -----------------------------------------------------------------------------------------------------------------------
 
 
-def _indent(code, by=1, tabsize=4, newline=False):
+def _indent(code, by=1, tabsize=4, newline=False, strip=False):
     """Indents every nonempty line of the given code."""
     return "".join(
         (" " * (tabsize * by) if line.strip() else "") + line
-        for line in code.splitlines(True)
+        for line in (code.strip() if strip else code).splitlines(True)
     ) + ("\n" if newline else "")
 
 

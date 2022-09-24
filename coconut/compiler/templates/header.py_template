@@ -989,6 +989,7 @@ def makedata(data_type, *args):
         return "".join(args)
     return data_type(args)
 {def_datamaker}
+{class_amap}
 def fmap(func, obj):
     """fmap(func, obj) creates a copy of obj with func applied to its contents.
 
@@ -1005,6 +1006,8 @@ def fmap(func, obj):
                 return result
     if obj.__class__.__module__ in {numpy_modules}:
         return _coconut.numpy.vectorize(func)(obj)
+    if _coconut.hasattr(obj, "__aiter__") and _coconut_amap is not None:
+        return _coconut_amap(func, obj)
     return _coconut_makedata(obj.__class__, *(_coconut_starmap(func, obj.items()) if _coconut.isinstance(obj, _coconut.abc.Mapping) else _coconut_map(func, obj)))
 def memoize(maxsize=None, *args, **kwargs):
     """Decorator that memoizes a function, preventing it from being recomputed

@@ -241,19 +241,26 @@ import collections.abc as abc
         lstatic="staticmethod(" if target_startswith != "3" else "",
         rstatic=")" if target_startswith != "3" else "",
         zip_iter=_indent(
-            r'''for items in _coconut.iter(_coconut.zip(*self.iters, strict=self.strict) if _coconut_sys.version_info >= (3, 10) else _coconut.zip_longest(*self.iters, fillvalue=_coconut_sentinel) if self.strict else _coconut.zip(*self.iters)):
+            r'''
+for items in _coconut.iter(_coconut.zip(*self.iters, strict=self.strict) if _coconut_sys.version_info >= (3, 10) else _coconut.zip_longest(*self.iters, fillvalue=_coconut_sentinel) if self.strict else _coconut.zip(*self.iters)):
     if self.strict and _coconut_sys.version_info < (3, 10) and _coconut.any(x is _coconut_sentinel for x in items):
         raise _coconut.ValueError("zip(..., strict=True) arguments have mismatched lengths")
-    yield items'''
+    yield items
+            '''
             if not target else
-            r'''for items in _coconut.iter(_coconut.zip(*self.iters, strict=self.strict)):
-    yield items'''
+            r'''
+for items in _coconut.iter(_coconut.zip(*self.iters, strict=self.strict)):
+    yield items
+            '''
             if target_info >= (3, 10) else
-            r'''for items in _coconut.iter(_coconut.zip_longest(*self.iters, fillvalue=_coconut_sentinel) if self.strict else _coconut.zip(*self.iters)):
+            r'''
+for items in _coconut.iter(_coconut.zip_longest(*self.iters, fillvalue=_coconut_sentinel) if self.strict else _coconut.zip(*self.iters)):
     if self.strict and _coconut.any(x is _coconut_sentinel for x in items):
         raise _coconut.ValueError("zip(..., strict=True) arguments have mismatched lengths")
-    yield items''',
+    yield items
+            ''',
             by=2,
+            strip=True,
         ),
         # disabled mocks must have different docstrings so the
         #  interpreter can tell them apart from the real thing
@@ -356,7 +363,7 @@ raise _coconut.RuntimeError("_namedtuple_of is not available on Python < 3.6 (us
         def_coconut_matmul=pycondition(
             (3, 5),
             if_ge=r'''_coconut_matmul = _coconut.operator.matmul''',
-            if_lt='''
+            if_lt=r'''
 def _coconut_matmul(a, b, **kwargs):
     """Matrix multiplication operator (@). Implements operator.matmul on any Python version."""
     in_place = kwargs.pop("in_place", False)
@@ -396,6 +403,26 @@ def _coconut_matmul(a, b, **kwargs):
         tco_comma="_coconut_tail_call, _coconut_tco, " if not no_tco else "",
         call_set_names_comma="_coconut_call_set_names, " if target_info < (3, 6) else "",
         handle_cls_args_comma="_coconut_handle_cls_kwargs, _coconut_handle_cls_stargs, " if target_startswith != "3" else "",
+        async_def_anext=_indent(
+            r'''
+async def __anext__(self):
+    return self.func(await self.aiter.__anext__())
+            ''' if target_info >= (3, 5) else
+            pycondition(
+                (3, 5),
+                if_ge=r'''
+_coconut_exec("async def __anext__(self): return self.func(await self.aiter.__anext__())")
+                ''',
+                if_lt=r'''
+@_coconut.asyncio.coroutine
+def __anext__(self):
+    result = yield from self.aiter.__anext__()
+    return self.func(result)
+                ''',
+            ),
+            by=1,
+            strip=True,
+        ),
     )
 
     # second round for format dict elements that use the format dict
@@ -429,6 +456,24 @@ except ImportError:
 import asyncio
             ''',
                 indent=1,
+            ),
+            class_amap=pycondition(
+                (3, 3),
+                if_lt=r'''
+_coconut_amap = None
+                ''',
+                if_ge=r'''
+class _coconut_amap(_coconut_base_hashable):
+    __slots__ = ("func", "aiter")
+    def __init__(self, func, aiter):
+        self.func = func
+        self.aiter = aiter.__aiter__()
+    def __reduce__(self):
+        return (self.__class__, (self.func, self.aiter))
+    def __aiter__(self):
+        return self
+{async_def_anext}
+                '''.format(**format_dict),
             ),
             maybe_bind_lru_cache=pycondition(
                 (3, 2),
