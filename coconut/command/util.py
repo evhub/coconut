@@ -347,6 +347,7 @@ def set_env_var(name, value):
 
 def set_mypy_path():
     """Put Coconut stubs in MYPYPATH."""
+    # mypy complains about the path if we don't use / over \
     install_dir = install_mypy_stubs().replace(os.sep, "/")
     original = os.getenv(mypy_path_env_var)
     if original is None:

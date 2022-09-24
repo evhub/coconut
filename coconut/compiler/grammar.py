@@ -1866,8 +1866,39 @@ class Grammar(object):
             ) + (def_match_funcdef | math_match_funcdef),
         ),
     )
+    async_yield_funcdef = attach(
+        trace(
+            any_len_perm(
+                # makes both required
+                (1, async_kwd.suppress()),
+                (2, keyword("yield").suppress()),
+            ) + (funcdef | math_funcdef),
+        ),
+        yield_funcdef_handle,
+    )
+    async_yield_match_funcdef = attach(
+        trace(
+            addspace(
+                any_len_perm(
+                    match_kwd.suppress(),
+                    # we don't suppress addpattern so its presence can be detected later
+                    addpattern_kwd,
+                    # makes both required
+                    (1, async_kwd.suppress()),
+                    (2, keyword("yield").suppress()),
+                ) + (def_match_funcdef | math_match_funcdef),
+            ),
+        ),
+        yield_funcdef_handle,
+    )
+    async_funcdef_stmt = (
+        async_funcdef
+        | async_match_funcdef
+        | async_yield_funcdef
+        | async_yield_match_funcdef
+    )
 
-    yield_normal_funcdef = keyword("yield").suppress() + funcdef
+    yield_normal_funcdef = keyword("yield").suppress() + (funcdef | math_funcdef)
     yield_match_funcdef = trace(
         addspace(
             any_len_perm(
@@ -1876,7 +1907,7 @@ class Grammar(object):
                 addpattern_kwd,
                 # makes yield required
                 (1, keyword("yield").suppress()),
-            ) + def_match_funcdef,
+            ) + (def_match_funcdef | math_match_funcdef),
         ),
     )
     yield_funcdef = attach(yield_normal_funcdef | yield_match_funcdef, yield_funcdef_handle)
@@ -1933,7 +1964,6 @@ class Grammar(object):
     decoratable_normal_funcdef_stmt_ref = Optional(decorators) + normal_funcdef_stmt
 
     decoratable_async_funcdef_stmt = Forward()
-    async_funcdef_stmt = async_funcdef | async_match_funcdef
     decoratable_async_funcdef_stmt_ref = Optional(decorators) + async_funcdef_stmt
 
     decoratable_func_stmt = decoratable_normal_funcdef_stmt | decoratable_async_funcdef_stmt

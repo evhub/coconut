@@ -1,0 +1,10 @@
+def py33_test() -> bool:
+    """Performs Python-3.3-specific tests."""
+    yield def f(x) = x
+    l = []
+    yield def g(x):
+        result = yield from f(x)
+        l.append(result)
+    assert g(10) |> list == []
+    assert l == [10]
+    return True

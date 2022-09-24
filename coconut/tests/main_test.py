@@ -463,18 +463,28 @@ def comp_3(args=[], **kwargs):
     comp(path="cocotest", folder="target_3", args=["--target", "3"] + args, **kwargs)
 
 
+def comp_33(args=[], **kwargs):
+    """Compiles target_33."""
+    comp(path="cocotest", folder="target_33", args=["--target", "33"] + args, **kwargs)
+
+
 def comp_35(args=[], **kwargs):
     """Compiles target_35."""
     comp(path="cocotest", folder="target_35", args=["--target", "35"] + args, **kwargs)
 
 
 def comp_36(args=[], **kwargs):
-    """Compiles target_35."""
+    """Compiles target_36."""
     comp(path="cocotest", folder="target_36", args=["--target", "36"] + args, **kwargs)
 
 
+def comp_37(args=[], **kwargs):
+    """Compiles target_37."""
+    comp(path="cocotest", folder="target_37", args=["--target", "37"] + args, **kwargs)
+
+
 def comp_38(args=[], **kwargs):
-    """Compiles target_35."""
+    """Compiles target_38."""
     comp(path="cocotest", folder="target_38", args=["--target", "38"] + args, **kwargs)
 
 
@@ -513,10 +523,14 @@ def run(args=[], agnostic_target=None, use_run_arg=False, convert_to_import=Fals
                 comp_2(args, **kwargs)
             else:
                 comp_3(args, **kwargs)
+                if sys.version_info >= (3, 3):
+                    comp_33(args, **kwargs)
                 if sys.version_info >= (3, 5):
                     comp_35(args, **kwargs)
                 if sys.version_info >= (3, 6):
                     comp_36(args, **kwargs)
+                if sys.version_info >= (3, 7):
+                    comp_37(args, **kwargs)
                 if sys.version_info >= (3, 8):
                     comp_38(args, **kwargs)
             comp_agnostic(agnostic_args, **kwargs)
@@ -556,8 +570,10 @@ def comp_all(args=[], agnostic_target=None, **kwargs):
 
     comp_2(args, **kwargs)
     comp_3(args, **kwargs)
+    comp_33(args, **kwargs)
     comp_35(args, **kwargs)
     comp_36(args, **kwargs)
+    comp_37(args, **kwargs)
     comp_38(args, **kwargs)
     comp_sys(args, **kwargs)
     comp_non_strict(args, **kwargs)
