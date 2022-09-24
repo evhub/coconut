@@ -809,6 +809,7 @@ class Grammar(object):
     dubstar_expr = Forward()
     comp_for = Forward()
     test_no_cond = Forward()
+    infix_op = Forward()
     namedexpr_test = Forward()
     # for namedexpr locations only supported in Python 3.10
     new_namedexpr_test = Forward()
@@ -902,9 +903,10 @@ class Grammar(object):
         | fixto(keyword("is"), "_coconut.operator.is_")
         | fixto(keyword("in"), "_coconut.operator.contains")
     )
+    partialable_op = base_op_item | infix_op
     partial_op_item = attach(
-        labeled_group(dot.suppress() + base_op_item + test, "right partial")
-        | labeled_group(test + base_op_item + dot.suppress(), "left partial"),
+        labeled_group(dot.suppress() + partialable_op + test, "right partial")
+        | labeled_group(test + partialable_op + dot.suppress(), "left partial"),
         partial_op_item_handle,
     )
     op_item = trace(partial_op_item | base_op_item)
@@ -1261,8 +1263,7 @@ class Grammar(object):
 
     lambdef = Forward()
 
-    infix_op = condense(backtick.suppress() + test_no_infix + backtick.suppress())
-
+    infix_op <<= backtick.suppress() + test_no_infix + backtick.suppress()
     infix_expr = Forward()
     infix_item = attach(
         Group(Optional(chain_expr))

@@ -910,6 +910,7 @@ forward 2""") == 900
     assert ret_args_kwargs$(1, x=?)(2) == ((1,), {"x": 2})
     assert {1:"2", 2:"3"} |> old_fmap$((k, v) -> (k+1, v+"!")) == {2:"2!", 3:"3!"}
     assert {1:"2", 2:"3"} |> fmap$(def ((k, v)) -> (k+1, v+"!")) == {2:"2!", 3:"3!"}
+    assert 2 |> (.`plus`3) == 5
 
     # must come at end
     assert fibs_calls[0] == 1

@@ -1504,6 +1504,13 @@ In addition, for every Coconut [operator function](#operator-functions), Coconut
 ```
 where `<op>` is the operator function and `<arg>` is any expression. Note that, as with operator functions themselves, the parentheses are necessary for this type of implicit partial application.
 
+Additionally, Coconut also supports implicit operator function partials for arbitrary functions as
+```
+(. `<name>` <arg>)
+(<arg> `<name>` .)
+```
+based on Coconut's [infix notation](#infix-functions) where `<name>` is the name of the function.
+
 ##### Example
 
 **Coconut:**
