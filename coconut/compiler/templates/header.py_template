@@ -992,8 +992,9 @@ def makedata(data_type, *args):
 {class_amap}
 def fmap(func, obj, **kwargs):
     """fmap(func, obj) creates a copy of obj with func applied to its contents.
+    Supports asynchronous iterables. For numpy arrays, uses np.vectorize.
 
-    Override by defining obj.__fmap__(func). For numpy arrays, uses np.vectorize.
+    Override by defining obj.__fmap__(func).
     """
     starmap_over_mappings = kwargs.pop("starmap_over_mappings", False)
     if kwargs:
