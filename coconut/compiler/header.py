@@ -408,16 +408,22 @@ def _coconut_matmul(a, b, **kwargs):
 async def __anext__(self):
     return self.func(await self.aiter.__anext__())
             ''' if target_info >= (3, 5) else
+            r'''
+@_coconut.asyncio.coroutine
+def __anext__(self):
+    result = yield from self.aiter.__anext__()
+    return self.func(result)
+            ''' if target_info >= (3, 3) else
             pycondition(
                 (3, 5),
                 if_ge=r'''
 _coconut_exec("async def __anext__(self): return self.func(await self.aiter.__anext__())")
                 ''',
                 if_lt=r'''
-@_coconut.asyncio.coroutine
+_coconut_exec("""@_coconut.asyncio.coroutine
 def __anext__(self):
     result = yield from self.aiter.__anext__()
-    return self.func(result)
+    return self.func(result)""")
                 ''',
             ),
             by=1,
