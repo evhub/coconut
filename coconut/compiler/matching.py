@@ -1098,15 +1098,17 @@ if _coconut.len({match_args_var}) < {num_pos_matches}:
         else:
             varname = "..."
         isinstance_checks_str = varname + " is " + " is ".join(isinstance_checks)
-        alt_syntax = " and ".join(varname + " `isinstance` " + is_item for is_item in isinstance_checks)
+        cls_syntax = " and ".join(instcheck + "(" + varname + ")" for instcheck in isinstance_checks)
+        explicit_syntax = " and ".join(varname + " `isinstance` " + instcheck for instcheck in isinstance_checks)
         self.comp.strict_err_or_warn(
-            "found deprecated isinstance-checking " + repr(isinstance_checks_str) + " pattern; use " + repr(alt_syntax) + " instead",
+            "found deprecated isinstance-checking " + repr(isinstance_checks_str) + " pattern;"
+            " rewrite to use class patterns (try " + repr(cls_syntax) + ") or explicit isinstance-checking (" + repr(explicit_syntax) + " should always work)",
             self.original,
             self.loc,
         )
 
-        for is_item in isinstance_checks:
-            self.add_check("_coconut.isinstance(" + item + ", " + is_item + ")")
+        for instcheck in isinstance_checks:
+            self.add_check("_coconut.isinstance(" + item + ", " + instcheck + ")")
         self.match(match, item)
 
     def match_and(self, tokens, item):
