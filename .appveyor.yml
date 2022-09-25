@@ -31,7 +31,7 @@ environment:
 install:
   # pywinpty installation fails without prior rust installation on some Python versions
   - curl -sSf -o rustup-init.exe https://win.rustup.rs
-  - rustup-init.exe -y
+  - rustup-init.exe -yv --default-toolchain stable --default-host i686-pc-windows-msvc
   - "SET PATH=%APPDATA%\\Python;%APPDATA%\\Python\\Scripts;%PYTHON%;%PYTHON%\\Scripts;c:\\MinGW\\bin;%PATH%;C:\\Users\\appveyor\\.cargo\\bin"
   - "copy c:\\MinGW\\bin\\mingw32-make.exe c:\\MinGW\\bin\\make.exe"
   - python -m pip install --user --upgrade setuptools pip
