@@ -3088,7 +3088,7 @@ with Pool() as pool:
 
 ### `concurrent_map`
 
-Coconut provides a concurrent version of [`parallel_map`](#parallel_map) under the name `concurrent_map`. `concurrent_map` behaves identically to `parallel_map` (including support for `concurrent_map.multiple_sequential_calls`) except that it uses multithreading instead of multiprocessing, and is therefore primarily useful for IO-bound tasks.
+Coconut provides a concurrent version of [`parallel_map`](#parallel_map) under the name `concurrent_map`. `concurrent_map` behaves identically to `parallel_map` (including support for `concurrent_map.multiple_sequential_calls`) except that it uses multithreading instead of multiprocessing, and is therefore primarily useful only for IO-bound tasks due to CPython's Global Interpreter Lock.
 
 ##### Python Docs
 
@@ -3096,7 +3096,7 @@ Coconut provides a concurrent version of [`parallel_map`](#parallel_map) under t
 
 Equivalent to `map(func, *iterables)` except _func_ is executed asynchronously and several calls to _func_ may be made concurrently. If a call raises an exception, then that exception will be raised when its value is retrieved from the iterator.
 
-`concurrent_map` chops the iterable into a number of chunks which it submits to the process pool as separate tasks. The (approximate) size of these chunks can be specified by setting _chunksize_ to a positive integer. For very long iterables using a large value for _chunksize_ can make the job complete **much** faster than using the default value of `1`.
+`concurrent_map` chops the iterable into a number of chunks which it submits to the thread pool as separate tasks. The (approximate) size of these chunks can be specified by setting _chunksize_ to a positive integer. For very long iterables using a large value for _chunksize_ can make the job complete **much** faster than using the default value of `1`.
 
 ##### Example
 

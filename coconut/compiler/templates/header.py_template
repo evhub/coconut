@@ -488,7 +488,7 @@ class _coconut_parallel_concurrent_map_func_wrapper(_coconut_base_hashable):
         self.map_cls.get_pool_stack().append(None)
         try:
             if self.star:
-                assert _coconut.len(args) == 1, "internal parallel/concurrent map error"
+                assert _coconut.len(args) == 1, "internal parallel/concurrent map error {report_this_text}"
                 return self.func(*args[0], **kwargs)
             else:
                 return self.func(*args, **kwargs)
@@ -497,7 +497,7 @@ class _coconut_parallel_concurrent_map_func_wrapper(_coconut_base_hashable):
             _coconut.traceback.print_exc()
             raise
         finally:
-            assert self.map_cls.get_pool_stack().pop() is None, "internal parallel/concurrent map error"
+            assert self.map_cls.get_pool_stack().pop() is None, "internal parallel/concurrent map error {report_this_text}"
 class _coconut_base_parallel_concurrent_map(map):
     __slots__ = ("result", "chunksize")
     @classmethod
@@ -689,7 +689,7 @@ class count(_coconut_base_hashable):
     def __contains__(self, elem):
         if not self.step:
             return elem == self.start
-        if elem < self.start:
+        if self.step > 0 and elem < self.start or self.step < 0 and elem > self.start:
             return False
         return (elem - self.start) % self.step == 0
     def __getitem__(self, index):
@@ -798,7 +798,7 @@ class recursive_iterator(_coconut_base_hashable):
             self.tee_store[key], to_return = _coconut_tee(it)
         return to_return
     def __repr__(self):
-        return "@recursive_iterator(%r)" % (self.func,)
+        return "recursive_iterator(%r)" % (self.func,)
     def __reduce__(self):
         return (self.__class__, (self.func,))
     def __get__(self, obj, objtype=None):
@@ -1013,8 +1013,15 @@ def fmap(func, obj, **kwargs):
                 return result
     if obj.__class__.__module__ in _coconut.numpy_modules:
         return _coconut.numpy.vectorize(func)(obj)
-    if _coconut.hasattr(obj, "__aiter__") and _coconut_amap is not None:
-        return _coconut_amap(func, obj)
+    obj_aiter = _coconut.getattr(obj, "__aiter__", None)
+    if obj_aiter is not None and _coconut_amap is not None:
+        try:
+            aiter = obj_aiter()
+        except _coconut.NotImplementedError:
+            pass
+        else:
+            if aiter is not _coconut.NotImplemented:
+                return _coconut_amap(func, aiter)
     if starmap_over_mappings:
         return _coconut_base_makedata(obj.__class__, _coconut_starmap(func, obj.items()) if _coconut.isinstance(obj, _coconut.abc.Mapping) else _coconut_map(func, obj))
     else:

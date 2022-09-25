@@ -477,7 +477,7 @@ class _coconut_amap(_coconut_base_hashable):
     __slots__ = ("func", "aiter")
     def __init__(self, func, aiter):
         self.func = func
-        self.aiter = aiter.__aiter__()
+        self.aiter = aiter
     def __reduce__(self):
         return (self.__class__, (self.func, self.aiter))
     def __aiter__(self):
