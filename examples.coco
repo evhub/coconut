@@ -11,9 +11,10 @@ match [head] + tail in [0, 1, 2, 3]:
     print(head, tail)
 
 
-{"list": [0] + rest} = {"list": [0, 1, 2, 3]}
+{"list": [0] + rest, **_} = {"list": [0, 1, 2, 3]}
 
 
+import numpy as np
 A = np.array([1, 2;; 3, 4])
 AA = [A ; A]
 

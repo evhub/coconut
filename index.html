@@ -97,13 +97,14 @@
 <li>enhanced destructuring assignment</li>
 </ul>
 <div class="highlight-coconut"><div class="highlight"><pre>
-<span class="p">{</span><span class="s2">&quot;list&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">rest</span><span class="p">}</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;list&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]}</span>
+<span class="p">{</span><span class="s2">&quot;list&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">rest</span><span class="p">,</span> <span class="o">**</span><span class="n">_</span><span class="p">}</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;list&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]}</span>
 </pre></div>
 </div>
 <ul class="simple">
 <li>multidimensional array literals/concatenation</li>
 </ul>
 <div class="highlight-coconut"><div class="highlight"><pre>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="n">A</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">;;</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">])</span>
 <span class="n">AA</span> <span class="o">=</span> <span class="p">[</span><span class="n">A</span> <span class="p">;</span> <span class="n">A</span><span class="p">]</span>
 </pre></div>
