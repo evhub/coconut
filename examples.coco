@@ -1,10 +1,10 @@
 "hello, world!" |> print
 
 
-x -> x ** 2
+x -> x + 1
 
 
-range(10) |> map$(pow$(?, 2)) |> list
+range(10) |> map$(.**2) |> list
 
 
 match [head] + tail in [0, 1, 2, 3]:
@@ -14,26 +14,27 @@ match [head] + tail in [0, 1, 2, 3]:
 {"list": [0] + rest} = {"list": [0, 1, 2, 3]}
 
 
-5 `mod` 3 == 2
+A = np.array([1, 2;; 3, 4])
+AA = [A ; A]
 
 
 product = reduce$(*)
 
 
-(f..g..h)(x, y, z)
+first_five_words = .split() ..> .$[:5] ..> " ".join
 
 
 (| first_elem() |) :: rest_elems()
 
 
-range(100) |> parallel_map$(pow$(2)) |> list
+range(100) |> parallel_map$(.**2) |> list
 
 
 def factorial(n, acc=1):
-    case n:
-        match 0:
+    match n:
+        case 0:
             return acc
-        match _ is int if n > 0:
+        case int(_) if n > 0:
             return factorial(n-1, acc*n)
 
 
