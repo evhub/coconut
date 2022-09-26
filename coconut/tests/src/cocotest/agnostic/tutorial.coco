@@ -9,7 +9,7 @@ match [head] + tail in [0, 1, 2, 3]:
     assert head == 0
     assert tail == [1, 2, 3]
 
-{"list": [0] + rest} = {"list": [0, 1, 2, 3]}
+{"list": [0] + rest, **_} = {"list": [0, 1, 2, 3]}
 assert rest == [1, 2, 3]
 
 A = [1, 2;; 3, 4]
