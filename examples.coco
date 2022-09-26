@@ -1,7 +1,7 @@
-"hello, world!" |> print
-
-
 x -> x + 1
+
+
+"hello, world!" |> print
 
 
 range(10) |> map$(.**2) |> list
@@ -45,9 +45,5 @@ data Leaf(n)
 data Node(l, r)
 
 def size(Empty()) = 0
-
-@addpattern(size)
-def size(Leaf(n)) = 1
-
-@addpattern(size)
-def size(Node(l, r)) = size(l) + size(r)
+addpattern def size(Leaf(n)) = 1
+addpattern def size(Node(l, r)) = size(l) + size(r)
