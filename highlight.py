@@ -32,7 +32,7 @@ def highlight_examples():
         return highlight(
             examples.read(),
             get_lexer_by_name("coconut"),
-            get_formatter_by_name("html")
+            get_formatter_by_name("html"),
         )
 
 

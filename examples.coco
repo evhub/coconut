@@ -25,7 +25,8 @@ product = reduce$(*)
 first_five_words = .split() ..> .$[:5] ..> " ".join
 
 
-(| first_elem() |) :: rest_elems()
+@recursive_iterator
+def fib() = (1, 1) :: map((+), fib(), fib()$[1:])
 
 
 range(100) |> parallel_map$(.**2) |> list

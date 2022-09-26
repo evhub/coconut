@@ -25,7 +25,8 @@
 <span class="n">first_five_words</span> <span class="o">=</span> <span class="o">.</span><span class="n">split</span><span class="p">()</span> <span class="o">..&gt;</span> <span class="o">.$</span><span class="p">[:</span><span class="mi">5</span><span class="p">]</span> <span class="o">..&gt;</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span>
 
 
-<span class="p">(</span><span class="o">|</span> <span class="n">first_elem</span><span class="p">()</span> <span class="o">|</span><span class="p">)</span> <span class="o">::</span> <span class="n">rest_elems</span><span class="p">()</span>
+<span class="o">@</span><span class="nb">recursive_iterator</span>
+<span class="k">def</span> <span class="nf">fib</span><span class="p">()</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="o">::</span> <span class="nb">map</span><span class="p">((</span><span class="o">+</span><span class="p">),</span> <span class="n">fib</span><span class="p">(),</span> <span class="n">fib</span><span class="p">()</span><span class="o">$</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
 
 
 <span class="nb">range</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="nb">parallel_map</span><span class="o">$</span><span class="p">(</span><span class="o">.**</span><span class="mi">2</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="nb">list</span>

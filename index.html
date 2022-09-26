@@ -124,10 +124,11 @@
 </pre></div>
 </div>
 <ul class="simple">
-<li>lazy lists</li>
+<li>lazy evaluation</li>
 </ul>
 <div class="highlight-coconut"><div class="highlight"><pre>
-<span class="p">(</span><span class="o">|</span> <span class="n">first_elem</span><span class="p">()</span> <span class="o">|</span><span class="p">)</span> <span class="o">::</span> <span class="n">rest_elems</span><span class="p">()</span>
+<span class="o">@</span><span class="nb">recursive_iterator</span>
+<span class="k">def</span> <span class="nf">fib</span><span class="p">()</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="o">::</span> <span class="nb">map</span><span class="p">((</span><span class="o">+</span><span class="p">),</span> <span class="n">fib</span><span class="p">(),</span> <span class="n">fib</span><span class="p">()</span><span class="o">$</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
 </pre></div>
 </div>
 <ul class="simple">
