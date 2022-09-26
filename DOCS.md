@@ -409,7 +409,7 @@ Sometimes, MyPy will not know how to handle certain Coconut constructs, such as 
 
 To allow for better use of [`numpy`](https://numpy.org/) objects in Coconut, all compiled Coconut code will do a number of special things to better integrate with `numpy` (if `numpy` is available to import when the code is run). Specifically:
 
-- Coconut's [multidimensional array literal and array concatenation syntax](#multidimensional-array-literals) supports `numpy` objects, including using fast `numpy` concatenation methods if given `numpy` arrays rather than Coconut's default much slower implementation built for Python lists of lists.
+- Coconut's [multidimensional array literal and array concatenation syntax](#multidimensional-array-literalconcatenation-syntax) supports `numpy` objects, including using fast `numpy` concatenation methods if given `numpy` arrays rather than Coconut's default much slower implementation built for Python lists of lists.
 - [`numpy.ndarray`](https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html) is registered as a [`collections.abc.Sequence`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence), enabling it to be used in [sequence patterns](#semantics-specification).
 - When a `numpy` object is passed to [`fmap`](#fmap), [`numpy.vectorize`](https://numpy.org/doc/stable/reference/generated/numpy.vectorize.html) is used instead of the default `fmap` implementation.
 - Coconut supports `@` for matrix multiplication of `numpy` arrays on all Python versions, as well as supplying the `(@)` [operator function](#operator-functions).
@@ -1593,7 +1593,7 @@ def int_map(
     return list(map(f, xs))
 ```
 
-### Multidimensional Array Literals
+### Multidimensional Array Literal/Concatenation Syntax
 
 Coconut supports multidimensional array literal and array [concatenation](https://numpy.org/doc/stable/reference/generated/numpy.concatenate.html)/[stack](https://numpy.org/doc/stable/reference/generated/numpy.stack.html) syntax.
 
