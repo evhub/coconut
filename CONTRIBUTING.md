@@ -168,9 +168,10 @@ After you've tested your changes locally, you'll want to add more permanent test
     13. If major release, set `root.py` to new version name
 
 2. Pull Request:
-    1. Create a pull request to merge `develop` into `master`
-    2. Link contributors on pull request
-    3. Wait until everything is passing
+    1. Move unresolved issues to new milestone
+    2. Create a pull request to merge `develop` into `master`
+    3. Link contributors on pull request
+    4. Wait until everything is passing
 
 3. Release:
     1. Release a new version of [`sublime-coconut`](https://github.com/evhub/sublime-coconut) if applicable
