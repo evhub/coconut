@@ -1,3 +1,54 @@
+# WEBSITE:
+
+plus1 = x -> x + 1
+assert plus1(5) == 6
+
+assert range(10) |> map$(.**2) |> list == [0, 1, 4, 9, 16, 25, 36, 49, 64, 81]
+
+match [head] + tail in [0, 1, 2, 3]:
+    assert head == 0
+    assert tail == [1, 2, 3]
+
+{"list": [0] + rest} = {"list": [0, 1, 2, 3]}
+assert rest == [1, 2, 3]
+
+A = [1, 2;; 3, 4]
+AA = [A ; A]
+assert AA == [[1, 2, 1, 2], [3, 4, 3, 4]]
+
+product = reduce$(*)
+assert range(1, 5) |> product == 24
+
+first_five_words = .split() ..> .$[:5] ..> " ".join
+assert first_five_words("ab cd ef gh ij kl") == "ab cd ef gh ij"
+
+assert range(100) |> parallel_map$(.**2) |> list |> .$[-1] == 9801
+
+def factorial(n, acc=1):
+    match n:
+        case 0:
+            return acc
+        case int(_) if n > 0:
+            return factorial(n-1, acc*n)
+assert factorial(100) == 93326215443944152681699238856266700490715968264381621468592963895217599993229915608941463976156518286253697920827223758251185210916864000000000000000000000000
+
+data Empty()
+data Leaf(n)
+data Node(l, r)
+
+def size(Empty()) = 0
+
+@addpattern(size)
+def size(Leaf(n)) = 1
+
+@addpattern(size)
+def size(Node(l, r)) = size(l) + size(r)
+
+assert size(Node(Leaf(1), Node(Leaf(2), Empty()))) == 2
+
+
+# TUTORIAL:
+
 def factorial(n):
     """Compute n! where n is an integer >= 0."""
     if n `isinstance` int and n >= 0:
