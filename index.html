@@ -50,7 +50,7 @@
 
 <p>Coconut is a <strong>functional programming language</strong> that <strong>compiles to <a href="https://www.python.org/">Python</a></strong>. Since <strong>all valid Python is valid Coconut</strong>, using Coconut will only extend and enhance what you're already capable of in Python.</p>
 
-<p>Why use Coconut? Coconut is built to be useful. Coconut aims to enhance the repertoire of Python programmers to include the tools of modern functional programming, in such a way that those tools are <strong>easy</strong> to use and immensely <strong>powerful</strong>. Not only that, but Coconut code runs the same on <strong>any Python version</strong>, meaning that even if you just use Coconut to write pure Python, you no longer have to worry about any core Python version differences—making things like the Python 2/3 split a thing of the past.</p>
+<p>Why use Coconut? Coconut is built to be useful. Coconut aims to enhance the repertoire of Python programmers to include the tools of modern functional programming, in such a way that those tools are easy to use and immensely powerful. Not only that, but <strong>Coconut code runs the same on any Python version</strong>, meaning that even if you just use Coconut to write pure Python, you no longer have to worry about any core Python version differences—making things like the Python 2/3 split a thing of the past.</p>
 
 <p>Installing Coconut is as easy as</p>
 
@@ -68,101 +68,101 @@
 <li>pipeline-style programming</li>
 </ul>
 <div class="highlight-coconut"><div class="highlight"><pre>
-    <span class="s2">&quot;hello, world!&quot;</span> <span class="o">|&gt;</span> <span class="nb">print</span>
+<span class="s2">&quot;hello, world!&quot;</span> <span class="o">|&gt;</span> <span class="nb">print</span>
 </pre></div>
 </div>
 <ul class="simple">
 <li>prettier lambdas</li>
 </ul>
 <div class="highlight-coconut"><div class="highlight"><pre>
-    <span class="n">x</span> <span class="o">-&gt;</span> <span class="n">x</span> <span class="o">+</span> <span class="mi">1</span>
+<span class="n">x</span> <span class="o">-&gt;</span> <span class="n">x</span> <span class="o">+</span> <span class="mi">1</span>
 </pre></div>
 </div>
 <ul class="simple">
 <li>partial application</li>
 </ul>
 <div class="highlight-coconut"><div class="highlight"><pre>
-    <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="nb">map</span><span class="o">$</span><span class="p">(</span><span class="o">.**</span><span class="mi">2</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="nb">list</span>
+<span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="nb">map</span><span class="o">$</span><span class="p">(</span><span class="o">.**</span><span class="mi">2</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="nb">list</span>
 </pre></div>
 </div>
 <ul class="simple">
 <li>enhanced pattern-matching</li>
 </ul>
 <div class="highlight-coconut"><div class="highlight"><pre>
-    <span class="k">match</span> <span class="p">[</span><span class="n">head</span><span class="p">]</span> <span class="o">+</span> <span class="n">tail</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="n">head</span><span class="p">,</span> <span class="n">tail</span><span class="p">)</span>
+<span class="k">match</span> <span class="p">[</span><span class="n">head</span><span class="p">]</span> <span class="o">+</span> <span class="n">tail</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">head</span><span class="p">,</span> <span class="n">tail</span><span class="p">)</span>
 </pre></div>
 </div>
 <ul class="simple">
 <li>enhanced destructuring assignment</li>
 </ul>
 <div class="highlight-coconut"><div class="highlight"><pre>
-    <span class="p">{</span><span class="s2">&quot;list&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">rest</span><span class="p">}</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;list&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]}</span>
+<span class="p">{</span><span class="s2">&quot;list&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">rest</span><span class="p">}</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;list&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]}</span>
 </pre></div>
 </div>
 <ul class="simple">
 <li>multidimensional array literals/concatenation</li>
 </ul>
 <div class="highlight-coconut"><div class="highlight"><pre>
-    <span class="n">A</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">;;</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">])</span>
-    <span class="n">AA</span> <span class="o">=</span> <span class="p">[</span><span class="n">A</span> <span class="p">;</span> <span class="n">A</span><span class="p">]</span>
+<span class="n">A</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">;;</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">])</span>
+<span class="n">AA</span> <span class="o">=</span> <span class="p">[</span><span class="n">A</span> <span class="p">;</span> <span class="n">A</span><span class="p">]</span>
 </pre></div>
 </div>
 <ul class="simple">
 <li>operator functions</li>
 </ul>
 <div class="highlight-coconut"><div class="highlight"><pre>
-    <span class="n">product</span> <span class="o">=</span> <span class="nb">reduce</span><span class="o">$</span><span class="p">(</span><span class="o">*</span><span class="p">)</span>
+<span class="n">product</span> <span class="o">=</span> <span class="nb">reduce</span><span class="o">$</span><span class="p">(</span><span class="o">*</span><span class="p">)</span>
 </pre></div>
 </div>
 <ul class="simple">
 <li>point-free programming</li>
 </ul>
 <div class="highlight-coconut"><div class="highlight"><pre>
-    <span class="n">first_five_words</span> <span class="o">=</span> <span class="o">.</span><span class="n">split</span><span class="p">()</span> <span class="o">..&gt;</span> <span class="o">.$</span><span class="p">[:</span><span class="mi">5</span><span class="p">]</span> <span class="o">..&gt;</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span>
+<span class="n">first_five_words</span> <span class="o">=</span> <span class="o">.</span><span class="n">split</span><span class="p">()</span> <span class="o">..&gt;</span> <span class="o">.$</span><span class="p">[:</span><span class="mi">5</span><span class="p">]</span> <span class="o">..&gt;</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span>
 </pre></div>
 </div>
 <ul class="simple">
 <li>lazy lists</li>
 </ul>
 <div class="highlight-coconut"><div class="highlight"><pre>
-    <span class="p">(</span><span class="o">|</span> <span class="n">first_elem</span><span class="p">()</span> <span class="o">|</span><span class="p">)</span> <span class="o">::</span> <span class="n">rest_elems</span><span class="p">()</span>
+<span class="p">(</span><span class="o">|</span> <span class="n">first_elem</span><span class="p">()</span> <span class="o">|</span><span class="p">)</span> <span class="o">::</span> <span class="n">rest_elems</span><span class="p">()</span>
 </pre></div>
 </div>
 <ul class="simple">
 <li>easy parallelization</li>
 </ul>
 <div class="highlight-coconut"><div class="highlight"><pre>
-    <span class="nb">range</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="nb">parallel_map</span><span class="o">$</span><span class="p">(</span><span class="o">.**</span><span class="mi">2</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="nb">list</span>
+<span class="nb">range</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="nb">parallel_map</span><span class="o">$</span><span class="p">(</span><span class="o">.**</span><span class="mi">2</span><span class="p">)</span> <span class="o">|&gt;</span> <span class="nb">list</span>
 </pre></div>
 </div>
 <ul class="simple">
 <li>tail call optimization</li>
 </ul>
 <div class="highlight-coconut"><div class="highlight"><pre>
-    <span class="k">def</span> <span class="nf">factorial</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">acc</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
-        <span class="k">match</span> <span class="n">n</span><span class="p">:</span>
-            <span class="k">case</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="k">return</span> <span class="n">acc</span>
-            <span class="k">case</span> <span class="nb">int</span><span class="p">(</span><span class="k">_</span><span class="p">)</span> <span class="k">if</span> <span class="n">n</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="k">return</span> <span class="n">factorial</span><span class="p">(</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">acc</span><span class="o">*</span><span class="n">n</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">factorial</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">acc</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+    <span class="k">match</span> <span class="n">n</span><span class="p">:</span>
+        <span class="k">case</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">acc</span>
+        <span class="k">case</span> <span class="nb">int</span><span class="p">(</span><span class="k">_</span><span class="p">)</span> <span class="k">if</span> <span class="n">n</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">factorial</span><span class="p">(</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">acc</span><span class="o">*</span><span class="n">n</span><span class="p">)</span>
 </pre></div>
 </div>
 <ul class="simple">
 <li>algebraic data types</li>
 </ul>
 <div class="highlight-coconut"><div class="highlight"><pre>
-    <span class="k">data</span> <span class="nc">Empty</span><span class="p">()</span>
-    <span class="k">data</span> <span class="nc">Leaf</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
-    <span class="k">data</span> <span class="nc">Node</span><span class="p">(</span><span class="n">l</span><span class="p">,</span> <span class="n">r</span><span class="p">)</span>
+<span class="k">data</span> <span class="nc">Empty</span><span class="p">()</span>
+<span class="k">data</span> <span class="nc">Leaf</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+<span class="k">data</span> <span class="nc">Node</span><span class="p">(</span><span class="n">l</span><span class="p">,</span> <span class="n">r</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">size</span><span class="p">(</span><span class="n">Empty</span><span class="p">())</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="k">def</span> <span class="nf">size</span><span class="p">(</span><span class="n">Empty</span><span class="p">())</span> <span class="o">=</span> <span class="mi">0</span>
 
-    <span class="o">@</span><span class="k">addpattern</span><span class="p">(</span><span class="n">size</span><span class="p">)</span>
-    <span class="k">def</span> <span class="nf">size</span><span class="p">(</span><span class="n">Leaf</span><span class="p">(</span><span class="n">n</span><span class="p">))</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="o">@</span><span class="k">addpattern</span><span class="p">(</span><span class="n">size</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">size</span><span class="p">(</span><span class="n">Leaf</span><span class="p">(</span><span class="n">n</span><span class="p">))</span> <span class="o">=</span> <span class="mi">1</span>
 
-    <span class="o">@</span><span class="k">addpattern</span><span class="p">(</span><span class="n">size</span><span class="p">)</span>
-    <span class="k">def</span> <span class="nf">size</span><span class="p">(</span><span class="n">Node</span><span class="p">(</span><span class="n">l</span><span class="p">,</span> <span class="n">r</span><span class="p">))</span> <span class="o">=</span> <span class="n">size</span><span class="p">(</span><span class="n">l</span><span class="p">)</span> <span class="o">+</span> <span class="n">size</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+<span class="o">@</span><span class="k">addpattern</span><span class="p">(</span><span class="n">size</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">size</span><span class="p">(</span><span class="n">Node</span><span class="p">(</span><span class="n">l</span><span class="p">,</span> <span class="n">r</span><span class="p">))</span> <span class="o">=</span> <span class="n">size</span><span class="p">(</span><span class="n">l</span><span class="p">)</span> <span class="o">+</span> <span class="n">size</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
 </pre></div>
 </div>
 </ul>
