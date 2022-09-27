@@ -22,7 +22,13 @@ assert range(1, 5) |> product == 24
 first_five_words = .split() ..> .$[:5] ..> " ".join
 assert first_five_words("ab cd ef gh ij kl") == "ab cd ef gh ij"
 
-assert range(100) |> parallel_map$(.**2) |> list |> .$[-1] == 9801
+@recursive_iterator
+def fib() = (1, 1) :: map((+), fib(), fib()$[1:])
+assert fib()$[:5] |> list == [1, 1, 2, 3, 5]
+
+# can't use parallel_map here otherwise each process would have to rerun all
+#  the tutorial tests since we don't guard them behind __name__ == "__main__"
+assert range(100) |> concurrent_map$(.**2) |> list |> .$[-1] == 9801
 
 def factorial(n, acc=1):
     match n:
@@ -37,12 +43,8 @@ data Leaf(n)
 data Node(l, r)
 
 def size(Empty()) = 0
-
-@addpattern(size)
-def size(Leaf(n)) = 1
-
-@addpattern(size)
-def size(Node(l, r)) = size(l) + size(r)
+addpattern def size(Leaf(n)) = 1
+addpattern def size(Node(l, r)) = size(l) + size(r)
 
 assert size(Node(Leaf(1), Node(Leaf(2), Empty()))) == 2
 
