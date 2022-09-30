@@ -730,6 +730,9 @@ def any_keyword_in(kwds):
     return regex_item(r"|".join(k + r"\b" for k in kwds))
 
 
+keyword_cache = {}
+
+
 def keyword(name, explicit_prefix=None):
     """Construct a grammar which matches name as a Python keyword."""
     if explicit_prefix is not False:
@@ -739,11 +742,20 @@ def keyword(name, explicit_prefix=None):
             extra="pass explicit_prefix to keyword for all reserved_vars and only reserved_vars",
         )
 
+    # always use the same grammar object for the same keyword to
+    #  increase packrat parsing cache hits
+    cached_item = keyword_cache.get((name, explicit_prefix))
+    if cached_item is not None:
+        return cached_item
+
     base_kwd = regex_item(name + r"\b")
     if explicit_prefix in (None, False):
-        return base_kwd
+        new_item = base_kwd
     else:
-        return Optional(explicit_prefix.suppress()) + base_kwd
+        new_item = Optional(explicit_prefix.suppress()) + base_kwd
+
+    keyword_cache[(name, explicit_prefix)] = new_item
+    return new_item
 
 
 boundary = regex_item(r"\b")
