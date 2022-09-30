@@ -305,11 +305,11 @@ def _coconut_base_compose(
 #     _g: _t.Callable[[_T], _Uco],
 #     _f: _t.Callable[[_Uco], _Vco],
 #     ) -> _t.Callable[[_T], _Vco]: ...
-@_t.overload
-def _coconut_forward_compose(
-    _g: _t.Callable[[_T, _U], _Vco],
-    _f: _t.Callable[[_Vco], _Wco],
-    ) -> _t.Callable[[_T, _U], _Wco]: ...
+# @_t.overload
+# def _coconut_forward_compose(
+#     _g: _t.Callable[[_T, _U], _Vco],
+#     _f: _t.Callable[[_Vco], _Wco],
+#     ) -> _t.Callable[[_T, _U], _Wco]: ...
 # @_t.overload
 # def _coconut_forward_compose(
 #     _h: _t.Callable[[_T], _Uco],
