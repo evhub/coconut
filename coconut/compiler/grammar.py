@@ -1606,6 +1606,7 @@ class Grammar(object):
             | match_string
             | match_const("const")
             | (keyword_atom | keyword("is").suppress() + negable_atom_item)("is")
+            | (keyword("in").suppress() + negable_atom_item)("in")
             | (lbrace.suppress() + matchlist_dict + Optional(dubstar.suppress() + (name | condense(lbrace + rbrace))) + rbrace.suppress())("dict")
             | (Optional(set_s.suppress()) + lbrace.suppress() + matchlist_set + rbrace.suppress())("set")
             | iter_match
