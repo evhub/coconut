@@ -1170,6 +1170,9 @@ def main_test() -> bool:
     assert -1 in count(-1, -1)
     assert -2 in count(-1, -1)
     assert 1 not in count(0, 2)
+    in (1, 2, 3) = 2
+    match in (1, 2, 3) in 4:
+        assert False
     return True
 
 def test_asyncio() -> bool:

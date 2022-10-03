@@ -112,6 +112,7 @@ class Matcher(object):
         "star": lambda self: self.match_star,
         "const": lambda self: self.match_const,
         "is": lambda self: self.match_is,
+        "in": lambda self: self.match_in,
         "var": lambda self: self.match_var,
         "set": lambda self: self.match_set,
         "data": lambda self: self.match_data,
@@ -883,6 +884,11 @@ class Matcher(object):
         """Matches an identity check."""
         match, = tokens
         self.add_check(item + " is " + match)
+
+    def match_in(self, tokens, item):
+        """Matches a containment check."""
+        match, = tokens
+        self.add_check(item + " in " + match)
 
     def match_set(self, tokens, item):
         """Matches a set."""
