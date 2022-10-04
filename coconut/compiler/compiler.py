@@ -449,7 +449,7 @@ class Compiler(Grammar, pickleable_obj):
         self.disable_name_check = False
         if self.operators is None or not keep_operators:
             self.operators = []
-            self.operator_repl_table = {}
+            self.operator_repl_table = []
 
     @contextmanager
     def inner_environment(self):
@@ -1150,8 +1150,16 @@ class Compiler(Grammar, pickleable_obj):
                     if op_name in self.operators:
                         raise self.make_err(CoconutSyntaxError, "custom operator already declared", raw_line, ln=self.adjust(ln))
                     self.operators.append(op_name)
-                    self.operator_repl_table[compile_regex(r"\(" + re.escape(op) + r"\)")] = (None, "(" + op_name + ")")
-                    self.operator_repl_table[compile_regex(r"(\b|\s)" + re.escape(op) + r"(?=\b|\s)")] = (1, "`" + op_name + "`")
+                    self.operator_repl_table.append((
+                        compile_regex(r"\(" + re.escape(op) + r"\)"),
+                        None,
+                        "(" + op_name + ")",
+                    ))
+                    self.operator_repl_table.append((
+                        compile_regex(r"(\b|\s)" + re.escape(op) + r"(?=\b|\s)"),
+                        1,
+                        "`" + op_name + "`",
+                    ))
                     use_line = False
 
             if imp_from is not None and op_name is not None:
@@ -1159,7 +1167,7 @@ class Compiler(Grammar, pickleable_obj):
 
             if use_line:
                 new_line = raw_line
-                for repl, (repl_type, repl_to) in self.operator_repl_table.items():
+                for repl, repl_type, repl_to in self.operator_repl_table:
                     if repl_type is None:
                         def sub_func(match):
                             return repl_to
