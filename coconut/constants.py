@@ -552,7 +552,6 @@ exceptions = (
 )
 
 new_operators = (
-    main_prompt.strip(),
     r"@",
     r"\$",
     r"`",

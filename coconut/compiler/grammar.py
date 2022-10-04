@@ -2073,7 +2073,7 @@ class Grammar(object):
 # -----------------------------------------------------------------------------------------------------------------------
 
     operator_regex = compile_regex(r"operator\b")
-    existing_operator_regex = compile_regex(r"([.;[\](){}\\]|[+=@%^&|*:,/<>~]=?|!=|\*\*|//|" + r"|".join(new_operators) + r")$")
+    existing_operator_regex = compile_regex(r"([.;[\](){}\\]|([+-=@%^&|*:,/<>~]|\*\*|//|>>|<<)=?|!=|" + r"|".join(new_operators) + r")$")
 
     def_regex = compile_regex(r"((async|addpattern)\s+)*def\b")
     yield_regex = compile_regex(r"\byield(?!\s+_coconut\.asyncio\.From)\b")
