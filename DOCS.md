@@ -751,7 +751,7 @@ operator <op>
 ```
 where `<op>` is whatever sequence of Unicode characters you want to use as a custom operator. The `operator` statement must appear at the top level and only affects code that comes after it.
 
-Once defined, you can use your custom operator anywhere where you would be able to use an [infix function](#infix-functions) as well as refer to the actual operator itself with the same `(<op>)` syntax as in other [operator functions](#operator-functions). Since custom operators work like infix functions, they always have the same precedence as infix functions and are always left-associative. Custom operators can be used as both unary operators and binary operators, and both prefix and postfix notation for unary operators is supported.
+Once defined, you can use your custom operator anywhere where you would be able to use an [infix function](#infix-functions) as well as refer to the actual operator itself with the same `(<op>)` syntax as in other [operator functions](#operator-functions). Since custom operators work like infix functions, they always have the same precedence as infix functions and are always left-associative. Custom operators can be used as binary, unary, or none-ary operators, and both prefix and postfix notation for unary operators is supported.
 
 Note that custom operators will usually need to be surrounded by whitespace (or parentheses when used as an operator function) to be parsed correctly.
 

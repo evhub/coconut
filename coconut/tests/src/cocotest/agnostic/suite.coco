@@ -2,7 +2,8 @@ from .util import *  # type: ignore
 
 operator <$
 operator !!
-from .util import (<$), (!!)
+operator lol
+from .util import (<$), (!!), (lol)
 
 def suite_test() -> bool:
     """Executes the main test suite."""
@@ -931,6 +932,9 @@ forward 2""") == 900
     assert not !! 0
     assert not 0 !!
     assert range(3) |> map$(!!) |> list == [False, True, True]
+    assert lol lol lol == "lololol"
+    lol lol
+    assert lols[0] == 5
 
     # must come at end
     assert fibs_calls[0] == 1

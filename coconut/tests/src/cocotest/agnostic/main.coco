@@ -1173,6 +1173,8 @@ def main_test() -> bool:
     in (1, 2, 3) = 2
     match in (1, 2, 3) in 4:
         assert False
+    operator = 1
+    assert operator == 1
     return True
 
 def test_asyncio() -> bool:

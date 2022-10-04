@@ -147,6 +147,13 @@ def x <$ xs = fmap(-> x, xs)
 operator !!  # bool
 (!!) = bool
 
+operator lol
+lols = [0]
+match def lol = "lol" where:
+    lols[0] += 1
+addpattern def (s) lol = s + "ol" where:  # type: ignore
+    lols[0] += 1
+
 # Quick-Sorts:
 def qsort1(l: int[]) -> int[]:
     '''Non-Functional Quick Sort.'''
