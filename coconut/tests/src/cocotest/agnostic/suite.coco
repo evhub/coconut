@@ -939,11 +939,11 @@ forward 2""") == 900
     assert range(3) |> map$(!!) |> list == [False, True, True]
     assert lol lol lol == "lololol"
     lol lol
-    assert lols[0] == 5
     assert 1 ++ == 2
 
     # must come at end
     assert fibs_calls[0] == 1
+    assert lols[0] == 5
     return True
 
 def tco_test() -> bool:

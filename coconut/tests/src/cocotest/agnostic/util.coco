@@ -148,11 +148,12 @@ operator !!  # bool
 (!!) = bool
 
 operator lol
-lols = [0]
+lols = [-1]
 match def lol = "lol" where:
     lols[0] += 1
 addpattern def (s) lol = s + "ol" where:  # type: ignore
     lols[0] += 1
+lol
 
 # Quick-Sorts:
 def qsort1(l: int[]) -> int[]:
