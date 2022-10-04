@@ -47,6 +47,7 @@ from coconut._pyparsing import (
     nestedExpr,
     FollowedBy,
     quotedString,
+    restOfLine,
 )
 
 from coconut.exceptions import (
@@ -1505,20 +1506,28 @@ class Grammar(object):
         | continue_stmt
     )
 
-    dotted_as_name = Group(dotted_name - Optional(keyword("as").suppress() - name))
-    import_as_name = Group(name - Optional(keyword("as").suppress() - name))
-    import_names = Group(maybeparens(lparen, tokenlist(dotted_as_name, comma), rparen))
-    from_import_names = Group(
-        maybeparens(
-            lparen,
-            tokenlist(maybeparens(lparen, import_as_name, rparen), comma),
-            rparen,
+    # maybeparens here allow for using custom operator names there
+    dotted_as_name = Group(
+        dotted_name
+        - Optional(
+            keyword("as").suppress()
+            - maybeparens(lparen, name, rparen),
         ),
     )
+    import_as_name = Group(
+        maybeparens(lparen, name, rparen)
+        - Optional(
+            keyword("as").suppress()
+            - maybeparens(lparen, name, rparen),
+        ),
+    )
+    import_names = Group(maybeparens(lparen, tokenlist(dotted_as_name, comma), rparen))
+    from_import_names = Group(maybeparens(lparen, tokenlist(import_as_name, comma), rparen))
     basic_import = keyword("import").suppress() - (import_names | Group(star))
+    import_from_name = condense(ZeroOrMore(unsafe_dot) + dotted_name | OneOrMore(unsafe_dot) | star)
     from_import = (
         keyword("from").suppress()
-        - condense(ZeroOrMore(unsafe_dot) + dotted_name | OneOrMore(unsafe_dot) | star)
+        - import_from_name
         - keyword("import").suppress() - (from_import_names | Group(star))
     )
     import_stmt = Forward()
@@ -2167,11 +2176,11 @@ class Grammar(object):
         ),
     )
 
-    dotted_unsafe_name = condense(unsafe_name + ZeroOrMore(dot + unsafe_name))
+    unsafe_dotted_name = condense(unsafe_name + ZeroOrMore(dot + unsafe_name))
     split_func = (
         start_marker
         - keyword("def").suppress()
-        - dotted_unsafe_name
+        - unsafe_dotted_name
         - lparen.suppress() - parameters_tokens - rparen.suppress()
     )
 
@@ -2207,6 +2216,15 @@ class Grammar(object):
     end_f_str_expr = start_marker + (bang | colon | rbrace)
 
     string_start = start_marker + quotedString
+
+    unsafe_import_from_name = condense(ZeroOrMore(unsafe_dot) + unsafe_dotted_name | OneOrMore(unsafe_dot))
+    from_import_operator = (
+        keyword("from").suppress()
+        + unsafe_import_from_name
+        + keyword("import").suppress()
+        + keyword("operator", explicit_prefix=colon).suppress()
+        + restOfLine
+    )
 
 # end: EXTRA GRAMMAR
 # -----------------------------------------------------------------------------------------------------------------------

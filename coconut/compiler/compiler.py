@@ -145,6 +145,7 @@ from coconut.compiler.util import (
     should_trim_arity,
     rem_and_count_indents,
     normalize_indent_markers,
+    try_parse,
 )
 from coconut.compiler.header import (
     minify_header,
@@ -1104,7 +1105,7 @@ class Compiler(Grammar, pickleable_obj):
         return "".join(out)
 
     def operator_proc(self, inputstring, **kwargs):
-        """Process custom operator definitons."""
+        """Process custom operator definitions."""
         out = []
         skips = self.copy_skips()
         for i, raw_line in enumerate(logical_lines(inputstring, keep_newlines=True)):
@@ -1112,10 +1113,21 @@ class Compiler(Grammar, pickleable_obj):
             base_line = rem_comment(raw_line)
             stripped_line = base_line.lstrip()
 
-            use_line = False
+            op = None
+            imp_from = None
             if self.operator_regex.match(stripped_line):
                 internal_assert(lambda: stripped_line.startswith("operator"), "invalid operator line", raw_line)
                 op = stripped_line[len("operator"):].strip()
+            else:
+                op_imp_toks = try_parse(self.from_import_operator, base_line)
+                if op_imp_toks is not None:
+                    imp_from, op = op_imp_toks
+                    op = op.strip()
+
+            op_name = None
+            if op is None:
+                use_line = True
+            else:
                 if not op:
                     raise self.make_err(CoconutSyntaxError, "empty operator declaration statement", raw_line, ln=self.adjust(ln))
                 # whitespace generally means it's not an operator definition statement
@@ -1140,8 +1152,10 @@ class Compiler(Grammar, pickleable_obj):
                     self.operators.append(op_name)
                     self.operator_repl_table[compile_regex(r"\(" + re.escape(op) + r"\)")] = (None, "(" + op_name + ")")
                     self.operator_repl_table[compile_regex(r"(\b|\s)" + re.escape(op) + r"(?=\b|\s)")] = (1, "`" + op_name + "`")
-            else:
-                use_line = True
+                    use_line = False
+
+            if imp_from is not None and op_name is not None:
+                out.append("from " + imp_from + " import " + op_name + "\n")
 
             if use_line:
                 new_line = raw_line
