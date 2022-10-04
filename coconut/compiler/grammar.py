@@ -905,8 +905,8 @@ class Grammar(object):
     )
     partialable_op = base_op_item | infix_op
     partial_op_item = attach(
-        labeled_group(dot.suppress() + partialable_op + test, "right partial")
-        | labeled_group(test + partialable_op + dot.suppress(), "left partial"),
+        labeled_group(dot.suppress() + partialable_op + test_no_infix, "right partial")
+        | labeled_group(test_no_infix + partialable_op + dot.suppress(), "left partial"),
         partial_op_item_handle,
     )
     op_item = trace(partial_op_item | base_op_item)
@@ -1507,7 +1507,13 @@ class Grammar(object):
     dotted_as_name = Group(dotted_name - Optional(keyword("as").suppress() - name))
     import_as_name = Group(name - Optional(keyword("as").suppress() - name))
     import_names = Group(maybeparens(lparen, tokenlist(dotted_as_name, comma), rparen))
-    from_import_names = Group(maybeparens(lparen, tokenlist(import_as_name, comma), rparen))
+    from_import_names = Group(
+        maybeparens(
+            lparen,
+            tokenlist(maybeparens(lparen, import_as_name, rparen), comma),
+            rparen,
+        ),
+    )
     basic_import = keyword("import").suppress() - (import_names | Group(star))
     from_import = (
         keyword("from").suppress()
@@ -2064,6 +2070,8 @@ class Grammar(object):
 # -----------------------------------------------------------------------------------------------------------------------
 # EXTRA GRAMMAR:
 # -----------------------------------------------------------------------------------------------------------------------
+
+    operator_regex = compile_regex(r"operator\b")
 
     def_regex = compile_regex(r"((async|addpattern)\s+)*def\b")
     yield_regex = compile_regex(r"\byield(?!\s+_coconut\.asyncio\.From)\b")

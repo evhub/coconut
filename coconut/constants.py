@@ -209,6 +209,7 @@ none_coalesce_var = reserved_prefix + "_x"
 func_var = reserved_prefix + "_func"
 format_var = reserved_prefix + "_format"
 is_data_var = reserved_prefix + "_is_data"
+custom_op_var = reserved_prefix + "_op"
 
 # prefer Matcher.get_temp_var to proliferating more vars here
 match_to_args_var = reserved_prefix + "_match_args"
@@ -270,6 +271,7 @@ reserved_vars = (
     "where",
     "addpattern",
     "then",
+    "operator",
     "\u03bb",  # lambda
 )
 
@@ -687,7 +689,7 @@ all_reqs = {
 
 # min versions are inclusive
 min_versions = {
-    "cPyparsing": (2, 4, 7, 1, 1, 0),
+    "cPyparsing": (2, 4, 7, 1, 2, 0),
     ("pre-commit", "py3"): (2, 20),
     "psutil": (5,),
     "jupyter": (1, 0),

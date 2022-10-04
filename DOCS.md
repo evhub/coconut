@@ -441,41 +441,42 @@ depth: 1
 
 In order of precedence, highest first, the operators supported in Coconut are:
 ```
-===================== ==========================
-Symbol(s)             Associativity
-===================== ==========================
-f x                   n/a
-await x               n/a
-..                    n/a
-**                    right
-+, -, ~               unary
-*, /, //, %, @        left
-+, -                  left
-<<, >>                left
-&                     left
-^                     left
-|                     left
-::                    n/a (lazy)
-a `b` c               left (captures lambda)
-??                    left (short-circuits)
-..>, <.., ..*>, <*.., n/a (captures lambda)
+====================== ==========================
+Symbol(s)              Associativity
+====================== ==========================
+f x                    n/a
+await x                n/a
+..                     n/a
+**                     right
++, -, ~                unary
+*, /, //, %, @         left
++, -                   left
+<<, >>                 left
+&                      left
+^                      left
+|                      left
+::                     n/a (lazy)
+a `b` c,               left (captures lambda)
+  all custom operators
+??                     left (short-circuits)
+..>, <.., ..*>, <*..,  n/a (captures lambda)
   ..**>, <**..
-|>, <|, |*>, <*|,     left (captures lambda)
+|>, <|, |*>, <*|,      left (captures lambda)
   |**>, <**|
 ==, !=, <, >,
   <=, >=,
   in, not in,
-  is, is not          n/a
-not                   unary
-and                   left (short-circuits)
-or                    left (short-circuits)
-x if c else y,        ternary left (short-circuits)
+  is, is not           n/a
+not                    unary
+and                    left (short-circuits)
+or                     left (short-circuits)
+x if c else y,         ternary left (short-circuits)
   if c then x else y
-->                    right
-===================== ==========================
+->                     right
+====================== ==========================
 ```
 
-Note that because addition has a greater precedence than piping, expressions of the form `x |> y + z` are equivalent to `x |> (y + z)`.
+For example, since addition has a higher precedence than piping, expressions of the form `x |> y + z` are equivalent to `x |> (y + z)`.
 
 ### Lambdas
 
@@ -653,46 +654,6 @@ fog = lambda *args, **kwargs: f(g(*args, **kwargs))
 f_into_g = lambda *args, **kwargs: g(f(*args, **kwargs))
 ```
 
-### Infix Functions
-
-Coconut allows for infix function calling, where an expression that evaluates to a function is surrounded by backticks and then can have arguments placed in front of or behind it. Infix calling has a precedence in-between chaining and `None`-coalescing, and is left-associative.
-
-The allowable notations for infix calls are:
-```coconut
-x `f` y  =>  f(x, y)
-`f` x    =>  f(x)
-x `f`    =>  f(x)
-`f`      =>  f()
-```
-Additionally, infix notation supports a lambda as the last argument, despite lambdas having a lower precedence. Thus, ``a `func` b -> c`` is equivalent to `func(a, b -> c)`.
-
-Coconut also supports infix function definition to make defining functions that are intended for infix usage simpler. The syntax for infix function definition is
-```coconut
-def <arg> `<name>` <arg>:
-    <body>
-```
-where `<name>` is the name of the function, the `<arg>`s are the function arguments, and `<body>` is the body of the function. If an `<arg>` includes a default, the `<arg>` must be surrounded in parentheses.
-
-_Note: Infix function definition can be combined with assignment and/or pattern-matching function definition._
-
-##### Rationale
-
-A common idiom in functional programming is to write functions that are intended to behave somewhat like operators, and to call and define them by placing them between their arguments. Coconut's infix syntax makes this possible.
-
-##### Example
-
-**Coconut:**
-```coconut
-def a `mod` b = a % b
-(x `mod` 2) `print`
-```
-
-**Python:**
-```coconut_python
-def mod(a, b): return a % b
-print(mod(x, 2))
-```
-
 ### Iterator Slicing
 
 Coconut uses a `$` sign right after an iterator before a slice to perform iterator slicing, as in `it$[:5]`. Coconut's iterator slicing works much the same as Python's sequence slicing, and looks much the same as Coconut's partial application, but with brackets instead of parentheses.
@@ -741,6 +702,100 @@ def N(n=0) = (n,) :: N(n+1)  # no infinite loop because :: is lazy
 
 **Python:**
 _Can't be done without a complicated iterator comprehension in place of the lazy chaining. See the compiled code for the Python syntax._
+
+### Infix Functions
+
+Coconut allows for infix function calling, where an expression that evaluates to a function is surrounded by backticks and then can have arguments placed in front of or behind it. Infix calling has a precedence in-between chaining and `None`-coalescing, and is left-associative.
+
+The allowable notations for infix calls are:
+```coconut
+x `f` y  =>  f(x, y)
+`f` x    =>  f(x)
+x `f`    =>  f(x)
+`f`      =>  f()
+```
+Additionally, infix notation supports a lambda as the last argument, despite lambdas having a lower precedence. Thus, ``a `func` b -> c`` is equivalent to `func(a, b -> c)`.
+
+Coconut also supports infix function definition to make defining functions that are intended for infix usage simpler. The syntax for infix function definition is
+```coconut
+def <arg> `<name>` <arg>:
+    <body>
+```
+where `<name>` is the name of the function, the `<arg>`s are the function arguments, and `<body>` is the body of the function. If an `<arg>` includes a default, the `<arg>` must be surrounded in parentheses.
+
+_Note: Infix function definition can be combined with assignment and/or pattern-matching function definition._
+
+##### Rationale
+
+A common idiom in functional programming is to write functions that are intended to behave somewhat like operators, and to call and define them by placing them between their arguments. Coconut's infix syntax makes this possible.
+
+##### Example
+
+**Coconut:**
+```coconut
+def a `mod` b = a % b
+(x `mod` 2) `print`
+```
+
+**Python:**
+```coconut_python
+def mod(a, b): return a % b
+print(mod(x, 2))
+```
+
+### Custom Operators
+
+Coconut allows you to define your own custom operators with the syntax
+```
+operator <op>
+```
+where `<op>` is whatever sequence of Unicode characters you want to use as a custom operator. The `operator` statement must appear at the top level and only affects code that comes after it.
+
+Once defined, you can use your custom operator anywhere where you would be able to use an [infix function](#infix-functions) as well as refer to the actual operator itself with the same `(<op>)` syntax as in other [operator functions](#operator-functions). Since custom operators work like infix functions, they always have the same precedence as infix functions and are always left-associative. Custom operators can be used as both unary operators and binary operators, and both prefix and postfix notation for unary operators is supported.
+
+Note that custom operators will usually need to be surrounded by whitespace (or parentheses when used as an operator function) to be parsed correctly.
+
+Some example syntaxes for defining custom operators:
+```
+def x <op> y: ...
+def x <op> y = ...
+(<op>) = ...
+from module import (<op>)
+```
+
+Note that, when importing custom operators, you must use a `from` import and must have an `operator` statement declaring the custom operator before the import.
+
+And some example syntaxes for using custom operators:
+```
+x <op> y
+x <op> y <op> z
+<op> x
+x <op>
+x = (<op>)
+f(<op>)
+(x <op> .)
+(. <op> y)
+```
+
+##### Examples
+
+**Coconut:**
+```coconut
+operator %%
+(%%) = math.remainder
+10 %% 3 |> print
+
+operator !!
+(!!) = bool
+!! 0 |> print
+```
+
+**Python:**
+```coconut_python
+print(math.remainder(10, 3))
+
+print(bool(0))
+```
 
 ### None Coalescing
 
