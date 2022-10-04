@@ -112,6 +112,7 @@ def test_setup_none() -> bool:
     assert_raises(-> parse("def f(x) = return x"), CoconutSyntaxError)
     assert_raises(-> parse("def f(x) =\n return x"), CoconutSyntaxError)
     assert_raises(-> parse('f"Black holes {*all_black_holes} and revelations"'), CoconutSyntaxError, err_has="format string")
+    assert_raises(-> parse("operator ++\noperator ++"), CoconutSyntaxError, err_has="custom operator already declared")
 
     assert_raises(-> parse("$"), CoconutParseError, err_has=" ^")
     assert_raises(-> parse("range(1,10) |> reduce$(*, initializer = 1000) |> print"), CoconutParseError, err_has=" ~~~~~~~~~~~~~~~~~~~~~~~~^")
