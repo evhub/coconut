@@ -2074,6 +2074,7 @@ class Grammar(object):
 
     operator_regex = compile_regex(r"operator\b")
     existing_operator_regex = compile_regex(r"([.;[\](){}\\]|([+-=@%^&|*:,/<>~]|\*\*|//|>>|<<)=?|!=|" + r"|".join(new_operators) + r")$")
+    whitespace_regex = compile_regex(r"\s")
 
     def_regex = compile_regex(r"((async|addpattern)\s+)*def\b")
     yield_regex = compile_regex(r"\byield(?!\s+_coconut\.asyncio\.From)\b")

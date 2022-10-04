@@ -75,6 +75,8 @@ from coconut.constants import (
     super_names,
     custom_op_var,
     all_keywords,
+    internally_reserved_symbols,
+    exit_chars,
 )
 from coconut.util import (
     pickleable_obj,
@@ -1112,11 +1114,16 @@ class Compiler(Grammar, pickleable_obj):
                 internal_assert(lambda: base_line.startswith("operator"), "invalid operator line", raw_line)
                 op = base_line[len("operator"):].strip()
                 if not op:
-                    raise self.make_err(CoconutSyntaxError, "empty operator definition statement", raw_line, ln=self.adjust(ln))
+                    raise self.make_err(CoconutSyntaxError, "empty operator declaration statement", raw_line, ln=self.adjust(ln))
                 if op in all_keywords:
                     raise self.make_err(CoconutSyntaxError, "cannot redefine keyword " + repr(op), raw_line, ln=self.adjust(ln))
+                if self.whitespace_regex.search(op):
+                    raise self.make_err(CoconutSyntaxError, "custom operators cannot contain whitespace", raw_line, ln=self.adjust(ln))
                 if self.existing_operator_regex.match(op):
                     raise self.make_err(CoconutSyntaxError, "cannot redefine existing operator " + repr(op), raw_line, ln=self.adjust(ln))
+                for sym in internally_reserved_symbols + exit_chars:
+                    if sym in op:
+                        raise self.make_err(CoconutSyntaxError, "invalid custom operator", raw_line, ln=self.adjust(ln))
                 op_name = custom_op_var
                 for c in op:
                     op_name += "_U" + str(ord(c))
