@@ -162,6 +162,10 @@ class Command(object):
         else:
             self.comp.setup(*args, **kwargs)
 
+    def parse_block(self, code):
+        """Compile a block of code for the interpreter."""
+        return self.comp.parse_block(code, keep_operators=True)
+
     def exit_on_error(self):
         """Exit if exit_code is abnormal."""
         if self.exit_code:
@@ -287,13 +291,13 @@ class Command(object):
 
         # handle extra cli tasks
         if args.code is not None:
-            self.execute(self.comp.parse_block(args.code))
+            self.execute(self.parse_block(args.code))
         got_stdin = False
         if args.jupyter is not None:
             self.start_jupyter(args.jupyter)
         elif stdin_readable():
             logger.log("Reading piped input from stdin...")
-            self.execute(self.comp.parse_block(sys.stdin.read()))
+            self.execute(self.parse_block(sys.stdin.read()))
             got_stdin = True
         if args.interact or (
             interact and not (
@@ -658,7 +662,7 @@ class Command(object):
         if not self.prompt.multiline:
             if not should_indent(code):
                 try:
-                    return self.comp.parse_block(code)
+                    return self.parse_block(code)
                 except CoconutException:
                     pass
             while True:
@@ -670,7 +674,7 @@ class Command(object):
                 else:
                     break
         try:
-            return self.comp.parse_block(code)
+            return self.parse_block(code)
         except CoconutException:
             logger.print_exc()
         return None

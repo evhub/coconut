@@ -1,5 +1,9 @@
 from .util import *  # type: ignore
 
+operator <$
+operator !!
+from .util import (<$), (!!)
+
 def suite_test() -> bool:
     """Executes the main test suite."""
     assert 1 `plus` 1 == 2 == 1 `(+)` 1
@@ -915,6 +919,18 @@ forward 2""") == 900
     assert [X;X] == Arr((2,4), [1,2,1,2;;3,4,3,4]) == Arr((2,4), [X.arr; X.arr])
     assert [X;;X] == Arr((4,2), [1,2;;3,4;;1,2;;3,4]) == Arr((4,2), [X.arr;;X.arr])
     assert [X;;;X] == Arr((2,2,2), [1,2;;3,4;;;1,2;;3,4]) == Arr((2,2,2), [X.arr;;;X.arr])
+    assert 10 <$ [1, 2, 3] == [10, 10, 10] == (<$)(10, [1, 2, 3])
+    assert [1, 2, 3] |> (10 <$ .) == [10, 10, 10]
+    ten = 10
+    one_two_three = Arr((3,), [1, 2, 3])
+    assert ten<$one_two_three == Arr((3,), [10, 10, 10])
+    assert ten*2 <$ -one_two_three == Arr((3,), [20, 20, 20])
+    assert 10 <$ one_two_three |> fmap$(.+1) == Arr((3,), [11, 11, 11])
+    assert !!ten
+    assert ten!!
+    assert not !! 0
+    assert not 0 !!
+    assert range(3) |> map$(!!) |> list == [False, True, True]
 
     # must come at end
     assert fibs_calls[0] == 1

@@ -137,6 +137,40 @@ Keyword.setDefaultKeywordChars(varchars)
 
 
 # -----------------------------------------------------------------------------------------------------------------------
+# PACKRAT CONTEXT:
+# -----------------------------------------------------------------------------------------------------------------------
+
+if PYPARSING_PACKAGE == "cPyparsing":
+    assert hasattr(ParserElement, "packrat_context"), "invalid cPyparsing install: " + str(PYPARSING_INFO)
+elif not MODERN_PYPARSING:
+    def _parseCache(self, instring, loc, doActions=True, callPreParse=True):
+        HIT, MISS = 0, 1
+        # [CPYPARSING] include packrat_context
+        lookup = (self, instring, loc, callPreParse, doActions, tuple(self.packrat_context))
+        with ParserElement.packrat_cache_lock:
+            cache = ParserElement.packrat_cache
+            value = cache.get(lookup)
+            if value is cache.not_in_cache:
+                ParserElement.packrat_cache_stats[MISS] += 1
+                try:
+                    value = self._parseNoCache(instring, loc, doActions, callPreParse)
+                except ParseBaseException as pe:
+                    # cache a copy of the exception, without the traceback
+                    cache.set(lookup, pe.__class__(*pe.args))
+                    raise
+                else:
+                    cache.set(lookup, (value[0], value[1].copy()))
+                    return value
+            else:
+                ParserElement.packrat_cache_stats[HIT] += 1
+                if isinstance(value, Exception):
+                    raise value
+                return value[0], value[1].copy()
+    ParserElement.packrat_context = []
+    ParserElement._parseCache = _parseCache
+
+
+# -----------------------------------------------------------------------------------------------------------------------
 # FAST REPRS:
 # -----------------------------------------------------------------------------------------------------------------------
 

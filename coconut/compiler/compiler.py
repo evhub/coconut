@@ -30,6 +30,7 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 from coconut.root import *  # NOQA
 
 import sys
+import re
 from contextlib import contextmanager
 from functools import partial, wraps
 from collections import defaultdict
@@ -72,6 +73,7 @@ from coconut.constants import (
     default_whitespace_chars,
     early_passthrough_wrapper,
     super_names,
+    custom_op_var,
 )
 from coconut.util import (
     pickleable_obj,
@@ -342,11 +344,13 @@ class Compiler(Grammar, pickleable_obj):
     """The Coconut compiler."""
     lock = Lock()
     current_compiler = [None]  # list for mutability
+    operators = None
 
     preprocs = [
         lambda self: self.prepare,
         lambda self: self.str_proc,
         lambda self: self.passthrough_proc,
+        lambda self: self.operator_proc,
         lambda self: self.ind_proc,
     ]
 
@@ -423,7 +427,7 @@ class Compiler(Grammar, pickleable_obj):
             ),
         )
 
-    def reset(self):
+    def reset(self, keep_operators=False):
         """Resets references."""
         self.indchar = None
         self.comments = {}
@@ -439,6 +443,9 @@ class Compiler(Grammar, pickleable_obj):
         self.original_lines = []
         self.num_lines = 0
         self.disable_name_check = False
+        if self.operators is None or not keep_operators:
+            self.operators = []
+            self.operator_repl_table = {}
 
     @contextmanager
     def inner_environment(self):
@@ -819,7 +826,7 @@ class Compiler(Grammar, pickleable_obj):
         """Return information on the current target as a version tuple."""
         return get_target_info(self.target)
 
-    def make_err(self, errtype, message, original, loc, ln=None, extra=None, reformat=True, include_endpoint=False, include_causes=False, **kwargs):
+    def make_err(self, errtype, message, original, loc=0, ln=None, extra=None, reformat=True, include_endpoint=False, include_causes=False, **kwargs):
         """Generate an error of the specified type."""
         # move loc back to end of most recent actual text
         while loc >= 2 and original[loc - 1:loc + 1].rstrip("".join(indchars) + default_whitespace_chars) == "":
@@ -903,16 +910,16 @@ class Compiler(Grammar, pickleable_obj):
             return self.post(parsed, **postargs)
 
     @contextmanager
-    def parsing(self):
+    def parsing(self, **kwargs):
         """Acquire the lock and reset the parser."""
         with self.lock:
-            self.reset()
+            self.reset(**kwargs)
             self.current_compiler[0] = self
             yield
 
-    def parse(self, inputstring, parser, preargs, postargs):
+    def parse(self, inputstring, parser, preargs, postargs, **kwargs):
         """Use the parser to parse the inputstring with appropriate setup and teardown."""
-        with self.parsing():
+        with self.parsing(**kwargs):
             with logger.gather_parsing_stats():
                 pre_procd = None
                 try:
@@ -1090,6 +1097,35 @@ class Compiler(Grammar, pickleable_obj):
         if hold is not None or found is not None:
             raise self.make_err(CoconutSyntaxError, "unclosed passthrough", inputstring, i)
 
+        self.set_skips(skips)
+        return "".join(out)
+
+    def operator_proc(self, inputstring, **kwargs):
+        """Process custom operator definitons."""
+        out = []
+        skips = self.copy_skips()
+        for i, raw_line in enumerate(logical_lines(inputstring, keep_newlines=True)):
+            ln = i + 1
+            new_line = raw_line
+            for repl, to in self.operator_repl_table.items():
+                new_line = repl.sub(lambda match: to, new_line)
+            base_line = rem_comment(new_line)
+            if self.operator_regex.match(base_line):
+                internal_assert(lambda: base_line.startswith("operator"), "invalid operator line", raw_line)
+                op = base_line[len("operator"):].strip()
+                if not op:
+                    raise self.make_err(CoconutSyntaxError, "empty operator definition statement", raw_line, ln=self.adjust(ln))
+                op_name = custom_op_var
+                for c in op:
+                    op_name += "_U" + str(ord(c))
+                self.operators.append(op_name)
+                self.operator_repl_table[compile_regex(r"\(" + re.escape(op) + r"\)")] = "(" + op_name + ")"
+                self.operator_repl_table[compile_regex(r"(?:\b|\s)" + re.escape(op) + r"(?=\b|\s)")] = " `" + op_name + "`"
+                skips = addskip(skips, self.adjust(ln))
+            elif self.operator_regex.match(base_line.strip()):
+                raise self.make_err(CoconutSyntaxError, "operator definition statement only allowed at top level", raw_line, ln=self.adjust(ln))
+            else:
+                out.append(new_line)
         self.set_skips(skips)
         return "".join(out)
 
@@ -3475,7 +3511,7 @@ for {match_to_var} in {item}:
                     self.add_code_before_replacements[temp_marker] = name
                     return temp_marker
             return name
-        elif name.startswith(reserved_prefix):
+        elif name.startswith(reserved_prefix) and name not in self.operators:
             raise CoconutDeferredSyntaxError("variable names cannot start with reserved prefix " + reserved_prefix, loc)
         else:
             return name
@@ -3525,50 +3561,50 @@ for {match_to_var} in {item}:
 # ENDPOINTS:
 # -----------------------------------------------------------------------------------------------------------------------
 
-    def parse_single(self, inputstring):
+    def parse_single(self, inputstring, **kwargs):
         """Parse line code."""
-        return self.parse(inputstring, self.single_parser, {}, {"header": "none", "initial": "none"})
+        return self.parse(inputstring, self.single_parser, {}, {"header": "none", "initial": "none"}, **kwargs)
 
-    def parse_file(self, inputstring, addhash=True):
+    def parse_file(self, inputstring, addhash=True, **kwargs):
         """Parse file code."""
         if addhash:
             use_hash = self.genhash(inputstring)
         else:
             use_hash = None
-        return self.parse(inputstring, self.file_parser, {"nl_at_eof_check": True}, {"header": "file", "use_hash": use_hash})
+        return self.parse(inputstring, self.file_parser, {"nl_at_eof_check": True}, {"header": "file", "use_hash": use_hash}, **kwargs)
 
-    def parse_exec(self, inputstring):
+    def parse_exec(self, inputstring, **kwargs):
         """Parse exec code."""
-        return self.parse(inputstring, self.file_parser, {}, {"header": "file", "initial": "none"})
+        return self.parse(inputstring, self.file_parser, {}, {"header": "file", "initial": "none"}, **kwargs)
 
-    def parse_package(self, inputstring, package_level=0, addhash=True):
+    def parse_package(self, inputstring, package_level=0, addhash=True, **kwargs):
         """Parse package code."""
         internal_assert(package_level >= 0, "invalid package level", package_level)
         if addhash:
             use_hash = self.genhash(inputstring, package_level)
         else:
             use_hash = None
-        return self.parse(inputstring, self.file_parser, {"nl_at_eof_check": True}, {"header": "package:" + str(package_level), "use_hash": use_hash})
+        return self.parse(inputstring, self.file_parser, {"nl_at_eof_check": True}, {"header": "package:" + str(package_level), "use_hash": use_hash}, **kwargs)
 
-    def parse_block(self, inputstring):
+    def parse_block(self, inputstring, **kwargs):
         """Parse block code."""
-        return self.parse(inputstring, self.file_parser, {}, {"header": "none", "initial": "none"})
+        return self.parse(inputstring, self.file_parser, {}, {"header": "none", "initial": "none"}, **kwargs)
 
-    def parse_sys(self, inputstring):
+    def parse_sys(self, inputstring, **kwargs):
         """Parse code to use the Coconut module."""
-        return self.parse(inputstring, self.file_parser, {}, {"header": "sys", "initial": "none"})
+        return self.parse(inputstring, self.file_parser, {}, {"header": "sys", "initial": "none"}, **kwargs)
 
-    def parse_eval(self, inputstring):
+    def parse_eval(self, inputstring, **kwargs):
         """Parse eval code."""
-        return self.parse(inputstring, self.eval_parser, {"strip": True}, {"header": "none", "initial": "none", "final_endline": False})
+        return self.parse(inputstring, self.eval_parser, {"strip": True}, {"header": "none", "initial": "none", "final_endline": False}, **kwargs)
 
-    def parse_lenient(self, inputstring):
+    def parse_lenient(self, inputstring, **kwargs):
         """Parse any code."""
-        return self.parse(inputstring, self.file_parser, {"strip": True}, {"header": "none", "initial": "none", "final_endline": False})
+        return self.parse(inputstring, self.file_parser, {"strip": True}, {"header": "none", "initial": "none", "final_endline": False}, **kwargs)
 
-    def parse_xonsh(self, inputstring):
+    def parse_xonsh(self, inputstring, **kwargs):
         """Parse xonsh code."""
-        return self.parse(inputstring, self.xonsh_parser, {"strip": True}, {"header": "none", "initial": "none"})
+        return self.parse(inputstring, self.xonsh_parser, {"strip": True}, {"header": "none", "initial": "none"}, **kwargs)
 
     def warm_up(self):
         """Warm up the compiler by running something through it."""

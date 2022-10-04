@@ -479,25 +479,35 @@ class Wrap(ParseElementEnhance):
 
     def __init__(self, item, wrapper):
         super(Wrap, self).__init__(item)
-        self.errmsg = item.errmsg + " (Wrapped)"
         self.wrapper = wrapper
-        self.setName(get_name(item))
+        self.setName(get_name(item) + " (Wrapped)")
 
-    @property
-    def _wrapper_name(self):
-        """Wrapper display name."""
-        return self.name + " wrapper"
+    @contextmanager
+    def wrapped_packrat_context(self):
+        """Context manager that edits the packrat_context.
+
+        Required to allow the packrat cache to distinguish between wrapped
+        and unwrapped parses. Only supported natively on cPyparsing."""
+        if hasattr(self, "packrat_context"):
+            self.packrat_context.append(self.wrapper)
+            try:
+                yield
+            finally:
+                self.packrat_context.pop()
+        else:
+            yield
 
     @override
     def parseImpl(self, original, loc, *args, **kwargs):
         """Wrapper around ParseElementEnhance.parseImpl."""
         if logger.tracing:  # avoid the overhead of the call if not tracing
-            logger.log_trace(self._wrapper_name, original, loc)
+            logger.log_trace(self.name, original, loc)
         with logger.indent_tracing():
             with self.wrapper(self, original, loc):
-                evaluated_toks = super(Wrap, self).parseImpl(original, loc, *args, **kwargs)
+                with self.wrapped_packrat_context():
+                    evaluated_toks = super(Wrap, self).parseImpl(original, loc, *args, **kwargs)
         if logger.tracing:  # avoid the overhead of the call if not tracing
-            logger.log_trace(self._wrapper_name, original, loc, evaluated_toks)
+            logger.log_trace(self.name, original, loc, evaluated_toks)
         return evaluated_toks
 
 

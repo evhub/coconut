@@ -140,6 +140,13 @@ sum_ = reduce$((+))
 add = zipwith$((+))
 add_ = zipwith_$(+)
 
+# Operators:
+operator <$  # fmapConst
+def x <$ xs = fmap(-> x, xs)
+
+operator !!  # bool
+(!!) = bool
+
 # Quick-Sorts:
 def qsort1(l: int[]) -> int[]:
     '''Non-Functional Quick Sort.'''
@@ -1579,3 +1586,9 @@ data Arr(shape, arr):
                     getind(arr.arr, ind),
                 )
         return cls(new_shape, new_arr)
+    def __fmap__(self, func):
+        new_arr = zeros(self.shape)
+        for ind in indices(self.shape):
+            setind(new_arr, ind, func(getind(self.arr, ind)))
+        return self.__class__(self.shape, new_arr)
+    def __neg__(self) = self |> fmap$(-)
