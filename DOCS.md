@@ -753,17 +753,13 @@ where `<op>` is whatever sequence of Unicode characters you want to use as a cus
 
 Once defined, you can use your custom operator anywhere where you would be able to use an [infix function](#infix-functions) as well as refer to the actual operator itself with the same `(<op>)` syntax as in other [operator functions](#operator-functions). Since custom operators work like infix functions, they always have the same precedence as infix functions and are always left-associative. Custom operators can be used as binary, unary, or none-ary operators, and both prefix and postfix notation for unary operators is supported.
 
-Note that custom operators will usually need to be surrounded by whitespace (or parentheses when used as an operator function) to be parsed correctly.
-
 Some example syntaxes for defining custom operators:
 ```
 def x <op> y: ...
 def x <op> y = ...
 (<op>) = ...
-from module import (<op>)
+from module import name as (<op>)
 ```
-
-Note that, when importing custom operators, you must use a `from` import and must have an `operator` statement declaring the custom operator before the import.
 
 And some example syntaxes for using custom operators:
 ```
@@ -776,6 +772,13 @@ f(<op>)
 (x <op> .)
 (. <op> y)
 ```
+
+Additionally, to import custom operators from other modules, Coconut supports the special syntax:
+```
+from <module> import operator <op>
+```
+
+Note that custom operators will usually need to be surrounded by whitespace (or parentheses when used as an operator function) to be parsed correctly.
 
 ##### Examples
 
