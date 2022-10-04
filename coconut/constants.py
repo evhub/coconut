@@ -181,27 +181,6 @@ default_encoding = "utf-8"
 hash_prefix = "# __coconut_hash__ = "
 hash_sep = "\x00"
 
-openindent = "\u204b"  # reverse pilcrow
-closeindent = "\xb6"  # pilcrow
-strwrapper = "\u25b6"  # black right-pointing triangle
-lnwrapper = "\u2021"  # double dagger
-early_passthrough_wrapper = "\u2038"  # caret
-unwrapper = "\u23f9"  # stop square
-funcwrapper = "def:"
-
-# must be tuples for .startswith / .endswith purposes
-indchars = (openindent, closeindent, "\n")
-comment_chars = ("#", lnwrapper)
-
-opens = "([{"  # opens parenthetical
-closes = ")]}"  # closes parenthetical
-holds = "'\""  # string open/close chars
-
-taberrfmt = 2  # spaces to indent exceptions
-tabideal = 4  # spaces to indent code for displaying
-
-justify_len = 79  # ideal line length
-
 reserved_prefix = "_coconut"
 
 # prefer Compiler.get_temp_var to proliferating more vars here
@@ -216,6 +195,40 @@ match_to_args_var = reserved_prefix + "_match_args"
 match_to_kwargs_var = reserved_prefix + "_match_kwargs"
 function_match_error_var = reserved_prefix + "_FunctionMatchError"
 match_set_name_var = reserved_prefix + "_match_set_name"
+
+# should match internally_reserved_symbols below
+openindent = "\u204b"  # reverse pilcrow
+closeindent = "\xb6"  # pilcrow
+strwrapper = "\u25b6"  # black right-pointing triangle
+lnwrapper = "\u2021"  # double dagger
+early_passthrough_wrapper = "\u2038"  # caret
+unwrapper = "\u23f9"  # stop square
+funcwrapper = "def:"
+
+# should match the constants defined above
+internally_reserved_symbols = (
+    reserved_prefix,
+    "\u204b",
+    "\xb6",
+    "\u25b6",
+    "\u2021",
+    "\u2038",
+    "\u23f9",
+    "def:",
+)
+
+# must be tuples for .startswith / .endswith purposes
+indchars = (openindent, closeindent, "\n")
+comment_chars = ("#", lnwrapper)
+
+opens = "([{"  # opens parenthetical
+closes = ")]}"  # closes parenthetical
+holds = "'\""  # string open/close chars
+
+taberrfmt = 2  # spaces to indent exceptions
+tabideal = 4  # spaces to indent code for displaying
+
+justify_len = 79  # ideal line length
 
 # for pattern-matching
 default_matcher_style = "python warn"
@@ -556,6 +569,7 @@ new_operators = (
     r"\$",
     r"`",
     r"::",
+    r";+",
     r"(?:<\*?\*?)?(?!\.\.\.)\.\.(?:\*?\*?>)?",  # ..
     r"\|\??\*?\*?>",
     r"<\*?\*?\|",
