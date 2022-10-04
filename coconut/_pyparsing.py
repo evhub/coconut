@@ -85,15 +85,16 @@ min_ver = min(min_versions["pyparsing"], min_versions["cPyparsing"][:3])  # incl
 max_ver = get_next_version(max(min_versions["pyparsing"], min_versions["cPyparsing"][:3]))  # exclusive
 cur_ver = None if __version__ is None else ver_str_to_tuple(__version__)
 
+min_ver_str = ver_tuple_to_str(min_ver)
+max_ver_str = ver_tuple_to_str(max_ver)
+
 if cur_ver is None or cur_ver < min_ver:
-    min_ver_str = ver_tuple_to_str(min_ver)
     raise ImportError(
-        "Coconut requires pyparsing/cPyparsing version >= " + min_ver_str
+        "This version of Coconut requires pyparsing/cPyparsing version >= " + min_ver_str
         + ("; got " + PYPARSING_INFO if PYPARSING_INFO is not None else "")
         + " (run '{python} -m pip install --upgrade {package}' to fix)".format(python=sys.executable, package=PYPARSING_PACKAGE),
     )
 elif cur_ver >= max_ver:
-    max_ver_str = ver_tuple_to_str(max_ver)
     warn(
         "This version of Coconut was built for pyparsing/cPyparsing versions < " + max_ver_str
         + ("; got " + PYPARSING_INFO if PYPARSING_INFO is not None else "")
@@ -141,7 +142,12 @@ Keyword.setDefaultKeywordChars(varchars)
 # -----------------------------------------------------------------------------------------------------------------------
 
 if PYPARSING_PACKAGE == "cPyparsing":
-    assert hasattr(ParserElement, "packrat_context"), "invalid cPyparsing install: " + str(PYPARSING_INFO)
+    if not hasattr(ParserElement, "packrat_context"):
+        raise ImportError(
+            "This version of Coconut requires cPyparsing>=" + ver_tuple_to_str(min_versions["cPyparsing"])
+            + "; got cPyparsing==" + __version__
+            + " (run '{python} -m pip install --upgrade cPyparsing' to fix)".format(python=sys.executable),
+        )
 elif not MODERN_PYPARSING:
     def _parseCache(self, instring, loc, doActions=True, callPreParse=True):
         HIT, MISS = 0, 1
@@ -168,6 +174,11 @@ elif not MODERN_PYPARSING:
                 return value[0], value[1].copy()
     ParserElement.packrat_context = []
     ParserElement._parseCache = _parseCache
+else:
+    warn(
+        "This version of Coconut is not built for pyparsing v3; some syntax features WILL NOT WORK"
+        + " (run either '{python} -m pip install --upgrade cPyparsing' or '{python} -m pip install pyparsing<{max_ver}' to fix)".format(python=sys.executable, max_ver=max_ver_str),
+    )
 
 
 # -----------------------------------------------------------------------------------------------------------------------
