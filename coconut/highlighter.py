@@ -35,6 +35,7 @@ from coconut.constants import (
     magic_methods,
     template_ext,
     exceptions,
+    main_prompt,
 )
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -80,6 +81,7 @@ class CoconutLexer(Python3Lexer):
 
     tokens = Python3Lexer.tokens.copy()
     tokens["root"] = [
+        (main_prompt.strip(), Operator),
         (r"|".join(new_operators), Operator),
         (
             r'(?<!\\)(:?match)?((?:\s|\\\s)+)(:?data)((?:\s|\\\s)+)',
