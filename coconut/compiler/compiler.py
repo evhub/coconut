@@ -1110,36 +1110,55 @@ class Compiler(Grammar, pickleable_obj):
         for i, raw_line in enumerate(logical_lines(inputstring, keep_newlines=True)):
             ln = i + 1
             base_line = rem_comment(raw_line)
-            if self.operator_regex.match(base_line):
-                internal_assert(lambda: base_line.startswith("operator"), "invalid operator line", raw_line)
-                op = base_line[len("operator"):].strip()
+            stripped_line = base_line.lstrip()
+
+            use_line = False
+            if self.operator_regex.match(stripped_line):
+                internal_assert(lambda: stripped_line.startswith("operator"), "invalid operator line", raw_line)
+                op = stripped_line[len("operator"):].strip()
                 if not op:
                     raise self.make_err(CoconutSyntaxError, "empty operator declaration statement", raw_line, ln=self.adjust(ln))
-                if op in all_keywords:
-                    raise self.make_err(CoconutSyntaxError, "cannot redefine keyword " + repr(op), raw_line, ln=self.adjust(ln))
+                # whitespace generally means it's not an operator definition statement
+                #  (e.g. it's something like "operator = 1" instead)
                 if self.whitespace_regex.search(op):
-                    raise self.make_err(CoconutSyntaxError, "custom operators cannot contain whitespace", raw_line, ln=self.adjust(ln))
-                if self.existing_operator_regex.match(op):
-                    raise self.make_err(CoconutSyntaxError, "cannot redefine existing operator " + repr(op), raw_line, ln=self.adjust(ln))
-                for sym in internally_reserved_symbols + exit_chars:
-                    if sym in op:
-                        raise self.make_err(CoconutSyntaxError, "invalid custom operator", raw_line, ln=self.adjust(ln))
-                op_name = custom_op_var
-                for c in op:
-                    op_name += "_U" + str(ord(c))
-                if op_name in self.operators:
-                    raise self.make_err(CoconutSyntaxError, "custom operator already declared", raw_line, ln=self.adjust(ln))
-                self.operators.append(op_name)
-                self.operator_repl_table[compile_regex(r"\(" + re.escape(op) + r"\)")] = "(" + op_name + ")"
-                self.operator_repl_table[compile_regex(r"(?:\b|\s)" + re.escape(op) + r"(?=\b|\s)")] = " `" + op_name + "`"
-                skips = addskip(skips, self.adjust(ln))
-            elif self.operator_regex.match(base_line.strip()):
-                raise self.make_err(CoconutSyntaxError, "operator definition statement only allowed at top level", raw_line, ln=self.adjust(ln))
+                    use_line = True
+                else:
+                    if stripped_line != base_line:
+                        raise self.make_err(CoconutSyntaxError, "operator declaration statement only allowed at top level", raw_line, ln=self.adjust(ln))
+                    if op in all_keywords:
+                        raise self.make_err(CoconutSyntaxError, "cannot redefine keyword " + repr(op), raw_line, ln=self.adjust(ln))
+                    if self.existing_operator_regex.match(op):
+                        raise self.make_err(CoconutSyntaxError, "cannot redefine existing operator " + repr(op), raw_line, ln=self.adjust(ln))
+                    for sym in internally_reserved_symbols + exit_chars:
+                        if sym in op:
+                            raise self.make_err(CoconutSyntaxError, "invalid custom operator", raw_line, ln=self.adjust(ln))
+                    op_name = custom_op_var
+                    for c in op:
+                        op_name += "_U" + str(ord(c))
+                    if op_name in self.operators:
+                        raise self.make_err(CoconutSyntaxError, "custom operator already declared", raw_line, ln=self.adjust(ln))
+                    self.operators.append(op_name)
+                    self.operator_repl_table[compile_regex(r"\(" + re.escape(op) + r"\)")] = (None, "(" + op_name + ")")
+                    self.operator_repl_table[compile_regex(r"(\b|\s)" + re.escape(op) + r"(?=\b|\s)")] = (1, "`" + op_name + "`")
             else:
+                use_line = True
+
+            if use_line:
                 new_line = raw_line
-                for repl, to in self.operator_repl_table.items():
-                    new_line = repl.sub(lambda match: to, new_line)
+                for repl, (repl_type, repl_to) in self.operator_repl_table.items():
+                    if repl_type is None:
+                        def sub_func(match):
+                            return repl_to
+                    elif repl_type == 1:
+                        def sub_func(match):
+                            return match.group(1) + repl_to
+                    else:
+                        raise CoconutInternalException("invalid operator_repl_table repl_type", repl_type)
+                    new_line = repl.sub(sub_func, new_line)
                 out.append(new_line)
+            else:
+                skips = addskip(skips, self.adjust(ln))
+
         self.set_skips(skips)
         return "".join(out)
 
