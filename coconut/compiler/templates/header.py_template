@@ -658,20 +658,78 @@ class enumerate(_coconut_base_hashable, _coconut.enumerate):
         new_enumerate.iter = iterable
         new_enumerate.start = start
         return new_enumerate
+    def __repr__(self):
+        return "enumerate(%s, %r)" % (_coconut.repr(self.iter), self.start)
+    def __fmap__(self, func):
+        return _coconut_map(func, self)
+    def __reduce__(self):
+        return (self.__class__, (self.iter, self.start))
+    def __iter__(self):
+        return _coconut.iter(_coconut.enumerate(self.iter, self.start))
     def __getitem__(self, index):
         if _coconut.isinstance(index, _coconut.slice):
             return self.__class__(_coconut_iter_getitem(self.iter, index), self.start + (0 if index.start is None else index.start if index.start >= 0 else _coconut.len(self.iter) + index.start))
         return (self.start + index, _coconut_iter_getitem(self.iter, index))
     def __len__(self):
         return _coconut.len(self.iter)
+class multi_enumerate(_coconut_base_hashable):
+    """Enumerate an iterable of iterables. Works like enumerate, but indexes
+    through inner iterables and produces a tuple index representing the index
+    in each inner iterable. Supports indexing.
+
+    For numpy arrays, effectively equivalent to:
+        it = np.nditer(iterable, flags=["multi_index"])
+        for x in it:
+            yield it.multi_index, x
+
+    Also supports len for numpy arrays.
+    """
+    __slots__ = ("iter",)
+    def __init__(self, iterable):
+        self.iter = iterable
     def __repr__(self):
-        return "enumerate(%s, %r)" % (_coconut.repr(self.iter), self.start)
-    def __reduce__(self):
-        return (self.__class__, (self.iter, self.start))
-    def __iter__(self):
-        return _coconut.iter(_coconut.enumerate(self.iter, self.start))
+        return "multi_enumerate(%s)" % (_coconut.repr(self.iter),)
     def __fmap__(self, func):
         return _coconut_map(func, self)
+    def __reduce__(self):
+        return (self.__class__, (self.iter,))
+    @property
+    def is_numpy(self):
+        return self.iter.__class__.__module__ in _coconut.numpy_modules
+    def __iter__(self):
+        if self.is_numpy:
+            it = _coconut.numpy.nditer(self.iter, flags=["multi_index"])
+            for x in it:
+                yield it.multi_index, x
+        else:
+            ind = [-1]
+            its = [_coconut.iter(self.iter)]
+            while its:
+                ind[-1] += 1
+                try:
+                    x = _coconut.next(its[-1])
+                except _coconut.StopIteration:
+                    ind.pop()
+                    its.pop()
+                else:
+                    if _coconut.isinstance(x, _coconut.abc.Iterable):
+                        ind.append(-1)
+                        its.append(_coconut.iter(x))
+                    else:
+                        yield _coconut.tuple(ind), x
+    def __getitem__(self, index):
+        if self.is_numpy and not _coconut.isinstance(index, _coconut.slice):
+            multi_ind = []
+            for i in _coconut.reversed(self.iter.shape):
+                multi_ind.append(index % i)
+                index //= i
+            multi_ind = _coconut.tuple(_coconut.reversed(multi_ind))
+            return multi_ind, self.iter[multi_ind]
+        return _coconut_iter_getitem(_coconut.iter(self), index)
+    def __len__(self):
+        if self.is_numpy:
+            return self.iter.size
+        return _coconut.NotImplemented
 class count(_coconut_base_hashable):
     """count(start, step) returns an infinite iterator starting at start and increasing by step.
 

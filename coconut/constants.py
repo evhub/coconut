@@ -532,6 +532,7 @@ coconut_specific_builtins = (
     "lift",
     "all_equal",
     "collectby",
+    "multi_enumerate",
     "py_chr",
     "py_hex",
     "py_input",

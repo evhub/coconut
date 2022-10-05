@@ -498,6 +498,9 @@ def reiterable(iterable: _t.Iterable[_T]) -> _t.Iterable[_T]: ...
 _coconut_reiterable = reiterable
 
 
+def multi_enumerate(iterable: _Iterable) -> _t.Iterable[_t.Tuple[_t.Tuple[int, ...], _t.Any]]: ...
+
+
 class _count(_t.Iterable[_T]):
     @_t.overload
     def __new__(self) -> _count[int]: ...
