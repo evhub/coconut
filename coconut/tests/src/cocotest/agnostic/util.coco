@@ -156,6 +156,10 @@ addpattern def (s) lol = s + "ol" where:  # type: ignore
     lols[0] += 1
 lol
 
+operator ***
+match def (x) *** (1) = x
+addpattern def (x) *** (y) = (x *** (y-1)) ** x  # type: ignore
+
 # Quick-Sorts:
 def qsort1(l: int[]) -> int[]:
     '''Non-Functional Quick Sort.'''
