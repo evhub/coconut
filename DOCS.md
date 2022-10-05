@@ -3003,6 +3003,37 @@ iter_of_iters = [[1, 2], [3, 4]]
 flat_it = iter_of_iters |> chain.from_iterable |> list
 ```
 
+### `multi_enumerate`
+
+Coconut's `multi_enumerate` enumerates through an iterable of iterables. `multi_enumerate` works like enumerate, but indexes through inner iterables and produces a tuple index representing the index in each inner iterable. Supports indexing.
+
+For numpy arrays, effectively equivalent to:
+```coconut_python
+def multi_enumerate(iterable):
+    it = np.nditer(iterable, flags=["multi_index"])
+    for x in it:
+        yield it.multi_index, x
+```
+
+Also supports `len` for numpy arrays (and only numpy arrays).
+
+##### Example
+
+**Coconut:**
+```coconut_pycon
+>>> [1, 2;; 3, 4] |> multi_enumerate |> list
+[((0, 0), 1), ((0, 1), 2), ((1, 0), 3), ((1, 1), 4)]
+```
+
+**Python:**
+```coconut_python
+array = [[1, 2], [3, 4]]
+enumerated_array = []
+for i in range(len(array)):
+    for j in range(len(array[i])):
+        enumerated_array.append(((i, j), array[i][j]))
+```
+
 ### `collectby`
 
 `collectby(key_func, iterable)` collects the items in `iterable` into a dictionary of lists keyed by `key_func(item)`.

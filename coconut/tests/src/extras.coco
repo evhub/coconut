@@ -329,6 +329,10 @@ def test_numpy() -> bool:
     )
     assert non_zero_diags([1,0,1;;0,1,0;;1,0,1])
     assert not non_zero_diags([1,0,0;;0,1,0;;1,0,1])
+    enumeration = multi_enumerate(np.array([1, 2;; 3, 4]))
+    assert len(enumeration) == 4  # type: ignore
+    assert enumeration[2] == ((1, 0), 3)  # type: ignore
+    assert list(enumeration) == [((0, 0), 1), ((0, 1), 2), ((1, 0), 3), ((1, 1), 4)]
     return True
 
 
