@@ -31,6 +31,14 @@ from warnings import warn
 from types import MethodType
 from contextlib import contextmanager
 
+if sys.version_info >= (3, 2):
+    from functools import lru_cache
+else:
+    try:
+        from backports.functools_lru_cache import lru_cache
+    except ImportError:
+        lru_cache = None
+
 from coconut.constants import (
     fixpath,
     default_encoding,
@@ -193,6 +201,15 @@ def get_name(expr):
 def noop_ctx():
     """A context manager that does nothing."""
     yield
+
+
+def memoize(maxsize=None, *args, **kwargs):
+    """Decorator that memoizes a function, preventing it from being recomputed
+    if it is called multiple times with the same arguments."""
+    if lru_cache is None:
+        return lambda func: func
+    else:
+        return lru_cache(maxsize, *args, **kwargs)
 
 
 # -----------------------------------------------------------------------------------------------------------------------
