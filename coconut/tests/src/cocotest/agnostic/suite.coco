@@ -1,4 +1,5 @@
 from .util import *  # type: ignore
+from .util import operator
 
 from .util import operator <$
 from .util import operator !!
@@ -940,6 +941,7 @@ forward 2""") == 900
     assert lol lol lol == "lololol"
     lol lol
     assert 1 ++ == 2
+    assert (*) is operator.mul
 
     # must come at end
     assert fibs_calls[0] == 1
