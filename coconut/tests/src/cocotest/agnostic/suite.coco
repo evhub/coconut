@@ -3,6 +3,7 @@ from .util import operator
 
 from .util import operator <$
 from .util import operator !!
+from .util import operator ***
 
 operator lol
 operator ++
@@ -942,6 +943,7 @@ forward 2""") == 900
     lol lol
     assert 1++ == 2 == ++1
     assert (*) is operator.mul
+    assert 2***3 == 16
 
     # must come at end
     assert fibs_calls[0] == 1
