@@ -1,6 +1,7 @@
 # Imports:
 import sys
 import random
+import operator  # NOQA
 from contextlib import contextmanager
 from functools import wraps
 from collections import defaultdict

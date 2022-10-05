@@ -1128,11 +1128,9 @@ class Compiler(Grammar, pickleable_obj):
             if op is None:
                 use_line = True
             else:
-                if not op:
-                    raise self.make_err(CoconutSyntaxError, "empty operator declaration statement", raw_line, ln=self.adjust(ln))
-                # whitespace generally means it's not an operator definition statement
-                #  (e.g. it's something like "operator = 1" instead)
-                if self.whitespace_regex.search(op):
+                # whitespace or just the word operator generally means it's not an operator
+                #  declaration (e.g. it's something like "operator = 1" instead)
+                if not op or self.whitespace_regex.search(op):
                     use_line = True
                 else:
                     if stripped_line != base_line:
