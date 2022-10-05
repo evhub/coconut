@@ -65,6 +65,7 @@ from coconut.util import (
     override,
     get_name,
     get_target_info,
+    memoize,
 )
 from coconut.terminal import (
     logger,
@@ -551,6 +552,7 @@ def disable_outside(item, *elems):
         yield wrapped
 
 
+@memoize()
 def labeled_group(item, label):
     """A labeled pyparsing Group."""
     return Group(item(label))
@@ -621,6 +623,7 @@ def condense(item):
     return attach(item, "".join, ignore_no_tokens=True, ignore_one_token=True)
 
 
+@memoize()
 def maybeparens(lparen, item, rparen, prefer_parens=False):
     """Wrap an item in optional parentheses, only applying them if necessary."""
     if prefer_parens:
@@ -629,6 +632,7 @@ def maybeparens(lparen, item, rparen, prefer_parens=False):
         return item | lparen.suppress() + item + rparen.suppress()
 
 
+@memoize()
 def tokenlist(item, sep, suppress=True, allow_trailing=True, at_least_two=False, require_sep=False):
     """Create a list of tokens matching the item."""
     if suppress:
@@ -740,9 +744,7 @@ def any_keyword_in(kwds):
     return regex_item(r"|".join(k + r"\b" for k in kwds))
 
 
-keyword_cache = {}
-
-
+@memoize()
 def keyword(name, explicit_prefix=None):
     """Construct a grammar which matches name as a Python keyword."""
     if explicit_prefix is not False:
@@ -752,20 +754,11 @@ def keyword(name, explicit_prefix=None):
             extra="pass explicit_prefix to keyword for all reserved_vars and only reserved_vars",
         )
 
-    # always use the same grammar object for the same keyword to
-    #  increase packrat parsing cache hits
-    cached_item = keyword_cache.get((name, explicit_prefix))
-    if cached_item is not None:
-        return cached_item
-
     base_kwd = regex_item(name + r"\b")
     if explicit_prefix in (None, False):
-        new_item = base_kwd
+        return base_kwd
     else:
-        new_item = Optional(explicit_prefix.suppress()) + base_kwd
-
-    keyword_cache[(name, explicit_prefix)] = new_item
-    return new_item
+        return Optional(explicit_prefix.suppress()) + base_kwd
 
 
 boundary = regex_item(r"\b")
