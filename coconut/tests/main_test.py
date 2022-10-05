@@ -723,9 +723,6 @@ class TestCompilation(unittest.TestCase):
     def test_normal(self):
         run()
 
-    def test_and(self):
-        run(["--and"])  # src and dest built by comp
-
     if MYPY:
         def test_universal_mypy_snip(self):
             call(
@@ -754,11 +751,16 @@ class TestCompilation(unittest.TestCase):
         def test_mypy_sys(self):
             run(["--mypy"] + mypy_args, agnostic_target="sys", expect_retcode=None, check_errors=False)  # fails due to tutorial mypy errors
 
+    # run fewer tests on Windows so appveyor doesn't time out
+    if not WINDOWS:
+        def test_strict(self):
+            run(["--strict"])
+
+        def test_line_numbers(self):
+            run(["--line-numbers"])
+
     def test_target(self):
         run(agnostic_target=(2 if PY2 else 3))
-
-    def test_line_numbers(self):
-        run(["--line-numbers"])
 
     def test_standalone(self):
         run(["--standalone"])
@@ -769,8 +771,8 @@ class TestCompilation(unittest.TestCase):
     def test_no_tco(self):
         run(["--no-tco"])
 
-    def test_strict(self):
-        run(["--strict"])
+    def test_and(self):
+        run(["--and"])  # src and dest built by comp
 
     # avoids a strange, unreproducable failure on appveyor
     if not (WINDOWS and sys.version_info[:2] == (3, 8)):
