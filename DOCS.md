@@ -410,8 +410,9 @@ Sometimes, MyPy will not know how to handle certain Coconut constructs, such as 
 To allow for better use of [`numpy`](https://numpy.org/) objects in Coconut, all compiled Coconut code will do a number of special things to better integrate with `numpy` (if `numpy` is available to import when the code is run). Specifically:
 
 - Coconut's [multidimensional array literal and array concatenation syntax](#multidimensional-array-literalconcatenation-syntax) supports `numpy` objects, including using fast `numpy` concatenation methods if given `numpy` arrays rather than Coconut's default much slower implementation built for Python lists of lists.
-- [`numpy.ndarray`](https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html) is registered as a [`collections.abc.Sequence`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence), enabling it to be used in [sequence patterns](#semantics-specification).
+- Coconut's [`multi_enumerate`](#multi_enumerate) built-in allows for easily looping over all the multi-dimensional indices in a `numpy` array.
 - When a `numpy` object is passed to [`fmap`](#fmap), [`numpy.vectorize`](https://numpy.org/doc/stable/reference/generated/numpy.vectorize.html) is used instead of the default `fmap` implementation.
+- [`numpy.ndarray`](https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html) is registered as a [`collections.abc.Sequence`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence), enabling it to be used in [sequence patterns](#semantics-specification).
 - Coconut supports `@` for matrix multiplication of `numpy` arrays on all Python versions, as well as supplying the `(@)` [operator function](#operator-functions).
 
 ### `xonsh` Support
@@ -3007,7 +3008,7 @@ flat_it = iter_of_iters |> chain.from_iterable |> list
 
 Coconut's `multi_enumerate` enumerates through an iterable of iterables. `multi_enumerate` works like enumerate, but indexes through inner iterables and produces a tuple index representing the index in each inner iterable. Supports indexing.
 
-For numpy arrays, effectively equivalent to:
+For [`numpy`](http://www.numpy.org/)/[`pandas`](https://pandas.pydata.org/)/[`jax.numpy`](https://jax.readthedocs.io/en/latest/jax.numpy.html) objects, effectively equivalent to:
 ```coconut_python
 def multi_enumerate(iterable):
     it = np.nditer(iterable, flags=["multi_index"])
@@ -3015,7 +3016,7 @@ def multi_enumerate(iterable):
         yield it.multi_index, x
 ```
 
-Also supports `len` for numpy arrays (and only numpy arrays).
+Also supports `len` for [`numpy`](http://www.numpy.org/)/[`pandas`](https://pandas.pydata.org/)/[`jax.numpy`](https://jax.readthedocs.io/en/latest/jax.numpy.html).
 
 ##### Example
 
