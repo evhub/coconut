@@ -2776,18 +2776,28 @@ def __hash__(self):
                 stmts.extend(more_stmts)
             else:
                 old_imp, new_imp, version_check = paths
-                # need to do new_imp first for type-checking reasons
-                stmts.append("if _coconut_sys.version_info >= " + str(version_check) + ":")
-                first_stmts = self.single_import(new_imp, imp_as)
-                first_stmts[0] = openindent + first_stmts[0]
-                first_stmts[-1] += closeindent
-                stmts.extend(first_stmts)
-                stmts.append("else:")
-                # should only type: ignore the old import
-                second_stmts = self.single_import(old_imp, imp_as, type_ignore=type_ignore)
-                second_stmts[0] = openindent + second_stmts[0]
-                second_stmts[-1] += closeindent
-                stmts.extend(second_stmts)
+                # we have to do this crazyness to get mypy to statically handle the version check
+                stmts.append(
+                    handle_indentation("""
+try:
+    {store_var} = sys
+except _coconut.NameError:
+    {store_var} = _coconut_sentinel
+sys = _coconut_sys
+if sys.version_info >= {version_check}:
+    {new_imp}
+else:
+    {old_imp}
+if {store_var} is not _coconut_sentinel:
+    sys = {store_var}
+                """).format(
+                        store_var=self.get_temp_var("sys"),
+                        version_check=version_check,
+                        new_imp="\n".join(self.single_import(new_imp, imp_as)),
+                        # should only type: ignore the old import
+                        old_imp="\n".join(self.single_import(old_imp, imp_as, type_ignore=type_ignore)),
+                    ),
+                )
         return "\n".join(stmts)
 
     def import_handle(self, original, loc, tokens):
