@@ -401,10 +401,10 @@ def main_test() -> bool:
     x, x = 1, 2
     assert x == 2
     from io import StringIO, BytesIO
-    s = StringIO("derp")  # type: ignore
-    assert s.read() == "derp"  # type: ignore
-    b = BytesIO(b"herp")  # type: ignore
-    assert b.read() == b"herp"  # type: ignore
+    s = StringIO("derp")
+    assert s.read() == "derp"
+    b = BytesIO(b"herp")
+    assert b.read() == b"herp"
     assert 1 ?? 2 == 1 == (??)(1, 2)
     assert None ?? 2 == 2 == (??)(None, 2)
     one = 1
@@ -1180,7 +1180,7 @@ def main_test() -> bool:
     return True
 
 def test_asyncio() -> bool:
-    import asyncio  # type: ignore
+    import asyncio
     loop = asyncio.new_event_loop()
     loop.close()
     return True
