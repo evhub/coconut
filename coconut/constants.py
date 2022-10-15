@@ -123,11 +123,13 @@ if sys.getrecursionlimit() < default_recursion_limit:
     sys.setrecursionlimit(default_recursion_limit)
 
 # modules that numpy-like arrays can live in
+jax_numpy_modules = (
+    "jaxlib.xla_extension",
+)
 numpy_modules = (
     "numpy",
     "pandas",
-    "jaxlib.xla_extension",
-)
+) + jax_numpy_modules
 
 legal_indent_chars = " \t"  # the only Python-legal indent chars
 

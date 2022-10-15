@@ -2776,7 +2776,7 @@ def __hash__(self):
                 stmts.extend(more_stmts)
             else:
                 old_imp, new_imp, version_check = paths
-                # we have to do this crazyness to get mypy to statically handle the version check
+                # we have to do this craziness to get mypy to statically handle the version check
                 stmts.append(
                     handle_indentation("""
 try:
