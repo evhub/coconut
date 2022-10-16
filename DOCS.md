@@ -773,6 +773,8 @@ x = (<op>)
 f(<op>)
 (x <op> .)
 (. <op> y)
+match x <op> in ...: ...
+match x <op> y in ...: ...
 ```
 
 Additionally, to import custom operators from other modules, Coconut supports the special syntax:

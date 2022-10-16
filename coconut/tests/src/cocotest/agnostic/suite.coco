@@ -4,6 +4,7 @@ from .util import operator
 from .util import operator <$
 from .util import operator !!
 from .util import operator ***
+from .util import operator ?int
 
 operator lol
 operator ++
@@ -944,6 +945,12 @@ forward 2""") == 900
     assert 1++ == 2 == ++1
     assert (*) is operator.mul
     assert 2***3 == 16
+    match x ?int in 5:
+        assert x == 5
+    else:
+        assert False
+    match x ?int in 5.0:
+        assert False
 
     # must come at end
     assert fibs_calls[0] == 1
