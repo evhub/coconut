@@ -2082,7 +2082,6 @@ class Grammar(object):
 # EXTRA GRAMMAR:
 # -----------------------------------------------------------------------------------------------------------------------
 
-    operator_regex = compile_regex(r"operator\b")
     existing_operator_regex = compile_regex(r"([.;[\](){}\\]|([+-=@%^&|*:,/<>~]|\*\*|//|>>|<<)=?|!=|" + r"|".join(new_operators) + r")$")
     whitespace_regex = compile_regex(r"\s")
 
@@ -2218,12 +2217,20 @@ class Grammar(object):
 
     string_start = start_marker + quotedString
 
+    operator_kwd = keyword("operator", explicit_prefix=colon)
+    operator_stmt = (
+        start_marker
+        + operator_kwd.suppress()
+        + restOfLine
+    )
+
     unsafe_import_from_name = condense(ZeroOrMore(unsafe_dot) + unsafe_dotted_name | OneOrMore(unsafe_dot))
     from_import_operator = (
-        keyword("from").suppress()
+        start_marker
+        + keyword("from").suppress()
         + unsafe_import_from_name
         + keyword("import").suppress()
-        + keyword("operator", explicit_prefix=colon).suppress()
+        + operator_kwd.suppress()
         + restOfLine
     )
 
