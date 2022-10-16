@@ -982,7 +982,7 @@ class Compiler(Grammar, pickleable_obj):
             try:
                 c = inputstring[x]
             except IndexError:
-                internal_assert(x == len(inputstring), "invalid index in str_proc", x)
+                internal_assert(x == len(inputstring), "invalid index in str_proc", (inputstring, x))
                 c = "\n"
 
             if hold is not None:
@@ -1113,16 +1113,14 @@ class Compiler(Grammar, pickleable_obj):
             base_line = rem_comment(raw_line)
             stripped_line = base_line.lstrip()
 
-            op = None
             imp_from = None
-            if self.operator_regex.match(stripped_line):
-                internal_assert(lambda: stripped_line.startswith("operator"), "invalid operator line", raw_line)
-                op = stripped_line[len("operator"):].strip()
-            else:
-                op_imp_toks = try_parse(self.from_import_operator, base_line)
+            op = try_parse(self.operator_stmt, stripped_line, inner=True)
+            if op is None:
+                op_imp_toks = try_parse(self.from_import_operator, base_line, inner=True)
                 if op_imp_toks is not None:
                     imp_from, op = op_imp_toks
-                    op = op.strip()
+            if op is not None:
+                op = op.strip()
 
             op_name = None
             if op is None:

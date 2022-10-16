@@ -4,7 +4,7 @@ from .util import operator
 from .util import operator <$
 from .util import operator !!
 from .util import operator ***
-from .util import operator ?int
+from .util import :operator ?int
 
 operator lol
 operator ++
