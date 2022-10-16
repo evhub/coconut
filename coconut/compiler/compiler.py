@@ -1144,7 +1144,7 @@ class Compiler(Grammar, pickleable_obj):
                             raise self.make_err(CoconutSyntaxError, "invalid custom operator", raw_line, ln=self.adjust(ln))
                     op_name = custom_op_var
                     for c in op:
-                        op_name += "_U" + str(ord(c))
+                        op_name += "_U" + hex(ord(c))[2:]
                     if op_name in self.operators:
                         raise self.make_err(CoconutSyntaxError, "custom operator already declared", raw_line, ln=self.adjust(ln))
                     self.operators.append(op_name)
