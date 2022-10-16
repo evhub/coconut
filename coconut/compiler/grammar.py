@@ -300,19 +300,20 @@ def op_funcdef_handle(tokens):
     """Process infix defs."""
     func, base_args = get_infix_items(tokens)
     args = []
-    for arg in base_args[:-1]:
-        rstrip_arg = arg.rstrip()
-        if not rstrip_arg.endswith(unwrapper):
-            if not rstrip_arg.endswith(","):
-                arg += ", "
-            elif arg.endswith(","):
-                arg += " "
-        args.append(arg)
-    last_arg = base_args[-1]
-    rstrip_last_arg = last_arg.rstrip()
-    if rstrip_last_arg.endswith(","):
-        last_arg = rstrip_last_arg[:-1].rstrip()
-    args.append(last_arg)
+    if base_args:
+        for arg in base_args[:-1]:
+            rstrip_arg = arg.rstrip()
+            if not rstrip_arg.endswith(unwrapper):
+                if not rstrip_arg.endswith(","):
+                    arg += ", "
+                elif arg.endswith(","):
+                    arg += " "
+            args.append(arg)
+        last_arg = base_args[-1]
+        rstrip_last_arg = last_arg.rstrip()
+        if rstrip_last_arg.endswith(","):
+            last_arg = rstrip_last_arg[:-1].rstrip()
+        args.append(last_arg)
     return func + "(" + "".join(args) + ")"
 
 
