@@ -638,7 +638,7 @@ Coconut has three basic function composition operators: `..`, `..>`, and `<..`. 
 
 The `..` operator has lower precedence than `await` but higher precedence than `**` while the `..>` pipe operators have a precedence directly higher than normal pipes.
 
-The in-place function composition operators are `..=`, `..>=`, `<..=`, `..*>=`, `<*..=`, `..**>`, and `..**>`.
+The in-place function composition operators are `..=`, `..>=`, `<..=`, `..*>=`, `<*..=`, `..**>=`, and `..**>=`.
 
 ##### Example
 
