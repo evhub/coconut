@@ -943,8 +943,9 @@ forward 2""") == 900
     assert lol lol lol == "lololol"
     lol lol
     assert 1++ == 2 == ++1
-    assert (*) is operator.mul
+    assert ( * ) is operator.mul
     assert 2***3 == 16
+    assert ( *** ) is (***)
     match x ?int in 5:
         assert x == 5
     else:

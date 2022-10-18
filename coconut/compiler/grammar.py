@@ -2082,7 +2082,7 @@ class Grammar(object):
 # EXTRA GRAMMAR:
 # -----------------------------------------------------------------------------------------------------------------------
 
-    existing_operator_regex = compile_regex(r"([.;[\](){}\\]|([+-=@%^&|*:,/<>~]|\*\*|//|>>|<<)=?|!=|" + r"|".join(new_operators) + r")$")
+    existing_operator_regex = compile_regex(r"([.;[\](){}\\]|([+-=@%^&|*:,/<>~]|\*\*|//|>>|<<)=?|!=|\(\)|\[\]|{}" + r"|".join(new_operators) + r")$")
     whitespace_regex = compile_regex(r"\s")
 
     def_regex = compile_regex(r"((async|addpattern)\s+)*def\b")

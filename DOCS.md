@@ -1383,8 +1383,9 @@ In Coconut, the following keywords are also valid variable names:
 - `match`
 - `case`
 - `cases`
-- `where`
 - `addpattern`
+- `where`
+- `operator`
 - `then`
 - `λ` (a [Unicode alternative](#unicode-alternatives) for `lambda`)
 
