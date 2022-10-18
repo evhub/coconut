@@ -60,7 +60,7 @@ from coconut._pyparsing import (
     line as _line,
 )
 
-from coconut import embed
+from coconut.ipy_endpoints import embed
 from coconut.util import (
     override,
     get_name,

@@ -312,10 +312,10 @@ def run_cmd(cmd, show_output=True, raise_errs=True, **kwargs):
 
 def symlink(link_to, link_from):
     """Link link_from to the directory link_to universally."""
-    if os.path.exists(link_from):
-        if os.path.islink(link_from):
-            os.unlink(link_from)
-        elif WINDOWS:
+    if os.path.islink(link_from):
+        os.unlink(link_from)
+    elif os.path.exists(link_from):
+        if WINDOWS:
             try:
                 os.rmdir(link_from)
             except OSError:

@@ -34,8 +34,8 @@ from coconut._pyparsing import (
     ParserElement,
 )
 
-from coconut import embed
 from coconut.root import _indent
+from coconut.ipy_endpoints import embed
 from coconut.constants import (
     info_tabulation,
     main_sig,

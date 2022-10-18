@@ -1147,7 +1147,7 @@ class Compiler(Grammar, pickleable_obj):
                         raise self.make_err(CoconutSyntaxError, "custom operator already declared", raw_line, ln=self.adjust(ln))
                     self.operators.append(op_name)
                     self.operator_repl_table.append((
-                        compile_regex(r"\(" + re.escape(op) + r"\)"),
+                        compile_regex(r"\(\s*" + re.escape(op) + r"\s*\)"),
                         None,
                         "(" + op_name + ")",
                     ))
