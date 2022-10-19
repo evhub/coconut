@@ -115,8 +115,8 @@ from coconut.compiler.util import (
 # -----------------------------------------------------------------------------------------------------------------------
 
 # memoize some pyparsing functions for better packrat parsing
-Literal = memoize(Literal)
-Optional = memoize(Optional)
+Literal = memoize()(Literal)
+Optional = memoize()(Optional)
 
 
 def attrgetter_atom_split(tokens):
