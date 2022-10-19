@@ -745,7 +745,7 @@ def any_keyword_in(kwds):
 
 
 @memoize()
-def keyword(name, explicit_prefix=None):
+def keyword(name, explicit_prefix=None, require_whitespace=False):
     """Construct a grammar which matches name as a Python keyword."""
     if explicit_prefix is not False:
         internal_assert(
@@ -754,7 +754,7 @@ def keyword(name, explicit_prefix=None):
             extra="pass explicit_prefix to keyword for all reserved_vars and only reserved_vars",
         )
 
-    base_kwd = regex_item(name + r"\b")
+    base_kwd = regex_item(name + r"\b" + (r"(?=\s)" if require_whitespace else ""))
     if explicit_prefix in (None, False):
         return base_kwd
     else:

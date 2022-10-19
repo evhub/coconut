@@ -50,6 +50,7 @@ from coconut._pyparsing import (
     restOfLine,
 )
 
+from coconut.util import memoize
 from coconut.exceptions import (
     CoconutInternalException,
     CoconutDeferredSyntaxError,
@@ -107,10 +108,15 @@ from coconut.compiler.util import (
     compile_regex,
 )
 
+
 # end: IMPORTS
 # -----------------------------------------------------------------------------------------------------------------------
 # HELPERS:
 # -----------------------------------------------------------------------------------------------------------------------
+
+# memoize some pyparsing functions for better packrat parsing
+Literal = memoize(Literal)
+Optional = memoize(Optional)
 
 
 def attrgetter_atom_split(tokens):
@@ -561,11 +567,11 @@ def array_literal_handle(loc, tokens):
     # build multidimensional array
     return "_coconut_multi_dim_arr(" + tuple_str_of(array_elems) + ", " + str(sep_level) + ")"
 
+
 # end: HANDLERS
 # -----------------------------------------------------------------------------------------------------------------------
 # MAIN GRAMMAR:
 # -----------------------------------------------------------------------------------------------------------------------
-
 
 class Grammar(object):
     """Coconut grammar specification."""
@@ -2217,7 +2223,7 @@ class Grammar(object):
 
     string_start = start_marker + quotedString
 
-    operator_kwd = keyword("operator", explicit_prefix=colon)
+    operator_kwd = keyword("operator", explicit_prefix=colon, require_whitespace=True)
     operator_stmt = (
         start_marker
         + operator_kwd.suppress()
@@ -2234,11 +2240,11 @@ class Grammar(object):
         + restOfLine
     )
 
+
 # end: EXTRA GRAMMAR
 # -----------------------------------------------------------------------------------------------------------------------
 # TRACING:
 # -----------------------------------------------------------------------------------------------------------------------
-
 
 def set_grammar_names():
     """Set names of grammar elements to their variable names."""
