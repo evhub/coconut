@@ -227,7 +227,7 @@ _timing_info = [None]  # in list to allow reassignment
 
 
 class _timing_sentinel(object):
-    pass
+    __slots__ = ()
 
 
 def add_timing_to_method(cls, method_name, method):
@@ -327,6 +327,7 @@ def collect_timing_info():
                         "__eq__",
                         "_trim_traceback",
                         "_ErrorStop",
+                        "_UnboundedCache",
                         "enablePackrat",
                         "inlineLiteralsUsing",
                         "setDefaultWhitespaceChars",
