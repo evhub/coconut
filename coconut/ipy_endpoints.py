@@ -6,7 +6,9 @@
 # -----------------------------------------------------------------------------------------------------------------------
 
 """
-Endpoints for Coconut's IPython integration.
+Author: Evan Hubinger
+License: Apache 2.0
+Description: Endpoints for Coconut's IPython integration.
 """
 
 # -----------------------------------------------------------------------------------------------------------------------

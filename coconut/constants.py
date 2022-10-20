@@ -216,14 +216,16 @@ opens = "([{"  # opens parenthetical
 closes = ")]}"  # closes parenthetical
 holds = "'\""  # string open/close chars
 
-# should match the constants defined above
-internally_reserved_symbols = tuple(opens + closes + holds) + (
-    reserved_prefix,
-    funcwrapper,
+# together should include all the constants defined above
+delimiter_symbols = tuple(opens + closes + holds) + (
     strwrapper,
     early_passthrough_wrapper,
     unwrapper,
 ) + indchars + comment_chars
+internally_reserved_symbols = delimiter_symbols + (
+    reserved_prefix,
+    funcwrapper,
+)
 
 taberrfmt = 2  # spaces to indent exceptions
 tabideal = 4  # spaces to indent code for displaying
@@ -307,7 +309,7 @@ untcoable_funcs = (
 )
 
 py3_to_py2_stdlib = {
-    # new_name: (old_name, before_version_info[, ])
+    # new_name: (old_name, before_version_info)
     "builtins": ("__builtin__", (3,)),
     "configparser": ("ConfigParser", (3,)),
     "copyreg": ("copy_reg", (3,)),
@@ -354,7 +356,6 @@ py3_to_py2_stdlib = {
     # third-party backports
     "asyncio": ("trollius", (3, 4)),
     "enum": ("aenum", (3, 4)),
-    # # at end of old_name adds # type: ignore comment
     "typing.AsyncContextManager": ("typing_extensions./AsyncContextManager", (3, 6)),
     "typing.AsyncGenerator": ("typing_extensions./AsyncGenerator", (3, 6)),
     "typing.AsyncIterable": ("typing_extensions./AsyncIterable", (3, 6)),

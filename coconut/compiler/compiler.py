@@ -76,6 +76,7 @@ from coconut.constants import (
     custom_op_var,
     all_keywords,
     internally_reserved_symbols,
+    delimiter_symbols,
     exit_chars,
     streamline_grammar_for_len,
 )
@@ -1176,9 +1177,9 @@ class Compiler(Grammar, pickleable_obj):
                         None,
                         "(" + op_name + ")",
                     ))
-                    any_reserved_symbol = r"|".join(re.escape(sym) for sym in internally_reserved_symbols)
+                    any_delimiter = r"|".join(re.escape(sym) for sym in delimiter_symbols)
                     self.operator_repl_table.append((
-                        compile_regex(r"(^|\s|(?<!\\)\b|" + any_reserved_symbol + r")" + re.escape(op) + r"(?=\s|\b|$|" + any_reserved_symbol + r")"),
+                        compile_regex(r"(^|\s|(?<!\\)\b|" + any_delimiter + r")" + re.escape(op) + r"(?=\s|\b|$|" + any_delimiter + r")"),
                         1,
                         "`" + op_name + "`",
                     ))
