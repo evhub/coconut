@@ -833,11 +833,14 @@ class Grammar(object):
     testlist_star_expr_ref = tokenlist(Group(test) | star_expr, comma, suppress=False)
     testlist_star_namedexpr = Forward()
     testlist_star_namedexpr_tokens = tokenlist(Group(namedexpr_test) | star_expr, comma, suppress=False)
+    # for testlist_star_expr locations only supported in Python 3.9
+    new_testlist_star_expr = Forward()
+    new_testlist_star_expr_ref = testlist_star_expr
 
     yield_from = Forward()
     dict_comp = Forward()
     dict_literal = Forward()
-    yield_classic = addspace(keyword("yield") + Optional(testlist))
+    yield_classic = addspace(keyword("yield") + Optional(new_testlist_star_expr))
     yield_from_ref = keyword("yield").suppress() + keyword("from").suppress() + test
     yield_expr = yield_from | yield_classic
     dict_comp_ref = lbrace.suppress() + (
@@ -1379,7 +1382,7 @@ class Grammar(object):
     stmt_lambdef = Forward()
     stmt_lambdef_body = Forward()
     match_guard = Optional(keyword("if").suppress() + namedexpr_test)
-    closing_stmt = longest(testlist("tests"), unsafe_simple_stmt_item)
+    closing_stmt = longest(new_testlist_star_expr("tests"), unsafe_simple_stmt_item)
     stmt_lambdef_match_params = Group(lparen.suppress() + match_args_list + match_guard + rparen.suppress())
     stmt_lambdef_params = Optional(
         attach(name, add_parens_handle)
@@ -1494,9 +1497,7 @@ class Grammar(object):
     comp_if = addspace(keyword("if") + test_no_cond + Optional(comp_iter))
     comp_iter <<= comp_for | comp_if
 
-    return_testlist = Forward()
-    return_testlist_ref = testlist_star_expr
-    return_stmt = addspace(keyword("return") - Optional(return_testlist))
+    return_stmt = addspace(keyword("return") - Optional(new_testlist_star_expr))
 
     complex_raise_stmt = Forward()
     pass_stmt = keyword("pass")
@@ -1728,10 +1729,10 @@ class Grammar(object):
     )
     while_stmt = addspace(keyword("while") - condense(namedexpr_test - suite - Optional(else_stmt)))
 
-    for_stmt = addspace(keyword("for") + assignlist + keyword("in") - condense(testlist - suite - Optional(else_stmt)))
+    for_stmt = addspace(keyword("for") + assignlist + keyword("in") - condense(new_testlist_star_expr - suite - Optional(else_stmt)))
 
     base_match_for_stmt = Forward()
-    base_match_for_stmt_ref = keyword("for").suppress() + many_match + keyword("in").suppress() - testlist - colon.suppress() - condense(nocolon_suite - Optional(else_stmt))
+    base_match_for_stmt_ref = keyword("for").suppress() + many_match + keyword("in").suppress() - new_testlist_star_expr - colon.suppress() - condense(nocolon_suite - Optional(else_stmt))
     match_for_stmt = Optional(match_kwd.suppress()) + base_match_for_stmt
 
     except_item = (
@@ -1834,7 +1835,7 @@ class Grammar(object):
     math_funcdef_suite = Forward()
     implicit_return = (
         invalid_syntax(return_stmt, "expected expression but got return statement")
-        | attach(return_testlist, implicit_return_handle)
+        | attach(new_testlist_star_expr, implicit_return_handle)
     )
     implicit_return_where = attach(
         implicit_return

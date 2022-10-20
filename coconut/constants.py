@@ -924,7 +924,7 @@ pygments_lexers = (
 requests_sleep_times = (0, 0.1, 0.2, 0.3, 0.4, 1)
 
 # -----------------------------------------------------------------------------------------------------------------------
-# ICOCONUT CONSTANTS:
+# INTEGRATION CONSTANTS:
 # -----------------------------------------------------------------------------------------------------------------------
 
 coconut_kernel_kwargs = dict(target="sys", line_numbers=True, keep_lines=True)
@@ -958,6 +958,8 @@ mimetype = "text/x-python3"
 all_keywords = keyword_vars + const_vars + reserved_vars
 
 conda_build_env_var = "CONDA_BUILD"
+
+max_xonsh_cmd_len = 100
 
 # -----------------------------------------------------------------------------------------------------------------------
 # DOCUMENTATION CONSTANTS:

@@ -24,7 +24,7 @@ import os.path
 import codecs
 import encodings
 
-from coconut.ipy_endpoints import embed
+from coconut.integrations import embed
 from coconut.exceptions import CoconutException
 from coconut.command import Command
 from coconut.command.cli import cli_version

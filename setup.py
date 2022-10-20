@@ -82,6 +82,9 @@ setuptools.setup(
             for script in script_names
         ],
         "pygments.lexers": list(pygments_lexers),
+        "xonsh.xontribs": [
+            "coconut = coconut.integrations",
+        ],
     },
     classifiers=list(classifiers),
     keywords=list(search_terms),
