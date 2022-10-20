@@ -1187,7 +1187,6 @@ def main_test() -> bool:
     `chirp`
     assert chirps[0] == 1
     assert 100 log10 == 2
-    assert (1,2,3,4) == ([1, 2], [3, 4]) |*> def (x, y) -> *x, *y
     xs = []
     for x in *(1, 2), *(3, 4):
         xs.append(x)
