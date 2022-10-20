@@ -77,6 +77,7 @@ from coconut.constants import (
     all_keywords,
     internally_reserved_symbols,
     exit_chars,
+    streamline_grammar_for_len,
 )
 from coconut.util import (
     pickleable_obj,
@@ -85,6 +86,7 @@ from coconut.util import (
     logical_lines,
     clean,
     get_target_info,
+    get_clock_time,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -146,6 +148,7 @@ from coconut.compiler.util import (
     rem_and_count_indents,
     normalize_indent_markers,
     try_parse,
+    prep_grammar,
 )
 from coconut.compiler.header import (
     minify_header,
@@ -924,9 +927,25 @@ class Compiler(Grammar, pickleable_obj):
             self.current_compiler[0] = self
             yield
 
+    def streamline(self, grammar, inputstring=""):
+        """Streamline the given grammar for the given inputstring."""
+        if streamline_grammar_for_len is not None and len(inputstring) >= streamline_grammar_for_len:
+            start_time = get_clock_time()
+            prep_grammar(grammar, streamline=True)
+            logger.log_lambda(
+                lambda: "Streamlined {grammar} in {time} seconds (streamlined due to receiving input of length {length}).".format(
+                    grammar=grammar.name,
+                    time=get_clock_time() - start_time,
+                    length=len(inputstring),
+                ),
+            )
+        else:
+            logger.log("No streamlining done for input of length {length}.".format(length=len(inputstring)))
+
     def parse(self, inputstring, parser, preargs, postargs, **kwargs):
         """Use the parser to parse the inputstring with appropriate setup and teardown."""
         with self.parsing(**kwargs):
+            self.streamline(parser, inputstring)
             with logger.gather_parsing_stats():
                 pre_procd = None
                 try:
@@ -3675,9 +3694,8 @@ for {match_to_var} in {item}:
         return self.parse(inputstring, self.xonsh_parser, {"strip": True}, {"header": "none", "initial": "none"}, **kwargs)
 
     def warm_up(self):
-        """Warm up the compiler by running something through it."""
-        result = self.parse("", self.file_parser, {}, {"header": "none", "initial": "none", "final_endline": False})
-        internal_assert(result == "", "compiler warm-up should produce no code; instead got", result)
+        """Warm up the compiler by streamlining the file_parser."""
+        self.streamline(self.file_parser)
 
 
 # end: ENDPOINTS

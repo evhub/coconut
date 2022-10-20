@@ -93,7 +93,6 @@ from coconut.constants import (
     indchars,
     comment_chars,
     non_syntactic_newline,
-    streamline_grammar,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -358,7 +357,7 @@ def parsing_context(inner_parse):
             ParserElement.packrat_cache_stats[1] += old_cache_stats[1]
 
 
-def prep_grammar(grammar, streamline=streamline_grammar):
+def prep_grammar(grammar, streamline=False):
     """Prepare a grammar item to be used as the root of a parse."""
     if streamline:
         grammar.streamlined = False
