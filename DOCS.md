@@ -417,7 +417,7 @@ To allow for better use of [`numpy`](https://numpy.org/) objects in Coconut, all
 
 ### `xonsh` Support
 
-Coconut integrates with [`xonsh`](https://xon.sh/) to allow the use of Coconut code directly from your command line. To use Coconut in `xonsh`, simply `pip install coconut` and then run `xontrib load coconut` from `xonsh` or add `xontrib load coconut` to your [`xonshrc`](https://xon.sh/xonshrc.html) file.
+Coconut integrates with [`xonsh`](https://xon.sh/) to allow the use of Coconut code directly from your command line. To use Coconut in `xonsh`, simply `pip install coconut` should be all you need to enable the use of Coconut syntax in the `xonsh` shell. In some circumstances, in particular depending on the installed `xonsh` version, adding `xontrib load coconut` to your [`xonshrc`](https://xon.sh/xonshrc.html) file might be necessary.
 
 For an example of using Coconut from `xonsh`:
 ```
@@ -427,7 +427,9 @@ user@computer ~ $ $(ls -la) |> .splitlines() |> len
 30
 ```
 
-Note that the way that Coconut integrates with `xonsh`, `@(<code>)` syntax will only work with Python code, not Coconut code. In all other situations, however, Coconut code is supported wherever you would normally use Python code.
+Note that the way that Coconut integrates with `xonsh`, `@(<code>)` syntax will only work with Python code, not Coconut code.
+
+Additionally, Coconut will only compile individual commands—Coconut will not touch the `.xonshrc` or any other `.xsh` files.
 
 ## Operators
 
