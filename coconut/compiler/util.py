@@ -93,6 +93,7 @@ from coconut.constants import (
     indchars,
     comment_chars,
     non_syntactic_newline,
+    streamline_grammar,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -357,32 +358,41 @@ def parsing_context(inner_parse):
             ParserElement.packrat_cache_stats[1] += old_cache_stats[1]
 
 
+def prep_grammar(grammar, streamline=streamline_grammar):
+    """Prepare a grammar item to be used as the root of a parse."""
+    if streamline:
+        grammar.streamlined = False
+        grammar.streamline()
+    else:
+        grammar.streamlined = True
+    return grammar.parseWithTabs()
+
+
 def parse(grammar, text, inner=False):
     """Parse text using grammar."""
     with parsing_context(inner):
-        return unpack(grammar.parseWithTabs().parseString(text))
+        return unpack(prep_grammar(grammar).parseString(text))
 
 
 def try_parse(grammar, text, inner=False):
     """Attempt to parse text using grammar else None."""
-    with parsing_context(inner):
-        try:
-            return parse(grammar, text)
-        except ParseBaseException:
-            return None
+    try:
+        return parse(grammar, text, inner)
+    except ParseBaseException:
+        return None
 
 
 def all_matches(grammar, text, inner=False):
     """Find all matches for grammar in text."""
     with parsing_context(inner):
-        for tokens, start, stop in grammar.parseWithTabs().scanString(text):
+        for tokens, start, stop in prep_grammar(grammar).scanString(text):
             yield unpack(tokens), start, stop
 
 
 def parse_where(grammar, text, inner=False):
     """Determine where the first parse is."""
     with parsing_context(inner):
-        for tokens, start, stop in grammar.parseWithTabs().scanString(text):
+        for tokens, start, stop in prep_grammar(grammar).scanString(text):
             return start, stop
     return None, None
 

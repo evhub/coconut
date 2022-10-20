@@ -859,6 +859,9 @@ class Compiler(Grammar, pickleable_obj):
             causes = []
             for cause, _, _ in all_matches(self.parse_err_msg, snippet[loc_in_snip:], inner=True):
                 causes.append(cause)
+            for cause, _, _ in all_matches(self.parse_err_msg, snippet[endpt_in_snip:], inner=True):
+                if cause not in causes:
+                    causes.append(cause)
             if causes:
                 extra = "possible cause{s}: {causes}".format(
                     s="s" if len(causes) > 1 else "",
