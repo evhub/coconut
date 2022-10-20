@@ -166,7 +166,7 @@ class Command(object):
 
     def parse_block(self, code):
         """Compile a block of code for the interpreter."""
-        return self.comp.parse_block(code, keep_operators=True)
+        return self.comp.parse_block(code, keep_state=True)
 
     def exit_on_error(self):
         """Exit if exit_code is abnormal."""

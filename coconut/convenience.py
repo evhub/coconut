@@ -109,8 +109,10 @@ PARSERS = {
 PARSERS["any"] = PARSERS["debug"] = PARSERS["lenient"]
 
 
-def parse(code="", mode="sys", state=False):
+def parse(code="", mode="sys", state=False, keep_state=None):
     """Compile Coconut code."""
+    if keep_state is None:
+        keep_state = bool(state)
     command = get_state(state)
     if command.comp is None:
         command.setup()
@@ -119,10 +121,10 @@ def parse(code="", mode="sys", state=False):
             "invalid parse mode " + repr(mode),
             extra="valid modes are " + ", ".join(PARSERS),
         )
-    return PARSERS[mode](command.comp)(code)
+    return PARSERS[mode](command.comp)(code, keep_state=keep_state)
 
 
-def coconut_eval(expression, globals=None, locals=None, state=False):
+def coconut_eval(expression, globals=None, locals=None, state=False, **kwargs):
     """Compile and evaluate Coconut code."""
     command = get_state(state)
     if command.comp is None:
@@ -131,7 +133,8 @@ def coconut_eval(expression, globals=None, locals=None, state=False):
     if globals is None:
         globals = {}
     command.runner.update_vars(globals)
-    return eval(parse(expression, "eval"), globals, locals)
+    compiled_python = parse(expression, "eval", state, **kwargs)
+    return eval(compiled_python, globals, locals)
 
 
 # -----------------------------------------------------------------------------------------------------------------------

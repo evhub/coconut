@@ -435,7 +435,7 @@ class Compiler(Grammar, pickleable_obj):
             ),
         )
 
-    def reset(self, keep_operators=False):
+    def reset(self, keep_state=False):
         """Resets references."""
         self.indchar = None
         self.comments = {}
@@ -451,7 +451,7 @@ class Compiler(Grammar, pickleable_obj):
         self.original_lines = []
         self.num_lines = 0
         self.disable_name_check = False
-        if self.operators is None or not keep_operators:
+        if self.operators is None or not keep_state:
             self.operators = []
             self.operator_repl_table = []
 
@@ -3699,6 +3699,7 @@ for {match_to_var} in {item}:
     def warm_up(self):
         """Warm up the compiler by streamlining the file_parser."""
         self.streamline(self.file_parser)
+        self.streamline(self.eval_parser)
 
 
 # end: ENDPOINTS

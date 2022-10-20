@@ -21,10 +21,7 @@ from coconut.root import *  # NOQA
 
 from types import MethodType
 
-from coconut.constants import (
-    coconut_kernel_kwargs,
-    max_xonsh_cmd_len,
-)
+from coconut.constants import coconut_kernel_kwargs
 
 # -----------------------------------------------------------------------------------------------------------------------
 # IPYTHON:
@@ -87,39 +84,43 @@ def load_ipython_extension(ipython):
 # XONSH:
 # -----------------------------------------------------------------------------------------------------------------------
 
-def _load_xontrib_(xsh, **kwargs):
-    """Special function to load the Coconut xontrib."""
-    # hide imports to avoid circular dependencies
-    from coconut.exceptions import CoconutException
-    from coconut.terminal import format_error
-    from coconut.compiler import Compiler
-    from coconut.command.util import Runner
+class CoconutXontribLoader(object):
+    """Implements Coconut's _load_xontrib_."""
+    compiler = None
+    runner = None
 
-    COMPILER = Compiler(**coconut_kernel_kwargs)
-    COMPILER.warm_up()
+    def __call__(self, xsh, **kwargs):
+        # hide imports to avoid circular dependencies
+        from coconut.exceptions import CoconutException
+        from coconut.terminal import format_error
 
-    RUNNER = Runner(COMPILER)
+        if self.compiler is None:
+            from coconut.compiler import Compiler
+            self.compiler = Compiler(**coconut_kernel_kwargs)
+            self.compiler.warm_up()
 
-    RUNNER.update_vars(xsh.ctx)
+        if self.runner is None:
+            from coconut.command.util import Runner
+            self.runner = Runner(self.compiler)
 
-    def new_parse(self, s, *args, **kwargs):
-        """Coconut-aware version of xonsh's _parse."""
-        err_str = None
-        if len(s) > max_xonsh_cmd_len:
-            err_str = "Coconut disabled on commands of len > {max_xonsh_cmd_len} for performance reasons".format(max_xonsh_cmd_len=max_xonsh_cmd_len)
-        else:
+        self.runner.update_vars(xsh.ctx)
+
+        def new_parse(execer, s, *args, **kwargs):
+            """Coconut-aware version of xonsh's _parse."""
             try:
-                s = COMPILER.parse_xonsh(s)
+                s = self.compiler.parse_xonsh(s, keep_state=True)
             except CoconutException as err:
                 err_str = format_error(err).splitlines()[0]
-        if err_str is not None:
-            s += " # " + err_str
-        return self.__class__.parse(self, s, *args, **kwargs)
+                s += " # " + err_str
+            return execer.__class__.parse(execer, s, *args, **kwargs)
 
-    main_parser = xsh.execer.parser
-    main_parser.parse = MethodType(new_parse, main_parser)
+        main_parser = xsh.execer.parser
+        main_parser.parse = MethodType(new_parse, main_parser)
 
-    ctx_parser = xsh.execer.ctxtransformer.parser
-    ctx_parser.parse = MethodType(new_parse, ctx_parser)
+        ctx_parser = xsh.execer.ctxtransformer.parser
+        ctx_parser.parse = MethodType(new_parse, ctx_parser)
 
-    return RUNNER.vars
+        return self.runner.vars
+
+
+_load_xontrib_ = CoconutXontribLoader()

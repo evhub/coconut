@@ -102,7 +102,7 @@ def memoized_parse_block(code):
     success, result = parse_block_memo.get(code, (None, None))
     if success is None:
         try:
-            parsed = COMPILER.parse_block(code)
+            parsed = COMPILER.parse_block(code, keep_state=True)
         except Exception as err:
             success, result = False, err
         else:
@@ -225,7 +225,7 @@ def user_expressions(self, expressions):
     compiled_expressions = {dict}
     for key, expr in expressions.items():
         try:
-            compiled_expressions[key] = COMPILER.parse_eval(expr)
+            compiled_expressions[key] = COMPILER.parse_eval(expr, keep_state=True)
         except CoconutException:
             compiled_expressions[key] = expr
     return super({cls}, self).user_expressions(compiled_expressions)
