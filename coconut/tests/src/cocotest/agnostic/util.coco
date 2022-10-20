@@ -157,8 +157,8 @@ addpattern def (s) lol = s + "ol" where:  # type: ignore
 lol
 
 operator ***
-match def (x) *** (1) = x
-addpattern def (x) *** (y) = (x *** (y-1)) ** x  # type: ignore
+match def x***(1) = x
+addpattern def x***y = (x *** (y-1)) ** x  # type: ignore
 
 :operator ?int
 def x ?int = x `isinstance` int
@@ -169,6 +169,12 @@ def CONST = 10
 operator “
 operator ”
 (“) = (”) = (,) ..> map$(str) ..> "".join
+
+operator !
+match def (int(x))! = 0 if x else 1
+addpattern def (float(x))! = 0.0 if x else 1.0  # type: ignore
+addpattern def x! if x = False  # type: ignore
+addpattern def x! = True  # type: ignore
 
 # Quick-Sorts:
 def qsort1(l: int[]) -> int[]:

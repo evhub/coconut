@@ -8,6 +8,7 @@ from .util import :operator ?int
 from .util import operator CONST
 from .util import operator “
 from .util import operator ”
+from .util import operator !
 
 operator lol
 operator ++
@@ -940,8 +941,8 @@ forward 2""") == 900
     assert 10 <$ one_two_three |> fmap$(.+1) == Arr((3,), [11, 11, 11])
     assert !!ten
     assert ten!!
-    assert not !! 0
-    assert not 0 !!
+    assert not !!0
+    assert not 0!!
     assert range(3) |> map$(!!) |> list == [False, True, True]
     assert lol lol lol == "lololol"
     lol lol
@@ -957,6 +958,8 @@ forward 2""") == 900
         assert False
     assert CONST |> (.+1) == 11
     assert "abc1020" == “"abc"” “10” “20”
+    assert !0 == 1
+    assert ![] is True
 
     # must come at end
     assert fibs_calls[0] == 1

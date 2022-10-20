@@ -1141,7 +1141,8 @@ class Compiler(Grammar, pickleable_obj):
                         raise self.make_err(CoconutSyntaxError, "cannot redefine existing operator " + repr(op), raw_line, ln=self.adjust(ln))
                     for sym in internally_reserved_symbols + exit_chars:
                         if sym in op:
-                            raise self.make_err(CoconutSyntaxError, "invalid custom operator", raw_line, ln=self.adjust(ln), extra="cannot contain " + ascii(sym))
+                            sym_repr = ascii(sym.replace(strwrapper, '"'))
+                            raise self.make_err(CoconutSyntaxError, "invalid custom operator", raw_line, ln=self.adjust(ln), extra="cannot contain " + sym_repr)
                     op_name = custom_op_var
                     for c in op:
                         op_name += "_U" + hex(ord(c))[2:]
@@ -1153,8 +1154,9 @@ class Compiler(Grammar, pickleable_obj):
                         None,
                         "(" + op_name + ")",
                     ))
+                    any_reserved_symbol = r"|".join(re.escape(sym) for sym in internally_reserved_symbols)
                     self.operator_repl_table.append((
-                        compile_regex(r"(^|\s|(?<!\\)\b|" + unwrapper + r")" + re.escape(op) + r"(?=\s|\b|$|" + strwrapper + r")"),
+                        compile_regex(r"(^|\s|(?<!\\)\b|" + any_reserved_symbol + r")" + re.escape(op) + r"(?=\s|\b|$|" + any_reserved_symbol + r")"),
                         1,
                         "`" + op_name + "`",
                     ))

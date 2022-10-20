@@ -216,13 +216,13 @@ closes = ")]}"  # closes parenthetical
 holds = "'\""  # string open/close chars
 
 # should match the constants defined above
-internally_reserved_symbols = indchars + comment_chars + (
+internally_reserved_symbols = tuple(opens + closes + holds) + (
     reserved_prefix,
+    funcwrapper,
     strwrapper,
     early_passthrough_wrapper,
     unwrapper,
-    funcwrapper,
-) + tuple(opens + closes + holds)
+) + indchars + comment_chars
 
 taberrfmt = 2  # spaces to indent exceptions
 tabideal = 4  # spaces to indent code for displaying

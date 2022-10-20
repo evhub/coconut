@@ -1784,9 +1784,14 @@ class Grammar(object):
     func_suite_tokens = Forward()
     op_match_funcdef_arg = Group(
         Optional(
-            lparen.suppress()
-            + Group(match + Optional(equals.suppress() + test))
-            + rparen.suppress(),
+            Group(
+                (
+                    lparen.suppress()
+                    + match
+                    + Optional(equals.suppress() + test)
+                    + rparen.suppress()
+                ) | interior_name_match,
+            ),
         ),
     )
     name_match_funcdef_ref = keyword("def").suppress() + dotted_name + lparen.suppress() + match_args_list + match_guard + rparen.suppress()
