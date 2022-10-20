@@ -63,7 +63,6 @@ from coconut.constants import (
     mypy_install_arg,
     mypy_builtin_regex,
     coconut_pth_file,
-    streamline_grammar,
 )
 from coconut.util import (
     printerr,
@@ -633,9 +632,7 @@ class Command(object):
 
     def start_running(self):
         """Start running the Runner."""
-        # warm_up is only necessary if we're streamlining
-        if streamline_grammar:
-            self.comp.warm_up()
+        self.comp.warm_up()
         self.check_runner()
         self.running = True
         logger.log("Time till prompt: " + str(get_clock_time() - first_import_time) + " secs")

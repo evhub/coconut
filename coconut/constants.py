@@ -100,7 +100,7 @@ enable_pyparsing_warnings = DEVELOP
 use_packrat_parser = True  # True also gives us better error messages
 use_left_recursion_if_available = False
 packrat_cache_size = None  # only works because final() clears the cache
-streamline_grammar = False
+streamline_grammar_for_len = 4000
 
 default_whitespace_chars = " \t\f"  # the only non-newline whitespace Python allows
 
