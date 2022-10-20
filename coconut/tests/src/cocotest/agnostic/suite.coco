@@ -5,6 +5,9 @@ from .util import operator <$
 from .util import operator !!
 from .util import operator ***
 from .util import :operator ?int
+from .util import operator CONST
+from .util import operator “
+from .util import operator ”
 
 operator lol
 operator ++
@@ -952,6 +955,8 @@ forward 2""") == 900
         assert False
     match x ?int in 5.0:
         assert False
+    assert CONST |> (.+1) == 11
+    assert "abc1020" == “"abc"” “10” “20”
 
     # must come at end
     assert fibs_calls[0] == 1

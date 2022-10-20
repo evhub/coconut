@@ -1154,7 +1154,7 @@ class Compiler(Grammar, pickleable_obj):
                         "(" + op_name + ")",
                     ))
                     self.operator_repl_table.append((
-                        compile_regex(r"(^|\s|(?<!\\)\b)" + re.escape(op) + r"(?=\s|\b|$)"),
+                        compile_regex(r"(^|\s|(?<!\\)\b|" + unwrapper + r")" + re.escape(op) + r"(?=\s|\b|$|" + strwrapper + r")"),
                         1,
                         "`" + op_name + "`",
                     ))

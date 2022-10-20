@@ -163,6 +163,13 @@ addpattern def (x) *** (y) = (x *** (y-1)) ** x  # type: ignore
 :operator ?int
 def x ?int = x `isinstance` int
 
+operator CONST
+def CONST = 10
+
+operator “
+operator ”
+(“) = (”) = (,) ..> map$(str) ..> "".join
+
 # Quick-Sorts:
 def qsort1(l: int[]) -> int[]:
     '''Non-Functional Quick Sort.'''
