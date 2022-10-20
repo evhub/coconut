@@ -216,7 +216,7 @@ class ComputationNode(object):
 
     def evaluate(self):
         """Get the result of evaluating the computation graph at this node."""
-        if DEVELOP:
+        if DEVELOP:  # avoid the overhead of the call if not develop
             internal_assert(not self.been_called, "inefficient reevaluation of action " + self.name + " with tokens", self.tokens)
             self.been_called = True
         evaluated_toks = evaluate_tokens(self.tokens)
