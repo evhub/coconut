@@ -2082,7 +2082,7 @@ class Grammar(object):
         + (parens | brackets | braces | name),
     )
     xonsh_parser, _anything_stmt, _xonsh_command = disable_outside(
-        file_parser,
+        single_parser,
         unsafe_anything_stmt,
         unsafe_xonsh_command,
     )
