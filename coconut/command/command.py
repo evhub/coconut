@@ -69,6 +69,8 @@ from coconut.util import (
     univ_open,
     ver_tuple_to_str,
     install_custom_kernel,
+    get_clock_time,
+    first_import_time,
 )
 from coconut.command.util import (
     writefile,
@@ -241,9 +243,10 @@ class Command(object):
             no_wrap=args.no_wrap,
         )
 
-        # process mypy args (must come after compiler setup)
+        # process mypy args and print timing info (must come after compiler setup)
         if args.mypy is not None:
             self.set_mypy_args(args.mypy)
+        logger.log("Grammar init time: " + str(self.comp.grammar_def_time) + " secs / Total init time: " + str(get_clock_time() - first_import_time) + " secs")
 
         if args.source is not None:
             # warnings if source is given
@@ -632,6 +635,7 @@ class Command(object):
         self.comp.warm_up()
         self.check_runner()
         self.running = True
+        logger.log("Time till prompt: " + str(get_clock_time() - first_import_time) + " secs")
 
     def start_prompt(self):
         """Start the interpreter."""

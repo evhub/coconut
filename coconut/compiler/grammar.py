@@ -50,7 +50,10 @@ from coconut._pyparsing import (
     restOfLine,
 )
 
-from coconut.util import memoize
+from coconut.util import (
+    memoize,
+    get_clock_time,
+)
 from coconut.exceptions import (
     CoconutInternalException,
     CoconutDeferredSyntaxError,
@@ -575,7 +578,7 @@ def array_literal_handle(loc, tokens):
 
 class Grammar(object):
     """Coconut grammar specification."""
-    timing_info = None
+    grammar_def_time = get_clock_time()
 
     comma = Literal(",")
     dubstar = Literal("**")
@@ -2240,11 +2243,13 @@ class Grammar(object):
         + restOfLine
     )
 
-
 # end: EXTRA GRAMMAR
 # -----------------------------------------------------------------------------------------------------------------------
-# TRACING:
+# TIMING, TRACING:
 # -----------------------------------------------------------------------------------------------------------------------
+
+    grammar_def_time = get_clock_time() - grammar_def_time
+
 
 def set_grammar_names():
     """Set names of grammar elements to their variable names."""
