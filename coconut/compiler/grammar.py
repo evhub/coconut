@@ -689,7 +689,7 @@ class Grammar(object):
         unsafe_name_regex += r"(?!" + no_kwd + r"\b)"
     # we disallow '"{ after to not match the "b" in b"" or the "s" in s{}
     unsafe_name_regex += r"(?![0-9])\w+\b(?![{" + strwrapper + r"])"
-    unsafe_name = Optional(backslash.suppress()) + regex_item(unsafe_name_regex)
+    unsafe_name = combine(Optional(backslash.suppress()) + regex_item(unsafe_name_regex))
 
     name = Forward()
     # use unsafe_name for dotted components since name should only be used for base names

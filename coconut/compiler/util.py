@@ -758,7 +758,7 @@ def keyword(name, explicit_prefix=None, require_whitespace=False):
     if explicit_prefix in (None, False):
         return base_kwd
     else:
-        return Optional(explicit_prefix.suppress()) + base_kwd
+        return combine(Optional(explicit_prefix.suppress()) + base_kwd)
 
 
 boundary = regex_item(r"\b")
