@@ -1126,20 +1126,22 @@ class Compiler(Grammar, pickleable_obj):
             if op is None:
                 use_line = True
             else:
-                # whitespace or just the word operator generally means it's not an operator
-                #  declaration (e.g. it's something like "operator = 1" instead)
-                if not op or self.whitespace_regex.search(op):
+                # whitespace, just the word operator, or a backslash continuation means it's not
+                #  an operator declaration (e.g. it's something like "operator = 1" instead)
+                if not op or op.endswith("\\") or self.whitespace_regex.search(op):
                     use_line = True
                 else:
                     if stripped_line != base_line:
                         raise self.make_err(CoconutSyntaxError, "operator declaration statement only allowed at top level", raw_line, ln=self.adjust(ln))
                     if op in all_keywords:
                         raise self.make_err(CoconutSyntaxError, "cannot redefine keyword " + repr(op), raw_line, ln=self.adjust(ln))
+                    if op.isdigit():
+                        raise self.make_err(CoconutSyntaxError, "cannot redefine number " + repr(op), raw_line, ln=self.adjust(ln))
                     if self.existing_operator_regex.match(op):
                         raise self.make_err(CoconutSyntaxError, "cannot redefine existing operator " + repr(op), raw_line, ln=self.adjust(ln))
                     for sym in internally_reserved_symbols + exit_chars:
                         if sym in op:
-                            raise self.make_err(CoconutSyntaxError, "invalid custom operator", raw_line, ln=self.adjust(ln))
+                            raise self.make_err(CoconutSyntaxError, "invalid custom operator", raw_line, ln=self.adjust(ln), extra="cannot contain " + ascii(sym))
                     op_name = custom_op_var
                     for c in op:
                         op_name += "_U" + hex(ord(c))[2:]
@@ -1152,7 +1154,7 @@ class Compiler(Grammar, pickleable_obj):
                         "(" + op_name + ")",
                     ))
                     self.operator_repl_table.append((
-                        compile_regex(r"(^|\b|\s)" + re.escape(op) + r"(?=\s|\b|$)"),
+                        compile_regex(r"(^|\s|(?<!\\)\b)" + re.escape(op) + r"(?=\s|\b|$)"),
                         1,
                         "`" + op_name + "`",
                     ))

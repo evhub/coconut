@@ -3,6 +3,9 @@ import itertools
 import collections
 import collections.abc
 
+operator log10
+from math import \log10 as (log10)
+
 
 def assert_raises(c, exc):
     """Test whether callable c raises an exception of type exc."""
@@ -1183,6 +1186,7 @@ def main_test() -> bool:
     def `chirp`: chirps[0] += 1
     `chirp`
     assert chirps[0] == 1
+    assert 100 log10 == 2
     return True
 
 def test_asyncio() -> bool:

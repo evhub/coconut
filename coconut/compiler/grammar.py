@@ -689,10 +689,7 @@ class Grammar(object):
         unsafe_name_regex += r"(?!" + no_kwd + r"\b)"
     # we disallow '"{ after to not match the "b" in b"" or the "s" in s{}
     unsafe_name_regex += r"(?![0-9])\w+\b(?![{" + strwrapper + r"])"
-    unsafe_name = (
-        regex_item(unsafe_name_regex)
-        | backslash.suppress() + any_keyword_in(reserved_vars)
-    )
+    unsafe_name = Optional(backslash.suppress()) + regex_item(unsafe_name_regex)
 
     name = Forward()
     # use unsafe_name for dotted components since name should only be used for base names
@@ -2091,7 +2088,9 @@ class Grammar(object):
 # EXTRA GRAMMAR:
 # -----------------------------------------------------------------------------------------------------------------------
 
-    existing_operator_regex = compile_regex(r"([.;[\](){}\\]|([+-=@%^&|*:,/<>~]|\*\*|//|>>|<<)=?|!=|\(\)|\[\]|{}" + r"|".join(new_operators) + r")$")
+    # we don't need to include opens/closes here because those are explicitly disallowed
+    existing_operator_regex = compile_regex(r"([.;\\]|([+-=@%^&|*:,/<>~]|\*\*|//|>>|<<)=?|!=|" + r"|".join(new_operators) + r")$")
+
     whitespace_regex = compile_regex(r"\s")
 
     def_regex = compile_regex(r"((async|addpattern)\s+)*def\b")

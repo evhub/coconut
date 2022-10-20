@@ -207,18 +207,6 @@ early_passthrough_wrapper = "\u2038"  # caret
 unwrapper = "\u23f9"  # stop square
 funcwrapper = "def:"
 
-# should match the constants defined above
-internally_reserved_symbols = (
-    reserved_prefix,
-    "\u204b",
-    "\xb6",
-    "\u25b6",
-    "\u2021",
-    "\u2038",
-    "\u23f9",
-    "def:",
-)
-
 # must be tuples for .startswith / .endswith purposes
 indchars = (openindent, closeindent, "\n")
 comment_chars = ("#", lnwrapper)
@@ -226,6 +214,15 @@ comment_chars = ("#", lnwrapper)
 opens = "([{"  # opens parenthetical
 closes = ")]}"  # closes parenthetical
 holds = "'\""  # string open/close chars
+
+# should match the constants defined above
+internally_reserved_symbols = indchars + comment_chars + (
+    reserved_prefix,
+    strwrapper,
+    early_passthrough_wrapper,
+    unwrapper,
+    funcwrapper,
+) + tuple(opens + closes + holds)
 
 taberrfmt = 2  # spaces to indent exceptions
 tabideal = 4  # spaces to indent code for displaying
