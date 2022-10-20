@@ -602,7 +602,7 @@ class Compiler(Grammar, pickleable_obj):
         cls.testlist_star_expr <<= trace_attach(cls.testlist_star_expr_ref, cls.method("testlist_star_expr_handle"))
         cls.list_expr <<= trace_attach(cls.list_expr_ref, cls.method("list_expr_handle"))
         cls.dict_literal <<= trace_attach(cls.dict_literal_ref, cls.method("dict_literal_handle"))
-        cls.return_testlist <<= trace_attach(cls.return_testlist_ref, cls.method("return_testlist_handle"))
+        cls.new_testlist_star_expr <<= trace_attach(cls.new_testlist_star_expr_ref, cls.method("new_testlist_star_expr_handle"))
         cls.anon_namedtuple <<= trace_attach(cls.anon_namedtuple_ref, cls.method("anon_namedtuple_handle"))
         cls.base_match_for_stmt <<= trace_attach(cls.base_match_for_stmt_ref, cls.method("base_match_for_stmt_handle"))
         cls.unsafe_typedef_tuple <<= trace_attach(cls.unsafe_typedef_tuple_ref, cls.method("unsafe_typedef_tuple_handle"))
@@ -3365,9 +3365,11 @@ __annotations__["{name}"] = {annotation}
             to_chain = []
             for g in groups:
                 if isinstance(g, list):
-                    to_chain.append(tuple_str_of(g))
+                    if g:
+                        to_chain.append(tuple_str_of(g))
                 else:
                     to_chain.append(g)
+            internal_assert(to_chain, "invalid naked a, *b expression", tokens)
 
             # return immediately, since we handle is_list here
             if is_list:
@@ -3415,11 +3417,11 @@ __annotations__["{name}"] = {annotation}
                     to_merge.append(g)
             return "_coconut_dict_merge(" + ", ".join(to_merge) + ")"
 
-    def return_testlist_handle(self, tokens):
-        """Handle the expression part of a return statement."""
+    def new_testlist_star_expr_handle(self, tokens):
+        """Handles new starred expressions that only started being allowed
+        outside of parentheses in Python 3.9."""
         item, = tokens
-        # add parens to support return x, *y on 3.5 - 3.7, which supports return (x, *y) but not return x, *y
-        if (3, 5) <= self.target_info <= (3, 7):
+        if (3, 5) <= self.target_info <= (3, 8):
             return "(" + item + ")"
         else:
             return item

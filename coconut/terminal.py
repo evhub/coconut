@@ -35,7 +35,7 @@ from coconut._pyparsing import (
 )
 
 from coconut.root import _indent
-from coconut.ipy_endpoints import embed
+from coconut.integrations import embed
 from coconut.constants import (
     info_tabulation,
     main_sig,

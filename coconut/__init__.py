@@ -31,6 +31,6 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 from coconut.root import *  # NOQA
 
 from coconut.constants import author as __author__  # NOQA
-from coconut.ipy_endpoints import embed, load_ipython_extension  # NOQA
+from coconut.integrations import embed, load_ipython_extension  # NOQA
 
 __version__ = VERSION  # NOQA

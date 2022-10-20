@@ -21,7 +21,7 @@ import sys
 import time
 import traceback
 
-from coconut.ipy_endpoints import embed
+from coconut.integrations import embed
 from coconut.constants import (
     PYPY,
     CPYTHON,
