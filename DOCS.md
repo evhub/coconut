@@ -782,7 +782,9 @@ Additionally, to import custom operators from other modules, Coconut supports th
 from <module> import operator <op>
 ```
 
-Note that custom operators will usually need to be surrounded by whitespace (or parentheses when used as an operator function) to be parsed correctly.
+Note that custom operators will often need to be surrounded by whitespace (or parentheses when used as an operator function) to be parsed correctly.
+
+If a custom operator that is also a valid name is desired, you can use a backslash before the name to get back the name instead with Coconut's [keyword/variable disambiguation syntax](#handling-keywordvariable-name-overlap).
 
 ##### Examples
 
@@ -795,6 +797,10 @@ operator %%
 operator !!
 (!!) = bool
 !! 0 |> print
+
+operator log10
+from math import \log10 as (log10)
+100 log10 |> print
 ```
 
 **Python:**
@@ -802,6 +808,8 @@ operator !!
 print(math.remainder(10, 3))
 
 print(bool(0))
+
+print(math.log10(100))
 ```
 
 ### None Coalescing
