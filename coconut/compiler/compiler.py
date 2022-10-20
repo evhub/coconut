@@ -943,10 +943,11 @@ class Compiler(Grammar, pickleable_obj):
         else:
             logger.log("No streamlining done for input of length {length}.".format(length=len(inputstring)))
 
-    def parse(self, inputstring, parser, preargs, postargs, **kwargs):
+    def parse(self, inputstring, parser, preargs, postargs, streamline=True, **kwargs):
         """Use the parser to parse the inputstring with appropriate setup and teardown."""
         with self.parsing(**kwargs):
-            self.streamline(parser, inputstring)
+            if streamline:
+                self.streamline(parser, inputstring)
             with logger.gather_parsing_stats():
                 pre_procd = None
                 try:
@@ -3653,7 +3654,7 @@ for {match_to_var} in {item}:
 
     def parse_single(self, inputstring, **kwargs):
         """Parse line code."""
-        return self.parse(inputstring, self.single_parser, {}, {"header": "none", "initial": "none"}, **kwargs)
+        return self.parse(inputstring, self.single_parser, {}, {"header": "none", "initial": "none"}, streamline=False, **kwargs)
 
     def parse_file(self, inputstring, addhash=True, **kwargs):
         """Parse file code."""
@@ -3694,7 +3695,7 @@ for {match_to_var} in {item}:
 
     def parse_xonsh(self, inputstring, **kwargs):
         """Parse xonsh code."""
-        return self.parse(inputstring, self.xonsh_parser, {"strip": True}, {"header": "none", "initial": "none"}, **kwargs)
+        return self.parse(inputstring, self.xonsh_parser, {"strip": True}, {"header": "none", "initial": "none"}, streamline=False, **kwargs)
 
     def warm_up(self):
         """Warm up the compiler by streamlining the file_parser."""

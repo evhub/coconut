@@ -86,6 +86,7 @@ def load_ipython_extension(ipython):
 
 class CoconutXontribLoader(object):
     """Implements Coconut's _load_xontrib_."""
+    timing_info = []
     compiler = None
     runner = None
 
@@ -93,6 +94,9 @@ class CoconutXontribLoader(object):
         # hide imports to avoid circular dependencies
         from coconut.exceptions import CoconutException
         from coconut.terminal import format_error
+        from coconut.util import get_clock_time
+
+        start_time = get_clock_time()
 
         if self.compiler is None:
             from coconut.compiler import Compiler
@@ -107,11 +111,13 @@ class CoconutXontribLoader(object):
 
         def new_parse(execer, s, *args, **kwargs):
             """Coconut-aware version of xonsh's _parse."""
+            parse_start_time = get_clock_time()
             try:
                 s = self.compiler.parse_xonsh(s, keep_state=True)
             except CoconutException as err:
                 err_str = format_error(err).splitlines()[0]
                 s += " # " + err_str
+            self.timing_info.append(("parse", get_clock_time() - parse_start_time))
             return execer.__class__.parse(execer, s, *args, **kwargs)
 
         main_parser = xsh.execer.parser
@@ -119,6 +125,8 @@ class CoconutXontribLoader(object):
 
         ctx_parser = xsh.execer.ctxtransformer.parser
         ctx_parser.parse = MethodType(new_parse, ctx_parser)
+
+        self.timing_info.append(("load", get_clock_time() - start_time))
 
         return self.runner.vars
 
