@@ -99,6 +99,10 @@ def test_setup_none() -> bool:
     assert parse("(1\f+\f2)", "lenient") == "(1 + 2)" == parse("(1\f+\f2)", "eval")
     assert "Ellipsis" not in parse("x: ...")
 
+    # things that don't parse correctly without the computation graph
+    if not PYPY:
+        exec(parse("assert (1,2,3,4) == ([1, 2], [3, 4]) |*> def (x, y) -> *x, *y"))
+
     assert_raises(-> parse("(a := b)"), CoconutTargetError)
     assert_raises(-> parse("async def f() = 1"), CoconutTargetError)
 
