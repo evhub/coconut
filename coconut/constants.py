@@ -79,7 +79,7 @@ IPY = (
     and not PY310
 )
 MYPY = (
-    PY36
+    PY37
     and not WINDOWS
     and not PYPY
 )
