@@ -809,7 +809,6 @@ classifiers = (
     "Development Status :: 5 - Production/Stable",
     "License :: OSI Approved :: Apache Software License",
     "Intended Audience :: Developers",
-    "Intended Audience :: Information Technology",
     "Topic :: Software Development",
     "Topic :: Software Development :: Code Generators",
     "Topic :: Software Development :: Compilers",
@@ -832,11 +831,14 @@ classifiers = (
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
     "Programming Language :: Other",
     "Programming Language :: Other Scripting Engines",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
     "Framework :: IPython",
+    "Framework :: Jupyter",
+    "Typing :: Typed",
 )
 
 search_terms = (
