@@ -185,7 +185,7 @@ def gam_eps_rate(bitarr) = (
 
 def test_convenience() -> bool:
     if IPY:
-        import coconut.highlighter  # type: ignore
+        import coconut.highlighter  # noqa # type: ignore
 
     assert_raises(-> cmd("-f"), SystemExit)
     assert_raises(-> cmd("-pa ."), SystemExit)

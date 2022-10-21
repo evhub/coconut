@@ -447,8 +447,8 @@ class Compiler(Grammar, pickleable_obj):
         self.add_code_before = {}
         self.add_code_before_regexes = {}
         self.add_code_before_replacements = {}
-        self.unused_imports = set()
-        self.original_lines = []
+        self.unused_imports = defaultdict(list)
+        self.kept_lines = []
         self.num_lines = 0
         self.disable_name_check = False
         if self.operators is None or not keep_state:
@@ -464,7 +464,7 @@ class Compiler(Grammar, pickleable_obj):
         skips, self.skips = self.skips, []
         docstring, self.docstring = self.docstring, ""
         parsing_context, self.parsing_context = self.parsing_context, defaultdict(list)
-        original_lines, self.original_lines = self.original_lines, []
+        kept_lines, self.kept_lines = self.kept_lines, []
         num_lines, self.num_lines = self.num_lines, 0
         try:
             yield
@@ -475,7 +475,7 @@ class Compiler(Grammar, pickleable_obj):
             self.skips = skips
             self.docstring = docstring
             self.parsing_context = parsing_context
-            self.original_lines = original_lines
+            self.kept_lines = kept_lines
             self.num_lines = num_lines
 
     @contextmanager
@@ -493,7 +493,7 @@ class Compiler(Grammar, pickleable_obj):
         """Version of transform for post-processing."""
         with self.complain_on_err():
             with self.disable_checks():
-                return transform(grammar, text, inner=True)
+                return transform(grammar, text)
         return None
 
     def get_temp_var(self, base_name="temp"):
@@ -666,6 +666,7 @@ class Compiler(Grammar, pickleable_obj):
 
     def reformat(self, snip, *indices, **kwargs):
         """Post process a preprocessed snippet."""
+        internal_assert("ignore_errors" in kwargs, "reformat() missing required keyword argument: 'ignore_errors'")
         if not indices:
             with self.complain_on_err():
                 return self.apply_procs(self.reformatprocs, snip, reformatting=True, log=False, **kwargs)
@@ -861,9 +862,9 @@ class Compiler(Grammar, pickleable_obj):
         if include_causes:
             internal_assert(extra is None, "make_err cannot include causes with extra")
             causes = []
-            for cause, _, _ in all_matches(self.parse_err_msg, snippet[loc_in_snip:], inner=True):
+            for cause, _, _ in all_matches(self.parse_err_msg, snippet[loc_in_snip:]):
                 causes.append(cause)
-            for cause, _, _ in all_matches(self.parse_err_msg, snippet[endpt_in_snip:], inner=True):
+            for cause, _, _ in all_matches(self.parse_err_msg, snippet[endpt_in_snip:]):
                 if cause not in causes:
                     causes.append(cause)
             if causes:
@@ -916,15 +917,16 @@ class Compiler(Grammar, pickleable_obj):
         if parser is None:
             parser = self.eval_parser
         with self.inner_environment():
+            self.streamline(parser, inputstring)
             pre_procd = self.pre(inputstring, **preargs)
-            parsed = parse(parser, pre_procd, inner=True)
+            parsed = parse(parser, pre_procd)
             return self.post(parsed, **postargs)
 
     @contextmanager
-    def parsing(self, **kwargs):
+    def parsing(self, keep_state=False):
         """Acquire the lock and reset the parser."""
         with self.lock:
-            self.reset(**kwargs)
+            self.reset(keep_state)
             self.current_compiler[0] = self
             yield
 
@@ -943,16 +945,35 @@ class Compiler(Grammar, pickleable_obj):
         else:
             logger.log("No streamlining done for input of length {length}.".format(length=len(inputstring)))
 
-    def parse(self, inputstring, parser, preargs, postargs, streamline=True, **kwargs):
+    def run_final_checks(self, original, keep_state=False):
+        """Run post-parsing checks to raise any necessary errors/warnings."""
+        # only check for unused imports if we're not keeping state accross parses
+        if not keep_state and self.strict:
+            for name, locs in self.unused_imports.items():
+                for loc in locs:
+                    ln = self.adjust(lineno(loc, original))
+                    comment = self.reformat(self.comments.get(ln, ""), ignore_errors=True)
+                    if not match_in(self.noqa_comment, comment):
+                        logger.warn_err(
+                            self.make_err(
+                                CoconutSyntaxWarning,
+                                "found unused import: " + name,
+                                original,
+                                loc,
+                                extra="add NOQA comment or remove --strict to dismiss",
+                            ),
+                        )
+
+    def parse(self, inputstring, parser, preargs, postargs, streamline=True, keep_state=False):
         """Use the parser to parse the inputstring with appropriate setup and teardown."""
-        with self.parsing(**kwargs):
+        with self.parsing(keep_state):
             if streamline:
                 self.streamline(parser, inputstring)
             with logger.gather_parsing_stats():
                 pre_procd = None
                 try:
                     pre_procd = self.pre(inputstring, **preargs)
-                    parsed = parse(parser, pre_procd)
+                    parsed = parse(parser, pre_procd, inner=False)
                     out = self.post(parsed, **postargs)
                 except ParseBaseException as err:
                     raise self.make_parse_err(err)
@@ -964,9 +985,7 @@ class Compiler(Grammar, pickleable_obj):
                         str(err), extra="try again with --recursion-limit greater than the current "
                         + str(sys.getrecursionlimit()),
                     )
-        if self.strict:
-            for name in self.unused_imports:
-                logger.warn("found unused import", name, extra="remove --strict to dismiss")
+            self.run_final_checks(pre_procd, keep_state)
         return out
 
 # end: COMPILER
@@ -979,11 +998,11 @@ class Compiler(Grammar, pickleable_obj):
         if self.strict and nl_at_eof_check and inputstring and not inputstring.endswith("\n"):
             end_index = len(inputstring) - 1 if inputstring else 0
             raise self.make_err(CoconutStyleError, "missing new line at end of file", inputstring, end_index)
-        original_lines = inputstring.splitlines()
-        self.num_lines = len(original_lines)
+        kept_lines = inputstring.splitlines()
+        self.num_lines = len(kept_lines)
         if self.keep_lines:
-            self.original_lines = original_lines
-        inputstring = "\n".join(original_lines)
+            self.kept_lines = kept_lines
+        inputstring = "\n".join(kept_lines)
         if strip:
             inputstring = inputstring.strip()
         return inputstring
@@ -1138,9 +1157,9 @@ class Compiler(Grammar, pickleable_obj):
             stripped_line = base_line.lstrip()
 
             imp_from = None
-            op = try_parse(self.operator_stmt, stripped_line, inner=True)
+            op = try_parse(self.operator_stmt, stripped_line)
             if op is None:
-                op_imp_toks = try_parse(self.from_import_operator, base_line, inner=True)
+                op_imp_toks = try_parse(self.from_import_operator, base_line)
                 if op_imp_toks is not None:
                     imp_from, op = op_imp_toks
             if op is not None:
@@ -1337,28 +1356,28 @@ class Compiler(Grammar, pickleable_obj):
         """Get an end line comment."""
         # CoconutInternalExceptions should always be caught and complained here
         if self.keep_lines:
-            if not 1 <= ln <= len(self.original_lines) + 2:
+            if not 1 <= ln <= len(self.kept_lines) + 2:
                 complain(
                     CoconutInternalException(
                         "out of bounds line number", ln,
-                        "not in range [1, " + str(len(self.original_lines) + 2) + "]",
+                        "not in range [1, " + str(len(self.kept_lines) + 2) + "]",
                     ),
                 )
-            if ln >= len(self.original_lines) + 1:  # trim too large
+            if ln >= len(self.kept_lines) + 1:  # trim too large
                 lni = -1
             else:
                 lni = ln - 1
 
         if self.line_numbers and self.keep_lines:
             if self.minify:
-                comment = str(ln) + " " + self.original_lines[lni]
+                comment = str(ln) + " " + self.kept_lines[lni]
             else:
-                comment = str(ln) + ": " + self.original_lines[lni]
+                comment = str(ln) + ": " + self.kept_lines[lni]
         elif self.keep_lines:
             if self.minify:
-                comment = self.original_lines[lni]
+                comment = self.kept_lines[lni]
             else:
-                comment = " " + self.original_lines[lni]
+                comment = " " + self.kept_lines[lni]
         elif self.line_numbers:
             if self.minify:
                 comment = str(ln)
@@ -1443,7 +1462,7 @@ class Compiler(Grammar, pickleable_obj):
         return "".join(out)
 
     def str_repl(self, inputstring, ignore_errors=False, **kwargs):
-        """Add back strings."""
+        """Add back strings and comments."""
         out = []
         comment = None
         string = None
@@ -1504,7 +1523,7 @@ class Compiler(Grammar, pickleable_obj):
             pass
         else:
             raw_first_line = split_leading_trailing_indent(rem_comment(first_line))[1]
-            if match_in(self.just_a_string, raw_first_line, inner=True):
+            if match_in(self.just_a_string, raw_first_line):
                 return first_line, rest_of_lines
         return None, block
 
@@ -1631,7 +1650,7 @@ else:
 
             # check if there is anything that stores a scope reference, and if so,
             #  disable TRE, since it can't handle that
-            if attempt_tre and match_in(self.stores_scope, line, inner=True):
+            if attempt_tre and match_in(self.stores_scope, line):
                 attempt_tre = False
 
             # attempt tco/tre/async universalization
@@ -1705,7 +1724,7 @@ else:
         # extract information about the function
         with self.complain_on_err():
             try:
-                split_func_tokens = parse(self.split_func, def_stmt, inner=True)
+                split_func_tokens = parse(self.split_func, def_stmt)
 
                 self.internal_assert(len(split_func_tokens) == 2, original, loc, "invalid function definition splitting tokens", split_func_tokens)
                 func_name, func_arg_tokens = split_func_tokens
@@ -2844,7 +2863,8 @@ if {store_var} is not _coconut_sentinel:
             logger.warn_err(self.make_err(CoconutSyntaxWarning, "[from *] import * is a Coconut Easter egg and should not be used in production code", original, loc))
             return special_starred_import_handle(imp_all=bool(imp_from))
         if self.strict:
-            self.unused_imports.update(imported_names(imports))
+            for imp_name in imported_names(imports):
+                self.unused_imports[imp_name].append(loc)
         return self.universal_import(imports, imp_from=imp_from)
 
     def complex_raise_stmt_handle(self, tokens):
@@ -3236,7 +3256,7 @@ __annotations__["{name}"] = {annotation}
                     exprs[-1] += c
                 elif paren_level > 0:
                     raise CoconutDeferredSyntaxError("imbalanced parentheses in format string expression", loc)
-                elif match_in(self.end_f_str_expr, remaining_text, inner=True):
+                elif match_in(self.end_f_str_expr, remaining_text):
                     in_expr = False
                     string_parts.append(c)
                 else:
@@ -3583,7 +3603,7 @@ for {match_to_var} in {item}:
         if self.disable_name_check:
             return name
         if self.strict:
-            self.unused_imports.discard(name)
+            self.unused_imports.pop(name, None)
 
         if name == "exec":
             if self.target.startswith("3"):
