@@ -805,7 +805,7 @@ class TestExternal(unittest.TestCase):
         def test_prelude(self):
             with using_path(prelude):
                 comp_prelude()
-                if PY35:  # has typing
+                if MYPY:
                     run_prelude()
 
     def test_pyston(self):
