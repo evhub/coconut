@@ -2248,6 +2248,8 @@ class Grammar(object):
         + restOfLine
     )
 
+    noqa_comment = regex_item(r"\b[Nn][Oo][Qq][Aa]\b")
+
 # end: EXTRA GRAMMAR
 # -----------------------------------------------------------------------------------------------------------------------
 # TIMING, TRACING:

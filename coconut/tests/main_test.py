@@ -261,6 +261,7 @@ def call(raw_cmd, assert_output=False, check_mypy=False, check_errors=True, stde
         assert "<unprintable" not in line, "Unprintable error in " + repr(line)
         assert "*** glibc detected ***" not in line, "C error in " + repr(line)
         assert "INTERNAL ERROR" not in line, "MyPy INTERNAL ERROR in " + repr(line)
+        assert "found unused import" not in line, "unused import in " + repr(line)
         if check_errors:
             assert "Traceback (most recent call last):" not in line, "Traceback in " + repr(line)
             assert "Exception" not in line, "Exception in " + repr(line)
@@ -602,8 +603,8 @@ def run_pyprover(**kwargs):
 def comp_prelude(args=[], **kwargs):
     """Compiles evhub/coconut-prelude."""
     call(["git", "clone", prelude_git])
-    if PY36 and not WINDOWS:
-        args.extend(["--target", "3.6", "--mypy"])
+    if MYPY and not WINDOWS:
+        args.extend(["--target", "3.7", "--mypy"])
         kwargs["check_errors"] = False
     call_coconut([os.path.join(prelude, "setup.coco"), "--force"] + args, **kwargs)
     call_coconut([os.path.join(prelude, "prelude-source"), os.path.join(prelude, "prelude"), "--force"] + args, **kwargs)

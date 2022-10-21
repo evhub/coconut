@@ -97,7 +97,6 @@ Exception = Exception
 AttributeError = AttributeError
 ImportError = ImportError
 IndexError = IndexError
-KeyError = KeyError
 NameError = NameError
 TypeError = TypeError
 ValueError = ValueError

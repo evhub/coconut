@@ -338,7 +338,7 @@ def unpack(tokens):
 
 
 @contextmanager
-def parsing_context(inner_parse):
+def parsing_context(inner_parse=True):
     """Context to manage the packrat cache across parse calls."""
     if inner_parse and use_packrat_parser:
         # store old packrat cache
@@ -367,13 +367,13 @@ def prep_grammar(grammar, streamline=False):
     return grammar.parseWithTabs()
 
 
-def parse(grammar, text, inner=False):
+def parse(grammar, text, inner=True):
     """Parse text using grammar."""
     with parsing_context(inner):
         return unpack(prep_grammar(grammar).parseString(text))
 
 
-def try_parse(grammar, text, inner=False):
+def try_parse(grammar, text, inner=True):
     """Attempt to parse text using grammar else None."""
     try:
         return parse(grammar, text, inner)
@@ -381,14 +381,14 @@ def try_parse(grammar, text, inner=False):
         return None
 
 
-def all_matches(grammar, text, inner=False):
+def all_matches(grammar, text, inner=True):
     """Find all matches for grammar in text."""
     with parsing_context(inner):
         for tokens, start, stop in prep_grammar(grammar).scanString(text):
             yield unpack(tokens), start, stop
 
 
-def parse_where(grammar, text, inner=False):
+def parse_where(grammar, text, inner=True):
     """Determine where the first parse is."""
     with parsing_context(inner):
         for tokens, start, stop in prep_grammar(grammar).scanString(text):
@@ -396,14 +396,14 @@ def parse_where(grammar, text, inner=False):
     return None, None
 
 
-def match_in(grammar, text, inner=False):
+def match_in(grammar, text, inner=True):
     """Determine if there is a match for grammar in text."""
     start, stop = parse_where(grammar, text, inner)
     internal_assert((start is None) == (stop is None), "invalid parse_where results", (start, stop))
     return start is not None
 
 
-def transform(grammar, text, inner=False):
+def transform(grammar, text, inner=True):
     """Transform text by replacing matches to grammar."""
     with parsing_context(inner):
         result = add_action(grammar, unpack).parseWithTabs().transformString(text)
