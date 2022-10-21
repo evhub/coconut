@@ -719,10 +719,10 @@ min_versions = {
     ("numpy", "py2;cpy"): (1,),
     ("dataclasses", "py==36"): (0, 8),
     ("aenum", "py<34"): (3,),
-    "sphinx": (5, 1),
-    "pydata-sphinx-theme": (0, 10),
+    "sphinx": (5, 2),
+    "pydata-sphinx-theme": (0, 11),
     "myst-parser": (0, 18),
-    "mypy[python2]": (0, 971),
+    "mypy[python2]": (0, 982),
 
     # pinned reqs: (must be added to pinned_reqs below)
 
