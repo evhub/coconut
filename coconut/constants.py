@@ -503,6 +503,8 @@ interpreter_compiler_var = "__coconut_compiler__"
 shebang_regex = r'coconut(?:-run)?'
 
 coconut_specific_builtins = (
+    "exit",
+    "reload",
     "breakpoint",
     "help",
     "TYPE_CHECKING",
