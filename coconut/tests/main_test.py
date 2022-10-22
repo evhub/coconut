@@ -754,11 +754,14 @@ class TestCompilation(unittest.TestCase):
 
     # run fewer tests on Windows so appveyor doesn't time out
     if not WINDOWS:
+        def test_line_numbers(self):
+            run(["--line-numbers"])
+
         def test_strict(self):
             run(["--strict"])
 
-        def test_line_numbers(self):
-            run(["--line-numbers"])
+        def test_and(self):
+            run(["--and"])  # src and dest built by comp
 
     def test_target(self):
         run(agnostic_target=(2 if PY2 else 3))
@@ -771,9 +774,6 @@ class TestCompilation(unittest.TestCase):
 
     def test_no_tco(self):
         run(["--no-tco"])
-
-    def test_and(self):
-        run(["--and"])  # src and dest built by comp
 
     # avoids a strange, unreproducable failure on appveyor
     if not (WINDOWS and sys.version_info[:2] == (3, 8)):
@@ -797,10 +797,12 @@ class TestCompilation(unittest.TestCase):
 @add_test_func_names
 class TestExternal(unittest.TestCase):
 
-    def test_pyprover(self):
-        with using_path(pyprover):
-            comp_pyprover()
-            run_pyprover()
+    # more appveyor timeout prevention
+    if not (WINDOWS and PY2):
+        def test_pyprover(self):
+            with using_path(pyprover):
+                comp_pyprover()
+                run_pyprover()
 
     if not PYPY or PY2:
         def test_prelude(self):
