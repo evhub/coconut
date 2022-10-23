@@ -960,6 +960,7 @@ forward 2""") == 900
     assert "abc1020" == “"abc"” “10” “20”
     assert !0 == 1
     assert ![] is True
+    assert (<$).__name__ == '_coconut_op_U3c_U24' == f"{(<$).__name__}"
 
     # must come at end
     assert fibs_calls[0] == 1
