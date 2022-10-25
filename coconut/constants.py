@@ -728,14 +728,13 @@ min_versions = {
 
     # pinned reqs: (must be added to pinned_reqs below)
 
-    # don't upgrade this until https://github.com/jupyter/jupyter_console/issues/241 is fixed
-    ("jupyter-client", "py3"): (6, 1, 12),
     # latest version supported on Python 2
     ("jupyter-client", "py2"): (5, 3),
     # don't upgrade these; they break on Python 3.5
     ("ipykernel", "py3"): (5, 5),
     ("ipython", "py3"): (7, 9),
     ("jupyter-console", "py3"): (6, 1),
+    ("jupyter-client", "py3"): (6, 1, 12),
     ("jupytext", "py3"): (1, 8),
     ("jupyterlab", "py35"): (2, 2),
     "xonsh": (0, 9),
