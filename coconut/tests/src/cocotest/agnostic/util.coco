@@ -177,9 +177,10 @@ addpattern def x! if x = False  # type: ignore
 addpattern def x! = True  # type: ignore
 
 # Type aliases:
-type list_or_tuple = list | tuple
+if sys.version_info >= (3, 5) or TYPE_CHECKING:
+    type list_or_tuple = list | tuple
 
-type func_to_int = -> int
+    type func_to_int = -> int
 
 # Quick-Sorts:
 def qsort1(l: int[]) -> int[]:

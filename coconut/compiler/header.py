@@ -404,10 +404,10 @@ def _coconut_matmul(a, b, **kwargs):
         import_typing_NamedTuple=pycondition(
             (3, 6),
             if_lt='''
-@staticmethod
 def NamedTuple(name, fields):
     return _coconut.collections.namedtuple(name, [x for x, t in fields])
 typing.NamedTuple = NamedTuple
+NamedTuple = staticmethod(NamedTuple)
             ''',
             indent=1,
             newline=True,
