@@ -401,17 +401,6 @@ def _coconut_matmul(a, b, **kwargs):
     raise _coconut.TypeError("unsupported operand type(s) for @: " + _coconut.repr(_coconut.type(a)) + " and " + _coconut.repr(_coconut.type(b)))
             ''',
         ),
-        import_typing_NamedTuple=pycondition(
-            (3, 6),
-            if_lt='''
-def NamedTuple(name, fields):
-    return _coconut.collections.namedtuple(name, [x for x, t in fields])
-typing.NamedTuple = NamedTuple
-NamedTuple = staticmethod(NamedTuple)
-            ''',
-            indent=1,
-            newline=True,
-        ),
         # used in the second round
         tco_comma="_coconut_tail_call, _coconut_tco, " if not no_tco else "",
         call_set_names_comma="_coconut_call_set_names, " if target_info < (3, 6) else "",
@@ -446,6 +435,12 @@ __anext__ = _coconut.asyncio.coroutine(_coconut_anext_ns["__anext__"])
             by=1,
             strip=True,
         ),
+        assign_typing_NamedTuple=pycondition(
+            (3, 5),
+            if_ge="typing.NamedTuple = NamedTuple",
+            if_lt="typing.NamedTuple = staticmethod(NamedTuple)",
+            newline=True,
+        ),
     )
 
     # second round for format dict elements that use the format dict
@@ -461,6 +456,17 @@ class typing{object}:
     __slots__ = ()
                 '''.format(**format_dict),
                 indent=1,
+            ),
+            import_typing_NamedTuple=pycondition(
+                (3, 6),
+                if_lt='''
+def NamedTuple(name, fields):
+    return _coconut.collections.namedtuple(name, [x for x, t in fields])
+{assign_typing_NamedTuple}
+NamedTuple = staticmethod(NamedTuple)
+                '''.format(**format_dict),
+                indent=1,
+                newline=True,
             ),
             import_typing_TypeAlias=pycondition(
                 (3, 10),
