@@ -1633,9 +1633,15 @@ where `typing` is the Python 3.5 built-in [`typing` module](https://docs.python.
 
 _Note: The transformation to `Union` is not done on Python 3.10 as Python 3.10 has native [PEP 604](https://www.python.org/dev/peps/pep-0604) support._
 
+To use these transformations in a [type alias](https://peps.python.org/pep-0484/#type-aliases), use the syntax
+```
+type <name> = <type>
+```
+which will allow `<type>` to include Coconut's special type annotation syntax and automatically flag `<name>` as a [`typing.TypeAlias`](https://docs.python.org/3/library/typing.html#typing.TypeAlias). If you try to instead just do a naked `<name> = <type>` type alias, Coconut won't be able to tell you're attempting a type alias and thus won't apply any of the above transformations.
+
 Importantly, note that `<type>[]` does not map onto `typing.List[<int>]` but onto `typing.Sequence[<int>]`. This is because, when writing in an idiomatic functional style, assignment should be rare and tuples should be common. Using `Sequence` covers both cases, accommodating tuples and lists and preventing indexed assignment. When an indexed assignment is attempted into a variable typed with `Sequence`, MyPy will generate an error:
 
-```
+```coconut
 foo: int[] = [0, 1, 2, 3, 4, 5]
 foo[0] = 1   # MyPy error: "Unsupported target for indexed assignment"
 ```

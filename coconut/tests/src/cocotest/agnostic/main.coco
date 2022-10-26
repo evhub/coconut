@@ -1191,6 +1191,7 @@ def main_test() -> bool:
     for x in *(1, 2), *(3, 4):
         xs.append(x)
     assert xs == [1, 2, 3, 4]
+    \\assert _coconut.typing.NamedTuple
     return True
 
 def test_asyncio() -> bool:

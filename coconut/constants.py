@@ -287,6 +287,7 @@ reserved_vars = (
     "addpattern",
     "then",
     "operator",
+    "type",
     "\u03bb",  # lambda
 )
 
@@ -672,6 +673,7 @@ all_reqs = {
     "mypy": (
         "mypy[python2]",
         "types-backports",
+        ("typing_extensions", "py3"),
     ),
     "watch": (
         "watchdog",

@@ -176,6 +176,11 @@ addpattern def (float(x))! = 0.0 if x else 1.0  # type: ignore
 addpattern def x! if x = False  # type: ignore
 addpattern def x! = True  # type: ignore
 
+# Type aliases:
+type list_or_tuple = list | tuple
+
+type func_to_int = -> int
+
 # Quick-Sorts:
 def qsort1(l: int[]) -> int[]:
     '''Non-Functional Quick Sort.'''

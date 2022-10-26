@@ -656,6 +656,7 @@ class Grammar(object):
     where_kwd = keyword("where", explicit_prefix=colon)
     addpattern_kwd = keyword("addpattern", explicit_prefix=colon)
     then_kwd = keyword("then", explicit_prefix=colon)
+    type_kwd = keyword("type", explicit_prefix=colon)
 
     ellipsis = Forward()
     ellipsis_tokens = Literal("...") | fixto(Literal("\u2026"), "...")
@@ -1221,6 +1222,9 @@ class Grammar(object):
     typed_assign_stmt = Forward()
     typed_assign_stmt_ref = simple_assign + colon.suppress() + typedef_test + Optional(equals.suppress() + test_expr)
     basic_stmt = trace(addspace(ZeroOrMore(assignlist + equals) + test_expr))
+
+    type_alias_stmt = Forward()
+    type_alias_stmt_ref = type_kwd.suppress() + name + equals.suppress() + typedef_test
 
     impl_call_arg = disallow_keywords(reserved_vars) + (
         keyword_atom
@@ -2036,6 +2040,7 @@ class Grammar(object):
         keyword_stmt
         | augassign_stmt
         | typed_assign_stmt
+        | type_alias_stmt
     )
     unsafe_simple_stmt_item <<= special_stmt | longest(basic_stmt, destructuring_stmt)
     simple_stmt_item <<= (

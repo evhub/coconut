@@ -401,6 +401,17 @@ def _coconut_matmul(a, b, **kwargs):
     raise _coconut.TypeError("unsupported operand type(s) for @: " + _coconut.repr(_coconut.type(a)) + " and " + _coconut.repr(_coconut.type(b)))
             ''',
         ),
+        import_typing_NamedTuple=pycondition(
+            (3, 6),
+            if_lt='''
+@staticmethod
+def NamedTuple(name, fields):
+    return _coconut.collections.namedtuple(name, [x for x, t in fields])
+typing.NamedTuple = NamedTuple
+            ''',
+            indent=1,
+            newline=True,
+        ),
         # used in the second round
         tco_comma="_coconut_tail_call, _coconut_tco, " if not no_tco else "",
         call_set_names_comma="_coconut_call_set_names, " if target_info < (3, 6) else "",
@@ -442,26 +453,37 @@ __anext__ = _coconut.asyncio.coroutine(_coconut_anext_ns["__anext__"])
         dict(
             # when anything is added to this list it must also be added to *both* __coconut__.pyi stub files
             underscore_imports="{tco_comma}{call_set_names_comma}{handle_cls_args_comma}_namedtuple_of, _coconut, _coconut_super, _coconut_MatchError, _coconut_iter_getitem, _coconut_base_compose, _coconut_forward_compose, _coconut_back_compose, _coconut_forward_star_compose, _coconut_back_star_compose, _coconut_forward_dubstar_compose, _coconut_back_dubstar_compose, _coconut_pipe, _coconut_star_pipe, _coconut_dubstar_pipe, _coconut_back_pipe, _coconut_back_star_pipe, _coconut_back_dubstar_pipe, _coconut_none_pipe, _coconut_none_star_pipe, _coconut_none_dubstar_pipe, _coconut_bool_and, _coconut_bool_or, _coconut_none_coalesce, _coconut_minus, _coconut_map, _coconut_partial, _coconut_get_function_match_error, _coconut_base_pattern_func, _coconut_addpattern, _coconut_sentinel, _coconut_assert, _coconut_raise, _coconut_mark_as_match, _coconut_reiterable, _coconut_self_match_types, _coconut_dict_merge, _coconut_exec, _coconut_comma_op, _coconut_multi_dim_arr, _coconut_mk_anon_namedtuple, _coconut_matmul".format(**format_dict),
-            import_typing_NamedTuple=pycondition(
-                (3, 6),
+            import_typing=pycondition(
+                (3, 5),
+                if_ge="import typing",
                 if_lt='''
 class typing{object}:
-    @staticmethod
-    def NamedTuple(name, fields):
-        return _coconut.collections.namedtuple(name, [x for x, t in fields])
-            '''.format(**format_dict),
-                if_ge='''
-import typing
-            ''',
+    __slots__ = ()
+                '''.format(**format_dict),
                 indent=1,
             ),
+            import_typing_TypeAlias=pycondition(
+                (3, 10),
+                if_lt='''
+try:
+    from typing_extensions import TypeAlias
+except ImportError:
+    class you_need_to_install_typing_extensions{object}:
+        __slots__ = ()
+    TypeAlias = you_need_to_install_typing_extensions()
+typing.TypeAlias = TypeAlias
+                '''.format(**format_dict),
+                indent=1,
+                newline=True,
+            ) if no_wrap else "",
             import_asyncio=pycondition(
                 (3, 4),
                 if_lt='''
 try:
     import trollius as asyncio
 except ImportError:
-    class you_need_to_install_trollius{object}: pass
+    class you_need_to_install_trollius{object}:
+        __slots__ = ()
     asyncio = you_need_to_install_trollius()
             '''.format(**format_dict),
                 if_ge='''
@@ -494,7 +516,8 @@ try:
     from backports.functools_lru_cache import lru_cache
     functools.lru_cache = lru_cache
 except ImportError:
-    class you_need_to_install_backports_functools_lru_cache{object}: pass
+    class you_need_to_install_backports_functools_lru_cache{object}:
+        __slots__ = ()
     functools.lru_cache = you_need_to_install_backports_functools_lru_cache()
             '''.format(**format_dict),
                 if_ge=None,

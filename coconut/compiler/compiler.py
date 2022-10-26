@@ -594,6 +594,7 @@ class Compiler(Grammar, pickleable_obj):
         cls.typedef_default <<= trace_attach(cls.typedef_default_ref, cls.method("typedef_handle"))
         cls.unsafe_typedef_default <<= trace_attach(cls.unsafe_typedef_default_ref, cls.method("unsafe_typedef_handle"))
         cls.typed_assign_stmt <<= trace_attach(cls.typed_assign_stmt_ref, cls.method("typed_assign_stmt_handle"))
+        cls.type_alias_stmt <<= trace_attach(cls.type_alias_stmt_ref, cls.method("type_alias_stmt_handle"))
         cls.with_stmt <<= trace_attach(cls.with_stmt_ref, cls.method("with_stmt_handle"))
         cls.await_expr <<= trace_attach(cls.await_expr_ref, cls.method("await_expr_handle"))
         cls.cases_stmt <<= trace_attach(cls.cases_stmt_ref, cls.method("cases_stmt_handle"))
@@ -3142,6 +3143,11 @@ __annotations__["{name}"] = {annotation}
                 # ignore target since this annotation isn't going inside an actual typedef
                 annotation=self.wrap_typedef(typedef, ignore_target=True),
             )
+
+    def type_alias_stmt_handle(self, tokens):
+        """Handle type alias statements."""
+        name, typedef = tokens
+        return self.typed_assign_stmt_handle([name, "_coconut.typing.TypeAlias", typedef])
 
     def with_stmt_handle(self, tokens):
         """Process with statements."""

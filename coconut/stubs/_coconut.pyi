@@ -60,11 +60,20 @@ except ImportError:
 else:
     _abc.Sequence.register(_numpy.ndarray)
 
+# The real _coconut only has TypeAlias if --no-wrap is passed
+if sys.version_info < (3, 10):
+    try:
+        from typing_extensions import TypeAlias
+    except ImportError:
+        TypeAlias = ...
+    typing.TypeAlias = TypeAlias
+
 # -----------------------------------------------------------------------------------------------------------------------
 # STUB:
 # -----------------------------------------------------------------------------------------------------------------------
 
-typing = _t  # The real _coconut doesn't import typing, but we want type-checkers to treat it as if it does
+typing = _t
+
 collections = _collections
 copy = _copy
 copyreg = _copyreg

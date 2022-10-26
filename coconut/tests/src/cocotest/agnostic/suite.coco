@@ -961,6 +961,9 @@ forward 2""") == 900
     assert !0 == 1
     assert ![] is True
     assert (<$).__name__ == '_coconut_op_U3c_U24' == f"{(<$).__name__}"
+    a_list: list_or_tuple = [1, 2, 3]
+    a_list = (1, 2, 3)
+    a_func: func_to_int = (.+1)
 
     # must come at end
     assert fibs_calls[0] == 1
