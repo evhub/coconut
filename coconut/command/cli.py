@@ -74,7 +74,7 @@ arguments.add_argument(
     "--and",
     metavar=("source", "dest"),
     type=str,
-    nargs=2,
+    nargs="+",
     action="append",
     help="additional source/dest pairs to compile",
 )

@@ -203,6 +203,14 @@ class Command(object):
             logger.warn("extraneous --line-numbers argument passed; --mypy implies --line-numbers")
         if args.site_install and args.site_uninstall:
             raise CoconutException("cannot --site-install and --site-uninstall simultaneously")
+        for and_args in getattr(args, "and") or []:
+            if len(and_args) > 2:
+                raise CoconutException(
+                    "--and accepts at most two arguments, source and dest ({n} given: {args!r})".format(
+                        n=len(and_args),
+                        args=and_args,
+                    ),
+                )
 
         # process general command args
         if args.recursion_limit is not None:
