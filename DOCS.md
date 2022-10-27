@@ -389,7 +389,7 @@ _Note: Unlike the normal Coconut command-line, `%%coconut` defaults to the `sys`
 
 Coconut has the ability to integrate with [MyPy](http://mypy-lang.org/) to provide optional static type_checking, including for all Coconut built-ins. Simply pass `--mypy` to `coconut` to enable MyPy integration, though be careful to pass it only as the last argument, since all arguments after `--mypy` are passed to `mypy`, not Coconut.
 
-You can also call `mypy` directly on the compiled Coconut if you run `coconut --mypy` at least once and then add `~/.coconut_stubs` to your [`MYPYPATH`](https://mypy.readthedocs.io/en/latest/running_mypy.html#how-imports-are-found). To install the stubs without launching the interpreter, you can also run `coconut --mypy install` instead of `coconut --mypy`.
+You can also call `mypy` directly on the compiled Coconut. If this isn't working, try running `coconut --mypy` at least once and adding `~/.coconut_stubs` to your [`MYPYPATH`](https://mypy.readthedocs.io/en/latest/running_mypy.html#how-imports-are-found). To install the stubs without launching the interpreter, you can also run `coconut --mypy install` instead of `coconut --mypy`.
 
 To explicitly annotate your code with types for MyPy to check, Coconut supports [Python 3 function type annotations](https://www.python.org/dev/peps/pep-0484/), [Python 3.6 variable type annotations](https://www.python.org/dev/peps/pep-0526/), and even Coconut's own [enhanced type annotation syntax](#enhanced-type-annotation). By default, all type annotations are compiled to Python-2-compatible type comments, which means it all works on any Python version.
 
@@ -1448,6 +1448,8 @@ def (arguments) -> statement; statement; ...
 where `arguments` can be standard function arguments or [pattern-matching function definition](#pattern-matching-functions) arguments and `statement` can be an assignment statement or a keyword statement. If the last `statement` (not followed by a semicolon) is an `expression`, it will automatically be returned.
 
 Statement lambdas also support implicit lambda syntax such that `def -> _` is equivalent to `def (_=None) -> _` as well as explicitly marking them as pattern-matching such that `match def (x) -> x` will be a pattern-matching function.
+
+Note that statement lambdas have a lower precedence than normal lambdas and thus capture things like trailing commas.
 
 ##### Example
 
@@ -3457,9 +3459,9 @@ If _state_ is `None`, gets a new state object, whereas if _state_ is `False`, th
 
 #### `parse`
 
-**coconut.convenience.parse**(_code_=`""`, _mode_=`"sys"`, _state_=`False`)
+**coconut.convenience.parse**(_code_=`""`, _mode_=`"sys"`, _state_=`False`, _keep\_internal\_state_=`None`)
 
-Likely the most useful of the convenience functions, `parse` takes Coconut code as input and outputs the equivalent compiled Python code. _mode_ is used to indicate the context for the parsing and _state_ is the state object storing the compilation parameters to use as obtained from [**get_state**](#get_state) (if `False`, uses the global state object).
+Likely the most useful of the convenience functions, `parse` takes Coconut code as input and outputs the equivalent compiled Python code. _mode_ is used to indicate the context for the parsing and _state_ is the state object storing the compilation parameters to use as obtained from [**get_state**](#get_state) (if `False`, uses the global state object). _keep\_internal\_state_ determines whether the state object will keep internal state (such as what [custom operators](#custom-operators) have been declared)—if `None`, internal state will be kept iff you are not using the global _state_.
 
 If _code_ is not passed, `parse` will output just the given _mode_'s header, which can be executed to set up an execution environment in which future code can be parsed and executed without a header.
 
@@ -3538,7 +3540,7 @@ Has the same effect of setting the command-line flags on the given _state_ objec
 
 #### `coconut_eval`
 
-**coconut.convenience.coconut_eval**(_expression_, _globals_=`None`, _locals_=`None`, _state_=`False`)
+**coconut.convenience.coconut_eval**(_expression_, _globals_=`None`, _locals_=`None`, _state_=`False`, _keep\_internal\_state_=`None`)
 
 Version of [`eval`](https://docs.python.org/3/library/functions.html#eval) which can evaluate Coconut code.
 

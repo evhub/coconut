@@ -68,6 +68,8 @@ def unwrap_future(event_loop, maybe_future):
 
 
 def test_setup_none() -> bool:
+    assert_raises((def -> import \(_coconut)), ImportError, err_has="should never be done at runtime")  # NOQA
+
     assert consume(range(10), keep_last=1)[0] == 9 == coc_consume(range(10), keep_last=1)[0]
     assert version() == version("num")
     assert version("name")

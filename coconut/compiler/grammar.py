@@ -1518,23 +1518,31 @@ class Grammar(object):
         | continue_stmt
     )
 
-    # maybeparens here allow for using custom operator names there
-    dotted_as_name = Group(
-        dotted_name
-        - Optional(
-            keyword("as").suppress()
-            - maybeparens(lparen, name, rparen),
-        ),
-    )
-    import_as_name = Group(
+    imp_name = (
+        # maybeparens allows for using custom operator names here
         maybeparens(lparen, name, rparen)
+        | passthrough_item
+    )
+    dotted_imp_name = (
+        dotted_name
+        | passthrough_item
+    )
+    import_item = Group(
+        dotted_imp_name
         - Optional(
             keyword("as").suppress()
-            - maybeparens(lparen, name, rparen),
+            - imp_name,
         ),
     )
-    import_names = Group(maybeparens(lparen, tokenlist(dotted_as_name, comma), rparen))
-    from_import_names = Group(maybeparens(lparen, tokenlist(import_as_name, comma), rparen))
+    from_import_item = Group(
+        imp_name
+        - Optional(
+            keyword("as").suppress()
+            - imp_name,
+        ),
+    )
+    import_names = Group(maybeparens(lparen, tokenlist(import_item, comma), rparen))
+    from_import_names = Group(maybeparens(lparen, tokenlist(from_import_item, comma), rparen))
     basic_import = keyword("import").suppress() - (import_names | Group(star))
     import_from_name = condense(ZeroOrMore(unsafe_dot) + dotted_name | OneOrMore(unsafe_dot) | star)
     from_import = (

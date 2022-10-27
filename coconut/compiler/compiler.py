@@ -378,7 +378,7 @@ class Compiler(Grammar, pickleable_obj):
         """Creates a new compiler with the given parsing parameters."""
         self.setup(*args, **kwargs)
 
-    # changes here should be reflected in stubs.coconut.convenience.setup
+    # changes here should be reflected in the stub for coconut.convenience.setup
     def setup(self, target=None, strict=False, minify=False, line_numbers=False, keep_lines=False, no_tco=False, no_wrap=False):
         """Initializes parsing parameters."""
         if target is None:
@@ -958,7 +958,7 @@ class Compiler(Grammar, pickleable_obj):
                         logger.warn_err(
                             self.make_err(
                                 CoconutSyntaxWarning,
-                                "found unused import: " + name,
+                                "found unused import: " + self.reformat(name, ignore_errors=True),
                                 original,
                                 loc,
                                 extra="add NOQA comment or remove --strict to dismiss",

@@ -31,8 +31,10 @@ class CoconutException(Exception):
 # COMMAND:
 #-----------------------------------------------------------------------------------------------------------------------
 
+GLOBAL_STATE: Optional[Command] = None
 
-CLI: Command = ...
+
+def get_state(state: Optional[Command]=None) -> Command: ...
 
 
 def cmd(args: Union[Text, bytes, Iterable], interact: bool=False) -> None: ...
@@ -63,13 +65,20 @@ def setup(
 PARSERS: Dict[Text, Callable] = ...
 
 
-def parse(code: Text, mode: Text=...) -> Text: ...
+def parse(
+    code: Text,
+    mode: Text=...,
+    state: Optional[Command]=...,
+    keep_internal_state: Optional[bool]=None,
+) -> Text: ...
 
 
 def coconut_eval(
     expression: Text,
     globals: Optional[Dict[Text, Any]]=None,
     locals: Optional[Dict[Text, Any]]=None,
+    state: Optional[Command]=...,
+    keep_internal_state: Optional[bool]=None,
 ) -> Any: ...
 
 

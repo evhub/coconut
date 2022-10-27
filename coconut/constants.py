@@ -438,7 +438,7 @@ prompt_use_suggester = False
 
 base_dir = os.path.dirname(os.path.abspath(fixpath(__file__)))
 
-base_stub_dir = os.path.join(base_dir, "stubs")
+base_stub_dir = os.path.dirname(base_dir)
 installed_stub_dir = os.path.join(coconut_home, ".coconut_stubs")
 
 watch_interval = .1  # seconds

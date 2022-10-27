@@ -109,10 +109,10 @@ PARSERS = {
 PARSERS["any"] = PARSERS["debug"] = PARSERS["lenient"]
 
 
-def parse(code="", mode="sys", state=False, keep_state=None):
+def parse(code="", mode="sys", state=False, keep_internal_state=None):
     """Compile Coconut code."""
-    if keep_state is None:
-        keep_state = bool(state)
+    if keep_internal_state is None:
+        keep_internal_state = bool(state)
     command = get_state(state)
     if command.comp is None:
         command.setup()
@@ -121,7 +121,7 @@ def parse(code="", mode="sys", state=False, keep_state=None):
             "invalid parse mode " + repr(mode),
             extra="valid modes are " + ", ".join(PARSERS),
         )
-    return PARSERS[mode](command.comp)(code, keep_state=keep_state)
+    return PARSERS[mode](command.comp)(code, keep_state=keep_internal_state)
 
 
 def coconut_eval(expression, globals=None, locals=None, state=False, **kwargs):
