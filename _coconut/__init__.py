@@ -23,4 +23,4 @@ from coconut.root import *  # NOQA
 # ERROR:
 # -----------------------------------------------------------------------------------------------------------------------
 
-raise ImportError("Importing _coconut should never be done at runtime; _coconut exists for type checking purposes only. You should be importing coconut (without the underscore) instead.")
+raise ImportError("Importing the top-level _coconut package should never be done at runtime; _coconut exists for type checking purposes only. Try 'from coconut.__coconut__ import _coconut' instead.")

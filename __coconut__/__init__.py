@@ -23,4 +23,4 @@ from coconut.root import *  # NOQA
 # ERROR:
 # -----------------------------------------------------------------------------------------------------------------------
 
-raise ImportError("Importing the top-level __coconut__ package should never be done at runtime; __coconut__ exists for type checking purposes only. You should be importing coconut.__coconut__ instead.")
+raise ImportError("Importing the top-level __coconut__ package should never be done at runtime; __coconut__ exists for type checking purposes only. Try 'import coconut.__coconut__' instead.")
