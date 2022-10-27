@@ -8,6 +8,7 @@ global-include *.md
 global-include *.json
 global-include *.toml
 global-include *.coco
+global-include py.typed
 prune coconut/tests/dest
 prune docs
 prune pyston
@@ -18,5 +19,6 @@ prune .mypy_cache
 prune coconut/stubs/.mypy_cache
 prune .pytest_cache
 prune *.egg-info
+prune .github
 exclude index.rst
 exclude profile.json

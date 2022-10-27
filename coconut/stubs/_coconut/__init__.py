@@ -8,9 +8,7 @@
 """
 Author: Evan Hubinger
 License: Apache 2.0
-Description: Mimics what a compiled __coconut__.py would do.
-
-Must match __coconut__.__init__.
+Description: For type checking purposes only. Should never be imported.
 """
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -19,11 +17,10 @@ Must match __coconut__.__init__.
 
 from __future__ import print_function, absolute_import, unicode_literals, division
 
-from coconut.compiler import Compiler as _coconut_Compiler
+from coconut.root import *  # NOQA
 
 # -----------------------------------------------------------------------------------------------------------------------
-# HEADER:
+# ERROR:
 # -----------------------------------------------------------------------------------------------------------------------
 
-# executes the __coconut__.py header for the current Python version
-exec(_coconut_Compiler(target="sys").getheader("code"))
+raise ImportError("Importing _coconut should never be done at runtime; _coconut exists for type checking purposes only. You should be importing coconut (without the underscore) instead.")
