@@ -1204,7 +1204,7 @@ def easter_egg_test() -> bool:
     import sys as _sys
     num_mods_0 = len(_sys.modules)
     import *  # type: ignore
-    assert sys == _sys
+    assert sys is _sys
     assert len(_sys.modules) > num_mods_0
     orig_name = __name__
     from * import *  # type: ignore

@@ -393,9 +393,12 @@ _Note: Unlike the normal Coconut command-line, `%%coconut` defaults to the `sys`
 
 Coconut has the ability to integrate with [MyPy](http://mypy-lang.org/) to provide optional static type_checking, including for all Coconut built-ins. Simply pass `--mypy` to `coconut` to enable MyPy integration, though be careful to pass it only as the last argument, since all arguments after `--mypy` are passed to `mypy`, not Coconut.
 
-You can also call `mypy` directly on the compiled Coconut. If this isn't working, try running `coconut --mypy` at least once and adding `~/.coconut_stubs` to your [`MYPYPATH`](https://mypy.readthedocs.io/en/latest/running_mypy.html#how-imports-are-found). To install the stubs without launching the interpreter, you can also run `coconut --mypy install` instead of `coconut --mypy`.
+You can also run `mypy`—or any other static type checker—directly on the compiled Coconut. If the static type checker is unable to find the necessary stub files, however, then you may need to:
 
-To explicitly annotate your code with types for MyPy to check, Coconut supports [Python 3 function type annotations](https://www.python.org/dev/peps/pep-0484/), [Python 3.6 variable type annotations](https://www.python.org/dev/peps/pep-0526/), and even Coconut's own [enhanced type annotation syntax](#enhanced-type-annotation). By default, all type annotations are compiled to Python-2-compatible type comments, which means it all works on any Python version.
+1. run `coconut --mypy install` and
+2. tell your static type checker of choice to look in `~/.coconut_stubs` for stub files (for `mypy`, this is done by adding it to your [`MYPYPATH`](https://mypy.readthedocs.io/en/latest/running_mypy.html#how-imports-are-found)).
+
+To explicitly annotate your code with types to be checked, Coconut supports [Python 3 function type annotations](https://www.python.org/dev/peps/pep-0484/), [Python 3.6 variable type annotations](https://www.python.org/dev/peps/pep-0526/), and even Coconut's own [enhanced type annotation syntax](#enhanced-type-annotation). By default, all type annotations are compiled to Python-2-compatible type comments, which means it all works on any Python version.
 
 Coconut even supports `--mypy` in the interpreter, which will intelligently scan each new line of code, in the context of previous lines, for newly-introduced MyPy errors. For example:
 ```coconut_pycon
@@ -407,7 +410,7 @@ Coconut even supports `--mypy` in the interpreter, which will intelligently scan
 ```
 _For more information on `reveal_type`, see [`reveal_type` and `reveal_locals`](#reveal-type-and-reveal-locals)._
 
-Sometimes, MyPy will not know how to handle certain Coconut constructs, such as `addpattern`. For the `addpattern` case, it is recommended to pass `--allow-redefinition` to MyPy (i.e. run `coconut <args> --mypy --allow-redefinition`), though in some cases `--allow-redefinition` may not be sufficient. In that case, either hide the offending code using [`TYPE_CHECKING`](#type_checking) or put a `# type: ignore` comment on the Coconut line which is generating the line MyPy is complaining about (you can figure out what line this is using `--line-numbers`) and the comment will be added to every generated line.
+Sometimes, MyPy will not know how to handle certain Coconut constructs, such as `addpattern`. For the `addpattern` case, it is recommended to pass `--allow-redefinition` to MyPy (i.e. run `coconut <args> --mypy --allow-redefinition`), though in some cases `--allow-redefinition` may not be sufficient. In that case, either hide the offending code using [`TYPE_CHECKING`](#type_checking) or put a `# type: ignore` comment on the Coconut line which is generating the line MyPy is complaining about and the comment will be added to every generated line.
 
 ### `numpy` Integration
 
