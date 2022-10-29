@@ -760,10 +760,12 @@ class inh_A(A):
     def inh_true1(self) =
         super().true()
     def inh_true2(self) =
-        py_super(inh_A, self).true()
+        super(inh_A, self).true()
     def inh_true3(nonstandard_self) =
         super().true()
-    inh_true4 = def (self) -> super().true()
+    def inh_true4(self) =
+        py_super(inh_A, self).true()
+    inh_true5 = def (self) -> super().true()
     @classmethod
     def inh_cls_true(cls) = super().cls_true()
 class B:

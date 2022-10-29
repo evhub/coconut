@@ -111,7 +111,8 @@ def evaluate_tokens(tokens, **kwargs):
     """Evaluate the given tokens in the computation graph."""
     # can't have this be a normal kwarg to make evaluate_tokens a valid parse action
     evaluated_toklists = kwargs.pop("evaluated_toklists", ())
-    internal_assert(not kwargs, "invalid keyword arguments to evaluate_tokens", kwargs)
+    if DEVELOP:  # avoid the overhead of the call if not develop
+        internal_assert(not kwargs, "invalid keyword arguments to evaluate_tokens", kwargs)
 
     if isinstance(tokens, ParseResults):
 
@@ -161,6 +162,7 @@ def evaluate_tokens(tokens, **kwargs):
                 ),
             )
 
+        # base cases (performance sensitive; should be in likelihood order):
         if isinstance(tokens, str):
             return tokens
 
@@ -172,6 +174,9 @@ def evaluate_tokens(tokens, **kwargs):
 
         elif isinstance(tokens, tuple):
             return tuple(evaluate_tokens(inner_toks, evaluated_toklists=evaluated_toklists) for inner_toks in tokens)
+
+        elif isinstance(tokens, DeferredNode):
+            return tokens
 
         else:
             raise CoconutInternalException("invalid computation graph tokens", tokens)
@@ -247,13 +252,26 @@ class ComputationNode(object):
         return self.name + "(\n" + inner_repr + "\n)"
 
 
-class CombineNode(Combine):
+class DeferredNode(object):
+    """A node in the computation graph that has had its evaluation explicitly deferred."""
+
+    def __init__(self, original, loc, tokens):
+        self.original = original
+        self.loc = loc
+        self.tokens = tokens
+
+    def evaluate(self):
+        """Evaluate the deferred computation."""
+        return unpack(self.tokens)
+
+
+class CombineToNode(Combine):
     """Modified Combine to work with the computation graph."""
     __slots__ = ()
 
     def _combine(self, original, loc, tokens):
         """Implement the parse action for Combine."""
-        combined_tokens = super(CombineNode, self).postParse(original, loc, tokens)
+        combined_tokens = super(CombineToNode, self).postParse(original, loc, tokens)
         if DEVELOP:  # avoid the overhead of the call if not develop
             internal_assert(len(combined_tokens) == 1, "Combine produced multiple tokens", combined_tokens)
         return combined_tokens[0]
@@ -265,7 +283,7 @@ class CombineNode(Combine):
 
 
 if USE_COMPUTATION_GRAPH:
-    combine = CombineNode
+    combine = CombineToNode
 else:
     combine = Combine
 
@@ -325,6 +343,12 @@ def final(item):
     """Collapse the computation graph upon parsing the given item."""
     # evaluate_tokens expects a computation graph, so we just call add_action directly
     return add_action(item, final_evaluate_tokens)
+
+
+def defer(item):
+    """Defers evaluation of the given item.
+    Only does any actual deferring if USE_COMPUTATION_GRAPH is True."""
+    return add_action(item, DeferredNode)
 
 
 def unpack(tokens):
@@ -487,9 +511,10 @@ class Wrap(ParseElementEnhance):
     """PyParsing token that wraps the given item in the given context manager."""
     __slots__ = ("errmsg", "wrapper")
 
-    def __init__(self, item, wrapper):
+    def __init__(self, item, wrapper, can_affect_parse_success=False):
         super(Wrap, self).__init__(item)
         self.wrapper = wrapper
+        self.can_affect_parse_success = can_affect_parse_success
         self.setName(get_name(item) + " (Wrapped)")
 
     @contextmanager
@@ -498,7 +523,7 @@ class Wrap(ParseElementEnhance):
 
         Required to allow the packrat cache to distinguish between wrapped
         and unwrapped parses. Only supported natively on cPyparsing."""
-        if hasattr(self, "packrat_context"):
+        if self.can_affect_parse_success and hasattr(self, "packrat_context"):
             self.packrat_context.append(self.wrapper)
             try:
                 yield
@@ -539,7 +564,7 @@ def disable_inside(item, *elems, **kwargs):
         finally:
             level[0] -= 1
 
-    yield Wrap(item, manage_item)
+    yield Wrap(item, manage_item, can_affect_parse_success=True)
 
     @contextmanager
     def manage_elem(self, original, loc):
@@ -549,7 +574,7 @@ def disable_inside(item, *elems, **kwargs):
             raise ParseException(original, loc, self.errmsg, self)
 
     for elem in elems:
-        yield Wrap(elem, manage_elem)
+        yield Wrap(elem, manage_elem, can_affect_parse_success=True)
 
 
 def disable_outside(item, *elems):

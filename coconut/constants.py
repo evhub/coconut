@@ -294,6 +294,7 @@ reserved_vars = (
 # names that trigger __class__ to be bound to local vars
 super_names = (
     "super",
+    "py_super",
     "__class__",
 )
 
@@ -301,7 +302,7 @@ super_names = (
 untcoable_funcs = (
     r"locals",
     r"globals",
-    r"super",
+    r"(py_)?super",
     r"(typing\.)?cast",
     r"(sys\.)?exc_info",
     r"(sys\.)?_getframe",

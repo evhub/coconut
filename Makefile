@@ -112,6 +112,13 @@ test-pypy3:
 	pypy3 ./coconut/tests/dest/runner.py
 	pypy3 ./coconut/tests/dest/extras.py
 
+# same as test-pypy3 but includes verbose output for better debugging
+.PHONY: test-pypy3-verbose
+test-pypy3-verbose:
+	pypy3 ./coconut/tests --strict --line-numbers --force --verbose --jobs 0
+	pypy3 ./coconut/tests/dest/runner.py
+	pypy3 ./coconut/tests/dest/extras.py
+
 # same as test-univ but also runs mypy
 .PHONY: test-mypy
 test-mypy:

@@ -478,6 +478,14 @@ class Compiler(Grammar, pickleable_obj):
             self.kept_lines = kept_lines
             self.num_lines = num_lines
 
+    def current_parsing_context(self, name):
+        """Get the current parsing context for the given name."""
+        stack = self.parsing_context[name]
+        if stack:
+            return stack[-1]
+        else:
+            return None
+
     @contextmanager
     def disable_checks(self):
         """Run the block without checking names or strict errors."""
@@ -3148,21 +3156,29 @@ __annotations__["{name}"] = {annotation}
         """Compiles type params into assignments."""
         lines = []
         for type_param in tokens:
+            bounds = ""
             if "TypeVar" in type_param:
+                TypeVarFunc = "TypeVar"
                 if len(type_param) == 1:
                     name, = type_param
-                    lines.append('{name} = _coconut.typing.TypeVar("{name}")'.format(name=name))
                 else:
                     name, bound = type_param
-                    lines.append('{name} = _coconut.typing.TypeVar("{name}", bound={bound})'.format(name=name, bound=self.wrap_typedef(bound)))
+                    bounds = ", bound=" + bound
             elif "TypeVarTuple" in type_param:
+                TypeVarFunc = "TypeVarTuple"
                 name, = type_param
-                lines.append('{name} = _coconut.typing.TypeVarTuple("{name}")'.format(name=name))
             elif "ParamSpec" in type_param:
+                TypeVarFunc = "ParamSpec"
                 name, = type_param
-                lines.append('{name} = _coconut.typing.ParamSpec("{name}")'.format(name=name))
             else:
                 raise CoconutInternalException("invalid type_param", type_param)
+            lines.append(
+                '{name} = _coconut.typing.{TypeVarFunc}("{name}"{bounds})'.format(
+                    name=name,
+                    TypeVarFunc=TypeVarFunc,
+                    bounds=bounds,
+                ),
+            )
         return "".join(line + "\n" for line in lines)
 
     def type_alias_stmt_handle(self, tokens):
@@ -3172,14 +3188,12 @@ __annotations__["{name}"] = {annotation}
             params = []
         else:
             name, params, typedef = tokens
-        return (
-            self.compile_type_params(params)
-            + self.typed_assign_stmt_handle([
-                name,
-                "_coconut.typing.TypeAlias",
-                self.wrap_typedef(typedef),
-            ])
-        )
+        paramdefs = self.compile_type_params(params)
+        return paramdefs + self.typed_assign_stmt_handle([
+            name,
+            "_coconut.typing.TypeAlias",
+            self.wrap_typedef(typedef),
+        ])
 
     def with_stmt_handle(self, tokens):
         """Process with statements."""
@@ -3594,7 +3608,7 @@ for {match_to_var} in {item}:
         cls_stack = self.parsing_context["class"]
         if cls_stack:
             cls_context = cls_stack[-1]
-            if cls_context["name"] is None:  # this should only happen when the managed class item will fail to fully match
+            if cls_context["name"] is None:  # this should only happen when the managed class item will fail to fully parse
                 name_prefix = cls_context["name_prefix"]
             elif cls_context["in_method"]:  # if we're in a function, we shouldn't use the prefix to look up the class
                 name_prefix = ""
@@ -3614,23 +3628,23 @@ for {match_to_var} in {item}:
 
     def classname_handle(self, tokens):
         """Handle class names."""
-        cls_stack = self.parsing_context["class"]
-        internal_assert(cls_stack, "found classname outside of class", tokens)
+        cls_context = self.current_parsing_context("class")
+        internal_assert(cls_context is not None, "found classname outside of class", tokens)
 
         name, = tokens
-        cls_stack[-1]["name"] = name
+        cls_context["name"] = name
         return name
 
     @contextmanager
     def func_manage(self, item, original, loc):
         """Manage the function parsing context."""
-        cls_stack = self.parsing_context["class"]
-        if cls_stack:
-            in_method, cls_stack[-1]["in_method"] = cls_stack[-1]["in_method"], True
+        cls_context = self.current_parsing_context("class")
+        if cls_context is not None:
+            in_method, cls_context["in_method"] = cls_context["in_method"], True
             try:
                 yield
             finally:
-                cls_stack[-1]["in_method"] = in_method
+                cls_context["in_method"] = in_method
         else:
             yield
 
@@ -3649,16 +3663,14 @@ for {match_to_var} in {item}:
             else:
                 return "_coconut_exec"
         elif name in super_names and not self.target.startswith("3"):
-            cls_stack = self.parsing_context["class"]
-            if cls_stack:
-                cls_context = cls_stack[-1]
-                if cls_context["name"] is not None and cls_context["in_method"]:
-                    enclosing_cls = cls_context["name_prefix"] + cls_context["name"]
-                    # temp_marker will be set back later, but needs to be a unique name until then for add_code_before
-                    temp_marker = self.get_temp_var("super")
-                    self.add_code_before[temp_marker] = "__class__ = " + enclosing_cls + "\n"
-                    self.add_code_before_replacements[temp_marker] = name
-                    return temp_marker
+            cls_context = self.current_parsing_context("class")
+            if cls_context is not None and cls_context["name"] is not None and cls_context["in_method"]:
+                enclosing_cls = cls_context["name_prefix"] + cls_context["name"]
+                # temp_marker will be set back later, but needs to be a unique name until then for add_code_before
+                temp_marker = self.get_temp_var("super")
+                self.add_code_before[temp_marker] = "__class__ = " + enclosing_cls + "\n"
+                self.add_code_before_replacements[temp_marker] = name
+                return temp_marker
             return name
         elif name.startswith(reserved_prefix) and name not in self.operators:
             raise CoconutDeferredSyntaxError("variable names cannot start with reserved prefix " + reserved_prefix, loc)
