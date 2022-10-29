@@ -293,8 +293,9 @@ reserved_vars = (
 
 # names that trigger __class__ to be bound to local vars
 super_names = (
+    # we would include py_super, but it's not helpful, since
+    #  py_super is unsatisfied by a simple local __class__ var
     "super",
-    "py_super",
     "__class__",
 )
 
@@ -489,7 +490,7 @@ oserror_retcode = 127
 
 mypy_install_arg = "install"
 
-mypy_builtin_regex = re.compile(r"\b(reveal_type|reveal_locals|TYPE_CHECKING)\b")
+mypy_builtin_regex = re.compile(r"\b(reveal_type|reveal_locals)\b")
 
 interpreter_uses_auto_compilation = True
 interpreter_uses_coconut_breakpoint = True

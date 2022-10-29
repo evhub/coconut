@@ -1192,6 +1192,16 @@ def main_test() -> bool:
         xs.append(x)
     assert xs == [1, 2, 3, 4]
     \\assert _coconut.typing.NamedTuple
+    class Asup:
+        a = 1
+    class Bsup(Asup):
+        def get_super_1(self) = super()
+        def get_super_2(self) = super(Bsup, self)
+        def get_super_3(self) = py_super(Bsup, self)
+    bsup = Bsup()
+    assert bsup.get_super_1().a == 1
+    assert bsup.get_super_2().a == 1
+    assert bsup.get_super_3().a == 1
     return True
 
 def test_asyncio() -> bool:

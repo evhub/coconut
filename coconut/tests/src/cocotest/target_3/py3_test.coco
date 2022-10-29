@@ -30,11 +30,4 @@ def py3_test() -> bool:
     assert keyword_only(a=10) == 10
     čeština = "czech"
     assert čeština == "czech"
-    class A:
-        a = 1
-    class B(A):
-        def get_super_1(self) = super()
-        def get_super_2(self) = super(B, self)
-    b = B()
-    assert b.get_super_1().a == 1 == b.get_super_2().a
     return True
