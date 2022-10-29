@@ -964,6 +964,9 @@ forward 2""") == 900
     a_list: list_or_tuple = [1, 2, 3]
     a_list = (1, 2, 3)
     a_func: func_to_int = (.+1)
+    a_tuple: TupleOf[int] = a_list
+    a_seq: Seq[int] = a_tuple
+    a_dict: TextMap[str, int] = {"a": 1}
 
     # must come at end
     assert fibs_calls[0] == 1

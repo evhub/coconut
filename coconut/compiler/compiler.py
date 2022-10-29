@@ -3144,10 +3144,42 @@ __annotations__["{name}"] = {annotation}
                 annotation=self.wrap_typedef(typedef, ignore_target=True),
             )
 
+    def compile_type_params(self, tokens):
+        """Compiles type params into assignments."""
+        lines = []
+        for type_param in tokens:
+            if "TypeVar" in type_param:
+                if len(type_param) == 1:
+                    name, = type_param
+                    lines.append('{name} = _coconut.typing.TypeVar("{name}")'.format(name=name))
+                else:
+                    name, bound = type_param
+                    lines.append('{name} = _coconut.typing.TypeVar("{name}", bound={bound})'.format(name=name, bound=self.wrap_typedef(bound)))
+            elif "TypeVarTuple" in type_param:
+                name, = type_param
+                lines.append('{name} = _coconut.typing.TypeVarTuple("{name}")'.format(name=name))
+            elif "ParamSpec" in type_param:
+                name, = type_param
+                lines.append('{name} = _coconut.typing.ParamSpec("{name}")'.format(name=name))
+            else:
+                raise CoconutInternalException("invalid type_param", type_param)
+        return "".join(line + "\n" for line in lines)
+
     def type_alias_stmt_handle(self, tokens):
         """Handle type alias statements."""
-        name, typedef = tokens
-        return self.typed_assign_stmt_handle([name, "_coconut.typing.TypeAlias", typedef])
+        if len(tokens) == 2:
+            name, typedef = tokens
+            params = []
+        else:
+            name, params, typedef = tokens
+        return (
+            self.compile_type_params(params)
+            + self.typed_assign_stmt_handle([
+                name,
+                "_coconut.typing.TypeAlias",
+                self.wrap_typedef(typedef),
+            ])
+        )
 
     def with_stmt_handle(self, tokens):
         """Process with statements."""

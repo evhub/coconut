@@ -1223,8 +1223,15 @@ class Grammar(object):
     typed_assign_stmt_ref = simple_assign + colon.suppress() + typedef_test + Optional(equals.suppress() + test_expr)
     basic_stmt = trace(addspace(ZeroOrMore(assignlist + equals) + test_expr))
 
+    type_param = (
+        labeled_group(name + Optional(colon.suppress() + typedef_test), "TypeVar")
+        | labeled_group(star.suppress() + name, "TypeVarTuple")
+        | labeled_group(dubstar.suppress() + name, "ParamSpec")
+    )
+    type_params = Group(lbrack.suppress() + tokenlist(type_param, comma) + rbrack.suppress())
+
     type_alias_stmt = Forward()
-    type_alias_stmt_ref = type_kwd.suppress() + name + equals.suppress() + typedef_test
+    type_alias_stmt_ref = type_kwd.suppress() + name + Optional(type_params) + equals.suppress() + typedef_test
 
     impl_call_arg = disallow_keywords(reserved_vars) + (
         keyword_atom

@@ -454,6 +454,8 @@ __anext__ = _coconut.asyncio.coroutine(_coconut_anext_ns["__anext__"])
                 if_lt='''
 class typing{object}:
     __slots__ = ()
+    def __getattr__(self, name):
+        raise _coconut.ImportError("the typing module is not available at runtime in Python 3.4 or earlier; try hiding your typedefs behind an 'if TYPE_CHECKING:' block")
                 '''.format(**format_dict),
                 indent=1,
             ),

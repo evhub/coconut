@@ -5,8 +5,6 @@ import operator  # NOQA
 from contextlib import contextmanager
 from functools import wraps
 from collections import defaultdict
-if TYPE_CHECKING:
-    import typing
 
 # Helpers:
 def rand_list(n):
@@ -178,9 +176,17 @@ addpattern def x! = True  # type: ignore
 
 # Type aliases:
 if sys.version_info >= (3, 5) or TYPE_CHECKING:
+    import typing
+
     type list_or_tuple = list | tuple
 
     type func_to_int = -> int
+
+    type Seq[Tseq] = Tseq[]
+
+    type TupleOf[Ttup] = typing.Tuple[Ttup, ...]
+
+    type TextMap[Tkey: typing.Text, Tval] = typing.Mapping[Tkey, Tval]
 
 # Quick-Sorts:
 def qsort1(l: int[]) -> int[]:
