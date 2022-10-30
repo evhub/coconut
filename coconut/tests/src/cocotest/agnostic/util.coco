@@ -1404,6 +1404,13 @@ truncate_sentence = (
 
 maxcolsum = map$(sum) ..> max
 
+dict_zip = (
+    (,)
+    ..> map$(.items())
+    ..> flatten
+    ..> collectby$(.[0], value_func=.[1])
+)
+
 
 # n-ary reduction
 def binary_reduce(binop, it) = (
