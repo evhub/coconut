@@ -1023,7 +1023,7 @@ base_pattern ::= (
         | "(|" patterns "|)"
       ]]
     | [STRING "+"] NAME              # complex string matching
-        ["+" STRING]                 #  (does not work with f-string literals)
+        ["+" STRING]
         ["+" NAME ["+" STRING]]
 )
 ```
