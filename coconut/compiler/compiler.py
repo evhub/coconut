@@ -150,6 +150,7 @@ from coconut.compiler.util import (
     normalize_indent_markers,
     try_parse,
     prep_grammar,
+    split_leading_whitespace,
 )
 from coconut.compiler.header import (
     minify_header,
@@ -558,8 +559,14 @@ class Compiler(Grammar, pickleable_obj):
 
         cls.classname <<= trace_attach(cls.classname_ref, cls.method("classname_handle"), greedy=True)
 
+        # parsing_context["typevars"] handling
+        cls.type_param <<= trace_attach(cls.type_param_ref, cls.method("type_param_handle"), greedy=True)
+
+        new_type_alias_stmt = Wrap(cls.type_alias_stmt_ref, cls.method("type_alias_stmt_manage"))
+        cls.type_alias_stmt <<= trace_attach(new_type_alias_stmt, cls.method("type_alias_stmt_handle"))
+
         # greedy handlers (we need to know about them even if suppressed and/or they use the parsing_context)
-        cls.name <<= attach(cls.unsafe_name, cls.method("name_handle"), greedy=True)
+        cls.base_name <<= attach(cls.base_name_tokens, cls.method("base_name_handle"), greedy=True)
         cls.comment <<= attach(cls.comment_tokens, cls.method("comment_handle"), greedy=True)
 
         # abnormally named handlers
@@ -602,7 +609,6 @@ class Compiler(Grammar, pickleable_obj):
         cls.typedef_default <<= trace_attach(cls.typedef_default_ref, cls.method("typedef_handle"))
         cls.unsafe_typedef_default <<= trace_attach(cls.unsafe_typedef_default_ref, cls.method("unsafe_typedef_handle"))
         cls.typed_assign_stmt <<= trace_attach(cls.typed_assign_stmt_ref, cls.method("typed_assign_stmt_handle"))
-        cls.type_alias_stmt <<= trace_attach(cls.type_alias_stmt_ref, cls.method("type_alias_stmt_handle"))
         cls.with_stmt <<= trace_attach(cls.with_stmt_ref, cls.method("with_stmt_handle"))
         cls.await_expr <<= trace_attach(cls.await_expr_ref, cls.method("await_expr_handle"))
         cls.cases_stmt <<= trace_attach(cls.cases_stmt_ref, cls.method("cases_stmt_handle"))
@@ -790,11 +796,12 @@ class Compiler(Grammar, pickleable_obj):
     def wrap_comment(self, text, reformat=True):
         """Wrap a comment."""
         if reformat:
-            text = self.reformat(text, ignore_errors=False)
+            whitespace, base_comment = split_leading_whitespace(text)
+            text = whitespace + self.reformat(base_comment, ignore_errors=False)
         return "#" + self.add_ref("comment", text) + unwrapper
 
     def type_ignore_comment(self):
-        return ("  " if not self.minify else "") + self.wrap_comment(" type: ignore", reformat=False)
+        return self.wrap_comment(" type: ignore", reformat=False)
 
     def wrap_line_number(self, ln):
         """Wrap a line number."""
@@ -3152,44 +3159,57 @@ __annotations__["{name}"] = {annotation}
                 annotation=self.wrap_typedef(typedef, ignore_target=True),
             )
 
-    def compile_type_params(self, tokens):
-        """Compiles type params into assignments."""
-        lines = []
-        for type_param in tokens:
-            bounds = ""
-            if "TypeVar" in type_param:
-                TypeVarFunc = "TypeVar"
-                if len(type_param) == 1:
-                    name, = type_param
-                else:
-                    name, bound = type_param
-                    bounds = ", bound=" + bound
-            elif "TypeVarTuple" in type_param:
-                TypeVarFunc = "TypeVarTuple"
-                name, = type_param
-            elif "ParamSpec" in type_param:
-                TypeVarFunc = "ParamSpec"
-                name, = type_param
+    def type_param_handle(self, loc, tokens):
+        """Compile a type param into an assignment."""
+        bounds = ""
+        if "TypeVar" in tokens:
+            TypeVarFunc = "TypeVar"
+            if len(tokens) == 1:
+                name, = tokens
             else:
-                raise CoconutInternalException("invalid type_param", type_param)
-            lines.append(
-                '{name} = _coconut.typing.{TypeVarFunc}("{name}"{bounds})'.format(
-                    name=name,
-                    TypeVarFunc=TypeVarFunc,
-                    bounds=bounds,
-                ),
-            )
-        return "".join(line + "\n" for line in lines)
+                name, bound = tokens
+                bounds = ", bound=" + bound
+        elif "TypeVarTuple" in tokens:
+            TypeVarFunc = "TypeVarTuple"
+            name, = tokens
+        elif "ParamSpec" in tokens:
+            TypeVarFunc = "ParamSpec"
+            name, = tokens
+        else:
+            raise CoconutInternalException("invalid type_param tokens", tokens)
+
+        typevars = self.current_parsing_context("typevars")
+        if typevars is not None:
+            if name in typevars:
+                raise CoconutDeferredSyntaxError("type variable {name!r} already defined", loc)
+            temp_name = self.get_temp_var(name)
+            typevars[name] = temp_name
+            name = temp_name
+
+        return '{name} = _coconut.typing.{TypeVarFunc}("{name}"{bounds})\n'.format(
+            name=name,
+            TypeVarFunc=TypeVarFunc,
+            bounds=bounds,
+        )
+
+    @contextmanager
+    def type_alias_stmt_manage(self, item, original, loc):
+        """Manage the typevars parsing context."""
+        typevars_stack = self.parsing_context["typevars"]
+        typevars_stack.append({})
+        try:
+            yield
+        finally:
+            typevars_stack.pop()
 
     def type_alias_stmt_handle(self, tokens):
         """Handle type alias statements."""
         if len(tokens) == 2:
             name, typedef = tokens
-            params = []
+            paramdefs = []
         else:
-            name, params, typedef = tokens
-        paramdefs = self.compile_type_params(params)
-        return paramdefs + self.typed_assign_stmt_handle([
+            name, paramdefs, typedef = tokens
+        return "".join(paramdefs) + self.typed_assign_stmt_handle([
             name,
             "_coconut.typing.TypeAlias",
             self.wrap_typedef(typedef),
@@ -3648,12 +3668,16 @@ for {match_to_var} in {item}:
         else:
             yield
 
-    def name_handle(self, loc, tokens):
+    def base_name_handle(self, loc, tokens):
         """Handle the given base name."""
         name, = tokens  # avoid the overhead of an internal_assert call here
-
         if self.disable_name_check:
             return name
+
+        typevars = self.current_parsing_context("typevars")
+        if typevars is not None and name in typevars:
+            return typevars[name]
+
         if self.strict:
             self.unused_imports.pop(name, None)
 

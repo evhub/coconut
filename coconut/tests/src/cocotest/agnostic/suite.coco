@@ -968,6 +968,7 @@ forward 2""") == 900
     a_tuple: TupleOf[int] = a_list
     a_seq: Seq[int] = a_tuple
     a_dict: TextMap[str, int] = {"a": 1}
+    assert HasT().T == 1
 
     # must come at end
     assert fibs_calls[0] == 1

@@ -30,4 +30,9 @@ def py3_test() -> bool:
     assert keyword_only(a=10) == 10
     čeština = "czech"
     assert čeština == "czech"
+    class HasExecMethod:
+        def exec(self, x) = x()
+    has_exec = HasExecMethod()
+    assert hasattr(has_exec, "exec")
+    assert has_exec.exec(-> 1) == 1
     return True

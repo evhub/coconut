@@ -685,14 +685,16 @@ class Grammar(object):
     test_no_chain, dubcolon = disable_inside(test, unsafe_dubcolon)
     test_no_infix, backtick = disable_inside(test, unsafe_backtick)
 
-    unsafe_name_regex = r""
+    base_name_regex = r""
     for no_kwd in keyword_vars + const_vars:
-        unsafe_name_regex += r"(?!" + no_kwd + r"\b)"
-    # we disallow '"{ after to not match the "b" in b"" or the "s" in s{}
-    unsafe_name_regex += r"(?![0-9])\w+\b(?![{" + strwrapper + r"])"
-    unsafe_name = combine(Optional(backslash.suppress()) + regex_item(unsafe_name_regex))
+        base_name_regex += r"(?!" + no_kwd + r"\b)"
+    # we disallow ['"{] after to not match the "b" in b"" or the "s" in s{}
+    base_name_regex += r"(?![0-9])\w+\b(?![{" + strwrapper + r"])"
+    base_name_tokens = regex_item(base_name_regex)
 
-    name = Forward()
+    base_name = Forward()
+    name = base_name | combine(backslash.suppress() + base_name_tokens)
+    unsafe_name = combine(Optional(backslash.suppress()) + base_name_tokens)
     # use unsafe_name for dotted components since name should only be used for base names
     dotted_name = condense(name + ZeroOrMore(dot + unsafe_name))
     must_be_dotted_name = condense(name + OneOrMore(dot + unsafe_name))
@@ -1223,10 +1225,11 @@ class Grammar(object):
     typed_assign_stmt_ref = simple_assign + colon.suppress() + typedef_test + Optional(equals.suppress() + test_expr)
     basic_stmt = trace(addspace(ZeroOrMore(assignlist + equals) + test_expr))
 
-    type_param = (
-        labeled_group(name + Optional(colon.suppress() + typedef_test), "TypeVar")
-        | labeled_group(star.suppress() + name, "TypeVarTuple")
-        | labeled_group(dubstar.suppress() + name, "ParamSpec")
+    type_param = Forward()
+    type_param_ref = (
+        (name + Optional(colon.suppress() + typedef_test))("TypeVar")
+        | (star.suppress() + name)("TypeVarTuple")
+        | (dubstar.suppress() + name)("ParamSpec")
     )
     type_params = Group(lbrack.suppress() + tokenlist(type_param, comma) + rbrack.suppress())
 

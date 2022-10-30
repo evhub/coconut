@@ -1407,6 +1407,7 @@ In Coconut, the following keywords are also valid variable names:
 - `operator`
 - `then`
 - `λ` (a [Unicode alternative](#unicode-alternatives) for `lambda`)
+- `exec` (keyword in Python 2)
 
 While Coconut can usually disambiguate these two use cases, special syntax is available for disambiguating them if necessary. Note that, if what you're writing can be interpreted as valid Python 3, Coconut will always prefer that interpretation by default.
 

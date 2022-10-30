@@ -182,11 +182,14 @@ if sys.version_info >= (3, 5) or TYPE_CHECKING:
 
     type func_to_int = -> int
 
-    type Seq[Tseq] = Tseq[]
+    type Seq[T] = T[]
 
-    type TupleOf[Ttup] = typing.Tuple[Ttup, ...]
+    type TupleOf[T] = typing.Tuple[T, ...]
 
-    type TextMap[Tkey: typing.Text, Tval] = typing.Mapping[Tkey, Tval]
+    type TextMap[T: typing.Text, U] = typing.Mapping[T, U]
+
+class HasT:
+    T = 1
 
 # Quick-Sorts:
 def qsort1(l: int[]) -> int[]:

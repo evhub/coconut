@@ -1025,6 +1025,14 @@ def split_leading_trailing_indent(line, max_indents=None):
     return leading_indent, line, trailing_indent
 
 
+def split_leading_whitespace(inputstr):
+    """Split leading whitespace."""
+    basestr = inputstr.lstrip()
+    whitespace = inputstr[:len(inputstr) - len(basestr)]
+    internal_assert(whitespace + basestr == inputstr, "invalid whitespace split", inputstr)
+    return whitespace, basestr
+
+
 def rem_and_count_indents(inputstr):
     """Removes and counts the ind_change (opens - closes)."""
     no_opens = inputstr.replace(openindent, "")
