@@ -479,13 +479,13 @@ class Compiler(Grammar, pickleable_obj):
             self.kept_lines = kept_lines
             self.num_lines = num_lines
 
-    def current_parsing_context(self, name):
+    def current_parsing_context(self, name, default=None):
         """Get the current parsing context for the given name."""
         stack = self.parsing_context[name]
         if stack:
             return stack[-1]
         else:
-            return None
+            return default
 
     @contextmanager
     def disable_checks(self):
@@ -3196,7 +3196,7 @@ __annotations__["{name}"] = {annotation}
     def type_alias_stmt_manage(self, item, original, loc):
         """Manage the typevars parsing context."""
         typevars_stack = self.parsing_context["typevars"]
-        typevars_stack.append({})
+        typevars_stack.append(self.current_parsing_context("typevars", {}).copy())
         try:
             yield
         finally:
