@@ -543,31 +543,34 @@ class Compiler(Grammar, pickleable_obj):
     def bind(cls):
         """Binds reference objects to the proper parse actions."""
         # parsing_context["class"] handling
-        new_classdef = Wrap(cls.classdef_ref, cls.method("class_manage"))
+        new_classdef = Wrap(cls.classdef_ref, cls.method("class_manage"), greedy=True)
         cls.classdef <<= trace_attach(new_classdef, cls.method("classdef_handle"))
 
-        new_datadef = Wrap(cls.datadef_ref, cls.method("class_manage"))
+        new_datadef = Wrap(cls.datadef_ref, cls.method("class_manage"), greedy=True)
         cls.datadef <<= trace_attach(new_datadef, cls.method("datadef_handle"))
 
-        new_match_datadef = Wrap(cls.match_datadef_ref, cls.method("class_manage"))
+        new_match_datadef = Wrap(cls.match_datadef_ref, cls.method("class_manage"), greedy=True)
         cls.match_datadef <<= trace_attach(new_match_datadef, cls.method("match_datadef_handle"))
 
-        cls.stmt_lambdef_body <<= Wrap(cls.stmt_lambdef_body_ref, cls.method("func_manage"))
-        cls.func_suite <<= Wrap(cls.func_suite_ref, cls.method("func_manage"))
-        cls.func_suite_tokens <<= Wrap(cls.func_suite_tokens_ref, cls.method("func_manage"))
-        cls.math_funcdef_suite <<= Wrap(cls.math_funcdef_suite_ref, cls.method("func_manage"))
+        cls.stmt_lambdef_body <<= Wrap(cls.stmt_lambdef_body_ref, cls.method("func_manage"), greedy=True)
+        cls.func_suite <<= Wrap(cls.func_suite_ref, cls.method("func_manage"), greedy=True)
+        cls.func_suite_tokens <<= Wrap(cls.func_suite_tokens_ref, cls.method("func_manage"), greedy=True)
+        cls.math_funcdef_suite <<= Wrap(cls.math_funcdef_suite_ref, cls.method("func_manage"), greedy=True)
 
-        cls.classname <<= trace_attach(cls.classname_ref, cls.method("classname_handle"), greedy=True)
+        cls.classname <<= trace_attach(cls.classname_ref, cls.method("classname_handle"))
 
         # parsing_context["typevars"] handling
-        cls.type_param <<= trace_attach(cls.type_param_ref, cls.method("type_param_handle"), greedy=True)
+        cls.type_param <<= trace_attach(cls.type_param_ref, cls.method("type_param_handle"))
 
-        new_type_alias_stmt = Wrap(cls.type_alias_stmt_ref, cls.method("type_alias_stmt_manage"))
+        new_type_alias_stmt = Wrap(cls.type_alias_stmt_ref, cls.method("type_alias_stmt_manage"), greedy=True)
         cls.type_alias_stmt <<= trace_attach(new_type_alias_stmt, cls.method("type_alias_stmt_handle"))
 
         # greedy handlers (we need to know about them even if suppressed and/or they use the parsing_context)
-        cls.base_name <<= attach(cls.base_name_tokens, cls.method("base_name_handle"), greedy=True)
         cls.comment <<= attach(cls.comment_tokens, cls.method("comment_handle"), greedy=True)
+
+        # name handlers
+        cls.varname <<= attach(cls.name_ref, cls.method("name_handle"))
+        cls.setname <<= attach(cls.name_ref, cls.method("name_handle", assign=True))
 
         # abnormally named handlers
         cls.moduledoc_item <<= trace_attach(cls.moduledoc, cls.method("set_moduledoc"))
@@ -638,9 +641,9 @@ class Compiler(Grammar, pickleable_obj):
         cls.star_assign_item <<= trace_attach(cls.star_assign_item_ref, cls.method("star_assign_item_check"))
         cls.classic_lambdef <<= trace_attach(cls.classic_lambdef_ref, cls.method("lambdef_check"))
         cls.star_sep_arg <<= trace_attach(cls.star_sep_arg_ref, cls.method("star_sep_check"))
-        cls.star_sep_vararg <<= trace_attach(cls.star_sep_vararg_ref, cls.method("star_sep_check"))
+        cls.star_sep_setarg <<= trace_attach(cls.star_sep_setarg_ref, cls.method("star_sep_check"))
         cls.slash_sep_arg <<= trace_attach(cls.slash_sep_arg_ref, cls.method("slash_sep_check"))
-        cls.slash_sep_vararg <<= trace_attach(cls.slash_sep_vararg_ref, cls.method("slash_sep_check"))
+        cls.slash_sep_setarg <<= trace_attach(cls.slash_sep_setarg_ref, cls.method("slash_sep_check"))
         cls.endline_semicolon <<= trace_attach(cls.endline_semicolon_ref, cls.method("endline_semicolon_check"))
         cls.async_stmt <<= trace_attach(cls.async_stmt_ref, cls.method("async_stmt_check"))
         cls.async_comp_for <<= trace_attach(cls.async_comp_for_ref, cls.method("async_comp_check"))
@@ -2097,7 +2100,7 @@ if {store_var} is not _coconut_sentinel:
             - (op, args)+ for itemgetter."""
         # list implies artificial tokens, which must be expr
         if isinstance(tokens, list) or "expr" in tokens:
-            internal_assert(len(tokens) == 1, "invalid expr pipe item tokens", tokens)
+            internal_assert(len(tokens) == 1, "invalid pipe item", tokens)
             return "expr", tokens
         elif "partial" in tokens:
             func, args = tokens
@@ -2124,8 +2127,8 @@ if {store_var} is not _coconut_sentinel:
             # we've only been given one operand, so we can't do any optimization, so just produce the standard object
             name, split_item = self.pipe_item_split(item, loc)
             if name == "expr":
-                self.internal_assert(len(split_item) == 1, original, loc)
-                return split_item[0]
+                expr, = split_item
+                return expr
             elif name == "partial":
                 self.internal_assert(len(split_item) == 3, original, loc)
                 return "_coconut.functools.partial(" + join_args(split_item) + ")"
@@ -2295,13 +2298,13 @@ if {store_var} is not _coconut_sentinel:
 
     def set_moduledoc(self, tokens):
         """Set the docstring."""
-        internal_assert(len(tokens) == 2, "invalid moduledoc tokens", tokens)
-        self.docstring = self.reformat(tokens[0], ignore_errors=False) + "\n\n"
-        return tokens[1]
+        moduledoc, endline = tokens
+        self.docstring = self.reformat(moduledoc, ignore_errors=False) + "\n\n"
+        return endline
 
     def yield_from_handle(self, tokens):
         """Process Python 3.3 yield from."""
-        internal_assert(len(tokens) == 1, "invalid yield from tokens", tokens)
+        expr, = tokens
         if self.target_info < (3, 3):
             ret_val_name = self.get_temp_var("yield_from")
             self.add_code_before[ret_val_name] = handle_indentation(
@@ -2316,19 +2319,19 @@ while True:
                 ''',
                 add_newline=True,
             ).format(
-                expr=tokens[0],
+                expr=expr,
                 yield_from_var=self.get_temp_var("yield_from"),
                 yield_err_var=self.get_temp_var("yield_err"),
                 ret_val_name=ret_val_name,
             )
             return ret_val_name
         else:
-            return "yield from " + tokens[0]
+            return "yield from " + expr
 
     def endline_handle(self, original, loc, tokens):
         """Add line number information to end of line."""
-        self.internal_assert(len(tokens) == 1, original, loc, "invalid endline tokens", tokens)
-        lines = tokens[0].splitlines(True)
+        endline, = tokens
+        lines = endline.splitlines(True)
         if self.minify:
             lines = lines[0]
         out = []
@@ -2340,12 +2343,12 @@ while True:
 
     def comment_handle(self, original, loc, tokens):
         """Store comment in comments."""
-        self.internal_assert(len(tokens) == 1, original, loc, "invalid comment tokens", tokens)
+        comment_marker, = tokens
         ln = self.adjust(lineno(loc, original))
         if ln in self.comments:
-            self.comments[ln] += " " + tokens[0]
+            self.comments[ln] += " " + comment_marker
         else:
-            self.comments[ln] = tokens[0]
+            self.comments[ln] = comment_marker
         return ""
 
     def kwd_augassign_handle(self, original, loc, tokens):
@@ -2523,19 +2526,15 @@ def __new__(_coconut_cls, *{match_to_args_var}, **{match_to_kwargs_var}):
 
             star, default, typedef = False, None, None
             if "name" in arg:
-                internal_assert(len(arg) == 1)
-                argname = arg[0]
+                argname, = arg
             elif "default" in arg:
-                internal_assert(len(arg) == 2)
                 argname, default = arg
             elif "star" in arg:
-                internal_assert(len(arg) == 1)
-                star, argname = True, arg[0]
+                argname, = arg
+                star = True
             elif "type" in arg:
-                internal_assert(len(arg) == 2)
                 argname, typedef = arg
             elif "type default" in arg:
-                internal_assert(len(arg) == 3)
                 argname, typedef, default = arg
             else:
                 raise CoconutInternalException("invalid data arg tokens", arg)
@@ -2885,25 +2884,23 @@ if {store_var} is not _coconut_sentinel:
 
     def complex_raise_stmt_handle(self, tokens):
         """Process Python 3 raise from statement."""
-        internal_assert(len(tokens) == 2, "invalid raise from tokens", tokens)
+        raise_expr, from_expr = tokens
         if self.target.startswith("3"):
-            return "raise " + tokens[0] + " from " + tokens[1]
+            return "raise " + raise_expr + " from " + from_expr
         else:
             raise_from_var = self.get_temp_var("raise_from")
             return (
-                raise_from_var + " = " + tokens[0] + "\n"
-                + raise_from_var + ".__cause__ = " + tokens[1] + "\n"
+                raise_from_var + " = " + raise_expr + "\n"
+                + raise_from_var + ".__cause__ = " + from_expr + "\n"
                 + "raise " + raise_from_var
             )
 
     def dict_comp_handle(self, loc, tokens):
         """Process Python 2.7 dictionary comprehension."""
-        internal_assert(len(tokens) == 3, "invalid dictionary comprehension tokens", tokens)
+        key, val, comp = tokens
         if self.target.startswith("3"):
-            key, val, comp = tokens
             return "{" + key + ": " + val + " " + comp + "}"
         else:
-            key, val, comp = tokens
             return "dict(((" + key + "), (" + val + ")) " + comp + ")"
 
     def pattern_error(self, original, loc, value_var, check_var, match_error_class='_coconut_MatchError'):
@@ -3085,7 +3082,7 @@ if not {check_var}:
 
     def await_expr_handle(self, original, loc, tokens):
         """Check for Python 3.5 await expression."""
-        self.internal_assert(len(tokens) == 1, original, loc, "invalid await statement tokens", tokens)
+        await_expr, = tokens
         if not self.target:
             raise self.make_err(
                 CoconutTargetError,
@@ -3094,13 +3091,13 @@ if not {check_var}:
                 target="sys",
             )
         elif self.target_info >= (3, 5):
-            return "await " + tokens[0]
+            return "await " + await_expr
         elif self.target_info >= (3, 3):
             # we have to wrap the yield here so it doesn't cause the function to be detected as an async generator
-            return self.wrap_passthrough("(yield from " + tokens[0] + ")", early=True)
+            return self.wrap_passthrough("(yield from " + await_expr + ")", early=True)
         else:
             # this yield is fine because we can detect the _coconut.asyncio.From
-            return "(yield _coconut.asyncio.From(" + tokens[0] + "))"
+            return "(yield _coconut.asyncio.From(" + await_expr + "))"
 
     def unsafe_typedef_handle(self, tokens):
         """Process type annotations without a comma after them."""
@@ -3283,8 +3280,7 @@ __annotations__["{name}"] = {annotation}
 
     def f_string_handle(self, loc, tokens):
         """Process Python 3.6 format strings."""
-        internal_assert(len(tokens) == 1, "invalid format string tokens", tokens)
-        string = tokens[0]
+        string, = tokens
 
         # strip raw r
         raw = string.startswith("r")
@@ -3292,7 +3288,7 @@ __annotations__["{name}"] = {annotation}
             string = string[1:]
 
         # strip wrappers
-        internal_assert(string.startswith(strwrapper) and string.endswith(unwrapper))
+        internal_assert(string.startswith(strwrapper) and string.endswith(unwrapper), "invalid f string item", string)
         string = string[1:-1]
 
         # get text
@@ -3668,25 +3664,42 @@ for {match_to_var} in {item}:
         else:
             yield
 
-    def base_name_handle(self, loc, tokens):
+    def name_handle(self, original, loc, tokens, assign=False):
         """Handle the given base name."""
-        name, = tokens  # avoid the overhead of an internal_assert call here
+        name, = tokens
+        if name.startswith("\\"):
+            name = name[1:]
+            escaped = True
+        else:
+            escaped = False
+
         if self.disable_name_check:
             return name
 
-        typevars = self.current_parsing_context("typevars")
-        if typevars is not None and name in typevars:
-            return typevars[name]
+        if not escaped:
+            typevars = self.current_parsing_context("typevars")
+            if typevars is not None and name in typevars:
+                if assign:
+                    raise CoconutDeferredSyntaxError("cannot reassign type variable: " + repr(name), loc)
+                return typevars[name]
 
-        if self.strict:
+        if self.strict and not assign:
             self.unused_imports.pop(name, None)
 
-        if name == "exec":
+        if not escaped and name == "exec":
             if self.target.startswith("3"):
                 return name
+            elif assign:
+                raise self.make_err(
+                    CoconutTargetError,
+                    "found Python-3-only assignment to 'exec' as a variable name",
+                    original,
+                    loc,
+                    target="3",
+                )
             else:
                 return "_coconut_exec"
-        elif name in super_names and not self.target.startswith("3"):
+        elif not assign and name in super_names and not self.target.startswith("3"):
             cls_context = self.current_parsing_context("class")
             if cls_context is not None and cls_context["name"] is not None and cls_context["in_method"]:
                 enclosing_cls = cls_context["name_prefix"] + cls_context["name"]
@@ -3695,8 +3708,9 @@ for {match_to_var} in {item}:
                 self.add_code_before[temp_marker] = "__class__ = " + enclosing_cls + "\n"
                 self.add_code_before_replacements[temp_marker] = name
                 return temp_marker
-            return name
-        elif name.startswith(reserved_prefix) and name not in self.operators:
+            else:
+                return name
+        elif not escaped and name.startswith(reserved_prefix) and name not in self.operators:
             raise CoconutDeferredSyntaxError("variable names cannot start with reserved prefix " + reserved_prefix, loc)
         else:
             return name

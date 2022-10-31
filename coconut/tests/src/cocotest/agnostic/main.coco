@@ -1104,13 +1104,6 @@ def main_test() -> bool:
     assert_raises(-> (|1,2,3|)$[0.5:], TypeError)
     assert_raises(-> (|1,2,3|)$[:2.5], TypeError)
     assert_raises(-> (|1,2,3|)$[::1.5], TypeError)
-    def exec_rebind_test():
-        exec = 1
-        assert exec + 1 == 2
-        def exec(x) = x
-        assert exec(1) == 1
-        return True
-    assert exec_rebind_test() is True
     try:
         (raise)(TypeError(), ValueError())
     except TypeError as err:
@@ -1202,6 +1195,10 @@ def main_test() -> bool:
     assert bsup.get_super_1().a == 1
     assert bsup.get_super_2().a == 1
     assert bsup.get_super_3().a == 1
+    e = exec
+    test: dict = {}
+    e("a=1", test)
+    assert test["a"] == 1
     return True
 
 def test_asyncio() -> bool:

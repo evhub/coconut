@@ -109,6 +109,7 @@ def test_setup_none() -> bool:
 
     assert_raises(-> parse("(a := b)"), CoconutTargetError)
     assert_raises(-> parse("async def f() = 1"), CoconutTargetError)
+    assert_raises(-> parse("exec = 1"), CoconutTargetError)
 
     assert_raises(-> parse(" abc", "file"), CoconutSyntaxError)
     assert_raises(-> parse("'"), CoconutSyntaxError)
@@ -122,8 +123,18 @@ def test_setup_none() -> bool:
     assert_raises(-> parse("f(**x, y)"), CoconutSyntaxError)
     assert_raises(-> parse("def f(x) = return x"), CoconutSyntaxError)
     assert_raises(-> parse("def f(x) =\n return x"), CoconutSyntaxError)
+
     assert_raises(-> parse('f"Black holes {*all_black_holes} and revelations"'), CoconutSyntaxError, err_has="format string")
     assert_raises(-> parse("operator ++\noperator ++"), CoconutSyntaxError, err_has="custom operator already declared")
+    assert_raises(
+        -> parse("type abc[T,T] = T | T"),
+        CoconutSyntaxError,
+        err_has="""
+cannot reassign type variable: 'T' (line 1)
+  type abc[T,T] = T | T
+             ^
+        """.strip(),
+    )
 
     assert_raises(-> parse("$"), CoconutParseError, err_has=" ^")
     assert_raises(-> parse("range(1,10) |> reduce$(*, initializer = 1000) |> print"), CoconutParseError, err_has=" ~~~~~~~~~~~~~~~~~~~~~~~~^")

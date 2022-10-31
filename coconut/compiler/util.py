@@ -35,7 +35,7 @@ import itertools
 from functools import partial, reduce
 from collections import defaultdict
 from contextlib import contextmanager
-from pprint import pformat
+from pprint import pformat, pprint
 
 from coconut._pyparsing import (
     USE_COMPUTATION_GRAPH,
@@ -108,16 +108,20 @@ indexable_evaluated_tokens_types = (ParseResults, list, tuple)
 
 
 def evaluate_tokens(tokens, **kwargs):
-    """Evaluate the given tokens in the computation graph."""
+    """Evaluate the given tokens in the computation graph.
+    Very performance sensitive."""
     # can't have this be a normal kwarg to make evaluate_tokens a valid parse action
     evaluated_toklists = kwargs.pop("evaluated_toklists", ())
     if DEVELOP:  # avoid the overhead of the call if not develop
         internal_assert(not kwargs, "invalid keyword arguments to evaluate_tokens", kwargs)
 
+    if not USE_COMPUTATION_GRAPH:
+        return tokens
+
     if isinstance(tokens, ParseResults):
 
         # evaluate the list portion of the ParseResults
-        old_toklist, name, asList, modal = tokens.__getnewargs__()
+        old_toklist, old_name, asList, modal = tokens.__getnewargs__()
         new_toklist = None
         for eval_old_toklist, eval_new_toklist in evaluated_toklists:
             if old_toklist == eval_old_toklist:
@@ -128,7 +132,10 @@ def evaluate_tokens(tokens, **kwargs):
             # overwrite evaluated toklists rather than appending, since this
             #  should be all the information we need for evaluating the dictionary
             evaluated_toklists = ((old_toklist, new_toklist),)
-        new_tokens = ParseResults(new_toklist, name, asList, modal)
+        # we have to pass name=None here and then set __name after otherwise
+        #  the constructor might generate a new tokdict item we don't want
+        new_tokens = ParseResults(new_toklist, None, asList, modal)
+        new_tokens._ParseResults__name = old_name
         new_tokens._ParseResults__accumNames.update(tokens._ParseResults__accumNames)
 
         # evaluate the dictionary portion of the ParseResults
@@ -140,6 +147,9 @@ def evaluate_tokens(tokens, **kwargs):
                 new_occurrences.append(_ParseResultsWithOffset(new_value, position))
             new_tokdict[name] = new_occurrences
         new_tokens._ParseResults__tokdict.update(new_tokdict)
+
+        if DEVELOP:  # avoid the overhead of the call if not develop
+            internal_assert(set(tokens._ParseResults__tokdict.keys()) == set(new_tokens._ParseResults__tokdict.keys()), "evaluate_tokens on ParseResults failed to maintain tokdict keys", (tokens, "->", new_tokens))
 
         return new_tokens
 
@@ -185,6 +195,7 @@ def evaluate_tokens(tokens, **kwargs):
 class ComputationNode(object):
     """A single node in the computation graph."""
     __slots__ = ("action", "original", "loc", "tokens") + (("been_called",) if DEVELOP else ())
+    pprinting = False
 
     def __new__(cls, action, original, loc, tokens, ignore_no_tokens=False, ignore_one_token=False, greedy=False, trim_arity=True):
         """Create a ComputionNode to return from a parse action.
@@ -220,7 +231,8 @@ class ComputationNode(object):
         return name if name is not None else repr(self.action)
 
     def evaluate(self):
-        """Get the result of evaluating the computation graph at this node."""
+        """Get the result of evaluating the computation graph at this node.
+        Very performance sensitive."""
         if DEVELOP:  # avoid the overhead of the call if not develop
             internal_assert(not self.been_called, "inefficient reevaluation of action " + self.name + " with tokens", self.tokens)
             self.been_called = True
@@ -249,7 +261,10 @@ class ComputationNode(object):
         if not logger.tracing:
             logger.warn_err(CoconutInternalException("ComputationNode.__repr__ called when not tracing"))
         inner_repr = "\n".join("\t" + line for line in repr(self.tokens).splitlines())
-        return self.name + "(\n" + inner_repr + "\n)"
+        if self.pprinting:
+            return '("' + self.name + '",\n' + inner_repr + "\n)"
+        else:
+            return self.name + "(\n" + inner_repr + "\n)"
 
 
 class DeferredNode(object):
@@ -333,10 +348,7 @@ def final_evaluate_tokens(tokens):
     if use_packrat_parser:
         # clear cache without resetting stats
         ParserElement.packrat_cache.clear()
-    if USE_COMPUTATION_GRAPH:
-        return evaluate_tokens(tokens)
-    else:
-        return tokens
+    return evaluate_tokens(tokens)
 
 
 def final(item):
@@ -354,8 +366,7 @@ def defer(item):
 def unpack(tokens):
     """Evaluate and unpack the given computation graph."""
     logger.log_tag("unpack", tokens)
-    if USE_COMPUTATION_GRAPH:
-        tokens = evaluate_tokens(tokens)
+    tokens = evaluate_tokens(tokens)
     if isinstance(tokens, ParseResults) and len(tokens) == 1:
         tokens = tokens[0]
     return tokens
@@ -509,11 +520,11 @@ def get_target_info_smart(target, mode="lowest"):
 
 class Wrap(ParseElementEnhance):
     """PyParsing token that wraps the given item in the given context manager."""
-    __slots__ = ("errmsg", "wrapper")
 
-    def __init__(self, item, wrapper, can_affect_parse_success=False):
+    def __init__(self, item, wrapper, greedy=False, can_affect_parse_success=False):
         super(Wrap, self).__init__(item)
         self.wrapper = wrapper
+        self.greedy = greedy
         self.can_affect_parse_success = can_affect_parse_success
         self.setName(get_name(item) + " (Wrapped)")
 
@@ -540,10 +551,12 @@ class Wrap(ParseElementEnhance):
         with logger.indent_tracing():
             with self.wrapper(self, original, loc):
                 with self.wrapped_packrat_context():
-                    evaluated_toks = super(Wrap, self).parseImpl(original, loc, *args, **kwargs)
+                    parse_loc, evaluated_toks = super(Wrap, self).parseImpl(original, loc, *args, **kwargs)
+                    if self.greedy:
+                        evaluated_toks = evaluate_tokens(evaluated_toks)
         if logger.tracing:  # avoid the overhead of the call if not tracing
             logger.log_trace(self.name, original, loc, evaluated_toks)
-        return evaluated_toks
+        return parse_loc, evaluated_toks
 
 
 def disable_inside(item, *elems, **kwargs):
@@ -839,6 +852,15 @@ def any_len_perm(*groups_and_elems):
 # -----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
 # -----------------------------------------------------------------------------------------------------------------------
+
+def pprint_tokens(tokens):
+    """Pretty print tokens."""
+    pprinting, ComputationNode.pprinting = ComputationNode.pprinting, True
+    try:
+        pprint(eval(repr(tokens)))
+    finally:
+        ComputationNode.pprinting = pprinting
+
 
 def getline(loc, original):
     """Get the line at loc in original."""

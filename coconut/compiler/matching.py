@@ -54,6 +54,7 @@ from coconut.compiler.util import (
 
 def get_match_names(match):
     """Gets keyword names for the given match."""
+    internal_assert(not isinstance(match, str), "invalid match in get_match_names", match)
     names = []
     # these constructs directly contain top-level variable names
     if "var" in match:
@@ -1179,6 +1180,7 @@ except _coconut.Exception as _coconut_view_func_exc:
 
     def match(self, tokens, item):
         """Performs pattern-matching processing."""
+        internal_assert(not isinstance(tokens, str), "invalid match tokens", tokens)
         for flag, get_handler in self.matchers.items():
             if flag in tokens:
                 return get_handler(self)(tokens, item)
