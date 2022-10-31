@@ -71,6 +71,7 @@ test: test-mypy
 
 # basic testing for the universal target
 .PHONY: test-univ
+test-univ: export COCONUT_USE_COLOR=TRUE
 test-univ:
 	python ./coconut/tests --strict --line-numbers --force
 	python ./coconut/tests/dest/runner.py
@@ -79,6 +80,7 @@ test-univ:
 # same as test-univ, but doesn't recompile unchanged test files;
 # should only be used when testing the tests not the compiler
 .PHONY: test-tests
+test-tests: export COCONUT_USE_COLOR=TRUE
 test-tests:
 	python ./coconut/tests --strict --line-numbers
 	python ./coconut/tests/dest/runner.py
@@ -86,6 +88,7 @@ test-tests:
 
 # same as test-univ but uses Python 2
 .PHONY: test-py2
+test-py2: export COCONUT_USE_COLOR=TRUE
 test-py2:
 	python2 ./coconut/tests --strict --line-numbers --force
 	python2 ./coconut/tests/dest/runner.py
@@ -93,6 +96,7 @@ test-py2:
 
 # same as test-univ but uses Python 3
 .PHONY: test-py3
+test-py3: export COCONUT_USE_COLOR=TRUE
 test-py3:
 	python3 ./coconut/tests --strict --line-numbers --force
 	python3 ./coconut/tests/dest/runner.py
@@ -100,6 +104,7 @@ test-py3:
 
 # same as test-univ but uses PyPy
 .PHONY: test-pypy
+test-pypy: export COCONUT_USE_COLOR=TRUE
 test-pypy:
 	pypy ./coconut/tests --strict --line-numbers --force
 	pypy ./coconut/tests/dest/runner.py
@@ -107,6 +112,7 @@ test-pypy:
 
 # same as test-univ but uses PyPy3
 .PHONY: test-pypy3
+test-pypy3: export COCONUT_USE_COLOR=TRUE
 test-pypy3:
 	pypy3 ./coconut/tests --strict --line-numbers --force
 	pypy3 ./coconut/tests/dest/runner.py
@@ -114,6 +120,7 @@ test-pypy3:
 
 # same as test-pypy3 but includes verbose output for better debugging
 .PHONY: test-pypy3-verbose
+test-pypy3-verbose: export COCONUT_USE_COLOR=TRUE
 test-pypy3-verbose:
 	pypy3 ./coconut/tests --strict --line-numbers --force --verbose --jobs 0
 	pypy3 ./coconut/tests/dest/runner.py
@@ -121,6 +128,7 @@ test-pypy3-verbose:
 
 # same as test-univ but also runs mypy
 .PHONY: test-mypy
+test-mypy: export COCONUT_USE_COLOR=TRUE
 test-mypy:
 	python ./coconut/tests --strict --force --target sys --mypy --follow-imports silent --ignore-missing-imports --allow-redefinition
 	python ./coconut/tests/dest/runner.py
@@ -128,6 +136,7 @@ test-mypy:
 
 # same as test-mypy but uses the universal target
 .PHONY: test-mypy-univ
+test-mypy-univ: export COCONUT_USE_COLOR=TRUE
 test-mypy-univ:
 	python ./coconut/tests --strict --force --mypy --follow-imports silent --ignore-missing-imports --allow-redefinition
 	python ./coconut/tests/dest/runner.py
@@ -135,6 +144,7 @@ test-mypy-univ:
 
 # same as test-univ but includes verbose output for better debugging
 .PHONY: test-verbose
+test-verbose: export COCONUT_USE_COLOR=TRUE
 test-verbose:
 	python ./coconut/tests --strict --line-numbers --force --verbose --jobs 0
 	python ./coconut/tests/dest/runner.py
@@ -142,6 +152,7 @@ test-verbose:
 
 # same as test-mypy but uses --verbose and --check-untyped-defs
 .PHONY: test-mypy-all
+test-mypy-all: export COCONUT_USE_COLOR=TRUE
 test-mypy-all:
 	python ./coconut/tests --strict --force --target sys --verbose --mypy --follow-imports silent --ignore-missing-imports --allow-redefinition --check-untyped-defs
 	python ./coconut/tests/dest/runner.py
@@ -149,6 +160,7 @@ test-mypy-all:
 
 # same as test-univ but also tests easter eggs
 .PHONY: test-easter-eggs
+test-easter-eggs: export COCONUT_USE_COLOR=TRUE
 test-easter-eggs:
 	python ./coconut/tests --strict --line-numbers --force
 	python ./coconut/tests/dest/runner.py --test-easter-eggs
@@ -161,6 +173,7 @@ test-pyparsing: test-univ
 
 # same as test-univ but uses --minify
 .PHONY: test-minify
+test-minify: export COCONUT_USE_COLOR=TRUE
 test-minify:
 	python ./coconut/tests --strict --line-numbers --force --minify
 	python ./coconut/tests/dest/runner.py
@@ -168,6 +181,7 @@ test-minify:
 
 # same as test-univ but watches tests before running them
 .PHONY: test-watch
+test-watch: export COCONUT_USE_COLOR=TRUE
 test-watch:
 	python ./coconut/tests --strict --line-numbers --force
 	coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --watch --strict --line-numbers

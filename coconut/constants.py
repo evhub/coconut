@@ -199,7 +199,7 @@ match_to_kwargs_var = reserved_prefix + "_match_kwargs"
 function_match_error_var = reserved_prefix + "_FunctionMatchError"
 match_set_name_var = reserved_prefix + "_match_set_name"
 
-# should match internally_reserved_symbols below
+# should match reserved_compiler_symbols below
 openindent = "\u204b"  # reverse pilcrow
 closeindent = "\xb6"  # pilcrow
 strwrapper = "\u25b6"  # black right-pointing triangle
@@ -224,7 +224,7 @@ delimiter_symbols = tuple(opens + closes + holds) + (
     early_passthrough_wrapper,
     unwrapper,
 ) + indchars + comment_chars
-internally_reserved_symbols = delimiter_symbols + (
+reserved_compiler_symbols = delimiter_symbols + (
     reserved_prefix,
     funcwrapper,
 )
@@ -429,8 +429,13 @@ mypy_path_env_var = "MYPYPATH"
 style_env_var = "COCONUT_STYLE"
 vi_mode_env_var = "COCONUT_VI_MODE"
 home_env_var = "COCONUT_HOME"
+use_color_env_var = "COCONUT_USE_COLOR"
 
 coconut_home = fixpath(os.getenv(home_env_var, "~"))
+
+use_color = str_to_bool(os.getenv(use_color_env_var, ""), default=None)
+error_color_code = "31"
+log_color_code = "93"
 
 default_style = "default"
 prompt_histfile = os.path.join(coconut_home, ".coconut_history")
@@ -459,6 +464,12 @@ report_this_text = "(you should report this at " + new_issue_url + ")"
 exit_chars = (
     "\x04",  # Ctrl-D
     "\x1a",  # Ctrl-Z
+)
+ansii_escape = "\x1b"
+
+# should match special characters above
+reserved_command_symbols = exit_chars + (
+    ansii_escape,
 )
 
 # always use atomic --xxx=yyy rather than --xxx yyy

@@ -65,7 +65,6 @@ from coconut.constants import (
     coconut_pth_file,
 )
 from coconut.util import (
-    printerr,
     univ_open,
     ver_tuple_to_str,
     install_custom_kernel,
@@ -407,7 +406,7 @@ class Command(object):
                 logger.print_exc()
             elif not isinstance(err, KeyboardInterrupt):
                 logger.print_exc()
-                printerr(report_this_text)
+                logger.printerr(report_this_text)
             self.register_exit_code(err=err)
 
     def compile_path(self, path, write=True, package=True, **kwargs):
@@ -501,7 +500,7 @@ class Command(object):
             if show_unchanged:
                 logger.show_tabulated("Left unchanged", showpath(destpath), "(pass --force to override).")
             if self.show:
-                print(foundhash)
+                logger.print(foundhash)
             if run:
                 self.execute_file(destpath, argv_source_path=codepath)
 
@@ -516,7 +515,7 @@ class Command(object):
                         writefile(opened, compiled)
                     logger.show_tabulated("Compiled to", showpath(destpath), ".")
                 if self.show:
-                    print(compiled)
+                    logger.print(compiled)
                 if run:
                     if destpath is None:
                         self.execute(compiled, path=codepath, allow_show=False)
@@ -627,10 +626,10 @@ class Command(object):
         try:
             received = self.prompt.input(more)
         except KeyboardInterrupt:
-            print()
-            printerr("KeyboardInterrupt")
+            logger.print()
+            logger.printerr("KeyboardInterrupt")
         except EOFError:
-            print()
+            logger.print()
             self.exit_runner()
         else:
             if received.startswith(exit_chars):
@@ -662,7 +661,7 @@ class Command(object):
                     if compiled:
                         self.execute(compiled, use_eval=None)
             except KeyboardInterrupt:
-                printerr("\nKeyboardInterrupt")
+                logger.printerr("\nKeyboardInterrupt")
 
     def exit_runner(self, exit_code=0):
         """Exit the interpreter."""
@@ -697,7 +696,7 @@ class Command(object):
         if compiled is not None:
 
             if allow_show and self.show:
-                print(compiled)
+                logger.print(compiled)
 
             if path is None:  # header is not included
                 if not self.mypy:
@@ -792,16 +791,16 @@ class Command(object):
                 logger.log("[MyPy]", line)
                 if line.startswith(mypy_silent_err_prefixes):
                     if code is None:  # file
-                        printerr(line)
+                        logger.printerr(line)
                         self.register_exit_code(errmsg="MyPy error")
                 elif not line.startswith(mypy_silent_non_err_prefixes):
                     if code is None:  # file
-                        printerr(line)
+                        logger.printerr(line)
                         if any(infix in line for infix in mypy_err_infixes):
                             self.register_exit_code(errmsg="MyPy error")
                     if line not in self.mypy_errs:
                         if code is not None:  # interpreter
-                            printerr(line)
+                            logger.printerr(line)
                         self.mypy_errs.append(line)
 
     def run_silent_cmd(self, *args):

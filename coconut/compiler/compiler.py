@@ -77,9 +77,9 @@ from coconut.constants import (
     super_names,
     custom_op_var,
     all_keywords,
-    internally_reserved_symbols,
+    reserved_compiler_symbols,
     delimiter_symbols,
-    exit_chars,
+    reserved_command_symbols,
     streamline_grammar_for_len,
 )
 from coconut.util import (
@@ -1215,7 +1215,7 @@ class Compiler(Grammar, pickleable_obj):
                         raise self.make_err(CoconutSyntaxError, "cannot redefine number " + repr(op), raw_line, ln=self.adjust(ln))
                     if self.existing_operator_regex.match(op):
                         raise self.make_err(CoconutSyntaxError, "cannot redefine existing operator " + repr(op), raw_line, ln=self.adjust(ln))
-                    for sym in internally_reserved_symbols + exit_chars:
+                    for sym in reserved_compiler_symbols + reserved_command_symbols:
                         if sym in op:
                             sym_repr = ascii(sym.replace(strwrapper, '"'))
                             raise self.make_err(CoconutSyntaxError, "invalid custom operator", raw_line, ln=self.adjust(ln), extra="cannot contain " + sym_repr)
