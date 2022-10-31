@@ -559,7 +559,7 @@ class Compiler(Grammar, pickleable_obj):
         cls.func_suite_tokens <<= Wrap(cls.func_suite_tokens_ref, cls.method("func_manage"), greedy=True)
         cls.math_funcdef_suite <<= Wrap(cls.math_funcdef_suite_ref, cls.method("func_manage"), greedy=True)
 
-        cls.classname <<= trace_attach(cls.classname_ref, cls.method("classname_handle"))
+        cls.classname <<= trace_attach(cls.classname_ref, cls.method("classname_handle"), greedy=True)
 
         # parsing_context["typevars"] handling
         cls.type_param <<= trace_attach(cls.type_param_ref, cls.method("type_param_handle"))
@@ -3197,7 +3197,7 @@ __annotations__["{name}"] = {annotation}
         if typevars is not None:
             if name in typevars:
                 raise CoconutDeferredSyntaxError("type variable {name!r} already defined", loc)
-            temp_name = self.get_temp_var(name)
+            temp_name = self.get_temp_var("typevar_" + name)
             typevars[name] = temp_name
             name = temp_name
 
