@@ -153,6 +153,7 @@ from coconut.compiler.util import (
     try_parse,
     prep_grammar,
     split_leading_whitespace,
+    ordered_items,
 )
 from coconut.compiler.header import (
     minify_header,
@@ -2020,7 +2021,7 @@ if {store_var} is not _coconut_sentinel:
 
             # look for add_code_before regexes
             else:
-                for name, raw_code in self.add_code_before.items():
+                for name, raw_code in ordered_items(self.add_code_before):
                     if name in ignore_names:
                         continue
 

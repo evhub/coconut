@@ -853,6 +853,14 @@ def any_len_perm(*groups_and_elems):
 # UTILITIES:
 # -----------------------------------------------------------------------------------------------------------------------
 
+def ordered_items(inputdict):
+    """Return the items of inputdict in a deterministic order."""
+    if PY2:
+        return sorted(inputdict.items())
+    else:
+        return inputdict.items()
+
+
 def pprint_tokens(tokens):
     """Pretty print tokens."""
     pprinting, ComputationNode.pprinting = ComputationNode.pprinting, True
