@@ -37,6 +37,7 @@ from collections import defaultdict
 from threading import Lock
 
 from coconut._pyparsing import (
+    USE_COMPUTATION_GRAPH,
     ParseBaseException,
     ParseResults,
     col as getcol,
@@ -54,6 +55,7 @@ from coconut.constants import (
     openindent,
     closeindent,
     strwrapper,
+    errwrapper,
     lnwrapper,
     unwrapper,
     holds,
@@ -802,6 +804,17 @@ class Compiler(Grammar, pickleable_obj):
             whitespace, base_comment = split_leading_whitespace(text)
             text = whitespace + self.reformat(base_comment, ignore_errors=False)
         return "#" + self.add_ref("comment", text) + unwrapper
+
+    def wrap_error(self, error):
+        """Create a symbol that will raise the given error in postprocessing."""
+        return errwrapper + self.add_ref("error", error) + unwrapper
+
+    def raise_or_wrap_error(self, error):
+        """Raise if USE_COMPUTATION_GRAPH else wrap."""
+        if USE_COMPUTATION_GRAPH:
+            raise error
+        else:
+            return self.wrap_error(error)
 
     def type_ignore_comment(self):
         return self.wrap_comment(" type: ignore", reformat=False)
@@ -1974,6 +1987,11 @@ if {store_var} is not _coconut_sentinel:
 
             # handle early passthroughs
             line = self.base_passthrough_repl(line, wrap_char=early_passthrough_wrapper, **kwargs)
+
+            # look for deferred errors
+            if errwrapper in raw_line:
+                err_ref = raw_line.split(errwrapper, 1)[1].split(unwrapper, 1)[0]
+                raise self.get_ref("error", err_ref)
 
             # look for functions
             if line.startswith(funcwrapper):
@@ -3676,11 +3694,21 @@ for {match_to_var} in {item}:
         if self.disable_name_check:
             return name
 
+        # raise_or_wrap_error for all errors here to make sure we don't
+        #  raise spurious errors if not using the computation graph
+
         if not escaped:
             typevars = self.current_parsing_context("typevars")
             if typevars is not None and name in typevars:
                 if assign:
-                    raise CoconutDeferredSyntaxError("cannot reassign type variable: " + repr(name), loc)
+                    return self.raise_or_wrap_error(
+                        self.make_err(
+                            CoconutSyntaxError,
+                            "cannot reassign type variable: " + repr(name),
+                            original,
+                            loc,
+                        ),
+                    )
                 return typevars[name]
 
         if self.strict and not assign:
@@ -3690,12 +3718,14 @@ for {match_to_var} in {item}:
             if self.target.startswith("3"):
                 return name
             elif assign:
-                raise self.make_err(
-                    CoconutTargetError,
-                    "found Python-3-only assignment to 'exec' as a variable name",
-                    original,
-                    loc,
-                    target="3",
+                return self.raise_or_wrap_error(
+                    self.make_err(
+                        CoconutTargetError,
+                        "found Python-3-only assignment to 'exec' as a variable name",
+                        original,
+                        loc,
+                        target="3",
+                    ),
                 )
             else:
                 return "_coconut_exec"
@@ -3711,7 +3741,14 @@ for {match_to_var} in {item}:
             else:
                 return name
         elif not escaped and name.startswith(reserved_prefix) and name not in self.operators:
-            raise CoconutDeferredSyntaxError("variable names cannot start with reserved prefix " + reserved_prefix, loc)
+            return self.raise_or_wrap_error(
+                self.make_err(
+                    CoconutSyntaxError,
+                    "variable names cannot start with reserved prefix " + repr(reserved_prefix),
+                    original,
+                    loc,
+                ),
+            )
         else:
             return name
 

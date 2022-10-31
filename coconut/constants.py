@@ -203,8 +203,9 @@ match_set_name_var = reserved_prefix + "_match_set_name"
 openindent = "\u204b"  # reverse pilcrow
 closeindent = "\xb6"  # pilcrow
 strwrapper = "\u25b6"  # black right-pointing triangle
-lnwrapper = "\u2021"  # double dagger
+errwrapper = "\u24d8"  # circled letter i
 early_passthrough_wrapper = "\u2038"  # caret
+lnwrapper = "\u2021"  # double dagger
 unwrapper = "\u23f9"  # stop square
 funcwrapper = "def:"
 
@@ -219,6 +220,7 @@ holds = "'\""  # string open/close chars
 # together should include all the constants defined above
 delimiter_symbols = tuple(opens + closes + holds) + (
     strwrapper,
+    errwrapper,
     early_passthrough_wrapper,
     unwrapper,
 ) + indchars + comment_chars
