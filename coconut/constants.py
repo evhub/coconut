@@ -25,6 +25,7 @@ import string
 import platform
 import re
 import datetime as dt
+from warnings import warn
 
 # -----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
@@ -36,14 +37,16 @@ def fixpath(path):
     return os.path.normpath(os.path.realpath(os.path.expanduser(path)))
 
 
-def str_to_bool(boolstr, default=False):
-    """Convert a string to a boolean."""
-    boolstr = boolstr.lower()
+def get_bool_env_var(env_var, default=False):
+    """Get a boolean from an environment variable."""
+    boolstr = os.getenv(env_var, "").lower()
     if boolstr in ("true", "yes", "on", "1"):
         return True
     elif boolstr in ("false", "no", "off", "0"):
         return False
     else:
+        if boolstr not in ("", "none", "default"):
+            warn("{env_var} has invalid value {value!r} (defaulting to {default})".format(env_var=env_var, value=os.getenv(env_var), default=default))
         return default
 
 
@@ -447,14 +450,14 @@ use_color_env_var = "COCONUT_USE_COLOR"
 
 coconut_home = fixpath(os.getenv(home_env_var, "~"))
 
-use_color = str_to_bool(os.getenv(use_color_env_var, ""), default=None)
+use_color = get_bool_env_var(use_color_env_var, default=None)
 error_color_code = "31"
 log_color_code = "93"
 
 default_style = "default"
 prompt_histfile = os.path.join(coconut_home, ".coconut_history")
 prompt_multiline = False
-prompt_vi_mode = str_to_bool(os.getenv(vi_mode_env_var, ""))
+prompt_vi_mode = get_bool_env_var(vi_mode_env_var)
 prompt_wrap_lines = True
 prompt_history_search = True
 prompt_use_suggester = False
@@ -652,7 +655,7 @@ website_url = "http://coconut-lang.org"
 license_name = "Apache 2.0"
 
 pure_python_env_var = "COCONUT_PURE_PYTHON"
-PURE_PYTHON = str_to_bool(os.getenv(pure_python_env_var, ""))
+PURE_PYTHON = get_bool_env_var(pure_python_env_var)
 
 # the different categories here are defined in requirements.py,
 #  anything after a colon is ignored but allows different versions
