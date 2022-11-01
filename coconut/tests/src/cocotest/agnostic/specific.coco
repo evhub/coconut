@@ -82,9 +82,6 @@ def py36_spec_test(tco: bool) -> bool:
     class HasGens[T, U]
     assert HasGens `issubclass` object
 
-    class HasVarGen[*Ts]  # type: ignore
-    assert HasVarGen `issubclass` object
-
     class HasPSpec[**P]
     assert HasPSpec `issubclass` object
 
@@ -140,6 +137,8 @@ def py37_spec_test() -> bool:
     l: typing.List[int] = []
     range(10) |> toa |> fmap$(l.append) |> aconsume |> asyncio.run
     assert l == list(range(10))
+    class HasVarGen[*Ts]  # type: ignore
+    assert HasVarGen `issubclass` object
     return True
 
 
