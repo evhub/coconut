@@ -579,13 +579,12 @@ class Compiler(Grammar, pickleable_obj):
         cls.decoratable_async_funcdef_stmt <<= Wrap(new_decoratable_async_funcdef_stmt, cls.method("func_manage"), greedy=True)
 
         # handle parsing_context for type aliases
-        cls.type_param <<= trace_attach(cls.type_param_ref, cls.method("type_param_handle"))
-
         new_type_alias_stmt = trace_attach(cls.type_alias_stmt_ref, cls.method("type_alias_stmt_handle"))
         cls.type_alias_stmt <<= Wrap(new_type_alias_stmt, cls.method("type_alias_stmt_manage"), greedy=True)
 
         # greedy handlers (we need to know about them even if suppressed and/or they use the parsing_context)
         cls.comment <<= attach(cls.comment_tokens, cls.method("comment_handle"), greedy=True)
+        cls.type_param <<= trace_attach(cls.type_param_ref, cls.method("type_param_handle"), greedy=True)
 
         # name handlers
         cls.varname <<= attach(cls.name_ref, cls.method("name_handle"))
@@ -642,6 +641,7 @@ class Compiler(Grammar, pickleable_obj):
         cls.anon_namedtuple <<= trace_attach(cls.anon_namedtuple_ref, cls.method("anon_namedtuple_handle"))
         cls.base_match_for_stmt <<= trace_attach(cls.base_match_for_stmt_ref, cls.method("base_match_for_stmt_handle"))
         cls.unsafe_typedef_tuple <<= trace_attach(cls.unsafe_typedef_tuple_ref, cls.method("unsafe_typedef_tuple_handle"))
+        cls.funcname_typeparams <<= trace_attach(cls.funcname_typeparams_ref, cls.method("funcname_typeparams_handle"))
 
         # these handlers just do strict/target checking
         cls.u_string <<= trace_attach(cls.u_string_ref, cls.method("u_string_check"))
@@ -2037,7 +2037,7 @@ if {store_var} is not _coconut_sentinel:
                     if replacement is None:
                         saw_name = regex.search(line)
                     else:
-                        line, saw_name = regex.subn(replacement, line)
+                        line, saw_name = regex.subn(lambda match: replacement, line)
 
                     if saw_name:
                         # process inner code
@@ -3185,6 +3185,21 @@ __annotations__["{name}"] = {annotation}
                 annotation=self.wrap_typedef(typedef, ignore_target=True),
             )
 
+    def funcname_typeparams_handle(self, tokens):
+        """Handle function names with type parameters."""
+        if len(tokens) == 1:
+            name, = tokens
+            return name
+        else:
+            name, paramdefs = tokens
+            # temp_marker will be set back later, but needs to be a unique name until then for add_code_before
+            temp_marker = self.get_temp_var("type_param_func")
+            self.add_code_before[temp_marker] = "".join(paramdefs)
+            self.add_code_before_replacements[temp_marker] = name
+            return temp_marker
+
+    funcname_typeparams_handle.ignore_one_token = True
+
     def type_param_handle(self, loc, tokens):
         """Compile a type param into an assignment."""
         bounds = ""
@@ -3249,14 +3264,6 @@ __annotations__["{name}"] = {annotation}
             yield
         finally:
             typevars_stack.pop()
-
-    def get_typevars(self):
-        """Get all the current typevars or None."""
-        typevar_info = self.current_parsing_context("typevars")
-        if typevar_info is None:
-            return None
-        else:
-            return typevar_info["all_typevars"]
 
     def type_alias_stmt_handle(self, tokens):
         """Handle type alias statements."""
@@ -3748,18 +3755,20 @@ for {match_to_var} in {item}:
         #  raise spurious errors if not using the computation graph
 
         if not escaped:
-            typevars = self.get_typevars()
-            if typevars is not None and name in typevars:
-                if assign:
-                    return self.raise_or_wrap_error(
-                        self.make_err(
-                            CoconutSyntaxError,
-                            "cannot reassign type variable: " + repr(name),
-                            original,
-                            loc,
-                        ),
-                    )
-                return typevars[name]
+            typevar_info = self.current_parsing_context("typevars")
+            if typevar_info is not None:
+                typevars = typevar_info["all_typevars"]
+                if name in typevars:
+                    if assign:
+                        return self.raise_or_wrap_error(
+                            self.make_err(
+                                CoconutSyntaxError,
+                                "cannot reassign type variable: " + repr(name),
+                                original,
+                                loc,
+                            ),
+                        )
+                    return typevars[name]
 
         if self.strict and not assign:
             self.unused_imports.pop(name, None)

@@ -398,7 +398,7 @@ You can also run `mypy`—or any other static type checker—directly on the com
 1. run `coconut --mypy install` and
 2. tell your static type checker of choice to look in `~/.coconut_stubs` for stub files (for `mypy`, this is done by adding it to your [`MYPYPATH`](https://mypy.readthedocs.io/en/latest/running_mypy.html#how-imports-are-found)).
 
-To explicitly annotate your code with types to be checked, Coconut supports [Python 3 function type annotations](https://www.python.org/dev/peps/pep-0484/), [Python 3.6 variable type annotations](https://www.python.org/dev/peps/pep-0526/), and even Coconut's own [enhanced type annotation syntax](#enhanced-type-annotation). By default, all type annotations are compiled to Python-2-compatible type comments, which means it all works on any Python version.
+To explicitly annotate your code with types to be checked, Coconut supports [Python 3 function type annotations](https://www.python.org/dev/peps/pep-0484/), [Python 3.6 variable type annotations](https://www.python.org/dev/peps/pep-0526/), and even Coconut's own [enhanced type annotation syntax](#enhanced-type-annotation). By default, all type annotations are compiled to Python-2-compatible type comments, which means it all works on any Python version. Coconut also supports [PEP 695 type parameter syntax](#type-parameter-syntax) for easily adding type parameters to classes, functions, [`data` types](#data), and type aliases.
 
 Coconut even supports `--mypy` in the interpreter, which will intelligently scan each new line of code, in the context of previous lines, for newly-introduced MyPy errors. For example:
 ```coconut_pycon
@@ -924,6 +924,10 @@ Coconut supports Unicode alternatives to many different operator symbols. The Un
 ≠ (\u2260) or ¬= (\xac=)    => "!="
 ≤ (\u2264)                  => "<="
 ≥ (\u2265)                  => ">="
+⊆ (\u2286)                  => "<="
+⊇ (\u2287)                  => ">="
+⊊ (\u228a)                  => "<"
+⊋ (\u228b)                  => ">"
 ∧ (\u2227) or ∩ (\u2229)    => "&"
 ∨ (\u2228) or ∪ (\u222a)    => "|"
 ⊻ (\u22bb) or ⊕ (\u2295)    => "^"
@@ -1651,6 +1655,8 @@ type <name> = <type>
 ```
 which will allow `<type>` to include Coconut's special type annotation syntax and type `<name>` as a [`typing.TypeAlias`](https://docs.python.org/3/library/typing.html#typing.TypeAlias). If you try to instead just do a naked `<name> = <type>` type alias, Coconut won't be able to tell you're attempting a type alias and thus won't apply any of the above transformations.
 
+Such type alias statements—as well as all `class`, `data`, and function definitions in Coconut—also support Coconut's [type parameter syntax](#type-parameter-syntax), allowing you to do things like `type OrStr[T] = T | str`.
+
 Importantly, note that `<type>[]` does not map onto `typing.List[<int>]` but onto `typing.Sequence[<int>]`. This is because, when writing in an idiomatic functional style, assignment should be rare and tuples should be common. Using `Sequence` covers both cases, accommodating tuples and lists and preventing indexed assignment. When an indexed assignment is attempted into a variable typed with `Sequence`, MyPy will generate an error:
 
 ```coconut
@@ -2173,6 +2179,83 @@ print(a, b)
 
 **Python:**
 _Can't be done without a long series of checks in place of the destructuring assignment statement. See the compiled code for the Python syntax._
+
+### Type Parameter Syntax
+
+Coconut fully supports [PEP 695](https://peps.python.org/pep-0695/) type parameter syntax (with the caveat that all type variables are invariant rather than inferred).
+
+That includes type parameters for classes, [`data` types](#data), and [all types of function definition](#function-definition). For different types of function definition, the type parameters always come in brackets right after the function name.
+
+Coconut's [enhanced type annotation syntax](#enhanced-type-annotation) is supported for all type parameter bounds. Additionally, Coconut supports the alternative bounds syntax of `type NewType[T <= bound] = ...` rather than `type NewType[T: bound] = ...`, to make it more clear that it is a bound rather than a type.
+
+##### PEP 695 Docs
+
+Defining a generic class prior to this PEP looks something like this.
+
+```coconut_python
+from typing import Generic, TypeVar
+
+_T_co = TypeVar("_T_co", covariant=True, bound=str)
+
+class ClassA(Generic[_T_co]):
+    def method1(self) -> _T_co:
+        ...
+```
+
+With the new syntax, it looks like this.
+
+```coconut
+class ClassA[T: str]:
+    def method1(self) -> T:
+        ...
+```
+
+Here is an example of a generic function today.
+
+```coconut_python
+from typing import TypeVar
+
+_T = TypeVar("_T")
+
+def func(a: _T, b: _T) -> _T:
+    ...
+```
+
+And the new syntax.
+
+```coconut
+def func[T](a: T, b: T) -> T:
+    ...
+```
+
+Here is an example of a generic type alias today.
+
+```coconut_python
+from typing import TypeAlias
+
+_T = TypeVar("_T")
+
+ListOrSet: TypeAlias = list[_T] | set[_T]
+```
+
+And with the new syntax.
+
+```coconut
+type ListOrSet[T] = list[T] | set[T]
+```
+
+
+##### Example
+
+**Coconut:**
+```coconut
+data D[T](x: T, y: T)
+
+def my_ident[T](x: T) -> T = x
+```
+
+**Python:**
+_Can't be done without a complex definition for the data type. See the compiled code for the Python syntax._
 
 ### Implicit `pass`
 

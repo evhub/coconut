@@ -661,10 +661,23 @@ class Grammar(object):
     ellipsis = Forward()
     ellipsis_tokens = Literal("...") | fixto(Literal("\u2026"), "...")
 
-    lt = ~Literal("<<") + ~Literal("<=") + ~Literal("<|") + ~Literal("<..") + ~Literal("<*") + Literal("<")
-    gt = ~Literal(">>") + ~Literal(">=") + Literal(">")
-    le = Literal("<=") | fixto(Literal("\u2264"), "<=")
-    ge = Literal(">=") | fixto(Literal("\u2265"), ">=")
+    lt = (
+        ~Literal("<<")
+        + ~Literal("<=")
+        + ~Literal("<|")
+        + ~Literal("<..")
+        + ~Literal("<*")
+        + Literal("<")
+        | fixto(Literal("\u228a"), "<")
+    )
+    gt = (
+        ~Literal(">>")
+        + ~Literal(">=")
+        + Literal(">")
+        | fixto(Literal("\u228b"), ">")
+    )
+    le = Literal("<=") | fixto(Literal("\u2264") | Literal("\u2286"), "<=")
+    ge = Literal(">=") | fixto(Literal("\u2265") | Literal("\u2287"), ">=")
     ne = Literal("!=") | fixto(Literal("\xac=") | Literal("\u2260"), "!=")
 
     mul_star = star | fixto(Literal("\xd7"), "*")
@@ -1231,7 +1244,7 @@ class Grammar(object):
 
     type_param = Forward()
     type_param_ref = (
-        (setname + Optional(colon.suppress() + typedef_test))("TypeVar")
+        (setname + Optional((colon | le).suppress() + typedef_test))("TypeVar")
         | (star.suppress() + setname)("TypeVarTuple")
         | (dubstar.suppress() + setname)("ParamSpec")
     )
@@ -1793,11 +1806,12 @@ class Grammar(object):
     with_stmt_ref = keyword("with").suppress() - with_item_list - suite
     with_stmt = Forward()
 
-    return_typedef = Forward()
-    name_funcdef = trace(condense(dotted_setname + parameters))
+    funcname_typeparams = Forward()
+    funcname_typeparams_ref = dotted_setname + Optional(type_params)
+    name_funcdef = trace(condense(funcname_typeparams + parameters))
     op_tfpdef = unsafe_typedef_default | condense(setname + Optional(default))
     op_funcdef_arg = setname | condense(lparen.suppress() + op_tfpdef + rparen.suppress())
-    op_funcdef_name = unsafe_backtick.suppress() + dotted_setname + unsafe_backtick.suppress()
+    op_funcdef_name = unsafe_backtick.suppress() + funcname_typeparams + unsafe_backtick.suppress()
     op_funcdef = trace(
         attach(
             Group(Optional(op_funcdef_arg))
@@ -1806,6 +1820,8 @@ class Grammar(object):
             op_funcdef_handle,
         ),
     )
+
+    return_typedef = Forward()
     return_typedef_ref = arrow.suppress() + typedef_test
     end_func_colon = return_typedef + colon.suppress() | colon
     base_funcdef = op_funcdef | name_funcdef
@@ -1825,7 +1841,7 @@ class Grammar(object):
             ),
         ),
     )
-    name_match_funcdef_ref = keyword("def").suppress() + dotted_setname + lparen.suppress() + match_args_list + match_guard + rparen.suppress()
+    name_match_funcdef_ref = keyword("def").suppress() + funcname_typeparams + lparen.suppress() + match_args_list + match_guard + rparen.suppress()
     op_match_funcdef_ref = keyword("def").suppress() + op_match_funcdef_arg + op_funcdef_name + op_match_funcdef_arg + match_guard
     base_match_funcdef = trace(op_match_funcdef | name_match_funcdef)
     func_suite = (

@@ -971,7 +971,6 @@ forward 2""") == 900
     assert HasT().T == 1
     assert dict_zip({"a": 1, "b": 2}, {"a": 3, "b": 4}) == {"a": [1, 3], "b": [2, 4]}
     assert intdata(x=2).x == 2 == intdata_(x=2).x
-    assert methtest().recurse_n_times(100_000) == "done!"
     assert weird_recursor()
     summer.acc = 0
     summer.args = list(range(100_000))
@@ -988,4 +987,5 @@ def tco_test() -> bool:
     assert is_even_(5000) and is_odd_(5001)
     assert hasattr(ret_none, "_coconut_tco_func")
     assert hasattr(tricky_tco, "_coconut_tco_func")
+    assert methtest().recurse_n_times(100_000) == "done!"
     return True
