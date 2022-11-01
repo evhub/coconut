@@ -466,7 +466,7 @@ def tricky_tco(func):
     except TypeError:
         return func()
 
-weird_recursor_ns = [100]
+weird_recursor_ns = [50]
 
 def weird_recursor(n):
     if n == 0:

@@ -922,10 +922,8 @@ Coconut supports Unicode alternatives to many different operator symbols. The Un
 ⁻ (\u207b)                  => "-" (only negation)
 ¬ (\xac)                    => "~"
 ≠ (\u2260) or ¬= (\xac=)    => "!="
-≤ (\u2264)                  => "<="
-≥ (\u2265)                  => ">="
-⊆ (\u2286)                  => "<="
-⊇ (\u2287)                  => ">="
+≤ (\u2264) or ⊆ (\u2286)    => "<="
+≥ (\u2265) or ⊇ (\u2287)    => ">="
 ⊊ (\u228a)                  => "<"
 ⊋ (\u228b)                  => ">"
 ∧ (\u2227) or ∩ (\u2229)    => "&"
@@ -2186,7 +2184,7 @@ Coconut fully supports [PEP 695](https://peps.python.org/pep-0695/) type paramet
 
 That includes type parameters for classes, [`data` types](#data), and [all types of function definition](#function-definition). For different types of function definition, the type parameters always come in brackets right after the function name.
 
-Coconut's [enhanced type annotation syntax](#enhanced-type-annotation) is supported for all type parameter bounds. Additionally, Coconut supports the alternative bounds syntax of `type NewType[T <= bound] = ...` rather than `type NewType[T: bound] = ...`, to make it more clear that it is a bound rather than a type.
+Coconut's [enhanced type annotation syntax](#enhanced-type-annotation) is supported for all type parameter bounds. Additionally, Coconut supports the alternative bounds syntax of `type NewType[T <= bound] = ...` rather than `type NewType[T: bound] = ...`, to make it more clear that it is an upper bound rather than a type.
 
 ##### PEP 695 Docs
 
