@@ -470,20 +470,51 @@ NamedTuple = staticmethod(NamedTuple)
                 indent=1,
                 newline=True,
             ),
-            import_typing_TypeAlias=pycondition(
+            import_typing_TypeAlias_ParamSpec=pycondition(
                 (3, 10),
                 if_lt='''
 try:
-    from typing_extensions import TypeAlias
+    from typing_extensions import TypeAlias, ParamSpec
 except ImportError:
     class you_need_to_install_typing_extensions{object}:
         __slots__ = ()
-    TypeAlias = you_need_to_install_typing_extensions()
+    TypeAlias = ParamSpec = you_need_to_install_typing_extensions()
 typing.TypeAlias = TypeAlias
+typing.ParamSpec = ParamSpec
                 '''.format(**format_dict),
                 indent=1,
                 newline=True,
-            ) if no_wrap else "",
+            ),
+            import_typing_TypeVarTuple_Unpack=pycondition(
+                (3, 11),
+                if_lt='''
+try:
+    from typing_extensions import TypeVarTuple, Unpack
+except ImportError:
+    class you_need_to_install_typing_extensions{object}:
+        __slots__ = ()
+    TypeVarTuple = you_need_to_install_typing_extensions()
+    class MockUnpack{object}:
+        __slots__ = ()
+        def __getitem__(self, _): return self
+    Unpack = MockUnpack()
+typing.TypeVarTuple = TypeVarTuple
+typing.Unpack = Unpack
+                '''.format(**format_dict),
+                indent=1,
+                newline=True,
+            ),
+            import_typing_Generic=pycondition(
+                (3, 5),
+                if_lt='''
+class MockGeneric{object}:
+    __slots__ = ()
+    def __getitem__(self, _): return self
+typing.Generic = MockGeneric()
+                '''.format(**format_dict),
+                indent=1,
+                newline=True,
+            ),
             import_asyncio=pycondition(
                 (3, 4),
                 if_lt='''

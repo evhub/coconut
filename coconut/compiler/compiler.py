@@ -356,7 +356,6 @@ class Compiler(Grammar, pickleable_obj):
     """The Coconut compiler."""
     lock = Lock()
     current_compiler = [None]  # list for mutability
-    operators = None
 
     preprocs = [
         lambda self: self.prepare,
@@ -439,6 +438,9 @@ class Compiler(Grammar, pickleable_obj):
             ),
         )
 
+    temp_var_counts = None
+    operators = None
+
     def reset(self, keep_state=False):
         """Resets references."""
         self.indchar = None
@@ -446,7 +448,9 @@ class Compiler(Grammar, pickleable_obj):
         self.refs = []
         self.skips = []
         self.docstring = ""
-        self.temp_var_counts = defaultdict(int)
+        # need to keep temp_var_counts in interpreter to avoid overwriting typevars
+        if self.temp_var_counts is None or not keep_state:
+            self.temp_var_counts = defaultdict(int)
         self.parsing_context = defaultdict(list)
         self.add_code_before = {}
         self.add_code_before_regexes = {}
@@ -546,14 +550,14 @@ class Compiler(Grammar, pickleable_obj):
     def bind(cls):
         """Binds reference objects to the proper parse actions."""
         # parsing_context["class"] handling
-        new_classdef = Wrap(cls.classdef_ref, cls.method("class_manage"), greedy=True)
-        cls.classdef <<= trace_attach(new_classdef, cls.method("classdef_handle"))
+        new_classdef = trace_attach(cls.classdef_ref, cls.method("classdef_handle"))
+        cls.classdef <<= Wrap(new_classdef, cls.method("class_manage"), greedy=True)
 
-        new_datadef = Wrap(cls.datadef_ref, cls.method("class_manage"), greedy=True)
-        cls.datadef <<= trace_attach(new_datadef, cls.method("datadef_handle"))
+        new_datadef = trace_attach(cls.datadef_ref, cls.method("datadef_handle"))
+        cls.datadef <<= Wrap(new_datadef, cls.method("class_manage"), greedy=True)
 
-        new_match_datadef = Wrap(cls.match_datadef_ref, cls.method("class_manage"), greedy=True)
-        cls.match_datadef <<= trace_attach(new_match_datadef, cls.method("match_datadef_handle"))
+        new_match_datadef = trace_attach(cls.match_datadef_ref, cls.method("match_datadef_handle"))
+        cls.match_datadef <<= Wrap(new_match_datadef, cls.method("class_manage"), greedy=True)
 
         cls.stmt_lambdef_body <<= Wrap(cls.stmt_lambdef_body_ref, cls.method("func_manage"), greedy=True)
         cls.func_suite <<= Wrap(cls.func_suite_ref, cls.method("func_manage"), greedy=True)
@@ -565,8 +569,8 @@ class Compiler(Grammar, pickleable_obj):
         # parsing_context["typevars"] handling
         cls.type_param <<= trace_attach(cls.type_param_ref, cls.method("type_param_handle"))
 
-        new_type_alias_stmt = Wrap(cls.type_alias_stmt_ref, cls.method("type_alias_stmt_manage"), greedy=True)
-        cls.type_alias_stmt <<= trace_attach(new_type_alias_stmt, cls.method("type_alias_stmt_handle"))
+        new_type_alias_stmt = trace_attach(cls.type_alias_stmt_ref, cls.method("type_alias_stmt_handle"))
+        cls.type_alias_stmt <<= Wrap(new_type_alias_stmt, cls.method("type_alias_stmt_manage"), greedy=True)
 
         # greedy handlers (we need to know about them even if suppressed and/or they use the parsing_context)
         cls.comment <<= attach(cls.comment_tokens, cls.method("comment_handle"), greedy=True)
@@ -2431,18 +2435,19 @@ while True:
 
     def classdef_handle(self, original, loc, tokens):
         """Process class definitions."""
-        name, classlist_toks, body = tokens
+        if len(tokens) == 4:
+            decorators, name, classlist_toks, body = tokens
+            paramdefs = ""
+        elif len(tokens) == 5:
+            decorators, name, paramdefs, classlist_toks, body = tokens
+        else:
+            raise CoconutInternalException("invalid classdef tokens", tokens)
 
-        out = "class " + name
+        out = "".join(paramdefs) + decorators + "class " + name
 
         # handle classlist
-        if len(classlist_toks) == 0:
-            if self.target.startswith("3"):
-                out += ""
-            else:
-                out += "(_coconut.object)"
-
-        else:
+        base_classes = []
+        if classlist_toks:
             pos_args, star_args, kwd_args, dubstar_args = self.split_function_call(classlist_toks, loc)
 
             # check for just inheriting from object
@@ -2467,9 +2472,15 @@ while True:
                     out = "@_coconut_handle_cls_kwargs(" + join_args(kwd_args, dubstar_args) + ")\n" + out
                     kwd_args = dubstar_args = ()
 
-            out += "(" + join_args(pos_args, star_args, kwd_args, dubstar_args) + ")"
+            base_classes.append(join_args(pos_args, star_args, kwd_args, dubstar_args))
 
-        out += body
+        if paramdefs:
+            base_classes.append(self.get_generic_for_typevars())
+
+        if not base_classes and not self.target.startswith("3"):
+            base_classes.append("_coconut.object")
+
+        out += "(" + ", ".join(base_classes) + ")" + body
 
         # add override detection
         if self.target_info < (3, 6):
@@ -2479,13 +2490,13 @@ while True:
 
     def match_datadef_handle(self, original, loc, tokens):
         """Process pattern-matching data blocks."""
-        if len(tokens) == 3:
-            name, match_tokens, stmts = tokens
+        if len(tokens) == 4:
+            decorators, name, match_tokens, stmts = tokens
             inherit = None
-        elif len(tokens) == 4:
-            name, match_tokens, inherit, stmts = tokens
+        elif len(tokens) == 5:
+            decorators, name, match_tokens, inherit, stmts = tokens
         else:
-            raise CoconutInternalException("invalid pattern-matching data tokens", tokens)
+            raise CoconutInternalException("invalid match_datadef tokens", tokens)
 
         if len(match_tokens) == 1:
             matches, = match_tokens
@@ -2523,17 +2534,17 @@ def __new__(_coconut_cls, *{match_to_args_var}, **{match_to_kwargs_var}):
         )
 
         namedtuple_call = self.make_namedtuple_call(name, matcher.name_list)
-        return self.assemble_data(name, namedtuple_call, inherit, extra_stmts, stmts, matcher.name_list)
+        return self.assemble_data(decorators, name, namedtuple_call, inherit, extra_stmts, stmts, matcher.name_list)
 
     def datadef_handle(self, loc, tokens):
         """Process data blocks."""
-        if len(tokens) == 3:
-            name, original_args, stmts = tokens
+        if len(tokens) == 4:
+            decorators, name, original_args, stmts = tokens
             inherit = None
-        elif len(tokens) == 4:
-            name, original_args, inherit, stmts = tokens
+        elif len(tokens) == 5:
+            decorators, name, original_args, inherit, stmts = tokens
         else:
-            raise CoconutInternalException("invalid data tokens", tokens)
+            raise CoconutInternalException("invalid datadef tokens", tokens)
 
         all_args = []  # string definitions for all args
         base_args = []  # names of all the non-starred args
@@ -2658,7 +2669,7 @@ def __new__(_coconut_cls, {all_args}):
         namedtuple_args = base_args + ([] if starred_arg is None else [starred_arg])
         namedtuple_call = self.make_namedtuple_call(name, namedtuple_args, types)
 
-        return self.assemble_data(name, namedtuple_call, inherit, extra_stmts, stmts, namedtuple_args)
+        return self.assemble_data(decorators, name, namedtuple_call, inherit, extra_stmts, stmts, namedtuple_args)
 
     def make_namedtuple_call(self, name, namedtuple_args, types=None):
         """Construct a namedtuple call."""
@@ -2677,11 +2688,12 @@ def __new__(_coconut_cls, {all_args}):
             else:
                 return '_coconut.collections.namedtuple("' + name + '", ' + tuple_str_of(namedtuple_args, add_quotes=True) + ')'
 
-    def assemble_data(self, name, namedtuple_call, inherit, extra_stmts, stmts, match_args):
+    def assemble_data(self, decorators, name, namedtuple_call, inherit, extra_stmts, stmts, match_args):
         """Create a data class definition from the given components."""
         # create class
         out = (
-            "class " + name + "("
+            decorators
+            + "class " + name + "("
             + namedtuple_call
             + (", " + inherit if inherit is not None else "")
             + (", _coconut.object" if not self.target.startswith("3") else "")
@@ -3194,12 +3206,13 @@ __annotations__["{name}"] = {annotation}
         else:
             raise CoconutInternalException("invalid type_param tokens", tokens)
 
-        typevars = self.current_parsing_context("typevars")
-        if typevars is not None:
-            if name in typevars:
+        typevar_info = self.current_parsing_context("typevars")
+        if typevar_info is not None:
+            if name in typevar_info["all_typevars"]:
                 raise CoconutDeferredSyntaxError("type variable {name!r} already defined", loc)
             temp_name = self.get_temp_var("typevar_" + name)
-            typevars[name] = temp_name
+            typevar_info["all_typevars"][name] = temp_name
+            typevar_info["new_typevars"].append((TypeVarFunc, temp_name))
             name = temp_name
 
         return '{name} = _coconut.typing.{TypeVarFunc}("{name}"{bounds})\n'.format(
@@ -3208,15 +3221,44 @@ __annotations__["{name}"] = {annotation}
             bounds=bounds,
         )
 
+    def get_generic_for_typevars(self):
+        """Get the Generic instances for the current typevars."""
+        typevar_info = self.current_parsing_context("typevars")
+        internal_assert(typevar_info is not None, "get_generic_for_typevars called with no typevars")
+        generics = []
+        for TypeVarFunc, name in typevar_info["new_typevars"]:
+            if TypeVarFunc in ("TypeVar", "ParamSpec"):
+                generics.append(name)
+            elif TypeVarFunc == "TypeVarTuple":
+                if self.target_info >= (3, 11):
+                    generics.append("*" + name)
+                else:
+                    generics.append("_coconut.typing.Unpack[" + name + "]")
+            else:
+                raise CoconutInternalException("invalid TypeVarFunc", TypeVarFunc)
+        return "_coconut.typing.Generic[" + ", ".join(generics) + "]"
+
     @contextmanager
-    def type_alias_stmt_manage(self, item, original, loc):
+    def type_alias_stmt_manage(self, item=None, original=None, loc=None):
         """Manage the typevars parsing context."""
         typevars_stack = self.parsing_context["typevars"]
-        typevars_stack.append(self.current_parsing_context("typevars", {}).copy())
+        prev_typevar_info = self.current_parsing_context("typevars")
+        typevars_stack.append({
+            "all_typevars": {} if prev_typevar_info is None else prev_typevar_info["all_typevars"].copy(),
+            "new_typevars": [],
+        })
         try:
             yield
         finally:
             typevars_stack.pop()
+
+    def get_typevars(self):
+        """Get all the current typevars or None."""
+        typevar_info = self.current_parsing_context("typevars")
+        if typevar_info is None:
+            return None
+        else:
+            return typevar_info["all_typevars"]
 
     def type_alias_stmt_handle(self, tokens):
         """Handle type alias statements."""
@@ -3657,7 +3699,9 @@ for {match_to_var} in {item}:
             "in_method": False,
         })
         try:
-            yield
+            # handles support for class type variables
+            with self.type_alias_stmt_manage():
+                yield
         finally:
             cls_stack.pop()
 
@@ -3699,7 +3743,7 @@ for {match_to_var} in {item}:
         #  raise spurious errors if not using the computation graph
 
         if not escaped:
-            typevars = self.current_parsing_context("typevars")
+            typevars = self.get_typevars()
             if typevars is not None and name in typevars:
                 if assign:
                     return self.raise_or_wrap_error(

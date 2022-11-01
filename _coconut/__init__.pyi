@@ -60,13 +60,24 @@ except ImportError:
 else:
     _abc.Sequence.register(_numpy.ndarray)
 
-# The real _coconut only has TypeAlias if --no-wrap is passed
 if sys.version_info < (3, 10):
     try:
-        from typing_extensions import TypeAlias
+        from typing_extensions import TypeAlias, ParamSpec
     except ImportError:
         TypeAlias = ...
+        ParamSpec = ...
     typing.TypeAlias = TypeAlias
+    typing.ParamSpec = ParamSpec
+
+
+if sys.version_info < (3, 11):
+    try:
+        from typing_extensions import TypeVarTuple, Unpack
+    except ImportError:
+        TypeVarTuple = ...
+        Unpack = ...
+    typing.TypeVarTuple = TypeVarTuple
+    typing.Unpack = Unpack
 
 # -----------------------------------------------------------------------------------------------------------------------
 # STUB:

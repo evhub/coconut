@@ -1495,13 +1495,21 @@ class Grammar(object):
 
     classdef = Forward()
     classname = Forward()
+    decorators = Forward()
     classname_ref = setname
     classlist = Group(
         Optional(function_call_tokens)
         + ~equals,  # don't match class destructuring assignment
     )
     class_suite = suite | attach(newline, class_suite_handle)
-    classdef_ref = keyword("class").suppress() + classname + classlist + class_suite
+    classdef_ref = (
+        Optional(decorators, default="")
+        + keyword("class").suppress()
+        + classname
+        + Optional(type_params)
+        + classlist
+        + class_suite
+    )
 
     async_comp_for = Forward()
     comp_iter = Forward()
@@ -1983,7 +1991,8 @@ class Grammar(object):
                 ),
             ) + rparen.suppress(),
         ),
-    ) + Optional(keyword("from").suppress() + testlist)
+    )
+    data_inherit = Optional(keyword("from").suppress() + testlist)
     data_suite = Group(
         colon.suppress() - (
             (newline.suppress() + indent.suppress() + Optional(docstring) + Group(OneOrMore(stmt)) - dedent.suppress())("complex")
@@ -1991,13 +2000,28 @@ class Grammar(object):
             | simple_stmt("simple")
         ) | newline("empty"),
     )
-    datadef_ref = data_kwd.suppress() + classname + data_args + data_suite
+    datadef_ref = (
+        Optional(decorators, default="")
+        + data_kwd.suppress()
+        + classname
+        + data_args
+        + data_inherit
+        + data_suite
+    )
 
     match_datadef = Forward()
     match_data_args = lparen.suppress() + Group(
         match_args_list + match_guard,
-    ) + rparen.suppress() + Optional(keyword("from").suppress() + testlist)
-    match_datadef_ref = Optional(match_kwd.suppress()) + data_kwd.suppress() + classname + match_data_args + data_suite
+    ) + rparen.suppress()
+    match_datadef_ref = (
+        Optional(decorators, default="")
+        + Optional(match_kwd.suppress())
+        + data_kwd.suppress()
+        + classname
+        + match_data_args
+        + data_inherit
+        + data_suite
+    )
 
     simple_decorator = condense(dotted_varname + Optional(function_call) + newline)("simple")
     complex_decorator = condense(namedexpr_test + newline)("complex")
@@ -2008,7 +2032,6 @@ class Grammar(object):
             | complex_decorator,
         ),
     )
-    decorators = Forward()
 
     decoratable_normal_funcdef_stmt = Forward()
     normal_funcdef_stmt = (
@@ -2025,8 +2048,8 @@ class Grammar(object):
 
     decoratable_func_stmt = decoratable_normal_funcdef_stmt | decoratable_async_funcdef_stmt
 
-    class_stmt = classdef | datadef | match_datadef
-    decoratable_class_stmt = trace(condense(Optional(decorators) + class_stmt))
+    # decorators are integrated into the definitions of each item here
+    decoratable_class_stmt = classdef | datadef | match_datadef
 
     passthrough_stmt = condense(passthrough_block - (base_suite | newline))
 

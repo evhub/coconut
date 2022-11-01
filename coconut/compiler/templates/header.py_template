@@ -20,7 +20,7 @@ def _coconut_super(type=None, object_or_type=None):
 {import_OrderedDict}
 {import_collections_abc}
 {import_typing}
-{import_typing_NamedTuple}{import_typing_TypeAlias}{set_zip_longest}
+{import_typing_NamedTuple}{import_typing_TypeAlias_ParamSpec}{import_typing_TypeVarTuple_Unpack}{import_typing_Generic}{set_zip_longest}
     try:
         import numpy
     except ImportError:

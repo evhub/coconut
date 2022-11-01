@@ -1184,7 +1184,7 @@ def main_test() -> bool:
     for x in *(1, 2), *(3, 4):
         xs.append(x)
     assert xs == [1, 2, 3, 4]
-    \\assert _coconut.typing.NamedTuple
+    assert \_coconut.typing.NamedTuple
     class Asup:
         a = 1
     class Bsup(Asup):
@@ -1199,6 +1199,10 @@ def main_test() -> bool:
     test: dict = {}
     e("a=1", test)
     assert test["a"] == 1
+    class HasGens[T, U]
+    if not TYPE_CHECKING:  # not yet supported by mypy
+        class HasVarGen[*Ts]
+    class HasPSpec[**P]
     return True
 
 def test_asyncio() -> bool:
