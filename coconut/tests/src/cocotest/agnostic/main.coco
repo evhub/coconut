@@ -1200,9 +1200,15 @@ def main_test() -> bool:
     e("a=1", test)
     assert test["a"] == 1
     class HasGens[T, U]
-    if not TYPE_CHECKING:  # not yet supported by mypy
-        class HasVarGen[*Ts]
+    assert HasGens `issubclass` object
+    class HasVarGen[*Ts]  # type: ignore
+    assert HasVarGen `issubclass` object
     class HasPSpec[**P]
+    assert HasPSpec `issubclass` object
+    data D1[T](x: T, y: T)  # type: ignore
+    assert D1(10, 20).y == 20
+    data D2[T: int[]](xs: T)  # type: ignore
+    assert D2((10, 20)).xs == (10, 20)
     return True
 
 def test_asyncio() -> bool:

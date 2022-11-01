@@ -40,6 +40,7 @@ from coconut.constants import (
     match_set_name_var,
     is_data_var,
     default_matcher_style,
+    self_match_types,
 )
 from coconut.compiler.util import (
     paren_join,
@@ -69,8 +70,8 @@ def get_match_names(match):
     # these constructs continue matching on the entire original item,
     #  meaning they can also contain top-level variable names
     elif "paren" in match:
-        (match,) = match
-        names += get_match_names(match)
+        (paren_match,) = match
+        names += get_match_names(paren_match)
     elif "and" in match:
         for and_match in match:
             names += get_match_names(and_match)
@@ -80,6 +81,10 @@ def get_match_names(match):
     elif "isinstance_is" in match:
         isinstance_is_match = match[0]
         names += get_match_names(isinstance_is_match)
+    elif "class" in match or "data_or_class" in match:
+        cls_name, class_matches = match
+        if cls_name in self_match_types and len(class_matches) == 1 and len(class_matches[0]) == 1:
+            names += get_match_names(class_matches[0][0])
     return names
 
 

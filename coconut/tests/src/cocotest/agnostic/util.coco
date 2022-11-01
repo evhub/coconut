@@ -1165,6 +1165,9 @@ data data6(int() as x) from BaseClass
 data namedpt(str() as name, int() as x, int() as y):
     def mag(self) = (self.x**2 + self.y**2)**0.5
 
+data intdata(int(x))
+data intdata_(class int(x))
+
 
 # Descriptor test
 def tuplify(*args) = args

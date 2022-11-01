@@ -1506,7 +1506,7 @@ class Grammar(object):
         Optional(decorators, default="")
         + keyword("class").suppress()
         + classname
-        + Optional(type_params)
+        + Optional(type_params, default=())
         + classlist
         + class_suite
     )
@@ -2004,6 +2004,7 @@ class Grammar(object):
         Optional(decorators, default="")
         + data_kwd.suppress()
         + classname
+        + Optional(type_params, default=())
         + data_args
         + data_inherit
         + data_suite
@@ -2013,6 +2014,7 @@ class Grammar(object):
     match_data_args = lparen.suppress() + Group(
         match_args_list + match_guard,
     ) + rparen.suppress()
+    # we don't support type_params here since we don't support types
     match_datadef_ref = (
         Optional(decorators, default="")
         + Optional(match_kwd.suppress())

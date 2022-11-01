@@ -34,6 +34,7 @@ from coconut.constants import (
     report_this_text,
     numpy_modules,
     jax_numpy_modules,
+    self_match_types,
 )
 from coconut.util import (
     univ_open,
@@ -201,6 +202,7 @@ def process_header_args(which, target, use_hash, no_tco, strict, no_wrap):
         report_this_text=report_this_text,
         numpy_modules=tuple_str_of(numpy_modules, add_quotes=True),
         jax_numpy_modules=tuple_str_of(jax_numpy_modules, add_quotes=True),
+        self_match_types=tuple_str_of(self_match_types),
         set_super=(
             # we have to use _coconut_super even on the universal target, since once we set __class__ it becomes a local variable
             "super = _coconut_super\n" if target_startswith != 3 else ""

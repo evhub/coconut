@@ -2435,13 +2435,7 @@ while True:
 
     def classdef_handle(self, original, loc, tokens):
         """Process class definitions."""
-        if len(tokens) == 4:
-            decorators, name, classlist_toks, body = tokens
-            paramdefs = ""
-        elif len(tokens) == 5:
-            decorators, name, paramdefs, classlist_toks, body = tokens
-        else:
-            raise CoconutInternalException("invalid classdef tokens", tokens)
+        decorators, name, paramdefs, classlist_toks, body = tokens
 
         out = "".join(paramdefs) + decorators + "class " + name
 
@@ -2477,7 +2471,7 @@ while True:
         if paramdefs:
             base_classes.append(self.get_generic_for_typevars())
 
-        if not base_classes and not self.target.startswith("3"):
+        if not classlist_toks and not self.target.startswith("3"):
             base_classes.append("_coconut.object")
 
         out += "(" + ", ".join(base_classes) + ")" + body
@@ -2538,11 +2532,11 @@ def __new__(_coconut_cls, *{match_to_args_var}, **{match_to_kwargs_var}):
 
     def datadef_handle(self, loc, tokens):
         """Process data blocks."""
-        if len(tokens) == 4:
-            decorators, name, original_args, stmts = tokens
+        if len(tokens) == 5:
+            decorators, name, paramdefs, original_args, stmts = tokens
             inherit = None
-        elif len(tokens) == 5:
-            decorators, name, original_args, inherit, stmts = tokens
+        elif len(tokens) == 6:
+            decorators, name, paramdefs, original_args, inherit, stmts = tokens
         else:
             raise CoconutInternalException("invalid datadef tokens", tokens)
 
@@ -2669,7 +2663,7 @@ def __new__(_coconut_cls, {all_args}):
         namedtuple_args = base_args + ([] if starred_arg is None else [starred_arg])
         namedtuple_call = self.make_namedtuple_call(name, namedtuple_args, types)
 
-        return self.assemble_data(decorators, name, namedtuple_call, inherit, extra_stmts, stmts, namedtuple_args)
+        return self.assemble_data(decorators, name, namedtuple_call, inherit, extra_stmts, stmts, namedtuple_args, paramdefs)
 
     def make_namedtuple_call(self, name, namedtuple_args, types=None):
         """Construct a namedtuple call."""
@@ -2688,14 +2682,16 @@ def __new__(_coconut_cls, {all_args}):
             else:
                 return '_coconut.collections.namedtuple("' + name + '", ' + tuple_str_of(namedtuple_args, add_quotes=True) + ')'
 
-    def assemble_data(self, decorators, name, namedtuple_call, inherit, extra_stmts, stmts, match_args):
+    def assemble_data(self, decorators, name, namedtuple_call, inherit, extra_stmts, stmts, match_args, paramdefs=()):
         """Create a data class definition from the given components."""
         # create class
         out = (
-            decorators
+            "".join(paramdefs)
+            + decorators
             + "class " + name + "("
             + namedtuple_call
             + (", " + inherit if inherit is not None else "")
+            + (", " + self.get_generic_for_typevars() if paramdefs else "")
             + (", _coconut.object" if not self.target.startswith("3") else "")
             + "):\n"
             + openindent
