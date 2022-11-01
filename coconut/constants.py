@@ -75,8 +75,6 @@ PY310 = sys.version_info >= (3, 10)
 IPY = (
     ((PY2 and not PY26) or PY35)
     and not (PYPY and WINDOWS)
-    # necessary until jupyter-console fixes https://github.com/jupyter/jupyter_console/issues/245
-    and not PY310
 )
 MYPY = (
     PY37
