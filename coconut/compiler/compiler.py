@@ -154,6 +154,7 @@ from coconut.compiler.util import (
     prep_grammar,
     split_leading_whitespace,
     ordered_items,
+    tuple_str_of_str,
 )
 from coconut.compiler.header import (
     minify_header,
@@ -549,7 +550,7 @@ class Compiler(Grammar, pickleable_obj):
     @classmethod
     def bind(cls):
         """Binds reference objects to the proper parse actions."""
-        # parsing_context["class"] handling
+        # handle parsing_context for class definitions
         new_classdef = trace_attach(cls.classdef_ref, cls.method("classdef_handle"))
         cls.classdef <<= Wrap(new_classdef, cls.method("class_manage"), greedy=True)
 
@@ -559,14 +560,25 @@ class Compiler(Grammar, pickleable_obj):
         new_match_datadef = trace_attach(cls.match_datadef_ref, cls.method("match_datadef_handle"))
         cls.match_datadef <<= Wrap(new_match_datadef, cls.method("class_manage"), greedy=True)
 
-        cls.stmt_lambdef_body <<= Wrap(cls.stmt_lambdef_body_ref, cls.method("func_manage"), greedy=True)
-        cls.func_suite <<= Wrap(cls.func_suite_ref, cls.method("func_manage"), greedy=True)
-        cls.func_suite_tokens <<= Wrap(cls.func_suite_tokens_ref, cls.method("func_manage"), greedy=True)
-        cls.math_funcdef_suite <<= Wrap(cls.math_funcdef_suite_ref, cls.method("func_manage"), greedy=True)
-
         cls.classname <<= trace_attach(cls.classname_ref, cls.method("classname_handle"), greedy=True)
 
-        # parsing_context["typevars"] handling
+        # handle parsing_context for function definitions
+        new_stmt_lambdef = trace_attach(cls.stmt_lambdef_ref, cls.method("stmt_lambdef_handle"))
+        cls.stmt_lambdef <<= Wrap(new_stmt_lambdef, cls.method("func_manage"), greedy=True)
+
+        new_decoratable_normal_funcdef_stmt = trace_attach(
+            cls.decoratable_normal_funcdef_stmt_ref,
+            cls.method("decoratable_funcdef_stmt_handle"),
+        )
+        cls.decoratable_normal_funcdef_stmt <<= Wrap(new_decoratable_normal_funcdef_stmt, cls.method("func_manage"), greedy=True)
+
+        new_decoratable_async_funcdef_stmt = trace_attach(
+            cls.decoratable_async_funcdef_stmt_ref,
+            cls.method("decoratable_funcdef_stmt_handle", is_async=True),
+        )
+        cls.decoratable_async_funcdef_stmt <<= Wrap(new_decoratable_async_funcdef_stmt, cls.method("func_manage"), greedy=True)
+
+        # handle parsing_context for type aliases
         cls.type_param <<= trace_attach(cls.type_param_ref, cls.method("type_param_handle"))
 
         new_type_alias_stmt = trace_attach(cls.type_alias_stmt_ref, cls.method("type_alias_stmt_handle"))
@@ -614,7 +626,6 @@ class Compiler(Grammar, pickleable_obj):
         cls.name_match_funcdef <<= trace_attach(cls.name_match_funcdef_ref, cls.method("name_match_funcdef_handle"))
         cls.op_match_funcdef <<= trace_attach(cls.op_match_funcdef_ref, cls.method("op_match_funcdef_handle"))
         cls.yield_from <<= trace_attach(cls.yield_from_ref, cls.method("yield_from_handle"))
-        cls.stmt_lambdef <<= trace_attach(cls.stmt_lambdef_ref, cls.method("stmt_lambdef_handle"))
         cls.typedef <<= trace_attach(cls.typedef_ref, cls.method("typedef_handle"))
         cls.typedef_default <<= trace_attach(cls.typedef_default_ref, cls.method("typedef_handle"))
         cls.unsafe_typedef_default <<= trace_attach(cls.unsafe_typedef_default_ref, cls.method("unsafe_typedef_handle"))
@@ -631,16 +642,6 @@ class Compiler(Grammar, pickleable_obj):
         cls.anon_namedtuple <<= trace_attach(cls.anon_namedtuple_ref, cls.method("anon_namedtuple_handle"))
         cls.base_match_for_stmt <<= trace_attach(cls.base_match_for_stmt_ref, cls.method("base_match_for_stmt_handle"))
         cls.unsafe_typedef_tuple <<= trace_attach(cls.unsafe_typedef_tuple_ref, cls.method("unsafe_typedef_tuple_handle"))
-
-        # handle normal and async function definitions
-        cls.decoratable_normal_funcdef_stmt <<= trace_attach(
-            cls.decoratable_normal_funcdef_stmt_ref,
-            cls.method("decoratable_funcdef_stmt_handle"),
-        )
-        cls.decoratable_async_funcdef_stmt <<= trace_attach(
-            cls.decoratable_async_funcdef_stmt_ref,
-            cls.method("decoratable_funcdef_stmt_handle", is_async=True),
-        )
 
         # these handlers just do strict/target checking
         cls.u_string <<= trace_attach(cls.u_string_ref, cls.method("u_string_check"))
@@ -1578,9 +1579,9 @@ class Compiler(Grammar, pickleable_obj):
             if not func_args or func_args == args:
                 tre_recurse = "continue"
             elif mock_var is None:
-                tre_recurse = func_args + " = " + args + "\ncontinue"
+                tre_recurse = tuple_str_of_str(func_args) + " = " + tuple_str_of_str(args) + "\ncontinue"
             else:
-                tre_recurse = func_args + " = " + mock_var + "(" + args + ")" + "\ncontinue"
+                tre_recurse = tuple_str_of_str(func_args) + " = " + mock_var + "(" + args + ")" + "\ncontinue"
 
             tre_check_var = self.get_temp_var("tre_check")
             return handle_indentation(
@@ -1742,7 +1743,7 @@ else:
         func_code = "".join(lines)
         return func_code, tco, tre
 
-    def proc_funcdef(self, original, loc, decorators, funcdef, is_async):
+    def proc_funcdef(self, original, loc, decorators, funcdef, is_async, in_method):
         """Determines if TCO or TRE can be done and if so does it,
         handles dotted function names, and universalizes async functions."""
         # process tokens
@@ -1863,7 +1864,8 @@ else:
             attempt_tre = (
                 func_name is not None
                 and not is_gen
-                # tre does not work with decorators, though tco does
+                # tre does not work with methods or decorators (though tco does)
+                and not in_method
                 and not decorators
             )
             if attempt_tre:
@@ -1916,7 +1918,7 @@ else:
                                 i=i,
                             ),
                         )
-                    mock_body_lines.append("return " + func_args)
+                    mock_body_lines.append("return " + tuple_str_of_str(func_args))
                     mock_def = handle_indentation(
                         """
 def {mock_var}({mock_paramdef}):
@@ -2001,7 +2003,7 @@ if {store_var} is not _coconut_sentinel:
             # look for functions
             if line.startswith(funcwrapper):
                 func_id = int(line[len(funcwrapper):])
-                original, loc, decorators, funcdef, is_async = self.get_ref("func", func_id)
+                original, loc, decorators, funcdef, is_async, in_method = self.get_ref("func", func_id)
 
                 # process inner code
                 decorators = self.deferred_code_proc(decorators, add_code_at_start=True, ignore_names=ignore_names, **kwargs)
@@ -2020,7 +2022,7 @@ if {store_var} is not _coconut_sentinel:
 
                 out.append(bef_ind)
                 out.extend(pre_def_lines)
-                out.append(self.proc_funcdef(original, loc, decorators, "".join(post_def_lines), is_async))
+                out.append(self.proc_funcdef(original, loc, decorators, "".join(post_def_lines), is_async, in_method))
                 out.append(aft_ind)
 
             # look for add_code_before regexes
@@ -3105,7 +3107,7 @@ if not {check_var}:
             decorators, funcdef = tokens
         else:
             raise CoconutInternalException("invalid function definition tokens", tokens)
-        return funcwrapper + self.add_ref("func", (original, loc, decorators, funcdef, is_async)) + "\n"
+        return funcwrapper + self.add_ref("func", (original, loc, decorators, funcdef, is_async, self.in_method)) + "\n"
 
     def await_expr_handle(self, original, loc, tokens):
         """Check for Python 3.5 await expression."""
@@ -3260,7 +3262,7 @@ __annotations__["{name}"] = {annotation}
         """Handle type alias statements."""
         if len(tokens) == 2:
             name, typedef = tokens
-            paramdefs = []
+            paramdefs = ()
         else:
             name, paramdefs, typedef = tokens
         return "".join(paramdefs) + self.typed_assign_stmt_handle([
@@ -3716,12 +3718,19 @@ for {match_to_var} in {item}:
         cls_context = self.current_parsing_context("class")
         if cls_context is not None:
             in_method, cls_context["in_method"] = cls_context["in_method"], True
-            try:
+        try:
+            # handles support for function type variables
+            with self.type_alias_stmt_manage():
                 yield
-            finally:
+        finally:
+            if cls_context is not None:
                 cls_context["in_method"] = in_method
-        else:
-            yield
+
+    @property
+    def in_method(self):
+        """Determine if currently in a method."""
+        cls_context = self.current_parsing_context("class")
+        return cls_context is not None and cls_context["name"] is not None and cls_context["in_method"]
 
     def name_handle(self, original, loc, tokens, assign=False):
         """Handle the given base name."""
@@ -3771,8 +3780,8 @@ for {match_to_var} in {item}:
             else:
                 return "_coconut_exec"
         elif not assign and name in super_names and not self.target.startswith("3"):
-            cls_context = self.current_parsing_context("class")
-            if cls_context is not None and cls_context["name"] is not None and cls_context["in_method"]:
+            if self.in_method:
+                cls_context = self.current_parsing_context("class")
                 enclosing_cls = cls_context["name_prefix"] + cls_context["name"]
                 # temp_marker will be set back later, but needs to be a unique name until then for add_code_before
                 temp_marker = self.get_temp_var("super")

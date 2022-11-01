@@ -1398,7 +1398,6 @@ class Grammar(object):
     lambdef_base = classic_lambdef | new_lambdef | implicit_lambdef
 
     stmt_lambdef = Forward()
-    stmt_lambdef_body = Forward()
     match_guard = Optional(keyword("if").suppress() + namedexpr_test)
     closing_stmt = longest(new_testlist_star_expr("tests"), unsafe_simple_stmt_item)
     stmt_lambdef_match_params = Group(lparen.suppress() + match_args_list + match_guard + rparen.suppress())
@@ -1408,7 +1407,7 @@ class Grammar(object):
         | stmt_lambdef_match_params,
         default="(_=None)",
     )
-    stmt_lambdef_body_ref = (
+    stmt_lambdef_body = (
         Group(OneOrMore(simple_stmt_item + semicolon.suppress())) + Optional(closing_stmt)
         | Group(ZeroOrMore(simple_stmt_item + semicolon.suppress())) + closing_stmt
     )
@@ -1795,7 +1794,6 @@ class Grammar(object):
     with_stmt = Forward()
 
     return_typedef = Forward()
-    func_suite = Forward()
     name_funcdef = trace(condense(dotted_setname + parameters))
     op_tfpdef = unsafe_typedef_default | condense(setname + Optional(default))
     op_funcdef_arg = setname | condense(lparen.suppress() + op_tfpdef + rparen.suppress())
@@ -1811,12 +1809,10 @@ class Grammar(object):
     return_typedef_ref = arrow.suppress() + typedef_test
     end_func_colon = return_typedef + colon.suppress() | colon
     base_funcdef = op_funcdef | name_funcdef
-    func_suite_ref = nocolon_suite
-    funcdef = trace(addspace(keyword("def") + condense(base_funcdef + end_func_colon + func_suite)))
+    funcdef = trace(addspace(keyword("def") + condense(base_funcdef + end_func_colon + nocolon_suite)))
 
     name_match_funcdef = Forward()
     op_match_funcdef = Forward()
-    func_suite_tokens = Forward()
     op_match_funcdef_arg = Group(
         Optional(
             Group(
@@ -1832,7 +1828,7 @@ class Grammar(object):
     name_match_funcdef_ref = keyword("def").suppress() + dotted_setname + lparen.suppress() + match_args_list + match_guard + rparen.suppress()
     op_match_funcdef_ref = keyword("def").suppress() + op_match_funcdef_arg + op_funcdef_name + op_match_funcdef_arg + match_guard
     base_match_funcdef = trace(op_match_funcdef | name_match_funcdef)
-    func_suite_tokens_ref = (
+    func_suite = (
         attach(simple_stmt, make_suite_handle)
         | (
             newline.suppress()
@@ -1846,7 +1842,7 @@ class Grammar(object):
         attach(
             base_match_funcdef
             + end_func_colon
-            - func_suite_tokens,
+            - func_suite,
             join_match_funcdef,
         ),
     )
@@ -1866,7 +1862,6 @@ class Grammar(object):
         where_handle,
     )
 
-    math_funcdef_suite = Forward()
     implicit_return = (
         invalid_syntax(return_stmt, "expected expression but got return statement")
         | attach(new_testlist_star_expr, implicit_return_handle)
@@ -1882,7 +1877,7 @@ class Grammar(object):
         | implicit_return_where
     )
     math_funcdef_body = condense(ZeroOrMore(~(implicit_return_stmt + dedent) + stmt) - implicit_return_stmt)
-    math_funcdef_suite_ref = (
+    math_funcdef_suite = (
         attach(implicit_return_stmt, make_suite_handle)
         | condense(newline - indent - math_funcdef_body - dedent)
     )
@@ -1977,6 +1972,14 @@ class Grammar(object):
     )
     yield_funcdef = attach(yield_normal_funcdef | yield_match_funcdef, yield_funcdef_handle)
 
+    normal_funcdef_stmt = (
+        funcdef
+        | math_funcdef
+        | math_match_funcdef
+        | match_funcdef
+        | yield_funcdef
+    )
+
     datadef = Forward()
     data_args = Group(
         Optional(
@@ -2036,13 +2039,6 @@ class Grammar(object):
     )
 
     decoratable_normal_funcdef_stmt = Forward()
-    normal_funcdef_stmt = (
-        funcdef
-        | math_funcdef
-        | math_match_funcdef
-        | match_funcdef
-        | yield_funcdef
-    )
     decoratable_normal_funcdef_stmt_ref = Optional(decorators) + normal_funcdef_stmt
 
     decoratable_async_funcdef_stmt = Forward()

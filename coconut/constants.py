@@ -704,7 +704,8 @@ all_reqs = {
     "mypy": (
         "mypy[python2]",
         "types-backports",
-        ("typing_extensions", "py3"),
+        ("typing_extensions", "py==35"),
+        ("typing_extensions", "py36"),
     ),
     "watch": (
         "watchdog",
@@ -716,7 +717,8 @@ all_reqs = {
         ("trollius", "py2;cpy"),
         ("aenum", "py<34"),
         ("dataclasses", "py==36"),
-        ("typing_extensions", "py3"),
+        ("typing_extensions", "py==35"),
+        ("typing_extensions", "py36"),
     ),
     "dev": (
         ("pre-commit", "py3"),
@@ -758,6 +760,7 @@ min_versions = {
     "pydata-sphinx-theme": (0, 11),
     "myst-parser": (0, 18),
     "mypy[python2]": (0, 982),
+    ("typing_extensions", "py36"): (4, 1),
 
     # pinned reqs: (must be added to pinned_reqs below)
 
@@ -771,7 +774,7 @@ min_versions = {
     ("jupytext", "py3"): (1, 8),
     ("jupyterlab", "py35"): (2, 2),
     "xonsh": (0, 9),
-    ("typing_extensions", "py3"): (3, 10),
+    ("typing_extensions", "py==35"): (3, 10),
     # don't upgrade this to allow all versions
     ("prompt_toolkit", "mark3"): (1,),
     # don't upgrade this; it breaks on Python 2.6
@@ -804,7 +807,7 @@ pinned_reqs = (
     ("jupytext", "py3"),
     ("jupyterlab", "py35"),
     "xonsh",
-    ("typing_extensions", "py3"),
+    ("typing_extensions", "py==35"),
     ("prompt_toolkit", "mark3"),
     "pytest",
     "vprof",

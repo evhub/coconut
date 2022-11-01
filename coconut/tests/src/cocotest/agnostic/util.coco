@@ -31,6 +31,16 @@ def assert_raises(c, exc=Exception):
     else:
         raise AssertionError(f"{c} failed to raise exception {exc}")
 
+try:
+    prepattern()  # type: ignore
+except NameError, TypeError:
+    def prepattern(base_func, **kwargs):  # type: ignore
+        """Decorator to add a new case to a pattern-matching function,
+        where the new case is checked first."""
+        def pattern_prepender(func):
+            return addpattern(func, base_func, **kwargs)
+        return pattern_prepender
+
 # Old functions:
 old_fmap = fmap$(starmap_over_mappings=True)
 
@@ -377,6 +387,11 @@ def return_in_loop(x):
 class methtest:
     def meth(self, arg) = meth(self, arg)
     def tail_call_meth(self, arg) = self.meth(arg)
+    @staticmethod
+    def recurse_n_times(n):
+        if n == 0: return "done!"
+        return methtest.recurse_n_times(n-1)
+
 def meth(self, arg) = arg
 
 def un_treable_func1(x, g=-> _):
@@ -450,6 +465,24 @@ def tricky_tco(func):
 
     except TypeError:
         return func()
+
+weird_recursor_ns = [100]
+
+def weird_recursor(n):
+    if n == 0:
+        weird_recursor_ns.pop()
+        return True
+    weird_recursor_ns[-1] -= 1
+    return weird_recursor()  # type: ignore
+
+@prepattern(weird_recursor)  # type: ignore
+match def weird_recursor() = weird_recursor(weird_recursor_ns[-1])
+
+def summer():
+    if not summer.args:
+        return summer.acc
+    summer.acc += summer.args.pop()
+    return summer()
 
 
 # Data Blocks:
@@ -834,16 +867,6 @@ def SHOPeriodTerminate(X, t, params):
     return 0     # keep going
 
 # Multiple dispatch:
-try:
-    prepattern()  # type: ignore
-except NameError, TypeError:
-    def prepattern(base_func, **kwargs):  # type: ignore
-        """Decorator to add a new case to a pattern-matching function,
-        where the new case is checked first."""
-        def pattern_prepender(func):
-            return addpattern(func, base_func, **kwargs)
-        return pattern_prepender
-
 def add_int_or_str_1(int() as x) = x + 1
 addpattern def add_int_or_str_1(str() as x) = x + "1"  # type: ignore
 

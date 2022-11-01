@@ -967,6 +967,14 @@ def tuple_str_of(items, add_quotes=False, add_parens=True):
     return out
 
 
+def tuple_str_of_str(argstr, add_parens=True):
+    """Make a tuple repr of the given comma-delimited argstr."""
+    out = argstr + ("," if argstr else "")
+    if add_parens:
+        out = "(" + out + ")"
+    return out
+
+
 def split_comment(line, move_indents=False):
     """Split line into base and comment."""
     if move_indents:

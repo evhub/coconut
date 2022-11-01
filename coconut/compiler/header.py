@@ -454,10 +454,11 @@ __anext__ = _coconut.asyncio.coroutine(_coconut_anext_ns["__anext__"])
                 (3, 5),
                 if_ge="import typing",
                 if_lt='''
-class typing{object}:
-    __slots__ = ()
+class typing_mock{object}:
+    TYPE_CHECKING = False
     def __getattr__(self, name):
         raise _coconut.ImportError("the typing module is not available at runtime in Python 3.4 or earlier; try hiding your typedefs behind an 'if TYPE_CHECKING:' block")
+typing = typing_mock()
                 '''.format(**format_dict),
                 indent=1,
             ),
@@ -495,24 +496,9 @@ try:
 except ImportError:
     class you_need_to_install_typing_extensions{object}:
         __slots__ = ()
-    TypeVarTuple = you_need_to_install_typing_extensions()
-    class MockUnpack{object}:
-        __slots__ = ()
-        def __getitem__(self, _): return self
-    Unpack = MockUnpack()
+    TypeVarTuple = Unpack = you_need_to_install_typing_extensions()
 typing.TypeVarTuple = TypeVarTuple
 typing.Unpack = Unpack
-                '''.format(**format_dict),
-                indent=1,
-                newline=True,
-            ),
-            import_typing_Generic=pycondition(
-                (3, 5),
-                if_lt='''
-class MockGeneric{object}:
-    __slots__ = ()
-    def __getitem__(self, _): return self
-typing.Generic = MockGeneric()
                 '''.format(**format_dict),
                 indent=1,
                 newline=True,
