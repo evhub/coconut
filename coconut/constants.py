@@ -74,6 +74,7 @@ PY35 = sys.version_info >= (3, 5)
 PY36 = sys.version_info >= (3, 6)
 PY37 = sys.version_info >= (3, 7)
 PY38 = sys.version_info >= (3, 8)
+PY39 = sys.version_info >= (3, 9)
 PY310 = sys.version_info >= (3, 10)
 PY311 = sys.version_info >= (3, 11)
 IPY = (
@@ -84,6 +85,10 @@ MYPY = (
     PY37
     and not WINDOWS
     and not PYPY
+)
+XONSH = (
+    PY35
+    and not (PYPY and PY39)
 )
 
 py_version_str = sys.version.split()[0]
