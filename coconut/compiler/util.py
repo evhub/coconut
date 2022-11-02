@@ -307,14 +307,14 @@ def add_action(item, action, make_copy=None):
     """Add a parse action to the given item."""
     if make_copy is None:
         item_ref_count = sys.getrefcount(item) if CPYTHON else float("inf")
-        internal_assert(item_ref_count >= temp_grammar_item_ref_count, "add_action got item with too low ref count", (item, type(item), item_ref_count))
+        internal_assert(lambda: item_ref_count >= temp_grammar_item_ref_count, "add_action got item with too low ref count", (item, type(item), item_ref_count))
         make_copy = item_ref_count > temp_grammar_item_ref_count
     if make_copy:
         item = item.copy()
     return item.addParseAction(action)
 
 
-def attach(item, action, ignore_no_tokens=None, ignore_one_token=None, ignore_tokens=None, trim_arity=None, **kwargs):
+def attach(item, action, ignore_no_tokens=None, ignore_one_token=None, ignore_tokens=None, trim_arity=None, make_copy=None, **kwargs):
     """Set the parse action for the given item to create a node in the computation graph."""
     if ignore_tokens is None:
         ignore_tokens = getattr(action, "ignore_tokens", False)
@@ -335,7 +335,7 @@ def attach(item, action, ignore_no_tokens=None, ignore_one_token=None, ignore_to
         if not trim_arity:
             kwargs["trim_arity"] = trim_arity
         action = partial(ComputationNode, action, **kwargs)
-    return add_action(item, action)
+    return add_action(item, action, make_copy)
 
 
 def trace_attach(*args, **kwargs):
@@ -767,7 +767,7 @@ def stores_loc_action(loc, tokens):
 stores_loc_action.ignore_tokens = True
 
 
-stores_loc_item = attach(Empty(), stores_loc_action)
+stores_loc_item = attach(Empty(), stores_loc_action, make_copy=False)
 
 
 def disallow_keywords(kwds, with_suffix=None):
