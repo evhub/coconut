@@ -75,6 +75,7 @@ PY36 = sys.version_info >= (3, 6)
 PY37 = sys.version_info >= (3, 7)
 PY38 = sys.version_info >= (3, 8)
 PY310 = sys.version_info >= (3, 10)
+PY311 = sys.version_info >= (3, 11)
 IPY = (
     ((PY2 and not PY26) or PY35)
     and not (PYPY and WINDOWS)
@@ -116,7 +117,7 @@ embed_on_internal_exc = False
 assert not embed_on_internal_exc or DEVELOP, "embed_on_internal_exc should never be enabled on non-develop build"
 
 # should be the minimal ref count observed by attach
-temp_grammar_item_ref_count = 5
+temp_grammar_item_ref_count = 3 if PY311 else 5
 
 minimum_recursion_limit = 128
 default_recursion_limit = 4096

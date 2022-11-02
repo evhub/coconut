@@ -627,8 +627,7 @@ class Command(object):
         try:
             received = self.prompt.input(more)
         except KeyboardInterrupt:
-            logger.print()
-            logger.printerr("KeyboardInterrupt")
+            logger.printerr("\nKeyboardInterrupt")
         except EOFError:
             logger.print()
             self.exit_runner()
