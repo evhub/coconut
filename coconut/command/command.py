@@ -191,6 +191,7 @@ class Command(object):
             unset_fast_pyparsing_reprs()
         if args.profile:
             collect_timing_info()
+        logger.enable_colors()
 
         logger.log(cli_version)
         if original_args is not None:

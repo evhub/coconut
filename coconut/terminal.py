@@ -20,6 +20,7 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 from coconut.root import *  # NOQA
 
 import sys
+import os
 import traceback
 import logging
 from contextlib import contextmanager
@@ -62,6 +63,9 @@ from coconut.exceptions import (
 # -----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
 # -----------------------------------------------------------------------------------------------------------------------
+
+ansii_reset = ansii_escape + "[0m"
+
 
 def isatty(stream, default=None):
     """Check if a stream is a terminal interface."""
@@ -175,6 +179,7 @@ class Logger(object):
     quiet = False
     path = None
     name = None
+    colors_enabled = False
     tracing = False
     trace_ind = 0
 
@@ -183,6 +188,17 @@ class Logger(object):
         if other is not None:
             self.copy_from(other)
         self.patch_logging()
+
+    @classmethod
+    def enable_colors(cls):
+        """Attempt to enable CLI colors."""
+        if not cls.colors_enabled:
+            # necessary to resolve https://bugs.python.org/issue40134
+            try:
+                os.system("")
+            except Exception:
+                logger.log_exc()
+            cls.colors_enabled = True
 
     def copy_from(self, other):
         """Copy other onto self."""
@@ -212,6 +228,9 @@ class Logger(object):
         if use_color is False or (use_color is None and not isatty(file)):
             color = None
 
+        if color:
+            self.enable_colors()
+
         raw_message = " ".join(str(msg) for msg in messages)
         # if there's nothing to display but there is a sig, display the sig
         if not raw_message and sig:
@@ -225,7 +244,7 @@ class Logger(object):
                 line = sig + line
             components.append(line)
         if color:
-            components.append(ansii_escape + "[0m")
+            components.append(ansii_reset)
         components.append(end)
         full_message = "".join(components)
 
