@@ -699,17 +699,19 @@ all_reqs = {
         ("ipykernel", "py2"),
         ("ipykernel", "py3"),
         ("jupyter-client", "py2"),
-        ("jupyter-client", "py3"),
+        ("jupyter-client", "py==35"),
+        ("jupyter-client", "py36"),
         "jedi",
+        ("pywinpty", "py2;windows"),
     ),
     "jupyter": (
         "jupyter",
         ("jupyter-console", "py2"),
-        ("jupyter-console", "py3"),
+        ("jupyter-console", "py==35"),
+        ("jupyter-console", "py36"),
         ("jupyterlab", "py35"),
         ("jupytext", "py3"),
         "papermill",
-        ("pywinpty", "py2;windows"),
     ),
     "mypy": (
         "mypy[python2]",
@@ -771,16 +773,16 @@ min_versions = {
     "myst-parser": (0, 18),
     "mypy[python2]": (0, 982),
     ("typing_extensions", "py36"): (4, 1),
+    ("jupyter-client", "py36"): (7,),
+    ("jupyter-console", "py36"): (6, 4),
 
     # pinned reqs: (must be added to pinned_reqs below)
 
-    # latest version supported on Python 2
-    ("jupyter-client", "py2"): (5, 3),
     # don't upgrade these; they break on Python 3.5
     ("ipykernel", "py3"): (5, 5),
     ("ipython", "py3"): (7, 9),
-    ("jupyter-console", "py3"): (6, 1),
-    ("jupyter-client", "py3"): (6, 1, 12),
+    ("jupyter-console", "py==35"): (6, 1),
+    ("jupyter-client", "py==35"): (6, 1, 12),
     ("jupytext", "py3"): (1, 8),
     ("jupyterlab", "py35"): (2, 2),
     "xonsh": (0, 9),
@@ -794,6 +796,7 @@ min_versions = {
     # don't upgrade this; it breaks on Python 3.4
     "pygments": (2, 3),
     # don't upgrade these; they break on Python 2
+    ("jupyter-client", "py2"): (5, 3),
     ("pywinpty", "py2;windows"): (0, 5),
     ("jupyter-console", "py2"): (5, 2),
     ("ipython", "py2"): (5, 4),
@@ -803,17 +806,17 @@ min_versions = {
     "papermill": (1, 2),
     # don't upgrade this; it breaks with old IPython versions
     "jedi": (0, 17),
-    # Coconut works best on pyparsing 2
+    # Coconut requires pyparsing 2
     "pyparsing": (2, 4, 7),
 }
 
 # should match the reqs with comments above
 pinned_reqs = (
-    ("jupyter-client", "py3"),
     ("jupyter-client", "py2"),
     ("ipykernel", "py3"),
     ("ipython", "py3"),
-    ("jupyter-console", "py3"),
+    ("jupyter-console", "py==35"),
+    ("jupyter-client", "py==35"),
     ("jupytext", "py3"),
     ("jupyterlab", "py35"),
     "xonsh",
@@ -838,7 +841,7 @@ pinned_reqs = (
 #  that the element corresponding to the last None should be incremented
 _ = None
 max_versions = {
-    ("jupyter-client", "py3"): _,
+    ("jupyter-client", "py==35"): _,
     "pyparsing": _,
     "cPyparsing": (_, _, _),
     ("prompt_toolkit", "mark2"): _,
