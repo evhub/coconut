@@ -1457,7 +1457,9 @@ The syntax for a statement lambda is
 ```
 [async] [match] def (arguments) -> statement; statement; ...
 ```
-where `arguments` can be standard function arguments or [pattern-matching function definition](#pattern-matching-functions) arguments and `statement` can be an assignment statement or a keyword statement. If the last `statement` (not followed by a semicolon) is an `expression`, it will automatically be returned.
+where `arguments` can be standard function arguments or [pattern-matching function definition](#pattern-matching-functions) arguments and `statement` can be an assignment statement or a keyword statement. Note that the `async` and `match` keywords can be in any order.
+
+If the last `statement` (not followed by a semicolon) in a statement lambda is an `expression`, it will automatically be returned.
 
 Statement lambdas also support implicit lambda syntax such that `def -> _` is equivalent to `def (_=None) -> _` as well as explicitly marking them as pattern-matching such that `match def (x) -> x` will be a pattern-matching function.
 
@@ -2012,11 +2014,11 @@ Because this could have unintended and potentially damaging consequences, Coconu
 
 Coconut allows for assignment function definition that automatically returns the last line of the function body. An assignment function is constructed by substituting `=` for `:` after the function definition line. Thus, the syntax for assignment function definition is either
 ```coconut
-def <name>(<args>) = <expr>
+[async] def <name>(<args>) = <expr>
 ```
 for one-liners or
 ```coconut
-def <name>(<args>) =
+[async] def <name>(<args>) =
     <stmts>
     <expr>
 ```
@@ -2046,14 +2048,14 @@ print(binexp(5))
 
 Coconut pattern-matching functions are just normal functions, except where the arguments are patterns to be matched against instead of variables to be assigned to. The syntax for pattern-matching function definition is
 ```coconut
-[match] def <name>(<arg>, <arg>, ... [if <cond>]) [-> <return_type>]:
+[async] [match] def <name>(<arg>, <arg>, ... [if <cond>]) [-> <return_type>]:
     <body>
 ```
 where `<arg>` is defined as
 ```coconut
 [*|**] <pattern> [= <default>]
 ```
-where `<name>` is the name of the function, `<cond>` is an optional additional check, `<body>` is the body of the function, `<pattern>` is defined by Coconut's [`match` statement](#match), `<default>` is the optional default if no argument is passed, and `<return_type>` is the optional return type annotation (note that argument type annotations are not supported for pattern-matching functions). The `match` keyword at the beginning is optional, but is sometimes necessary to disambiguate pattern-matching function definition from normal function definition, since Python function definition will always take precedence.
+where `<name>` is the name of the function, `<cond>` is an optional additional check, `<body>` is the body of the function, `<pattern>` is defined by Coconut's [`match` statement](#match), `<default>` is the optional default if no argument is passed, and `<return_type>` is the optional return type annotation (note that argument type annotations are not supported for pattern-matching functions). The `match` keyword at the beginning is optional, but is sometimes necessary to disambiguate pattern-matching function definition from normal function definition, since Python function definition will always take precedence. Note that the `async` and `match` keywords can be in any order.
 
 If `<pattern>` has a variable name (either directly or with `as`), the resulting pattern-matching function will support keyword arguments using that variable name.
 
@@ -2106,10 +2108,12 @@ _Can't be done without a complicated decorator definition and a long series of c
 
 Coconut supports the syntax
 ```
-yield def <name>(<args>):
+[async] yield def <name>(<args>):
     <body>
 ```
-to denote that you are explicitly defining a generator function. This is useful to ensure that, even if all the `yield`s in your function are removed, it'll always be a generator function. Explicit generator functions also support [pattern-matching syntax](#pattern-matching-functions), [infix function definition](#infix-functions), and [assignment function syntax](#assignment-functions) (though note that assignment function syntax here creates a generator return).
+to denote that you are explicitly defining a generator function. This is useful to ensure that, even if all the `yield`s in your function are removed, it'll always be a generator function. Note that the `async` and `yield` keywords can be in any order.
+
+Explicit generator functions also support [pattern-matching syntax](#pattern-matching-functions), [infix function definition](#infix-functions), and [assignment function syntax](#assignment-functions) (though note that assignment function syntax here creates a generator return).
 
 ##### Example
 
