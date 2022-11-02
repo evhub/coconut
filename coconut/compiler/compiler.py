@@ -1743,7 +1743,7 @@ else:
         func_code = "".join(lines)
         return func_code, tco, tre
 
-    def proc_funcdef(self, original, loc, decorators, funcdef, is_async, in_method):
+    def proc_funcdef(self, original, loc, decorators, funcdef, is_async, in_method, is_stmt_lambda):
         """Determines if TCO or TRE can be done and if so does it,
         handles dotted function names, and universalizes async functions."""
         # process tokens
@@ -1864,8 +1864,8 @@ else:
             attempt_tre = (
                 func_name is not None
                 and not is_gen
-                # tre does not work with methods or decorators (though tco does)
                 and not in_method
+                and not is_stmt_lambda
                 and not decorators
             )
             if attempt_tre:
@@ -2003,7 +2003,7 @@ if {store_var} is not _coconut_sentinel:
             # look for functions
             if line.startswith(funcwrapper):
                 func_id = int(line[len(funcwrapper):])
-                original, loc, decorators, funcdef, is_async, in_method = self.get_ref("func", func_id)
+                original, loc, decorators, funcdef, is_async, in_method, is_stmt_lambda = self.get_ref("func", func_id)
 
                 # process inner code
                 decorators = self.deferred_code_proc(decorators, add_code_at_start=True, ignore_names=ignore_names, **kwargs)
@@ -2022,7 +2022,7 @@ if {store_var} is not _coconut_sentinel:
 
                 out.append(bef_ind)
                 out.extend(pre_def_lines)
-                out.append(self.proc_funcdef(original, loc, decorators, "".join(post_def_lines), is_async, in_method))
+                out.append(self.proc_funcdef(original, loc, decorators, "".join(post_def_lines), is_async, in_method, is_stmt_lambda))
                 out.append(aft_ind)
 
             # look for add_code_before regexes
@@ -3071,43 +3071,57 @@ if not {check_var}:
     def stmt_lambdef_handle(self, original, loc, tokens):
         """Process multi-line lambdef statements."""
         if len(tokens) == 2:
-            params, stmts = tokens
+            params, stmts_toks = tokens
+            is_async = False
         elif len(tokens) == 3:
-            params, stmts, last = tokens
-            if "tests" in tokens:
+            async_kwd, params, stmts_toks = tokens
+            internal_assert(async_kwd == "async", "invalid stmt lambdef async kwd", async_kwd)
+            is_async = True
+        else:
+            raise CoconutInternalException("invalid statement lambda tokens", tokens)
+
+        if len(stmts_toks) == 1:
+            stmts, = stmts_toks
+        elif len(stmts_toks) == 2:
+            stmts, last = stmts_toks
+            if "tests" in stmts_toks:
                 stmts = stmts.asList() + ["return " + last]
             else:
                 stmts = stmts.asList() + [last]
         else:
-            raise CoconutInternalException("invalid statement lambda tokens", tokens)
+            raise CoconutInternalException("invalid statement lambda body tokens", stmts_toks)
 
         name = self.get_temp_var("lambda")
         body = openindent + "\n".join(stmts) + closeindent
 
         if isinstance(params, str):
-            self.add_code_before[name] = "def " + name + params + ":\n" + body
+            decorators = ""
+            funcdef = "def " + name + params + ":\n" + body
         else:
             match_tokens = [name] + list(params)
             before_colon, after_docstring = self.name_match_funcdef_handle(original, loc, match_tokens)
-            self.add_code_before[name] = (
-                "@_coconut_mark_as_match\n"
-                + before_colon
+            decorators = "@_coconut_mark_as_match\n"
+            funcdef = (
+                before_colon
                 + ":\n"
                 + after_docstring
                 + body
             )
 
+        self.add_code_before[name] = self.decoratable_funcdef_stmt_handle(original, loc, [decorators, funcdef], is_async, is_stmt_lambda=True)
+
         return name
 
-    def decoratable_funcdef_stmt_handle(self, original, loc, tokens, is_async=False):
+    def decoratable_funcdef_stmt_handle(self, original, loc, tokens, is_async=False, is_stmt_lambda=False):
         """Wraps the given function for later processing"""
         if len(tokens) == 1:
-            decorators, funcdef = "", tokens[0]
+            funcdef, = tokens
+            decorators = ""
         elif len(tokens) == 2:
             decorators, funcdef = tokens
         else:
             raise CoconutInternalException("invalid function definition tokens", tokens)
-        return funcwrapper + self.add_ref("func", (original, loc, decorators, funcdef, is_async, self.in_method)) + "\n"
+        return funcwrapper + self.add_ref("func", (original, loc, decorators, funcdef, is_async, self.in_method, is_stmt_lambda)) + "\n"
 
     def await_expr_handle(self, original, loc, tokens):
         """Check for Python 3.5 await expression."""

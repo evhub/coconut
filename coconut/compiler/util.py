@@ -812,7 +812,7 @@ def keyword(name, explicit_prefix=None, require_whitespace=False):
 boundary = regex_item(r"\b")
 
 
-def any_len_perm(*groups_and_elems):
+def any_len_perm_with_one_of_each_group(*groups_and_elems):
     """Matches any len permutation of elems that contains at least one of each group."""
     elems = []
     groups = defaultdict(list)
@@ -848,6 +848,17 @@ def any_len_perm(*groups_and_elems):
     if allow_none:
         out = Optional(out)
     return out
+
+
+def any_len_perm(*optional, **kwargs):
+    """Any length permutation of optional and required."""
+    required = kwargs.pop("required", ())
+    internal_assert(not kwargs, "invalid any_len_perm kwargs", kwargs)
+
+    groups_and_elems = []
+    groups_and_elems.extend(optional)
+    groups_and_elems.extend(enumerate(required))
+    return any_len_perm_with_one_of_each_group(*groups_and_elems)
 
 
 # -----------------------------------------------------------------------------------------------------------------------

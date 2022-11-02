@@ -96,7 +96,7 @@ def _coconut_tco(func):{COMMENT._coconut_tco_func_attr_is_used_in_main_coco}
                 wkref_func = None if wkref is None else wkref()
                 if wkref_func is call_func:
                     call_func = call_func._coconut_tco_func
-            result = call_func(*args, **kwargs)  # pass --no-tco to clean up your traceback
+            result = call_func(*args, **kwargs)  # use coconut --no-tco to clean up your traceback
             if not isinstance(result, _coconut_tail_call):
                 return result
             call_func, args, kwargs = result.func, result.args, result.kwargs

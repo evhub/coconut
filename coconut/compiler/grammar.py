@@ -1441,12 +1441,13 @@ class Grammar(object):
         | stmt_lambdef_match_params,
         default="(_=None)",
     )
-    stmt_lambdef_body = (
+    stmt_lambdef_body = Group(
         Group(OneOrMore(simple_stmt_item + semicolon.suppress())) + Optional(closing_stmt)
-        | Group(ZeroOrMore(simple_stmt_item + semicolon.suppress())) + closing_stmt
+        | Group(ZeroOrMore(simple_stmt_item + semicolon.suppress())) + closing_stmt,
     )
     general_stmt_lambdef = (
-        keyword("def").suppress()
+        Optional(async_kwd)
+        + keyword("def").suppress()
         + stmt_lambdef_params
         + arrow.suppress()
         + stmt_lambdef_body
@@ -1458,7 +1459,16 @@ class Grammar(object):
         + arrow.suppress()
         + stmt_lambdef_body
     )
-    stmt_lambdef_ref = general_stmt_lambdef | match_stmt_lambdef
+    async_match_stmt_lambdef = (
+        any_len_perm(
+            match_kwd.suppress(),
+            required=(async_kwd,),
+        ) + keyword("def").suppress()
+        + stmt_lambdef_match_params
+        + arrow.suppress()
+        + stmt_lambdef_body
+    )
+    stmt_lambdef_ref = general_stmt_lambdef | match_stmt_lambdef | async_match_stmt_lambdef
 
     lambdef <<= addspace(lambdef_base + test) | stmt_lambdef
     lambdef_no_cond = trace(addspace(lambdef_base + test_no_cond))
@@ -1970,17 +1980,17 @@ class Grammar(object):
                 match_kwd.suppress(),
                 # we don't suppress addpattern so its presence can be detected later
                 addpattern_kwd,
-                # makes async required
-                (1, async_kwd.suppress()),
+                required=(async_kwd.suppress(),),
             ) + (def_match_funcdef | math_match_funcdef),
         ),
     )
     async_yield_funcdef = attach(
         trace(
             any_len_perm(
-                # makes both required
-                (1, async_kwd.suppress()),
-                (2, keyword("yield").suppress()),
+                required=(
+                    async_kwd.suppress(),
+                    keyword("yield").suppress(),
+                ),
             ) + (funcdef | math_funcdef),
         ),
         yield_funcdef_handle,
@@ -1992,9 +2002,10 @@ class Grammar(object):
                     match_kwd.suppress(),
                     # we don't suppress addpattern so its presence can be detected later
                     addpattern_kwd,
-                    # makes both required
-                    (1, async_kwd.suppress()),
-                    (2, keyword("yield").suppress()),
+                    required=(
+                        async_kwd.suppress(),
+                        keyword("yield").suppress(),
+                    ),
                 ) + (def_match_funcdef | math_match_funcdef),
             ),
         ),
@@ -2014,8 +2025,7 @@ class Grammar(object):
                 match_kwd.suppress(),
                 # we don't suppress addpattern so its presence can be detected later
                 addpattern_kwd,
-                # makes yield required
-                (1, keyword("yield").suppress()),
+                required=(keyword("yield").suppress(),),
             ) + (def_match_funcdef | math_match_funcdef),
         ),
     )
