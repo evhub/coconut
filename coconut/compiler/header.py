@@ -460,7 +460,7 @@ typing = typing_mock()
             '''.format(**format_dict),
             indent=1,
         ),
-        # all typing_extensions imports must be added to the __coconut__ stub file
+        # all typing_extensions imports must be added to the _coconut stub file
         import_typing_TypeAlias_ParamSpec_Concatenate=pycondition(
             (3, 10),
             if_lt='''

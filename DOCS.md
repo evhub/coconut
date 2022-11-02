@@ -1624,6 +1624,8 @@ Furthermore, when compiling type annotations to Python 3 versions without [PEP 5
 
 Additionally, Coconut adds special syntax for making type annotations easier and simpler to write. When inside of a type annotation, Coconut treats certain syntax constructs differently, compiling them to type annotations instead of what they would normally represent. Specifically, Coconut applies the following transformations:
 ```coconut
+<type> | <type>
+    => typing.Union[<type>, <type>]
 (<type>; <type>)
     => typing.Tuple[<type>, <type>]
 <type>?
@@ -1642,10 +1644,10 @@ Additionally, Coconut adds special syntax for making type annotations easier and
     => typing.Callable[..., <ret>]
 (<args>, **<ParamSpec>) -> <ret>
     => typing.Callable[typing.Concatenate[<args>, <ParamSpec>], <ret>]
-<type> | <type>
-    => typing.Union[<type>, <type>]
+async (<args>) -> <ret>
+    => typing.Callable[[<args>], typing.Awaitable[<ret>]]
 ```
-where `typing` is the Python 3.5 built-in [`typing` module](https://docs.python.org/3/library/typing.html).
+where `typing` is the Python 3.5 built-in [`typing` module](https://docs.python.org/3/library/typing.html). For more information on the Callable syntax, see [PEP 677](https://peps.python.org/pep-0677), which Coconut fully supports.
 
 _Note: The transformation to `Union` is not done on Python 3.10 as Python 3.10 has native [PEP 604](https://www.python.org/dev/peps/pep-0604) support._
 

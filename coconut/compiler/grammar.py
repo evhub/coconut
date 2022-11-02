@@ -338,24 +338,33 @@ def lambdef_handle(tokens):
 
 def typedef_callable_handle(loc, tokens):
     """Process -> to Callable inside type annotations."""
-    if len(tokens) == 1:
-        ret_typedef, = tokens
+    if len(tokens) == 2:
+        async_kwd, ret_typedef = tokens
         args_typedef = "..."
-    elif len(tokens) == 2:
-        args_tokens, ret_typedef = tokens
+    elif len(tokens) == 3:
+        async_kwd, args_tokens, ret_typedef = tokens
         args = []
         paramspec = None
+        ellipsis = None
         for arg_toks in args_tokens:
             if paramspec is not None:
                 raise CoconutDeferredSyntaxError("ParamSpecs must come at end of Callable parameters", loc)
-            elif len(arg_toks) == 1:
+            elif ellipsis is not None:
+                raise CoconutDeferredSyntaxError("only a single ellipsis is supported in Callable parameters", loc)
+            elif "arg" in arg_toks:
                 arg, = arg_toks
                 args.append(arg)
+            elif "paramspec" in arg_toks:
+                paramspec, = arg_toks
+            elif "ellipsis" in arg_toks:
+                if args or paramspec is not None:
+                    raise CoconutDeferredSyntaxError("only a single ellipsis is supported in Callable parameters", loc)
+                ellipsis, = arg_toks
             else:
-                stars, arg = arg_toks
-                internal_assert(stars == "**", "invalid typedef_callable_arg", arg_toks)
-                paramspec = arg
-        if paramspec is None:
+                raise CoconutInternalException("invalid typedef_callable arg tokens", arg_toks)
+        if ellipsis is not None:
+            args_typedef = ellipsis
+        elif paramspec is None:
             args_typedef = "[" + ", ".join(args) + "]"
         elif not args:
             args_typedef = paramspec
@@ -363,6 +372,9 @@ def typedef_callable_handle(loc, tokens):
             args_typedef = "_coconut.typing.Concatenate[" + ", ".join(args) + ", " + paramspec + "]"
     else:
         raise CoconutInternalException("invalid Callable typedef tokens", tokens)
+    if async_kwd:
+        internal_assert(async_kwd == "async", "invalid typedef_callable async kwd", async_kwd)
+        ret_typedef = "_coconut.typing.Awaitable[" + ret_typedef + "]"
     return "_coconut.typing.Callable[" + args_typedef + ", " + ret_typedef + "]"
 
 
@@ -1474,16 +1486,23 @@ class Grammar(object):
     lambdef_no_cond = trace(addspace(lambdef_base + test_no_cond))
 
     typedef_callable_arg = Group(
-        test
-        | dubstar + refname,
+        test("arg")
+        | (dubstar.suppress() + refname)("paramspec"),
     )
     typedef_callable_params = Optional(
         Group(
-            lparen.suppress() + Optional(tokenlist(typedef_callable_arg, comma)) + rparen.suppress()
-            | Group(negable_atom_item),
+            labeled_group(maybeparens(lparen, ellipsis_tokens, rparen), "ellipsis")
+            | lparen.suppress() + Optional(tokenlist(typedef_callable_arg, comma)) + rparen.suppress()
+            | labeled_group(negable_atom_item, "arg"),
         ),
     )
-    unsafe_typedef_callable = attach(typedef_callable_params + arrow.suppress() + typedef_test, typedef_callable_handle)
+    unsafe_typedef_callable = attach(
+        Optional(async_kwd, default="")
+        + typedef_callable_params
+        + arrow.suppress()
+        + typedef_test,
+        typedef_callable_handle,
+    )
 
     unsafe_typedef_trailer = (  # use special type signifier for item_handle
         Group(fixto(lbrack + rbrack, "type:[]"))

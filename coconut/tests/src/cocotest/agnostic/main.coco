@@ -1214,6 +1214,9 @@ def main_test() -> bool:
     mut = [0]
     (def -> mut[0] += 1)()
     assert mut[0] == 1
+    to_int: ... -> int = -> 5
+    to_int_: (...) -> int = -> 5
+    assert to_int() + to_int_() == 10
     return True
 
 def test_asyncio() -> bool:
