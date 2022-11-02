@@ -760,7 +760,8 @@ class Grammar(object):
     endline_ref = condense(OneOrMore(Literal("\n")))
     lineitem = ZeroOrMore(comment) + endline
     newline = condense(OneOrMore(lineitem))
-    end_simple_stmt_item = FollowedBy(semicolon | newline)
+    # rparen handles simple stmts ending parenthesized stmt lambdas
+    end_simple_stmt_item = FollowedBy(semicolon | newline | rparen)
 
     start_marker = StringStart()
     moduledoc_marker = condense(ZeroOrMore(lineitem) - Optional(moduledoc_item))
@@ -1767,7 +1768,13 @@ class Grammar(object):
     )
     cases_stmt_ref = cases_stmt_co_syntax | cases_stmt_py_syntax
 
-    assert_stmt = addspace(keyword("assert") - testlist)
+    assert_stmt = addspace(
+        keyword("assert")
+        - (
+            lparen.suppress() + testlist + rparen.suppress() + end_simple_stmt_item
+            | testlist
+        ),
+    )
     if_stmt = condense(
         addspace(keyword("if") + condense(namedexpr_test + suite))
         - ZeroOrMore(addspace(keyword("elif") - condense(namedexpr_test - suite)))

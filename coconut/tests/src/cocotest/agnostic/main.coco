@@ -1205,6 +1205,15 @@ def main_test() -> bool:
         def super(self) = super()
     assert Sup().super().sup == "sup"
     assert s{1, 2} ⊆ s{1, 2, 3}
+    try:
+        assert (False, "msg")
+    except AssertionError:
+        pass
+    else:
+        assert False
+    mut = [0]
+    (def -> mut[0] += 1)()
+    assert mut[0] == 1
     return True
 
 def test_asyncio() -> bool:
