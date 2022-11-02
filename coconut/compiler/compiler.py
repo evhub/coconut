@@ -3070,15 +3070,15 @@ if not {check_var}:
 
     def stmt_lambdef_handle(self, original, loc, tokens):
         """Process multi-line lambdef statements."""
-        if len(tokens) == 2:
-            params, stmts_toks = tokens
-            is_async = False
-        elif len(tokens) == 3:
-            async_kwd, params, stmts_toks = tokens
-            internal_assert(async_kwd == "async", "invalid stmt lambdef async kwd", async_kwd)
-            is_async = True
-        else:
-            raise CoconutInternalException("invalid statement lambda tokens", tokens)
+        kwds, params, stmts_toks = tokens
+
+        is_async = False
+        for kwd in kwds:
+            if kwd == "async":
+                internal_assert(not is_async, "duplicate stmt_lambdef async keyword", kwd)
+                is_async = True
+            else:
+                raise CoconutInternalException("invalid stmt_lambdef keyword", kwd)
 
         if len(stmts_toks) == 1:
             stmts, = stmts_toks

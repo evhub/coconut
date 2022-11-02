@@ -540,13 +540,14 @@ def alt_ternary_handle(tokens):
 def yield_funcdef_handle(tokens):
     """Handle yield def explicit generators."""
     funcdef, = tokens
-    return funcdef + openindent + handle_indentation(
+    return funcdef + handle_indentation(
         """
 if False:
     yield
         """,
         add_newline=True,
-    ) + closeindent
+        extra_indent=1,
+    )
 
 
 def partial_op_item_handle(tokens):
@@ -1458,29 +1459,27 @@ class Grammar(object):
         | Group(ZeroOrMore(simple_stmt_item + semicolon.suppress())) + closing_stmt,
     )
     general_stmt_lambdef = (
-        Optional(async_kwd)
-        + keyword("def").suppress()
+        Group(
+            any_len_perm(
+                async_kwd,
+            ),
+        ) + keyword("def").suppress()
         + stmt_lambdef_params
         + arrow.suppress()
         + stmt_lambdef_body
     )
     match_stmt_lambdef = (
-        match_kwd.suppress()
-        + keyword("def").suppress()
-        + stmt_lambdef_match_params
-        + arrow.suppress()
-        + stmt_lambdef_body
-    )
-    async_match_stmt_lambdef = (
-        any_len_perm(
-            match_kwd.suppress(),
-            required=(async_kwd,),
+        Group(
+            any_len_perm(
+                match_kwd.suppress(),
+                async_kwd,
+            ),
         ) + keyword("def").suppress()
         + stmt_lambdef_match_params
         + arrow.suppress()
         + stmt_lambdef_body
     )
-    stmt_lambdef_ref = general_stmt_lambdef | match_stmt_lambdef | async_match_stmt_lambdef
+    stmt_lambdef_ref = general_stmt_lambdef | match_stmt_lambdef
 
     lambdef <<= addspace(lambdef_base + test) | stmt_lambdef
     lambdef_no_cond = trace(addspace(lambdef_base + test_no_cond))

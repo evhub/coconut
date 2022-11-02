@@ -1044,7 +1044,7 @@ base_pattern ::= (
   - Identity Checks (`is <expr>`): will check that whatever is in that position `is` the expression `<expr>`.
   - Sets (`{<constants>}`): will only match a set (`collections.abc.Set`) of the same length and contents.
 - Arbitrary Function Patterns:
-  - Infix Checks (`` <pattern> `<op>` <expr> ``): will check that the operator `<op>$(?, <expr>)` returns a truthy value when called on whatever is in that position, then matches `<pattern>`. For example, `` x `isinstance` int `` will check that whatever is in that position `isinstance$(?, int)` and bind it to `x`. If `<expr>` is not given, will simply check `<op>` directly rather than `<op>$(<expr>)`.
+  - Infix Checks (`` <pattern> `<op>` <expr> ``): will check that the operator `<op>$(?, <expr>)` returns a truthy value when called on whatever is in that position, then matches `<pattern>`. For example, `` x `isinstance` int `` will check that whatever is in that position `isinstance$(?, int)` and bind it to `x`. If `<expr>` is not given, will simply check `<op>` directly rather than `<op>$(<expr>)`. Additionally, `` `<op>` `` can instead be a [custom operator](#custom-operators) (in that case, no backticks should be used).
   - View Patterns (`(<expression>) -> <pattern>`): calls `<expression>` on the item being matched and matches the result to `<pattern>`. The match fails if a [`MatchError`](#matcherror) is raised. `<expression>` may be unparenthesized only when it is a single atom.
 - Class and Data Type Matching:
   - Classes or Data Types (`<name>(<args>)`): will match as a data type if given [a Coconut `data` type](#data) (or a tuple of Coconut data types) and a class otherwise.
@@ -1596,7 +1596,7 @@ Additionally, Coconut also supports implicit operator function partials for arbi
 (. `<name>` <arg>)
 (<arg> `<name>` .)
 ```
-based on Coconut's [infix notation](#infix-functions) where `<name>` is the name of the function.
+based on Coconut's [infix notation](#infix-functions) where `<name>` is the name of the function. Additionally, `` `<name>` `` can instead be a [custom operator](#custom-operators) (in that case, no backticks should be used).
 
 ##### Example
 
@@ -2109,7 +2109,7 @@ Coconut supports the syntax
 yield def <name>(<args>):
     <body>
 ```
-to denote that you are explicitly defining a generator function. This is useful to ensure that, even if all the `yield`s in your function are removed, it'll always be a generator function. Explicit generator functions also support [pattern-matching syntax](#pattern-matching-functions), but not [assignment function syntax](#assignment-functions), as an assignment function would create a generator return, which is usually undesirable.
+to denote that you are explicitly defining a generator function. This is useful to ensure that, even if all the `yield`s in your function are removed, it'll always be a generator function. Explicit generator functions also support [pattern-matching syntax](#pattern-matching-functions), [infix function definition](#infix-functions), and [assignment function syntax](#assignment-functions) (though note that assignment function syntax here creates a generator return).
 
 ##### Example
 

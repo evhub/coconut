@@ -1139,7 +1139,7 @@ def interleaved_join(first_list, second_list):
     return "".join(interleaved)
 
 
-def handle_indentation(inputstr, add_newline=False):
+def handle_indentation(inputstr, add_newline=False, extra_indent=0):
     """Replace tabideal indentation with openindent and closeindent.
     Ignores whitespace-only lines."""
     out_lines = []
@@ -1166,6 +1166,8 @@ def handle_indentation(inputstr, add_newline=False):
     if prev_ind > 0:
         out_lines[-1] += closeindent * prev_ind
     out = "\n".join(out_lines)
+    if extra_indent:
+        out = openindent * extra_indent + out + closeindent * extra_indent
     internal_assert(lambda: out.count(openindent) == out.count(closeindent), "failed to properly handle indentation in", out)
     return out
 
