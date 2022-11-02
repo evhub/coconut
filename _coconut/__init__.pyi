@@ -62,12 +62,13 @@ else:
 
 if sys.version_info < (3, 10):
     try:
-        from typing_extensions import TypeAlias, ParamSpec
+        from typing_extensions import TypeAlias, ParamSpec, Concatenate
     except ImportError:
         TypeAlias = ...
         ParamSpec = ...
     typing.TypeAlias = TypeAlias
     typing.ParamSpec = ParamSpec
+    typing.Concatenate = Concatenate
 
 
 if sys.version_info < (3, 11):

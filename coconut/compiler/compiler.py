@@ -587,7 +587,7 @@ class Compiler(Grammar, pickleable_obj):
         cls.type_param <<= trace_attach(cls.type_param_ref, cls.method("type_param_handle"), greedy=True)
 
         # name handlers
-        cls.varname <<= attach(cls.name_ref, cls.method("name_handle"))
+        cls.refname <<= attach(cls.name_ref, cls.method("name_handle"))
         cls.setname <<= attach(cls.name_ref, cls.method("name_handle", assign=True))
 
         # abnormally named handlers

@@ -263,20 +263,20 @@ class Logger(object):
         """Print messages to stderr."""
         self.display(messages, level="logging", **kwargs)
 
-    def show(self, *messages):
+    def show(self, *messages, **kwargs):
         """Prints messages if not --quiet."""
         if not self.quiet:
-            self.display(messages)
+            self.display(messages, **kwargs)
 
-    def show_sig(self, *messages):
+    def show_sig(self, *messages, **kwargs):
         """Prints messages with main signature if not --quiet."""
         if not self.quiet:
-            self.display(messages, main_sig)
+            self.display(messages, main_sig, **kwargs)
 
-    def show_error(self, *messages):
+    def show_error(self, *messages, **kwargs):
         """Prints error messages with main signature if not --quiet."""
         if not self.quiet:
-            self.display(messages, main_sig, level="error")
+            self.display(messages, main_sig, level="error", **kwargs)
 
     def log(self, *messages):
         """Logs debug messages if --verbose."""

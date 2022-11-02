@@ -446,7 +446,7 @@ __anext__ = _coconut.asyncio.coroutine(_coconut_anext_ns["__anext__"])
 
     # second round for format dict elements that use the format dict
     extra_format_dict = dict(
-        # when anything is added to this list it must also be added to *both* __coconut__.pyi stub files
+        # when anything is added to this list it must also be added to *both* __coconut__ stub files
         underscore_imports="{tco_comma}{call_set_names_comma}{handle_cls_args_comma}_namedtuple_of, _coconut, _coconut_super, _coconut_MatchError, _coconut_iter_getitem, _coconut_base_compose, _coconut_forward_compose, _coconut_back_compose, _coconut_forward_star_compose, _coconut_back_star_compose, _coconut_forward_dubstar_compose, _coconut_back_dubstar_compose, _coconut_pipe, _coconut_star_pipe, _coconut_dubstar_pipe, _coconut_back_pipe, _coconut_back_star_pipe, _coconut_back_dubstar_pipe, _coconut_none_pipe, _coconut_none_star_pipe, _coconut_none_dubstar_pipe, _coconut_bool_and, _coconut_bool_or, _coconut_none_coalesce, _coconut_minus, _coconut_map, _coconut_partial, _coconut_get_function_match_error, _coconut_base_pattern_func, _coconut_addpattern, _coconut_sentinel, _coconut_assert, _coconut_raise, _coconut_mark_as_match, _coconut_reiterable, _coconut_self_match_types, _coconut_dict_merge, _coconut_exec, _coconut_comma_op, _coconut_multi_dim_arr, _coconut_mk_anon_namedtuple, _coconut_matmul".format(**format_dict),
         import_typing=pycondition(
             (3, 5),
@@ -460,17 +460,19 @@ typing = typing_mock()
             '''.format(**format_dict),
             indent=1,
         ),
-        import_typing_TypeAlias_ParamSpec=pycondition(
+        # all typing_extensions imports must be added to the __coconut__ stub file
+        import_typing_TypeAlias_ParamSpec_Concatenate=pycondition(
             (3, 10),
             if_lt='''
 try:
-    from typing_extensions import TypeAlias, ParamSpec
+    from typing_extensions import TypeAlias, ParamSpec, Concatenate
 except ImportError:
     class you_need_to_install_typing_extensions{object}:
         __slots__ = ()
-    TypeAlias = ParamSpec = you_need_to_install_typing_extensions()
+    TypeAlias = ParamSpec = Concatenate = you_need_to_install_typing_extensions()
 typing.TypeAlias = TypeAlias
 typing.ParamSpec = ParamSpec
+typing.Concatenate = Concatenate
             '''.format(**format_dict),
             indent=1,
             newline=True,

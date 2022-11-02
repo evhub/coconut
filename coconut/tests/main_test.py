@@ -93,7 +93,7 @@ mypy_snip_err_3 = '''error: Incompatible types in assignment (expression has typ
 mypy_args = ["--follow-imports", "silent", "--ignore-missing-imports", "--allow-redefinition"]
 
 ignore_mypy_errs_with = (
-    "Exiting with error: MyPy error",
+    "with error: MyPy error",
     "tutorial.py",
     "unused 'type: ignore' comment",
     "site-packages/numpy",

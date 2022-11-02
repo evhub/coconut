@@ -63,6 +63,7 @@ from coconut.constants import (
     mypy_install_arg,
     mypy_builtin_regex,
     coconut_pth_file,
+    error_color_code,
 )
 from coconut.util import (
     univ_open,
@@ -171,7 +172,9 @@ class Command(object):
         """Exit if exit_code is abnormal."""
         if self.exit_code:
             if self.errmsg is not None:
-                logger.show("Exiting with error: " + self.errmsg)
+                # show on stdout with error color code so that stdout
+                #  listeners see the error
+                logger.show("Coconut exiting with error: " + self.errmsg, color=error_color_code)
                 self.errmsg = None
             if self.using_jobs:
                 kill_children()

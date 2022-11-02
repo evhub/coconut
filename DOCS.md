@@ -1624,6 +1624,8 @@ Furthermore, when compiling type annotations to Python 3 versions without [PEP 5
 
 Additionally, Coconut adds special syntax for making type annotations easier and simpler to write. When inside of a type annotation, Coconut treats certain syntax constructs differently, compiling them to type annotations instead of what they would normally represent. Specifically, Coconut applies the following transformations:
 ```coconut
+(<type>; <type>)
+    => typing.Tuple[<type>, <type>]
 <type>?
     => typing.Optional[<type>]
 <type>[]
@@ -1638,8 +1640,8 @@ Additionally, Coconut adds special syntax for making type annotations easier and
     => typing.Callable[[<args>], <ret>]
 -> <ret>
     => typing.Callable[..., <ret>]
-(<type>; <type>)
-    => typing.Tuple[<type>, <type>]
+(<args>, **<ParamSpec>) -> <ret>
+    => typing.Callable[typing.Concatenate[<args>, <ParamSpec>], <ret>]
 <type> | <type>
     => typing.Union[<type>, <type>]
 ```

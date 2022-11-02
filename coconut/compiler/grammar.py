@@ -336,14 +336,34 @@ def lambdef_handle(tokens):
         raise CoconutInternalException("invalid lambda tokens", tokens)
 
 
-def typedef_callable_handle(tokens):
+def typedef_callable_handle(loc, tokens):
     """Process -> to Callable inside type annotations."""
     if len(tokens) == 1:
-        return '_coconut.typing.Callable[..., ' + tokens[0] + ']'
+        ret_typedef, = tokens
+        args_typedef = "..."
     elif len(tokens) == 2:
-        return '_coconut.typing.Callable[[' + tokens[0] + '], ' + tokens[1] + ']'
+        args_tokens, ret_typedef = tokens
+        args = []
+        paramspec = None
+        for arg_toks in args_tokens:
+            if paramspec is not None:
+                raise CoconutDeferredSyntaxError("ParamSpecs must come at end of Callable parameters", loc)
+            elif len(arg_toks) == 1:
+                arg, = arg_toks
+                args.append(arg)
+            else:
+                stars, arg = arg_toks
+                internal_assert(stars == "**", "invalid typedef_callable_arg", arg_toks)
+                paramspec = arg
+        if paramspec is None:
+            args_typedef = "[" + ", ".join(args) + "]"
+        elif not args:
+            args_typedef = paramspec
+        else:
+            args_typedef = "_coconut.typing.Concatenate[" + ", ".join(args) + ", " + paramspec + "]"
     else:
         raise CoconutInternalException("invalid Callable typedef tokens", tokens)
+    return "_coconut.typing.Callable[" + args_typedef + ", " + ret_typedef + "]"
 
 
 def make_suite_handle(tokens):
@@ -705,16 +725,16 @@ class Grammar(object):
     base_name_regex += r"(?![0-9])\w+\b(?![{" + strwrapper + r"])"
     base_name = regex_item(base_name_regex)
 
-    varname = Forward()
+    refname = Forward()
     setname = Forward()
     name_ref = combine(Optional(backslash) + base_name)
     unsafe_name = combine(Optional(backslash.suppress()) + base_name)
 
     # use unsafe_name for dotted components since name should only be used for base names
-    dotted_varname = condense(varname + ZeroOrMore(dot + unsafe_name))
+    dotted_refname = condense(refname + ZeroOrMore(dot + unsafe_name))
     dotted_setname = condense(setname + ZeroOrMore(dot + unsafe_name))
     unsafe_dotted_name = condense(unsafe_name + ZeroOrMore(dot + unsafe_name))
-    must_be_dotted_name = condense(varname + OneOrMore(dot + unsafe_name))
+    must_be_dotted_name = condense(refname + OneOrMore(dot + unsafe_name))
 
     integer = combine(Word(nums) + ZeroOrMore(underscore.suppress() + Word(nums)))
     binint = combine(Word("01") + ZeroOrMore(underscore.suppress() + Word("01")))
@@ -1157,7 +1177,7 @@ class Grammar(object):
     atom = (
         # known_atom must come before name to properly parse string prefixes
         known_atom
-        | varname
+        | refname
         | paren_atom
         | passthrough_atom
     )
@@ -1257,7 +1277,7 @@ class Grammar(object):
     impl_call_arg = disallow_keywords(reserved_vars) + (
         keyword_atom
         | number
-        | dotted_varname
+        | dotted_refname
     )
     impl_call = attach(
         disallow_keywords(reserved_vars)
@@ -1443,9 +1463,15 @@ class Grammar(object):
     lambdef <<= addspace(lambdef_base + test) | stmt_lambdef
     lambdef_no_cond = trace(addspace(lambdef_base + test_no_cond))
 
-    typedef_callable_params = (
-        lparen.suppress() + Optional(testlist, default="") + rparen.suppress()
-        | Optional(negable_atom_item)
+    typedef_callable_arg = Group(
+        test
+        | dubstar + refname,
+    )
+    typedef_callable_params = Optional(
+        Group(
+            lparen.suppress() + Optional(tokenlist(typedef_callable_arg, comma)) + rparen.suppress()
+            | Group(negable_atom_item),
+        ),
     )
     unsafe_typedef_callable = attach(typedef_callable_params + arrow.suppress() + typedef_test, typedef_callable_handle)
 
@@ -1685,9 +1711,9 @@ class Grammar(object):
             | sequence_match
             | star_match
             | (lparen.suppress() + match + rparen.suppress())("paren")
-            | (data_kwd.suppress() + dotted_varname + lparen.suppress() + matchlist_data + rparen.suppress())("data")
-            | (keyword("class").suppress() + dotted_varname + lparen.suppress() + matchlist_data + rparen.suppress())("class")
-            | (dotted_varname + lparen.suppress() + matchlist_data + rparen.suppress())("data_or_class")
+            | (data_kwd.suppress() + dotted_refname + lparen.suppress() + matchlist_data + rparen.suppress())("data")
+            | (keyword("class").suppress() + dotted_refname + lparen.suppress() + matchlist_data + rparen.suppress())("class")
+            | (dotted_refname + lparen.suppress() + matchlist_data + rparen.suppress())("data_or_class")
             | Optional(keyword("as").suppress()) + setname("var"),
         ),
     )
@@ -2051,7 +2077,7 @@ class Grammar(object):
         + data_suite
     )
 
-    simple_decorator = condense(dotted_varname + Optional(function_call) + newline)("simple")
+    simple_decorator = condense(dotted_refname + Optional(function_call) + newline)("simple")
     complex_decorator = condense(namedexpr_test + newline)("complex")
     decorators_ref = OneOrMore(
         at.suppress()
