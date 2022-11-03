@@ -758,7 +758,7 @@ min_versions = {
     "psutil": (5,),
     "jupyter": (1, 0),
     "types-backports": (0, 1),
-    "futures": (3, 3),
+    "futures": (3, 4),
     "backports.functools-lru-cache": (1, 6),
     "argparse": (1, 4),
     "pexpect": (4,),
@@ -772,7 +772,7 @@ min_versions = {
     "pydata-sphinx-theme": (0, 11),
     "myst-parser": (0, 18),
     "mypy[python2]": (0, 982),
-    ("typing_extensions", "py36"): (4, 1),
+    ("typing_extensions", "py36"): (4, 4),
     ("jupyter-console", "py36"): (6, 4),
 
     # pinned reqs: (must be added to pinned_reqs below)
@@ -813,6 +813,7 @@ min_versions = {
 
 # should match the reqs with comments above
 pinned_reqs = (
+    ("jupyter-client", "py36"),
     ("jupyter-client", "py2"),
     ("ipykernel", "py3"),
     ("ipython", "py3"),
