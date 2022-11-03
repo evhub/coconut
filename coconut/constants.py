@@ -772,13 +772,13 @@ min_versions = {
     "pydata-sphinx-theme": (0, 11),
     "myst-parser": (0, 18),
     "mypy[python2]": (0, 982),
-    ("typing_extensions", "py36"): (4, 4),
     ("jupyter-console", "py36"): (6, 4),
 
     # pinned reqs: (must be added to pinned_reqs below)
 
     # don't upgrade this; it breaks on Python 3.6
     ("jupyter-client", "py36"): (7, 1, 2),
+    ("typing_extensions", "py36"): (4, 1),
     # don't upgrade these; they break on Python 3.5
     ("ipykernel", "py3"): (5, 5),
     ("ipython", "py3"): (7, 9),
