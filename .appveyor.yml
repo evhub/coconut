@@ -21,6 +21,9 @@ environment:
     - PYTHON: "C:\\Python310"
       PYTHON_VERSION: "3.10.x"
       PYTHON_ARCH: "64"
+    - PYTHON: "C:\\Python311"
+      PYTHON_VERSION: "3.11.x"
+      PYTHON_ARCH: "64"
 
 install:
   # pywinpty installation fails without prior rust installation on some Python versions
