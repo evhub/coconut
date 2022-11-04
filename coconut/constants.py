@@ -80,6 +80,7 @@ PY311 = sys.version_info >= (3, 11)
 IPY = (
     ((PY2 and not PY26) or PY35)
     and not (PYPY and WINDOWS)
+    and not (PY311 and not WINDOWS)
 )
 MYPY = (
     PY37
