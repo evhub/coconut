@@ -489,7 +489,7 @@ def summer():
 try:
     datamaker()  # type: ignore
 except NameError, TypeError:
-    def datamaker(data_type):
+    def datamaker(data_type):  # type: ignore
         """Get the original constructor of the given data type or class."""
         return makedata$(data_type)
 

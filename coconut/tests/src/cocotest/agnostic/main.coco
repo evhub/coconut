@@ -799,7 +799,7 @@ def main_test() -> bool:
     def \match(x) = (+)$(1) <| x
     assert match(1) == 2
     try:
-        match[0] = 1
+        match[0] = 1  # type: ignore
     except TypeError:
         pass
     else:
@@ -1288,9 +1288,6 @@ def run_main(test_easter_eggs=False) -> bool:
     else:
         from .py3_test import py3_test
         assert py3_test() is True
-        if sys.version_info >= (3, 3):
-            from .py33_test import py33_test
-            assert py33_test() is True
         if sys.version_info >= (3, 5):
             from .py35_test import py35_test
             assert py35_test() is True

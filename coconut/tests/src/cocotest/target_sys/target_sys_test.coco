@@ -115,4 +115,13 @@ def target_sys_test() -> bool:
         assert err.args[0] == (1, 2)
     else:
         assert False
+
+    yield def f(x) = x
+    l = []
+    yield def g(x):
+        result = yield from f(x)
+        l.append(result)
+    assert g(10) |> list == []
+    assert l == [10]
+
     return True

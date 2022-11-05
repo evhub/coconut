@@ -1652,10 +1652,11 @@ else:
         self.internal_assert(not (not normal_func and (attempt_tre or attempt_tco)), original, loc, "cannot tail call optimize async/generator functions")
 
         if (
+            not normal_func
             # don't transform generator returns if they're supported
-            is_gen and self.target_info >= (3, 3)
+            and (not is_gen or self.target_info >= (3, 3))
             # don't transform async returns if they're supported
-            or is_async and self.target_info >= (3, 5)
+            and (not is_async or self.target_info >= (3, 5))
         ):
             func_code = "".join(raw_lines)
             return func_code, tco, tre
