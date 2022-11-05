@@ -43,6 +43,7 @@ from coconut.terminal import (
     internal_assert,
 )
 from coconut.constants import (
+    PY32,
     fixpath,
     code_exts,
     comp_ext,
@@ -970,12 +971,12 @@ class Command(object):
     def get_python_lib(self):
         """Get current Python lib location."""
         # these are expensive, so should only be imported here
-        if PY2:
-            from distutils import sysconfig
-            python_lib = sysconfig.get_python_lib()
-        else:
+        if PY32:
             from sysconfig import get_path
             python_lib = get_path("purelib")
+        else:
+            from distutils import sysconfig
+            python_lib = sysconfig.get_python_lib()
         return fixpath(python_lib)
 
     def site_install(self):
