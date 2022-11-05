@@ -235,7 +235,7 @@ By default, if the `source` argument to the command-line utility is a file, it w
 
 ### Compatible Python Versions
 
-While Coconut syntax is based off of Python 3, Coconut code compiled in universal mode (the default `--target`)—and the Coconut compiler itself—should run on any Python version `>= 2.6` on the `2.x` branch or `>= 3.2` on the `3.x` branch (and on either [CPython](https://www.python.org/) or [PyPy](http://pypy.org/)).
+While Coconut syntax is based off of the latest Python 3, Coconut code compiled in universal mode (the default `--target`)—and the Coconut compiler itself—should run on any Python version `>= 2.6` on the `2.x` branch or `>= 3.2` on the `3.x` branch (and on either [CPython](https://www.python.org/) or [PyPy](http://pypy.org/)).
 
 To make Coconut built-ins universal across Python versions, Coconut makes available on any Python version built-ins that only exist in later versions, including **automatically overwriting Python 2 built-ins with their Python 3 counterparts.** Additionally, Coconut also [overwrites some Python 3 built-ins for optimization and enhancement purposes](#enhanced-built-ins). If access to the original Python versions of any overwritten built-ins is desired, the old built-ins can be retrieved by prefixing them with `py_`. Specifically, the overwritten built-ins are:
 
@@ -269,16 +269,16 @@ Additionally, Coconut allows the [`__set_name__`](https://docs.python.org/3/refe
 Finally, while Coconut will try to compile Python-3-specific syntax to its universal equivalent, the following constructs have no equivalent in Python 2, and require the specification of a target of at least `3` to be used:
 
 - the `nonlocal` keyword,
-- keyword-only function parameters (use pattern-matching function definition for universal code),
+- keyword-only function parameters (use [pattern-matching function definition](#pattern-matching-functions) for universal code),
 - `async` and `await` statements (requires `--target 3.5`),
 - `:=` assignment expressions (requires `--target 3.8`),
-- positional-only function parameters (use pattern-matching function definition for universal code) (requires `--target 3.8`),
-- `a[x, *y]` variadic generic syntax (requires `--target 3.11`), and
+- positional-only function parameters (use [pattern-matching function definition](#pattern-matching-functions) for universal code) (requires `--target 3.8`),
+- `a[x, *y]` variadic generic syntax (use [type parameter syntax](#type-parameter-syntax) for universal code) (requires `--target 3.11`), and
 - `except*` multi-except statements (requires `--target 3.11`).
 
 ### Allowable Targets
 
-If the version of Python that the compiled code will be running on is known ahead of time, a target should be specified with `--target`. The given target will only affect the compiled code and whether or not the Python-3-specific syntax detailed above is allowed. Where Python 3 and Python 2 syntax standards differ, Coconut syntax will always follow Python 3 across all targets. The supported targets are:
+If the version of Python that the compiled code will be running on is known ahead of time, a target should be specified with `--target`. The given target will only affect the compiled code and whether or not the Python-3-specific syntax detailed above is allowed. Where Python syntax differs across versions, Coconut syntax will always follow the latest Python 3 across all targets. The supported targets are:
 
 - `universal` (default) (will work on _any_ of the below),
 - `2`, `2.6` (will work on any Python `>= 2.6` but `< 3`),
@@ -292,14 +292,15 @@ If the version of Python that the compiled code will be running on is known ahea
 - `3.8` (will work on any Python `>= 3.8`),
 - `3.9` (will work on any Python `>= 3.9`),
 - `3.10` (will work on any Python `>= 3.10`),
-- `3.11` (will work on any Python `>= 3.11`), and
+- `3.11` (will work on any Python `>= 3.11`),
+- `3.12` (will work on any Python `>= 3.12`), and
 - `sys` (chooses the target corresponding to the current Python version).
 
 _Note: Periods are ignored in target specifications, such that the target `27` is equivalent to the target `2.7`._
 
 ### `strict` Mode
 
-If the `--strict` (`-s` for short) flag is enabled, Coconut will perform additional checks on the code being compiled. It is recommended that you use the `--strict` flag if you are starting a new Coconut project, as it will help you write cleaner code. Specifically, the extra checks done by `--strict` are
+If the `--strict` (`-s` for short) flag is enabled, Coconut will perform additional checks on the code being compiled. It is recommended that you use the `--strict` flag if you are starting a new Coconut project, as it will help you write cleaner code. Specifically, the extra checks done by `--strict` are:
 
 - disabling deprecated features (making them entirely unavailable to code compiled with `--strict`),
 - warning about unused imports,

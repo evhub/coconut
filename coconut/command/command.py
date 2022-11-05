@@ -969,8 +969,14 @@ class Command(object):
 
     def get_python_lib(self):
         """Get current Python lib location."""
-        from distutils import sysconfig  # expensive, so should only be imported here
-        return fixpath(sysconfig.get_python_lib())
+        # these are expensive, so should only be imported here
+        if PY2:
+            from distutils import sysconfig
+            python_lib = sysconfig.get_python_lib()
+        else:
+            from sysconfig import get_path
+            python_lib = get_path("purelib")
+        return fixpath(python_lib)
 
     def site_install(self):
         """Add Coconut's pth file to site-packages."""
