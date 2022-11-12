@@ -970,12 +970,14 @@ class Grammar(object):
         | fixto(keyword("in"), "_coconut.operator.contains")
     )
     partialable_op = base_op_item | infix_op
-    partial_op_item = attach(
+    partial_op_item_tokens = (
         labeled_group(dot.suppress() + partialable_op + test_no_infix, "right partial")
-        | labeled_group(test_no_infix + partialable_op + dot.suppress(), "left partial"),
-        partial_op_item_handle,
+        | labeled_group(test_no_infix + partialable_op + dot.suppress(), "left partial")
     )
+    partial_op_item = attach(partial_op_item_tokens, partial_op_item_handle)
     op_item = trace(partial_op_item | base_op_item)
+
+    partial_op_atom_tokens = lparen.suppress() + partial_op_item_tokens + rparen.suppress()
 
     typedef = Forward()
     typedef_default = Forward()
@@ -1389,13 +1391,16 @@ class Grammar(object):
         labeled_group(attrgetter_atom_tokens, "attrgetter") + pipe_op
         | labeled_group(itemgetter_atom_tokens, "itemgetter") + pipe_op
         | labeled_group(partial_atom_tokens, "partial") + pipe_op
+        | labeled_group(partial_op_atom_tokens, "op partial") + pipe_op
+        # expr must come at end
         | labeled_group(comp_pipe_expr, "expr") + pipe_op
     )
     pipe_augassign_item = trace(
         # should match pipe_item but with pipe_op -> end_simple_stmt_item and no expr
         labeled_group(attrgetter_atom_tokens, "attrgetter") + end_simple_stmt_item
         | labeled_group(itemgetter_atom_tokens, "itemgetter") + end_simple_stmt_item
-        | labeled_group(partial_atom_tokens, "partial") + end_simple_stmt_item,
+        | labeled_group(partial_atom_tokens, "partial") + end_simple_stmt_item
+        | labeled_group(partial_op_atom_tokens, "op partial") + end_simple_stmt_item,
     )
     last_pipe_item = Group(
         lambdef("expr")
@@ -1404,6 +1409,7 @@ class Grammar(object):
             attrgetter_atom_tokens("attrgetter"),
             itemgetter_atom_tokens("itemgetter"),
             partial_atom_tokens("partial"),
+            partial_op_atom_tokens("op partial"),
             comp_pipe_expr("expr"),
         ),
     )
@@ -1790,8 +1796,7 @@ class Grammar(object):
     destructuring_stmt_ref, match_dotted_name_const_ref = disable_inside(base_destructuring_stmt, must_be_dotted_name + ~lparen)
 
     cases_stmt = Forward()
-    # both syntaxes here must be kept matching except for the keywords
-    cases_kwd = cases_kwd | case_kwd
+    # both syntaxes here must be kept the same except for the keywords
     case_match_co_syntax = trace(
         Group(
             (match_kwd | case_kwd).suppress()
@@ -1802,7 +1807,7 @@ class Grammar(object):
         ),
     )
     cases_stmt_co_syntax = (
-        cases_kwd + testlist_star_namedexpr + colon.suppress() + newline.suppress()
+        (cases_kwd | case_kwd) + testlist_star_namedexpr + colon.suppress() + newline.suppress()
         + indent.suppress() + Group(OneOrMore(case_match_co_syntax))
         + dedent.suppress() + Optional(keyword("else").suppress() + suite)
     )

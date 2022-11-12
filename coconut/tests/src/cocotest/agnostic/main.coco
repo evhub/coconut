@@ -1217,6 +1217,16 @@ def main_test() -> bool:
     to_int: ... -> int = -> 5
     to_int_: (...) -> int = -> 5
     assert to_int() + to_int_() == 10
+    assert 3 |> (./2) == 3/2 == (./2) <| 3
+    assert 2 |> (3/.) == 3/2 == (3/.) <| 2
+    x = 3
+    x |>= (./2)
+    assert x == 3/2
+    x = 2
+    x |>= (3/.)
+    assert x == 3/2
+    assert (./2) |> (.`of`3) == 3/2
+    assert 5 |> (.*2) |> (2/.) == 1/5 == 5 |> (2*.) |> (./2) |> (1/.)
     return True
 
 def test_asyncio() -> bool:

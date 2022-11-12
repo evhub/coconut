@@ -527,7 +527,10 @@ class Wrap(ParseElementEnhance):
         self.wrapper = wrapper
         self.greedy = greedy
         self.can_affect_parse_success = can_affect_parse_success
-        self.setName(get_name(item) + " (Wrapped)")
+
+    @property
+    def wrapped_name(self):
+        return get_name(self.expr) + " (Wrapped)"
 
     @contextmanager
     def wrapped_packrat_context(self):
@@ -548,7 +551,7 @@ class Wrap(ParseElementEnhance):
     def parseImpl(self, original, loc, *args, **kwargs):
         """Wrapper around ParseElementEnhance.parseImpl."""
         if logger.tracing:  # avoid the overhead of the call if not tracing
-            logger.log_trace(self.name, original, loc)
+            logger.log_trace(self.wrapped_name, original, loc)
         with logger.indent_tracing():
             with self.wrapper(self, original, loc):
                 with self.wrapped_packrat_context():
@@ -556,8 +559,14 @@ class Wrap(ParseElementEnhance):
                     if self.greedy:
                         evaluated_toks = evaluate_tokens(evaluated_toks)
         if logger.tracing:  # avoid the overhead of the call if not tracing
-            logger.log_trace(self.name, original, loc, evaluated_toks)
+            logger.log_trace(self.wrapped_name, original, loc, evaluated_toks)
         return parse_loc, evaluated_toks
+
+    def __str__(self):
+        return self.wrapped_name
+
+    def __repr__(self):
+        return self.wrapped_name
 
 
 def disable_inside(item, *elems, **kwargs):

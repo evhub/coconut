@@ -116,6 +116,7 @@ from coconut.compiler.grammar import (
     attrgetter_atom_split,
     attrgetter_atom_handle,
     itemgetter_handle,
+    partial_op_item_handle,
 )
 from coconut.compiler.util import (
     sys_target,
@@ -2119,11 +2120,14 @@ if {store_var} is not _coconut_sentinel:
 
     def pipe_item_split(self, tokens, loc):
         """Process a pipe item, which could be a partial, an attribute access, a method call, or an expression.
-        Return (type, split) where split is
-            - (expr,) for expression,
-            - (func, pos_args, kwd_args) for partial,
-            - (name, args) for attr/method, and
-            - (op, args)+ for itemgetter."""
+
+        Return (type, split) where split is:
+            - (expr,) for expression
+            - (func, pos_args, kwd_args) for partial
+            - (name, args) for attr/method
+            - (op, args)+ for itemgetter
+            - (op, arg) for right op partial
+        """
         # list implies artificial tokens, which must be expr
         if isinstance(tokens, list) or "expr" in tokens:
             internal_assert(len(tokens) == 1, "invalid pipe item", tokens)
@@ -2138,6 +2142,16 @@ if {store_var} is not _coconut_sentinel:
         elif "itemgetter" in tokens:
             internal_assert(len(tokens) >= 2, "invalid itemgetter pipe item tokens", tokens)
             return "itemgetter", tokens
+        elif "op partial" in tokens:
+            inner_toks, = tokens
+            if "left partial" in inner_toks:
+                arg, op = inner_toks
+                return "partial", (op, arg, "")
+            elif "right partial" in inner_toks:
+                op, arg = inner_toks
+                return "right op partial", (op, arg)
+            else:
+                raise CoconutInternalException("invalid op partial tokens in pipe_item", inner_toks)
         else:
             raise CoconutInternalException("invalid pipe item tokens", tokens)
 
@@ -2162,6 +2176,8 @@ if {store_var} is not _coconut_sentinel:
                 return attrgetter_atom_handle(loc, item)
             elif name == "itemgetter":
                 return itemgetter_handle(item)
+            elif name == "right op partial":
+                return partial_op_item_handle(item)
             else:
                 raise CoconutInternalException("invalid split pipe item", split_item)
 
@@ -2222,6 +2238,11 @@ if {store_var} is not _coconut_sentinel:
                             raise CoconutInternalException("pipe into invalid implicit itemgetter operation", op)
                         out = fmtstr.format(x=out, args=args)
                     return out
+                elif name == "right op partial":
+                    if stars:
+                        raise CoconutDeferredSyntaxError("cannot star pipe into operator partial", loc)
+                    op, arg = split_item
+                    return "({op})({x}, {arg})".format(op=op, x=subexpr, arg=arg)
                 else:
                     raise CoconutInternalException("invalid split pipe item", split_item)
 
