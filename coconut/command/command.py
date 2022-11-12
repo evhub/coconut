@@ -984,7 +984,7 @@ class Command(object):
         python_lib = self.get_python_lib()
 
         shutil.copy(coconut_pth_file, python_lib)
-        logger.show_sig("Added %s to %s." % (os.path.basename(coconut_pth_file), python_lib))
+        logger.show_sig("Added %s to %s" % (os.path.basename(coconut_pth_file), python_lib))
 
     def site_uninstall(self):
         """Remove Coconut's pth file from site-packages."""
@@ -993,6 +993,6 @@ class Command(object):
 
         if os.path.isfile(pth_file):
             os.remove(pth_file)
-            logger.show_sig("Removed %s from %s." % (os.path.basename(coconut_pth_file), python_lib))
+            logger.show_sig("Removed %s from %s" % (os.path.basename(coconut_pth_file), python_lib))
         else:
             raise CoconutException("failed to find %s file to remove" % (os.path.basename(coconut_pth_file),))
