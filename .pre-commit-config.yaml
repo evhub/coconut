@@ -30,7 +30,7 @@ repos:
         args:
         - --ignore=W503,E501,E265,E402,F405,E305,E126
 -   repo: https://github.com/pre-commit/mirrors-autopep8
-    rev: v1.7.0
+    rev: v2.0.0
     hooks:
     -   id: autopep8
         args:

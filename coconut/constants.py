@@ -774,7 +774,7 @@ min_versions = {
     "sphinx": (5, 3),
     "pydata-sphinx-theme": (0, 11),
     "myst-parser": (0, 18),
-    "mypy[python2]": (0, 982),
+    "mypy[python2]": (0, 990),
     ("jupyter-console", "py36"): (6, 4),
 
     # pinned reqs: (must be added to pinned_reqs below)
@@ -817,6 +817,7 @@ min_versions = {
 # should match the reqs with comments above
 pinned_reqs = (
     ("jupyter-client", "py36"),
+    ("typing_extensions", "py36"),
     ("jupyter-client", "py2"),
     ("ipykernel", "py3"),
     ("ipython", "py3"),

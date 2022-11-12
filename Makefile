@@ -17,22 +17,27 @@ dev-py3: clean setup-py3
 
 .PHONY: setup
 setup:
+	python -m ensurepip
 	python -m pip install --upgrade "setuptools<58" wheel pip pytest_remotedata
 
 .PHONY: setup-py2
 setup-py2:
+	python2 -m ensurepip
 	python2 -m pip install --upgrade "setuptools<58" wheel pip pytest_remotedata
 
 .PHONY: setup-py3
 setup-py3:
+	python3 -m ensurepip
 	python3 -m pip install --upgrade "setuptools<58" wheel pip pytest_remotedata
 
 .PHONY: setup-pypy
 setup-pypy:
+	pypy -m ensurepip
 	pypy -m pip install --upgrade "setuptools<58" wheel pip pytest_remotedata
 
 .PHONY: setup-pypy3
 setup-pypy3:
+	pypy3 -m ensurepip
 	pypy3 -m pip install --upgrade "setuptools<58" wheel pip pytest_remotedata
 
 .PHONY: install
