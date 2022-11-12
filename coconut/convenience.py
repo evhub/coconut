@@ -22,7 +22,7 @@ from coconut.root import *  # NOQA
 import sys
 import os.path
 import codecs
-import encodings
+from encodings import utf_8
 
 from coconut.integrations import embed
 from coconut.exceptions import CoconutException
@@ -224,7 +224,7 @@ auto_compilation()
 # -----------------------------------------------------------------------------------------------------------------------
 
 
-class CoconutStreamReader(encodings.utf_8.StreamReader, object):
+class CoconutStreamReader(utf_8.StreamReader, object):
     """Compile Coconut code from a stream of UTF-8."""
     coconut_compiler = None
 
@@ -242,7 +242,7 @@ class CoconutStreamReader(encodings.utf_8.StreamReader, object):
         return cls.compile_coconut(input_str), len_consumed
 
 
-class CoconutIncrementalDecoder(encodings.utf_8.IncrementalDecoder, object):
+class CoconutIncrementalDecoder(utf_8.IncrementalDecoder, object):
     """Compile Coconut at the end of incrementally decoding UTF-8."""
     invertible = False
     _buffer_decode = CoconutStreamReader.decode
@@ -256,12 +256,12 @@ def get_coconut_encoding(encoding="coconut"):
         raise CoconutException("unknown Coconut encoding: " + repr(encoding))
     return codecs.CodecInfo(
         name=encoding,
-        encode=encodings.utf_8.encode,
+        encode=utf_8.encode,
         decode=CoconutStreamReader.decode,
-        incrementalencoder=encodings.utf_8.IncrementalEncoder,
+        incrementalencoder=utf_8.IncrementalEncoder,
         incrementaldecoder=CoconutIncrementalDecoder,
         streamreader=CoconutStreamReader,
-        streamwriter=encodings.utf_8.StreamWriter,
+        streamwriter=utf_8.StreamWriter,
     )
 
 
