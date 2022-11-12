@@ -243,6 +243,9 @@ else:
     except CoconutStyleError as err:
         assert str(err) == """found deprecated isinstance-checking 'x is int is str' pattern; rewrite to use class patterns (try 'int(x) and str(x)') or explicit isinstance-checking ('x `isinstance` int and x `isinstance` str' should always work) (remove --strict to dismiss) (line 2)
   x is int is str = x"""
+    assert_raises(-> parse("""case x:
+    match x:
+        pass"""), CoconutStyleError, err_has="case x:")
 
     setup(target="2.7")
     assert parse("from io import BytesIO", mode="lenient") == "from io import BytesIO"

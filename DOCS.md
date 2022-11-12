@@ -1174,7 +1174,7 @@ match <value>:
 ```
 where `<pattern>` is any `match` pattern, `<value>` is the item to match against, `<cond>` is an optional additional check, and `<body>` is simply code that is executed if the header above it succeeds. Note the absence of an `in` in the `match` statements: that's because the `<value>` in `case <value>` is taking its place. If no `else` is present and no match succeeds, then the `case` statement is simply skipped over as with [`match` statements](#match) (though unlike [destructuring assignments](#destructuring-assignment)).
 
-Additionally, `cases` can be used as the top-level keyword instead of `case`, and in such a `case` block `match` is allowed for each case rather than `case`.
+Additionally, `cases` can be used as the top-level keyword instead of `match`, and in such a `case` block `match` is allowed for each case rather than `case`. _DEPRECATED: Coconut also supports `case` instead of `cases` as the top-level keyword for backwards-compatibility purposes._
 
 ##### Examples
 

@@ -1795,7 +1795,7 @@ class Grammar(object):
     base_destructuring_stmt = Optional(match_kwd.suppress()) + many_match + equals.suppress() + test_expr
     destructuring_stmt_ref, match_dotted_name_const_ref = disable_inside(base_destructuring_stmt, must_be_dotted_name + ~lparen)
 
-    cases_stmt = Forward()
+    top_level_case_kwd = Forward()
     # both syntaxes here must be kept the same except for the keywords
     case_match_co_syntax = trace(
         Group(
@@ -1807,7 +1807,7 @@ class Grammar(object):
         ),
     )
     cases_stmt_co_syntax = (
-        (cases_kwd | case_kwd) + testlist_star_namedexpr + colon.suppress() + newline.suppress()
+        (cases_kwd | top_level_case_kwd) + testlist_star_namedexpr + colon.suppress() + newline.suppress()
         + indent.suppress() + Group(OneOrMore(case_match_co_syntax))
         + dedent.suppress() + Optional(keyword("else").suppress() + suite)
     )
@@ -1825,6 +1825,7 @@ class Grammar(object):
         + indent.suppress() + Group(OneOrMore(case_match_py_syntax))
         + dedent.suppress() + Optional(keyword("else").suppress() - suite)
     )
+    cases_stmt = Forward()
     cases_stmt_ref = cases_stmt_co_syntax | cases_stmt_py_syntax
 
     assert_stmt = addspace(

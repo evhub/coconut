@@ -661,6 +661,7 @@ class Compiler(Grammar, pickleable_obj):
         cls.match_dotted_name_const <<= trace_attach(cls.match_dotted_name_const_ref, cls.method("match_dotted_name_const_check"))
         cls.except_star_clause <<= trace_attach(cls.except_star_clause_ref, cls.method("except_star_clause_check"))
         cls.subscript_star <<= trace_attach(cls.subscript_star_ref, cls.method("subscript_star_check"))
+        cls.top_level_case_kwd <<= trace_attach(cls.case_kwd, cls.method("top_level_case_kwd_check"))
 
         # these checking handlers need to be greedy since they can be suppressed
         cls.match_check_equals <<= trace_attach(cls.match_check_equals_ref, cls.method("match_check_equals_check"), greedy=True)
@@ -3710,6 +3711,10 @@ for {match_to_var} in {item}:
     def match_check_equals_check(self, original, loc, tokens):
         """Check for old-style =item in pattern-matching."""
         return self.check_strict("deprecated equality-checking '=...' pattern; use '==...' instead", original, loc, tokens)
+
+    def top_level_case_kwd_check(self, original, loc, tokens):
+        """Check for case keyword at top level in match-case block."""
+        return self.check_strict("deprecated case keyword at top level in match-case block (use Python 3.10 match-case syntax instead)", original, loc, tokens)
 
     def check_py(self, version, name, original, loc, tokens):
         """Check for Python-version-specific syntax."""
