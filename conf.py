@@ -24,7 +24,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from coconut.root import *  # NOQA
 
 from coconut.constants import (
-    version_str_tag,
+    version_tag,
     without_toc,
     with_toc,
     exclude_docs_dirs,
@@ -56,7 +56,7 @@ from coconut.constants import (  # NOQA
 )
 
 version = VERSION
-release = version_str_tag
+release = version_tag
 
 html_theme = "pydata_sphinx_theme"
 html_theme_options = {

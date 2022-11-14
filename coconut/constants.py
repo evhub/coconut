@@ -60,7 +60,6 @@ if DEVELOP:
     version_tag = "develop"
 else:
     version_tag = "v" + VERSION
-version_str_tag = "v" + VERSION_STR
 
 version_tuple = tuple(VERSION.split("."))
 
