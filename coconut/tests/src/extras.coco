@@ -129,8 +129,8 @@ def test_setup_none() -> bool:
     assert_raises(
         -> parse("type abc[T,T] = T | T"),
         CoconutSyntaxError,
-        err_has="""
-cannot reassign type variable: 'T' (line 1)
+        err_has=r"""
+cannot reassign type variable 'T' (use explicit '\T' syntax to dismiss) (line 1)
   type abc[T,T] = T | T
              ^
         """.strip(),

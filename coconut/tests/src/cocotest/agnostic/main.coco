@@ -1118,9 +1118,9 @@ def main_test() -> bool:
     assert x is None
     assert a == "abc"
     class HasSuper1:
-        super = 10
+        \super = 10
     class HasSuper2:
-        def super(self) = 10
+        def \super(self) = 10
     assert HasSuper1().super == 10 == HasSuper2().super()
     class HasSuper3:
         class super:
@@ -1202,7 +1202,7 @@ def main_test() -> bool:
     class SupSup:
         sup = "sup"
     class Sup(SupSup):
-        def super(self) = super()
+        def \super(self) = super()
     assert Sup().super().sup == "sup"
     assert s{1, 2} ⊆ s{1, 2, 3}
     try:
@@ -1227,6 +1227,10 @@ def main_test() -> bool:
     assert x == 3/2
     assert (./2) |> (.`of`3) == 3/2
     assert 5 |> (.*2) |> (2/.) == 1/5 == 5 |> (2*.) |> (./2) |> (1/.)
+    def test_list():
+        \list = [1, 2, 3]
+        return \list
+    assert test_list() == list((1, 2, 3))
     return True
 
 def test_asyncio() -> bool:

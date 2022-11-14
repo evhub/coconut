@@ -438,6 +438,46 @@ self_match_types = (
     "tuple",
 )
 
+python_builtins = (
+    '__import__', 'abs', 'all', 'any', 'bin', 'bool', 'bytearray',
+    'breakpoint', 'bytes', 'chr', 'classmethod', 'compile', 'complex',
+    'delattr', 'dict', 'dir', 'divmod', 'enumerate', 'eval', 'filter',
+    'float', 'format', 'frozenset', 'getattr', 'globals', 'hasattr',
+    'hash', 'hex', 'id', 'input', 'int', 'isinstance', 'issubclass',
+    'iter', 'len', 'list', 'locals', 'map', 'max', 'memoryview',
+    'min', 'next', 'object', 'oct', 'open', 'ord', 'pow', 'print',
+    'property', 'range', 'repr', 'reversed', 'round', 'set', 'setattr',
+    'slice', 'sorted', 'staticmethod', 'str', 'sum', 'super', 'tuple',
+    'type', 'vars', 'zip',
+    'Ellipsis', 'NotImplemented',
+    'ArithmeticError', 'AssertionError', 'AttributeError',
+    'BaseException', 'BufferError', 'BytesWarning', 'DeprecationWarning',
+    'EOFError', 'EnvironmentError', 'Exception', 'FloatingPointError',
+    'FutureWarning', 'GeneratorExit', 'IOError', 'ImportError',
+    'ImportWarning', 'IndentationError', 'IndexError', 'KeyError',
+    'KeyboardInterrupt', 'LookupError', 'MemoryError', 'NameError',
+    'NotImplementedError', 'OSError', 'OverflowError',
+    'PendingDeprecationWarning', 'ReferenceError', 'ResourceWarning',
+    'RuntimeError', 'RuntimeWarning', 'StopIteration',
+    'SyntaxError', 'SyntaxWarning', 'SystemError', 'SystemExit',
+    'TabError', 'TypeError', 'UnboundLocalError', 'UnicodeDecodeError',
+    'UnicodeEncodeError', 'UnicodeError', 'UnicodeTranslateError',
+    'UnicodeWarning', 'UserWarning', 'ValueError', 'VMSError',
+    'Warning', 'WindowsError', 'ZeroDivisionError',
+    '__name__',
+    '__file__',
+    '__annotations__',
+    '__debug__',
+    # don't include builtins that aren't always made available by Coconut:
+    # 'BlockingIOError', 'ChildProcessError', 'ConnectionError',
+    # 'BrokenPipeError', 'ConnectionAbortedError', 'ConnectionRefusedError',
+    # 'ConnectionResetError', 'FileExistsError', 'FileNotFoundError',
+    # 'InterruptedError', 'IsADirectoryError', 'NotADirectoryError',
+    # 'PermissionError', 'ProcessLookupError', 'TimeoutError',
+    # 'StopAsyncIteration', 'ModuleNotFoundError', 'RecursionError',
+    # 'EncodingWarning',
+)
+
 # -----------------------------------------------------------------------------------------------------------------------
 # COMMAND CONSTANTS:
 # -----------------------------------------------------------------------------------------------------------------------
@@ -543,9 +583,13 @@ interpreter_compiler_var = "__coconut_compiler__"
 
 shebang_regex = r'coconut(?:-run)?'
 
-coconut_specific_builtins = (
-    "exit",
+interp_only_builtins = (
     "reload",
+    "exit",
+    "quit",
+)
+
+coconut_specific_builtins = (
     "breakpoint",
     "help",
     "TYPE_CHECKING",
@@ -599,6 +643,8 @@ coconut_specific_builtins = (
     "py_breakpoint",
     "_namedtuple_of",
 )
+
+all_builtins = frozenset(python_builtins + coconut_specific_builtins)
 
 magic_methods = (
     "__fmap__",
@@ -948,7 +994,12 @@ search_terms = (
     "PEP 622",
     "overrides",
     "islice",
-) + coconut_specific_builtins + magic_methods + exceptions + reserved_vars
+) + (
+    coconut_specific_builtins
+    + exceptions
+    + magic_methods
+    + reserved_vars
+)
 
 exclude_install_dirs = (
     os.path.join("coconut", "tests", "dest"),

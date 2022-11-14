@@ -6,6 +6,8 @@ from contextlib import contextmanager
 from functools import wraps
 from collections import defaultdict
 
+__doc__ = "docstring"
+
 # Helpers:
 def rand_list(n):
     '''Generate a random list of length n.'''
@@ -764,7 +766,7 @@ class lazy:
     done = False
     def finish(self):
         self.done = True
-    def list(self):
+    def \list(self):
         return (| 1, 2, 3, self.finish() |)
 def is_empty(i):
     match (||) in i:
@@ -788,7 +790,7 @@ class A:
     def true(self):
         return True
     def not_super(self):
-        def super() = self
+        def \super() = self
         return super().true()
     @classmethod
     def cls_true(cls) = True
@@ -976,7 +978,7 @@ class container_(\(object)):
         isinstance(other, container_) and self.x == other.x
 
 class counter:
-    count = 0
+    \count = 0
     def inc(self):
         self.count += 1
 
