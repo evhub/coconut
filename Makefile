@@ -202,6 +202,10 @@ test-mini:
 diff:
 	git diff origin/develop
 
+.PHONY: fix-develop
+fix-develop:
+	git merge master -s ours
+
 .PHONY: docs
 docs: clean
 	sphinx-build -b html . ./docs
