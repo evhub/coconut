@@ -181,10 +181,10 @@ After you've tested your changes locally, you'll want to add more permanent test
     2. Merge pull request and mark as resolved
     3. Release `master` on GitHub
     4. `git fetch`, `git checkout master`, and `git pull`
-    5. Run `make upload`
+    5. Run `sudo make upload`
     6. `git checkout develop`, `git rebase master`, and `git push`
     7. Turn on `develop` in `root`
-    8. Run `make dev`
+    8. Run `sudo make dev`
     9.  Push to `develop`
     10. Wipe all updated versions on [readthedocs](https://readthedocs.org/projects/coconut/versions/)
     11. Build all updated versions on [readthedocs](https://readthedocs.org/projects/coconut/builds/)
