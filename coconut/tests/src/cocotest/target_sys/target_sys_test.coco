@@ -56,7 +56,8 @@ def asyncio_test() -> bool:
         True
     async def aplus(x) = y -> x + y
     aplus_: async int -> int -> int = async def x -> y -> x + y
-    type AsyncNumFunc[T: int | float] = async T -> T
+    if sys.version_info >= (3, 5) or TYPE_CHECKING:
+        type AsyncNumFunc[T: int | float] = async T -> T
     aplus1: AsyncNumFunc[int] = async def x -> x + 1
     async def main():
         assert await async_map_test()
