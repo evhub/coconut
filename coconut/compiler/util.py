@@ -35,7 +35,7 @@ import itertools
 from functools import partial, reduce
 from collections import defaultdict
 from contextlib import contextmanager
-from pprint import pformat
+from pprint import pformat, pprint
 
 from coconut._pyparsing import (
     USE_COMPUTATION_GRAPH,
@@ -108,15 +108,20 @@ indexable_evaluated_tokens_types = (ParseResults, list, tuple)
 
 
 def evaluate_tokens(tokens, **kwargs):
-    """Evaluate the given tokens in the computation graph."""
+    """Evaluate the given tokens in the computation graph.
+    Very performance sensitive."""
     # can't have this be a normal kwarg to make evaluate_tokens a valid parse action
     evaluated_toklists = kwargs.pop("evaluated_toklists", ())
-    internal_assert(not kwargs, "invalid keyword arguments to evaluate_tokens", kwargs)
+    if DEVELOP:  # avoid the overhead of the call if not develop
+        internal_assert(not kwargs, "invalid keyword arguments to evaluate_tokens", kwargs)
+
+    if not USE_COMPUTATION_GRAPH:
+        return tokens
 
     if isinstance(tokens, ParseResults):
 
         # evaluate the list portion of the ParseResults
-        old_toklist, name, asList, modal = tokens.__getnewargs__()
+        old_toklist, old_name, asList, modal = tokens.__getnewargs__()
         new_toklist = None
         for eval_old_toklist, eval_new_toklist in evaluated_toklists:
             if old_toklist == eval_old_toklist:
@@ -127,7 +132,10 @@ def evaluate_tokens(tokens, **kwargs):
             # overwrite evaluated toklists rather than appending, since this
             #  should be all the information we need for evaluating the dictionary
             evaluated_toklists = ((old_toklist, new_toklist),)
-        new_tokens = ParseResults(new_toklist, name, asList, modal)
+        # we have to pass name=None here and then set __name after otherwise
+        #  the constructor might generate a new tokdict item we don't want
+        new_tokens = ParseResults(new_toklist, None, asList, modal)
+        new_tokens._ParseResults__name = old_name
         new_tokens._ParseResults__accumNames.update(tokens._ParseResults__accumNames)
 
         # evaluate the dictionary portion of the ParseResults
@@ -139,6 +147,9 @@ def evaluate_tokens(tokens, **kwargs):
                 new_occurrences.append(_ParseResultsWithOffset(new_value, position))
             new_tokdict[name] = new_occurrences
         new_tokens._ParseResults__tokdict.update(new_tokdict)
+
+        if DEVELOP:  # avoid the overhead of the call if not develop
+            internal_assert(set(tokens._ParseResults__tokdict.keys()) == set(new_tokens._ParseResults__tokdict.keys()), "evaluate_tokens on ParseResults failed to maintain tokdict keys", (tokens, "->", new_tokens))
 
         return new_tokens
 
@@ -161,6 +172,7 @@ def evaluate_tokens(tokens, **kwargs):
                 ),
             )
 
+        # base cases (performance sensitive; should be in likelihood order):
         if isinstance(tokens, str):
             return tokens
 
@@ -173,6 +185,9 @@ def evaluate_tokens(tokens, **kwargs):
         elif isinstance(tokens, tuple):
             return tuple(evaluate_tokens(inner_toks, evaluated_toklists=evaluated_toklists) for inner_toks in tokens)
 
+        elif isinstance(tokens, DeferredNode):
+            return tokens
+
         else:
             raise CoconutInternalException("invalid computation graph tokens", tokens)
 
@@ -180,6 +195,7 @@ def evaluate_tokens(tokens, **kwargs):
 class ComputationNode(object):
     """A single node in the computation graph."""
     __slots__ = ("action", "original", "loc", "tokens") + (("been_called",) if DEVELOP else ())
+    pprinting = False
 
     def __new__(cls, action, original, loc, tokens, ignore_no_tokens=False, ignore_one_token=False, greedy=False, trim_arity=True):
         """Create a ComputionNode to return from a parse action.
@@ -215,7 +231,8 @@ class ComputationNode(object):
         return name if name is not None else repr(self.action)
 
     def evaluate(self):
-        """Get the result of evaluating the computation graph at this node."""
+        """Get the result of evaluating the computation graph at this node.
+        Very performance sensitive."""
         if DEVELOP:  # avoid the overhead of the call if not develop
             internal_assert(not self.been_called, "inefficient reevaluation of action " + self.name + " with tokens", self.tokens)
             self.been_called = True
@@ -244,16 +261,32 @@ class ComputationNode(object):
         if not logger.tracing:
             logger.warn_err(CoconutInternalException("ComputationNode.__repr__ called when not tracing"))
         inner_repr = "\n".join("\t" + line for line in repr(self.tokens).splitlines())
-        return self.name + "(\n" + inner_repr + "\n)"
+        if self.pprinting:
+            return '("' + self.name + '",\n' + inner_repr + "\n)"
+        else:
+            return self.name + "(\n" + inner_repr + "\n)"
 
 
-class CombineNode(Combine):
+class DeferredNode(object):
+    """A node in the computation graph that has had its evaluation explicitly deferred."""
+
+    def __init__(self, original, loc, tokens):
+        self.original = original
+        self.loc = loc
+        self.tokens = tokens
+
+    def evaluate(self):
+        """Evaluate the deferred computation."""
+        return unpack(self.tokens)
+
+
+class CombineToNode(Combine):
     """Modified Combine to work with the computation graph."""
     __slots__ = ()
 
     def _combine(self, original, loc, tokens):
         """Implement the parse action for Combine."""
-        combined_tokens = super(CombineNode, self).postParse(original, loc, tokens)
+        combined_tokens = super(CombineToNode, self).postParse(original, loc, tokens)
         if DEVELOP:  # avoid the overhead of the call if not develop
             internal_assert(len(combined_tokens) == 1, "Combine produced multiple tokens", combined_tokens)
         return combined_tokens[0]
@@ -265,7 +298,7 @@ class CombineNode(Combine):
 
 
 if USE_COMPUTATION_GRAPH:
-    combine = CombineNode
+    combine = CombineToNode
 else:
     combine = Combine
 
@@ -274,14 +307,15 @@ def add_action(item, action, make_copy=None):
     """Add a parse action to the given item."""
     if make_copy is None:
         item_ref_count = sys.getrefcount(item) if CPYTHON else float("inf")
-        internal_assert(item_ref_count >= temp_grammar_item_ref_count, "add_action got item with too low ref count", (item, type(item), item_ref_count))
+        # keep this a lambda to prevent cPython refcounting changes from breaking release builds
+        internal_assert(lambda: item_ref_count >= temp_grammar_item_ref_count, "add_action got item with too low ref count", (item, type(item), item_ref_count))
         make_copy = item_ref_count > temp_grammar_item_ref_count
     if make_copy:
         item = item.copy()
     return item.addParseAction(action)
 
 
-def attach(item, action, ignore_no_tokens=None, ignore_one_token=None, ignore_tokens=None, trim_arity=None, **kwargs):
+def attach(item, action, ignore_no_tokens=None, ignore_one_token=None, ignore_tokens=None, trim_arity=None, make_copy=None, **kwargs):
     """Set the parse action for the given item to create a node in the computation graph."""
     if ignore_tokens is None:
         ignore_tokens = getattr(action, "ignore_tokens", False)
@@ -302,7 +336,7 @@ def attach(item, action, ignore_no_tokens=None, ignore_one_token=None, ignore_to
         if not trim_arity:
             kwargs["trim_arity"] = trim_arity
         action = partial(ComputationNode, action, **kwargs)
-    return add_action(item, action)
+    return add_action(item, action, make_copy)
 
 
 def trace_attach(*args, **kwargs):
@@ -315,10 +349,7 @@ def final_evaluate_tokens(tokens):
     if use_packrat_parser:
         # clear cache without resetting stats
         ParserElement.packrat_cache.clear()
-    if USE_COMPUTATION_GRAPH:
-        return evaluate_tokens(tokens)
-    else:
-        return tokens
+    return evaluate_tokens(tokens)
 
 
 def final(item):
@@ -327,11 +358,16 @@ def final(item):
     return add_action(item, final_evaluate_tokens)
 
 
+def defer(item):
+    """Defers evaluation of the given item.
+    Only does any actual deferring if USE_COMPUTATION_GRAPH is True."""
+    return add_action(item, DeferredNode)
+
+
 def unpack(tokens):
     """Evaluate and unpack the given computation graph."""
     logger.log_tag("unpack", tokens)
-    if USE_COMPUTATION_GRAPH:
-        tokens = evaluate_tokens(tokens)
+    tokens = evaluate_tokens(tokens)
     if isinstance(tokens, ParseResults) and len(tokens) == 1:
         tokens = tokens[0]
     return tokens
@@ -485,12 +521,16 @@ def get_target_info_smart(target, mode="lowest"):
 
 class Wrap(ParseElementEnhance):
     """PyParsing token that wraps the given item in the given context manager."""
-    __slots__ = ("errmsg", "wrapper")
 
-    def __init__(self, item, wrapper):
+    def __init__(self, item, wrapper, greedy=False, can_affect_parse_success=False):
         super(Wrap, self).__init__(item)
         self.wrapper = wrapper
-        self.setName(get_name(item) + " (Wrapped)")
+        self.greedy = greedy
+        self.can_affect_parse_success = can_affect_parse_success
+
+    @property
+    def wrapped_name(self):
+        return get_name(self.expr) + " (Wrapped)"
 
     @contextmanager
     def wrapped_packrat_context(self):
@@ -498,7 +538,7 @@ class Wrap(ParseElementEnhance):
 
         Required to allow the packrat cache to distinguish between wrapped
         and unwrapped parses. Only supported natively on cPyparsing."""
-        if hasattr(self, "packrat_context"):
+        if self.can_affect_parse_success and hasattr(self, "packrat_context"):
             self.packrat_context.append(self.wrapper)
             try:
                 yield
@@ -511,14 +551,22 @@ class Wrap(ParseElementEnhance):
     def parseImpl(self, original, loc, *args, **kwargs):
         """Wrapper around ParseElementEnhance.parseImpl."""
         if logger.tracing:  # avoid the overhead of the call if not tracing
-            logger.log_trace(self.name, original, loc)
+            logger.log_trace(self.wrapped_name, original, loc)
         with logger.indent_tracing():
             with self.wrapper(self, original, loc):
                 with self.wrapped_packrat_context():
-                    evaluated_toks = super(Wrap, self).parseImpl(original, loc, *args, **kwargs)
+                    parse_loc, evaluated_toks = super(Wrap, self).parseImpl(original, loc, *args, **kwargs)
+                    if self.greedy:
+                        evaluated_toks = evaluate_tokens(evaluated_toks)
         if logger.tracing:  # avoid the overhead of the call if not tracing
-            logger.log_trace(self.name, original, loc, evaluated_toks)
-        return evaluated_toks
+            logger.log_trace(self.wrapped_name, original, loc, evaluated_toks)
+        return parse_loc, evaluated_toks
+
+    def __str__(self):
+        return self.wrapped_name
+
+    def __repr__(self):
+        return self.wrapped_name
 
 
 def disable_inside(item, *elems, **kwargs):
@@ -539,7 +587,7 @@ def disable_inside(item, *elems, **kwargs):
         finally:
             level[0] -= 1
 
-    yield Wrap(item, manage_item)
+    yield Wrap(item, manage_item, can_affect_parse_success=True)
 
     @contextmanager
     def manage_elem(self, original, loc):
@@ -549,7 +597,7 @@ def disable_inside(item, *elems, **kwargs):
             raise ParseException(original, loc, self.errmsg, self)
 
     for elem in elems:
-        yield Wrap(elem, manage_elem)
+        yield Wrap(elem, manage_elem, can_affect_parse_success=True)
 
 
 def disable_outside(item, *elems):
@@ -729,7 +777,7 @@ def stores_loc_action(loc, tokens):
 stores_loc_action.ignore_tokens = True
 
 
-stores_loc_item = attach(Empty(), stores_loc_action)
+stores_loc_item = attach(Empty(), stores_loc_action, make_copy=False)
 
 
 def disallow_keywords(kwds, with_suffix=None):
@@ -773,7 +821,7 @@ def keyword(name, explicit_prefix=None, require_whitespace=False):
 boundary = regex_item(r"\b")
 
 
-def any_len_perm(*groups_and_elems):
+def any_len_perm_with_one_of_each_group(*groups_and_elems):
     """Matches any len permutation of elems that contains at least one of each group."""
     elems = []
     groups = defaultdict(list)
@@ -811,9 +859,37 @@ def any_len_perm(*groups_and_elems):
     return out
 
 
+def any_len_perm(*optional, **kwargs):
+    """Any length permutation of optional and required."""
+    required = kwargs.pop("required", ())
+    internal_assert(not kwargs, "invalid any_len_perm kwargs", kwargs)
+
+    groups_and_elems = []
+    groups_and_elems.extend(optional)
+    groups_and_elems.extend(enumerate(required))
+    return any_len_perm_with_one_of_each_group(*groups_and_elems)
+
+
 # -----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
 # -----------------------------------------------------------------------------------------------------------------------
+
+def ordered_items(inputdict):
+    """Return the items of inputdict in a deterministic order."""
+    if PY2:
+        return sorted(inputdict.items())
+    else:
+        return inputdict.items()
+
+
+def pprint_tokens(tokens):
+    """Pretty print tokens."""
+    pprinting, ComputationNode.pprinting = ComputationNode.pprinting, True
+    try:
+        pprint(eval(repr(tokens)))
+    finally:
+        ComputationNode.pprinting = pprinting
+
 
 def getline(loc, original):
     """Get the line at loc in original."""
@@ -912,6 +988,14 @@ def tuple_str_of(items, add_quotes=False, add_parens=True):
     return out
 
 
+def tuple_str_of_str(argstr, add_parens=True):
+    """Make a tuple repr of the given comma-delimited argstr."""
+    out = argstr + ("," if argstr else "")
+    if add_parens:
+        out = "(" + out + ")"
+    return out
+
+
 def split_comment(line, move_indents=False):
     """Split line into base and comment."""
     if move_indents:
@@ -1000,6 +1084,14 @@ def split_leading_trailing_indent(line, max_indents=None):
     return leading_indent, line, trailing_indent
 
 
+def split_leading_whitespace(inputstr):
+    """Split leading whitespace."""
+    basestr = inputstr.lstrip()
+    whitespace = inputstr[:len(inputstr) - len(basestr)]
+    internal_assert(whitespace + basestr == inputstr, "invalid whitespace split", inputstr)
+    return whitespace, basestr
+
+
 def rem_and_count_indents(inputstr):
     """Removes and counts the ind_change (opens - closes)."""
     no_opens = inputstr.replace(openindent, "")
@@ -1056,7 +1148,7 @@ def interleaved_join(first_list, second_list):
     return "".join(interleaved)
 
 
-def handle_indentation(inputstr, add_newline=False):
+def handle_indentation(inputstr, add_newline=False, extra_indent=0):
     """Replace tabideal indentation with openindent and closeindent.
     Ignores whitespace-only lines."""
     out_lines = []
@@ -1083,6 +1175,8 @@ def handle_indentation(inputstr, add_newline=False):
     if prev_ind > 0:
         out_lines[-1] += closeindent * prev_ind
     out = "\n".join(out_lines)
+    if extra_indent:
+        out = openindent * extra_indent + out + closeindent * extra_indent
     internal_assert(lambda: out.count(openindent) == out.count(closeindent), "failed to properly handle indentation in", out)
     return out
 

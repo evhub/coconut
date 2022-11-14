@@ -60,11 +60,32 @@ except ImportError:
 else:
     _abc.Sequence.register(_numpy.ndarray)
 
+if sys.version_info < (3, 10):
+    try:
+        from typing_extensions import TypeAlias, ParamSpec, Concatenate
+    except ImportError:
+        TypeAlias = ...
+        ParamSpec = ...
+    typing.TypeAlias = TypeAlias
+    typing.ParamSpec = ParamSpec
+    typing.Concatenate = Concatenate
+
+
+if sys.version_info < (3, 11):
+    try:
+        from typing_extensions import TypeVarTuple, Unpack
+    except ImportError:
+        TypeVarTuple = ...
+        Unpack = ...
+    typing.TypeVarTuple = TypeVarTuple
+    typing.Unpack = Unpack
+
 # -----------------------------------------------------------------------------------------------------------------------
 # STUB:
 # -----------------------------------------------------------------------------------------------------------------------
 
-typing = _t  # The real _coconut doesn't import typing, but we want type-checkers to treat it as if it does
+typing = _t
+
 collections = _collections
 copy = _copy
 copyreg = _copyreg

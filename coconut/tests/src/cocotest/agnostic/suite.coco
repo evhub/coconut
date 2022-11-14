@@ -216,6 +216,7 @@ def suite_test() -> bool:
     assert inh_a.inh_true2() is True
     assert inh_a.inh_true3() is True
     assert inh_a.inh_true4() is True
+    assert inh_a.inh_true5() is True
     assert inh_A.inh_cls_true() is True
     assert pt.__doc__
     out0 = grid() |> grid_trim$(xmax=5, ymax=5)
@@ -961,6 +962,19 @@ forward 2""") == 900
     assert !0 == 1
     assert ![] is True
     assert (<$).__name__ == '_coconut_op_U3c_U24' == f"{(<$).__name__}"
+    a_list: list_or_tuple = [1, 2, 3]
+    a_list = (1, 2, 3)
+    a_func: func_to_int = (.+1)
+    a_tuple: TupleOf[int] = a_list
+    a_seq: Seq[int] = a_tuple
+    a_dict: TextMap[str, int] = {"a": 1}
+    assert HasT().T == 1
+    assert dict_zip({"a": 1, "b": 2}, {"a": 3, "b": 4}) == {"a": [1, 3], "b": [2, 4]}
+    assert intdata(x=2).x == 2 == intdata_(x=2).x
+    assert weird_recursor()
+    summer.acc = 0
+    summer.args = list(range(100_000))
+    assert summer() == sum(range(100_000))
 
     # must come at end
     assert fibs_calls[0] == 1
@@ -973,4 +987,5 @@ def tco_test() -> bool:
     assert is_even_(5000) and is_odd_(5001)
     assert hasattr(ret_none, "_coconut_tco_func")
     assert hasattr(tricky_tco, "_coconut_tco_func")
+    assert methtest().recurse_n_times(100_000) == "done!"
     return True

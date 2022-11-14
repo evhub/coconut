@@ -20,6 +20,7 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 from coconut.root import *  # NOQA
 
 import sys
+import os
 import traceback
 import logging
 from contextlib import contextmanager
@@ -42,9 +43,12 @@ from coconut.constants import (
     taberrfmt,
     use_packrat_parser,
     embed_on_internal_exc,
+    use_color,
+    error_color_code,
+    log_color_code,
+    ansii_escape,
 )
 from coconut.util import (
-    printerr,
     get_clock_time,
     get_name,
     displayable,
@@ -59,6 +63,18 @@ from coconut.exceptions import (
 # -----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
 # -----------------------------------------------------------------------------------------------------------------------
+
+ansii_reset = ansii_escape + "[0m"
+
+
+def isatty(stream, default=None):
+    """Check if a stream is a terminal interface."""
+    try:
+        return stream.isatty()
+    except Exception:
+        logger.log_exc()
+    return default
+
 
 def format_error(err_value, err_type=None, err_trace=None):
     """Properly formats the specified error."""
@@ -163,6 +179,7 @@ class Logger(object):
     quiet = False
     path = None
     name = None
+    colors_enabled = False
     tracing = False
     trace_ind = 0
 
@@ -171,6 +188,17 @@ class Logger(object):
         if other is not None:
             self.copy_from(other)
         self.patch_logging()
+
+    @classmethod
+    def enable_colors(cls):
+        """Attempt to enable CLI colors."""
+        if not cls.colors_enabled:
+            # necessary to resolve https://bugs.python.org/issue40134
+            try:
+                os.system("")
+            except Exception:
+                logger.log_exc()
+            cls.colors_enabled = True
 
     def copy_from(self, other):
         """Copy other onto self."""
@@ -184,48 +212,81 @@ class Logger(object):
         """Make a copy of the logger."""
         return Logger(self)
 
-    def display(self, messages, sig="", debug=False, end="\n", **kwargs):
+    def display(self, messages, sig="", end="\n", file=None, level="normal", color=None, **kwargs):
         """Prints an iterator of messages."""
-        full_message = "".join(
-            sig + line for line in " ".join(
-                str(msg) for msg in messages
-            ).splitlines(True)
-        ) + end
-        if not full_message:
-            full_message = sig.rstrip()
-        # we use end="" to ensure atomic printing
-        if debug:
-            printerr(full_message, end="", **kwargs)
+        if level == "normal":
+            file = file or sys.stdout
+        elif level == "logging":
+            file = file or sys.stderr
+            color = color or log_color_code
+        elif level == "error":
+            file = file or sys.stderr
+            color = color or error_color_code
         else:
-            print(full_message, end="", **kwargs)
+            raise CoconutInternalException("invalid logging level", level)
+
+        if use_color is False or (use_color is None and not isatty(file)):
+            color = None
+
+        if color:
+            self.enable_colors()
+
+        raw_message = " ".join(str(msg) for msg in messages)
+        # if there's nothing to display but there is a sig, display the sig
+        if not raw_message and sig:
+            raw_message = "\n"
+
+        components = []
+        if color:
+            components.append(ansii_escape + "[" + color + "m")
+        for line in raw_message.splitlines(True):
+            if sig:
+                line = sig + line
+            components.append(line)
+        if color:
+            components.append(ansii_reset)
+        components.append(end)
+        full_message = "".join(components)
+
+        # we use end="" to ensure atomic printing (and so we add the end in earlier)
+        print(full_message, file=file, end="", **kwargs)
 
     def print(self, *messages, **kwargs):
         """Print messages to stdout."""
         self.display(messages, **kwargs)
 
     def printerr(self, *messages, **kwargs):
-        """Print messages to stderr."""
-        self.display(messages, debug=True, **kwargs)
+        """Print errors to stderr."""
+        self.display(messages, level="error", **kwargs)
 
-    def show(self, *messages):
+    def printlog(self, *messages, **kwargs):
+        """Print messages to stderr."""
+        self.display(messages, level="logging", **kwargs)
+
+    def show(self, *messages, **kwargs):
         """Prints messages if not --quiet."""
         if not self.quiet:
-            self.display(messages)
+            self.display(messages, **kwargs)
 
-    def show_sig(self, *messages):
+    def show_sig(self, *messages, **kwargs):
         """Prints messages with main signature if not --quiet."""
         if not self.quiet:
-            self.display(messages, main_sig)
+            self.display(messages, main_sig, **kwargs)
 
-    def show_error(self, *messages):
+    def show_error(self, *messages, **kwargs):
         """Prints error messages with main signature if not --quiet."""
         if not self.quiet:
-            self.display(messages, main_sig, debug=True)
+            self.display(messages, main_sig, level="error", **kwargs)
 
     def log(self, *messages):
         """Logs debug messages if --verbose."""
         if self.verbose:
-            self.printerr(*messages)
+            self.printlog(*messages)
+
+    def log_stdout(self, *messages):
+        """Logs debug messages to stdout if --verbose."""
+        if self.verbose:
+            self.print(*messages)
 
     def log_lambda(self, *msg_funcs):
         if self.verbose:
@@ -234,7 +295,7 @@ class Logger(object):
                 if callable(msg):
                     msg = msg()
                 messages.append(msg)
-            self.printerr(*messages)
+            self.printlog(*messages)
 
     def log_func(self, func):
         """Calls a function and logs the results if --verbose."""
@@ -242,12 +303,12 @@ class Logger(object):
             to_log = func()
             if not isinstance(to_log, tuple):
                 to_log = (to_log,)
-            self.printerr(*to_log)
+            self.printlog(*to_log)
 
     def log_prefix(self, prefix, *messages):
         """Logs debug messages with the given signature if --verbose."""
         if self.verbose:
-            self.display(messages, prefix, debug=True)
+            self.display(messages, prefix, level="logging")
 
     def log_sig(self, *messages):
         """Logs debug messages with the main signature if --verbose."""
@@ -259,7 +320,7 @@ class Logger(object):
             new_vars = dict(variables)
             for v in rem_vars:
                 del new_vars[v]
-            self.printerr(message, new_vars)
+            self.printlog(message, new_vars)
 
     def get_error(self, err=None, show_tb=None):
         """Properly formats the current error."""
@@ -301,11 +362,18 @@ class Logger(object):
             try:
                 raise warning
             except Exception:
-                self.print_exc()
+                self.print_exc(warning=True)
 
-    def print_exc(self, err=None, show_tb=None):
-        """Properly prints an exception in the exception context."""
-        errmsg = self.get_error(err, show_tb)
+    def print_exc(self, err=None, show_tb=None, warning=False):
+        """Properly prints an exception."""
+        self.print_formatted_error(self.get_error(err, show_tb), warning)
+
+    def print_exception(self, err_type, err_value, err_tb):
+        """Properly prints the given exception details."""
+        self.print_formatted_error(format_error(err_value, err_type, err_tb))
+
+    def print_formatted_error(self, errmsg, warning=False):
+        """Print a formatted error message in the current context."""
         if errmsg is not None:
             if self.path is not None:
                 errmsg_lines = ["in " + self.path + ":"]
@@ -314,7 +382,10 @@ class Logger(object):
                         line = " " * taberrfmt + line
                     errmsg_lines.append(line)
                 errmsg = "\n".join(errmsg_lines)
-            self.printerr(errmsg)
+            if warning:
+                self.printlog(errmsg)
+            else:
+                self.printerr(errmsg)
 
     def log_exc(self, err=None):
         """Display an exception only if --verbose."""
@@ -342,7 +413,7 @@ class Logger(object):
     def print_trace(self, *args):
         """Print to stderr with tracing indent."""
         trace = " ".join(str(arg) for arg in args)
-        self.printerr(_indent(trace, self.trace_ind))
+        self.printlog(_indent(trace, self.trace_ind))
 
     def log_tag(self, tag, code, multiline=False):
         """Logs a tagged message if tracing."""
@@ -411,10 +482,10 @@ class Logger(object):
                 yield
             finally:
                 elapsed_time = get_clock_time() - start_time
-                self.printerr("Time while parsing:", elapsed_time, "secs")
+                self.printlog("Time while parsing:", elapsed_time, "secs")
                 if use_packrat_parser:
                     hits, misses = ParserElement.packrat_cache_stats
-                    self.printerr("\tPackrat parsing stats:", hits, "hits;", misses, "misses")
+                    self.printlog("\tPackrat parsing stats:", hits, "hits;", misses, "misses")
         else:
             yield
 
@@ -430,7 +501,7 @@ class Logger(object):
 
     def pylog(self, *args, **kwargs):
         """Display all available logging information."""
-        self.printerr(self.name, args, kwargs, traceback.format_exc())
+        self.printlog(self.name, args, kwargs, traceback.format_exc())
     debug = info = warning = error = critical = exception = pylog
 
 

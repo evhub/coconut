@@ -74,6 +74,10 @@ I certainly hope not! Unlike most transpiled languages, all valid Python is vali
 
 First, you're going to want a fast compiler, so you should make sure you're using [`cPyparsing`](https://github.com/evhub/cpyparsing). Second, there are two simple things you can do to make Coconut produce faster Python: compile with `--no-tco` and compile with a `--target` specification for the exact version of Python you want to run your code on. Passing `--target` helps Coconut optimize the compiled code for the Python version you want, and, though [Tail Call Optimization](./DOCS.md#tail-call-optimization) is useful, it will usually significantly slow down functions that use it, so disabling it will often provide a major performance boost.
 
+### When I try to use Coconut on the command line, I get weird unprintable characters and numbers; how do I get rid of them?
+
+You're probably seeing color codes while using a terminal that doesn't support them (e.g. Windows `cmd`). Try setting the `COCONUT_USE_COLOR` environment variable to `FALSE` to get rid of them.
+
 ### I want to contribute to Coconut, how do I get started?
 
 That's great! Coconut is completely open-source, and new contributors are always welcome. Check out Coconut's [contributing guidelines](./CONTRIBUTING.md) for more information.

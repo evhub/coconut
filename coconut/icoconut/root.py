@@ -34,6 +34,7 @@ from coconut.exceptions import (
 from coconut.constants import (
     WINDOWS,
     PY38,
+    PY311,
     py_syntax_version,
     mimetype,
     version_banner,
@@ -213,8 +214,7 @@ def run_cell(self, raw_cell, store_history=False, silent=False, shell_futures=Tr
 
 if asyncio is not None:
     @override
-    @asyncio.coroutine
-    def run_cell_async(self, raw_cell, store_history=False, silent=False, shell_futures=True, cell_id=None, **kwargs):
+    {async_}def run_cell_async(self, raw_cell, store_history=False, silent=False, shell_futures=True, cell_id=None, **kwargs):
         """Version of run_cell_async that always uses shell_futures."""
         # same as above
         return super({cls}, self).run_cell_async(raw_cell, store_history, silent, shell_futures=True, **kwargs)
@@ -231,15 +231,24 @@ def user_expressions(self, expressions):
     return super({cls}, self).user_expressions(compiled_expressions)
 '''
 
+    format_dict = dict(
+        dict="{}",
+        async_=(
+            "async " if PY311 else
+            """@asyncio.coroutine
+    """
+        ),
+    )
+
     class CoconutShell(ZMQInteractiveShell, object):
         """ZMQInteractiveShell for Coconut."""
-        exec(INTERACTIVE_SHELL_CODE.format(dict="{}", cls="CoconutShell"))
+        exec(INTERACTIVE_SHELL_CODE.format(cls="CoconutShell", **format_dict))
 
     InteractiveShellABC.register(CoconutShell)
 
     class CoconutShellEmbed(InteractiveShellEmbed, object):
         """InteractiveShellEmbed for Coconut."""
-        exec(INTERACTIVE_SHELL_CODE.format(dict="{}", cls="CoconutShellEmbed"))
+        exec(INTERACTIVE_SHELL_CODE.format(cls="CoconutShellEmbed", **format_dict))
 
     InteractiveShellABC.register(CoconutShellEmbed)
 

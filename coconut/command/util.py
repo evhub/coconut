@@ -21,7 +21,6 @@ from coconut.root import *  # NOQA
 
 import sys
 import os
-import traceback
 import subprocess
 import shutil
 from select import select
@@ -36,6 +35,7 @@ from coconut.terminal import (
     logger,
     complain,
     internal_assert,
+    isatty,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -261,18 +261,18 @@ def call_output(cmd, stdin=None, encoding_errors="replace", **kwargs):
     stdout, stderr, retcode = [], [], None
     while retcode is None:
         if stdin is not None:
-            logger.log_prefix("<0 ", stdin.rstrip())
+            logger.log_prefix("STDIN < ", stdin.rstrip())
         raw_out, raw_err = p.communicate(stdin)
         stdin = None
 
         out = raw_out.decode(get_encoding(sys.stdout), encoding_errors) if raw_out else ""
         if out:
-            logger.log_prefix("1> ", out.rstrip())
+            logger.log_stdout(out.rstrip())
         stdout.append(out)
 
         err = raw_err.decode(get_encoding(sys.stderr), encoding_errors) if raw_err else ""
         if err:
-            logger.log_prefix("2> ", err.rstrip())
+            logger.log(err.rstrip())
         stderr.append(err)
 
         retcode = p.poll()
@@ -369,11 +369,8 @@ def stdin_readable():
             return bool(select([sys.stdin], [], [], 0)[0])
         except Exception:
             logger.log_exc()
-    try:
-        return not sys.stdin.isatty()
-    except Exception:
-        logger.log_exc()
-    return False
+    # by default assume not readable
+    return not isatty(sys.stdin, default=True)
 
 
 def set_recursion_limit(limit):
@@ -455,7 +452,7 @@ class Prompt(object):
         elif prompt_toolkit is None:
             raise CoconutException("syntax highlighting is not supported on this Python version")
         elif style == "list":
-            print("Coconut Styles: none, " + ", ".join(pygments.styles.get_all_styles()))
+            logger.print("Coconut Styles: none, " + ", ".join(pygments.styles.get_all_styles()))
             sys.exit(0)
         elif style in pygments.styles.get_all_styles():
             self.style = style
@@ -585,7 +582,7 @@ class Runner(object):
                 if tb is None or not subpath(tb.tb_frame.f_code.co_filename, base_dir):
                     break
                 tb = tb.tb_next
-            traceback.print_exception(etype, value, tb)
+            logger.print_exception(etype, value, tb)
             if all_errors_exit:
                 self.exit(1)
 

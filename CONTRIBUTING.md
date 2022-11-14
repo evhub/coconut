@@ -177,7 +177,7 @@ After you've tested your changes locally, you'll want to add more permanent test
     1. Release a new version of [`sublime-coconut`](https://github.com/evhub/sublime-coconut) if applicable
         1. Edit the [`package.json`](https://github.com/evhub/sublime-coconut/blob/master/package.json) with the new version
         2. Run `make publish`
-        3. Release a new version on GitHub
+        3. [Release a new version on GitHub](https://github.com/evhub/sublime-coconut/releases)
     2. Merge pull request and mark as resolved
     3. Release `master` on GitHub
     4. `git fetch`, `git checkout master`, and `git pull`

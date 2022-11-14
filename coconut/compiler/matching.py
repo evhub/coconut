@@ -40,11 +40,13 @@ from coconut.constants import (
     match_set_name_var,
     is_data_var,
     default_matcher_style,
+    self_match_types,
 )
 from coconut.compiler.util import (
     paren_join,
     handle_indentation,
     add_int_and_strs,
+    ordered_items,
 )
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -54,6 +56,7 @@ from coconut.compiler.util import (
 
 def get_match_names(match):
     """Gets keyword names for the given match."""
+    internal_assert(not isinstance(match, str), "invalid match in get_match_names", match)
     names = []
     # these constructs directly contain top-level variable names
     if "var" in match:
@@ -67,8 +70,8 @@ def get_match_names(match):
     # these constructs continue matching on the entire original item,
     #  meaning they can also contain top-level variable names
     elif "paren" in match:
-        (match,) = match
-        names += get_match_names(match)
+        (paren_match,) = match
+        names += get_match_names(paren_match)
     elif "and" in match:
         for and_match in match:
             names += get_match_names(and_match)
@@ -78,6 +81,10 @@ def get_match_names(match):
     elif "isinstance_is" in match:
         isinstance_is_match = match[0]
         names += get_match_names(isinstance_is_match)
+    elif "class" in match or "data_or_class" in match:
+        cls_name, class_matches = match
+        if cls_name in self_match_types and len(class_matches) == 1 and len(class_matches[0]) == 1:
+            names += get_match_names(class_matches[0][0])
     return names
 
 
@@ -425,8 +432,7 @@ class Matcher(object):
         # length checking
         max_len = None if allow_star_args else len(pos_only_match_args) + len(match_args)
         self.check_len_in(req_len, max_len, args)
-        for i in sorted(arg_checks):
-            lt_check, ge_check = arg_checks[i]
+        for i, (lt_check, ge_check) in ordered_items(arg_checks):
             if i < req_len:
                 if lt_check is not None:
                     self.add_check(lt_check)
@@ -1179,6 +1185,7 @@ except _coconut.Exception as _coconut_view_func_exc:
 
     def match(self, tokens, item):
         """Performs pattern-matching processing."""
+        internal_assert(not isinstance(tokens, str), "invalid match tokens", tokens)
         for flag, get_handler in self.matchers.items():
             if flag in tokens:
                 return get_handler(self)(tokens, item)

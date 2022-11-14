@@ -25,6 +25,7 @@ import string
 import platform
 import re
 import datetime as dt
+from warnings import warn
 
 # -----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
@@ -36,14 +37,16 @@ def fixpath(path):
     return os.path.normpath(os.path.realpath(os.path.expanduser(path)))
 
 
-def str_to_bool(boolstr, default=False):
-    """Convert a string to a boolean."""
-    boolstr = boolstr.lower()
+def get_bool_env_var(env_var, default=False):
+    """Get a boolean from an environment variable."""
+    boolstr = os.getenv(env_var, "").lower()
     if boolstr in ("true", "yes", "on", "1"):
         return True
     elif boolstr in ("false", "no", "off", "0"):
         return False
     else:
+        if boolstr not in ("", "none", "default"):
+            warn("{env_var} has invalid value {value!r} (defaulting to {default})".format(env_var=env_var, value=os.getenv(env_var), default=default))
         return default
 
 
@@ -57,7 +60,6 @@ if DEVELOP:
     version_tag = "develop"
 else:
     version_tag = "v" + VERSION
-version_str_tag = "v" + VERSION_STR
 
 version_tuple = tuple(VERSION.split("."))
 
@@ -71,17 +73,22 @@ PY35 = sys.version_info >= (3, 5)
 PY36 = sys.version_info >= (3, 6)
 PY37 = sys.version_info >= (3, 7)
 PY38 = sys.version_info >= (3, 8)
+PY39 = sys.version_info >= (3, 9)
 PY310 = sys.version_info >= (3, 10)
+PY311 = sys.version_info >= (3, 11)
 IPY = (
     ((PY2 and not PY26) or PY35)
     and not (PYPY and WINDOWS)
-    # necessary until jupyter-console fixes https://github.com/jupyter/jupyter_console/issues/245
-    and not PY310
+    and not (PY311 and not WINDOWS)
 )
 MYPY = (
     PY37
     and not WINDOWS
     and not PYPY
+)
+XONSH = (
+    PY35
+    and not (PYPY and PY39)
 )
 
 py_version_str = sys.version.split()[0]
@@ -115,7 +122,7 @@ embed_on_internal_exc = False
 assert not embed_on_internal_exc or DEVELOP, "embed_on_internal_exc should never be enabled on non-develop build"
 
 # should be the minimal ref count observed by attach
-temp_grammar_item_ref_count = 5
+temp_grammar_item_ref_count = 3 if PY311 else 5
 
 minimum_recursion_limit = 128
 default_recursion_limit = 4096
@@ -152,6 +159,7 @@ supported_py3_vers = (
     (3, 9),
     (3, 10),
     (3, 11),
+    (3, 12),
 )
 
 # must match supported vers above and must be replicated in DOCS
@@ -168,6 +176,7 @@ specific_targets = (
     "39",
     "310",
     "311",
+    "312",
 )
 pseudo_targets = {
     "universal": "",
@@ -199,12 +208,13 @@ match_to_kwargs_var = reserved_prefix + "_match_kwargs"
 function_match_error_var = reserved_prefix + "_FunctionMatchError"
 match_set_name_var = reserved_prefix + "_match_set_name"
 
-# should match internally_reserved_symbols below
+# should match reserved_compiler_symbols below
 openindent = "\u204b"  # reverse pilcrow
 closeindent = "\xb6"  # pilcrow
 strwrapper = "\u25b6"  # black right-pointing triangle
-lnwrapper = "\u2021"  # double dagger
+errwrapper = "\u24d8"  # circled letter i
 early_passthrough_wrapper = "\u2038"  # caret
+lnwrapper = "\u2021"  # double dagger
 unwrapper = "\u23f9"  # stop square
 funcwrapper = "def:"
 
@@ -219,10 +229,11 @@ holds = "'\""  # string open/close chars
 # together should include all the constants defined above
 delimiter_symbols = tuple(opens + closes + holds) + (
     strwrapper,
+    errwrapper,
     early_passthrough_wrapper,
     unwrapper,
 ) + indchars + comment_chars
-internally_reserved_symbols = delimiter_symbols + (
+reserved_compiler_symbols = delimiter_symbols + (
     reserved_prefix,
     funcwrapper,
 )
@@ -287,11 +298,14 @@ reserved_vars = (
     "addpattern",
     "then",
     "operator",
+    "type",
     "\u03bb",  # lambda
 )
 
 # names that trigger __class__ to be bound to local vars
 super_names = (
+    # we would include py_super, but it's not helpful, since
+    #  py_super is unsatisfied by a simple local __class__ var
     "super",
     "__class__",
 )
@@ -300,7 +314,7 @@ super_names = (
 untcoable_funcs = (
     r"locals",
     r"globals",
-    r"super",
+    r"(py_)?super",
     r"(typing\.)?cast",
     r"(sys\.)?exc_info",
     r"(sys\.)?_getframe",
@@ -408,6 +422,22 @@ py3_to_py2_stdlib = {
     "typing.Unpack": ("typing_extensions./Unpack", (3, 11)),
 }
 
+self_match_types = (
+    "bool",
+    "bytearray",
+    "bytes",
+    "dict",
+    "float",
+    "frozenset",
+    "int",
+    "py_int",
+    "list",
+    "set",
+    "str",
+    "py_str",
+    "tuple",
+)
+
 # -----------------------------------------------------------------------------------------------------------------------
 # COMMAND CONSTANTS:
 # -----------------------------------------------------------------------------------------------------------------------
@@ -424,20 +454,25 @@ mypy_path_env_var = "MYPYPATH"
 style_env_var = "COCONUT_STYLE"
 vi_mode_env_var = "COCONUT_VI_MODE"
 home_env_var = "COCONUT_HOME"
+use_color_env_var = "COCONUT_USE_COLOR"
 
 coconut_home = fixpath(os.getenv(home_env_var, "~"))
+
+use_color = get_bool_env_var(use_color_env_var, default=None)
+error_color_code = "31"
+log_color_code = "93"
 
 default_style = "default"
 prompt_histfile = os.path.join(coconut_home, ".coconut_history")
 prompt_multiline = False
-prompt_vi_mode = str_to_bool(os.getenv(vi_mode_env_var, ""))
+prompt_vi_mode = get_bool_env_var(vi_mode_env_var)
 prompt_wrap_lines = True
 prompt_history_search = True
 prompt_use_suggester = False
 
 base_dir = os.path.dirname(os.path.abspath(fixpath(__file__)))
 
-base_stub_dir = os.path.join(base_dir, "stubs")
+base_stub_dir = os.path.dirname(base_dir)
 installed_stub_dir = os.path.join(coconut_home, ".coconut_stubs")
 
 watch_interval = .1  # seconds
@@ -454,6 +489,12 @@ report_this_text = "(you should report this at " + new_issue_url + ")"
 exit_chars = (
     "\x04",  # Ctrl-D
     "\x1a",  # Ctrl-Z
+)
+ansii_escape = "\x1b"
+
+# should match special characters above
+reserved_command_symbols = exit_chars + (
+    ansii_escape,
 )
 
 # always use atomic --xxx=yyy rather than --xxx yyy
@@ -487,7 +528,7 @@ oserror_retcode = 127
 
 mypy_install_arg = "install"
 
-mypy_builtin_regex = re.compile(r"\b(reveal_type|reveal_locals|TYPE_CHECKING)\b")
+mypy_builtin_regex = re.compile(r"\b(reveal_type|reveal_locals)\b")
 
 interpreter_uses_auto_compilation = True
 interpreter_uses_coconut_breakpoint = True
@@ -601,8 +642,11 @@ new_operators = (
     "\xbb",  # >>
     "\xd7",  # @
     "\u2026",  # ...
+    "\u2286",  # C=
+    "\u2287",  # ^reversed
+    "\u228a",  # C!=
+    "\u228b",  # ^reversed
 )
-
 
 # -----------------------------------------------------------------------------------------------------------------------
 # INSTALLATION CONSTANTS:
@@ -619,7 +663,7 @@ website_url = "http://coconut-lang.org"
 license_name = "Apache 2.0"
 
 pure_python_env_var = "COCONUT_PURE_PYTHON"
-PURE_PYTHON = str_to_bool(os.getenv(pure_python_env_var, ""))
+PURE_PYTHON = get_bool_env_var(pure_python_env_var)
 
 # the different categories here are defined in requirements.py,
 #  anything after a colon is ignored but allows different versions
@@ -657,21 +701,25 @@ all_reqs = {
         ("ipykernel", "py2"),
         ("ipykernel", "py3"),
         ("jupyter-client", "py2"),
-        ("jupyter-client", "py3"),
+        ("jupyter-client", "py==35"),
+        ("jupyter-client", "py36"),
         "jedi",
+        ("pywinpty", "py2;windows"),
     ),
     "jupyter": (
         "jupyter",
         ("jupyter-console", "py2"),
-        ("jupyter-console", "py3"),
+        ("jupyter-console", "py==35"),
+        ("jupyter-console", "py36"),
         ("jupyterlab", "py35"),
         ("jupytext", "py3"),
         "papermill",
-        ("pywinpty", "py2;windows"),
     ),
     "mypy": (
         "mypy[python2]",
         "types-backports",
+        ("typing_extensions", "py==35"),
+        ("typing_extensions", "py36"),
     ),
     "watch": (
         "watchdog",
@@ -683,7 +731,8 @@ all_reqs = {
         ("trollius", "py2;cpy"),
         ("aenum", "py<34"),
         ("dataclasses", "py==36"),
-        ("typing_extensions", "py3"),
+        ("typing_extensions", "py==35"),
+        ("typing_extensions", "py36"),
     ),
     "dev": (
         ("pre-commit", "py3"),
@@ -711,7 +760,7 @@ min_versions = {
     "psutil": (5,),
     "jupyter": (1, 0),
     "types-backports": (0, 1),
-    "futures": (3, 3),
+    "futures": (3, 4),
     "backports.functools-lru-cache": (1, 6),
     "argparse": (1, 4),
     "pexpect": (4,),
@@ -724,21 +773,23 @@ min_versions = {
     "sphinx": (5, 3),
     "pydata-sphinx-theme": (0, 11),
     "myst-parser": (0, 18),
-    "mypy[python2]": (0, 982),
+    "mypy[python2]": (0, 990),
+    ("jupyter-console", "py36"): (6, 4),
 
     # pinned reqs: (must be added to pinned_reqs below)
 
-    # latest version supported on Python 2
-    ("jupyter-client", "py2"): (5, 3),
+    # don't upgrade this; it breaks on Python 3.6
+    ("jupyter-client", "py36"): (7, 1, 2),
+    ("typing_extensions", "py36"): (4, 1),
     # don't upgrade these; they break on Python 3.5
     ("ipykernel", "py3"): (5, 5),
     ("ipython", "py3"): (7, 9),
-    ("jupyter-console", "py3"): (6, 1),
-    ("jupyter-client", "py3"): (6, 1, 12),
+    ("jupyter-console", "py==35"): (6, 1),
+    ("jupyter-client", "py==35"): (6, 1, 12),
     ("jupytext", "py3"): (1, 8),
     ("jupyterlab", "py35"): (2, 2),
     "xonsh": (0, 9),
-    ("typing_extensions", "py3"): (3, 10),
+    ("typing_extensions", "py==35"): (3, 10),
     # don't upgrade this to allow all versions
     ("prompt_toolkit", "mark3"): (1,),
     # don't upgrade this; it breaks on Python 2.6
@@ -748,6 +799,7 @@ min_versions = {
     # don't upgrade this; it breaks on Python 3.4
     "pygments": (2, 3),
     # don't upgrade these; they break on Python 2
+    ("jupyter-client", "py2"): (5, 3),
     ("pywinpty", "py2;windows"): (0, 5),
     ("jupyter-console", "py2"): (5, 2),
     ("ipython", "py2"): (5, 4),
@@ -757,21 +809,23 @@ min_versions = {
     "papermill": (1, 2),
     # don't upgrade this; it breaks with old IPython versions
     "jedi": (0, 17),
-    # Coconut works best on pyparsing 2
+    # Coconut requires pyparsing 2
     "pyparsing": (2, 4, 7),
 }
 
 # should match the reqs with comments above
 pinned_reqs = (
-    ("jupyter-client", "py3"),
+    ("jupyter-client", "py36"),
+    ("typing_extensions", "py36"),
     ("jupyter-client", "py2"),
     ("ipykernel", "py3"),
     ("ipython", "py3"),
-    ("jupyter-console", "py3"),
+    ("jupyter-console", "py==35"),
+    ("jupyter-client", "py==35"),
     ("jupytext", "py3"),
     ("jupyterlab", "py35"),
     "xonsh",
-    ("typing_extensions", "py3"),
+    ("typing_extensions", "py==35"),
     ("prompt_toolkit", "mark3"),
     "pytest",
     "vprof",
@@ -792,7 +846,7 @@ pinned_reqs = (
 #  that the element corresponding to the last None should be incremented
 _ = None
 max_versions = {
-    ("jupyter-client", "py3"): _,
+    ("jupyter-client", "py==35"): _,
     "pyparsing": _,
     "cPyparsing": (_, _, _),
     ("prompt_toolkit", "mark2"): _,

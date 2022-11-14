@@ -22,7 +22,10 @@ from coconut.root import *  # NOQA
 import sys
 import os.path
 import codecs
-import encodings
+try:
+    from encodings import utf_8
+except ImportError:
+    utf_8 = None
 
 from coconut.integrations import embed
 from coconut.exceptions import CoconutException
@@ -109,10 +112,10 @@ PARSERS = {
 PARSERS["any"] = PARSERS["debug"] = PARSERS["lenient"]
 
 
-def parse(code="", mode="sys", state=False, keep_state=None):
+def parse(code="", mode="sys", state=False, keep_internal_state=None):
     """Compile Coconut code."""
-    if keep_state is None:
-        keep_state = bool(state)
+    if keep_internal_state is None:
+        keep_internal_state = bool(state)
     command = get_state(state)
     if command.comp is None:
         command.setup()
@@ -121,7 +124,7 @@ def parse(code="", mode="sys", state=False, keep_state=None):
             "invalid parse mode " + repr(mode),
             extra="valid modes are " + ", ".join(PARSERS),
         )
-    return PARSERS[mode](command.comp)(code, keep_state=keep_state)
+    return PARSERS[mode](command.comp)(code, keep_state=keep_internal_state)
 
 
 def coconut_eval(expression, globals=None, locals=None, state=False, **kwargs):
@@ -224,28 +227,28 @@ auto_compilation()
 # -----------------------------------------------------------------------------------------------------------------------
 
 
-class CoconutStreamReader(encodings.utf_8.StreamReader, object):
-    """Compile Coconut code from a stream of UTF-8."""
-    coconut_compiler = None
+if utf_8 is not None:
+    class CoconutStreamReader(utf_8.StreamReader, object):
+        """Compile Coconut code from a stream of UTF-8."""
+        coconut_compiler = None
 
-    @classmethod
-    def compile_coconut(cls, source):
-        """Compile the given Coconut source text."""
-        if cls.coconut_compiler is None:
-            cls.coconut_compiler = Compiler(**coconut_kernel_kwargs)
-        return cls.coconut_compiler.parse_sys(source)
+        @classmethod
+        def compile_coconut(cls, source):
+            """Compile the given Coconut source text."""
+            if cls.coconut_compiler is None:
+                cls.coconut_compiler = Compiler(**coconut_kernel_kwargs)
+            return cls.coconut_compiler.parse_sys(source)
 
-    @classmethod
-    def decode(cls, input_bytes, errors="strict"):
-        """Decode and compile the given Coconut source bytes."""
-        input_str, len_consumed = super(CoconutStreamReader, cls).decode(input_bytes, errors)
-        return cls.compile_coconut(input_str), len_consumed
+        @classmethod
+        def decode(cls, input_bytes, errors="strict"):
+            """Decode and compile the given Coconut source bytes."""
+            input_str, len_consumed = super(CoconutStreamReader, cls).decode(input_bytes, errors)
+            return cls.compile_coconut(input_str), len_consumed
 
-
-class CoconutIncrementalDecoder(encodings.utf_8.IncrementalDecoder, object):
-    """Compile Coconut at the end of incrementally decoding UTF-8."""
-    invertible = False
-    _buffer_decode = CoconutStreamReader.decode
+    class CoconutIncrementalDecoder(utf_8.IncrementalDecoder, object):
+        """Compile Coconut at the end of incrementally decoding UTF-8."""
+        invertible = False
+        _buffer_decode = CoconutStreamReader.decode
 
 
 def get_coconut_encoding(encoding="coconut"):
@@ -254,14 +257,16 @@ def get_coconut_encoding(encoding="coconut"):
         return None
     if encoding != "coconut":
         raise CoconutException("unknown Coconut encoding: " + repr(encoding))
+    if utf_8 is None:
+        raise CoconutException("coconut encoding requires encodings.utf_8")
     return codecs.CodecInfo(
         name=encoding,
-        encode=encodings.utf_8.encode,
+        encode=utf_8.encode,
         decode=CoconutStreamReader.decode,
-        incrementalencoder=encodings.utf_8.IncrementalEncoder,
+        incrementalencoder=utf_8.IncrementalEncoder,
         incrementaldecoder=CoconutIncrementalDecoder,
         streamreader=CoconutStreamReader,
-        streamwriter=encodings.utf_8.StreamWriter,
+        streamwriter=utf_8.StreamWriter,
     )
 
 

@@ -22,19 +22,20 @@ def py3_test() -> bool:
     assert head_tail((|1, 2, 3|)) == (1, [2, 3])
     assert py_map((x) -> x+1, range(4)) |> tuple == (1, 2, 3, 4)
     assert py_zip(range(3), range(3)) |> tuple == ((0, 0), (1, 1), (2, 2))
-    e = exec
-    test: dict = {}
-    e("a=1", test)
-    assert test["a"] == 1
     def keyword_only(*, a) = a
     assert keyword_only(a=10) == 10
     čeština = "czech"
     assert čeština == "czech"
-    class A:
-        a = 1
-    class B(A):
-        def get_super_1(self) = super()
-        def get_super_2(self) = super(B, self)
-    b = B()
-    assert b.get_super_1().a == 1 == b.get_super_2().a
+    class HasExecMethod:
+        def exec(self, x) = x()
+    has_exec = HasExecMethod()
+    assert hasattr(has_exec, "exec")
+    assert has_exec.exec(-> 1) == 1
+    def exec_rebind_test():
+        exec = 1
+        assert exec + 1 == 2
+        def exec(x) = x
+        assert exec(1) == 1
+        return True
+    assert exec_rebind_test() is True
     return True

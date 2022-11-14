@@ -115,6 +115,12 @@ else:
     _trim_arity = _pyparsing._trim_arity
     _ParseResultsWithOffset = _pyparsing._ParseResultsWithOffset
 
+if MODERN_PYPARSING:
+    warn(
+        "This version of Coconut is not built for pyparsing v3; some syntax features WILL NOT WORK"
+        + " (run either '{python} -m pip install cPyparsing<{max_ver}' or '{python} -m pip install pyparsing<{max_ver}' to fix)".format(python=sys.executable, max_ver=max_ver_str),
+    )
+
 USE_COMPUTATION_GRAPH = (
     not MODERN_PYPARSING  # not yet supported
     and not PYPY  # experimentally determined
@@ -174,11 +180,6 @@ elif not MODERN_PYPARSING:
                 return value[0], value[1].copy()
     ParserElement.packrat_context = []
     ParserElement._parseCache = _parseCache
-else:
-    warn(
-        "This version of Coconut is not built for pyparsing v3; some syntax features WILL NOT WORK"
-        + " (run either '{python} -m pip install --upgrade cPyparsing' or '{python} -m pip install pyparsing<{max_ver}' to fix)".format(python=sys.executable, max_ver=max_ver_str),
-    )
 
 
 # -----------------------------------------------------------------------------------------------------------------------

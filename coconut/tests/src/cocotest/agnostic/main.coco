@@ -799,7 +799,7 @@ def main_test() -> bool:
     def \match(x) = (+)$(1) <| x
     assert match(1) == 2
     try:
-        match[0] = 1
+        match[0] = 1  # type: ignore
     except TypeError:
         pass
     else:
@@ -1104,13 +1104,6 @@ def main_test() -> bool:
     assert_raises(-> (|1,2,3|)$[0.5:], TypeError)
     assert_raises(-> (|1,2,3|)$[:2.5], TypeError)
     assert_raises(-> (|1,2,3|)$[::1.5], TypeError)
-    def exec_rebind_test():
-        exec = 1
-        assert exec + 1 == 2
-        def exec(x) = x
-        assert exec(1) == 1
-        return True
-    assert exec_rebind_test() is True
     try:
         (raise)(TypeError(), ValueError())
     except TypeError as err:
@@ -1191,6 +1184,49 @@ def main_test() -> bool:
     for x in *(1, 2), *(3, 4):
         xs.append(x)
     assert xs == [1, 2, 3, 4]
+    assert \_coconut.typing.NamedTuple
+    class Asup:
+        a = 1
+    class Bsup(Asup):
+        def get_super_1(self) = super()
+        def get_super_2(self) = super(Bsup, self)
+        def get_super_3(self) = py_super(Bsup, self)
+    bsup = Bsup()
+    assert bsup.get_super_1().a == 1
+    assert bsup.get_super_2().a == 1
+    assert bsup.get_super_3().a == 1
+    e = exec
+    test: dict = {}
+    e("a=1", test)
+    assert test["a"] == 1
+    class SupSup:
+        sup = "sup"
+    class Sup(SupSup):
+        def super(self) = super()
+    assert Sup().super().sup == "sup"
+    assert s{1, 2} ⊆ s{1, 2, 3}
+    try:
+        assert (False, "msg")
+    except AssertionError:
+        pass
+    else:
+        assert False
+    mut = [0]
+    (def -> mut[0] += 1)()
+    assert mut[0] == 1
+    to_int: ... -> int = -> 5
+    to_int_: (...) -> int = -> 5
+    assert to_int() + to_int_() == 10
+    assert 3 |> (./2) == 3/2 == (./2) <| 3
+    assert 2 |> (3/.) == 3/2 == (3/.) <| 2
+    x = 3
+    x |>= (./2)
+    assert x == 3/2
+    x = 2
+    x |>= (3/.)
+    assert x == 3/2
+    assert (./2) |> (.`of`3) == 3/2
+    assert 5 |> (.*2) |> (2/.) == 1/5 == 5 |> (2*.) |> (./2) |> (1/.)
     return True
 
 def test_asyncio() -> bool:
@@ -1203,7 +1239,7 @@ def easter_egg_test() -> bool:
     import sys as _sys
     num_mods_0 = len(_sys.modules)
     import *  # type: ignore
-    assert sys == _sys
+    assert sys is _sys
     assert len(_sys.modules) > num_mods_0
     orig_name = __name__
     from * import *  # type: ignore
@@ -1262,9 +1298,6 @@ def run_main(test_easter_eggs=False) -> bool:
     else:
         from .py3_test import py3_test
         assert py3_test() is True
-        if sys.version_info >= (3, 3):
-            from .py33_test import py33_test
-            assert py33_test() is True
         if sys.version_info >= (3, 5):
             from .py35_test import py35_test
             assert py35_test() is True

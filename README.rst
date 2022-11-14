@@ -25,7 +25,7 @@ Coconut is developed on GitHub_ and hosted on PyPI_. Installing Coconut is as ea
 
     pip install coconut
 
-after which the entire world of Coconut will be at your disposal. To help you get started, check out these links for more information about Coconut:
+To help you get started, check out these links for more information about Coconut:
 
 - Tutorial_: If you're new to Coconut, a good place to start is Coconut's **tutorial**.
 - Documentation_: If you're looking for info about a specific feature, check out Coconut's **documentation**.

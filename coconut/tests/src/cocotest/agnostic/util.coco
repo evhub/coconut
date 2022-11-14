@@ -5,8 +5,6 @@ import operator  # NOQA
 from contextlib import contextmanager
 from functools import wraps
 from collections import defaultdict
-if TYPE_CHECKING:
-    import typing
 
 # Helpers:
 def rand_list(n):
@@ -32,6 +30,16 @@ def assert_raises(c, exc=Exception):
         raise AssertionError(f"got wrong exception {err} (expected {exc})")
     else:
         raise AssertionError(f"{c} failed to raise exception {exc}")
+
+try:
+    prepattern()  # type: ignore
+except NameError, TypeError:
+    def prepattern(base_func, **kwargs):  # type: ignore
+        """Decorator to add a new case to a pattern-matching function,
+        where the new case is checked first."""
+        def pattern_prepender(func):
+            return addpattern(func, base_func, **kwargs)
+        return pattern_prepender
 
 # Old functions:
 old_fmap = fmap$(starmap_over_mappings=True)
@@ -175,6 +183,23 @@ match def (int(x))! = 0 if x else 1
 addpattern def (float(x))! = 0.0 if x else 1.0  # type: ignore
 addpattern def x! if x = False  # type: ignore
 addpattern def x! = True  # type: ignore
+
+# Type aliases:
+if sys.version_info >= (3, 5) or TYPE_CHECKING:
+    import typing
+
+    type list_or_tuple = list | tuple
+
+    type func_to_int = -> int
+
+    type Seq[T] = T[]
+
+    type TupleOf[T] = typing.Tuple[T, ...]
+
+    type TextMap[T: typing.Text, U] = typing.Mapping[T, U]
+
+class HasT:
+    T = 1
 
 # Quick-Sorts:
 def qsort1(l: int[]) -> int[]:
@@ -362,6 +387,11 @@ def return_in_loop(x):
 class methtest:
     def meth(self, arg) = meth(self, arg)
     def tail_call_meth(self, arg) = self.meth(arg)
+    @staticmethod
+    def recurse_n_times(n):
+        if n == 0: return "done!"
+        return methtest.recurse_n_times(n-1)
+
 def meth(self, arg) = arg
 
 def un_treable_func1(x, g=-> _):
@@ -436,12 +466,30 @@ def tricky_tco(func):
     except TypeError:
         return func()
 
+weird_recursor_ns = [50]
+
+def weird_recursor(n):
+    if n == 0:
+        weird_recursor_ns.pop()
+        return True
+    weird_recursor_ns[-1] -= 1
+    return weird_recursor()  # type: ignore
+
+@prepattern(weird_recursor)  # type: ignore
+match def weird_recursor() = weird_recursor(weird_recursor_ns[-1])
+
+def summer():
+    if not summer.args:
+        return summer.acc
+    summer.acc += summer.args.pop()
+    return summer()
+
 
 # Data Blocks:
 try:
     datamaker()  # type: ignore
 except NameError, TypeError:
-    def datamaker(data_type):
+    def datamaker(data_type):  # type: ignore
         """Get the original constructor of the given data type or class."""
         return makedata$(data_type)
 
@@ -748,10 +796,12 @@ class inh_A(A):
     def inh_true1(self) =
         super().true()
     def inh_true2(self) =
-        py_super(inh_A, self).true()
+        super(inh_A, self).true()
     def inh_true3(nonstandard_self) =
         super().true()
-    inh_true4 = def (self) -> super().true()
+    def inh_true4(self) =
+        py_super(inh_A, self).true()
+    inh_true5 = def (self) -> super().true()
     @classmethod
     def inh_cls_true(cls) = super().cls_true()
 class B:
@@ -817,16 +867,6 @@ def SHOPeriodTerminate(X, t, params):
     return 0     # keep going
 
 # Multiple dispatch:
-try:
-    prepattern()  # type: ignore
-except NameError, TypeError:
-    def prepattern(base_func, **kwargs):  # type: ignore
-        """Decorator to add a new case to a pattern-matching function,
-        where the new case is checked first."""
-        def pattern_prepender(func):
-            return addpattern(func, base_func, **kwargs)
-        return pattern_prepender
-
 def add_int_or_str_1(int() as x) = x + 1
 addpattern def add_int_or_str_1(str() as x) = x + "1"  # type: ignore
 
@@ -1148,6 +1188,9 @@ data data6(int() as x) from BaseClass
 data namedpt(str() as name, int() as x, int() as y):
     def mag(self) = (self.x**2 + self.y**2)**0.5
 
+data intdata(int(x))
+data intdata_(class int(x))
+
 
 # Descriptor test
 def tuplify(*args) = args
@@ -1386,6 +1429,13 @@ truncate_sentence = (
 )
 
 maxcolsum = map$(sum) ..> max
+
+dict_zip = (
+    (,)
+    ..> map$(.items())
+    ..> flatten
+    ..> collectby$(.[0], value_func=.[1])
+)
 
 
 # n-ary reduction

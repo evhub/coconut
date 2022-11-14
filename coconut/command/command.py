@@ -43,6 +43,7 @@ from coconut.terminal import (
     internal_assert,
 )
 from coconut.constants import (
+    PY32,
     fixpath,
     code_exts,
     comp_ext,
@@ -63,9 +64,9 @@ from coconut.constants import (
     mypy_install_arg,
     mypy_builtin_regex,
     coconut_pth_file,
+    error_color_code,
 )
 from coconut.util import (
-    printerr,
     univ_open,
     ver_tuple_to_str,
     install_custom_kernel,
@@ -172,7 +173,9 @@ class Command(object):
         """Exit if exit_code is abnormal."""
         if self.exit_code:
             if self.errmsg is not None:
-                logger.show("Exiting with error: " + self.errmsg)
+                # show on stdout with error color code so that stdout
+                #  listeners see the error
+                logger.show("Coconut exiting with error: " + self.errmsg, color=error_color_code)
                 self.errmsg = None
             if self.using_jobs:
                 kill_children()
@@ -192,6 +195,7 @@ class Command(object):
             unset_fast_pyparsing_reprs()
         if args.profile:
             collect_timing_info()
+        logger.enable_colors()
 
         logger.log(cli_version)
         if original_args is not None:
@@ -203,6 +207,14 @@ class Command(object):
             logger.warn("extraneous --line-numbers argument passed; --mypy implies --line-numbers")
         if args.site_install and args.site_uninstall:
             raise CoconutException("cannot --site-install and --site-uninstall simultaneously")
+        for and_args in getattr(args, "and") or []:
+            if len(and_args) > 2:
+                raise CoconutException(
+                    "--and accepts at most two arguments, source and dest ({n} given: {args!r})".format(
+                        n=len(and_args),
+                        args=and_args,
+                    ),
+                )
 
         # process general command args
         if args.recursion_limit is not None:
@@ -399,7 +411,7 @@ class Command(object):
                 logger.print_exc()
             elif not isinstance(err, KeyboardInterrupt):
                 logger.print_exc()
-                printerr(report_this_text)
+                logger.printerr(report_this_text)
             self.register_exit_code(err=err)
 
     def compile_path(self, path, write=True, package=True, **kwargs):
@@ -493,7 +505,7 @@ class Command(object):
             if show_unchanged:
                 logger.show_tabulated("Left unchanged", showpath(destpath), "(pass --force to override).")
             if self.show:
-                print(foundhash)
+                logger.print(foundhash)
             if run:
                 self.execute_file(destpath, argv_source_path=codepath)
 
@@ -508,7 +520,7 @@ class Command(object):
                         writefile(opened, compiled)
                     logger.show_tabulated("Compiled to", showpath(destpath), ".")
                 if self.show:
-                    print(compiled)
+                    logger.print(compiled)
                 if run:
                     if destpath is None:
                         self.execute(compiled, path=codepath, allow_show=False)
@@ -619,10 +631,9 @@ class Command(object):
         try:
             received = self.prompt.input(more)
         except KeyboardInterrupt:
-            print()
-            printerr("KeyboardInterrupt")
+            logger.printerr("\nKeyboardInterrupt")
         except EOFError:
-            print()
+            logger.print()
             self.exit_runner()
         else:
             if received.startswith(exit_chars):
@@ -654,7 +665,7 @@ class Command(object):
                     if compiled:
                         self.execute(compiled, use_eval=None)
             except KeyboardInterrupt:
-                printerr("\nKeyboardInterrupt")
+                logger.printerr("\nKeyboardInterrupt")
 
     def exit_runner(self, exit_code=0):
         """Exit the interpreter."""
@@ -689,7 +700,7 @@ class Command(object):
         if compiled is not None:
 
             if allow_show and self.show:
-                print(compiled)
+                logger.print(compiled)
 
             if path is None:  # header is not included
                 if not self.mypy:
@@ -784,16 +795,16 @@ class Command(object):
                 logger.log("[MyPy]", line)
                 if line.startswith(mypy_silent_err_prefixes):
                     if code is None:  # file
-                        printerr(line)
+                        logger.printerr(line)
                         self.register_exit_code(errmsg="MyPy error")
                 elif not line.startswith(mypy_silent_non_err_prefixes):
                     if code is None:  # file
-                        printerr(line)
+                        logger.printerr(line)
                         if any(infix in line for infix in mypy_err_infixes):
                             self.register_exit_code(errmsg="MyPy error")
                     if line not in self.mypy_errs:
                         if code is not None:  # interpreter
-                            printerr(line)
+                            logger.printerr(line)
                         self.mypy_errs.append(line)
 
     def run_silent_cmd(self, *args):
@@ -959,15 +970,21 @@ class Command(object):
 
     def get_python_lib(self):
         """Get current Python lib location."""
-        from distutils import sysconfig  # expensive, so should only be imported here
-        return fixpath(sysconfig.get_python_lib())
+        # these are expensive, so should only be imported here
+        if PY32:
+            from sysconfig import get_path
+            python_lib = get_path("purelib")
+        else:
+            from distutils import sysconfig
+            python_lib = sysconfig.get_python_lib()
+        return fixpath(python_lib)
 
     def site_install(self):
         """Add Coconut's pth file to site-packages."""
         python_lib = self.get_python_lib()
 
         shutil.copy(coconut_pth_file, python_lib)
-        logger.show_sig("Added %s to %s." % (os.path.basename(coconut_pth_file), python_lib))
+        logger.show_sig("Added %s to %s" % (os.path.basename(coconut_pth_file), python_lib))
 
     def site_uninstall(self):
         """Remove Coconut's pth file from site-packages."""
@@ -976,6 +993,6 @@ class Command(object):
 
         if os.path.isfile(pth_file):
             os.remove(pth_file)
-            logger.show_sig("Removed %s from %s." % (os.path.basename(coconut_pth_file), python_lib))
+            logger.show_sig("Removed %s from %s" % (os.path.basename(coconut_pth_file), python_lib))
         else:
             raise CoconutException("failed to find %s file to remove" % (os.path.basename(coconut_pth_file),))

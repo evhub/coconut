@@ -87,6 +87,7 @@ class CoconutException(BaseCoconutException, Exception):
 
 class CoconutSyntaxError(CoconutException):
     """Coconut SyntaxError."""
+    point_to_endpoint = False
 
     def __init__(self, message, source=None, point=None, ln=None, extra=None, endpoint=None):
         """Creates the Coconut SyntaxError."""
@@ -146,7 +147,11 @@ class CoconutSyntaxError(CoconutException):
                     if point_ind > 0 or endpoint_ind > 0:
                         message += "\n" + " " * (taberrfmt + point_ind)
                         if endpoint_ind - point_ind > 1:
-                            message += "~" * (endpoint_ind - point_ind - 1) + "^"
+                            if not self.point_to_endpoint:
+                                message += "^"
+                            message += "~" * (endpoint_ind - point_ind - 1)
+                            if self.point_to_endpoint:
+                                message += "^"
                         else:
                             message += "^"
 
@@ -213,6 +218,7 @@ class CoconutTargetError(CoconutSyntaxError):
 
 class CoconutParseError(CoconutSyntaxError):
     """Coconut ParseError."""
+    point_to_endpoint = True
 
 
 class CoconutWarning(CoconutException):
