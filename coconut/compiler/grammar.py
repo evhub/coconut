@@ -208,7 +208,7 @@ def comp_pipe_handle(loc, tokens):
         op, fn = tokens[i], tokens[i + 1]
         new_direction, stars, none_aware = pipe_info(op)
         if none_aware:
-            raise CoconutInternalException("found unsupported None-aware composition pipe")
+            raise CoconutInternalException("found unsupported None-aware composition pipe", op)
         if direction is None:
             direction = new_direction
         elif new_direction != direction:
@@ -348,9 +348,9 @@ def typedef_callable_handle(loc, tokens):
         ellipsis = None
         for arg_toks in args_tokens:
             if paramspec is not None:
-                raise CoconutDeferredSyntaxError("ParamSpecs must come at end of Callable parameters", loc)
+                raise CoconutDeferredSyntaxError("only the last Callable parameter may be a ParamSpec", loc)
             elif ellipsis is not None:
-                raise CoconutDeferredSyntaxError("only a single ellipsis is supported in Callable parameters", loc)
+                raise CoconutDeferredSyntaxError("if Callable parameters contain an ellipsis, they must be only an ellipsis", loc)
             elif "arg" in arg_toks:
                 arg, = arg_toks
                 args.append(arg)
@@ -358,7 +358,7 @@ def typedef_callable_handle(loc, tokens):
                 paramspec, = arg_toks
             elif "ellipsis" in arg_toks:
                 if args or paramspec is not None:
-                    raise CoconutDeferredSyntaxError("only a single ellipsis is supported in Callable parameters", loc)
+                    raise CoconutDeferredSyntaxError("if Callable parameters contain an ellipsis, they must be only an ellipsis", loc)
                 ellipsis, = arg_toks
             else:
                 raise CoconutInternalException("invalid typedef_callable arg tokens", arg_toks)

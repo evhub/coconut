@@ -2693,7 +2693,10 @@ def __new__(_coconut_cls, {all_args}):
     def make_namedtuple_call(self, name, namedtuple_args, types=None):
         """Construct a namedtuple call."""
         if types:
-            wrapped_types = [self.wrap_typedef(types.get(i, "_coconut.typing.Any")) for i in range(len(namedtuple_args))]
+            wrapped_types = [
+                self.wrap_typedef(types.get(i, "_coconut.typing.Any"), for_py_typedef=False)
+                for i in range(len(namedtuple_args))
+            ]
             if name is None:
                 return "_coconut_mk_anon_namedtuple(" + tuple_str_of(namedtuple_args, add_quotes=True) + ", " + tuple_str_of(wrapped_types) + ")"
             else:
@@ -3169,9 +3172,9 @@ if not {check_var}:
         """Process type annotations without a comma after them."""
         return self.typedef_handle(tokens.asList() + [","])
 
-    def wrap_typedef(self, typedef, ignore_target=False):
-        """Wrap a type definition in a string to defer it unless --no-wrap."""
-        if self.no_wrap or not ignore_target and self.target_info >= (3, 7):
+    def wrap_typedef(self, typedef, for_py_typedef):
+        """Wrap a type definition in a string to defer it unless --no-wrap or __future__.annotations."""
+        if self.no_wrap or for_py_typedef and self.target_info >= (3, 7):
             return typedef
         else:
             return self.wrap_str_of(self.reformat(typedef, ignore_errors=False))
@@ -3180,7 +3183,7 @@ if not {check_var}:
         """Process Python 3 type annotations."""
         if len(tokens) == 1:  # return typedef
             if self.target.startswith("3"):
-                return " -> " + self.wrap_typedef(tokens[0]) + ":"
+                return " -> " + self.wrap_typedef(tokens[0], for_py_typedef=True) + ":"
             else:
                 return ":\n" + self.wrap_comment(" type: (...) -> " + tokens[0])
         else:  # argument typedef
@@ -3192,7 +3195,7 @@ if not {check_var}:
             else:
                 raise CoconutInternalException("invalid type annotation tokens", tokens)
             if self.target.startswith("3"):
-                return varname + ": " + self.wrap_typedef(typedef) + default + comma
+                return varname + ": " + self.wrap_typedef(typedef, for_py_typedef=True) + default + comma
             else:
                 return varname + default + comma + self.wrap_passthrough(self.wrap_comment(" type: " + typedef) + non_syntactic_newline, early=True)
 
@@ -3207,7 +3210,7 @@ if not {check_var}:
             raise CoconutInternalException("invalid variable type annotation tokens", tokens)
 
         if self.target_info >= (3, 6):
-            return name + ": " + self.wrap_typedef(typedef) + ("" if value is None else " = " + value)
+            return name + ": " + self.wrap_typedef(typedef, for_py_typedef=True) + ("" if value is None else " = " + value)
         else:
             return handle_indentation('''
 {name} = {value}{comment}
@@ -3218,8 +3221,7 @@ __annotations__["{name}"] = {annotation}
                 name=name,
                 value="None" if value is None else value,
                 comment=self.wrap_comment(" type: " + typedef),
-                # ignore target since this annotation isn't going inside an actual typedef
-                annotation=self.wrap_typedef(typedef, ignore_target=True),
+                annotation=self.wrap_typedef(typedef, for_py_typedef=False),
             )
 
     def funcname_typeparams_handle(self, tokens):
@@ -3246,7 +3248,7 @@ __annotations__["{name}"] = {annotation}
                 name, = tokens
             else:
                 name, bound = tokens
-                bounds = ", bound=" + bound
+                bounds = ", bound=" + self.wrap_typedef(bound, for_py_typedef=False)
         elif "TypeVarTuple" in tokens:
             TypeVarFunc = "TypeVarTuple"
             name, = tokens
@@ -3312,7 +3314,7 @@ __annotations__["{name}"] = {annotation}
         return "".join(paramdefs) + self.typed_assign_stmt_handle([
             name,
             "_coconut.typing.TypeAlias",
-            self.wrap_typedef(typedef),
+            self.wrap_typedef(typedef, for_py_typedef=False),
         ])
 
     def with_stmt_handle(self, tokens):

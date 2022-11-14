@@ -143,7 +143,7 @@ legal_indent_chars = " \t"  # the only Python-legal indent chars
 
 non_syntactic_newline = "\f"  # must be a single character
 
-# both must be in ascending order
+# both must be in ascending order and must be unbroken with no missing 2 num vers
 supported_py2_vers = (
     (2, 6),
     (2, 7),
