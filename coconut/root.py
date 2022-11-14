@@ -26,7 +26,7 @@ import sys as _coconut_sys
 VERSION = "2.1.1"
 VERSION_NAME = "The Spanish Inquisition"
 # False for release, int >= 1 for develop
-DEVELOP = True
+DEVELOP = 2
 ALPHA = False  # for pre releases rather than post releases
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -46,7 +46,9 @@ def _indent(code, by=1, tabsize=4, newline=False, strip=False):
 # CONSTANTS:
 # -----------------------------------------------------------------------------------------------------------------------
 
+assert isinstance(DEVELOP, int) or DEVELOP is False, "DEVELOP must be an int or False"
 assert DEVELOP or not ALPHA, "alpha releases are only for develop"
+
 if DEVELOP:
     VERSION += "-" + ("a" if ALPHA else "post") + "_dev" + str(int(DEVELOP))
 VERSION_STR = VERSION + " [" + VERSION_NAME + "]"
