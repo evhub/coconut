@@ -502,7 +502,12 @@ class Logger(object):
     def pylog(self, *args, **kwargs):
         """Display all available logging information."""
         self.printlog(self.name, args, kwargs, traceback.format_exc())
-    debug = info = warning = error = critical = exception = pylog
+    debug = info = warning = pylog
+
+    def pylogerr(self, *args, **kwargs):
+        """Display all available error information."""
+        self.printerr(self.name, args, kwargs, traceback.format_exc())
+    error = critical = exception = pylogerr
 
 
 # -----------------------------------------------------------------------------------------------------------------------
