@@ -740,6 +740,7 @@ class Grammar(object):
 
     refname = Forward()
     setname = Forward()
+    classname = Forward()
     name_ref = combine(Optional(backslash) + base_name)
     unsafe_name = combine(Optional(backslash.suppress()) + base_name)
 
@@ -1567,9 +1568,7 @@ class Grammar(object):
     )
 
     classdef = Forward()
-    classname = Forward()
     decorators = Forward()
-    classname_ref = setname
     classlist = Group(
         Optional(function_call_tokens)
         + ~equals,  # don't match class destructuring assignment
@@ -1618,32 +1617,48 @@ class Grammar(object):
         maybeparens(lparen, setname, rparen)
         | passthrough_item
     )
+    unsafe_imp_name = (
+        # should match imp_name except with unsafe_name instead of setname
+        maybeparens(lparen, unsafe_name, rparen)
+        | passthrough_item
+    )
     dotted_imp_name = (
         dotted_setname
         | passthrough_item
     )
+    unsafe_dotted_imp_name = (
+        # should match dotted_imp_name except with unsafe_dotted_name
+        unsafe_dotted_name
+        | passthrough_item
+    )
+    imp_as = keyword("as").suppress() - imp_name
     import_item = Group(
-        dotted_imp_name
-        - Optional(
-            keyword("as").suppress()
-            - imp_name,
-        ),
+        unsafe_dotted_imp_name + imp_as
+        | dotted_imp_name,
     )
     from_import_item = Group(
-        imp_name
-        - Optional(
-            keyword("as").suppress()
-            - imp_name,
-        ),
+        unsafe_imp_name + imp_as
+        | imp_name,
     )
-    import_names = Group(maybeparens(lparen, tokenlist(import_item, comma), rparen))
-    from_import_names = Group(maybeparens(lparen, tokenlist(from_import_item, comma), rparen))
-    basic_import = keyword("import").suppress() - (import_names | Group(star))
-    import_from_name = condense(ZeroOrMore(unsafe_dot) + dotted_setname | OneOrMore(unsafe_dot) | star)
+
+    import_names = Group(
+        maybeparens(lparen, tokenlist(import_item, comma), rparen)
+        | star,
+    )
+    from_import_names = Group(
+        maybeparens(lparen, tokenlist(from_import_item, comma), rparen)
+        | star,
+    )
+    basic_import = keyword("import").suppress() - import_names
+    import_from_name = condense(
+        ZeroOrMore(unsafe_dot) + unsafe_dotted_name
+        | OneOrMore(unsafe_dot)
+        | star,
+    )
     from_import = (
         keyword("from").suppress()
         - import_from_name
-        - keyword("import").suppress() - (from_import_names | Group(star))
+        - keyword("import").suppress() - from_import_names
     )
     import_stmt = Forward()
     import_stmt_ref = from_import | basic_import
@@ -2236,7 +2251,7 @@ class Grammar(object):
     tco_disable_regex = compile_regex(r"try\b|(async\s+)?(with\b|for\b)|while\b")
     return_regex = compile_regex(r"return\b")
 
-    noqa_comment_regex = compile_regex(r"\b[Nn][Oo][Qq][Aa]\b")
+    noqa_regex = compile_regex(r"\b[Nn][Oo][Qq][Aa]\b")
 
     just_non_none_atom = start_marker + ~keyword("None") + known_atom + end_marker
 

@@ -81,6 +81,7 @@ from coconut.constants import (
     delimiter_symbols,
     reserved_command_symbols,
     streamline_grammar_for_len,
+    all_builtins,
 )
 from coconut.util import (
     pickleable_obj,
@@ -561,8 +562,6 @@ class Compiler(Grammar, pickleable_obj):
         new_match_datadef = trace_attach(cls.match_datadef_ref, cls.method("match_datadef_handle"))
         cls.match_datadef <<= Wrap(new_match_datadef, cls.method("class_manage"), greedy=True)
 
-        cls.classname <<= trace_attach(cls.classname_ref, cls.method("classname_handle"), greedy=True)
-
         # handle parsing_context for function definitions
         new_stmt_lambdef = trace_attach(cls.stmt_lambdef_ref, cls.method("stmt_lambdef_handle"))
         cls.stmt_lambdef <<= Wrap(new_stmt_lambdef, cls.method("func_manage"), greedy=True)
@@ -584,12 +583,13 @@ class Compiler(Grammar, pickleable_obj):
         cls.type_alias_stmt <<= Wrap(new_type_alias_stmt, cls.method("type_alias_stmt_manage"), greedy=True)
 
         # greedy handlers (we need to know about them even if suppressed and/or they use the parsing_context)
-        cls.comment <<= attach(cls.comment_tokens, cls.method("comment_handle"), greedy=True)
+        cls.comment <<= trace_attach(cls.comment_tokens, cls.method("comment_handle"), greedy=True)
         cls.type_param <<= trace_attach(cls.type_param_ref, cls.method("type_param_handle"), greedy=True)
 
         # name handlers
         cls.refname <<= attach(cls.name_ref, cls.method("name_handle"))
         cls.setname <<= attach(cls.name_ref, cls.method("name_handle", assign=True))
+        cls.classname <<= trace_attach(cls.name_ref, cls.method("name_handle", assign=True, classname=True), greedy=True)
 
         # abnormally named handlers
         cls.moduledoc_item <<= trace_attach(cls.moduledoc, cls.method("set_moduledoc"))
@@ -900,7 +900,7 @@ class Compiler(Grammar, pickleable_obj):
 
         # determine possible causes
         if include_causes:
-            internal_assert(extra is None, "make_err cannot include causes with extra")
+            self.internal_assert(extra is None, original, loc, "make_err cannot include causes with extra")
             causes = []
             for cause, _, _ in all_matches(self.parse_err_msg, snippet[loc_in_snip:]):
                 causes.append(cause)
@@ -993,7 +993,7 @@ class Compiler(Grammar, pickleable_obj):
                 for loc in locs:
                     ln = self.adjust(lineno(loc, original))
                     comment = self.reformat(self.comments.get(ln, ""), ignore_errors=True)
-                    if not self.noqa_comment_regex.search(comment):
+                    if not self.noqa_regex.search(comment):
                         logger.warn_err(
                             self.make_err(
                                 CoconutSyntaxWarning,
@@ -3101,7 +3101,7 @@ if not {check_var}:
         is_async = False
         for kwd in kwds:
             if kwd == "async":
-                internal_assert(not is_async, "duplicate stmt_lambdef async keyword", kwd)
+                self.internal_assert(not is_async, original, loc, "duplicate stmt_lambdef async keyword", kwd)
                 is_async = True
             else:
                 raise CoconutInternalException("invalid stmt_lambdef keyword", kwd)
@@ -3753,15 +3753,6 @@ for {match_to_var} in {item}:
         finally:
             cls_stack.pop()
 
-    def classname_handle(self, tokens):
-        """Handle class names."""
-        cls_context = self.current_parsing_context("class")
-        internal_assert(cls_context is not None, "found classname outside of class", tokens)
-
-        name, = tokens
-        cls_context["name"] = name
-        return name
-
     @contextmanager
     def func_manage(self, item, original, loc):
         """Manage the function parsing context."""
@@ -3782,7 +3773,7 @@ for {match_to_var} in {item}:
         cls_context = self.current_parsing_context("class")
         return cls_context is not None and cls_context["name"] is not None and cls_context["in_method"]
 
-    def name_handle(self, original, loc, tokens, assign=False):
+    def name_handle(self, original, loc, tokens, assign=False, classname=False):
         """Handle the given base name."""
         name, = tokens
         if name.startswith("\\"):
@@ -3790,6 +3781,11 @@ for {match_to_var} in {item}:
             escaped = True
         else:
             escaped = False
+
+        if classname:
+            cls_context = self.current_parsing_context("class")
+            self.internal_assert(cls_context is not None, original, loc, "found classname outside of class", tokens)
+            cls_context["name"] = name
 
         if self.disable_name_check:
             return name
@@ -3806,15 +3802,38 @@ for {match_to_var} in {item}:
                         return self.raise_or_wrap_error(
                             self.make_err(
                                 CoconutSyntaxError,
-                                "cannot reassign type variable: " + repr(name),
+                                "cannot reassign type variable '{name}'".format(name=name),
                                 original,
                                 loc,
+                                extra="use explicit '\\{name}' syntax to dismiss".format(name=name),
                             ),
                         )
                     return typevars[name]
 
         if self.strict and not assign:
             self.unused_imports.pop(name, None)
+
+        if (
+            self.strict
+            and assign
+            and not escaped
+            # if we're not using the computation graph, then name is handled
+            #  greedily, which means this might be an invalid parse, in which
+            #  case we can't be sure this is actually shadowing a builtin
+            and USE_COMPUTATION_GRAPH
+            # classnames are handled greedily, so ditto the above
+            and not classname
+            and name in all_builtins
+        ):
+            logger.warn_err(
+                self.make_err(
+                    CoconutSyntaxWarning,
+                    "assignment shadows builtin '{name}' (use explicit '\\{name}' syntax when purposefully assigning to builtin names)".format(name=name),
+                    original,
+                    loc,
+                    extra="remove --strict to dismiss",
+                ),
+            )
 
         if not escaped and name == "exec":
             if self.target.startswith("3"):

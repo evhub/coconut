@@ -86,6 +86,15 @@ bbopt_git = "https://github.com/evhub/bbopt.git"
 
 coconut_snip = r"msg = '<success>'; pmsg = print$(msg); `pmsg`"
 
+always_err_strs = (
+    "CoconutInternalException",
+    "<unprintable",
+    "*** glibc detected ***",
+    "INTERNAL ERROR",
+    "found unused import",
+    "assignment shadows builtin",
+)
+
 mypy_snip = "a: str = count()[0]"
 mypy_snip_err_2 = '''error: Incompatible types in assignment (expression has type\n"int", variable has type "unicode")'''
 mypy_snip_err_3 = '''error: Incompatible types in assignment (expression has type\n"int", variable has type "str")'''
@@ -257,11 +266,8 @@ def call(raw_cmd, assert_output=False, check_mypy=False, check_errors=True, stde
         i += 1
 
     for line in lines:
-        assert "CoconutInternalException" not in line, "CoconutInternalException in " + repr(line)
-        assert "<unprintable" not in line, "Unprintable error in " + repr(line)
-        assert "*** glibc detected ***" not in line, "C error in " + repr(line)
-        assert "INTERNAL ERROR" not in line, "MyPy INTERNAL ERROR in " + repr(line)
-        assert "found unused import" not in line, "unused import in " + repr(line)
+        for errstr in always_err_strs:
+            assert errstr not in line, "{errstr!r} in {line!r}".format(errstr=errstr, line=line)
         if check_errors:
             assert "Traceback (most recent call last):" not in line, "Traceback in " + repr(line)
             assert "Exception" not in line, "Exception in " + repr(line)

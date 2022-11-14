@@ -304,6 +304,7 @@ If the `--strict` (`-s` for short) flag is enabled, Coconut will perform additio
 
 - disabling deprecated features (making them entirely unavailable to code compiled with `--strict`),
 - warning about unused imports,
+- warning when assigning to built-ins,
 - warning on missing `__init__.coco` files when compiling in `--package` mode,
 - throwing errors on various style problems (see list below).
 
@@ -1416,7 +1417,9 @@ While Coconut can usually disambiguate these two use cases, special syntax is av
 
 To specify that you want a _variable_, prefix the name with a backslash as in `\data`, and to specify that you want a _keyword_, prefix the name with a colon as in `:match`.
 
-In addition to helping with cases where the two uses conflict, such disambiguation syntax can also be helpful for letting syntax highlighters know what you're doing.
+Additionally, backslash syntax for escaping variable names can also be used to distinguish between variable names and [custom operators](#custom-operators) as well as explicitly signify that an assignment to a built-in is desirable to dismiss [`--strict` warnings](#strict-mode).
+
+Finally, such disambiguation syntax can also be helpful for letting syntax highlighters know what you're doing.
 
 ##### Examples
 

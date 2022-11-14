@@ -1,4 +1,5 @@
 from .util import *  # type: ignore
+from .util import __doc__ as util_doc
 from .util import operator
 
 from .util import operator <$
@@ -373,14 +374,17 @@ def suite_test() -> bool:
     assert identity[1] == 1
     assert identity[1,] == (1,)
     assert identity |> .[0, 0] == (0, 0)
+
     assert container(1) == container(1)
     assert not container(1) != container(1)
     assert container(1) != container(2)
     assert not container(1) == container(2)
+
     assert container_(1) == container_(1)
     assert not container_(1) != container_(1)
     assert container_(1) != container_(2)
     assert not container_(1) == container_(2)
+
     t = Tuple_(1, 2)
     assert repr(t) == "Tuple_(*elems=(1, 2))"
     assert t.elems == (1, 2)
@@ -975,6 +979,7 @@ forward 2""") == 900
     summer.acc = 0
     summer.args = list(range(100_000))
     assert summer() == sum(range(100_000))
+    assert util_doc == "docstring"
 
     # must come at end
     assert fibs_calls[0] == 1
