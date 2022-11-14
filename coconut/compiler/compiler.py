@@ -993,7 +993,7 @@ class Compiler(Grammar, pickleable_obj):
                 for loc in locs:
                     ln = self.adjust(lineno(loc, original))
                     comment = self.reformat(self.comments.get(ln, ""), ignore_errors=True)
-                    if not match_in(self.noqa_comment, comment):
+                    if not self.noqa_comment_regex.search(comment):
                         logger.warn_err(
                             self.make_err(
                                 CoconutSyntaxWarning,
@@ -3563,7 +3563,7 @@ __annotations__["{name}"] = {annotation}
                         to_chain.append(tuple_str_of(g))
                 else:
                     to_chain.append(g)
-            internal_assert(to_chain, "invalid naked a, *b expression", tokens)
+            self.internal_assert(to_chain, original, loc, "invalid naked a, *b expression", tokens)
 
             # return immediately, since we handle is_list here
             if is_list:

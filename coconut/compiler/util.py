@@ -904,7 +904,7 @@ def powerset(items, min_len=0):
 
 
 def ordered_powerset(items, min_len=0):
-    """Return the all orderings of each subset in the powerset of the given items."""
+    """Return all orderings of each subset in the powerset of the given items."""
     return itertools.chain.from_iterable(
         itertools.permutations(items, perm_len) for perm_len in range(min_len, len(items) + 1)
     )

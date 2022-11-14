@@ -2236,6 +2236,8 @@ class Grammar(object):
     tco_disable_regex = compile_regex(r"try\b|(async\s+)?(with\b|for\b)|while\b")
     return_regex = compile_regex(r"return\b")
 
+    noqa_comment_regex = compile_regex(r"\b[Nn][Oo][Qq][Aa]\b")
+
     just_non_none_atom = start_marker + ~keyword("None") + known_atom + end_marker
 
     original_function_call_tokens = (
@@ -2377,8 +2379,6 @@ class Grammar(object):
         + operator_kwd.suppress()
         + restOfLine
     )
-
-    noqa_comment = regex_item(r"\b[Nn][Oo][Qq][Aa]\b")
 
 # end: EXTRA GRAMMAR
 # -----------------------------------------------------------------------------------------------------------------------
