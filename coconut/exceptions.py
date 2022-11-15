@@ -184,20 +184,9 @@ class CoconutSyntaxError(CoconutException):
 class CoconutStyleError(CoconutSyntaxError):
     """Coconut --strict error."""
 
-    def __init__(self, message, source=None, point=None, ln=None, endpoint=None):
+    def __init__(self, message, source=None, point=None, ln=None, extra="remove --strict to dismiss", endpoint=None):
         """Creates the --strict Coconut error."""
-        self.args = (message, source, point, ln, endpoint)
-
-    def message(self, message, source, point, ln, endpoint):
-        """Creates the --strict Coconut error message."""
-        return super(CoconutStyleError, self).message(
-            message,
-            source,
-            point,
-            ln,
-            extra="remove --strict to dismiss",
-            endpoint=endpoint,
-        )
+        self.args = (message, source, point, ln, extra, endpoint)
 
 
 class CoconutTargetError(CoconutSyntaxError):
