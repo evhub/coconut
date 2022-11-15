@@ -303,8 +303,8 @@ _Note: Periods are ignored in target specifications, such that the target `27` i
 If the `--strict` (`-s` for short) flag is enabled, Coconut will perform additional checks on the code being compiled. It is recommended that you use the `--strict` flag if you are starting a new Coconut project, as it will help you write cleaner code. Specifically, the extra checks done by `--strict` are:
 
 - disabling deprecated features (making them entirely unavailable to code compiled with `--strict`),
-- warning about unused imports,
-- warning when assigning to built-ins,
+- errors instead of warnings on unused imports (unless they have a `# NOQA` or `# noqa` comment),
+- errors instead of warnings when overwriting built-ins (unless a backslash is used to escape the built-in name),
 - warning on missing `__init__.coco` files when compiling in `--package` mode,
 - throwing errors on various style problems (see list below).
 
@@ -312,13 +312,13 @@ The style issues which will cause `--strict` to throw an error are:
 
 - mixing of tabs and spaces (without `--strict` will show a warning),
 - use of `from __future__` imports (Coconut does these automatically) (without `--strict` will show a warning),
+- inheriting from `object` in classes (Coconut does this automatically) (without `--strict` will show a warning),
+- semicolons at end of lines (without `--strict` will show a warning),
+- use of `u` to denote Unicode strings (all Coconut strings are Unicode strings) (without `--strict` will show a warning),
 - missing new line at end of file,
 - trailing whitespace at end of lines,
-- semicolons at end of lines,
 - use of the Python-style `lambda` statement (use [Coconut's lambda syntax](#lambdas) instead),
-- Python-3.10/PEP-634-style dotted names in pattern-matching (Coconut style is to preface these with `==`),
-- inheriting from `object` in classes (Coconut does this automatically),
-- use of `u` to denote Unicode strings (all Coconut strings are Unicode strings), and
+- Python-3.10/PEP-634-style dotted names in pattern-matching (Coconut style is to preface these with `==`), and
 - use of backslash continuation (use [parenthetical continuation](#enhanced-parenthetical-continuation) instead).
 
 ## Integrations

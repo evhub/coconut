@@ -661,7 +661,6 @@ class Compiler(Grammar, pickleable_obj):
         cls.match_dotted_name_const <<= trace_attach(cls.match_dotted_name_const_ref, cls.method("match_dotted_name_const_check"))
         cls.except_star_clause <<= trace_attach(cls.except_star_clause_ref, cls.method("except_star_clause_check"))
         cls.subscript_star <<= trace_attach(cls.subscript_star_ref, cls.method("subscript_star_check"))
-        cls.top_level_case_kwd <<= trace_attach(cls.case_kwd, cls.method("top_level_case_kwd_check"))
 
         # these checking handlers need to be greedy since they can be suppressed
         cls.match_check_equals <<= trace_attach(cls.match_check_equals_ref, cls.method("match_check_equals_check"), greedy=True)
@@ -728,7 +727,9 @@ class Compiler(Grammar, pickleable_obj):
 
     def strict_err_or_warn(self, *args, **kwargs):
         """Raises an error if in strict mode, otherwise raises a warning."""
+        internal_assert("extra" not in kwargs, "cannot pass extra=... to strict_err_or_warn")
         if self.strict:
+            kwargs["extra"] = "remove --strict to downgrade to a warning"
             raise self.make_err(CoconutStyleError, *args, **kwargs)
         else:
             logger.warn_err(self.make_err(CoconutSyntaxWarning, *args, **kwargs))
@@ -988,20 +989,16 @@ class Compiler(Grammar, pickleable_obj):
     def run_final_checks(self, original, keep_state=False):
         """Run post-parsing checks to raise any necessary errors/warnings."""
         # only check for unused imports if we're not keeping state accross parses
-        if not keep_state and self.strict:
+        if not keep_state:
             for name, locs in self.unused_imports.items():
                 for loc in locs:
                     ln = self.adjust(lineno(loc, original))
                     comment = self.reformat(self.comments.get(ln, ""), ignore_errors=True)
                     if not self.noqa_regex.search(comment):
-                        logger.warn_err(
-                            self.make_err(
-                                CoconutSyntaxWarning,
-                                "found unused import: " + self.reformat(name, ignore_errors=True),
-                                original,
-                                loc,
-                                extra="add NOQA comment or remove --strict to dismiss",
-                            ),
+                        self.strict_err_or_warn(
+                            "found unused import: " + self.reformat(name, ignore_errors=True) + " (add '# NOQA' to suppress)",
+                            original,
+                            loc,
                         )
 
     def parse(self, inputstring, parser, preargs, postargs, streamline=True, keep_state=False):
@@ -1306,7 +1303,7 @@ class Compiler(Grammar, pickleable_obj):
                     new.append(line)
             elif last_line is not None and last_line.endswith("\\"):  # backslash line continuation
                 if self.strict:
-                    raise self.make_err(CoconutStyleError, "found backslash continuation", new[-1], len(last_line), self.adjust(ln - 1))
+                    raise self.make_err(CoconutStyleError, "found backslash continuation (use parenthetical continuation instead)", new[-1], len(last_line), self.adjust(ln - 1))
                 skips = addskip(skips, self.adjust(ln))
                 new[-1] = last_line[:-1] + non_syntactic_newline + line + last_comment
             elif opens:  # inside parens
@@ -2471,14 +2468,13 @@ while True:
 
             # check for just inheriting from object
             if (
-                self.strict
-                and len(pos_args) == 1
+                len(pos_args) == 1
                 and pos_args[0] == "object"
                 and not star_args
                 and not kwd_args
                 and not dubstar_args
             ):
-                raise self.make_err(CoconutStyleError, "unnecessary inheriting from object (Coconut does this automatically)", original, loc)
+                self.strict_err_or_warn("unnecessary inheriting from object (Coconut does this automatically)", original, loc)
 
             # universalize if not Python 3
             if not self.target.startswith("3"):
@@ -2932,9 +2928,8 @@ if {store_var} is not _coconut_sentinel:
                 raise self.make_err(CoconutSyntaxError, "only [from *] import * allowed, not from * import name", original, loc)
             logger.warn_err(self.make_err(CoconutSyntaxWarning, "[from *] import * is a Coconut Easter egg and should not be used in production code", original, loc))
             return special_starred_import_handle(imp_all=bool(imp_from))
-        if self.strict:
-            for imp_name in imported_names(imports):
-                self.unused_imports[imp_name].append(loc)
+        for imp_name in imported_names(imports):
+            self.unused_imports[imp_name].append(loc)
         return self.universal_import(imports, imp_from=imp_from)
 
     def complex_raise_stmt_handle(self, tokens):
@@ -3364,8 +3359,8 @@ __annotations__["{name}"] = {annotation}
             raise CoconutInternalException("invalid case tokens", tokens)
 
         self.internal_assert(block_kwd in ("cases", "case", "match"), original, loc, "invalid case statement keyword", block_kwd)
-        if self.strict and block_kwd == "case":
-            raise CoconutStyleError("found deprecated 'case ...:' syntax; use 'cases ...:' or 'match ...:' (with 'case' for each case) instead", original, loc)
+        if block_kwd == "case":
+            self.strict_err_or_warn("deprecated case keyword at top level in case ...: match ...: block (use Python 3.10 match ...: case ...: syntax instead)", original, loc)
 
         check_var = self.get_temp_var("case_match_check")
         match_var = self.get_temp_var("case_match_to")
@@ -3685,13 +3680,19 @@ for {match_to_var} in {item}:
     def check_strict(self, name, original, loc, tokens, only_warn=False, always_warn=False):
         """Check that syntax meets --strict requirements."""
         self.internal_assert(len(tokens) == 1, original, loc, "invalid " + name + " tokens", tokens)
+        message = "found " + name
         if self.strict:
+            kwargs = {}
             if only_warn:
-                logger.warn_err(self.make_err(CoconutSyntaxWarning, "found " + name, original, loc, extra="remove --strict to dismiss"))
+                if not always_warn:
+                    kwargs["extra"] = "remove --strict to dismiss"
+                logger.warn_err(self.make_err(CoconutSyntaxWarning, message, original, loc, **kwargs))
             else:
-                raise self.make_err(CoconutStyleError, "found " + name, original, loc)
+                if always_warn:
+                    kwargs["extra"] = "remove --strict to downgrade to a warning"
+                raise self.make_err(CoconutStyleError, message, original, loc, **kwargs)
         elif always_warn:
-            logger.warn_err(self.make_err(CoconutSyntaxWarning, "found " + name, original, loc))
+            logger.warn_err(self.make_err(CoconutSyntaxWarning, message, original, loc))
         return tokens[0]
 
     def lambdef_check(self, original, loc, tokens):
@@ -3700,11 +3701,11 @@ for {match_to_var} in {item}:
 
     def endline_semicolon_check(self, original, loc, tokens):
         """Check for semicolons at the end of lines."""
-        return self.check_strict("semicolon at end of line", original, loc, tokens)
+        return self.check_strict("semicolon at end of line", original, loc, tokens, always_warn=True)
 
     def u_string_check(self, original, loc, tokens):
         """Check for Python-2-style unicode strings."""
-        return self.check_strict("Python-2-style unicode string (all Coconut strings are unicode strings)", original, loc, tokens)
+        return self.check_strict("Python-2-style unicode string (all Coconut strings are unicode strings)", original, loc, tokens, always_warn=True)
 
     def match_dotted_name_const_check(self, original, loc, tokens):
         """Check for Python-3.10-style implicit dotted name match check."""
@@ -3712,11 +3713,7 @@ for {match_to_var} in {item}:
 
     def match_check_equals_check(self, original, loc, tokens):
         """Check for old-style =item in pattern-matching."""
-        return self.check_strict("deprecated equality-checking '=...' pattern; use '==...' instead", original, loc, tokens)
-
-    def top_level_case_kwd_check(self, original, loc, tokens):
-        """Check for case keyword at top level in match-case block."""
-        return self.check_strict("deprecated case keyword at top level in match-case block (use Python 3.10 match-case syntax instead)", original, loc, tokens)
+        return self.check_strict("deprecated equality-checking '=...' pattern; use '==...' instead", original, loc, tokens, always_warn=True)
 
     def check_py(self, version, name, original, loc, tokens):
         """Check for Python-version-specific syntax."""
@@ -3810,12 +3807,11 @@ for {match_to_var} in {item}:
                         )
                     return typevars[name]
 
-        if self.strict and not assign:
+        if not assign:
             self.unused_imports.pop(name, None)
 
         if (
-            self.strict
-            and assign
+            assign
             and not escaped
             # if we're not using the computation graph, then name is handled
             #  greedily, which means this might be an invalid parse, in which
@@ -3825,14 +3821,10 @@ for {match_to_var} in {item}:
             and not classname
             and name in all_builtins
         ):
-            logger.warn_err(
-                self.make_err(
-                    CoconutSyntaxWarning,
-                    "assignment shadows builtin '{name}' (use explicit '\\{name}' syntax when purposefully assigning to builtin names)".format(name=name),
-                    original,
-                    loc,
-                    extra="remove --strict to dismiss",
-                ),
+            self.strict_err_or_warn(
+                "assignment shadows builtin '{name}' (use explicit '\\{name}' syntax when purposefully assigning to builtin names)".format(name=name),
+                original,
+                loc,
             )
 
         if not escaped and name == "exec":
