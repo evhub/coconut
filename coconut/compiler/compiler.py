@@ -3802,7 +3802,7 @@ for {match_to_var} in {item}:
                                 "cannot reassign type variable '{name}'".format(name=name),
                                 original,
                                 loc,
-                                extra="use explicit '\\{name}' syntax to fix".format(name=name),
+                                extra="use explicit '\\{name}' syntax if intended".format(name=name),
                             ),
                         )
                     return typevars[name]
@@ -3827,7 +3827,7 @@ for {match_to_var} in {item}:
                 loc,
             )
 
-        if not escaped and name == "exec":
+        if name == "exec":
             if self.target.startswith("3"):
                 return name
             elif assign:
@@ -3857,7 +3857,7 @@ for {match_to_var} in {item}:
             return self.raise_or_wrap_error(
                 self.make_err(
                     CoconutSyntaxError,
-                    "variable names cannot start with reserved prefix " + repr(reserved_prefix),
+                    "variable names cannot start with reserved prefix '{prefix}' (use explicit '\\{name}' syntax if intending to access Coconut internals)".format(prefix=reserved_prefix, name=name),
                     original,
                     loc,
                 ),

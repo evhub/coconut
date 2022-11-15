@@ -101,7 +101,6 @@ def test_setup_none() -> bool:
     assert "==" not in parse("None = None")
     assert parse("(1\f+\f2)", "lenient") == "(1 + 2)" == parse("(1\f+\f2)", "eval")
     assert "Ellipsis" not in parse("x: ...")
-    assert parse(r"\exec", "lenient") == "exec"
 
     # things that don't parse correctly without the computation graph
     if not PYPY:
@@ -130,7 +129,7 @@ def test_setup_none() -> bool:
         -> parse("type abc[T,T] = T | T"),
         CoconutSyntaxError,
         err_has=r"""
-cannot reassign type variable 'T' (use explicit '\T' syntax to fix) (line 1)
+cannot reassign type variable 'T' (use explicit '\T' syntax if intended) (line 1)
   type abc[T,T] = T | T
              ^
         """.strip(),
