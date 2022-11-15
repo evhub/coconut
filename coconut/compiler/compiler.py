@@ -996,7 +996,7 @@ class Compiler(Grammar, pickleable_obj):
                     comment = self.reformat(self.comments.get(ln, ""), ignore_errors=True)
                     if not self.noqa_regex.search(comment):
                         self.strict_err_or_warn(
-                            "found unused import: " + self.reformat(name, ignore_errors=True) + " (add '# NOQA' to suppress)",
+                            "found unused import " + repr(self.reformat(name, ignore_errors=True)) + " (add '# NOQA' to suppress)",
                             original,
                             loc,
                         )

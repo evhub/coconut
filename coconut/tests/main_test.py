@@ -575,7 +575,7 @@ def comp_all(args=[], agnostic_target=None, **kwargs):
 def comp_pyston(args=[], **kwargs):
     """Compiles evhub/pyston."""
     call(["git", "clone", pyston_git])
-    call_coconut(["pyston", "--force"] + args, **kwargs)
+    call_coconut(["pyston", "--force"] + args, check_errors=False, **kwargs)
 
 
 def run_pyston(**kwargs):
