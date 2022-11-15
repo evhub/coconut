@@ -819,7 +819,7 @@ min_versions = {
     "sphinx": (5, 3),
     "pydata-sphinx-theme": (0, 11),
     "myst-parser": (0, 18),
-    "mypy[python2]": (0, 990),
+    "mypy[python2]": (0, 991),
     ("jupyter-console", "py36"): (6, 4),
 
     # pinned reqs: (must be added to pinned_reqs below)

@@ -137,7 +137,7 @@ def py36_spec_test(tco: bool) -> bool:
 def py37_spec_test() -> bool:
     """Tests for any py37+ version."""
     import asyncio, typing
-    assert py_breakpoint
+    assert py_breakpoint  # type: ignore
     ns: typing.Dict[str, typing.Any] = {}
     exec("""async def toa(it):
     for x in it:
