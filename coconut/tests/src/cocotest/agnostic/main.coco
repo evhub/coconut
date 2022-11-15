@@ -143,7 +143,7 @@ def main_test() -> bool:
     else:
         assert False
     import queue as q, builtins, email.mime.base
-    assert q.Queue
+    assert q.Queue  # type: ignore
     assert builtins.len([1, 1]) == 2
     assert email.mime.base
     from email.mime import base as mimebase
@@ -356,10 +356,10 @@ def main_test() -> bool:
     assert count(0.5, 0.5)[:3] |> tuple == (0.5, 1, 1.5)
     assert [1, 2, 3] |> fmap$(x -> x+1) == [2, 3, 4]
     assert (1, 2, 3) |> fmap$(x -> x+1) == (2, 3, 4)
-    assert "abc" |> fmap$(x -> x+"!") == "a!b!c!"
-    assert {1, 2, 3} |> fmap$(-> _+1) == {2, 3, 4}
+    assert "abc" |> fmap$(.+"!") == "a!b!c!"
+    assert {1, 2, 3} |> fmap$(-> _+1) == {2, 3, 4}  # type: ignore
     assert [[1, 2, 3]] |> fmap$((+)$([0])) == [[0, 1, 2, 3]]
-    assert range(3) |> fmap$(-> _+1) |> tuple == (1, 2, 3) == (|0, 1, 2|) |> iter |> fmap$(-> _+1) |> tuple
+    assert range(3) |> fmap$(-> _+1) |> tuple == (1, 2, 3) == (|0, 1, 2|) |> iter |> fmap$(-> _+1) |> tuple  # type: ignore
     assert issubclass(int, py_int)
     class pyobjsub(py_object)
     class objsub(\(object))
@@ -404,10 +404,10 @@ def main_test() -> bool:
     x, x = 1, 2
     assert x == 2
     from io import StringIO, BytesIO
-    s = StringIO("derp")
-    assert s.read() == "derp"
-    b = BytesIO(b"herp")
-    assert b.read() == b"herp"
+    sio = StringIO("derp")
+    assert sio.read() == "derp"
+    bio = BytesIO(b"herp")
+    assert bio.read() == b"herp"
     assert 1 ?? 2 == 1 == (??)(1, 2)
     assert None ?? 2 == 2 == (??)(None, 2)
     one = 1
