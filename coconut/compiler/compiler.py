@@ -3805,7 +3805,7 @@ for {match_to_var} in {item}:
                                 "cannot reassign type variable '{name}'".format(name=name),
                                 original,
                                 loc,
-                                extra="use explicit '\\{name}' syntax to dismiss".format(name=name),
+                                extra="use explicit '\\{name}' syntax to fix".format(name=name),
                             ),
                         )
                     return typevars[name]
