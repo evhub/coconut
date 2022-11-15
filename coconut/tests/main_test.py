@@ -91,8 +91,6 @@ always_err_strs = (
     "<unprintable",
     "*** glibc detected ***",
     "INTERNAL ERROR",
-    "found unused import",
-    "assignment shadows builtin",
 )
 
 mypy_snip = "a: str = count()[0]"
