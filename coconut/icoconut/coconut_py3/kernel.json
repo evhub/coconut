@@ -6,6 +6,6 @@
     "-f",
     "{connection_file}"
   ],
-  "display_name": "Coconut (Default Python 3)",
+  "display_name": "Coconut (from 'python3')",
   "language": "coconut"
 }
