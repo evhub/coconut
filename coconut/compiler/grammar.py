@@ -622,6 +622,7 @@ class Grammar(object):
     unsafe_dubcolon = Literal("::")
     unsafe_colon = Literal(":")
     colon = ~unsafe_dubcolon + ~colon_eq + unsafe_colon
+    lt_colon = Literal("<:")
     semicolon = Literal(";") | invalid_syntax("\u037e", "invalid Greek question mark instead of semicolon", greedy=True)
     multisemicolon = combine(OneOrMore(semicolon))
     eq = Literal("==")
@@ -700,6 +701,7 @@ class Grammar(object):
         + ~Literal("<|")
         + ~Literal("<..")
         + ~Literal("<*")
+        + ~Literal("<:")
         + Literal("<")
         | fixto(Literal("\u228a"), "<")
     )
@@ -1280,8 +1282,9 @@ class Grammar(object):
     basic_stmt = trace(addspace(ZeroOrMore(assignlist + equals) + test_expr))
 
     type_param = Forward()
+    type_param_bound_op = lt_colon | colon | le
     type_param_ref = (
-        (setname + Optional((colon | le).suppress() + typedef_test))("TypeVar")
+        (setname + Optional(type_param_bound_op + typedef_test))("TypeVar")
         | (star.suppress() + setname)("TypeVarTuple")
         | (dubstar.suppress() + setname)("ParamSpec")
     )

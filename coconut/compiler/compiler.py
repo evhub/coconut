@@ -725,6 +725,12 @@ class Compiler(Grammar, pickleable_obj):
             complain(err)
             return code
 
+    def strict_err(self, *args, **kwargs):
+        """Raise a CoconutStyleError if in strict mode."""
+        internal_assert("extra" not in kwargs, "cannot pass extra=... to strict_err")
+        if self.strict:
+            raise self.make_err(CoconutStyleError, *args, **kwargs)
+
     def strict_err_or_warn(self, *args, **kwargs):
         """Raises an error if in strict mode, otherwise raises a warning."""
         internal_assert("extra" not in kwargs, "cannot pass extra=... to strict_err_or_warn")
@@ -1291,8 +1297,7 @@ class Compiler(Grammar, pickleable_obj):
             line = lines[ln - 1]  # lines is 0-indexed
             line_rstrip = line.rstrip()
             if line != line_rstrip:
-                if self.strict:
-                    raise self.make_err(CoconutStyleError, "found trailing whitespace", line, len(line), self.adjust(ln))
+                self.strict_err("found trailing whitespace", line, len(line), self.adjust(ln))
                 line = line_rstrip
             last_line, last_comment = split_comment(new[-1]) if new else (None, None)
 
@@ -1302,8 +1307,7 @@ class Compiler(Grammar, pickleable_obj):
                 else:
                     new.append(line)
             elif last_line is not None and last_line.endswith("\\"):  # backslash line continuation
-                if self.strict:
-                    raise self.make_err(CoconutStyleError, "found backslash continuation (use parenthetical continuation instead)", new[-1], len(last_line), self.adjust(ln - 1))
+                self.strict_err("found backslash continuation (use parenthetical continuation instead)", new[-1], len(last_line), self.adjust(ln - 1))
                 skips = addskip(skips, self.adjust(ln))
                 new[-1] = last_line[:-1] + non_syntactic_newline + line + last_comment
             elif opens:  # inside parens
@@ -3234,7 +3238,7 @@ __annotations__["{name}"] = {annotation}
 
     funcname_typeparams_handle.ignore_one_token = True
 
-    def type_param_handle(self, loc, tokens):
+    def type_param_handle(self, original, loc, tokens):
         """Compile a type param into an assignment."""
         bounds = ""
         if "TypeVar" in tokens:
@@ -3242,7 +3246,21 @@ __annotations__["{name}"] = {annotation}
             if len(tokens) == 1:
                 name, = tokens
             else:
-                name, bound = tokens
+                name, bound_op, bound = tokens
+                if bound_op == "<=":
+                    self.strict_err_or_warn(
+                        "use of " + repr(bound_op) + " as a type parameter bound declaration operator is deprecated (Coconut style is to use '<:' operator)",
+                        original,
+                        loc,
+                    )
+                elif bound_op == ":":
+                    self.strict_err(
+                        "found use of " + repr(bound_op) + " as a type parameter bound declaration operator (Coconut style is to use '<:' operator)",
+                        original,
+                        loc,
+                    )
+                else:
+                    self.internal_assert(bound_op == "<:", original, loc, "invalid type_param bound_op", bound_op)
                 bounds = ", bound=" + self.wrap_typedef(bound, for_py_typedef=False)
         elif "TypeVarTuple" in tokens:
             TypeVarFunc = "TypeVarTuple"

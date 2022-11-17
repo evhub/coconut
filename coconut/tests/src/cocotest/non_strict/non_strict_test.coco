@@ -1,5 +1,11 @@
 from __future__ import division
 
+import sys
+
+if sys.version_info >= (3, 5) or TYPE_CHECKING:
+    import typing
+    type TextMap[T: typing.Text, U] = typing.Mapping[T, U]
+
 def non_strict_test() -> bool:
     """Performs non --strict tests."""
     assert (lambda x: x + 1)(2) == 3;
@@ -72,6 +78,8 @@ def non_strict_test() -> bool:
         assert False
     def weird_func(f:lambda g=->_:g=lambda h=->_:h) = f  # type: ignore
     assert weird_func()()(5) == 5
+    a_dict: TextMap[str, int] = {"a": 1}
+    assert a_dict["a"] == 1
     return True
 
 if __name__ == "__main__":

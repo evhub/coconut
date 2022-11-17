@@ -198,7 +198,7 @@ if sys.version_info >= (3, 5) or TYPE_CHECKING:
 
     type TupleOf[T] = typing.Tuple[T, ...]
 
-    type TextMap[T: typing.Text, U] = typing.Mapping[T, U]
+    type TextMap[T <: typing.Text, U] = typing.Mapping[T, U]
 
 class HasT:
     T = 1

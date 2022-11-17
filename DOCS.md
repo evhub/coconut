@@ -318,8 +318,9 @@ The style issues which will cause `--strict` to throw an error are:
 - missing new line at end of file,
 - trailing whitespace at end of lines,
 - use of the Python-style `lambda` statement (use [Coconut's lambda syntax](#lambdas) instead),
+- use of backslash continuation (use [parenthetical continuation](#enhanced-parenthetical-continuation) instead),
 - Python-3.10/PEP-634-style dotted names in pattern-matching (Coconut style is to preface these with `==`), and
-- use of backslash continuation (use [parenthetical continuation](#enhanced-parenthetical-continuation) instead).
+- use of `:` instead of `<:` to specify upper bounds in [Coconut's type parameter syntax](#type-parameter-syntax).
 
 ## Integrations
 
@@ -2193,9 +2194,9 @@ _Can't be done without a long series of checks in place of the destructuring ass
 
 Coconut fully supports [PEP 695](https://peps.python.org/pep-0695/) type parameter syntax (with the caveat that all type variables are invariant rather than inferred).
 
-That includes type parameters for classes, [`data` types](#data), and [all types of function definition](#function-definition). For different types of function definition, the type parameters always come in brackets right after the function name.
+That includes type parameters for classes, [`data` types](#data), and [all types of function definition](#function-definition). For different types of function definition, the type parameters always come in brackets right after the function name. Coconut's [enhanced type annotation syntax](#enhanced-type-annotation) is supported for all type parameter bounds.
 
-Coconut's [enhanced type annotation syntax](#enhanced-type-annotation) is supported for all type parameter bounds. Additionally, Coconut supports the alternative bounds syntax of `type NewType[T <= bound] = ...` rather than `type NewType[T: bound] = ...`, to make it more clear that it is an upper bound rather than a type.
+Additionally, Coconut supports the alternative bounds syntax of `type NewType[T <: bound] = ...` rather than `type NewType[T: bound] = ...`, to make it more clear that it is an upper bound rather than a type. In `--strict` mode, `<:` is required over `:` for all type parameter bounds. _DEPRECATED:_ `<=` can also be used as an alternative to `<:`.
 
 ##### PEP 695 Docs
 

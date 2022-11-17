@@ -88,7 +88,7 @@ def py36_spec_test(tco: bool) -> bool:
     data D1[T](x: T, y: T)  # type: ignore
     assert D1(10, 20).y == 20
 
-    data D2[T: int[]](xs: T)  # type: ignore
+    data D2[T <: int[]](xs: T)  # type: ignore
     assert D2((10, 20)).xs == (10, 20)
 
     def myid[T](x: T) -> T = x
@@ -100,15 +100,15 @@ def py36_spec_test(tco: bool) -> bool:
     def twople[T, U](x: T, y: U) -> (T; U) = (x, y)
     assert twople(1, 2) == (1, 2)
 
-    def head[T: int[]](xs: T) -> (int; T) = (xs[0], xs)
-    def head_[T <= int[]](xs: T) -> (int; T) = (xs[0], xs)
+    def head[T <: int[]](xs: T) -> (int; T) = (xs[0], xs)
+    def head_[T <: int[]](xs: T) -> (int; T) = (xs[0], xs)
     assert head(range(5)) == (0, range(5)) == head_(range(5))
 
     def duplicate[T](x: T) -> (T; T) = x, y where:
         y: T = x
     assert duplicate(10) == (10, 10)
 
-    class HasStr[T <= str]:
+    class HasStr[T <: str]:
         def __init__(self, x: T):
             self.x: T = x
 
