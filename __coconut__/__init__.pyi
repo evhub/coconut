@@ -235,8 +235,12 @@ def recursive_iterator(func: _T_iter_func) -> _T_iter_func:
     return func
 
 
-def override(func: _Tfunc) -> _Tfunc:
-    return func
+try:
+    from typing_extensions import override as _override  # type: ignore
+    override = _override
+except ImportError:
+    def override(func: _Tfunc) -> _Tfunc:
+        return func
 
 def _coconut_call_set_names(cls: object) -> None: ...
 
