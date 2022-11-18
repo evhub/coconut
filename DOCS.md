@@ -2198,6 +2198,8 @@ That includes type parameters for classes, [`data` types](#data), and [all types
 
 Additionally, Coconut supports the alternative bounds syntax of `type NewType[T <: bound] = ...` rather than `type NewType[T: bound] = ...`, to make it more clear that it is an upper bound rather than a type. In `--strict` mode, `<:` is required over `:` for all type parameter bounds. _DEPRECATED:_ `<=` can also be used as an alternative to `<:`.
 
+_Note that, by default, all type declarations are wrapped in strings to enable forward references and improve runtime performance. If you don't want that—e.g. because you want to use type annotations at runtime—simply pass the `--no-wrap` flag._
+
 ##### PEP 695 Docs
 
 Defining a generic class prior to this PEP looks something like this.
