@@ -6,6 +6,10 @@ import collections.abc
 operator log10
 from math import \log10 as (log10)
 
+# need to be at top level to avoid binding sys as a local in main_test
+from importlib import reload  # NOQA
+from enum import Enum  # noqa
+
 
 def assert_raises(c, exc):
     """Test whether callable c raises an exception of type exc."""
@@ -516,7 +520,6 @@ def main_test() -> bool:
     else:
         assert False
     assert 4 == range(2,20) |> filter$(i-> i > 3) |> .$[0]
-    from importlib import reload  # NOQA
     x = 1
     y = "2"
     assert f"{x} == {y}" == "1 == 2"
@@ -811,7 +814,6 @@ def main_test() -> bool:
     assert f"{x}" f"{x}" == "11"
     assert f"{x}" "{x}" == "1{x}"
     assert "{x}" f"{x}" == "{x}1"
-    from enum import Enum  # noqa
     assert (if False then 1 else 2) == 2 == (if False then 1 else if True then 2 else 3)
     class metaA(type):
         def __instancecheck__(cls, inst):
