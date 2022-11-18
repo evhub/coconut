@@ -184,14 +184,6 @@ test-minify:
 	python ./coconut/tests/dest/runner.py
 	python ./coconut/tests/dest/extras.py
 
-# same as test-univ but uses --no-wrap
-.PHONY: test-no-wrap
-test-no-wrap: export COCONUT_USE_COLOR=TRUE
-test-no-wrap:
-	python ./coconut/tests --strict --line-numbers --keep-lines --force --no-wrap
-	python ./coconut/tests/dest/runner.py
-	python ./coconut/tests/dest/extras.py
-
 # same as test-univ but watches tests before running them
 .PHONY: test-watch
 test-watch: export COCONUT_USE_COLOR=TRUE
