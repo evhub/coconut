@@ -44,6 +44,7 @@ from coconut.terminal import (
 )
 from coconut.constants import (
     PY32,
+    PY35,
     fixpath,
     code_exts,
     comp_ext,
@@ -865,20 +866,25 @@ class Command(object):
             kernel_list.append(line.split()[0])
         return kernel_list
 
-    def start_jupyter(self, args):
-        """Start Jupyter with the Coconut kernel."""
-        # get the correct jupyter command
+    def get_jupyter_command(self):
+        """Get the correct jupyter command."""
         for jupyter in (
             [sys.executable, "-m", "jupyter"],
             [sys.executable, "-m", "ipython"],
-            ["jupyter"],
         ):
+            if PY35:  # newer Python versions should only use "jupyter", not "ipython"
+                break
             try:
                 self.run_silent_cmd(jupyter + ["--help"])  # --help is much faster than --version
             except CalledProcessError:
                 logger.warn("failed to find Jupyter command at " + repr(" ".join(jupyter)))
             else:
                 break
+        return jupyter
+
+    def start_jupyter(self, args):
+        """Start Jupyter with the Coconut kernel."""
+        jupyter = self.get_jupyter_command()
 
         # get a list of installed kernels
         kernel_list = self.get_jupyter_kernels(jupyter)
