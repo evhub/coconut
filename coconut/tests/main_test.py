@@ -750,8 +750,8 @@ class TestCompilation(unittest.TestCase):
 
     # run fewer tests on Windows so appveyor doesn't time out
     if not WINDOWS:
-        def test_line_numbers(self):
-            run(["--line-numbers"])
+        def test_line_numbers_keep_lines(self):
+            run(["--line-numbers", "--keep-lines"])
 
         def test_strict(self):
             run(["--strict"])
@@ -771,6 +771,10 @@ class TestCompilation(unittest.TestCase):
     def test_no_tco(self):
         run(["--no-tco"])
 
+    if PY35:
+        def test_no_wrap(self):
+            run(["--no-wrap"])
+
     # avoids a strange, unreproducable failure on appveyor
     if not (WINDOWS and sys.version_info[:2] == (3, 8)):
         def test_run(self):
@@ -779,6 +783,9 @@ class TestCompilation(unittest.TestCase):
     if not PYPY and not PY26:
         def test_jobs_zero(self):
             run(["--jobs", "0"])
+
+    def test_simple_line_numbers(self):
+        run_runnable(["-n", "--line-numbers"])
 
     def test_simple_keep_lines(self):
         run_runnable(["-n", "--keep-lines"])

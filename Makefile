@@ -78,7 +78,7 @@ test: test-mypy
 .PHONY: test-univ
 test-univ: export COCONUT_USE_COLOR=TRUE
 test-univ:
-	python ./coconut/tests --strict --line-numbers --force
+	python ./coconut/tests --strict --line-numbers --keep-lines --force
 	python ./coconut/tests/dest/runner.py
 	python ./coconut/tests/dest/extras.py
 
@@ -87,7 +87,7 @@ test-univ:
 .PHONY: test-tests
 test-tests: export COCONUT_USE_COLOR=TRUE
 test-tests:
-	python ./coconut/tests --strict --line-numbers
+	python ./coconut/tests --strict --line-numbers --keep-lines
 	python ./coconut/tests/dest/runner.py
 	python ./coconut/tests/dest/extras.py
 
@@ -95,7 +95,7 @@ test-tests:
 .PHONY: test-py2
 test-py2: export COCONUT_USE_COLOR=TRUE
 test-py2:
-	python2 ./coconut/tests --strict --line-numbers --force
+	python2 ./coconut/tests --strict --line-numbers --keep-lines --force
 	python2 ./coconut/tests/dest/runner.py
 	python2 ./coconut/tests/dest/extras.py
 
@@ -103,7 +103,7 @@ test-py2:
 .PHONY: test-py3
 test-py3: export COCONUT_USE_COLOR=TRUE
 test-py3:
-	python3 ./coconut/tests --strict --line-numbers --force
+	python3 ./coconut/tests --strict --line-numbers --keep-lines --force
 	python3 ./coconut/tests/dest/runner.py
 	python3 ./coconut/tests/dest/extras.py
 
@@ -111,7 +111,7 @@ test-py3:
 .PHONY: test-pypy
 test-pypy: export COCONUT_USE_COLOR=TRUE
 test-pypy:
-	pypy ./coconut/tests --strict --line-numbers --force
+	pypy ./coconut/tests --strict --line-numbers --keep-lines --force
 	pypy ./coconut/tests/dest/runner.py
 	pypy ./coconut/tests/dest/extras.py
 
@@ -119,7 +119,7 @@ test-pypy:
 .PHONY: test-pypy3
 test-pypy3: export COCONUT_USE_COLOR=TRUE
 test-pypy3:
-	pypy3 ./coconut/tests --strict --line-numbers --force
+	pypy3 ./coconut/tests --strict --line-numbers --keep-lines --force
 	pypy3 ./coconut/tests/dest/runner.py
 	pypy3 ./coconut/tests/dest/extras.py
 
@@ -127,7 +127,7 @@ test-pypy3:
 .PHONY: test-pypy3-verbose
 test-pypy3-verbose: export COCONUT_USE_COLOR=TRUE
 test-pypy3-verbose:
-	pypy3 ./coconut/tests --strict --line-numbers --force --verbose --jobs 0
+	pypy3 ./coconut/tests --strict --line-numbers --keep-lines --force --verbose --jobs 0
 	pypy3 ./coconut/tests/dest/runner.py
 	pypy3 ./coconut/tests/dest/extras.py
 
@@ -151,7 +151,7 @@ test-mypy-univ:
 .PHONY: test-verbose
 test-verbose: export COCONUT_USE_COLOR=TRUE
 test-verbose:
-	python ./coconut/tests --strict --line-numbers --force --verbose --jobs 0
+	python ./coconut/tests --strict --line-numbers --keep-lines --force --verbose --jobs 0
 	python ./coconut/tests/dest/runner.py
 	python ./coconut/tests/dest/extras.py
 
@@ -167,7 +167,7 @@ test-mypy-all:
 .PHONY: test-easter-eggs
 test-easter-eggs: export COCONUT_USE_COLOR=TRUE
 test-easter-eggs:
-	python ./coconut/tests --strict --line-numbers --force
+	python ./coconut/tests --strict --line-numbers --keep-lines --force
 	python ./coconut/tests/dest/runner.py --test-easter-eggs
 	python ./coconut/tests/dest/extras.py
 
@@ -180,7 +180,15 @@ test-pyparsing: test-univ
 .PHONY: test-minify
 test-minify: export COCONUT_USE_COLOR=TRUE
 test-minify:
-	python ./coconut/tests --strict --line-numbers --force --minify
+	python ./coconut/tests --strict --line-numbers --keep-lines --force --minify
+	python ./coconut/tests/dest/runner.py
+	python ./coconut/tests/dest/extras.py
+
+# same as test-univ but uses --no-wrap
+.PHONY: test-no-wrap
+test-no-wrap: export COCONUT_USE_COLOR=TRUE
+test-no-wrap:
+	python ./coconut/tests --strict --line-numbers --keep-lines --force --no-wrap
 	python ./coconut/tests/dest/runner.py
 	python ./coconut/tests/dest/extras.py
 
@@ -188,8 +196,8 @@ test-minify:
 .PHONY: test-watch
 test-watch: export COCONUT_USE_COLOR=TRUE
 test-watch:
-	python ./coconut/tests --strict --line-numbers --force
-	coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --watch --strict --line-numbers
+	python ./coconut/tests --strict --line-numbers --keep-lines --force
+	coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --watch --strict --line-numbers --keep-lines
 	python ./coconut/tests/dest/runner.py
 	python ./coconut/tests/dest/extras.py
 
