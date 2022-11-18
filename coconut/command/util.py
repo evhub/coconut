@@ -44,6 +44,7 @@ from coconut.exceptions import (
 from coconut.util import (
     pickleable_obj,
     get_encoding,
+    get_clock_time,
 )
 from coconut.constants import (
     WINDOWS,
@@ -532,7 +533,7 @@ class Runner(object):
         self.stored = [] if store else None
         if comp is not None:
             self.store(comp.getheader("package:0"))
-            self.run(comp.getheader("code"), store=False)
+            self.run(comp.getheader("code"), use_eval=False, store=False)
             self.fix_pickle()
             self.vars[interpreter_compiler_var] = comp
 
@@ -600,11 +601,12 @@ class Runner(object):
         """Execute Python code."""
         if use_eval is None:
             run_func = interpret
-        elif use_eval is True:
+        elif use_eval:
             run_func = eval
         else:
             run_func = exec_func
-        logger.log("Running " + repr(run_func) + "...")
+        logger.log("Running {func}()...".format(func=getattr(run_func, "__name__", run_func)))
+        start_time = get_clock_time()
         result = None
         with self.handling_errors(all_errors_exit):
             if path is None:
@@ -617,7 +619,7 @@ class Runner(object):
                     self.vars.update(use_vars)
             if store:
                 self.store(code)
-        logger.log("\tGot result back:", result)
+        logger.log("\tFinished in {took_time} secs.".format(took_time=get_clock_time() - start_time))
         return result
 
     def run_file(self, path, all_errors_exit=True):

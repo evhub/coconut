@@ -76,7 +76,7 @@ arguments.add_argument(
     type=str,
     nargs="+",
     action="append",
-    help="additional source/dest pairs to compile",
+    help="add an additional source/dest pair to compile",
 )
 
 arguments.add_argument(
