@@ -143,7 +143,7 @@ dest                destination directory for compiled files (defaults to
 optional arguments:
   -h, --help            show this help message and exit
   --and source [dest ...]
-                        additional source/dest pairs to compile
+                        add an additional source/dest pair to compile
   -v, -V, --version     print Coconut and Python version information
   -t version, --target version
                         specify target Python version (defaults to universal)
@@ -190,8 +190,7 @@ optional arguments:
   --style name          set Pygments syntax highlighting style (or 'list' to list styles)
                         (defaults to COCONUT_STYLE environment variable if it exists,
                         otherwise 'default')
-  --history-file path   set history file (or '' for no file) (currently set to
-                        'C:\\Users\\evanj\\.coconut_history') (can be modified by setting
+  --history-file path   set history file (or '' for no file) (can be modified by setting
                         COCONUT_HOME environment variable)
   --vi-mode, --vimode   enable vi mode in the interpreter (currently set to False) (can be
                         modified by setting COCONUT_VI_MODE environment variable)
