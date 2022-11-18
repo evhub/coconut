@@ -1036,7 +1036,8 @@ requests_sleep_times = (0, 0.1, 0.2, 0.3, 0.4, 1)
 # INTEGRATION CONSTANTS:
 # -----------------------------------------------------------------------------------------------------------------------
 
-coconut_kernel_kwargs = dict(target="sys", line_numbers=True, keep_lines=True)
+# must be replicated in DOCS
+coconut_kernel_kwargs = dict(target="sys", line_numbers=True, keep_lines=True, no_wrap=True)
 
 icoconut_dir = os.path.join(base_dir, "icoconut")
 
