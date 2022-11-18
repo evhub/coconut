@@ -449,6 +449,8 @@ def main_test() -> bool:
     assert range(5) |> iter |> reiterable |> .[1] == 1
     assert range(5) |> reiterable |> fmap$(-> _ + 1) |> list == [1, 2, 3, 4, 5]
 
+    if TYPE_CHECKING or sys.version_info >= (3, 5):
+        from typing import Iterable
     a: Iterable[int] = [1] :: [2] :: [3]  # type: ignore
     a = a |> reiterable
     b = a |> reiterable

@@ -988,7 +988,7 @@ class unrepresentable:
         raise Fail("unrepresentable")
 
 # Typing
-if TYPE_CHECKING:
+if TYPE_CHECKING or sys.version_info >= (3, 5):
     from typing import List, Dict, Any, cast
 else:
     def cast(typ, value) = value

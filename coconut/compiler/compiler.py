@@ -1015,9 +1015,9 @@ class Compiler(Grammar, pickleable_obj):
             with logger.gather_parsing_stats():
                 pre_procd = None
                 try:
-                    pre_procd = self.pre(inputstring, **preargs)
+                    pre_procd = self.pre(inputstring, keep_state=keep_state, **preargs)
                     parsed = parse(parser, pre_procd, inner=False)
-                    out = self.post(parsed, **postargs)
+                    out = self.post(parsed, keep_state=keep_state, **postargs)
                 except ParseBaseException as err:
                     raise self.make_parse_err(err)
                 except CoconutDeferredSyntaxError as err:
@@ -1190,7 +1190,7 @@ class Compiler(Grammar, pickleable_obj):
         self.set_skips(skips)
         return "".join(out)
 
-    def operator_proc(self, inputstring, **kwargs):
+    def operator_proc(self, inputstring, keep_state=False, **kwargs):
         """Process custom operator definitions."""
         out = []
         skips = self.copy_skips()
@@ -1209,49 +1209,42 @@ class Compiler(Grammar, pickleable_obj):
                 op = op.strip()
 
             op_name = None
-            if op is None:
-                use_line = True
-            else:
-                # whitespace, just the word operator, or a backslash continuation means it's not
-                #  an operator declaration (e.g. it's something like "operator = 1" instead)
-                if not op or op.endswith("\\") or self.whitespace_regex.search(op):
-                    use_line = True
-                else:
-                    if stripped_line != base_line:
-                        raise self.make_err(CoconutSyntaxError, "operator declaration statement only allowed at top level", raw_line, ln=self.adjust(ln))
-                    if op in all_keywords:
-                        raise self.make_err(CoconutSyntaxError, "cannot redefine keyword " + repr(op), raw_line, ln=self.adjust(ln))
-                    if op.isdigit():
-                        raise self.make_err(CoconutSyntaxError, "cannot redefine number " + repr(op), raw_line, ln=self.adjust(ln))
-                    if self.existing_operator_regex.match(op):
-                        raise self.make_err(CoconutSyntaxError, "cannot redefine existing operator " + repr(op), raw_line, ln=self.adjust(ln))
-                    for sym in reserved_compiler_symbols + reserved_command_symbols:
-                        if sym in op:
-                            sym_repr = ascii(sym.replace(strwrapper, '"'))
-                            raise self.make_err(CoconutSyntaxError, "invalid custom operator", raw_line, ln=self.adjust(ln), extra="cannot contain " + sym_repr)
-                    op_name = custom_op_var
-                    for c in op:
-                        op_name += "_U" + hex(ord(c))[2:]
-                    if op_name in self.operators:
-                        raise self.make_err(CoconutSyntaxError, "custom operator already declared", raw_line, ln=self.adjust(ln))
-                    self.operators.append(op_name)
-                    self.operator_repl_table.append((
-                        compile_regex(r"\(\s*" + re.escape(op) + r"\s*\)"),
-                        None,
-                        "(" + op_name + ")",
-                    ))
-                    any_delimiter = r"|".join(re.escape(sym) for sym in delimiter_symbols)
-                    self.operator_repl_table.append((
-                        compile_regex(r"(^|\s|(?<!\\)\b|" + any_delimiter + r")" + re.escape(op) + r"(?=\s|\b|$|" + any_delimiter + r")"),
-                        1,
-                        "`" + op_name + "`",
-                    ))
-                    use_line = False
+            # whitespace, just the word operator, or a backslash continuation means it's not
+            #  an operator declaration (e.g. it's something like "operator = 1" instead)
+            if op is not None and op and not op.endswith("\\") and not self.whitespace_regex.search(op):
+                if stripped_line != base_line:
+                    raise self.make_err(CoconutSyntaxError, "operator declaration statement only allowed at top level", raw_line, ln=self.adjust(ln))
+                if op in all_keywords:
+                    raise self.make_err(CoconutSyntaxError, "cannot redefine keyword " + repr(op), raw_line, ln=self.adjust(ln))
+                if op.isdigit():
+                    raise self.make_err(CoconutSyntaxError, "cannot redefine number " + repr(op), raw_line, ln=self.adjust(ln))
+                if self.existing_operator_regex.match(op):
+                    raise self.make_err(CoconutSyntaxError, "cannot redefine existing operator " + repr(op), raw_line, ln=self.adjust(ln))
+                for sym in reserved_compiler_symbols + reserved_command_symbols:
+                    if sym in op:
+                        sym_repr = ascii(sym.replace(strwrapper, '"'))
+                        raise self.make_err(CoconutSyntaxError, "invalid custom operator", raw_line, ln=self.adjust(ln), extra="cannot contain " + sym_repr)
+                op_name = custom_op_var
+                for c in op:
+                    op_name += "_U" + hex(ord(c))[2:]
+                # if we're keeping state, then we're at the interpreter, so to support reevaluation
+                #  (which the interpreter often does), we need to allow repeated operator declarations
+                if not keep_state and op_name in self.operators:
+                    raise self.make_err(CoconutSyntaxError, "custom operator already declared", raw_line, ln=self.adjust(ln))
+                self.operators.append(op_name)
+                self.operator_repl_table.append((
+                    compile_regex(r"\(\s*" + re.escape(op) + r"\s*\)"),
+                    None,
+                    "(" + op_name + ")",
+                ))
+                any_delimiter = r"|".join(re.escape(sym) for sym in delimiter_symbols)
+                self.operator_repl_table.append((
+                    compile_regex(r"(^|\s|(?<!\\)\b|" + any_delimiter + r")" + re.escape(op) + r"(?=\s|\b|$|" + any_delimiter + r")"),
+                    1,
+                    "`" + op_name + "`",
+                ))
 
-            if imp_from is not None and op_name is not None:
-                out.append("from " + imp_from + " import " + op_name + "\n")
-
-            if use_line:
+            if op_name is None:
                 new_line = raw_line
                 for repl, repl_type, repl_to in self.operator_repl_table:
                     if repl_type is None:
@@ -1264,6 +1257,8 @@ class Compiler(Grammar, pickleable_obj):
                         raise CoconutInternalException("invalid operator_repl_table repl_type", repl_type)
                     new_line = repl.sub(sub_func, new_line)
                 out.append(new_line)
+            elif imp_from is not None:
+                out.append("from " + imp_from + " import " + op_name + "\n")
             else:
                 skips = addskip(skips, self.adjust(ln))
 
@@ -1397,13 +1392,13 @@ class Compiler(Grammar, pickleable_obj):
         """Get an end line comment."""
         # CoconutInternalExceptions should always be caught and complained here
         if self.keep_lines:
-            if not 1 <= ln <= len(self.kept_lines) + 2:
-                complain(
-                    CoconutInternalException(
-                        "out of bounds line number", ln,
-                        "not in range [1, " + str(len(self.kept_lines) + 2) + "]",
-                    ),
-                )
+            internal_assert(
+                # keep this as a lambda to prevent it from breaking release builds
+                lambda: 1 <= ln <= len(self.kept_lines) + 2,
+                "out of bounds line number",
+                ln,
+                "not in range [1, " + str(len(self.kept_lines) + 2) + "]",
+            )
             if ln >= len(self.kept_lines) + 1:  # trim too large
                 lni = -1
             else:

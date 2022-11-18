@@ -19,6 +19,7 @@ Must match __coconut__.__init__.
 
 from __future__ import print_function, absolute_import, unicode_literals, division
 
+from coconut.constants import coconut_kernel_kwargs as _coconut_kernel_kwargs
 from coconut.compiler import Compiler as _coconut_Compiler
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -26,4 +27,4 @@ from coconut.compiler import Compiler as _coconut_Compiler
 # -----------------------------------------------------------------------------------------------------------------------
 
 # executes the __coconut__.py header for the current Python version
-exec(_coconut_Compiler(target="sys").getheader("code"))
+exec(_coconut_Compiler(**_coconut_kernel_kwargs).getheader("code"))
