@@ -196,7 +196,7 @@ def interpret(code, in_vars):
         pass  # exec code outside of exception context
     else:
         if result is not None:
-            print(ascii(result))
+            logger.print(ascii(result))
         return  # don't also exec code
     exec_func(code, in_vars)
 
@@ -597,7 +597,7 @@ class Runner(object):
             update_vars = self.vars
         global_vars.update(update_vars)
 
-    def run(self, code, use_eval=None, path=None, all_errors_exit=False, store=True):
+    def run(self, code, use_eval=False, path=None, all_errors_exit=False, store=True):
         """Execute Python code."""
         if use_eval is None:
             run_func = interpret

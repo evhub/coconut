@@ -489,6 +489,20 @@ class Logger(object):
         else:
             yield
 
+    def time_func(self, func):
+        """Decorator to time a function if --verbose."""
+        def timed_func(*args, **kwargs):
+            """Function timed by logger.time_func."""
+            if not self.verbose:
+                return func(*args, **kwargs)
+            start_time = get_clock_time()
+            try:
+                return func(*args, **kwargs)
+            finally:
+                elapsed_time = get_clock_time() - start_time
+                self.printlog("Time while running", func.__name__ + ":", elapsed_time, "secs")
+        return timed_func
+
     def patch_logging(self):
         """Patches built-in Python logging if necessary."""
         if not hasattr(logging, "getLogger"):
