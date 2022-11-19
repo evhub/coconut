@@ -141,16 +141,20 @@ def readfile(openedfile):
     return str(openedfile.read())
 
 
+def open_website(url):
+    """Open a website in the default web browser."""
+    import webbrowser  # this is expensive, so only do it here
+    webbrowser.open(url, 2)
+
+
 def launch_tutorial():
     """Open the Coconut tutorial."""
-    import webbrowser  # this is expensive, so only do it here
-    webbrowser.open(tutorial_url, 2)
+    open_website(tutorial_url)
 
 
 def launch_documentation():
     """Open the Coconut documentation."""
-    import webbrowser  # this is expensive, so only do it here
-    webbrowser.open(documentation_url, 2)
+    open_website(documentation_url)
 
 
 def showpath(path):
@@ -197,7 +201,7 @@ def interpret(code, in_vars):
     else:
         if result is not None:
             logger.print(ascii(result))
-        return  # don't also exec code
+        return result  # don't also exec code
     exec_func(code, in_vars)
 
 
