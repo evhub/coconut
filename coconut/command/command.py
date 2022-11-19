@@ -880,6 +880,8 @@ class Command(object):
                 logger.warn("failed to find Jupyter command at " + repr(" ".join(jupyter)))
             else:
                 break
+        else:  # no break
+            raise CoconutException("'coconut --jupyter' requires Jupyter (run 'pip install coconut[jupyter]' to fix)")
         return jupyter
 
     def start_jupyter(self, args):
