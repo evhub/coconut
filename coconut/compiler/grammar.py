@@ -663,7 +663,7 @@ class Grammar(object):
     amp = Literal("&") | fixto(Literal("\u2227") | Literal("\u2229"), "&")
     caret = Literal("^") | fixto(Literal("\u22bb") | Literal("\u2295"), "^")
     unsafe_bar = ~Literal("|>") + ~Literal("|*") + Literal("|") | fixto(Literal("\u2228") | Literal("\u222a"), "|")
-    bar = ~rbanana + unsafe_bar
+    bar = ~rbanana + unsafe_bar | invalid_syntax("\xa6", "invalid broken bar character", greedy=True)
     percent = Literal("%")
     dollar = Literal("$")
     lshift = Literal("<<") | fixto(Literal("\xab"), "<<")
