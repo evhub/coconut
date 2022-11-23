@@ -49,7 +49,7 @@ from coconut.constants import (
     MYPY,
     PY35,
     PY36,
-    PY310,
+    PY39,
     icoconut_default_kernel_names,
     icoconut_custom_kernel_name,
     mypy_err_infixes,
@@ -823,7 +823,7 @@ class TestExternal(unittest.TestCase):
     def test_bbopt(self):
         with using_path(bbopt):
             comp_bbopt()
-            if not PYPY and (PY2 or PY36) and not PY310:
+            if not PYPY and (PY2 or PY36) and not PY39:
                 install_bbopt()
 
 
