@@ -818,7 +818,7 @@ min_versions = {
     ("dataclasses", "py==36"): (0, 8),
     ("aenum", "py<34"): (3,),
     "sphinx": (5, 3),
-    "pydata-sphinx-theme": (0, 11),
+    "pydata-sphinx-theme": (0, 12),
     "myst-parser": (0, 18),
     "mypy[python2]": (0, 991),
     ("jupyter-console", "py36"): (6, 4),
