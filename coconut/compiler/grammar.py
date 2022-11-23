@@ -816,7 +816,8 @@ class Grammar(object):
     string = combine(Optional(raw_r) + string_item)
     # Python 2 only supports br"..." not rb"..."
     b_string = combine((bit_b + Optional(raw_r) | fixto(raw_r + bit_b, "br")) + string_item)
-    u_string_ref = combine((unicode_u + Optional(raw_r) | raw_r + unicode_u) + string_item)
+    # ur"..."/ru"..." strings are not suppored in Python 3
+    u_string_ref = combine(unicode_u + string_item)
     f_string_tokens = combine((format_f + Optional(raw_r) | raw_r + format_f) + string_item)
     nonbf_string = string | u_string
     nonb_string = nonbf_string | f_string
