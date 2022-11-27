@@ -91,7 +91,7 @@ The full list of optional dependencies is:
 - `jobs`: improves use of the `--jobs` flag.
 - `mypy`: enables use of the `--mypy` flag.
 - `backports`: installs libraries that backport newer Python features to older versions, which Coconut will automatically use instead of the standard library if the standard library is not available. Specifically:
-  - Installs [`typing_extensions`](https://pypi.org/project/typing-extensions/) to backport [`typing`](https://docs.python.org/3/library/typing.html).
+  - Installs [`typing`](https://pypi.org/project/typing/) and [`typing_extensions`](https://pypi.org/project/typing-extensions/) to backport [`typing`](https://docs.python.org/3/library/typing.html).
   - Installs [`aenum`](https://pypi.org/project/aenum) to backport [`enum`](https://docs.python.org/3/library/enum.html).
   - Installs [`trollius`](https://pypi.python.org/pypi/trollius) to backport [`asyncio`](https://docs.python.org/3/library/asyncio.html).
   - Installs [`dataclasses`](https://pypi.org/project/dataclasses/) to backport [`dataclasses`](https://docs.python.org/3/library/dataclasses.html).

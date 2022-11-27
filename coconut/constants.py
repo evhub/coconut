@@ -778,6 +778,7 @@ all_reqs = {
         ("trollius", "py2;cpy"),
         ("aenum", "py<34"),
         ("dataclasses", "py==36"),
+        ("typing", "py<35"),
         ("typing_extensions", "py==35"),
         ("typing_extensions", "py36"),
     ),
@@ -822,6 +823,7 @@ min_versions = {
     "myst-parser": (0, 18),
     "mypy[python2]": (0, 991),
     ("jupyter-console", "py36"): (6, 4),
+    ("typing", "py<35"): (3, 1),
 
     # pinned reqs: (must be added to pinned_reqs below)
 
