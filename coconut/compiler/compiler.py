@@ -3213,8 +3213,15 @@ if "__annotations__" not in _coconut.locals():
 __annotations__["{name}"] = {annotation}
             ''').format(
                 name=name,
-                value="None" if value is None else value,
-                comment=self.wrap_comment(" type: " + typedef),
+                value=(
+                    value if value is not None
+                    else "..." if self.target.startswith("3")
+                    else "None"
+                ),
+                comment=(
+                    self.wrap_comment(" type: " + typedef)
+                    + (self.type_ignore_comment() if value is None else "")
+                ),
                 annotation=self.wrap_typedef(typedef, for_py_typedef=False),
             )
 

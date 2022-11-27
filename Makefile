@@ -1,3 +1,7 @@
+# the main test command to use when developing rapidly
+.PHONY: test
+test: test-mypy
+
 .PHONY: dev
 dev: clean setup
 	python -m pip install --upgrade -e .[dev]
@@ -69,10 +73,6 @@ format: dev
 .PHONY: test-all
 test-all: clean
 	pytest --strict-markers -s ./coconut/tests
-
-# the main test command to use when developing rapidly
-.PHONY: test
-test: test-mypy
 
 # basic testing for the universal target
 .PHONY: test-univ
