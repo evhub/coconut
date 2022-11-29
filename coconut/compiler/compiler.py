@@ -3215,13 +3215,9 @@ __annotations__["{name}"] = {annotation}
                 name=name,
                 value=(
                     value if value is not None
-                    else "..." if self.target.startswith("3")
-                    else "None"
+                    else "_coconut.typing.cast(_coconut.typing.Any, {ellipsis})".format(ellipsis=self.ellipsis_handle())
                 ),
-                comment=(
-                    self.wrap_comment(" type: " + typedef)
-                    + (self.type_ignore_comment() if value is None else "")
-                ),
+                comment=self.wrap_comment(" type: " + typedef),
                 annotation=self.wrap_typedef(typedef, for_py_typedef=False),
             )
 
@@ -3344,7 +3340,7 @@ __annotations__["{name}"] = {annotation}
                 + closeindent * (len(withs) - 1)
             )
 
-    def ellipsis_handle(self, tokens):
+    def ellipsis_handle(self, tokens=None):
         if self.target.startswith("3"):
             return "..."
         else:

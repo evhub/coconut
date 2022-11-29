@@ -453,7 +453,12 @@ __anext__ = _coconut.asyncio.coroutine(_coconut_anext_ns["__anext__"])
             if_ge="import typing",
             if_lt='''
 class typing_mock{object}:
+    """The typing module is not available at runtime in Python 3.4 or earlier; try hiding your typedefs behind an 'if TYPE_CHECKING:' block."""
     TYPE_CHECKING = False
+    Any = Ellipsis
+    def cast(self, t, x):
+        """typing.cast[TT <: Type, T <: TT](t: TT, x: Any) -> T = x"""
+        return x
     def __getattr__(self, name):
         raise _coconut.ImportError("the typing module is not available at runtime in Python 3.4 or earlier; try hiding your typedefs behind an 'if TYPE_CHECKING:' block")
 typing = typing_mock()
