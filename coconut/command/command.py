@@ -259,7 +259,7 @@ class Command(object):
         # process mypy args and print timing info (must come after compiler setup)
         if args.mypy is not None:
             self.set_mypy_args(args.mypy)
-        logger.log("Grammar init time: " + str(self.comp.grammar_def_time) + " secs / Total init time: " + str(get_clock_time() - first_import_time) + " secs")
+        logger.log("Grammar init time: " + str(self.comp.grammar_init_time) + " secs / Total init time: " + str(get_clock_time() - first_import_time) + " secs")
 
         if args.source is not None:
             # warnings if source is given
