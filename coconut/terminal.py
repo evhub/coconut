@@ -490,10 +490,10 @@ class Logger(object):
             yield
 
     def time_func(self, func):
-        """Decorator to time a function if --verbose."""
+        """Decorator to print timing info for a function."""
         def timed_func(*args, **kwargs):
             """Function timed by logger.time_func."""
-            if not self.verbose:
+            if not DEVELOP or self.quiet:
                 return func(*args, **kwargs)
             start_time = get_clock_time()
             try:

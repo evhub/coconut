@@ -28,6 +28,7 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 from coconut.root import *  # NOQA
 
 from collections import defaultdict
+from contextlib import contextmanager
 
 from coconut._pyparsing import (
     CaselessLiteral,
@@ -611,7 +612,7 @@ def array_literal_handle(loc, tokens):
 
 class Grammar(object):
     """Coconut grammar specification."""
-    grammar_def_time = get_clock_time()
+    grammar_init_time = get_clock_time()
 
     comma = Literal(",")
     dubstar = Literal("**")
@@ -2403,7 +2404,17 @@ class Grammar(object):
 # TIMING, TRACING:
 # -----------------------------------------------------------------------------------------------------------------------
 
-    grammar_def_time = get_clock_time() - grammar_def_time
+    grammar_init_time = get_clock_time() - grammar_init_time
+
+    @classmethod
+    @contextmanager
+    def add_to_grammar_init_time(cls):
+        """Add additional time to the grammar_init_time."""
+        start_time = get_clock_time()
+        try:
+            yield
+        finally:
+            cls.grammar_init_time += get_clock_time() - start_time
 
 
 def set_grammar_names():

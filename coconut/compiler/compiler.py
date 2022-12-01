@@ -3982,6 +3982,7 @@ for {match_to_var} in {item}:
 # BINDING:
 # -----------------------------------------------------------------------------------------------------------------------
 
-Compiler.bind()
+with Compiler.add_to_grammar_init_time():
+    Compiler.bind()
 
 # end: BINDING
