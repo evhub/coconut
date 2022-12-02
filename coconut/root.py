@@ -129,6 +129,8 @@ class range(object):
         return _coconut.reversed(self._xrange)
     def __len__(self):
         return _coconut.len(self._xrange)
+    def __bool__(self):
+        return True
     def __contains__(self, elem):
         return elem in self._xrange
     def __getitem__(self, index):
