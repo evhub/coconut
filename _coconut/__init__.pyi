@@ -153,6 +153,7 @@ property = property
 range = range
 reversed = reversed
 set = set
+setattr = setattr
 slice = slice
 str = str
 sum = sum

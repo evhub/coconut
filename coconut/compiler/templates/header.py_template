@@ -32,7 +32,7 @@ def _coconut_super(type=None, object_or_type=None):
     numpy_modules = {numpy_modules}
     jax_numpy_modules = {jax_numpy_modules}
     abc.Sequence.register(collections.deque)
-    Ellipsis, NotImplemented, NotImplementedError, Exception, AttributeError, ImportError, IndexError, NameError, TypeError, ValueError, StopIteration, RuntimeError, all, any, bytes, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, locals, map, min, max, next, object, property, range, reversed, set, slice, str, sum, super, tuple, type, vars, zip, repr, print{comma_bytearray} = Ellipsis, NotImplemented, NotImplementedError, Exception, AttributeError, ImportError, IndexError, NameError, TypeError, ValueError, StopIteration, RuntimeError, all, any, bytes, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, locals, map, min, max, next, object, property, range, reversed, set, slice, str, sum, {lstatic}super{rstatic}, tuple, type, vars, zip, {lstatic}repr{rstatic}, {lstatic}print{rstatic}{comma_bytearray}
+    Ellipsis, NotImplemented, NotImplementedError, Exception, AttributeError, ImportError, IndexError, NameError, TypeError, ValueError, StopIteration, RuntimeError, all, any, bytes, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, locals, map, min, max, next, object, property, range, reversed, set, setattr, slice, str, sum, super, tuple, type, vars, zip, repr, print{comma_bytearray} = Ellipsis, NotImplemented, NotImplementedError, Exception, AttributeError, ImportError, IndexError, NameError, TypeError, ValueError, StopIteration, RuntimeError, all, any, bytes, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, locals, map, min, max, next, object, property, range, reversed, set, setattr, slice, str, sum, {lstatic}super{rstatic}, tuple, type, vars, zip, {lstatic}repr{rstatic}, {lstatic}print{rstatic}{comma_bytearray}
 class _coconut_sentinel{object}:
     __slots__ = ()
 class _coconut_base_hashable{object}:
@@ -43,8 +43,11 @@ class _coconut_base_hashable{object}:
         return self.__class__ is other.__class__ and self.__reduce__() == other.__reduce__()
     def __hash__(self):
         return _coconut.hash(self.__reduce__())
-    def __bool__(self):
-        return True{COMMENT.avoids_expensive_len_calls}
+    def __bool__(self):{COMMENT.avoids_expensive_len_calls}
+        return True
+    def __setstate__(self, setvars):{COMMENT.fixes_unpickling_with_slots}
+        for k, v in setvars.items():
+            _coconut.setattr(self, k, v)
 class MatchError(_coconut_base_hashable, Exception):
     """Pattern-matching error. Has attributes .pattern, .value, and .message."""
     __slots__ = ("pattern", "value", "_message")
@@ -440,6 +443,9 @@ class flatten(_coconut_base_hashable):
     def __contains__(self, elem):
         self.iter, new_iter = _coconut_tee(self.iter)
         return _coconut.any(elem in it for it in new_iter)
+    def __len__(self):
+        self.iter, new_iter = _coconut_tee(self.iter)
+        return _coconut.sum(_coconut.len(it) for it in new_iter)
     def count(self, elem):
         """Count the number of times elem appears in the flattened iterable."""
         self.iter, new_iter = _coconut_tee(self.iter)
@@ -466,11 +472,15 @@ Additionally supports Cartesian products of numpy arrays."""
         if kwargs:
             raise _coconut.TypeError("cartesian_product() got unexpected keyword arguments " + _coconut.repr(kwargs))
         if iterables and _coconut.all(it.__class__.__module__ in _coconut.numpy_modules for it in iterables):
+            if _coconut.any(it.__class__.__module__ in _coconut.jax_numpy_modules for it in iterables):
+                from jax import numpy
+            else:
+                numpy = _coconut.numpy
             iterables *= repeat
             la = _coconut.len(iterables)
-            dtype = _coconut.numpy.result_type(*iterables)
-            arr = _coconut.numpy.empty([_coconut.len(a) for a in iterables] + [la], dtype=dtype)
-            for i, a in _coconut.enumerate(_coconut.numpy.ix_(*iterables)):
+            dtype = numpy.result_type(*iterables)
+            arr = numpy.empty([_coconut.len(a) for a in iterables] + [la], dtype=dtype)
+            for i, a in _coconut.enumerate(numpy.ix_(*iterables)):
                 arr[...,i] = a
             return arr.reshape(-1, la)
         self = _coconut.object.__new__(cls)
