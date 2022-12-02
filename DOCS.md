@@ -195,7 +195,7 @@ optional arguments:
   --vi-mode, --vimode   enable vi mode in the interpreter (currently set to False) (can be
                         modified by setting COCONUT_VI_MODE environment variable)
   --recursion-limit limit, --recursionlimit limit
-                        set maximum recursion depth in compiler (defaults to 4096)
+                        set maximum recursion depth in compiler (defaults to 2090)
   --site-install, --siteinstall
                         set up coconut.convenience to be imported on Python start
   --site-uninstall, --siteuninstall
