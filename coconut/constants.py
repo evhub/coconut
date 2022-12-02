@@ -125,7 +125,7 @@ assert not embed_on_internal_exc or DEVELOP, "embed_on_internal_exc should never
 temp_grammar_item_ref_count = 3 if PY311 else 5
 
 minimum_recursion_limit = 128
-default_recursion_limit = 4096
+default_recursion_limit = 2090
 
 if sys.getrecursionlimit() < default_recursion_limit:
     sys.setrecursionlimit(default_recursion_limit)
