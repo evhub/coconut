@@ -142,6 +142,7 @@ takewhile = _coconut.itertools.takewhile
 dropwhile = _coconut.itertools.dropwhile
 tee = _coconut.itertools.tee
 starmap = _coconut.itertools.starmap
+cartesian_product = _coconut.itertools.product
 
 
 _coconut_tee = tee

@@ -1235,6 +1235,25 @@ def main_test() -> bool:
         \list = [1, 2, 3]
         return \list
     assert test_list() == list((1, 2, 3))
+    match def only_one(1) = 1
+    only_one.one = 1
+    assert only_one.one == 1
+    assert cartesian_product() |> list == [] == cartesian_product(repeat=10) |> list
+    assert cartesian_product() |> len == 1 == cartesian_product(repeat=10) |> len
+    assert () in cartesian_product()
+    assert () in cartesian_product(repeat=10)
+    assert (1,) not in cartesian_product()
+    assert (1,) not in cartesian_product(repeat=10)
+    assert cartesian_product().count(()) == 1 == cartesian_product(repeat=10).count(())
+    v = [1, 2]
+    assert cartesian_product(v, v) |> list == [(1, 1), (1, 2), (2, 1), (2, 2)] == cartesian_product(v, repeat=2) |> list
+    assert cartesian_product(v, v) |> len == 4 == cartesian_product(v, repeat=2) |> len
+    assert (2, 2) in cartesian_product(v, v)
+    assert (2, 2) in cartesian_product(v, repeat=2)
+    assert (2, 3) not in cartesian_product(v, v)
+    assert (2, 3) not in cartesian_product(v, repeat=2)
+    assert cartesian_product(v, v).count((2, 1)) == 1 == cartesian_product(v, repeat=2).count((2, 1))
+    assert cartesian_product(v, v).count((2, 0)) == 0 == cartesian_product(v, repeat=2).count((2, 0))
     return True
 
 def test_asyncio() -> bool:

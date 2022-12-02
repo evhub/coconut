@@ -324,16 +324,6 @@ return _coconut.types.MethodType(self.func, obj)
             if set_name is not None:
                 set_name(cls, k)'''
         ),
-        pattern_func_slots=pycondition(
-            (3, 7),
-            if_lt=r'''
-__slots__ = ("FunctionMatchError", "patterns", "__doc__", "__name__")
-            ''',
-            if_ge=r'''
-__slots__ = ("FunctionMatchError", "patterns", "__doc__", "__name__", "__qualname__")
-            ''',
-            indent=1,
-        ),
         set_qualname_none=pycondition(
             (3, 7),
             if_ge=r'''
