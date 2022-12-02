@@ -430,8 +430,14 @@ class reversed(_coconut_base_hashable):
 class flatten(_coconut_base_hashable):
     """Flatten an iterable of iterables into a single iterable."""
     __slots__ = ("iter",)
-    def __init__(self, iterable):
+    def __new__(cls, iterable):
+        if iterable.__class__.__module__ in _coconut.numpy_modules:
+            if len(iterable.shape) < 2:
+                raise _coconut.TypeError("flatten() on numpy arrays requires two or more dimensions")
+            return iterable.reshape(-1, *iterable.shape[2:])
+        self = _coconut.object.__new__(cls)
         self.iter = iterable
+        return self
     def __iter__(self):
         return _coconut.itertools.chain.from_iterable(self.iter)
     def __reversed__(self):
