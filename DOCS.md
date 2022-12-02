@@ -2488,7 +2488,7 @@ Coconut's `map`, `zip`, `filter`, `reversed`, and `enumerate` objects are enhanc
 - `reversed`,
 - `repr`,
 - optimized normal (and iterator) slicing (all but `filter`),
-- `len` (all but `filter`),
+- `len` (all but `filter`) (though `bool` will still always yield `True`),
 - the ability to be iterated over multiple times if the underlying iterators are iterables,
 - [PEP 618](https://www.python.org/dev/peps/pep-0618) `zip(..., strict=True)` support on all Python versions, and
 - have added attributes which subclasses can make use of to get at the original arguments to the object:
