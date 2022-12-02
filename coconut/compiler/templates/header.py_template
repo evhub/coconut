@@ -48,6 +48,16 @@ class _coconut_base_hashable{object}:
     def __setstate__(self, setvars):{COMMENT.fixes_unpickling_with_slots}
         for k, v in setvars.items():
             _coconut.setattr(self, k, v)
+    def __copy__(self):
+        reduction = self.__reduce__()
+        if _coconut.len(reduction) <= 2:
+            cls, args = reduction
+            return cls(*args)
+        else:
+            cls, args, state = reduction[:3]
+            copy = cls(*args)
+            copy.__setstate__(state)
+            return copy
 class MatchError(_coconut_base_hashable, Exception):
     """Pattern-matching error. Has attributes .pattern, .value, and .message."""
     __slots__ = ("pattern", "value", "_message")
@@ -849,8 +859,6 @@ class count(_coconut_base_hashable):
         return "count(%s, %s)" % (_coconut.repr(self.start), _coconut.repr(self.step))
     def __reduce__(self):
         return (self.__class__, (self.start, self.step))
-    def __copy__(self):
-        return self.__class__(self.start, self.step)
     def __fmap__(self, func):
         return _coconut_map(func, self)
 class groupsof(_coconut_base_hashable):
