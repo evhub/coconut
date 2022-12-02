@@ -352,6 +352,8 @@ def suite_test() -> bool:
     a = altclass()
     assert a.func(1) == 1
     assert a.zero(10) == 0
+    assert altclass.func.__name__ == "func"
+    assert altclass.zero.__name__ == "zero"
     with Vars.using(globals()):
         assert var_one == 1  # type: ignore
     try:

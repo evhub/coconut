@@ -1808,9 +1808,10 @@ else:
         def_name = func_name  # the name used when defining the function
 
         # handle dotted function definition
-        is_dotted = func_name is not None and "." in func_name
-        if is_dotted:
-            def_name = func_name.rsplit(".", 1)[-1]
+        undotted_name = None
+        if func_name is not None and "." in func_name:
+            undotted_name = func_name.rsplit(".", 1)[-1]
+            def_name = self.get_temp_var(undotted_name)
 
         # detect pattern-matching functions
         is_match_func = func_paramdef == "*{match_to_args_var}, **{match_to_kwargs_var}".format(
@@ -1954,17 +1955,14 @@ def {mock_var}({mock_paramdef}):
             decorators += "@_coconut_mark_as_match\n"  # binds most tightly
 
         # handle dotted function definition
-        if is_dotted:
+        if undotted_name is not None:
             store_var = self.get_temp_var("name_store")
             out = handle_indentation(
                 '''
-try:
-    {store_var} = {def_name}
-except _coconut.NameError:
-    {store_var} = _coconut_sentinel
-{decorators}{def_stmt}{func_code}{func_name} = {def_name}
-if {store_var} is not _coconut_sentinel:
-    {def_name} = {store_var}
+{decorators}{def_stmt}{func_code}
+{def_name}.__name__ = _coconut_py_str("{undotted_name}")
+{def_name}.__qualname__ = _coconut_py_str("{func_name}" if "." not in _coconut.getattr({def_name}, "__qualname__", "") else _coconut.getattr({def_name}, "__qualname__", "").rsplit(".", 1)[0] + ".{func_name}")
+{func_name} = {def_name}
                 ''',
                 add_newline=True,
             ).format(
@@ -1974,6 +1972,7 @@ if {store_var} is not _coconut_sentinel:
                 def_stmt=def_stmt,
                 func_code=func_code,
                 func_name=func_name,
+                undotted_name=undotted_name,
             )
         else:
             out = decorators + def_stmt + func_code

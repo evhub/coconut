@@ -1,4 +1,6 @@
 from io import StringIO  # type: ignore
+if TYPE_CHECKING:
+    from typing import Any
 
 from .util import mod  # NOQA
 
@@ -26,6 +28,19 @@ def non_py32_test() -> bool:
     fakefile = StringIO()
     print("herpaderp", file=fakefile, flush=True)
     assert fakefile.getvalue() == "herpaderp\n"
+    return True
+
+
+def py3_spec_test() -> bool:
+    """Tests for any py3 version."""
+    class Outer:
+        class Inner:
+            if TYPE_CHECKING:
+                f: Any
+        def Inner.f(x) = x
+    assert Outer.Inner.f(2) == 2
+    assert Outer.Inner.f.__name__ == "f"
+    assert Outer.Inner.f.__qualname__.endswith("Outer.Inner.f"), Outer.Inner.f.__qualname__
     return True
 
 

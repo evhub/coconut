@@ -1273,20 +1273,25 @@ def run_main(test_easter_eggs=False) -> bool:
     assert main_test() is True
 
     print_dot()  # ...
+    from .specific import (
+        non_py26_test,
+        non_py32_test,
+        py3_spec_test,
+        py36_spec_test,
+        py37_spec_test,
+        py38_spec_test,
+    )
     if sys.version_info >= (2, 7):
-        from .specific import non_py26_test
         assert non_py26_test() is True
     if not (3,) <= sys.version_info < (3, 3):
-        from .specific import non_py32_test
         assert non_py32_test() is True
+    if sys.version_info >= (3,):
+        assert py3_spec_test() is True
     if sys.version_info >= (3, 6):
-        from .specific import py36_spec_test
         assert py36_spec_test(tco=using_tco) is True
     if sys.version_info >= (3, 7):
-        from .specific import py37_spec_test
         assert py37_spec_test() is True
     if sys.version_info >= (3, 8):
-        from .specific import py38_spec_test
         assert py38_spec_test() is True
 
     print_dot()  # ....
