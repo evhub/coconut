@@ -1235,10 +1235,13 @@ def main_test() -> bool:
         \list = [1, 2, 3]
         return \list
     assert test_list() == list((1, 2, 3))
-    match def only_one(1) = 1
-    only_one.one = 1
-    assert only_one.one == 1
-    assert cartesian_product() |> list == [] == cartesian_product(repeat=10) |> list
+    match def one_or_two(1) = one_or_two.one
+    addpattern def one_or_two(2) = one_or_two.two  # type: ignore
+    one_or_two.one = 10
+    one_or_two.two = 20
+    assert one_or_two(1) == 10
+    assert one_or_two(2) == 20
+    assert cartesian_product() |> list == [()] == cartesian_product(repeat=10) |> list
     assert cartesian_product() |> len == 1 == cartesian_product(repeat=10) |> len
     assert () in cartesian_product()
     assert () in cartesian_product(repeat=10)

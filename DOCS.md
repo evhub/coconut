@@ -423,9 +423,11 @@ To distribute your code with checkable type annotations, you'll need to include 
 To allow for better use of [`numpy`](https://numpy.org/) objects in Coconut, all compiled Coconut code will do a number of special things to better integrate with `numpy` (if `numpy` is available to import when the code is run). Specifically:
 
 - Coconut's [multidimensional array literal and array concatenation syntax](#multidimensional-array-literalconcatenation-syntax) supports `numpy` objects, including using fast `numpy` concatenation methods if given `numpy` arrays rather than Coconut's default much slower implementation built for Python lists of lists.
-- Coconut's [`multi_enumerate`](#multi_enumerate) built-in allows for easily looping over all the multi-dimensional indices in a `numpy` array.
-- Coconut's [`all_equal`](#all_equal) built-in allows for easily checking if all the elements in a `numpy` array are the same.
-- When a `numpy` object is passed to [`fmap`](#fmap), [`numpy.vectorize`](https://numpy.org/doc/stable/reference/generated/numpy.vectorize.html) is used instead of the default `fmap` implementation.
+- Many of Coconut's built-ins include special `numpy` support, specifically:
+  * [`fmap`](#fmap) will use [`numpy.vectorize`](https://numpy.org/doc/stable/reference/generated/numpy.vectorize.html) to map over `numpy` arrays.
+  * [`multi_enumerate`](#multi_enumerate) allows for easily looping over all the multi-dimensional indices in a `numpy` array.
+  * [`cartesian_product`](#cartesian_product) can compute the Cartesian product of given `numpy` arrays as a `numpy` array.
+  * [`all_equal`](#all_equal) allows for easily checking if all the elements in a `numpy` array are the same.
 - [`numpy.ndarray`](https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html) is registered as a [`collections.abc.Sequence`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence), enabling it to be used in [sequence patterns](#semantics-specification).
 - Coconut supports `@` for matrix multiplication of `numpy` arrays on all Python versions, as well as supplying the `(@)` [operator function](#operator-functions).
 
@@ -3101,7 +3103,7 @@ for x in input_data:
 
 ### `flatten`
 
-Coconut provides an enhanced version of `itertools.chain.from_iterable` as a built-in under the name `flatten` with added support for `reversed`, `repr`, `in`, `.count()`, `.index()`, and `fmap`.
+Coconut provides an enhanced version of `itertools.chain.from_iterable` as a built-in under the name `flatten` with added support for `reversed`, `len`, `repr`, `in`, `.count()`, `.index()`, and `fmap`.
 
 ##### Python Docs
 
@@ -3130,6 +3132,55 @@ flat_it = iter_of_iters |> flatten |> list
 from itertools import chain
 iter_of_iters = [[1, 2], [3, 4]]
 flat_it = iter_of_iters |> chain.from_iterable |> list
+```
+
+### `cartesian_product`
+
+Coconut provides an enhanced version of `itertools.product` as a built-in under the name `cartesian_product` with added support for `len`, `repr`, `in`, `.count()`, and `fmap`.
+
+Additionally, `cartesian_product` includes special support for [`numpy`](http://www.numpy.org/)/[`pandas`](https://pandas.pydata.org/)/[`jax.numpy`](https://jax.readthedocs.io/en/latest/jax.numpy.html) objects, in which case a multidimensional array is returned instead of an iterator.
+
+##### Python Docs
+
+itertools.**product**(_\*iterables, repeat=1_)
+
+Cartesian product of input iterables.
+
+Roughly equivalent to nested for-loops in a generator expression. For example, `product(A, B)` returns the same as `((x,y) for x in A for y in B)`.
+
+The nested loops cycle like an odometer with the rightmost element advancing on every iteration. This pattern creates a lexicographic ordering so that if the input’s iterables are sorted, the product tuples are emitted in sorted order.
+
+To compute the product of an iterable with itself, specify the number of repetitions with the optional repeat keyword argument. For example, `product(A, repeat=4)` means the same as `product(A, A, A, A)`.
+
+This function is roughly equivalent to the following code, except that the actual implementation does not build up intermediate results in memory:
+
+```coconut_python
+def product(*args, repeat=1):
+    # product('ABCD', 'xy') --> Ax Ay Bx By Cx Cy Dx Dy
+    # product(range(2), repeat=3) --> 000 001 010 011 100 101 110 111
+    pools = [tuple(pool) for pool in args] * repeat
+    result = [[]]
+    for pool in pools:
+        result = [x+[y] for x in result for y in pool]
+    for prod in result:
+        yield tuple(prod)
+```
+
+Before `product()` runs, it completely consumes the input iterables, keeping pools of values in memory to generate the products. Accordingly, it is only useful with finite inputs.
+
+##### Example
+
+**Coconut:**
+```coconut
+v = [1, 2]
+assert cartesian_product(v, v) |> list == [(1, 1), (1, 2), (2, 1), (2, 2)]
+```
+
+**Python:**
+```coconut_python
+from itertools import product
+v = [1, 2]
+assert list(product(v, v)) == [(1, 1), (1, 2), (2, 1), (2, 2)]
 ```
 
 ### `multi_enumerate`
