@@ -369,6 +369,11 @@ def test_numpy() -> bool:
     assert len(enumeration) == 4  # type: ignore
     assert enumeration[2] == ((1, 0), 3)  # type: ignore
     assert list(enumeration) == [((0, 0), 1), ((0, 1), 2), ((1, 0), 3), ((1, 1), 4)]
+    assert all_equal(np.array([]))
+    assert all_equal(np.array([1]))
+    assert all_equal(np.array([1, 1]))
+    assert all_equal(np.array([1, 1;; 1, 1]))
+    assert not all_equal(np.array([1, 1;; 1, 2]))
     return True
 
 

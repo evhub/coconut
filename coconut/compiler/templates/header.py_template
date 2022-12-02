@@ -1238,8 +1238,10 @@ class lift(_coconut_base_hashable):
 def all_equal(iterable):
     """For a given iterable, check whether all elements in that iterable are equal to each other.
 
-    Assumes transitivity and 'x != y' being equivalent to 'not (x == y)'.
+    Supports numpy arrays. Assumes transitivity and 'x != y' being equivalent to 'not (x == y)'.
     """
+    if iterable.__class__.__module__ in _coconut.numpy_modules:
+        return not len(iterable) or (iterable == iterable[0]).all()
     first_item = _coconut_sentinel
     for item in iterable:
         if first_item is _coconut_sentinel:
