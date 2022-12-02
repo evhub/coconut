@@ -42,13 +42,25 @@ No problem—just use Coconut's [`recursive_iterator`](./DOCS.md#recursive-itera
 
 Since Coconut syntax is a superset of Python 3 syntax, Coconut supports the same line continuation syntax as Python. That means both backslash line continuation and implied line continuation inside of parentheses, brackets, or braces will all work. Parenthetical continuation is the recommended method, and Coconut even supports an [enhanced version of it](./DOCS.md#enhanced-parenthetical-continuation).
 
-### If I'm already perfectly happy with Python, why should I learn Coconut?
+### I want to use Coconut in a production environment; how do I achieve maximum performance?
 
-You're exactly the person Coconut was built for! Coconut lets you keep doing the thing you do well—write Python—without having to worry about annoyances like version compatibility, while also allowing you to do new cool things you might never have thought were possible before like pattern-matching and lazy evaluation. If you've ever used a functional programming language before, you'll know that functional code is often much simpler, cleaner, and more readable (but not always, which is why Coconut isn't purely functional). Python is a wonderful imperative language, but when it comes to modern functional programming—which, in Python's defense, it wasn't designed for—Python falls short, and Coconut corrects that shortfall.
+First, you're going to want a fast compiler, so you should make sure you're using [`cPyparsing`](https://github.com/evhub/cpyparsing). Second, there are two simple things you can do to make Coconut produce faster Python: compile with `--no-tco` and compile with a `--target` specification for the exact version of Python you want to run your code on. Passing `--target` helps Coconut optimize the compiled code for the Python version you want, and, though [Tail Call Optimization](./DOCS.md#tail-call-optimization) is useful, it will usually significantly slow down functions that use it, so disabling it will often provide a major performance boost.
+
+### How do I use a runtime type checker like [`beartype`](https://pypi.org/project/beartype) when Coconut seems to compile all my type annotations to strings/comments?
+
+First, to make sure you get actual type annotations rather than type comments, you'll need to `--target` a Python version that supports the sorts of type annotations you'll be using (specifically `--target 3.6` should usually do the trick). Second, if you're using runtime type checking, you'll need to pass the `--no-wrap` argument, which will tell Coconut not to wrap type annotations in strings. When using type annotations for static type checking, wrapping them in strings is preferred, but when using them for runtime type checking, you'll want to disable it.
+
+### When I try to use Coconut on the command line, I get weird unprintable characters and numbers; how do I get rid of them?
+
+You're probably seeing color codes while using a terminal that doesn't support them (e.g. Windows `cmd`). Try setting the `COCONUT_USE_COLOR` environment variable to `FALSE` to get rid of them.
 
 ### How will I be able to debug my Python if I'm not the one writing it?
 
 Ease of debugging has long been a problem for all compiled languages, including languages like `C` and `C++` that these days we think of as very low-level languages. The solution to this problem has always been the same: line number maps. If you know what line in the compiled code corresponds to what line in the source code, you can easily debug just from the source code, without ever needing to deal with the compiled code at all. In Coconut, this can easily be accomplished by passing the `--line-numbers` or `-l` flag, which will add a comment to every line in the compiled code with the number of the corresponding line in the source code. Alternatively, `--keep-lines` or `-k` will put in the verbatim source line instead of or in addition to the source line number. Then, if Python raises an error, you'll be able to see from the snippet of the compiled code that it shows you a comment telling you what line in your source code you need to look at to debug the error.
+
+### If I'm already perfectly happy with Python, why should I learn Coconut?
+
+You're exactly the person Coconut was built for! Coconut lets you keep doing the thing you do well—write Python—without having to worry about annoyances like version compatibility, while also allowing you to do new cool things you might never have thought were possible before like pattern-matching and lazy evaluation. If you've ever used a functional programming language before, you'll know that functional code is often much simpler, cleaner, and more readable (but not always, which is why Coconut isn't purely functional). Python is a wonderful imperative language, but when it comes to modern functional programming—which, in Python's defense, it wasn't designed for—Python falls short, and Coconut corrects that shortfall.
 
 ### I don't like functional programming, should I still learn Coconut?
 
@@ -69,14 +81,6 @@ The short answer is that Python isn't purely functional, and all valid Python is
 ### Won't a transpiled language like Coconut be bad for the Python community?
 
 I certainly hope not! Unlike most transpiled languages, all valid Python is valid Coconut. Coconut's goal isn't to replace Python, but to _extend_ it. If a newbie learns Coconut, it won't mean they have a harder time learning Python, it'll mean they _already know_ Python. And not just any Python, the newest and greatest—Python 3. And of course, Coconut is perfectly interoperable with Python, and uses all the same libraries—thus, Coconut can't split the Python community, because the Coconut community _is_ the Python community.
-
-### I want to use Coconut in a production environment; how do I achieve maximum performance?
-
-First, you're going to want a fast compiler, so you should make sure you're using [`cPyparsing`](https://github.com/evhub/cpyparsing). Second, there are two simple things you can do to make Coconut produce faster Python: compile with `--no-tco` and compile with a `--target` specification for the exact version of Python you want to run your code on. Passing `--target` helps Coconut optimize the compiled code for the Python version you want, and, though [Tail Call Optimization](./DOCS.md#tail-call-optimization) is useful, it will usually significantly slow down functions that use it, so disabling it will often provide a major performance boost.
-
-### When I try to use Coconut on the command line, I get weird unprintable characters and numbers; how do I get rid of them?
-
-You're probably seeing color codes while using a terminal that doesn't support them (e.g. Windows `cmd`). Try setting the `COCONUT_USE_COLOR` environment variable to `FALSE` to get rid of them.
 
 ### I want to contribute to Coconut, how do I get started?
 

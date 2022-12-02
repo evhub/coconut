@@ -116,7 +116,7 @@ class CoconutXontribLoader(object):
                 s = self.compiler.parse_xonsh(s, keep_state=True)
             except CoconutException as err:
                 err_str = format_error(err).splitlines()[0]
-                s += " #" + err_str
+                s += "  #" + err_str
             self.timing_info.append(("parse", get_clock_time() - parse_start_time))
             return execer.__class__.parse(execer, s, *args, **kwargs)
 
