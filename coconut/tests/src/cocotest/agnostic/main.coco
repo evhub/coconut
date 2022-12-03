@@ -2,6 +2,7 @@ import sys
 import itertools
 import collections
 import collections.abc
+from copy import copy
 
 operator log10
 from math import \log10 as (log10)
@@ -241,7 +242,7 @@ def main_test() -> bool:
     assert len <| map((x) -> x, [1, 2]) == 2  # type: ignore
     assert repr("hello") == "'hello'" == ascii("hello")
     assert count(1,3) |> .index(1) == 0 == (.index(1))(count(1, 3))
-    assert count(1).__copy__()$[0] == 1 == (.$[])(count(1), 0)
+    assert copy(count(1))$[0] == 1 == (.$[])(count(1), 0)
     assert tee(count()) |> map$((t) -> isinstance(t, count)) |> all
     assert tee(range(10)) |> map$((t) -> isinstance(t, range)) |> all
     assert tee([1, 2, 3]) |> map$((t) -> isinstance(t, list)) |> all
@@ -1257,6 +1258,7 @@ def main_test() -> bool:
     assert (2, 3) not in cartesian_product(v, repeat=2)
     assert cartesian_product(v, v).count((2, 1)) == 1 == cartesian_product(v, repeat=2).count((2, 1))
     assert cartesian_product(v, v).count((2, 0)) == 0 == cartesian_product(v, repeat=2).count((2, 0))
+    assert not range(0, 0)
     return True
 
 def test_asyncio() -> bool:
