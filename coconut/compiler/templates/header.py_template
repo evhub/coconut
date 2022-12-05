@@ -450,7 +450,8 @@ class reversed(_coconut_base_hashable):
     def __fmap__(self, func):
         return self.__class__(_coconut_map(func, self.iter))
 class flatten(_coconut_base_hashable):
-    """Flatten an iterable of iterables into a single iterable."""
+    """Flatten an iterable of iterables into a single iterable.
+    Flattens the first axis of numpy arrays."""
     __slots__ = ("iter",)
     def __new__(cls, iterable):
         if iterable.__class__.__module__ in _coconut.numpy_modules:
