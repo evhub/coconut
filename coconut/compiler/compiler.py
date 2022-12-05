@@ -1956,23 +1956,24 @@ def {mock_var}({mock_paramdef}):
 
         # handle dotted function definition
         if undotted_name is not None:
-            store_var = self.get_temp_var("name_store")
             out = handle_indentation(
                 '''
 {decorators}{def_stmt}{func_code}
 {def_name}.__name__ = _coconut_py_str("{undotted_name}")
-{def_name}.__qualname__ = _coconut_py_str("{func_name}" if "." not in _coconut.getattr({def_name}, "__qualname__", "") else _coconut.getattr({def_name}, "__qualname__", "").rsplit(".", 1)[0] + ".{func_name}")
+{temp_var} = _coconut.getattr({def_name}, "__qualname__", None)
+if {temp_var} is not None:
+    {def_name}.__qualname__ = _coconut_py_str("{func_name}" if "." not in {temp_var} else {temp_var}.rsplit(".", 1)[0] + ".{func_name}")
 {func_name} = {def_name}
                 ''',
                 add_newline=True,
             ).format(
-                store_var=store_var,
                 def_name=def_name,
                 decorators=decorators,
                 def_stmt=def_stmt,
                 func_code=func_code,
                 func_name=func_name,
                 undotted_name=undotted_name,
+                temp_var=self.get_temp_var("qualname"),
             )
         else:
             out = decorators + def_stmt + func_code
