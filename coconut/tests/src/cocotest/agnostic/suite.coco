@@ -558,6 +558,7 @@ def suite_test() -> bool:
     assert sum2([3, 4]) == 7
     assert ridiculously_recursive(300) == 201666561657114122540576123152528437944095370972927688812965354745141489205495516550423117825 == ridiculously_recursive_(300)
     assert [fib(n) for n in range(16)] == [0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610] == [fib_(n) for n in range(16)]
+    assert [fib_alt1(n) for n in range(16)] == [0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610] == [fib_alt2(n) for n in range(16)]
     assert fib.cache_info().hits == 28
     fib_N = 100
     assert range(fib_N) |> map$(fib) |> .$[-1] == fibs()$[fib_N-2] == fib_(fib_N-1) == fibs_()$[fib_N-2]

@@ -32,7 +32,7 @@ def _coconut_super(type=None, object_or_type=None):
     numpy_modules = {numpy_modules}
     jax_numpy_modules = {jax_numpy_modules}
     abc.Sequence.register(collections.deque)
-    Ellipsis, NotImplemented, NotImplementedError, Exception, AttributeError, ImportError, IndexError, NameError, TypeError, ValueError, StopIteration, RuntimeError, all, any, bytes, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, locals, map, min, max, next, object, property, range, reversed, set, setattr, slice, str, sum, super, tuple, type, vars, zip, repr, print{comma_bytearray} = Ellipsis, NotImplemented, NotImplementedError, Exception, AttributeError, ImportError, IndexError, NameError, TypeError, ValueError, StopIteration, RuntimeError, all, any, bytes, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, locals, map, min, max, next, object, property, range, reversed, set, setattr, slice, str, sum, {lstatic}super{rstatic}, tuple, type, vars, zip, {lstatic}repr{rstatic}, {lstatic}print{rstatic}{comma_bytearray}
+    Ellipsis, NotImplemented, NotImplementedError, Exception, AttributeError, ImportError, IndexError, NameError, TypeError, ValueError, StopIteration, RuntimeError, all, any, bytes, callable, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, locals, map, min, max, next, object, property, range, reversed, set, setattr, slice, str, sum, super, tuple, type, vars, zip, repr, print{comma_bytearray} = Ellipsis, NotImplemented, NotImplementedError, Exception, AttributeError, ImportError, IndexError, NameError, TypeError, ValueError, StopIteration, RuntimeError, all, any, bytes, callable, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, locals, map, min, max, next, object, property, range, reversed, set, setattr, slice, str, sum, {lstatic}super{rstatic}, tuple, type, vars, zip, {lstatic}repr{rstatic}, {lstatic}print{rstatic}{comma_bytearray}
 class _coconut_sentinel{object}:
     __slots__ = ()
 class _coconut_base_hashable{object}:
@@ -1230,6 +1230,8 @@ def fmap(func, obj, **kwargs):
         else:
             if result is not _coconut.NotImplemented:
                 return result
+    if obj.__class__ is None.__class__:
+        return None
     if obj.__class__.__module__ in _coconut.jax_numpy_modules:
         import jax.numpy as jnp
         return jnp.vectorize(func)(obj)
@@ -1248,10 +1250,17 @@ def fmap(func, obj, **kwargs):
         return _coconut_base_makedata(obj.__class__, _coconut_starmap(func, obj.items()) if _coconut.isinstance(obj, _coconut.abc.Mapping) else _coconut_map(func, obj))
     else:
         return _coconut_base_makedata(obj.__class__, _coconut_map(func, obj.items() if _coconut.isinstance(obj, _coconut.abc.Mapping) else obj))
-def memoize(maxsize=None, *args, **kwargs):
+def _coconut_memoize_helper(maxsize=None, typed=False):
+    return maxsize, typed
+def memoize(*args, **kwargs):
     """Decorator that memoizes a function, preventing it from being recomputed
     if it is called multiple times with the same arguments."""
-    return _coconut.functools.lru_cache(maxsize, *args, **kwargs)
+    if not kwargs and _coconut.len(args) == 1 and _coconut.callable(args[0]):
+        return _coconut.functools.lru_cache(maxsize=None)(args[0])
+    if _coconut.len(kwargs) == 1 and "user_function" in kwargs and _coconut.callable(kwargs["user_function"]):
+        return _coconut.functools.lru_cache(maxsize=None)(kwargs["user_function"])
+    maxsize, typed = _coconut_memoize_helper(*args, **kwargs)
+    return _coconut.functools.lru_cache(maxsize, typed)
 {def_call_set_names}
 class override(_coconut_base_hashable):
     __slots__ = ("func",)

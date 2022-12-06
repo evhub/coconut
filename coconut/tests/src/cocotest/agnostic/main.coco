@@ -1259,6 +1259,7 @@ def main_test() -> bool:
     assert cartesian_product(v, v).count((2, 1)) == 1 == cartesian_product(v, repeat=2).count((2, 1))
     assert cartesian_product(v, v).count((2, 0)) == 0 == cartesian_product(v, repeat=2).count((2, 0))
     assert not range(0, 0)
+    assert None |> fmap$(.+1) is None
     return True
 
 def test_asyncio() -> bool:

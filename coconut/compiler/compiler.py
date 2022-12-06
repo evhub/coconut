@@ -3963,9 +3963,9 @@ for {match_to_var} in {item}:
         """Parse eval code."""
         return self.parse(inputstring, self.eval_parser, {"strip": True}, {"header": "none", "initial": "none", "final_endline": False}, **kwargs)
 
-    def parse_lenient(self, inputstring, **kwargs):
+    def parse_lenient(self, inputstring, newline=False, **kwargs):
         """Parse any code."""
-        return self.parse(inputstring, self.file_parser, {"strip": True}, {"header": "none", "initial": "none", "final_endline": False}, **kwargs)
+        return self.parse(inputstring, self.file_parser, {"strip": True}, {"header": "none", "initial": "none", "final_endline": newline}, **kwargs)
 
     def parse_xonsh(self, inputstring, **kwargs):
         """Parse xonsh code."""
