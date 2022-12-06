@@ -953,7 +953,7 @@ def main_test() -> bool:
     assert (a=1, b=2) == (1, 2) == (a:int=1, b=2)
     assert (a=1, b: int = 2) == (1, 2) == (a: int=1, b: int=2)
     assert "_namedtuple_of" in repr((a=1,))
-    assert "b=2" in repr <| of$(?, a=1, b=2)
+    assert "b=2" in repr <| call$(?, a=1, b=2)
     assert lift((,), (.*2), (.**2))(3) == (6, 9)
     assert_raises(-> (⁻)(1, 2), TypeError)
     assert -1 == ⁻1
@@ -1230,7 +1230,7 @@ def main_test() -> bool:
     x = 2
     x |>= (3/.)
     assert x == 3/2
-    assert (./2) |> (.`of`3) == 3/2
+    assert (./2) |> (.`call`3) == 3/2
     assert 5 |> (.*2) |> (2/.) == 1/5 == 5 |> (2*.) |> (./2) |> (1/.)
     def test_list():
         \list = [1, 2, 3]

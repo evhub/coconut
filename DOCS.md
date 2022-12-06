@@ -1564,7 +1564,7 @@ A very common thing to do in functional programming is to make use of function v
 (raise)     => def (exc=None, from_exc=None) -> raise exc from from_exc  # or just raise if exc is None
 ```
 
-_For an operator function for function application, see [`of`](#of)._
+_For an operator function for function application, see [`call`](#call)._
 
 ##### Example
 
@@ -3521,16 +3521,18 @@ def flip(f, nargs=None) =
     )
 ```
 
-### `of`
+### `call`
 
-**of**(_func_, /, *_args_, \*\*_kwargs_)
+**call**(_func_, /, *_args_, \*\*_kwargs_)
 
-Coconut's `of` simply implements function application. Thus, `of` is equivalent to
+Coconut's `call` simply implements function application. Thus, `call` is equivalent to
 ```coconut
-def of(f, /, *args, **kwargs) = f(*args, **kwargs)
+def call(f, /, *args, **kwargs) = f(*args, **kwargs)
 ```
 
-`of` is primarily useful as an [operator function](#operator-functions) for function application when writing in a point-free style.
+`call` is primarily useful as an [operator function](#operator-functions) for function application when writing in a point-free style.
+
+**DEPRECATED:** `of` is available as a deprecated alias for `call`. Note that deprecated features are disabled in `--strict` mode.
 
 ### `const`
 

@@ -213,12 +213,14 @@ def test_convenience() -> bool:
     assert parse("abc", "lenient") == "abc  #1: abc"
 
     setup()
-    assert "Deprecated feature 'prepattern' disabled by --strict compilation" not in parse("\n", mode="file")
-    assert "Deprecated feature 'datamaker' disabled by --strict compilation" not in parse("\n", mode="file")
+    assert "Deprecated built-in 'prepattern' disabled by --strict compilation" not in parse("\n", mode="file")
+    assert "Deprecated built-in 'datamaker' disabled by --strict compilation" not in parse("\n", mode="file")
+    assert "Deprecated built-in 'of' disabled by --strict compilation" not in parse("\n", mode="file")
 
     setup(strict=True)
-    assert "Deprecated feature 'prepattern' disabled by --strict compilation" in parse("\n", mode="file")
-    assert "Deprecated feature 'datamaker' disabled by --strict compilation" in parse("\n", mode="file")
+    assert "Deprecated built-in 'prepattern' disabled by --strict compilation" in parse("\n", mode="file")
+    assert "Deprecated built-in 'datamaker' disabled by --strict compilation" in parse("\n", mode="file")
+    assert "Deprecated built-in 'of' disabled by --strict compilation" in parse("\n", mode="file")
 
     assert_raises(-> parse("def f(x):\n \t pass"), CoconutStyleError)
     assert_raises(-> parse("lambda x: x"), CoconutStyleError)

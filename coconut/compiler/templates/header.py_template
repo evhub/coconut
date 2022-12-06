@@ -1221,6 +1221,8 @@ def fmap(func, obj, **kwargs):
     starmap_over_mappings = kwargs.pop("starmap_over_mappings", False)
     if kwargs:
         raise _coconut.TypeError("fmap() got unexpected keyword arguments " + _coconut.repr(kwargs))
+    if obj is None:
+        return None
     obj_fmap = _coconut.getattr(obj, "__fmap__", None)
     if obj_fmap is not None:
         try:
@@ -1230,8 +1232,6 @@ def fmap(func, obj, **kwargs):
         else:
             if result is not _coconut.NotImplemented:
                 return result
-    if obj.__class__ is None.__class__:
-        return None
     if obj.__class__.__module__ in _coconut.jax_numpy_modules:
         import jax.numpy as jnp
         return jnp.vectorize(func)(obj)
@@ -1330,13 +1330,14 @@ def ident(x, **kwargs):
     if side_effect is not None:
         side_effect(x)
     return x
-def of(_coconut_f, *args, **kwargs):
+def call(_coconut_f, *args, **kwargs):
     """Function application operator function.
 
     Equivalent to:
-        def of(f, *args, **kwargs) = f(*args, **kwargs).
+        def call(f, /, *args, **kwargs) = f(*args, **kwargs).
     """
     return _coconut_f(*args, **kwargs)
+{of_is_call}
 class flip(_coconut_base_hashable):
     """Given a function, return a new function with inverse argument order.
     If nargs is passed, only the first nargs arguments are reversed."""

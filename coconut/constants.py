@@ -614,7 +614,7 @@ coconut_specific_builtins = (
     "override",
     "flatten",
     "ident",
-    "of",
+    "call",
     "flip",
     "const",
     "lift",
