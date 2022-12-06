@@ -272,12 +272,12 @@ for items in _coconut.iter(_coconut.zip_longest(*self.iters, fillvalue=_coconut_
             r'''def prepattern(base_func, **kwargs):
     """DEPRECATED: use addpattern instead."""
     def pattern_prepender(func):
-        return addpattern(func, **kwargs)(base_func)
+        return addpattern(func, base_func, **kwargs)
     return pattern_prepender'''
             if not strict else
             r'''def prepattern(*args, **kwargs):
-    """Deprecated feature 'prepattern' disabled by --strict compilation; use 'addpattern' instead."""
-    raise _coconut.NameError("deprecated feature 'prepattern' disabled by --strict compilation; use 'addpattern' instead")'''
+    """Deprecated built-in 'prepattern' disabled by --strict compilation; use 'addpattern' instead."""
+    raise _coconut.NameError("deprecated built-in 'prepattern' disabled by --strict compilation; use 'addpattern' instead")'''
         ),
         def_datamaker=(
             r'''def datamaker(data_type):
@@ -285,8 +285,14 @@ for items in _coconut.iter(_coconut.zip_longest(*self.iters, fillvalue=_coconut_
     return _coconut.functools.partial(makedata, data_type)'''
             if not strict else
             r'''def datamaker(*args, **kwargs):
-    """Deprecated feature 'datamaker' disabled by --strict compilation; use 'makedata' instead."""
-    raise _coconut.NameError("deprecated feature 'datamaker' disabled by --strict compilation; use 'makedata' instead")'''
+    """Deprecated built-in 'datamaker' disabled by --strict compilation; use 'makedata' instead."""
+    raise _coconut.NameError("deprecated built-in 'datamaker' disabled by --strict compilation; use 'makedata' instead")'''
+        ),
+        of_is_call=(
+            "of = call" if not strict else
+            r'''def of(*args, **kwargs):
+    """Deprecated built-in 'of' disabled by --strict compilation; use 'call' instead."""
+    raise _coconut.NameError("deprecated built-in 'of' disabled by --strict compilation; use 'call' instead")'''
         ),
         return_method_of_self=pycondition(
             (3,),
@@ -515,6 +521,8 @@ class _coconut_amap(_coconut_base_hashable):
         self.aiter = aiter
     def __reduce__(self):
         return (self.__class__, (self.func, self.aiter))
+    def __repr__(self):
+        return "fmap(" + _coconut.repr(self.func) + ", " + _coconut.repr(self.aiter) + ")"
     def __aiter__(self):
         return self
 {async_def_anext}

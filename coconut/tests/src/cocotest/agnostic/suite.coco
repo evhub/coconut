@@ -746,12 +746,12 @@ def suite_test() -> bool:
     class inh_A() `isinstance` A `isinstance` object = inh_A()
     for maxdiff in (maxdiff1, maxdiff2, maxdiff3, maxdiff_):
         assert maxdiff([7,1,4,5]) == 4, "failed for " + repr(maxdiff)
-    assert all(r == 4 for r in parallel_map(of$(?, [7,1,4,5]), [maxdiff1, maxdiff2, maxdiff3]))
+    assert all(r == 4 for r in parallel_map(call$(?, [7,1,4,5]), [maxdiff1, maxdiff2, maxdiff3]))
     assert ret_ret_func(1) == ((), {"func": 1}) == ret_args_kwargs$(func=1)()  # type: ignore
     assert ret_args_kwargs$(?, func=2)(1) == ((1,), {"func": 2})
     assert lift(ret_args_kwargs)(ident, plus1, times2, sq=square)(3) == ((3, 4, 6), {"sq": 9})
-    assert plus1 `of` 2 == 3
-    assert of(ret_args_kwargs, 1, 2, a=1, b=3) == ((1, 2), {"a": 1, "b": 3})
+    assert plus1 `call` 2 == 3
+    assert call(ret_args_kwargs, 1, 2, a=1, b=3) == ((1, 2), {"a": 1, "b": 3})
     x = y = 2
     starsum$ x y .. starproduct$ 2 2 <| 2 == 12
     assert x_and_y(x=1) == (1, 1) == x_and_y(y=1)
@@ -771,7 +771,7 @@ def suite_test() -> bool:
     match tree() in leaf(1):
         assert False
     x = y = -1
-    x `flip(of)` is_even or y = 2
+    x `flip(call)` is_even or y = 2
     assert x == 2
     assert y == -1
     x `(x, f) -> f(x)` is_even or y = 3

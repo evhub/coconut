@@ -180,32 +180,32 @@ def _coconut_tco(func: _Tfunc) -> _Tfunc:
 
 
 @_t.overload
-def _coconut_tail_call(
+def call(
     _func: _t.Callable[[_T], _Uco],
     _x: _T,
 ) -> _Uco: ...
 @_t.overload
-def _coconut_tail_call(
+def call(
     _func: _t.Callable[[_T, _U], _Vco],
     _x: _T,
     _y: _U,
 ) -> _Vco: ...
 @_t.overload
-def _coconut_tail_call(
+def call(
     _func: _t.Callable[[_T, _U, _V], _Wco],
     _x: _T,
     _y: _U,
     _z: _V,
 ) -> _Wco: ...
 @_t.overload
-def _coconut_tail_call(
+def call(
     _func: _t.Callable[_t.Concatenate[_T, _P], _Uco],
     _x: _T,
     *args: _t.Any,
     **kwargs: _t.Any,
 ) -> _Uco: ...
 @_t.overload
-def _coconut_tail_call(
+def call(
     _func: _t.Callable[_t.Concatenate[_T, _U, _P], _Vco],
     _x: _T,
     _y: _U,
@@ -213,7 +213,7 @@ def _coconut_tail_call(
     **kwargs: _t.Any,
 ) -> _Vco: ...
 @_t.overload
-def _coconut_tail_call(
+def call(
     _func: _t.Callable[_t.Concatenate[_T, _U, _V, _P], _Wco],
     _x: _T,
     _y: _U,
@@ -222,14 +222,14 @@ def _coconut_tail_call(
     **kwargs: _t.Any,
 ) -> _Wco: ...
 @_t.overload
-def _coconut_tail_call(
+def call(
     _func: _t.Callable[..., _Tco],
     *args: _t.Any,
     **kwargs: _t.Any,
 ) -> _Tco: ...
 
 
-of = _coconut_tail_call
+_coconut_tail_call = of = call
 
 
 def recursive_iterator(func: _T_iter_func) -> _T_iter_func:
