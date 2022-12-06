@@ -2514,6 +2514,8 @@ _Can't be done without defining a custom `map` type. The full definition of `map
 
 ### `addpattern`
 
+**addpattern**(_base\_func_, _new\_pattern_=`None`, *, _allow\_any\_func_=`False`)
+
 Takes one argument that is a [pattern-matching function](#pattern-matching-functions), and returns a decorator that adds the patterns in the existing function to the new function being decorated, where the existing patterns are checked first, then the new. Roughly equivalent to:
 ```
 def addpattern(base_func, new_pattern=None, *, allow_any_func=True):
@@ -2596,6 +2598,8 @@ _Note: Passing `--strict` disables deprecated features._
 
 ### `reduce`
 
+**reduce**(_function_, _iterable_[, _initial_], /)
+
 Coconut re-introduces Python 2's `reduce` built-in, using the `functools.reduce` version.
 
 ##### Python Docs
@@ -2622,11 +2626,13 @@ print(product(range(1, 10)))
 
 ### `zip_longest`
 
+**zip\_longest**(*_iterables_, _fillvalue_=`None`)
+
 Coconut provides an enhanced version of `itertools.zip_longest` as a built-in under the name `zip_longest`. `zip_longest` supports all the same features as Coconut's [enhanced zip](#enhanced-built-ins) as well as the additional attribute `fillvalue`.
 
 ##### Python Docs
 
-**zip_longest**(_\*iterables, fillvalue=None_)
+**zip\_longest**(_\*iterables, fillvalue=None_)
 
 Make an iterator that aggregates elements from each of the iterables. If the iterables are of uneven length, missing values are filled-in with _fillvalue_. Iteration continues until the longest iterable is exhausted. Roughly equivalent to:
 
@@ -2669,6 +2675,8 @@ result = itertools.zip_longest(range(5), range(10))
 
 ### `takewhile`
 
+**takewhile**(_predicate_, _iterable_, /)
+
 Coconut provides `itertools.takewhile` as a built-in under the name `takewhile`.
 
 ##### Python Docs
@@ -2700,6 +2708,8 @@ negatives = itertools.takewhile(lambda x: x < 0, numiter)
 ```
 
 ### `dropwhile`
+
+**dropwhile**(_predicate_, _iterable_, /)
 
 Coconut provides `itertools.dropwhile` as a built-in under the name `dropwhile`.
 
@@ -2735,48 +2745,64 @@ positives = itertools.dropwhile(lambda x: x < 0, numiter)
 
 ### `memoize`
 
+**memoize**(_maxsize_=`None`, _typed_=`False`)
+
+**memoize**(_user\_function_)
+
 Coconut provides `functools.lru_cache` as a built-in under the name `memoize` with the modification that the _maxsize_ parameter is set to `None` by default. `memoize` makes the use case of optimizing recursive functions easier, as a _maxsize_ of `None` is usually what is desired in that case.
 
 Use of `memoize` requires `functools.lru_cache`, which exists in the Python 3 standard library, but under Python 2 will require `pip install backports.functools_lru_cache` to function. Additionally, if on Python 2 and `backports.functools_lru_cache` is present, Coconut will patch `functools` such that `functools.lru_cache = backports.functools_lru_cache.lru_cache`.
 
 ##### Python Docs
 
-**memoize**(_maxsize=None, typed=False_)
+@**memoize**(_user\_function_)
+
+@**memoize**(_maxsize=None, typed=False_)
 
 Decorator to wrap a function with a memoizing callable that saves up to the _maxsize_ most recent calls. It can save time when an expensive or I/O bound function is periodically called with the same arguments.
 
 Since a dictionary is used to cache results, the positional and keyword arguments to the function must be hashable.
 
-If _maxsize_ is set to `None`, the LRU feature is disabled and the cache can grow without bound. The LRU feature performs best when _maxsize_ is a power-of-two.
+Distinct argument patterns may be considered to be distinct calls with separate cache entries. For example, `f(a=1, b=2)` and `f(b=2, a=1)` differ in their keyword argument order and may have two separate cache entries.
 
-If _typed_ is set to true, function arguments of different types will be cached separately. For example, `f(3)` and `f(3.0)` will be treated as distinct calls with distinct results.
+If _user\_function_ is specified, it must be a callable. This allows the _memoize_ decorator to be applied directly to a user function, leaving the maxsize at its default value of `None`:
+```coconut_python
+@memoize
+def count_vowels(sentence):
+    return sum(sentence.count(vowel) for vowel in 'AEIOUaeiou')
+```
 
-To help measure the effectiveness of the cache and tune the _maxsize_ parameter, the wrapped function is instrumented with a `cache_info()` function that returns a named tuple showing _hits_, _misses_, _maxsize_ and _currsize_. In a multi-threaded environment, the hits and misses are approximate.
+If _maxsize_ is set to `None`, the LRU feature is disabled and the cache can grow without bound.
+
+If _typed_ is set to true, function arguments of different types will be cached separately. If typed is false, the implementation will usually regard them as equivalent calls and only cache a single result. (Some types such as str and int may be cached separately even when typed is false.)
+
+Note, type specificity applies only to the function’s immediate arguments rather than their contents. The scalar arguments, `Decimal(42)` and `Fraction(42)` are be treated as distinct calls with distinct results. In contrast, the tuple arguments `('answer', Decimal(42))` and `('answer', Fraction(42))` are treated as equivalent.
 
 The decorator also provides a `cache_clear()` function for clearing or invalidating the cache.
 
 The original underlying function is accessible through the `__wrapped__` attribute. This is useful for introspection, for bypassing the cache, or for rewrapping the function with a different cache.
 
-An LRU (least recently used) cache works best when the most recent calls are the best predictors of upcoming calls (for example, the most popular articles on a news server tend to change each day). The cache’s size limit assures that the cache does not grow without bound on long-running processes such as web servers.
+The cache keeps references to the arguments and return values until they age out of the cache or until the cache is cleared.
 
-Example of an LRU cache for static web content:
+If a method is cached, the `self` instance argument is included in the cache. See [How do I cache method calls?](https://docs.python.org/3/faq/programming.html#faq-cache-method-calls)
+
+An [LRU (least recently used) cache](https://en.wikipedia.org/wiki/Cache_replacement_policies#Least_recently_used_(LRU)) works best when the most recent calls are the best predictors of upcoming calls (for example, the most popular articles on a news server tend to change each day). The cache’s size limit assures that the cache does not grow without bound on long-running processes such as web servers.
+
+In general, the LRU cache should only be used when you want to reuse previously computed values. Accordingly, it doesn’t make sense to cache functions with side-effects, functions that need to create distinct mutable objects on each call, or impure functions such as time() or random().
+
+Example of efficiently computing Fibonacci numbers using a cache to implement a dynamic programming technique:
 ```coconut_pycon
-@memoize(maxsize=32)
-def get_pep(num):
-    'Retrieve text of a Python Enhancement Proposal'
-    resource = 'http://www.python.org/dev/peps/pep-%04d/' % num
-    try:
-        with urllib.request.urlopen(resource) as s:
-            return s.read()
-    except urllib.error.HTTPError:
-        return 'Not Found'
+@memoize
+def fib(n):
+    if n < 2:
+        return n
+    return fib(n-1) + fib(n-2)
 
->>> for n in 8, 290, 308, 320, 8, 218, 320, 279, 289, 320, 9991:
-...     pep = get_pep(n)
-...     print(n, len(pep))
+>>> [fib(n) for n in range(16)]
+[0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610]
 
->>> get_pep.cache_info()
-CacheInfo(hits=3, misses=8, maxsize=32, currsize=8)
+>>> fib.cache_info()
+CacheInfo(hits=28, misses=16, maxsize=None, currsize=16)
 ```
 
 ##### Example
@@ -2785,7 +2811,7 @@ CacheInfo(hits=3, misses=8, maxsize=32, currsize=8)
 ```coconut
 def fib(n if n < 2) = n
 
-@memoize()
+@memoize
 @addpattern(fib)
 def fib(n) = fib(n-1) + fib(n-2)
 ```
@@ -2804,6 +2830,8 @@ def fib(n):
 ```
 
 ### `override`
+
+**override**(_func_)
 
 Coconut provides the `@override` decorator to allow declaring a method definition in a subclass as an override of some parent class method. When `@override` is used on a method, if a method of the same name does not exist on some parent class, the class definition will raise a `RuntimeError`.
 
@@ -2824,6 +2852,8 @@ class B:
 _Can't be done without a long decorator definition. The full definition of the decorator in Python can be found in the Coconut header._
 
 ### `groupsof`
+
+**groupsof**(_n_, _iterable_)
 
 Coconut provides the `groupsof` built-in to split an iterable into groups of a specific length. Specifically, `groupsof(n, iterable)` will split `iterable` into tuples of length `n`, with only the last tuple potentially of size `< n` if the length of `iterable` is not divisible by `n`.
 
@@ -2848,6 +2878,8 @@ if group:
 ```
 
 ### `tee`
+
+**tee**(_iterable_, _n_=`2`)
 
 Coconut provides an optimized version of `itertools.tee` as a built-in under the name `tee`.
 
@@ -2890,6 +2922,8 @@ sliced = itertools.islice(temp, 5, None)
 
 ### `reiterable`
 
+**reiterable**(_iterable_)
+
 Sometimes, when an iterator may need to be iterated over an arbitrary number of times, [`tee`](#tee) can be cumbersome to use. For such cases, Coconut provides `reiterable`, which wraps the given iterator such that whenever an attempt to iterate over it is made, it iterates over a `tee` instead of the original.
 
 ##### Example
@@ -2910,6 +2944,8 @@ def list_type(xs):
 _Can't be done without a long series of checks for each `match` statement. See the compiled code for the Python syntax._
 
 ### `consume`
+
+**consume**(_iterable_, _keep\_last_=`0`)
 
 Coconut provides the `consume` function to efficiently exhaust an iterator and thus perform any lazy evaluation contained within it. `consume` takes one optional argument, `keep_last`, that defaults to 0 and specifies how many, if any, items from the end to return as a sequence (`None` will keep all elements).
 
@@ -2937,6 +2973,8 @@ collections.deque(map(print, map(lambda x: x**2, range(10))), maxlen=0)
 ```
 
 ### `count`
+
+**count**(_start_=`0`, _step_=`1`)
 
 Coconut provides a modified version of `itertools.count` that supports `in`, normal slicing, optimized iterator slicing, the standard `count` and `index` sequence methods, `repr`, and `start`/`step` attributes as a built-in under the name `count`.
 
@@ -2970,7 +3008,13 @@ _Can't be done quickly without Coconut's iterator slicing, which requires many c
 
 ### `makedata`
 
-Coconut provides the `makedata` function to construct a container given the desired type and contents. This is particularly useful when writing alternative constructors for [`data`](#data) types by overwriting `__new__`, since it allows direct access to the base constructor of the data type created with the Coconut `data` statement. `makedata` takes the data type to construct as the first argument, and the objects to put in that container as the rest of the arguments.
+**makedata**(_data\_type_, *_args_)
+
+Coconut provides the `makedata` function to construct a container given the desired type and contents. This is particularly useful when writing alternative constructors for [`data`](#data) types by overwriting `__new__`, since it allows direct access to the base constructor of the data type created with the Coconut `data` statement.
+
+`makedata` takes the data type to construct as the first argument, and the objects to put in that container as the rest of the arguments.
+
+Additionally, `makedata` can also be called with non-`data` type as the first argument, in which case it will do its best to construct the given type of object with the given arguments. This functionality is used internally by `fmap`.
 
 **DEPRECATED:** Coconut also has a `datamaker` built-in, which partially applies `makedata`; `datamaker` is defined as:
 ```coconut
@@ -2994,6 +3038,8 @@ _Can't be done without a series of method definitions for each data type. See th
 
 ### `fmap`
 
+**fmap**(_func_, _obj_, *, _starmap\_over\_mappings_=`False`)
+
 In functional programming, `fmap(func, obj)` takes a data type `obj` and returns a new data type with `func` mapped over the contents. Coconut's `fmap` function does the exact same thing in Coconut.
 
 `fmap` can also be used on built-ins such as `str`, `list`, `set`, and `dict` as a variant of `map` that returns back an object of the same type. The behavior of `fmap` for a given object can be overridden by defining an `__fmap__(self, func)` magic method that will be called whenever `fmap` is invoked on that object.
@@ -3008,6 +3054,8 @@ async def fmap_over_async_iters(func, async_iter):
     async for item in async_iter:
         yield func(item)
 ```
+
+For `None`, `fmap` will always return `None`, ignoring the function passed to it.
 
 ##### Example
 
@@ -3027,6 +3075,8 @@ Nothing() |> fmap$(x -> x*2) == Nothing()
 _Can't be done without a series of method definitions for each data type. See the compiled code for the Python syntax._
 
 ### `starmap`
+
+**starmap**(_function_, _iterable_)
 
 Coconut provides a modified version of `itertools.starmap` that supports `reversed`, `repr`, optimized normal (and iterator) slicing, `len`, and `func`/`iter` attributes.
 
@@ -3057,6 +3107,8 @@ collections.deque(itertools.starmap(print, map(range, range(1, 5))), maxlen=0)
 ```
 
 ### `scan`
+
+**scan**(_function_, _iterable_[, _initial_])
 
 Coconut provides a modified version of `itertools.accumulate` with opposite argument order as `scan` that also supports `repr`, `len`, and `func`/`iter`/`initial` attributes. `scan` works exactly like [`reduce`](#reduce), except that instead of only returning the last accumulated value, it returns an iterator of all the intermediate values.
 
@@ -3104,6 +3156,8 @@ for x in input_data:
 
 ### `flatten`
 
+**flatten**(_iterable_)
+
 Coconut provides an enhanced version of `itertools.chain.from_iterable` as a built-in under the name `flatten` with added support for `reversed`, `len`, `repr`, `in`, `.count()`, `.index()`, and `fmap`.
 
 Additionally, `flatten` includes special support for [`numpy`](http://www.numpy.org/)/[`pandas`](https://pandas.pydata.org/)/[`jax.numpy`](https://jax.readthedocs.io/en/latest/jax.numpy.html) objects, in which case a multidimensional array is returned instead of an iterator.
@@ -3141,26 +3195,28 @@ flat_it = iter_of_iters |> chain.from_iterable |> list
 
 ### `cartesian_product`
 
+**cartesian\_product**(*_iterables_, _repeat_=`1`)
+
 Coconut provides an enhanced version of `itertools.product` as a built-in under the name `cartesian_product` with added support for `len`, `repr`, `in`, `.count()`, and `fmap`.
 
 Additionally, `cartesian_product` includes special support for [`numpy`](http://www.numpy.org/)/[`pandas`](https://pandas.pydata.org/)/[`jax.numpy`](https://jax.readthedocs.io/en/latest/jax.numpy.html) objects, in which case a multidimensional array is returned instead of an iterator.
 
 ##### Python Docs
 
-itertools.**product**(_\*iterables, repeat=1_)
+**cartesian\_product**(_\*iterables, repeat=1_)
 
 Cartesian product of input iterables.
 
-Roughly equivalent to nested for-loops in a generator expression. For example, `product(A, B)` returns the same as `((x,y) for x in A for y in B)`.
+Roughly equivalent to nested for-loops in a generator expression. For example, `cartesian_product(A, B)` returns the same as `((x,y) for x in A for y in B)`.
 
 The nested loops cycle like an odometer with the rightmost element advancing on every iteration. This pattern creates a lexicographic ordering so that if the input’s iterables are sorted, the product tuples are emitted in sorted order.
 
-To compute the product of an iterable with itself, specify the number of repetitions with the optional repeat keyword argument. For example, `product(A, repeat=4)` means the same as `product(A, A, A, A)`.
+To compute the product of an iterable with itself, specify the number of repetitions with the optional repeat keyword argument. For example, `product(A, repeat=4)` means the same as `cartesian_product(A, A, A, A)`.
 
 This function is roughly equivalent to the following code, except that the actual implementation does not build up intermediate results in memory:
 
 ```coconut_python
-def product(*args, repeat=1):
+def cartesian_product(*args, repeat=1):
     # product('ABCD', 'xy') --> Ax Ay Bx By Cx Cy Dx Dy
     # product(range(2), repeat=3) --> 000 001 010 011 100 101 110 111
     pools = [tuple(pool) for pool in args] * repeat
@@ -3171,7 +3227,7 @@ def product(*args, repeat=1):
         yield tuple(prod)
 ```
 
-Before `product()` runs, it completely consumes the input iterables, keeping pools of values in memory to generate the products. Accordingly, it is only useful with finite inputs.
+Before `cartesian_product()` runs, it completely consumes the input iterables, keeping pools of values in memory to generate the products. Accordingly, it is only useful with finite inputs.
 
 ##### Example
 
@@ -3189,6 +3245,8 @@ assert list(product(v, v)) == [(1, 1), (1, 2), (2, 1), (2, 2)]
 ```
 
 ### `multi_enumerate`
+
+**multi\_enumerate**(_iterable_)
 
 Coconut's `multi_enumerate` enumerates through an iterable of iterables. `multi_enumerate` works like enumerate, but indexes through inner iterables and produces a tuple index representing the index in each inner iterable. Supports indexing.
 
@@ -3220,6 +3278,8 @@ for i in range(len(array)):
 ```
 
 ### `collectby`
+
+**collectby**(_key\_func_, _iterable_, _value\_func_=`None`, _reduce\_func_=`None`)
 
 `collectby(key_func, iterable)` collects the items in `iterable` into a dictionary of lists keyed by `key_func(item)`.
 
@@ -3269,6 +3329,8 @@ for item in balance_data:
 
 ### `all_equal`
 
+**all\_equal**(_iterable_)
+
 Coconut's `all_equal` built-in takes in an iterable and determines whether all of its elements are equal to each other. `all_equal` assumes transitivity of equality and that `!=` is the negation of `==`. Special support is provided for [`numpy`](http://www.numpy.org/)/[`pandas`](https://pandas.pydata.org/)/[`jax.numpy`](https://jax.readthedocs.io/en/latest/jax.numpy.html) objects.
 
 ##### Example
@@ -3295,6 +3357,8 @@ all_equal([1, 1, 2])
 ```
 
 ### `recursive_iterator`
+
+**recursive\_iterator**(_func_)
 
 Coconut provides a `recursive_iterator` decorator that memoizes any stateless, recursive function that returns an iterator. To use `recursive_iterator` on a function, it must meet the following criteria:
 
@@ -3330,6 +3394,8 @@ _Can't be done without a long decorator definition. The full definition of the d
 
 ### `parallel_map`
 
+**parallel\_map**(_function_, *_iterables_, *, _chunksize_=`1`)
+
 Coconut provides a parallel version of `map` under the name `parallel_map`. `parallel_map` makes use of multiple processes, and is therefore much faster than `map` for CPU-bound tasks. `parallel_map` never loads the entire input iterator into memory, though it does consume the entire input iterator as soon as a single output is requested. If any exceptions are raised inside of `parallel_map`, a traceback will be printed as soon as they are encountered.
 
 Because `parallel_map` uses multiple processes for its execution, it is necessary that all of its arguments be pickleable. Only objects defined at the module level, and not lambdas, objects defined inside of a function, or objects defined inside of the interpreter, are pickleable. Furthermore, on Windows, it is necessary that all calls to `parallel_map` occur inside of an `if __name__ == "__main__"` guard.
@@ -3363,6 +3429,8 @@ with Pool() as pool:
 
 ### `concurrent_map`
 
+**concurrent\_map**(_function_, *_iterables_, *, _chunksize_=`1`)
+
 Coconut provides a concurrent version of [`parallel_map`](#parallel_map) under the name `concurrent_map`. `concurrent_map` behaves identically to `parallel_map` (including support for `concurrent_map.multiple_sequential_calls`) except that it uses multithreading instead of multiprocessing, and is therefore primarily useful only for IO-bound tasks due to CPython's Global Interpreter Lock.
 
 ##### Python Docs
@@ -3389,6 +3457,10 @@ with concurrent.futures.ThreadPoolExecutor() as executor:
 ```
 
 ### `lift`
+
+**lift**(_func_)
+
+**lift**(_func_, *_func\_args_, **_func\_kwargs_)
 
 Coconut's `lift` built-in is a higher-order function that takes in a function and “lifts” it up so that all of its arguments are functions.
 
@@ -3430,6 +3502,8 @@ def min_and_max(xs):
 
 ### `flip`
 
+**flip**(_func_, _nargs_=`None`)
+
 Coconut's `flip(f, nargs=None)` is a higher-order function that, given a function `f`, returns a new function with reversed argument order. If `nargs` is passed, only the first `nargs` arguments are reversed.
 
 For the binary case, `flip` works as
@@ -3449,23 +3523,29 @@ def flip(f, nargs=None) =
 
 ### `of`
 
+**of**(_func_, /, *_args_, \*\*_kwargs_)
+
 Coconut's `of` simply implements function application. Thus, `of` is equivalent to
 ```coconut
-def of(f, *args, **kwargs) = f(*args, **kwargs)
+def of(f, /, *args, **kwargs) = f(*args, **kwargs)
 ```
 
 `of` is primarily useful as an [operator function](#operator-functions) for function application when writing in a point-free style.
 
 ### `const`
 
+**const**(_value_)
+
 Coconut's `const` simply constructs a function that, whatever its arguments, just returns the given value. Thus, `const` is equivalent to a pickleable version of
 ```coconut
-def const(x) = (*args, **kwargs) -> x
+def const(value) = (*args, **kwargs) -> value
 ```
 
 `const` is primarily useful when writing in a point-free style (e.g. in combination with [`lift`](#lift)).
 
 ### `ident`
+
+**ident**(_x_, *, _side\_effect_=`None`)
 
 Coconut's `ident` is the identity function, generally equivalent to `x -> x`.
 

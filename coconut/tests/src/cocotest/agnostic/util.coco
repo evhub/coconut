@@ -1146,7 +1146,6 @@ def ridiculously_recursive_(n):
     return result
 
 def fib(n if n < 2) = n
-
 @memoize()  # type: ignore
 addpattern def fib(n) = fib(n-1) + fib(n-2)  # type: ignore
 
@@ -1154,6 +1153,14 @@ addpattern def fib(n) = fib(n-1) + fib(n-2)  # type: ignore
 def Fibs() = (0, 1) :: map((+), Fibs(), Fibs()$[1:])
 
 fib_ = reiterable(Fibs())$[]
+
+def fib_alt1(n if n < 2) = n
+@memoize  # type: ignore
+addpattern def fib_alt1(n) = fib_alt1(n-1) + fib_alt1(n-2)  # type: ignore
+
+def fib_alt2(n if n < 2) = n
+@memoize$(user_function=?)  # type: ignore
+addpattern def fib_alt2(n) = fib_alt2(n-1) + fib_alt2(n-2)  # type: ignore
 
 # MapReduce
 from collections import defaultdict

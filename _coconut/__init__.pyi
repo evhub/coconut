@@ -123,6 +123,7 @@ TypeError = TypeError
 ValueError = ValueError
 StopIteration = StopIteration
 RuntimeError = RuntimeError
+callable = callable
 classmethod = classmethod
 all = all
 any = any
