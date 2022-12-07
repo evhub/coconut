@@ -22,13 +22,14 @@ import types as _types
 import itertools as _itertools
 import operator as _operator
 import threading as _threading
-import weakref as _weakref
 import os as _os
 import warnings as _warnings
 import contextlib as _contextlib
 import traceback as _traceback
-import pickle as _pickle
+import weakref as _weakref
 import multiprocessing as _multiprocessing
+import math as _math
+import pickle as _pickle
 from multiprocessing import dummy as _multiprocessing_dummy
 
 if sys.version_info >= (3,):
@@ -88,29 +89,38 @@ typing = _t
 
 collections = _collections
 copy = _copy
-copyreg = _copyreg
 functools = _functools
 types = _types
 itertools = _itertools
 operator = _operator
 threading = _threading
-weakref = _weakref
 os = _os
 warnings = _warnings
 contextlib = _contextlib
 traceback = _traceback
-pickle = _pickle
-asyncio = _asyncio
-abc = _abc
+weakref = _weakref
 multiprocessing = _multiprocessing
+math = _math
 multiprocessing_dummy = _multiprocessing_dummy
-numpy = _numpy
-npt = _npt  # Fake, like typing
+
+copyreg = _copyreg
+asyncio = _asyncio
+pickle = _pickle
 if sys.version_info >= (2, 7):
     OrderedDict = collections.OrderedDict
 else:
     OrderedDict = dict
+abc = _abc
+abc.Sequence.register(collections.deque)
+numpy = _numpy
+npt = _npt  # Fake, like typing
 zip_longest = _zip_longest
+
+numpy_modules: _t.Any = ...
+jax_numpy_modules: _t.Any = ...
+tee_type: _t.Any = ...
+reiterables: _t.Any = ...
+
 Ellipsis = Ellipsis
 NotImplemented = NotImplemented
 NotImplementedError = NotImplementedError

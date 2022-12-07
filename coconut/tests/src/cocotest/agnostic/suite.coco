@@ -275,6 +275,7 @@ def suite_test() -> bool:
     assert vector(1, 2) |> (==)$(vector(1, 2))
     assert vector(1, 2) |> .__eq__(other=vector(1, 2))  # type: ignore
     assert fibs()$[1:4] |> tuple == (1, 2, 3) == fibs_()$[1:4] |> tuple
+    assert fibs()$[:10] |> list == [1,1,2,3,5,8,13,21,34,55] == fibs_()$[:10] |> list
     assert fibs() |> takewhile$((i) -> i < 4000000 ) |> filter$((i) -> i % 2 == 0 ) |> sum == 4613732 == fibs_() |> takewhile$((i) -> i < 4000000 ) |> filter$((i) -> i % 2 == 0 ) |> sum  # type: ignore
     assert loop([1,2])$[:4] |> list == [1, 2] * 2
     assert parallel_map(list .. .$[:2] .. loop, ([1], [2]))$[:2] |> tuple == ([1, 1], [2, 2])
@@ -1001,6 +1002,8 @@ forward 2""") == 900
 """) == 7 + 8 + 9
     assert split_in_half("123456789") |> list == [("1","2","3","4","5"), ("6","7","8","9")]
     assert arr_of_prod([5,2,1,4,3]) |> list == [24,60,120,30,40]
+    assert safe_call(raise_exc).error `isinstance` Exception
+    assert safe_call((.+1), 5).result == 6
 
     # must come at end
     assert fibs_calls[0] == 1

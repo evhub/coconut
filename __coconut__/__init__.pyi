@@ -47,6 +47,7 @@ _Wco = _t.TypeVar("_Wco", covariant=True)
 _Tcontra = _t.TypeVar("_Tcontra", contravariant=True)
 _Tfunc = _t.TypeVar("_Tfunc", bound=_Callable)
 _Ufunc = _t.TypeVar("_Ufunc", bound=_Callable)
+_Tfunc_contra = _t.TypeVar("_Tfunc_contra", bound=_Callable, contravariant=True)
 _Titer = _t.TypeVar("_Titer", bound=_Iterable)
 _T_iter_func = _t.TypeVar("_T_iter_func", bound=_t.Callable[..., _Iterable])
 
@@ -179,6 +180,7 @@ def _coconut_tco(func: _Tfunc) -> _Tfunc:
     return func
 
 
+# any changes here should also be made to safe_call below
 @_t.overload
 def call(
     _func: _t.Callable[[_T], _Uco],
@@ -232,6 +234,71 @@ def call(
 _coconut_tail_call = of = call
 
 
+class _base_Expected(_t.NamedTuple, _t.Generic[_T]):
+    result: _t.Optional[_T]
+    error: _t.Optional[Exception]
+    def __fmap__(self, func: _t.Callable[[_T], _U]) -> Expected[_U]: ...
+class Expected(_base_Expected[_T]):
+    __slots__ = ()
+    def __new__(
+        self,
+        result: _t.Optional[_T] = None,
+        error: _t.Optional[Exception] = None
+    ) -> Expected[_T]: ...
+_coconut_Expected = Expected
+
+
+# should match call above but with Expected
+@_t.overload
+def safe_call(
+    _func: _t.Callable[[_T], _Uco],
+    _x: _T,
+) -> Expected[_Uco]: ...
+@_t.overload
+def safe_call(
+    _func: _t.Callable[[_T, _U], _Vco],
+    _x: _T,
+    _y: _U,
+) -> Expected[_Vco]: ...
+@_t.overload
+def safe_call(
+    _func: _t.Callable[[_T, _U, _V], _Wco],
+    _x: _T,
+    _y: _U,
+    _z: _V,
+) -> Expected[_Wco]: ...
+@_t.overload
+def safe_call(
+    _func: _t.Callable[_t.Concatenate[_T, _P], _Uco],
+    _x: _T,
+    *args: _t.Any,
+    **kwargs: _t.Any,
+) -> Expected[_Uco]: ...
+@_t.overload
+def safe_call(
+    _func: _t.Callable[_t.Concatenate[_T, _U, _P], _Vco],
+    _x: _T,
+    _y: _U,
+    *args: _t.Any,
+    **kwargs: _t.Any,
+) -> Expected[_Vco]: ...
+@_t.overload
+def safe_call(
+    _func: _t.Callable[_t.Concatenate[_T, _U, _V, _P], _Wco],
+    _x: _T,
+    _y: _U,
+    _z: _V,
+    *args: _t.Any,
+    **kwargs: _t.Any,
+) -> Expected[_Wco]: ...
+@_t.overload
+def safe_call(
+    _func: _t.Callable[..., _Tco],
+    *args: _t.Any,
+    **kwargs: _t.Any,
+) -> Expected[_Tco]: ...
+
+
 def recursive_iterator(func: _T_iter_func) -> _T_iter_func:
     return func
 
@@ -248,7 +315,7 @@ def _coconut_call_set_names(cls: object) -> None: ...
 
 class _coconut_base_pattern_func:
     def __init__(self, *funcs: _Callable) -> None: ...
-    def add(self, func: _Callable) -> None: ...
+    def add_pattern(self, func: _Callable) -> None: ...
     def __call__(self, *args: _t.Any, **kwargs: _t.Any) -> _t.Any: ...
 
 @_t.overload
@@ -274,6 +341,7 @@ def _coconut_mark_as_match(func: _Tfunc) -> _Tfunc:
 
 class _coconut_partial(_t.Generic[_T]):
     args: _Tuple = ...
+    required_nargs: int = ...
     keywords: _t.Dict[_t.Text, _t.Any] = ...
     def __init__(
         self,
@@ -564,6 +632,12 @@ def consume(
     ) -> _t.Sequence[_T]: ...
 
 
+class _FMappable(_t.Protocol[_Tfunc_contra, _Tco]):
+    def __fmap__(self, func: _Tfunc_contra) -> _Tco: ...
+
+
+@_t.overload
+def fmap(func: _Tfunc, obj: _FMappable[_Tfunc, _Tco]) -> _Tco: ...
 @_t.overload
 def fmap(func: _t.Callable[[_Tco], _Tco], obj: _Titer) -> _Titer: ...
 @_t.overload

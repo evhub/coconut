@@ -590,9 +590,10 @@ interp_only_builtins = (
 )
 
 coconut_specific_builtins = (
+    "TYPE_CHECKING",
+    "Expected",
     "breakpoint",
     "help",
-    "TYPE_CHECKING",
     "reduce",
     "takewhile",
     "dropwhile",
@@ -615,6 +616,7 @@ coconut_specific_builtins = (
     "flatten",
     "ident",
     "call",
+    "safe_call",
     "flip",
     "const",
     "lift",
@@ -645,15 +647,15 @@ coconut_specific_builtins = (
     "_namedtuple_of",
 )
 
-all_builtins = frozenset(python_builtins + coconut_specific_builtins)
+coconut_exceptions = (
+    "MatchError",
+)
+
+all_builtins = frozenset(python_builtins + coconut_specific_builtins + coconut_exceptions)
 
 magic_methods = (
     "__fmap__",
     "__iter_getitem__",
-)
-
-exceptions = (
-    "MatchError",
 )
 
 new_operators = (
@@ -1000,7 +1002,7 @@ search_terms = (
     "islice",
 ) + (
     coconut_specific_builtins
-    + exceptions
+    + coconut_exceptions
     + magic_methods
     + reserved_vars
 )

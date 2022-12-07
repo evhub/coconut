@@ -678,7 +678,7 @@ f_into_g = lambda *args, **kwargs: g(f(*args, **kwargs))
 
 Coconut uses a `$` sign right after an iterator before a slice to perform iterator slicing, as in `it$[:5]`. Coconut's iterator slicing works much the same as Python's sequence slicing, and looks much the same as Coconut's partial application, but with brackets instead of parentheses.
 
-Iterator slicing works just like sequence slicing, including support for negative indices and slices, and support for `slice` objects in the same way as can be done with normal slicing. Iterator slicing makes no guarantee, however, that the original iterator passed to it be preserved (to preserve the iterator, use Coconut's [`tee`](#tee) or [`reiterable`](#reiterable) built-ins).
+Iterator slicing works just like sequence slicing, including support for negative indices and slices, and support for `slice` objects in the same way as can be done with normal slicing. Iterator slicing makes no guarantee, however, that the original iterator passed to it be preserved (to preserve the iterator, use Coconut's [`reiterable`](#reiterable) built-in).
 
 Coconut's iterator slicing is very similar to Python's `itertools.islice`, but unlike `itertools.islice`, Coconut's iterator slicing supports negative indices, and will preferentially call an object's `__iter_getitem__` (Coconut-specific magic method, preferred) or `__getitem__` (general Python magic method), if they exist. Coconut's iterator slicing is also optimized to work well with all of Coconut's built-in objects, only computing the elements of each that are actually necessary to extract the desired slice.
 
@@ -1074,7 +1074,7 @@ base_pattern ::= (
   - Iterable Splits (`<list/tuple/lazy list> :: <var> :: <list/tuple/lazy list> :: <var> :: <list/tuple/lazy list>`): same as other sequence destructuring, but works on any iterable (`collections.abc.Iterable`), including infinite iterators (note that if an iterator is matched against it will be modified unless it is [`reiterable`](#reiterable)).
   - Complex String Matching (`<string> + <var> + <string> + <var> + <string>`): string matching supports the same destructuring options as above.
 
-_Note: Like [iterator slicing](#iterator-slicing), iterator and lazy list matching make no guarantee that the original iterator matched against be preserved (to preserve the iterator, use Coconut's [`tee`](#tee) or [`reiterable`](#reiterable) built-ins)._
+_Note: Like [iterator slicing](#iterator-slicing), iterator and lazy list matching make no guarantee that the original iterator matched against be preserved (to preserve the iterator, use Coconut's [`reiterable`](#reiterable) built-in)._
 
 When checking whether or not an object can be matched against in a particular fashion, Coconut makes use of Python's abstract base classes. Therefore, to ensure proper matching for a custom object, it's recommended to register it with the proper abstract base classes.
 
@@ -1271,7 +1271,7 @@ data <name>(<args>) [from <inherits>]:
 ```
 `<name>` is the name of the new data type, `<args>` are the arguments to its constructor as well as the names of its attributes, `<body>` contains the data type's methods, and `<inherits>` optionally contains any desired base classes.
 
-Coconut allows data fields in `<args>` to have defaults and/or [type annotations](#enhanced-type-annotation) attached to them, and supports a starred parameter at the end to collect extra arguments.
+Coconut allows data fields in `<args>` to have defaults and/or [type annotations](#enhanced-type-annotation) attached to them, and supports a starred parameter at the end to collect extra arguments. Additionally, Coconut allows type parameters to be specified in brackets after `<name>` using Coconut's [type parameter syntax](#type-parameter-syntax).
 
 Writing constructors for `data` types must be done using the `__new__` method instead of the `__init__` method. For helping to easily write `__new__` methods, Coconut provides the [makedata](#makedata) built-in.
 
@@ -2879,11 +2879,38 @@ if group:
     pairs.append(tuple(group))
 ```
 
+### `reiterable`
+
+**reiterable**(_iterable_)
+
+`reiterable` wraps the given iterable to ensure that every time the `reiterable` is iterated over, it produces the same results. Note that the result need not be a `reiterable` object if the given iterable is already reiterable. `reiterable` uses [`tee`](#tee) under the hood and `tee` can be used in its place, though `reiterable` is generally recommended over `tee`.
+
+##### Example
+
+**Coconut:**
+```coconut
+def list_type(xs):
+    match reiterable(xs):
+        case [fst, snd] :: tail:
+            return "at least 2"
+        case [fst] :: tail:
+            return "at least 1"
+        case (| |):
+            return "empty"
+```
+
+**Python:**
+_Can't be done without a long series of checks for each `match` statement. See the compiled code for the Python syntax._
+
 ### `tee`
 
 **tee**(_iterable_, _n_=`2`)
 
 Coconut provides an optimized version of `itertools.tee` as a built-in under the name `tee`.
+
+Though `tee` is not deprecated, [`reiterable`](#reiterable) is generally recommended over `tee`.
+
+Custom `tee`/`reiterable` implementations for custom [Containers/Collections](https://docs.python.org/3/library/collections.abc.html) should be put in the `__copy__` method. Note that all [Sequences/Mappings/Sets](https://docs.python.org/3/library/collections.abc.html) are always assumed to be reiterable even without calling `__copy__`.
 
 ##### Python Docs
 
@@ -2920,58 +2947,6 @@ sliced = temp$[5:]
 import itertools
 original, temp = itertools.tee(original)
 sliced = itertools.islice(temp, 5, None)
-```
-
-### `reiterable`
-
-**reiterable**(_iterable_)
-
-Sometimes, when an iterator may need to be iterated over an arbitrary number of times, [`tee`](#tee) can be cumbersome to use. For such cases, Coconut provides `reiterable`, which wraps the given iterator such that whenever an attempt to iterate over it is made, it iterates over a `tee` instead of the original.
-
-##### Example
-
-**Coconut:**
-```coconut
-def list_type(xs):
-    match reiterable(xs):
-        case [fst, snd] :: tail:
-            return "at least 2"
-        case [fst] :: tail:
-            return "at least 1"
-        case (| |):
-            return "empty"
-```
-
-**Python:**
-_Can't be done without a long series of checks for each `match` statement. See the compiled code for the Python syntax._
-
-### `consume`
-
-**consume**(_iterable_, _keep\_last_=`0`)
-
-Coconut provides the `consume` function to efficiently exhaust an iterator and thus perform any lazy evaluation contained within it. `consume` takes one optional argument, `keep_last`, that defaults to 0 and specifies how many, if any, items from the end to return as a sequence (`None` will keep all elements).
-
-Equivalent to:
-```coconut
-def consume(iterable, keep_last=0):
-    """Fully exhaust iterable and return the last keep_last elements."""
-    return collections.deque(iterable, maxlen=keep_last)  # fastest way to exhaust an iterator
-```
-
-##### Rationale
-
-In the process of lazily applying operations to iterators, eventually a point is reached where evaluation of the iterator is necessary. To do this efficiently, Coconut provides the `consume` function, which will fully exhaust the iterator given to it.
-
-##### Example
-
-**Coconut:**
-```coconut
-range(10) |> map$((x) -> x**2) |> map$(print) |> consume
-```
-
-**Python:**
-```coconut_python
-collections.deque(map(print, map(lambda x: x**2, range(10))), maxlen=0)
 ```
 
 ### `count`
@@ -3160,7 +3135,7 @@ for x in input_data:
 
 **flatten**(_iterable_)
 
-Coconut provides an enhanced version of `itertools.chain.from_iterable` as a built-in under the name `flatten` with added support for `reversed`, `len`, `repr`, `in`, `.count()`, `.index()`, and `fmap`.
+Coconut provides an enhanced version of `itertools.chain.from_iterable` as a built-in under the name `flatten` with added support for `reversed`, `repr`, `in`, `.count()`, `.index()`, and `fmap`.
 
 Additionally, `flatten` includes special support for [`numpy`](http://www.numpy.org/)/[`pandas`](https://pandas.pydata.org/)/[`jax.numpy`](https://jax.readthedocs.io/en/latest/jax.numpy.html) objects, in which case a multidimensional array is returned instead of an iterator.
 
@@ -3458,6 +3433,111 @@ with concurrent.futures.ThreadPoolExecutor() as executor:
     print(list(executor.map(get_data_for_user, get_all_users())))
 ```
 
+### `consume`
+
+**consume**(_iterable_, _keep\_last_=`0`)
+
+Coconut provides the `consume` function to efficiently exhaust an iterator and thus perform any lazy evaluation contained within it. `consume` takes one optional argument, `keep_last`, that defaults to 0 and specifies how many, if any, items from the end to return as a sequence (`None` will keep all elements).
+
+Equivalent to:
+```coconut
+def consume(iterable, keep_last=0):
+    """Fully exhaust iterable and return the last keep_last elements."""
+    return collections.deque(iterable, maxlen=keep_last)  # fastest way to exhaust an iterator
+```
+
+##### Rationale
+
+In the process of lazily applying operations to iterators, eventually a point is reached where evaluation of the iterator is necessary. To do this efficiently, Coconut provides the `consume` function, which will fully exhaust the iterator given to it.
+
+##### Example
+
+**Coconut:**
+```coconut
+range(10) |> map$((x) -> x**2) |> map$(print) |> consume
+```
+
+**Python:**
+```coconut_python
+collections.deque(map(print, map(lambda x: x**2, range(10))), maxlen=0)
+```
+
+### `Expected`
+
+**Expected**(_result_=`None`, _error_=`None`)
+
+Coconut's `Expected` built-in is a Coconut [`data` type](#data) that represents a value that may or may not be an error, similar to Haskell's [`Either`](https://hackage.haskell.org/package/base-4.17.0.0/docs/Data-Either.html).
+
+`Expected` is effectively equivalent to the following:
+```coconut
+data Expected[T](result: T?, error: Exception?):
+    def __new__(cls, result: T?=None, error: Exception?=None) -> Expected[T]:
+        if result is not None and error is not None:
+            raise ValueError("Expected cannot have both a result and an error")
+        return makedata(cls, result, error)
+    def __bool__(self) -> bool:
+        return self.error is None
+    def __fmap__[U](self, func: T -> U) -> Expected[U]:
+        return self.__class__(func(self.result)) if self else self
+```
+
+`Expected` is primarily used as the return type for [`safe_call`](#safe_call). Generally, the best way to use `Expected` is with [`fmap`](#fmap), which will apply a function to the result if it exists, or otherwise retain the error.
+
+##### Example
+
+**Coconut:**
+```coconut
+def try_divide(x, y):
+    try:
+        return Expected(x / y)
+    except Exception as err:
+        return Expected(error=err)
+
+try_divide(1, 2) |> fmap$(.+1) |> print
+try_divide(1, 0) |> fmap$(.+1) |> print
+```
+
+**Python:**
+_Can't be done without a complex `Expected` definition. See the compiled code for the Python syntax._
+
+### `call`
+
+**call**(_func_, /, *_args_, \*\*_kwargs_)
+
+Coconut's `call` simply implements function application. Thus, `call` is equivalent to
+```coconut
+def call(f, /, *args, **kwargs) = f(*args, **kwargs)
+```
+
+`call` is primarily useful as an [operator function](#operator-functions) for function application when writing in a point-free style.
+
+**DEPRECATED:** `of` is available as a deprecated alias for `call`. Note that deprecated features are disabled in `--strict` mode.
+
+### `safe_call`
+
+**safe_call**(_func_, /, *_args_, \*\*_kwargs_)
+
+Coconut's `safe_call` is a version of [`call`](#call) that catches any `Exception`s and returns an [`Expected`](#expected) containing either the result or the error.
+
+`safe_call` is effectively equivalent to:
+```coconut
+def safe_call(f, /, *args, **kwargs):
+    try:
+        return Expected(f(*args, **kwargs))
+    except Exception as err:
+        return Expected(error=err)
+```
+
+##### Example
+
+**Coconut:**
+```coconut
+res, err = safe_call(-> 1 / 0) |> fmap$(.+1)
+```
+
+**Python:**
+_Can't be done without a complex `Expected` definition. See the compiled code for the Python syntax._
+
 ### `lift`
 
 **lift**(_func_)
@@ -3522,19 +3602,6 @@ def flip(f, nargs=None) =
         else f(*(args[nargs-1::-1] + args[nargs:]), **kwargs)
     )
 ```
-
-### `call`
-
-**call**(_func_, /, *_args_, \*\*_kwargs_)
-
-Coconut's `call` simply implements function application. Thus, `call` is equivalent to
-```coconut
-def call(f, /, *args, **kwargs) = f(*args, **kwargs)
-```
-
-`call` is primarily useful as an [operator function](#operator-functions) for function application when writing in a point-free style.
-
-**DEPRECATED:** `of` is available as a deprecated alias for `call`. Note that deprecated features are disabled in `--strict` mode.
 
 ### `const`
 

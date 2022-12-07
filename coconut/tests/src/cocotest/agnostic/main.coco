@@ -1265,6 +1265,25 @@ def main_test() -> bool:
     ys = (_ for _ in range(2)) :: (_ for _ in range(2))
     assert ys |> list == [0, 1, 0, 1]
     assert ys |> list == []
+    assert Expected(10) |> fmap$(.+1) == Expected(11)
+    some_err = ValueError()
+    assert Expected(error=some_err) |> fmap$(.+1) == Expected(error=some_err)
+    res, err = Expected(10)
+    assert (res, err) == (10, None)
+    assert Expected("abc")
+    assert not Expected(error=TypeError())
+    assert all(it `isinstance` flatten for it in tee(flatten([[1], [2]])))
+    fl12 = flatten([[1], [2]])
+    assert fl12.get_new_iter() is fl12.get_new_iter()  # type: ignore
+    res, err = safe_call(-> 1 / 0) |> fmap$(.+1)
+    assert res is None
+    assert err `isinstance` ZeroDivisionError
+    recit = ([1,2,3] :: recit) |> map$(.+1)
+    assert tee(recit)
+    rawit = (_ for _ in (0, 1))
+    t1, t2 = tee(rawit)
+    t1a, t1b = tee(t1)
+    assert (list(t1a), list(t1b), list(t2)) == ([0, 1], [0, 1], [0, 1])
     return True
 
 def test_asyncio() -> bool:
