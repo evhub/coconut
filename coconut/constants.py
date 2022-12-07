@@ -624,6 +624,7 @@ coconut_specific_builtins = (
     "collectby",
     "multi_enumerate",
     "cartesian_product",
+    "multiset",
     "py_chr",
     "py_hex",
     "py_input",

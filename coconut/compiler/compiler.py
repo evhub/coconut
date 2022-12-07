@@ -3071,13 +3071,15 @@ if not {check_var}:
             return "{" + tokens[0][0] + "}"
 
     def set_letter_literal_handle(self, tokens):
-        """Process set literals."""
+        """Process set literals with set letters."""
         if len(tokens) == 1:
             set_type = tokens[0]
             if set_type == "s":
                 return "_coconut.set()"
             elif set_type == "f":
                 return "_coconut.frozenset()"
+            elif set_type == "m":
+                return "_coconut_multiset()"
             else:
                 raise CoconutInternalException("invalid set type", set_type)
         elif len(tokens) == 2:
@@ -3087,6 +3089,8 @@ if not {check_var}:
                 return self.set_literal_handle([set_items])
             elif set_type == "f":
                 return "_coconut.frozenset(" + set_to_tuple(set_items) + ")"
+            elif set_type == "m":
+                return "_coconut_multiset(" + set_to_tuple(set_items) + ")"
             else:
                 raise CoconutInternalException("invalid set type", set_type)
         else:
