@@ -503,7 +503,7 @@ def main_test() -> bool:
     assert makedata(dict, ("a", 1), ("b", 2)) == {"a": 1, "b": 2}
     [a] `isinstance` list = [1]
     assert a == 1
-    assert makedata(type(iter(())), 1, 2) == (1, 2) == makedata(type(() :: ()), 1, 2)
+    assert makedata(type(iter(())), 1, 2) == (1, 2)
     all_none = count(None, 0) |> reversed
     assert all_none$[0] is None
     assert all_none$[:3] |> list == [None, None, None]
@@ -1260,6 +1260,11 @@ def main_test() -> bool:
     assert cartesian_product(v, v).count((2, 0)) == 0 == cartesian_product(v, repeat=2).count((2, 0))
     assert not range(0, 0)
     assert None |> fmap$(.+1) is None
+    xs = [1] :: [2]
+    assert xs |> list == [1, 2] == xs |> list
+    ys = (_ for _ in range(2)) :: (_ for _ in range(2))
+    assert ys |> list == [0, 1, 0, 1]
+    assert ys |> list == []
     return True
 
 def test_asyncio() -> bool:

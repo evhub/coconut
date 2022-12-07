@@ -983,6 +983,24 @@ forward 2""") == 900
     summer.args = list(range(100_000))
     assert summer() == sum(range(100_000))
     assert util_doc == "docstring"
+    assert max_sum_partition("""
+1
+2
+3
+
+4
+
+5
+6
+
+7
+8
+9
+
+10
+""") == 7 + 8 + 9
+    assert split_in_half("123456789") |> list == [("1","2","3","4","5"), ("6","7","8","9")]
+    assert arr_of_prod([5,2,1,4,3]) |> list == [24,60,120,30,40]
 
     # must come at end
     assert fibs_calls[0] == 1
