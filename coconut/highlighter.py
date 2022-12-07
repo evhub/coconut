@@ -35,7 +35,7 @@ from coconut.constants import (
     shebang_regex,
     magic_methods,
     template_ext,
-    exceptions,
+    coconut_exceptions,
     main_prompt,
 )
 
@@ -95,7 +95,7 @@ class CoconutLexer(Python3Lexer):
     ]
     tokens["builtins"] += [
         (words(coconut_specific_builtins + interp_only_builtins, suffix=r"\b"), Name.Builtin),
-        (words(exceptions, suffix=r"\b"), Name.Exception),
+        (words(coconut_exceptions, suffix=r"\b"), Name.Exception),
     ]
     tokens["numbers"] = [
         (r"0b[01_]+", Number.Integer),

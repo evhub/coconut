@@ -2706,7 +2706,11 @@ def __new__(_coconut_cls, {all_args}):
                 return '_coconut.collections.namedtuple("' + name + '", ' + tuple_str_of(namedtuple_args, add_quotes=True) + ')'
 
     def assemble_data(self, decorators, name, namedtuple_call, inherit, extra_stmts, stmts, match_args, paramdefs=()):
-        """Create a data class definition from the given components."""
+        """Create a data class definition from the given components.
+
+        IMPORTANT: Any changes to assemble_data must be reflected in the
+        definition of Expected in header.py_template.
+        """
         # create class
         out = (
             "".join(paramdefs)
