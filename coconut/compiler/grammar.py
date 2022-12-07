@@ -1169,7 +1169,8 @@ class Grammar(object):
     set_letter_literal = Forward()
     set_s = fixto(CaselessLiteral("s"), "s")
     set_f = fixto(CaselessLiteral("f"), "f")
-    set_letter = set_s | set_f
+    set_m = fixto(CaselessLiteral("m"), "m")
+    set_letter = set_s | set_f | set_m
     setmaker = Group(
         addspace(new_namedexpr_test + comp_for)("comp")
         | new_namedexpr_testlist_has_comma("list")

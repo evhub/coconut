@@ -141,9 +141,10 @@ memoize = _lru_cache
 reduce = _coconut.functools.reduce
 takewhile = _coconut.itertools.takewhile
 dropwhile = _coconut.itertools.dropwhile
-tee = _coconut.itertools.tee
-starmap = _coconut.itertools.starmap
+tee = _coconut_tee = _coconut.itertools.tee
+starmap = _coconut_starmap = _coconut.itertools.starmap
 cartesian_product = _coconut.itertools.product
+multiset = _coconut_multiset = _coconut.collections.Counter
 
 
 _coconut_tee = tee
@@ -595,7 +596,7 @@ class _count(_t.Iterable[_T]):
     def index(self, elem: _T) -> int: ...
     def __fmap__(self, func: _t.Callable[[_T], _Uco]) -> _count[_Uco]: ...
     def __copy__(self) -> _count[_T]: ...
-count = _count  # necessary since we define .count()
+count = _coconut_count = _count  # necessary since we define .count()
 
 
 class flatten(_t.Iterable[_T]):
@@ -692,6 +693,7 @@ def flip(func: _t.Callable[..., _T], nargs: _t.Optional[int]) -> _t.Callable[...
 
 
 def ident(x: _T, *, side_effect: _t.Optional[_t.Callable[[_T], _t.Any]] = None) -> _T: ...
+_coconut_ident = ident
 
 
 def const(value: _T) -> _t.Callable[..., _T]: ...

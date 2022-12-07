@@ -1868,7 +1868,9 @@ users = [
 
 ### Set Literals
 
-Coconut allows an optional `s` to be prepended in front of Python set literals. While in most cases this does nothing, in the case of the empty set it lets Coconut know that it is an empty set and not an empty dictionary. Additionally, an `f` is also supported, in which case a Python `frozenset` will be generated instead of a normal set.
+Coconut allows an optional `s` to be prepended in front of Python set literals. While in most cases this does nothing, in the case of the empty set it lets Coconut know that it is an empty set and not an empty dictionary.
+
+Additionally, Coconut also supports replacing the `s` with an `f` to generate a `frozenset` or an `m` to generate a Coconut [`multiset`](#multiset).
 
 ##### Example
 
@@ -2597,6 +2599,42 @@ def prepattern(base_func):
     return pattern_prepender
 ```
 _Note: Passing `--strict` disables deprecated features._
+
+### `multiset`
+
+**multiset**(_iterable_=`None`, /, **kwds)
+
+Coconut provides `multiset` as a built-in subclass of [`collections.Counter`](https://docs.python.org/3/library/collections.html#collections.Counter) that additionally implements the full [Set and MutableSet interfaces](https://docs.python.org/3/library/collections.abc.html). `multiset` is otherwise identical to `collections.Counter`.
+
+For easily constructing multisets, Coconut provides [multiset literals](#set-literals).
+
+The new methods provided by `multiset` on top of `collections.Counter` are:
+- multiset.**add**(_item_): Add an element to a multiset.
+- multiset.**discard**(_item_): Remove an element from a multiset if it is a member.
+- multiset.**remove**(_item_): Remove an element from a multiset; it must be a member.
+- multiset.**isdisjoint**(_other_): Return True if two multisets have a null intersection.
+- multiset.**__xor__**(_other_): Return the symmetric difference of two multisets as a new multiset. Specifically: `a ^ b = (a - b) | (b - a)`
+
+##### Example
+
+**Coconut:**
+```coconut
+my_multiset = m{1, 1, 2}
+my_multiset.add(3)
+my_multiset.remove(2)
+print(my_multiset)
+```
+
+**Python:**
+```coconut_python
+from collections import Counter
+my_counter = Counter((1, 1, 2))
+my_counter[3] += 1
+my_counter[2] -= 1
+if my_counter[2] <= 0:
+    del my_counter[2]
+print(my_counter)
+```
 
 ### `reduce`
 
