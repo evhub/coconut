@@ -1551,6 +1551,30 @@ def gam_eps_rate_(bitarr) = (
     |*> (*)
 )
 
+max_sum_partition = (
+    .strip()
+    ..> .split("\n\n")
+    ..> map$(
+        .split("\n")
+        ..> map$(int)
+        ..> sum
+    )
+    ..> max
+)
+
+split_in_half = lift(groupsof)(
+    len ..> (.+1) ..> (.//2),
+    ident,
+)  # type: ignore
+
+def arr_of_prod(arr) = (
+    range(len(arr))
+    |> map$(i ->
+        arr[:i] :: arr[i+1:]
+        |> reduce$(*)
+    )
+)
+
 
 # Search patterns
 def first_twin(_ + [p, (.-2) -> p] + _) = (p, p+2)

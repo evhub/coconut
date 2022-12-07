@@ -2449,7 +2449,7 @@ while True:
             # this is necessary to prevent a segfault caused by self-reference
             return (
                 ichain_var + " = " + name + "\n"
-                + name + " = _coconut.itertools.chain.from_iterable(" + lazy_list_handle(loc, [ichain_var, "(" + item + ")"]) + ")"
+                + name + " = _coconut_flatten(" + lazy_list_handle(loc, [ichain_var, "(" + item + ")"]) + ")"
             )
         else:
             return name + " " + op + " " + item

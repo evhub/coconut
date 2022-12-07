@@ -294,7 +294,7 @@ def chain_handle(loc, tokens):
     if len(tokens) == 1:
         return tokens[0]
     else:
-        return "_coconut.itertools.chain.from_iterable(" + lazy_list_handle(loc, tokens) + ")"
+        return "_coconut_flatten(" + lazy_list_handle(loc, tokens) + ")"
 
 
 chain_handle.ignore_one_token = True
