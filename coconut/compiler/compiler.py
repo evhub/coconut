@@ -3554,9 +3554,7 @@ __annotations__["{name}"] = {annotation}
         groups, has_star, has_comma = self.split_star_expr_tokens(tokens)
         is_sequence = has_comma or is_list
 
-        if not is_sequence:
-            if has_star:
-                raise CoconutDeferredSyntaxError("can't use starred expression here", loc)
+        if not is_sequence and not has_star:
             self.internal_assert(len(groups) == 1 and len(groups[0]) == 1, original, loc, "invalid single-item testlist_star_expr tokens", tokens)
             out = groups[0][0]
 
@@ -3565,7 +3563,7 @@ __annotations__["{name}"] = {annotation}
             out = tuple_str_of(groups[0], add_parens=False)
 
         # naturally supported on 3.5+
-        elif self.target_info >= (3, 5):
+        elif is_sequence and self.target_info >= (3, 5):
             to_literal = []
             for g in groups:
                 if isinstance(g, list):
