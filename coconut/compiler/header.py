@@ -411,6 +411,17 @@ NamedTuple = staticmethod(NamedTuple)
             indent=1,
             newline=True,
         ),
+        def_total=pycondition(
+            (3, 10),
+            if_lt='''
+def total(self):
+    """Compute the sum of the counts in a multiset.
+    Note that total_size is different from len(multiset), which only counts the unique elements."""
+    return _coconut.sum(self.values())
+            ''',
+            indent=1,
+            newline=True,
+        ),
         # used in the second round
         tco_comma="_coconut_tail_call, _coconut_tco, " if not no_tco else "",
         call_set_names_comma="_coconut_call_set_names, " if target_info < (3, 6) else "",

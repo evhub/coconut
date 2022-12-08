@@ -2602,9 +2602,9 @@ _Note: Passing `--strict` disables deprecated features._
 
 **multiset**(_iterable_=`None`, /, **kwds)
 
-Coconut provides `multiset` as a built-in subclass of [`collections.Counter`](https://docs.python.org/3/library/collections.html#collections.Counter) that additionally implements the full [Set and MutableSet interfaces](https://docs.python.org/3/library/collections.abc.html). `multiset` is otherwise identical to `collections.Counter`.
+Coconut provides `multiset` as a built-in subclass of [`collections.Counter`](https://docs.python.org/3/library/collections.html#collections.Counter) that additionally implements the full [Set and MutableSet interfaces](https://docs.python.org/3/library/collections.abc.html).
 
-For easily constructing multisets, Coconut provides [multiset literals](#set-literals).
+For easily constructing multisets, Coconut also provides [multiset literals](#set-literals).
 
 The new methods provided by `multiset` on top of `collections.Counter` are:
 - multiset.**add**(_item_): Add an element to a multiset.
@@ -2612,6 +2612,9 @@ The new methods provided by `multiset` on top of `collections.Counter` are:
 - multiset.**remove**(_item_): Remove an element from a multiset; it must be a member.
 - multiset.**isdisjoint**(_other_): Return True if two multisets have a null intersection.
 - multiset.**__xor__**(_other_): Return the symmetric difference of two multisets as a new multiset. Specifically: `a ^ b = (a - b) | (b - a)`
+- multiset.**count**(_item_): Return the number of times an element occurs in a multiset. Equivalent to `multiset[item]`, but additionally verifies the count is non-negative.
+
+Coconut also ensures that `multiset` supports [`Counter.total()`](https://docs.python.org/3/library/collections.html#collections.Counter.total) on all Python versions.
 
 ##### Example
 

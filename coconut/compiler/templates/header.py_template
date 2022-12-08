@@ -1215,7 +1215,14 @@ class multiset(_coconut.collections.Counter{comma_object}):
         return not self & other
     def __xor__(self, other):
         return self - other | other - self
-_coconut.abc.MutableSet.register(multiset)
+    def count(self, item):
+        """Return the number of times an element occurs in a multiset.
+        Equivalent to multiset[item], but additionally verifies the count is non-negative."""
+        result = self[item]
+        if result < 0:
+            raise _coconut.ValueError("multiset has negative count for " + _coconut.repr(item))
+        return result
+{def_total}_coconut.abc.MutableSet.register(multiset)
 def _coconut_base_makedata(data_type, args):
     if _coconut.hasattr(data_type, "_make") and _coconut.issubclass(data_type, _coconut.tuple):
         return data_type._make(args)
