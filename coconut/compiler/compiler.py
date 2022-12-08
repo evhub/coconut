@@ -172,7 +172,7 @@ from coconut.compiler.header import (
 def set_to_tuple(tokens):
     """Converts set literal tokens to tuples."""
     internal_assert(len(tokens) == 1, "invalid set maker tokens", tokens)
-    if "comp" in tokens or "list" in tokens:
+    if "list" in tokens or "comp" in tokens or "testlist_star_expr" in tokens:
         return "(" + tokens[0] + ")"
     elif "test" in tokens:
         return "(" + tokens[0] + ",)"

@@ -26,7 +26,7 @@ import sys as _coconut_sys
 VERSION = "2.1.1"
 VERSION_NAME = "The Spanish Inquisition"
 # False for release, int >= 1 for develop
-DEVELOP = 24
+DEVELOP = 25
 ALPHA = False  # for pre releases rather than post releases
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -138,6 +138,8 @@ class range(object):
         return _coconut.reversed(self._xrange)
     def __len__(self):
         return _coconut.len(self._xrange)
+    def __bool__(self):
+        return _coconut.bool(self._xrange)
     def __contains__(self, elem):
         return elem in self._xrange
     def __getitem__(self, index):
