@@ -411,13 +411,49 @@ NamedTuple = staticmethod(NamedTuple)
             indent=1,
             newline=True,
         ),
-        def_total=pycondition(
+        def_total_and_comparisons=pycondition(
             (3, 10),
             if_lt='''
 def total(self):
     """Compute the sum of the counts in a multiset.
     Note that total_size is different from len(multiset), which only counts the unique elements."""
     return _coconut.sum(self.values())
+def __eq__(self, other):
+    if not _coconut.isinstance(other, _coconut.dict):
+        return False
+    if not _coconut.isinstance(other, _coconut.collections.Counter):
+        return _coconut.NotImplemented
+    for k, v in self.items():
+        if other[k] != v:
+            return False
+    for k, v in other.items():
+        if self[k] != v:
+            return False
+    return True
+__ne__ = _coconut.object.__ne__
+def __le__(self, other):
+    if not _coconut.isinstance(other, _coconut.collections.Counter):
+        return _coconut.NotImplemented
+    for k, v in self.items():
+        if not (v <= other[k]):
+            return False
+    for k, v in other.items():
+        if not (self[k] <= v):
+            return False
+    return True
+def __lt__(self, other):
+    if not _coconut.isinstance(other, _coconut.collections.Counter):
+        return _coconut.NotImplemented
+    found_diff = False
+    for k, v in self.items():
+        if not (v <= other[k]):
+            return False
+        found_diff = found_diff or v != other[k]
+    for k, v in other.items():
+        if not (self[k] <= v):
+            return False
+        found_diff = found_diff or self[k] != v
+    return found_diff
             ''',
             indent=1,
             newline=True,

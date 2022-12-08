@@ -1222,7 +1222,7 @@ class multiset(_coconut.collections.Counter{comma_object}):
         if result < 0:
             raise _coconut.ValueError("multiset has negative count for " + _coconut.repr(item))
         return result
-{def_total}_coconut.abc.MutableSet.register(multiset)
+{def_total_and_comparisons}_coconut.abc.MutableSet.register(multiset)
 def _coconut_base_makedata(data_type, args):
     if _coconut.hasattr(data_type, "_make") and _coconut.issubclass(data_type, _coconut.tuple):
         return data_type._make(args)

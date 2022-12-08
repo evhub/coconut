@@ -1323,6 +1323,14 @@ def main_test() -> bool:
     assert_raises(-> bad_m.count(1), ValueError)
     assert len(m{1, 1}) == 1
     assert m{1, 1}.total() == 2 == m{1, 2}.total()
+    weird_m = m{1, 2}
+    weird_m[3] = 0
+    assert weird_m == m{1, 2}
+    assert not (weird_m != m{1, 2})
+    assert m{} <= m{} < m{1, 2} < m{1, 1, 2} <= m{1, 1, 2}
+    assert m{1, 1, 2} >= m{1, 1, 2} > m{1, 2} > m{} >= m{}
+    assert m{1} != {1:1, 2:0}
+    assert not (m{1} == {1:1, 2:0})
     return True
 
 def test_asyncio() -> bool:
