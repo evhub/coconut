@@ -387,6 +387,7 @@ def test_numpy() -> bool:
         np.array([1, 1;; 1, 2;; 2, 1;; 2, 2])
     )  # type: ignore
     assert flatten(np.array([1,2;;3,4])) `np.array_equal` np.array([1,2,3,4])  # type: ignore
+    assert cycle(np.array([1,2;;3,4]), 2) `np.array_equal` np.array([1,2;;3,4;;1,2;;3,4])  # type: ignore
     return True
 
 

@@ -934,6 +934,12 @@ class count(_coconut_base_hashable):
 class cycle(_coconut_has_iter):
     __slots__ = ("times",)
     def __new__(cls, iterable, times=None):
+        if times is not None:
+            if iterable.__class__.__module__ in _coconut.numpy_modules:
+                return _coconut.numpy.concatenate((iterable,) * times)
+            if iterable.__class__.__module__ in _coconut.jax_numpy_modules:
+                import jax.numpy as jnp
+                return jnp.concatenate((iterable,) * times)
         self = _coconut_has_iter.__new__(cls, iterable)
         self.times = times
         return self
