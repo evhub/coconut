@@ -1310,6 +1310,12 @@ def main_test() -> bool:
     assert multiset((1, 2)) == m{1, 2} == multiset(m{1, 2})
     assert multiset({1: 2, 2: 1}) == m{1, 1, 2}
     assert m{} `isinstance` multiset
+    assert m{} `isinstance` collections.abc.Set
+    assert m{} `isinstance` collections.abc.MutableSet
+    assert True `isinstance` bool
+    class HasBool:
+        def __bool__(self) = False
+    assert not HasBool()
     return True
 
 def test_asyncio() -> bool:

@@ -238,26 +238,26 @@ While Coconut syntax is based off of the latest Python 3, Coconut code compiled 
 
 To make Coconut built-ins universal across Python versions, Coconut makes available on any Python version built-ins that only exist in later versions, including **automatically overwriting Python 2 built-ins with their Python 3 counterparts.** Additionally, Coconut also [overwrites some Python 3 built-ins for optimization and enhancement purposes](#enhanced-built-ins). If access to the original Python versions of any overwritten built-ins is desired, the old built-ins can be retrieved by prefixing them with `py_`. Specifically, the overwritten built-ins are:
 
-- `py_chr`,
-- `py_hex`,
-- `py_input`,
-- `py_int`,
-- `py_map`,
-- `py_object`,
-- `py_oct`,
-- `py_open`,
-- `py_print`,
-- `py_range`,
-- `py_str`,
-- `py_super`,
-- `py_zip`,
-- `py_filter`,
-- `py_reversed`,
-- `py_enumerate`,
-- `py_raw_input`,
-- `py_xrange`,
-- `py_repr`, and
-- `py_breakpoint`.
+- `py_chr`
+- `py_hex`
+- `py_input`
+- `py_int`
+- `py_map`
+- `py_object`
+- `py_oct`
+- `py_open`
+- `py_print`
+- `py_range`
+- `py_str`
+- `py_super`
+- `py_zip`
+- `py_filter`
+- `py_reversed`
+- `py_enumerate`
+- `py_raw_input`
+- `py_xrange`
+- `py_repr`
+- `py_breakpoint`
 
 _Note: Coconut's `repr` can be somewhat tricky, as it will attempt to remove the `u` before reprs of unicode strings on Python 2, but will not always be able to do so if the unicode string is nested._
 
@@ -938,11 +938,10 @@ Coconut supports Unicode alternatives to many different operator symbols. The Un
 ⊋ (\u228b)                  => ">"
 ∧ (\u2227) or ∩ (\u2229)    => "&"
 ∨ (\u2228) or ∪ (\u222a)    => "|"
-⊻ (\u22bb) or ⊕ (\u2295)    => "^"
+⊻ (\u22bb)                  => "^"
 « (\xab)                    => "<<"
 » (\xbb)                    => ">>"
 … (\u2026)                  => "..."
-⋅ (\u22c5)                  => "@" (only matrix multiplication)
 λ (\u03bb)                  => "lambda"
 ```
 

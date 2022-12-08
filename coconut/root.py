@@ -26,7 +26,7 @@ import sys as _coconut_sys
 VERSION = "2.1.1"
 VERSION_NAME = "The Spanish Inquisition"
 # False for release, int >= 1 for develop
-DEVELOP = 20
+DEVELOP = 21
 ALPHA = False  # for pre releases rather than post releases
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -108,10 +108,20 @@ class object(object):
     def __ne__(self, other):
         eq = self == other
         return _coconut.NotImplemented if eq is _coconut.NotImplemented else not eq
+    def __nonzero__(self):
+        self_bool = _coconut.getattr(self, "__bool__", None)
+        if self_bool is not None:
+            try:
+                result = self_bool()
+            except _coconut.NotImplementedError:
+                pass
+            else:
+                if result is not _coconut.NotImplemented:
+                    return result
+        return True
 class int(_coconut_py_int):
     __slots__ = ()
-    if hasattr(_coconut_py_int, "__doc__"):
-        __doc__ = _coconut_py_int.__doc__
+    __doc__ = getattr(_coconut_py_int, "__doc__", "<see help(py_int)>")
     class __metaclass__(type):
         def __instancecheck__(cls, inst):
             return _coconut.isinstance(inst, (_coconut_py_int, _coconut_py_long))
@@ -119,8 +129,7 @@ class int(_coconut_py_int):
             return _coconut.issubclass(subcls, (_coconut_py_int, _coconut_py_long))
 class range(object):
     __slots__ = ("_xrange",)
-    if hasattr(_coconut_py_xrange, "__doc__"):
-        __doc__ = _coconut_py_xrange.__doc__
+    __doc__ = getattr(_coconut_py_xrange, "__doc__", "<see help(py_xrange)>")
     def __init__(self, *args):
         self._xrange = _coconut_py_xrange(*args)
     def __iter__(self):
