@@ -1316,6 +1316,13 @@ def main_test() -> bool:
     class HasBool:
         def __bool__(self) = False
     assert not HasBool()
+    assert m{1}.count(2) == 0
+    assert m{1, 1}.count(1) == 2
+    bad_m = m{}
+    bad_m[1] = -1
+    assert_raises(-> bad_m.count(1), ValueError)
+    assert len(m{1, 1}) == 1
+    assert m{1, 1}.total() == 2 == m{1, 2}.total()
     return True
 
 def test_asyncio() -> bool:
