@@ -669,7 +669,7 @@ class Grammar(object):
     dollar = Literal("$")
     lshift = Literal("<<") | fixto(Literal("\xab"), "<<")
     rshift = Literal(">>") | fixto(Literal("\xbb"), ">>")
-    tilde = Literal("~") | fixto(~Literal("\xac=") + Literal("\xac"), "~")
+    tilde = Literal("~")
     underscore = Literal("_")
     pound = Literal("#")
     unsafe_backtick = Literal("`")
