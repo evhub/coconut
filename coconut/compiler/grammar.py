@@ -662,7 +662,7 @@ class Grammar(object):
     comp_dubstar_pipe = Literal("..**>") | fixto(Literal("\u2218**>"), "..**>")
     comp_back_dubstar_pipe = Literal("<**..") | fixto(Literal("<**\u2218"), "<**..")
     amp = Literal("&") | fixto(Literal("\u2227") | Literal("\u2229"), "&")
-    caret = Literal("^") | fixto(Literal("\u22bb") | Literal("\u2295"), "^")
+    caret = Literal("^") | fixto(Literal("\u22bb"), "^")
     unsafe_bar = ~Literal("|>") + ~Literal("|*") + Literal("|") | fixto(Literal("\u2228") | Literal("\u222a"), "|")
     bar = ~rbanana + unsafe_bar | invalid_syntax("\xa6", "invalid broken bar character", greedy=True)
     percent = Literal("%")
@@ -728,7 +728,7 @@ class Grammar(object):
     )
     div_slash = slash | fixto(Literal("\xf7") + ~slash, "/")
     div_dubslash = dubslash | fixto(combine(Literal("\xf7") + slash), "//")
-    matrix_at = at | fixto(Literal("\u22c5"), "@")
+    matrix_at = at
 
     test = Forward()
     test_no_chain, dubcolon = disable_inside(test, unsafe_dubcolon)
