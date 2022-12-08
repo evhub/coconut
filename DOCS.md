@@ -2614,7 +2614,7 @@ The new methods provided by `multiset` on top of `collections.Counter` are:
 - multiset.**__xor__**(_other_): Return the symmetric difference of two multisets as a new multiset. Specifically: `a ^ b = (a - b) | (b - a)`
 - multiset.**count**(_item_): Return the number of times an element occurs in a multiset. Equivalent to `multiset[item]`, but additionally verifies the count is non-negative.
 
-Coconut also ensures that `multiset` supports [`Counter.total()`](https://docs.python.org/3/library/collections.html#collections.Counter.total) on all Python versions.
+Coconut also ensures that `multiset` supports [rich comparisons and `Counter.total()`](https://docs.python.org/3/library/collections.html#collections.Counter) on all Python versions.
 
 ##### Example
 
