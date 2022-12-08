@@ -1333,6 +1333,14 @@ def main_test() -> bool:
     assert not (m{1} == {1:1, 2:0})
     assert s{1, 2, *(2, 3, 4), *(4, 5)} == s{1, 2, 3, 4, 5}
     assert m{1, 2, *(2, 3, 4), *(4, 5)} == m{1, 2, 2, 3, 4, 4, 5}
+    assert {*(1, 2)} == {1, 2}
+    assert cycle(range(3))[:5] |> list == [0, 1, 2, 0, 1] == cycle(range(3)) |> iter |> .$[:5] |> list
+    assert cycle(range(2), 2)[:5] |> list == [0, 1, 0, 1] == cycle(range(2), 2) |> iter |> .$[:5] |> list
+    assert 2 in cycle(range(3))
+    assert reversed(cycle(range(2), 2)) |> list == [1, 0, 1, 0]
+    assert cycle((_ for _ in range(2)), 2) |> list == [0, 1, 0, 1]
+    assert cycle(range(3)).count(0) == float("inf")
+    assert cycle(range(3), 3).index(2) == 2
     return True
 
 def test_asyncio() -> bool:

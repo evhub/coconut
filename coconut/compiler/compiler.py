@@ -3065,10 +3065,11 @@ if not {check_var}:
     def set_literal_handle(self, tokens):
         """Converts set literals to the right form for the target Python."""
         internal_assert(len(tokens) == 1 and len(tokens[0]) == 1, "invalid set literal tokens", tokens)
-        if self.target_info < (2, 7):
-            return "_coconut.set(" + set_to_tuple(tokens[0]) + ")"
+        contents, = tokens
+        if self.target_info < (2, 7) or "testlist_star_expr" in contents:
+            return "_coconut.set(" + set_to_tuple(contents) + ")"
         else:
-            return "{" + tokens[0][0] + "}"
+            return "{" + contents[0] + "}"
 
     def set_letter_literal_handle(self, tokens):
         """Process set literals with set letters."""

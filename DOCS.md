@@ -3022,6 +3022,45 @@ count()$[10**100] |> print
 **Python:**
 _Can't be done quickly without Coconut's iterator slicing, which requires many complicated pieces. The necessary definitions in Python can be found in the Coconut header._
 
+### `cycle`
+
+**cycle**(_iterable_, _times_=`None`)
+
+Coconut's `cycle` is a modified version of `itertools.cycle` with a `times` parameter that controls the number of times to cycle through _iterable_ before stopping. `cycle` also supports `in`, slicing, `len`, `reversed`, `.count()`, `.index()`, and `repr`.
+
+##### Python Docs
+
+**cycle**(_iterable_)
+
+Make an iterator returning elements from the iterable and saving a copy of each. When the iterable is exhausted, return elements from the saved copy. Repeats indefinitely. Roughly equivalent to:
+
+```coconut_python
+def cycle(iterable):
+    # cycle('ABCD') --> A B C D A B C D A B C D ...
+    saved = []
+    for element in iterable:
+        yield element
+        saved.append(element)
+    while saved:
+        for element in saved:
+              yield element
+```
+
+Note, this member of the toolkit may require significant auxiliary storage (depending on the length of the iterable).
+
+##### Example
+
+**Coconut:**
+```coconut
+cycle(range(2), 2) |> list |> print
+```
+
+**Python:**
+```coconut_python
+from itertools import cycle, islice
+print(list(islice(cycle(range(2)), 4)))
+```
+
 ### `makedata`
 
 **makedata**(_data\_type_, *_args_)

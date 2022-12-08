@@ -146,6 +146,8 @@ class _coconut_has_iter(_coconut_base_hashable):
         with self.lock:
             self.iter = _coconut_reiterable(self.iter)
         return self.iter
+    def __fmap__(self, func):
+        return _coconut_map(func, self)
 class reiterable(_coconut_has_iter):
     """Allow an iterator to be iterated over multiple times with the same results."""
     __slots__ = ()
@@ -166,8 +168,6 @@ class reiterable(_coconut_has_iter):
         return (self.__class__, (self.iter,))
     def __copy__(self):
         return self.__class__(self.get_new_iter())
-    def __fmap__(self, func):
-        return _coconut_map(func, self)
     def __getitem__(self, index):
         return _coconut_iter_getitem(self.get_new_iter(), index)
     def __reversed__(self):
@@ -432,8 +432,6 @@ class scan(_coconut_has_iter):
         if not _coconut.isinstance(self.iter, _coconut.abc.Sized):
             return _coconut.NotImplemented
         return _coconut.len(self.iter)
-    def __fmap__(self, func):
-        return _coconut_map(func, self)
 class reversed(_coconut_has_iter):
     __slots__ = ()
     __doc__ = getattr(_coconut.reversed, "__doc__", "<see help(py_reversed)>")
@@ -838,8 +836,6 @@ class multi_enumerate(_coconut_has_iter):
     __slots__ = ()
     def __repr__(self):
         return "multi_enumerate(%s)" % (_coconut.repr(self.iter),)
-    def __fmap__(self, func):
-        return _coconut_map(func, self)
     def __reduce__(self):
         return (self.__class__, (self.iter,))
     def __copy__(self):
@@ -882,19 +878,22 @@ class multi_enumerate(_coconut_has_iter):
             return self.iter.size
         return _coconut.NotImplemented
 class count(_coconut_base_hashable):
-    """count(start, step) returns an infinite iterator starting at start and increasing by step.
-
-    If step is set to 0, count will infinitely repeat its first argument.
-    """
     __slots__ = ("start", "step")
+    __doc__ = getattr(_coconut.itertools.count, "__doc__", "count(start, step) returns an infinite iterator starting at start and increasing by step.")
     def __init__(self, start=0, step=1):
         self.start = start
         self.step = step
+    def __reduce__(self):
+        return (self.__class__, (self.start, self.step))
+    def __repr__(self):
+        return "count(%s, %s)" % (_coconut.repr(self.start), _coconut.repr(self.step))
     def __iter__(self):
         while True:
             yield self.start
             if self.step:
                 self.start += self.step
+    def __fmap__(self, func):
+        return _coconut_map(func, self)
     def __contains__(self, elem):
         if not self.step:
             return elem == self.start
@@ -932,12 +931,51 @@ class count(_coconut_base_hashable):
         if not self.step:
             return self
         raise _coconut.TypeError(_coconut.repr(self) + " object is not reversible")
-    def __repr__(self):
-        return "count(%s, %s)" % (_coconut.repr(self.start), _coconut.repr(self.step))
+class cycle(_coconut_has_iter):
+    __slots__ = ("times",)
+    def __new__(cls, iterable, times=None):
+        self = _coconut_has_iter.__new__(cls, iterable)
+        self.times = times
+        return self
     def __reduce__(self):
-        return (self.__class__, (self.start, self.step))
-    def __fmap__(self, func):
-        return _coconut_map(func, self)
+        return (self.__class__, (self.iter, self.times))
+    def __copy__(self):
+        return self.__class__(self.get_new_iter(), self.times)
+    def __repr__(self):
+        return "cycle(%s, %r)" % (_coconut.repr(self.iter), self.times)
+    def __iter__(self):
+        i = 0
+        while self.times is None or i < self.times:
+            for x in self.get_new_iter():
+                yield x
+            i += 1
+    def __contains__(self, elem):
+        return elem in self.iter
+    def __getitem__(self, index):
+        if not _coconut.isinstance(index, _coconut.slice):
+            if self.times is not None and index // _coconut.len(self.iter) >= self.times:
+                raise _coconut.IndexError("cycle index out of range")
+            return self.iter[index % _coconut.len(self.iter)]
+        if self.times is None:
+            return _coconut_map(self.__getitem__, _coconut_count()[index])
+        else:
+            return _coconut_map(self.__getitem__, _coconut_range(0, _coconut.len(self))[index])
+    def __len__(self):
+        if self.times is None:
+            return _coconut.NotImplemented
+        return _coconut.len(self.iter) * self.times
+    def __reversed__(self):
+        if self.times is None:
+            raise _coconut.TypeError(_coconut.repr(self) + " object is not reversible")
+        return self.__class__(_coconut_reversed(self.get_new_iter()), self.times)
+    def count(self, elem):
+        """Count the number of times elem appears in the cycle."""
+        return self.iter.count(elem) * (float("inf") if self.times is None else self.times)
+    def index(self, elem):
+        """Find the index of elem in the cycle."""
+        if elem not in self.iter:
+            raise _coconut.ValueError(_coconut.repr(elem) + " not in " + _coconut.repr(self))
+        return self.iter.index(elem)
 class groupsof(_coconut_has_iter):
     """groupsof(n, iterable) splits iterable into groups of size n.
 
@@ -973,8 +1011,6 @@ class groupsof(_coconut_has_iter):
         return (self.__class__, (self.group_size, self.iter))
     def __copy__(self):
         return self.__class__(self.group_size, self.get_new_iter())
-    def __fmap__(self, func):
-        return _coconut_map(func, self)
 class recursive_iterator(_coconut_base_hashable):
     """Decorator that optimizes a recursive function that returns an iterator (e.g. a recursive generator)."""
     __slots__ = ("func", "reit_store", "backup_reit_store")
@@ -1102,7 +1138,6 @@ _coconut_addpattern = addpattern
 {def_prepattern}
 class _coconut_partial(_coconut_base_hashable):
     __slots__ = ("func", "_argdict", "_arglen", "_pos_kwargs", "_stargs", "keywords")
-    __doc__ = getattr(_coconut.functools.partial, "__doc__", "Partial application of a function.")
     def __init__(self, _coconut_func, _coconut_argdict, _coconut_arglen, _coconut_pos_kwargs, *args, **kwargs):
         self.func = _coconut_func
         self._argdict = _coconut_argdict
@@ -1551,4 +1586,4 @@ def _coconut_multi_dim_arr(arrs, dim):
     max_arr_dim = _coconut.max(arr_dims)
     return _coconut_concatenate(arrs, max_arr_dim - dim)
 _coconut_self_match_types = {self_match_types}
-_coconut_Expected, _coconut_MatchError, _coconut_count, _coconut_enumerate, _coconut_flatten, _coconut_filter, _coconut_ident, _coconut_map, _coconut_multiset, _coconut_reiterable, _coconut_reversed, _coconut_starmap, _coconut_tee, _coconut_zip, TYPE_CHECKING, reduce, takewhile, dropwhile = Expected, MatchError, count, enumerate, flatten, filter, ident, map, multiset, reiterable, reversed, starmap, tee, zip, False, _coconut.functools.reduce, _coconut.itertools.takewhile, _coconut.itertools.dropwhile
+_coconut_Expected, _coconut_MatchError, _coconut_count, _coconut_enumerate, _coconut_flatten, _coconut_filter, _coconut_ident, _coconut_map, _coconut_multiset, _coconut_range, _coconut_reiterable, _coconut_reversed, _coconut_starmap, _coconut_tee, _coconut_zip, TYPE_CHECKING, reduce, takewhile, dropwhile = Expected, MatchError, count, enumerate, flatten, filter, ident, map, multiset, range, reiterable, reversed, starmap, tee, zip, False, _coconut.functools.reduce, _coconut.itertools.takewhile, _coconut.itertools.dropwhile
