@@ -1172,9 +1172,10 @@ class Grammar(object):
     set_m = fixto(CaselessLiteral("m"), "m")
     set_letter = set_s | set_f | set_m
     setmaker = Group(
-        addspace(new_namedexpr_test + comp_for)("comp")
-        | new_namedexpr_testlist_has_comma("list")
-        | new_namedexpr_test("test"),
+        (new_namedexpr_test + FollowedBy(rbrace))("test")
+        | (new_namedexpr_testlist_has_comma + FollowedBy(rbrace))("list")
+        | addspace(new_namedexpr_test + comp_for + FollowedBy(rbrace))("comp")
+        | (testlist_star_namedexpr + FollowedBy(rbrace))("testlist_star_expr"),
     )
     set_literal_ref = lbrace.suppress() + setmaker + rbrace.suppress()
     set_letter_literal_ref = combine(set_letter + lbrace.suppress()) + Optional(setmaker) + rbrace.suppress()

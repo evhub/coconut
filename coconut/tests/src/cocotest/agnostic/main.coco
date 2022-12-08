@@ -1331,6 +1331,8 @@ def main_test() -> bool:
     assert m{1, 1, 2} >= m{1, 1, 2} > m{1, 2} > m{} >= m{}
     assert m{1} != {1:1, 2:0}
     assert not (m{1} == {1:1, 2:0})
+    assert s{1, 2, *(2, 3, 4), *(4, 5)} == s{1, 2, 3, 4, 5}
+    assert m{1, 2, *(2, 3, 4), *(4, 5)} == m{1, 2, 2, 3, 4, 4, 5}
     return True
 
 def test_asyncio() -> bool:
