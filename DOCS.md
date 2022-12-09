@@ -3497,25 +3497,25 @@ if group:
     pairs.append(tuple(group))
 ```
 
-#### `windowed`
+#### `windows`
 
-**windowed**(_iterable_, _size_, _fillvalue_=`...`, _step_=`1`)
+**windows**(_size_, _iterable_, _fillvalue_=`...`, _step_=`1`)
 
-`windowed` produces an iterable that effectively mimics a sliding window over _iterable_ of size _size_. _step_ determines the spacing between windows.
+`windows` produces an iterable that effectively mimics a sliding window over _iterable_ of size _size_. _step_ determines the spacing between windows.
 
-If _size_ is larger than _iterable_, `windowed` will produce an empty iterable. If that is not the desired behavior, _fillvalue_ can be passed and will be used in place of missing values.
+If _size_ is larger than _iterable_, `windows` will produce an empty iterable. If that is not the desired behavior, _fillvalue_ can be passed and will be used in place of missing values.
 
-Additionally, `windowed` supports `len` when `iterable` supports `len`.
+Additionally, `windows` supports `len` when `iterable` supports `len`.
 
 ##### Example
 
 **Coconut:**
 ```coconut
-assert windowed("12345", 3) |> list == [("1", "2", "3"), ("2", "3", "4"), ("3", "4", "5")]
+assert "12345" |> windows$(3) |> list == [("1", "2", "3"), ("2", "3", "4"), ("3", "4", "5")]
 ```
 
 **Python:**
-_Can't be done without the definition of `windowed`; see the compiled header for the full definition._
+_Can't be done without the definition of `windows`; see the compiled header for the full definition._
 
 #### `collectby`
 
