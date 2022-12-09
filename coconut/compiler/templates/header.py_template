@@ -472,13 +472,9 @@ class reversed(_coconut_has_iter):
         return self.__class__(_coconut_map(func, self.iter))
 class flatten(_coconut_has_iter):{COMMENT.cant_implement_len_else_list_calls_become_very_innefficient}
     """Flatten an iterable of iterables into a single iterable.
-    Flattens the first axis of numpy arrays."""
+    Only flattens the top level of the iterable."""
     __slots__ = ()
     def __new__(cls, iterable):
-        if iterable.__class__.__module__ in _coconut.numpy_modules:
-            if len(iterable.shape) < 2:
-                raise _coconut.TypeError("flatten() on numpy arrays requires two or more dimensions")
-            return iterable.reshape(-1, *iterable.shape[2:])
         self = _coconut_has_iter.__new__(cls, iterable)
         return self
     def get_new_iter(self):
@@ -529,12 +525,11 @@ Additionally supports Cartesian products of numpy arrays."""
             else:
                 numpy = _coconut.numpy
             iterables *= repeat
-            la = _coconut.len(iterables)
             dtype = numpy.result_type(*iterables)
-            arr = numpy.empty([_coconut.len(a) for a in iterables] + [la], dtype=dtype)
+            arr = numpy.empty([_coconut.len(a) for a in iterables] + [_coconut.len(iterables)], dtype=dtype)
             for i, a in _coconut.enumerate(numpy.ix_(*iterables)):
-                arr[...,i] = a
-            return arr.reshape(-1, la)
+                arr[..., i] = a
+            return arr.reshape(-1, _coconut.len(iterables))
         self = _coconut.object.__new__(cls)
         self.iters = iterables
         self.repeat = repeat
@@ -934,12 +929,6 @@ class count(_coconut_base_hashable):
 class cycle(_coconut_has_iter):
     __slots__ = ("times",)
     def __new__(cls, iterable, times=None):
-        if times is not None:
-            if iterable.__class__.__module__ in _coconut.numpy_modules:
-                return _coconut.numpy.concatenate((iterable,) * times)
-            if iterable.__class__.__module__ in _coconut.jax_numpy_modules:
-                import jax.numpy as jnp
-                return jnp.concatenate((iterable,) * times)
         self = _coconut_has_iter.__new__(cls, iterable)
         self.times = times
         return self
