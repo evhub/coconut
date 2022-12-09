@@ -516,9 +516,11 @@ class cartesian_product(_coconut_base_hashable):
 
 Additionally supports Cartesian products of numpy arrays."""
     def __new__(cls, *iterables, **kwargs):
-        repeat = kwargs.pop("repeat", 1)
+        repeat = _coconut.operator.index(kwargs.pop("repeat", 1))
         if kwargs:
             raise _coconut.TypeError("cartesian_product() got unexpected keyword arguments " + _coconut.repr(kwargs))
+        if repeat <= 0:
+            raise _coconut.ValueError("cartesian_product: repeat must be positive")
         if iterables and _coconut.all(it.__class__.__module__ in _coconut.numpy_modules for it in iterables):
             if _coconut.any(it.__class__.__module__ in _coconut.jax_numpy_modules for it in iterables):
                 from jax import numpy
@@ -589,7 +591,7 @@ class map(_coconut_base_hashable, _coconut.map):
             return _coconut.NotImplemented
         return _coconut.min(_coconut.len(it) for it in self.iters)
     def __repr__(self):
-        return "map(%r, %s)" % (self.func, ", ".join((_coconut.repr(i) for i in self.iters)))
+        return "map(%r, %s)" % (self.func, ", ".join((_coconut.repr(it) for it in self.iters)))
     def __reduce__(self):
         return (self.__class__, (self.func,) + self.iters)
     def __copy__(self):
@@ -721,16 +723,16 @@ class zip(_coconut_base_hashable, _coconut.zip):
         return self
     def __getitem__(self, index):
         if _coconut.isinstance(index, _coconut.slice):
-            return self.__class__(*(_coconut_iter_getitem(i, index) for i in self.iters), strict=self.strict)
-        return _coconut.tuple(_coconut_iter_getitem(i, index) for i in self.iters)
+            return self.__class__(*(_coconut_iter_getitem(it, index) for it in self.iters), strict=self.strict)
+        return _coconut.tuple(_coconut_iter_getitem(it, index) for it in self.iters)
     def __reversed__(self):
-        return self.__class__(*(_coconut_reversed(i) for i in self.iters), strict=self.strict)
+        return self.__class__(*(_coconut_reversed(it) for it in self.iters), strict=self.strict)
     def __len__(self):
         if not _coconut.all(_coconut.isinstance(it, _coconut.abc.Sized) for it in self.iters):
             return _coconut.NotImplemented
-        return _coconut.min(_coconut.len(i) for i in self.iters)
+        return _coconut.min(_coconut.len(it) for it in self.iters)
     def __repr__(self):
-        return "zip(%s%s)" % (", ".join((_coconut.repr(i) for i in self.iters)), ", strict=True" if self.strict else "")
+        return "zip(%s%s)" % (", ".join((_coconut.repr(it) for it in self.iters)), ", strict=True" if self.strict else "")
     def __reduce__(self):
         return (self.__class__, self.iters, {lbrace}"strict": self.strict{rbrace})
     def __copy__(self):
@@ -757,7 +759,7 @@ class zip_longest(zip):
                 if self_len is _coconut.NotImplemented:
                     return self_len
             new_ind = _coconut.slice(index.start + self_len if index.start is not None and index.start < 0 else index.start, index.stop + self_len if index.stop is not None and index.stop < 0 else index.stop, index.step)
-            return self.__class__(*(_coconut_iter_getitem(i, new_ind) for i in self.iters))
+            return self.__class__(*(_coconut_iter_getitem(it, new_ind) for it in self.iters))
         if index < 0:
             if self_len is None:
                 self_len = self.__len__()
@@ -779,9 +781,9 @@ class zip_longest(zip):
     def __len__(self):
         if not _coconut.all(_coconut.isinstance(it, _coconut.abc.Sized) for it in self.iters):
             return _coconut.NotImplemented
-        return _coconut.max(_coconut.len(i) for i in self.iters)
+        return _coconut.max(_coconut.len(it) for it in self.iters)
     def __repr__(self):
-        return "zip_longest(%s, fillvalue=%s)" % (", ".join((_coconut.repr(i) for i in self.iters)), _coconut.repr(self.fillvalue))
+        return "zip_longest(%s, fillvalue=%s)" % (", ".join((_coconut.repr(it) for it in self.iters)), _coconut.repr(self.fillvalue))
     def __reduce__(self):
         return (self.__class__, self.iters, {lbrace}"fillvalue": self.fillvalue{rbrace})
     def __copy__(self):
@@ -793,6 +795,7 @@ class enumerate(_coconut_base_hashable, _coconut.enumerate):
     __slots__ = ("iter", "start")
     __doc__ = getattr(_coconut.enumerate, "__doc__", "<see help(py_enumerate)>")
     def __new__(cls, iterable, start=0):
+        start = _coconut.operator.index(start)
         self = _coconut.enumerate.__new__(cls, iterable, start)
         self.iter = iterable
         self.start = start
@@ -933,7 +936,12 @@ class cycle(_coconut_has_iter):
     __slots__ = ("times",)
     def __new__(cls, iterable, times=None):
         self = _coconut_has_iter.__new__(cls, iterable)
-        self.times = times
+        if times is None:
+            self.times = None
+        else:
+            self.times = _coconut.operator.index(times)
+            if self.times < 0:
+                raise _coconut.ValueError("cycle: times must be non-negative")
         return self
     def __reduce__(self):
         return (self.__class__, (self.iter, self.times))
@@ -959,7 +967,7 @@ class cycle(_coconut_has_iter):
         else:
             return _coconut_map(self.__getitem__, _coconut_range(0, _coconut.len(self))[index])
     def __len__(self):
-        if self.times is None:
+        if self.times is None or not _coconut.isinstance(self.iter, _coconut.abc.Sized):
             return _coconut.NotImplemented
         return _coconut.len(self.iter) * self.times
     def __reversed__(self):
@@ -974,6 +982,45 @@ class cycle(_coconut_has_iter):
         if elem not in self.iter:
             raise _coconut.ValueError(_coconut.repr(elem) + " not in " + _coconut.repr(self))
         return self.iter.index(elem)
+class windowed(_coconut_has_iter):
+    """TODO"""
+    __slots__ = ("size", "fillvalue", "step")
+    def __new__(cls, iterable, size, fillvalue=_coconut_sentinel, step=1):
+        self = _coconut_has_iter.__new__(cls, iterable)
+        self.size = _coconut.operator.index(size)
+        if self.size < 1:
+            raise _coconut.ValueError("windowed: size must be >= 1; not %r" % (self.size,))
+        self.fillvalue = fillvalue
+        self.step = _coconut.operator.index(step)
+        if self.step < 1:
+            raise _coconut.ValueError("windowed: step must be >= 1; not %r" % (self.step,))
+        return self
+    def __reduce__(self):
+        return (self.__class__, (self.iter, self.size, self.fillvalue, self.step))
+    def __copy__(self):
+        return self.__class__(self.get_new_iter(), self.size, self.fillvalue, self.step)
+    def __repr__(self):
+        return "windowed(" + _coconut.repr(self.iter) + ", " + _coconut.repr(self.size) + (", fillvalue=" + _coconut.repr(self.fillvalue) if self.fillvalue is not _coconut_sentinel else "") + (", step=" + _coconut.repr(self.step) if self.step != 1 else "") + ")"
+    def __iter__(self):
+        cache = _coconut.collections.deque()
+        got_window = False
+        for x in self.iter:
+            cache.append(x)
+            if _coconut.len(cache) == self.size:
+                yield _coconut.tuple(cache)
+                got_window = True
+                for _ in _coconut.range(self.step):
+                    cache.popleft()
+        if not got_window and self.fillvalue is not _coconut_sentinel:
+            while _coconut.len(cache) < self.size:
+                cache.append(self.fillvalue)
+            yield _coconut.tuple(cache)
+    def __len__(self):
+        if not _coconut.isinstance(self.iter, _coconut.abc.Sized):
+            return _coconut.NotImplemented
+        if _coconut.len(self.iter) < self.size:
+            return 0 if self.fillvalue is _coconut_sentinel else 1
+        return (_coconut.len(self.iter) - self.size + self.step) // self.step
 class groupsof(_coconut_has_iter):
     """groupsof(n, iterable) splits iterable into groups of size n.
 
