@@ -982,25 +982,29 @@ class cycle(_coconut_has_iter):
         if elem not in self.iter:
             raise _coconut.ValueError(_coconut.repr(elem) + " not in " + _coconut.repr(self))
         return self.iter.index(elem)
-class windowed(_coconut_has_iter):
-    """TODO"""
+class windows(_coconut_has_iter):
+    """Produces an iterable that effectively mimics a sliding window over iterable of the given size.
+    The step determines the spacing between windows.
+
+    If the size is larger than the iterable, windows will produce an empty iterable.
+    If that is not the desired behavior, fillvalue can be passed and will be used in place of missing values."""
     __slots__ = ("size", "fillvalue", "step")
-    def __new__(cls, iterable, size, fillvalue=_coconut_sentinel, step=1):
+    def __new__(cls, size, iterable, fillvalue=_coconut_sentinel, step=1):
         self = _coconut_has_iter.__new__(cls, iterable)
         self.size = _coconut.operator.index(size)
         if self.size < 1:
-            raise _coconut.ValueError("windowed: size must be >= 1; not %r" % (self.size,))
+            raise _coconut.ValueError("windows: size must be >= 1; not %r" % (self.size,))
         self.fillvalue = fillvalue
         self.step = _coconut.operator.index(step)
         if self.step < 1:
-            raise _coconut.ValueError("windowed: step must be >= 1; not %r" % (self.step,))
+            raise _coconut.ValueError("windows: step must be >= 1; not %r" % (self.step,))
         return self
     def __reduce__(self):
-        return (self.__class__, (self.iter, self.size, self.fillvalue, self.step))
+        return (self.__class__, (self.size, self.iter, self.fillvalue, self.step))
     def __copy__(self):
-        return self.__class__(self.get_new_iter(), self.size, self.fillvalue, self.step)
+        return self.__class__(self.size, self.get_new_iter(), self.fillvalue, self.step)
     def __repr__(self):
-        return "windowed(" + _coconut.repr(self.iter) + ", " + _coconut.repr(self.size) + (", fillvalue=" + _coconut.repr(self.fillvalue) if self.fillvalue is not _coconut_sentinel else "") + (", step=" + _coconut.repr(self.step) if self.step != 1 else "") + ")"
+        return "windows(" + _coconut.repr(self.size) + ", " + _coconut.repr(self.iter) + (", fillvalue=" + _coconut.repr(self.fillvalue) if self.fillvalue is not _coconut_sentinel else "") + (", step=" + _coconut.repr(self.step) if self.step != 1 else "") + ")"
     def __iter__(self):
         cache = _coconut.collections.deque()
         got_window = False

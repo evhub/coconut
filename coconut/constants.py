@@ -626,7 +626,7 @@ coconut_specific_builtins = (
     "cartesian_product",
     "multiset",
     "cycle",
-    "windowed",
+    "windows",
     "py_chr",
     "py_hex",
     "py_input",
@@ -1001,6 +1001,8 @@ search_terms = (
     "PEP 622",
     "overrides",
     "islice",
+    "itertools",
+    "functools",
 ) + (
     coconut_specific_builtins
     + coconut_exceptions
