@@ -19,22 +19,22 @@ Coconut is a variant of [Python](https://www.python.org/) built for **simple, el
 
 The Coconut compiler turns Coconut code into Python code. The primary method of accessing the Coconut compiler is through the Coconut command-line utility, which also features an interpreter for real-time compilation. In addition to the command-line utility, Coconut also supports the use of IPython/Jupyter notebooks.
 
-Thought Coconut syntax is primarily based on that of Python, Coconut also takes inspiration from [Haskell](https://www.haskell.org/), [CoffeeScript](http://coffeescript.org/), [F#](http://fsharp.org/), and [patterns.py](https://github.com/Suor/patterns).
+Thought Coconut syntax is primarily based on that of Python, other languages that inspired Coconut include [Haskell](https://www.haskell.org/), [CoffeeScript](http://coffeescript.org/), [F#](http://fsharp.org/), and [Julia](https://julialang.org/).
 
-### Try It Out
+#### Try It Out
 
-If you want to try Coconut in your browser, check out the [online interpreter](https://cs121-team-panda.github.io/coconut-interpreter).
+If you want to try Coconut in your browser, check out the [online interpreter](https://cs121-team-panda.github.io/coconut-interpreter). Note, however, that it may be running an outdated version of Coconut.
 
 ## Installation
 
 ```{contents}
 ---
 local:
-depth: 1
+depth: 2
 ---
 ```
 
-### Using Pip
+#### Using Pip
 
 Since Coconut is hosted on the [Python Package Index](https://pypi.python.org/pypi/coconut), it can be installed easily using `pip`. Simply [install Python](https://www.python.org/downloads/), open up a command-line prompt, and enter
 ```
@@ -52,7 +52,7 @@ which will force Coconut to use the pure-Python [`pyparsing`](https://github.com
 
 If `pip install coconut` works, but you cannot access the `coconut` command, be sure that Coconut's installation location is in your `PATH` environment variable. On UNIX, that is `/usr/local/bin` (without `--user`) or `${HOME}/.local/bin/` (with `--user`).
 
-### Using Conda
+#### Using Conda
 
 If you prefer to use [`conda`](https://conda.io/docs/) instead of `pip` to manage your Python packages, you can also install Coconut using `conda`. Just [install `conda`](https://conda.io/miniconda.html), open up a command-line prompt, and enter
 ```
@@ -63,7 +63,7 @@ which will properly create and build a `conda` recipe out of [Coconut's `conda-f
 
 _Note: Coconut's `conda` recipe uses `pyparsing` rather than `cPyparsing`, which may lead to degraded performance relative to installing Coconut via `pip`._
 
-### Using Homebrew
+#### Using Homebrew
 
 If you prefer to use [Homebrew](https://brew.sh/), you can also install Coconut using `brew`:
 ```
@@ -72,7 +72,7 @@ brew install coconut
 
 _Note: Coconut's Homebrew formula may not always be up-to-date with the latest version of Coconut._
 
-### Optional Dependencies
+#### Optional Dependencies
 
 Coconut also has optional dependencies, which can be installed by entering
 ```
@@ -101,7 +101,7 @@ The full list of optional dependencies is:
 - `docs`: everything necessary to build Coconut's documentation.
 - `dev`: everything necessary to develop on the Coconut language itself, including all of the dependencies above.
 
-### Develop Version
+#### Develop Version
 
 Alternatively, if you want to test out Coconut's latest and greatest, enter
 ```
@@ -118,7 +118,7 @@ depth: 1
 ---
 ```
 
-### Usage
+#### Usage
 
 ```
 coconut [-h] [--and source [dest ...]] [-v] [-t version] [-i] [-p] [-a] [-l] [-k] [-w]
@@ -129,7 +129,7 @@ coconut [-h] [--and source [dest ...]] [-v] [-t version] [-i] [-p] [-a] [-l] [-k
         [source] [dest]
 ```
 
-#### Positional Arguments
+##### Positional Arguments
 
 ```
 source              path to the Coconut file/folder to compile
@@ -137,7 +137,7 @@ dest                destination directory for compiled files (defaults to
                     the source directory)
 ```
 
-#### Optional Arguments
+##### Optional Arguments
 
 ```
 optional arguments:
@@ -205,7 +205,7 @@ optional arguments:
   --profile             collect and print timing info (only available in coconut-develop)
 ```
 
-### Coconut Scripts
+#### Coconut Scripts
 
 To run a Coconut file as a script, Coconut provides the command
 ```
@@ -222,17 +222,17 @@ which will quietly compile and run `<source>`, passing any additional arguments 
 #!/usr/bin/env coconut-run
 ```
 
-### Naming Source Files
+#### Naming Source Files
 
 Coconut source files should, so the compiler can recognize them, use the extension `.coco` (preferred), `.coc`, or `.coconut`. When Coconut compiles a `.coco` (or `.coc`/`.coconut`) file, it will compile to another file with the same name, except with `.py` instead of `.coco`, which will hold the compiled code. If an extension other than `.py` is desired for the compiled files, such as `.pyde` for [Python Processing](http://py.processing.org/), then that extension can be put before `.coco` in the source file name, and it will be used instead of `.py` for the compiled files. For example, `name.coco` will compile to `name.py`, whereas `name.pyde.coco` will compile to `name.pyde`.
 
-### Compilation Modes
+#### Compilation Modes
 
 Files compiled by the `coconut` command-line utility will vary based on compilation parameters. If an entire directory of files is compiled (which the compiler will search recursively for any folders containing `.coco`, `.coc`, or `.coconut` files), a `__coconut__.py` file will be created to house necessary functions (package mode), whereas if only a single file is compiled, that information will be stored within a header inside the file (standalone mode). Standalone mode is better for single files because it gets rid of the overhead involved in importing `__coconut__.py`, but package mode is better for large packages because it gets rid of the need to run the same Coconut header code again in every file, since it can just be imported from `__coconut__.py`.
 
 By default, if the `source` argument to the command-line utility is a file, it will perform standalone compilation on it, whereas if it is a directory, it will recursively search for all `.coco` (or `.coc` / `.coconut`) files and perform package compilation on them. Thus, in most cases, the mode chosen by Coconut automatically will be the right one. But if it is very important that no additional files like `__coconut__.py` be created, for example, then the command-line utility can also be forced to use a specific mode with the `--package` (`-p`) and `--standalone` (`-a`) flags.
 
-### Compatible Python Versions
+#### Compatible Python Versions
 
 While Coconut syntax is based off of the latest Python 3, Coconut code compiled in universal mode (the default `--target`)—and the Coconut compiler itself—should run on any Python version `>= 2.6` on the `2.x` branch or `>= 3.2` on the `3.x` branch (and on either [CPython](https://www.python.org/) or [PyPy](http://pypy.org/)).
 
@@ -275,7 +275,7 @@ Finally, while Coconut will try to compile Python-3-specific syntax to its unive
 - `a[x, *y]` variadic generic syntax (use [type parameter syntax](#type-parameter-syntax) for universal code) (requires `--target 3.11`), and
 - `except*` multi-except statements (requires `--target 3.11`).
 
-### Allowable Targets
+#### Allowable Targets
 
 If the version of Python that the compiled code will be running on is known ahead of time, a target should be specified with `--target`. The given target will only affect the compiled code and whether or not the Python-3-specific syntax detailed above is allowed. Where Python syntax differs across versions, Coconut syntax will always follow the latest Python 3 across all targets. The supported targets are:
 
@@ -297,7 +297,7 @@ If the version of Python that the compiled code will be running on is known ahea
 
 _Note: Periods are ignored in target specifications, such that the target `27` is equivalent to the target `2.7`._
 
-### `strict` Mode
+#### `strict` Mode
 
 If the `--strict` (`-s` for short) flag is enabled, Coconut will perform additional checks on the code being compiled. It is recommended that you use the `--strict` flag if you are starting a new Coconut project, as it will help you write cleaner code. Specifically, the extra checks done by `--strict` are:
 
@@ -326,11 +326,11 @@ The style issues which will cause `--strict` to throw an error are:
 ```{contents}
 ---
 local:
-depth: 1
+depth: 2
 ---
 ```
 
-### Syntax Highlighting
+#### Syntax Highlighting
 
 Text editors with support for Coconut syntax highlighting are:
 
@@ -343,7 +343,7 @@ Text editors with support for Coconut syntax highlighting are:
 
 Alternatively, if none of the above work for you, you can just treat Coconut as Python. Simply set up your editor so it interprets all `.coco` files as Python and that should highlight most of your code well enough (e.g. for IntelliJ IDEA see [registering file types](https://www.jetbrains.com/help/idea/creating-and-registering-file-types.html)).
 
-#### SublimeText
+##### SublimeText
 
 Coconut syntax highlighting for SublimeText requires that [Package Control](https://packagecontrol.io/installation), the standard package manager for SublimeText, be installed. Once that is done, simply:
 
@@ -355,7 +355,7 @@ To make sure everything is working properly, open a `.coco` file, and make sure 
 
 _Note: Coconut syntax highlighting for SublimeText is provided by the [sublime-coconut](https://github.com/evhub/sublime-coconut) package._
 
-#### Pygments
+##### Pygments
 
 The same `pip install coconut` command that installs the Coconut command-line utility will also install the `coconut` Pygments lexer. How to use this lexer depends on the Pygments-enabled application being used, but in general simply use the `.coco` file extension (should be all you need to do for Spyder) and/or enter `coconut` as the language being highlighted and Pygments should be able to figure it out.
 
@@ -365,11 +365,11 @@ highlight_language = "coconut"
 ```
 to Coconut's `conf.py`.
 
-### IPython/Jupyter Support
+#### IPython/Jupyter Support
 
 If you use [IPython](http://ipython.org/) (the Python kernel for the [Jupyter](http://jupyter.org/) framework) notebooks or console, Coconut can be used as a Jupyter kernel or IPython extension.
 
-#### Kernel
+##### Kernel
 
 If Coconut is used as a kernel, all code in the console or notebook will be sent directly to Coconut instead of Python to be evaluated. Otherwise, the Coconut kernel behaves exactly like the IPython kernel, including support for `%magic` commands.
 
@@ -385,7 +385,7 @@ Coconut also provides the following convenience commands:
 
 Additionally, [Jupytext](https://github.com/mwouts/jupytext) contains special support for the Coconut kernel and Coconut contains special support for [Papermill](https://papermill.readthedocs.io/en/latest/).
 
-#### Extension
+##### Extension
 
 If Coconut is used as an extension, a special magic command will send snippets of code to be evaluated using Coconut instead of IPython, but IPython will still be used as the default.
 
@@ -393,7 +393,7 @@ The line magic `%load_ext coconut` will load Coconut as an extension, providing 
 
 _Note: Unlike the normal Coconut command-line, `%%coconut` defaults to the `sys` target rather than the `universal` target._
 
-### MyPy Integration
+#### MyPy Integration
 
 Coconut has the ability to integrate with [MyPy](http://mypy-lang.org/) to provide optional static type_checking, including for all Coconut built-ins. Simply pass `--mypy` to `coconut` to enable MyPy integration, though be careful to pass it only as the last argument, since all arguments after `--mypy` are passed to `mypy`, not Coconut.
 
@@ -418,7 +418,7 @@ Sometimes, MyPy will not know how to handle certain Coconut constructs, such as 
 
 To distribute your code with checkable type annotations, you'll need to include `coconut` as a dependency (though a `--no-deps` install should be fine), as installing it is necessary to make the requisite stub files available. You'll also probably want to include a [`py.typed`](https://peps.python.org/pep-0561/) file.
 
-### `numpy` Integration
+#### `numpy` Integration
 
 To allow for better use of [`numpy`](https://numpy.org/) objects in Coconut, all compiled Coconut code will do a number of special things to better integrate with `numpy` (if `numpy` is available to import when the code is run). Specifically:
 
@@ -433,7 +433,7 @@ To allow for better use of [`numpy`](https://numpy.org/) objects in Coconut, all
 
 Additionally, Coconut provides the exact same support for [`pandas`](https://pandas.pydata.org/) and [`jax.numpy`](https://jax.readthedocs.io/en/latest/jax.numpy.html), including using `jax.numpy` methods over `numpy` methods when given `jax` arrays.
 
-### `xonsh` Support
+#### `xonsh` Support
 
 Coconut integrates with [`xonsh`](https://xon.sh/) to allow the use of Coconut code directly from your command line. To use Coconut in `xonsh`, simply `pip install coconut` should be all you need to enable the use of Coconut syntax in the `xonsh` shell. In some circumstances, in particular depending on the installed `xonsh` version, adding `xontrib load coconut` to your [`xonshrc`](https://xon.sh/xonshrc.html) file might be necessary.
 
@@ -2451,71 +2451,13 @@ Unlike Python, Coconut allows assignment expressions to be chained, as in `a := 
 ```{contents}
 ---
 local:
-depth: 1
+depth: 2
 ---
 ```
 
-### Expanded Indexing for Iterables
+### Built-In Function Decorators
 
-Beyond indexing standard Python sequences, Coconut supports indexing into a number of built-in iterables, including `range` and `map`, which do not support random access in all Python versions but do in Coconut. In Coconut, indexing into an iterable of this type uses the same syntax as indexing into a sequence in vanilla Python.
-
-##### Example
-
-**Coconut:**
-```coconut
-range(0, 12, 2)[4]  # 8
-
-map((i->i*2), range(10))[2]  # 4
-```
-
-**Python:**
-Can’t be done quickly without Coconut’s iterable indexing, which requires many complicated pieces. The necessary definitions in Python can be found in the Coconut header.
-
-##### Indexing into other built-ins
-
-Coconut cannot index into built-ins like `filter`, `takewhile`, or `dropwhile` directly, as there is no efficient way to do so.
-
-```coconut
-range(10) |> filter$(i->i>3) |> .[0]  # doesn't work
-```
-
-In order to make this work, you can explicitly use iterator slicing, which is less efficient in the general case:
-
-```coconut
-range(10) |> filter$(i->i>3) |> .$[0]  # works
-```
-
-For more information on Coconut's iterator slicing, see [here](#iterator-slicing).
-
-### Enhanced Built-Ins
-
-Coconut's `map`, `zip`, `filter`, `reversed`, and `enumerate` objects are enhanced versions of their Python equivalents that support:
-
-- `reversed`,
-- `repr`,
-- optimized normal (and iterator) slicing (all but `filter`),
-- `len` (all but `filter`) (though `bool` will still always yield `True`),
-- the ability to be iterated over multiple times if the underlying iterators are iterables,
-- [PEP 618](https://www.python.org/dev/peps/pep-0618) `zip(..., strict=True)` support on all Python versions, and
-- have added attributes which subclasses can make use of to get at the original arguments to the object:
-  * `map`: `func`, `iters`
-  * `zip`: `iters`
-  * `filter`: `func`, `iter`
-  * `reversed`: `iter`
-  * `enumerate`: `iter`, `start`
-
-##### Example
-
-**Coconut:**
-```coconut
-map((+), range(5), range(6)) |> len |> print
-range(10) |> filter$((x) -> x < 5) |> reversed |> tuple |> print
-```
-
-**Python:**
-_Can't be done without defining a custom `map` type. The full definition of `map` can be found in the Coconut header._
-
-### `addpattern`
+#### `addpattern`
 
 **addpattern**(_base\_func_, _new\_pattern_=`None`, *, _allow\_any\_func_=`False`)
 
@@ -2599,193 +2541,7 @@ def prepattern(base_func):
 ```
 _Note: Passing `--strict` disables deprecated features._
 
-### `multiset`
-
-**multiset**(_iterable_=`None`, /, **kwds)
-
-Coconut provides `multiset` as a built-in subclass of [`collections.Counter`](https://docs.python.org/3/library/collections.html#collections.Counter) that additionally implements the full [Set and MutableSet interfaces](https://docs.python.org/3/library/collections.abc.html).
-
-For easily constructing multisets, Coconut also provides [multiset literals](#set-literals).
-
-The new methods provided by `multiset` on top of `collections.Counter` are:
-- multiset.**add**(_item_): Add an element to a multiset.
-- multiset.**discard**(_item_): Remove an element from a multiset if it is a member.
-- multiset.**remove**(_item_): Remove an element from a multiset; it must be a member.
-- multiset.**isdisjoint**(_other_): Return True if two multisets have a null intersection.
-- multiset.**__xor__**(_other_): Return the symmetric difference of two multisets as a new multiset. Specifically: `a ^ b = (a - b) | (b - a)`
-- multiset.**count**(_item_): Return the number of times an element occurs in a multiset. Equivalent to `multiset[item]`, but additionally verifies the count is non-negative.
-
-Coconut also ensures that `multiset` supports [rich comparisons and `Counter.total()`](https://docs.python.org/3/library/collections.html#collections.Counter) on all Python versions.
-
-##### Example
-
-**Coconut:**
-```coconut
-my_multiset = m{1, 1, 2}
-my_multiset.add(3)
-my_multiset.remove(2)
-print(my_multiset)
-```
-
-**Python:**
-```coconut_python
-from collections import Counter
-my_counter = Counter((1, 1, 2))
-my_counter[3] += 1
-my_counter[2] -= 1
-if my_counter[2] <= 0:
-    del my_counter[2]
-print(my_counter)
-```
-
-### `reduce`
-
-**reduce**(_function_, _iterable_[, _initial_], /)
-
-Coconut re-introduces Python 2's `reduce` built-in, using the `functools.reduce` version.
-
-##### Python Docs
-
-**reduce**(_function, iterable_**[**_, initial_**]**)
-
-Apply _function_ of two arguments cumulatively to the items of _sequence_, from left to right, so as to reduce the sequence to a single value. For example, `reduce((x, y) -> x+y, [1, 2, 3, 4, 5])` calculates `((((1+2)+3)+4)+5)`. The left argument, _x_, is the accumulated value and the right argument, _y_, is the update value from the _sequence_. If the optional _initial_ is present, it is placed before the items of the sequence in the calculation, and serves as a default when the sequence is empty. If _initial_ is not given and _sequence_ contains only one item, the first item is returned.
-
-##### Example
-
-**Coconut:**
-```coconut
-product = reduce$(*)
-range(1, 10) |> product |> print
-```
-
-**Python:**
-```coconut_python
-import operator
-import functools
-product = functools.partial(functools.reduce, operator.mul)
-print(product(range(1, 10)))
-```
-
-### `zip_longest`
-
-**zip\_longest**(*_iterables_, _fillvalue_=`None`)
-
-Coconut provides an enhanced version of `itertools.zip_longest` as a built-in under the name `zip_longest`. `zip_longest` supports all the same features as Coconut's [enhanced zip](#enhanced-built-ins) as well as the additional attribute `fillvalue`.
-
-##### Python Docs
-
-**zip\_longest**(_\*iterables, fillvalue=None_)
-
-Make an iterator that aggregates elements from each of the iterables. If the iterables are of uneven length, missing values are filled-in with _fillvalue_. Iteration continues until the longest iterable is exhausted. Roughly equivalent to:
-
-```coconut_python
-def zip_longest(*args, fillvalue=None):
-    # zip_longest('ABCD', 'xy', fillvalue='-') --> Ax By C- D-
-    iterators = [iter(it) for it in args]
-    num_active = len(iterators)
-    if not num_active:
-        return
-    while True:
-        values = []
-        for i, it in enumerate(iterators):
-            try:
-                value = next(it)
-            except StopIteration:
-                num_active -= 1
-                if not num_active:
-                    return
-                iterators[i] = repeat(fillvalue)
-                value = fillvalue
-            values.append(value)
-        yield tuple(values)
-```
-
-If one of the iterables is potentially infinite, then the `zip_longest()` function should be wrapped with something that limits the number of calls (for example iterator slicing or `takewhile`). If not specified, _fillvalue_ defaults to `None`.
-
-##### Example
-
-**Coconut:**
-```coconut
-result = zip_longest(range(5), range(10))
-```
-
-**Python:**
-```coconut_python
-import itertools
-result = itertools.zip_longest(range(5), range(10))
-```
-
-### `takewhile`
-
-**takewhile**(_predicate_, _iterable_, /)
-
-Coconut provides `itertools.takewhile` as a built-in under the name `takewhile`.
-
-##### Python Docs
-
-**takewhile**(_predicate, iterable_)
-
-Make an iterator that returns elements from the _iterable_ as long as the _predicate_ is true. Equivalent to:
-```coconut_python
-def takewhile(predicate, iterable):
-    # takewhile(lambda x: x<5, [1,4,6,4,1]) --> 1 4
-    for x in iterable:
-        if predicate(x):
-            yield x
-        else:
-            break
-```
-
-##### Example
-
-**Coconut:**
-```coconut
-negatives = numiter |> takewhile$(x -> x < 0)
-```
-
-**Python:**
-```coconut_python
-import itertools
-negatives = itertools.takewhile(lambda x: x < 0, numiter)
-```
-
-### `dropwhile`
-
-**dropwhile**(_predicate_, _iterable_, /)
-
-Coconut provides `itertools.dropwhile` as a built-in under the name `dropwhile`.
-
-##### Python Docs
-
-**dropwhile**(_predicate, iterable_)
-
-Make an iterator that drops elements from the _iterable_ as long as the _predicate_ is true; afterwards, returns every element. Note: the iterator does not produce any output until the predicate first becomes false, so it may have a lengthy start-up time. Equivalent to:
-```coconut_python
-def dropwhile(predicate, iterable):
-    # dropwhile(lambda x: x<5, [1,4,6,4,1]) --> 6 4 1
-    iterable = iter(iterable)
-    for x in iterable:
-        if not predicate(x):
-            yield x
-            break
-    for x in iterable:
-        yield x
-```
-
-##### Example
-
-**Coconut:**
-```coconut
-positives = numiter |> dropwhile$(x -> x < 0)
-```
-
-**Python:**
-```coconut_python
-import itertools
-positives = itertools.dropwhile(lambda x: x < 0, numiter)
-```
-
-### `memoize`
+#### `memoize`
 
 **memoize**(_maxsize_=`None`, _typed_=`False`)
 
@@ -2871,7 +2627,7 @@ def fib(n):
     return fib(n-1) + fib(n-2)
 ```
 
-### `override`
+#### `override`
 
 **override**(_func_)
 
@@ -2893,176 +2649,130 @@ class B:
 **Python:**
 _Can't be done without a long decorator definition. The full definition of the decorator in Python can be found in the Coconut header._
 
-### `groupsof`
+#### `recursive_iterator`
 
-**groupsof**(_n_, _iterable_)
+**recursive\_iterator**(_func_)
 
-Coconut provides the `groupsof` built-in to split an iterable into groups of a specific length. Specifically, `groupsof(n, iterable)` will split `iterable` into tuples of length `n`, with only the last tuple potentially of size `< n` if the length of `iterable` is not divisible by `n`.
+Coconut provides a `recursive_iterator` decorator that memoizes any stateless, recursive function that returns an iterator. To use `recursive_iterator` on a function, it must meet the following criteria:
+
+1. your function either always `return`s an iterator or generates an iterator using `yield`,
+2. when called multiple times with arguments that are equal, your function produces the same iterator (your function is stateless), and
+3. your function gets called (usually calls itself) multiple times with the same arguments.
+
+If you are encountering a `RuntimeError` due to maximum recursion depth, it is highly recommended that you rewrite your function to meet either the criteria above for `recursive_iterator`, or the corresponding criteria for Coconut's [tail call optimization](#tail-call-optimization), either of which should prevent such errors.
+
+Furthermore, `recursive_iterator` also allows the resolution of a [nasty segmentation fault in Python's iterator logic that has never been fixed](http://bugs.python.org/issue14010). Specifically, instead of writing
+```coconut
+seq = get_elem() :: seq
+```
+which will crash due to the aforementioned Python issue, write
+```coconut
+@recursive_iterator
+def seq() = get_elem() :: seq()
+```
+which will work just fine.
+
+One pitfall to keep in mind working with `recursive_iterator` is that it shouldn't be used in contexts where the function can potentially be called multiple times with the same iterator object as an input, but with that object not actually corresponding to the same items (e.g. because the first time the object hasn't been iterated over yet and the second time it has been).
 
 ##### Example
 
 **Coconut:**
 ```coconut
-pairs = range(1, 11) |> groupsof$(2)
+@recursive_iterator
+def fib() = (1, 1) :: map((+), fib(), fib()$[1:])
 ```
 
 **Python:**
-```coconut_python
-pairs = []
-group = []
-for item in range(1, 11):
-    group.append(item)
-    if len(group) == 2:
-        pairs.append(tuple(group))
-        group = []
-if group:
-    pairs.append(tuple(group))
-```
+_Can't be done without a long decorator definition. The full definition of the decorator in Python can be found in the Coconut header._
 
-### `reiterable`
+### Built-In Types
 
-**reiterable**(_iterable_)
+#### `multiset`
 
-`reiterable` wraps the given iterable to ensure that every time the `reiterable` is iterated over, it produces the same results. Note that the result need not be a `reiterable` object if the given iterable is already reiterable. `reiterable` uses [`tee`](#tee) under the hood and `tee` can be used in its place, though `reiterable` is generally recommended over `tee`.
+**multiset**(_iterable_=`None`, /, **kwds)
+
+Coconut provides `multiset` as a built-in subclass of [`collections.Counter`](https://docs.python.org/3/library/collections.html#collections.Counter) that additionally implements the full [Set and MutableSet interfaces](https://docs.python.org/3/library/collections.abc.html).
+
+For easily constructing multisets, Coconut also provides [multiset literals](#set-literals).
+
+The new methods provided by `multiset` on top of `collections.Counter` are:
+- multiset.**add**(_item_): Add an element to a multiset.
+- multiset.**discard**(_item_): Remove an element from a multiset if it is a member.
+- multiset.**remove**(_item_): Remove an element from a multiset; it must be a member.
+- multiset.**isdisjoint**(_other_): Return True if two multisets have a null intersection.
+- multiset.**__xor__**(_other_): Return the symmetric difference of two multisets as a new multiset. Specifically: `a ^ b = (a - b) | (b - a)`
+- multiset.**count**(_item_): Return the number of times an element occurs in a multiset. Equivalent to `multiset[item]`, but additionally verifies the count is non-negative.
+
+Coconut also ensures that `multiset` supports [rich comparisons and `Counter.total()`](https://docs.python.org/3/library/collections.html#collections.Counter) on all Python versions.
 
 ##### Example
 
 **Coconut:**
 ```coconut
-def list_type(xs):
-    match reiterable(xs):
-        case [fst, snd] :: tail:
-            return "at least 2"
-        case [fst] :: tail:
-            return "at least 1"
-        case (| |):
-            return "empty"
+my_multiset = m{1, 1, 2}
+my_multiset.add(3)
+my_multiset.remove(2)
+print(my_multiset)
 ```
 
 **Python:**
-_Can't be done without a long series of checks for each `match` statement. See the compiled code for the Python syntax._
-
-### `tee`
-
-**tee**(_iterable_, _n_=`2`)
-
-Coconut provides an optimized version of `itertools.tee` as a built-in under the name `tee`.
-
-Though `tee` is not deprecated, [`reiterable`](#reiterable) is generally recommended over `tee`.
-
-Custom `tee`/`reiterable` implementations for custom [Containers/Collections](https://docs.python.org/3/library/collections.abc.html) should be put in the `__copy__` method. Note that all [Sequences/Mappings/Sets](https://docs.python.org/3/library/collections.abc.html) are always assumed to be reiterable even without calling `__copy__`.
-
-##### Python Docs
-
-**tee**(_iterable, n=2_)
-
-Return _n_ independent iterators from a single iterable. Equivalent to:
 ```coconut_python
-def tee(iterable, n=2):
-    it = iter(iterable)
-    deques = [collections.deque() for i in range(n)]
-    def gen(mydeque):
-        while True:
-            if not mydeque:             # when the local deque is empty
-                newval = next(it)       # fetch a new value and
-                for d in deques:        # load it to all the deques
-                    d.append(newval)
-            yield mydeque.popleft()
-    return tuple(gen(d) for d in deques)
+from collections import Counter
+my_counter = Counter((1, 1, 2))
+my_counter[3] += 1
+my_counter[2] -= 1
+if my_counter[2] <= 0:
+    del my_counter[2]
+print(my_counter)
 ```
-Once `tee()` has made a split, the original _iterable_ should not be used anywhere else; otherwise, the _iterable_ could get advanced without the tee objects being informed.
 
-This itertool may require significant auxiliary storage (depending on how much temporary data needs to be stored). In general, if one iterator uses most or all of the data before another iterator starts, it is faster to use `list()` instead of `tee()`.
+#### `Expected`
+
+**Expected**(_result_=`None`, _error_=`None`)
+
+Coconut's `Expected` built-in is a Coconut [`data` type](#data) that represents a value that may or may not be an error, similar to Haskell's [`Either`](https://hackage.haskell.org/package/base-4.17.0.0/docs/Data-Either.html).
+
+`Expected` is effectively equivalent to the following:
+```coconut
+data Expected[T](result: T?, error: Exception?):
+    def __new__(cls, result: T?=None, error: Exception?=None) -> Expected[T]:
+        if result is not None and error is not None:
+            raise ValueError("Expected cannot have both a result and an error")
+        return makedata(cls, result, error)
+    def __bool__(self) -> bool:
+        return self.error is None
+    def __fmap__[U](self, func: T -> U) -> Expected[U]:
+        return self.__class__(func(self.result)) if self else self
+```
+
+`Expected` is primarily used as the return type for [`safe_call`](#safe_call). Generally, the best way to use `Expected` is with [`fmap`](#fmap), which will apply a function to the result if it exists, or otherwise retain the error.
 
 ##### Example
 
 **Coconut:**
 ```coconut
-original, temp = tee(original)
-sliced = temp$[5:]
+def try_divide(x, y):
+    try:
+        return Expected(x / y)
+    except Exception as err:
+        return Expected(error=err)
+
+try_divide(1, 2) |> fmap$(.+1) |> print
+try_divide(1, 0) |> fmap$(.+1) |> print
 ```
 
 **Python:**
-```coconut_python
-import itertools
-original, temp = itertools.tee(original)
-sliced = itertools.islice(temp, 5, None)
-```
+_Can't be done without a complex `Expected` definition. See the compiled code for the Python syntax._
 
-### `count`
+#### `MatchError`
 
-**count**(_start_=`0`, _step_=`1`)
+A `MatchError` is raised when a [destructuring assignment](#destructuring-assignment) or [pattern-matching function](#pattern-matching-functions) fails, and thus `MatchError` is provided as a built-in for catching those errors. `MatchError` objects support three attributes: `pattern`, which is a string describing the failed pattern; `value`, which is the object that failed to match that pattern; and `message` which is the full error message. To avoid unnecessary `repr` calls, `MatchError` only computes the `message` once it is actually requested.
 
-Coconut provides a modified version of `itertools.count` that supports `in`, normal slicing, optimized iterator slicing, the standard `count` and `index` sequence methods, `repr`, and `start`/`step` attributes as a built-in under the name `count`.
+Additionally, if you are using [view patterns](#match), you might need to raise your own `MatchError` (though you can also just use a destructuring assignment or pattern-matching function definition to do so). To raise your own `MatchError`, just `raise MatchError(pattern, value)` (both arguments are optional).
 
-Additionally, if the _step_ parameter is set to `None`, `count` will behave like `itertools.repeat` instead.
+### Generic Built-In Functions
 
-##### Python Docs
-
-**count**(_start=0, step=1_)
-
-Make an iterator that returns evenly spaced values starting with number _start_. Often used as an argument to `map()` to generate consecutive data points. Also, used with `zip()` to add sequence numbers. Roughly equivalent to:
-```coconut_python
-def count(start=0, step=1):
-    # count(10) --> 10 11 12 13 14 ...
-    # count(2.5, 0.5) -> 2.5 3.0 3.5 ...
-    n = start
-    while True:
-        yield n
-        if step:
-          n += step
-```
-
-##### Example
-
-**Coconut:**
-```coconut
-count()$[10**100] |> print
-```
-
-**Python:**
-_Can't be done quickly without Coconut's iterator slicing, which requires many complicated pieces. The necessary definitions in Python can be found in the Coconut header._
-
-### `cycle`
-
-**cycle**(_iterable_, _times_=`None`)
-
-Coconut's `cycle` is a modified version of `itertools.cycle` with a `times` parameter that controls the number of times to cycle through _iterable_ before stopping. `cycle` also supports `in`, slicing, `len`, `reversed`, `.count()`, `.index()`, and `repr`.
-
-##### Python Docs
-
-**cycle**(_iterable_)
-
-Make an iterator returning elements from the iterable and saving a copy of each. When the iterable is exhausted, return elements from the saved copy. Repeats indefinitely. Roughly equivalent to:
-
-```coconut_python
-def cycle(iterable):
-    # cycle('ABCD') --> A B C D A B C D A B C D ...
-    saved = []
-    for element in iterable:
-        yield element
-        saved.append(element)
-    while saved:
-        for element in saved:
-              yield element
-```
-
-Note, this member of the toolkit may require significant auxiliary storage (depending on the length of the iterable).
-
-##### Example
-
-**Coconut:**
-```coconut
-cycle(range(2), 2) |> list |> print
-```
-
-**Python:**
-```coconut_python
-from itertools import cycle, islice
-print(list(islice(cycle(range(2)), 4)))
-```
-
-### `makedata`
+#### `makedata`
 
 **makedata**(_data\_type_, *_args_)
 
@@ -3092,7 +2802,7 @@ data Tuple(elems):
 **Python:**
 _Can't be done without a series of method definitions for each data type. See the compiled code for the Python syntax._
 
-### `fmap`
+#### `fmap`
 
 **fmap**(_func_, _obj_, *, _starmap\_over\_mappings_=`False`)
 
@@ -3130,7 +2840,245 @@ Nothing() |> fmap$(x -> x*2) == Nothing()
 **Python:**
 _Can't be done without a series of method definitions for each data type. See the compiled code for the Python syntax._
 
-### `starmap`
+
+#### `call`
+
+**call**(_func_, /, *_args_, \*\*_kwargs_)
+
+Coconut's `call` simply implements function application. Thus, `call` is equivalent to
+```coconut
+def call(f, /, *args, **kwargs) = f(*args, **kwargs)
+```
+
+`call` is primarily useful as an [operator function](#operator-functions) for function application when writing in a point-free style.
+
+**DEPRECATED:** `of` is available as a deprecated alias for `call`. Note that deprecated features are disabled in `--strict` mode.
+
+#### `safe_call`
+
+**safe_call**(_func_, /, *_args_, \*\*_kwargs_)
+
+Coconut's `safe_call` is a version of [`call`](#call) that catches any `Exception`s and returns an [`Expected`](#expected) containing either the result or the error.
+
+`safe_call` is effectively equivalent to:
+```coconut
+def safe_call(f, /, *args, **kwargs):
+    try:
+        return Expected(f(*args, **kwargs))
+    except Exception as err:
+        return Expected(error=err)
+```
+
+##### Example
+
+**Coconut:**
+```coconut
+res, err = safe_call(-> 1 / 0) |> fmap$(.+1)
+```
+
+**Python:**
+_Can't be done without a complex `Expected` definition. See the compiled code for the Python syntax._
+
+#### `lift`
+
+**lift**(_func_)
+
+**lift**(_func_, *_func\_args_, **_func\_kwargs_)
+
+Coconut's `lift` built-in is a higher-order function that takes in a function and “lifts” it up so that all of its arguments are functions.
+
+As a simple example, for a binary function `f(x, y)` and two unary functions `g(z)` and `h(z)`, `lift` works as
+```coconut
+lift(f)(g, h)(z) == f(g(z), h(z))
+```
+such that in this case `lift` implements the `S'` combinator (`liftA2` or `liftM2` in Haskell).
+
+In the general case, `lift` is equivalent to a pickleable version of
+```coconut
+def lift(f) = (
+    (*func_args, **func_kwargs) ->
+        (*args, **kwargs) ->
+            f(
+                *(g(*args, **kwargs) for g in func_args),
+                **{k: h(*args, **kwargs) for k, h in func_kwargs.items()}
+            )
+)
+```
+
+`lift` also supports a shortcut form such that `lift(f, *func_args, **func_kwargs)` is equivalent to `lift(f)(*func_args, **func_kwargs)`.
+
+##### Example
+
+**Coconut:**
+```coconut
+xs_and_xsp1 = ident `lift(zip)` map$(->_+1)
+min_and_max = min `lift(,)` max
+```
+
+**Python:**
+```coconut_python
+def xs_and_xsp1(xs):
+    return zip(xs, map(lambda x: x + 1, xs))
+def min_and_max(xs):
+    return min(xs), max(xs)
+```
+
+#### `flip`
+
+**flip**(_func_, _nargs_=`None`)
+
+Coconut's `flip(f, nargs=None)` is a higher-order function that, given a function `f`, returns a new function with reversed argument order. If `nargs` is passed, only the first `nargs` arguments are reversed.
+
+For the binary case, `flip` works as
+```coconut
+flip(f, 2)(x, y) == f(y, x)
+```
+such that `flip$(?, 2)` implements the `C` combinator (`flip` in Haskell).
+
+In the general case, `flip` is equivalent to a pickleable version of
+```coconut
+def flip(f, nargs=None) =
+    (*args, **kwargs) -> (
+        f(*args[::-1], **kwargs) if nargs is None
+        else f(*(args[nargs-1::-1] + args[nargs:]), **kwargs)
+    )
+```
+
+#### `const`
+
+**const**(_value_)
+
+Coconut's `const` simply constructs a function that, whatever its arguments, just returns the given value. Thus, `const` is equivalent to a pickleable version of
+```coconut
+def const(value) = (*args, **kwargs) -> value
+```
+
+`const` is primarily useful when writing in a point-free style (e.g. in combination with [`lift`](#lift)).
+
+#### `ident`
+
+**ident**(_x_, *, _side\_effect_=`None`)
+
+Coconut's `ident` is the identity function, generally equivalent to `x -> x`.
+
+`ident` also accepts one keyword-only argument, `side_effect`, which specifies a function to call on the argument before it is returned. Thus, `ident` is effectively equivalent to:
+```coconut
+def ident(x, *, side_effect=None):
+    if side_effect is not None:
+        side_effect(x)
+    return x
+```
+
+`ident` is primarily useful when writing in a point-free style (e.g. in combination with [`lift`](#lift)) or for debugging [pipes](#pipes) where `ident$(side_effect=print)` can let you see what is being piped.
+
+### Built-Ins for Working with Iterators
+
+#### Enhanced Built-Ins
+
+Coconut's `map`, `zip`, `filter`, `reversed`, and `enumerate` objects are enhanced versions of their Python equivalents that support:
+
+- `reversed`
+- `repr`
+- Optimized normal (and iterator) indexing/slicing (`map`, `zip`, `reversed`, and `enumerate` but not `filter`)
+- `len` (all but `filter`) (though `bool` will still always yield `True`)
+- The ability to be iterated over multiple times if the underlying iterators can be iterated over multiple times
+- [PEP 618](https://www.python.org/dev/peps/pep-0618) `zip(..., strict=True)` support on all Python versions
+- Added attributes which subclasses can make use of to get at the original arguments to the object:
+  * `map`: `func`, `iters`
+  * `zip`: `iters`
+  * `filter`: `func`, `iter`
+  * `reversed`: `iter`
+  * `enumerate`: `iter`, `start`
+
+##### Indexing into other built-ins
+
+Though Coconut provides random access indexing/slicing to `range`, `map`, `zip`, `reversed`, and `enumerate`, Coconut cannot index into built-ins like `filter`, `takewhile`, or `dropwhile` directly, as there is no efficient way to do so.
+
+```coconut
+range(10) |> filter$(i->i>3) |> .[0]  # doesn't work
+```
+
+In order to make this work, you can explicitly use iterator slicing, which is less efficient in the general case:
+
+```coconut
+range(10) |> filter$(i->i>3) |> .$[0]  # works
+```
+
+For more information on Coconut's iterator slicing, see [here](#iterator-slicing).
+
+##### Examples
+
+**Coconut:**
+```coconut
+map((+), range(5), range(6)) |> len |> print
+range(10) |> filter$((x) -> x < 5) |> reversed |> tuple |> print
+```
+
+**Python:**
+_Can't be done without defining a custom `map` type. The full definition of `map` can be found in the Coconut header._
+
+**Coconut:**
+```coconut
+range(0, 12, 2)[4]  # 8
+
+map((i->i*2), range(10))[2]  # 4
+```
+
+**Python:**
+_Can’t be done quickly without Coconut’s iterable indexing, which requires many complicated pieces. The necessary definitions in Python can be found in the Coconut header._
+
+#### `reduce`
+
+**reduce**(_function_, _iterable_[, _initial_], /)
+
+Coconut re-introduces Python 2's `reduce` built-in, using the `functools.reduce` version.
+
+##### Python Docs
+
+**reduce**(_function, iterable_**[**_, initial_**]**)
+
+Apply _function_ of two arguments cumulatively to the items of _sequence_, from left to right, so as to reduce the sequence to a single value. For example, `reduce((x, y) -> x+y, [1, 2, 3, 4, 5])` calculates `((((1+2)+3)+4)+5)`. The left argument, _x_, is the accumulated value and the right argument, _y_, is the update value from the _sequence_. If the optional _initial_ is present, it is placed before the items of the sequence in the calculation, and serves as a default when the sequence is empty. If _initial_ is not given and _sequence_ contains only one item, the first item is returned.
+
+##### Example
+
+**Coconut:**
+```coconut
+product = reduce$(*)
+range(1, 10) |> product |> print
+```
+
+**Python:**
+```coconut_python
+import operator
+import functools
+product = functools.partial(functools.reduce, operator.mul)
+print(product(range(1, 10)))
+```
+
+#### `reiterable`
+
+**reiterable**(_iterable_)
+
+`reiterable` wraps the given iterable to ensure that every time the `reiterable` is iterated over, it produces the same results. Note that the result need not be a `reiterable` object if the given iterable is already reiterable. `reiterable` uses [`tee`](#tee) under the hood and `tee` can be used in its place, though `reiterable` is generally recommended over `tee`.
+
+##### Example
+
+**Coconut:**
+```coconut
+def list_type(xs):
+    match reiterable(xs):
+        case [fst, snd] :: tail:
+            return "at least 2"
+        case [fst] :: tail:
+            return "at least 1"
+        case (| |):
+            return "empty"
+```
+
+**Python:**
+_Can't be done without a long series of checks for each `match` statement. See the compiled code for the Python syntax._
+
+#### `starmap`
 
 **starmap**(_function_, _iterable_)
 
@@ -3162,7 +3110,163 @@ import itertools, collections
 collections.deque(itertools.starmap(print, map(range, range(1, 5))), maxlen=0)
 ```
 
-### `scan`
+#### `zip_longest`
+
+**zip\_longest**(*_iterables_, _fillvalue_=`None`)
+
+Coconut provides an enhanced version of `itertools.zip_longest` as a built-in under the name `zip_longest`. `zip_longest` supports all the same features as Coconut's [enhanced zip](#enhanced-built-ins) as well as the additional attribute `fillvalue`.
+
+##### Python Docs
+
+**zip\_longest**(_\*iterables, fillvalue=None_)
+
+Make an iterator that aggregates elements from each of the iterables. If the iterables are of uneven length, missing values are filled-in with _fillvalue_. Iteration continues until the longest iterable is exhausted. Roughly equivalent to:
+
+```coconut_python
+def zip_longest(*args, fillvalue=None):
+    # zip_longest('ABCD', 'xy', fillvalue='-') --> Ax By C- D-
+    iterators = [iter(it) for it in args]
+    num_active = len(iterators)
+    if not num_active:
+        return
+    while True:
+        values = []
+        for i, it in enumerate(iterators):
+            try:
+                value = next(it)
+            except StopIteration:
+                num_active -= 1
+                if not num_active:
+                    return
+                iterators[i] = repeat(fillvalue)
+                value = fillvalue
+            values.append(value)
+        yield tuple(values)
+```
+
+If one of the iterables is potentially infinite, then the `zip_longest()` function should be wrapped with something that limits the number of calls (for example iterator slicing or `takewhile`). If not specified, _fillvalue_ defaults to `None`.
+
+##### Example
+
+**Coconut:**
+```coconut
+result = zip_longest(range(5), range(10))
+```
+
+**Python:**
+```coconut_python
+import itertools
+result = itertools.zip_longest(range(5), range(10))
+```
+
+#### `takewhile`
+
+**takewhile**(_predicate_, _iterable_, /)
+
+Coconut provides `itertools.takewhile` as a built-in under the name `takewhile`.
+
+##### Python Docs
+
+**takewhile**(_predicate, iterable_)
+
+Make an iterator that returns elements from the _iterable_ as long as the _predicate_ is true. Equivalent to:
+```coconut_python
+def takewhile(predicate, iterable):
+    # takewhile(lambda x: x<5, [1,4,6,4,1]) --> 1 4
+    for x in iterable:
+        if predicate(x):
+            yield x
+        else:
+            break
+```
+
+##### Example
+
+**Coconut:**
+```coconut
+negatives = numiter |> takewhile$(x -> x < 0)
+```
+
+**Python:**
+```coconut_python
+import itertools
+negatives = itertools.takewhile(lambda x: x < 0, numiter)
+```
+
+#### `dropwhile`
+
+**dropwhile**(_predicate_, _iterable_, /)
+
+Coconut provides `itertools.dropwhile` as a built-in under the name `dropwhile`.
+
+##### Python Docs
+
+**dropwhile**(_predicate, iterable_)
+
+Make an iterator that drops elements from the _iterable_ as long as the _predicate_ is true; afterwards, returns every element. Note: the iterator does not produce any output until the predicate first becomes false, so it may have a lengthy start-up time. Equivalent to:
+```coconut_python
+def dropwhile(predicate, iterable):
+    # dropwhile(lambda x: x<5, [1,4,6,4,1]) --> 6 4 1
+    iterable = iter(iterable)
+    for x in iterable:
+        if not predicate(x):
+            yield x
+            break
+    for x in iterable:
+        yield x
+```
+
+##### Example
+
+**Coconut:**
+```coconut
+positives = numiter |> dropwhile$(x -> x < 0)
+```
+
+**Python:**
+```coconut_python
+import itertools
+positives = itertools.dropwhile(lambda x: x < 0, numiter)
+```
+
+#### `flatten`
+
+**flatten**(_iterable_)
+
+Coconut provides an enhanced version of `itertools.chain.from_iterable` as a built-in under the name `flatten` with added support for `reversed`, `repr`, `in`, `.count()`, `.index()`, and `fmap`.
+
+Note that `flatten` only flattens the top level of the given iterable/array.
+
+##### Python Docs
+
+chain.**from_iterable**(_iterable_)
+
+Alternate constructor for `chain()`. Gets chained inputs from a single iterable argument that is evaluated lazily. Roughly equivalent to:
+
+```coconut_python
+def flatten(iterables):
+    # flatten(['ABC', 'DEF']) --> A B C D E F
+    for it in iterables:
+        for element in it:
+            yield element
+```
+
+##### Example
+
+**Coconut:**
+```coconut
+iter_of_iters = [[1, 2], [3, 4]]
+flat_it = iter_of_iters |> flatten |> list
+```
+
+**Python:**
+```coconut_python
+from itertools import chain
+iter_of_iters = [[1, 2], [3, 4]]
+flat_it = iter_of_iters |> chain.from_iterable |> list
+```
+
+#### `scan`
 
 **scan**(_function_, _iterable_[, _initial_])
 
@@ -3210,44 +3314,80 @@ for x in input_data:
     running_max.append(x)
 ```
 
-### `flatten`
+#### `count`
 
-**flatten**(_iterable_)
+**count**(_start_=`0`, _step_=`1`)
 
-Coconut provides an enhanced version of `itertools.chain.from_iterable` as a built-in under the name `flatten` with added support for `reversed`, `repr`, `in`, `.count()`, `.index()`, and `fmap`.
+Coconut provides a modified version of `itertools.count` that supports `in`, normal slicing, optimized iterator slicing, the standard `count` and `index` sequence methods, `repr`, and `start`/`step` attributes as a built-in under the name `count`.
 
-Note that `flatten` only flattens the top level of the given iterable/array.
+Additionally, if the _step_ parameter is set to `None`, `count` will behave like `itertools.repeat` instead.
 
 ##### Python Docs
 
-chain.**from_iterable**(_iterable_)
+**count**(_start=0, step=1_)
 
-Alternate constructor for `chain()`. Gets chained inputs from a single iterable argument that is evaluated lazily. Roughly equivalent to:
-
+Make an iterator that returns evenly spaced values starting with number _start_. Often used as an argument to `map()` to generate consecutive data points. Also, used with `zip()` to add sequence numbers. Roughly equivalent to:
 ```coconut_python
-def flatten(iterables):
-    # flatten(['ABC', 'DEF']) --> A B C D E F
-    for it in iterables:
-        for element in it:
-            yield element
+def count(start=0, step=1):
+    # count(10) --> 10 11 12 13 14 ...
+    # count(2.5, 0.5) -> 2.5 3.0 3.5 ...
+    n = start
+    while True:
+        yield n
+        if step:
+          n += step
 ```
 
 ##### Example
 
 **Coconut:**
 ```coconut
-iter_of_iters = [[1, 2], [3, 4]]
-flat_it = iter_of_iters |> flatten |> list
+count()$[10**100] |> print
+```
+
+**Python:**
+_Can't be done quickly without Coconut's iterator slicing, which requires many complicated pieces. The necessary definitions in Python can be found in the Coconut header._
+
+#### `cycle`
+
+**cycle**(_iterable_, _times_=`None`)
+
+Coconut's `cycle` is a modified version of `itertools.cycle` with a `times` parameter that controls the number of times to cycle through _iterable_ before stopping. `cycle` also supports `in`, slicing, `len`, `reversed`, `.count()`, `.index()`, and `repr`.
+
+##### Python Docs
+
+**cycle**(_iterable_)
+
+Make an iterator returning elements from the iterable and saving a copy of each. When the iterable is exhausted, return elements from the saved copy. Repeats indefinitely. Roughly equivalent to:
+
+```coconut_python
+def cycle(iterable):
+    # cycle('ABCD') --> A B C D A B C D A B C D ...
+    saved = []
+    for element in iterable:
+        yield element
+        saved.append(element)
+    while saved:
+        for element in saved:
+              yield element
+```
+
+Note, this member of the toolkit may require significant auxiliary storage (depending on the length of the iterable).
+
+##### Example
+
+**Coconut:**
+```coconut
+cycle(range(2), 2) |> list |> print
 ```
 
 **Python:**
 ```coconut_python
-from itertools import chain
-iter_of_iters = [[1, 2], [3, 4]]
-flat_it = iter_of_iters |> chain.from_iterable |> list
+from itertools import cycle, islice
+print(list(islice(cycle(range(2)), 4)))
 ```
 
-### `cartesian_product`
+#### `cartesian_product`
 
 **cartesian\_product**(*_iterables_, _repeat_=`1`)
 
@@ -3298,7 +3438,7 @@ v = [1, 2]
 assert list(product(v, v)) == [(1, 1), (1, 2), (2, 1), (2, 2)]
 ```
 
-### `multi_enumerate`
+#### `multi_enumerate`
 
 **multi\_enumerate**(_iterable_)
 
@@ -3331,7 +3471,33 @@ for i in range(len(array)):
         enumerated_array.append(((i, j), array[i][j]))
 ```
 
-### `collectby`
+#### `groupsof`
+
+**groupsof**(_n_, _iterable_)
+
+Coconut provides the `groupsof` built-in to split an iterable into groups of a specific length. Specifically, `groupsof(n, iterable)` will split `iterable` into tuples of length `n`, with only the last tuple potentially of size `< n` if the length of `iterable` is not divisible by `n`.
+
+##### Example
+
+**Coconut:**
+```coconut
+pairs = range(1, 11) |> groupsof$(2)
+```
+
+**Python:**
+```coconut_python
+pairs = []
+group = []
+for item in range(1, 11):
+    group.append(item)
+    if len(group) == 2:
+        pairs.append(tuple(group))
+        group = []
+if group:
+    pairs.append(tuple(group))
+```
+
+#### `collectby`
 
 **collectby**(_key\_func_, _iterable_, _value\_func_=`None`, _reduce\_func_=`None`)
 
@@ -3381,7 +3547,7 @@ for item in balance_data:
     user_balances[item.user] += item.balance
 ```
 
-### `all_equal`
+#### `all_equal`
 
 **all\_equal**(_iterable_)
 
@@ -3410,43 +3576,7 @@ all_equal([1, 1, 1])
 all_equal([1, 1, 2])
 ```
 
-### `recursive_iterator`
-
-**recursive\_iterator**(_func_)
-
-Coconut provides a `recursive_iterator` decorator that memoizes any stateless, recursive function that returns an iterator. To use `recursive_iterator` on a function, it must meet the following criteria:
-
-1. your function either always `return`s an iterator or generates an iterator using `yield`,
-2. when called multiple times with arguments that are equal, your function produces the same iterator (your function is stateless), and
-3. your function gets called (usually calls itself) multiple times with the same arguments.
-
-If you are encountering a `RuntimeError` due to maximum recursion depth, it is highly recommended that you rewrite your function to meet either the criteria above for `recursive_iterator`, or the corresponding criteria for Coconut's [tail call optimization](#tail-call-optimization), either of which should prevent such errors.
-
-Furthermore, `recursive_iterator` also allows the resolution of a [nasty segmentation fault in Python's iterator logic that has never been fixed](http://bugs.python.org/issue14010). Specifically, instead of writing
-```coconut
-seq = get_elem() :: seq
-```
-which will crash due to the aforementioned Python issue, write
-```coconut
-@recursive_iterator
-def seq() = get_elem() :: seq()
-```
-which will work just fine.
-
-One pitfall to keep in mind working with `recursive_iterator` is that it shouldn't be used in contexts where the function can potentially be called multiple times with the same iterator object as an input, but with that object not actually corresponding to the same items (e.g. because the first time the object hasn't been iterated over yet and the second time it has been).
-
-##### Example
-
-**Coconut:**
-```coconut
-@recursive_iterator
-def fib() = (1, 1) :: map((+), fib(), fib()$[1:])
-```
-
-**Python:**
-_Can't be done without a long decorator definition. The full definition of the decorator in Python can be found in the Coconut header._
-
-### `parallel_map`
+#### `parallel_map`
 
 **parallel\_map**(_function_, *_iterables_, *, _chunksize_=`1`)
 
@@ -3481,7 +3611,7 @@ with Pool() as pool:
     print(list(pool.imap(functools.partial(pow, 2), range(100))))
 ```
 
-### `concurrent_map`
+#### `concurrent_map`
 
 **concurrent\_map**(_function_, *_iterables_, *, _chunksize_=`1`)
 
@@ -3510,7 +3640,54 @@ with concurrent.futures.ThreadPoolExecutor() as executor:
     print(list(executor.map(get_data_for_user, get_all_users())))
 ```
 
-### `consume`
+#### `tee`
+
+**tee**(_iterable_, _n_=`2`)
+
+Coconut provides an optimized version of `itertools.tee` as a built-in under the name `tee`.
+
+Though `tee` is not deprecated, [`reiterable`](#reiterable) is generally recommended over `tee`.
+
+Custom `tee`/`reiterable` implementations for custom [Containers/Collections](https://docs.python.org/3/library/collections.abc.html) should be put in the `__copy__` method. Note that all [Sequences/Mappings/Sets](https://docs.python.org/3/library/collections.abc.html) are always assumed to be reiterable even without calling `__copy__`.
+
+##### Python Docs
+
+**tee**(_iterable, n=2_)
+
+Return _n_ independent iterators from a single iterable. Equivalent to:
+```coconut_python
+def tee(iterable, n=2):
+    it = iter(iterable)
+    deques = [collections.deque() for i in range(n)]
+    def gen(mydeque):
+        while True:
+            if not mydeque:             # when the local deque is empty
+                newval = next(it)       # fetch a new value and
+                for d in deques:        # load it to all the deques
+                    d.append(newval)
+            yield mydeque.popleft()
+    return tuple(gen(d) for d in deques)
+```
+Once `tee()` has made a split, the original _iterable_ should not be used anywhere else; otherwise, the _iterable_ could get advanced without the tee objects being informed.
+
+This itertool may require significant auxiliary storage (depending on how much temporary data needs to be stored). In general, if one iterator uses most or all of the data before another iterator starts, it is faster to use `list()` instead of `tee()`.
+
+##### Example
+
+**Coconut:**
+```coconut
+original, temp = tee(original)
+sliced = temp$[5:]
+```
+
+**Python:**
+```coconut_python
+import itertools
+original, temp = itertools.tee(original)
+sliced = itertools.islice(temp, 5, None)
+```
+
+#### `consume`
 
 **consume**(_iterable_, _keep\_last_=`0`)
 
@@ -3539,181 +3716,9 @@ range(10) |> map$((x) -> x**2) |> map$(print) |> consume
 collections.deque(map(print, map(lambda x: x**2, range(10))), maxlen=0)
 ```
 
-### `Expected`
+### Typing-Specific Built-Ins
 
-**Expected**(_result_=`None`, _error_=`None`)
-
-Coconut's `Expected` built-in is a Coconut [`data` type](#data) that represents a value that may or may not be an error, similar to Haskell's [`Either`](https://hackage.haskell.org/package/base-4.17.0.0/docs/Data-Either.html).
-
-`Expected` is effectively equivalent to the following:
-```coconut
-data Expected[T](result: T?, error: Exception?):
-    def __new__(cls, result: T?=None, error: Exception?=None) -> Expected[T]:
-        if result is not None and error is not None:
-            raise ValueError("Expected cannot have both a result and an error")
-        return makedata(cls, result, error)
-    def __bool__(self) -> bool:
-        return self.error is None
-    def __fmap__[U](self, func: T -> U) -> Expected[U]:
-        return self.__class__(func(self.result)) if self else self
-```
-
-`Expected` is primarily used as the return type for [`safe_call`](#safe_call). Generally, the best way to use `Expected` is with [`fmap`](#fmap), which will apply a function to the result if it exists, or otherwise retain the error.
-
-##### Example
-
-**Coconut:**
-```coconut
-def try_divide(x, y):
-    try:
-        return Expected(x / y)
-    except Exception as err:
-        return Expected(error=err)
-
-try_divide(1, 2) |> fmap$(.+1) |> print
-try_divide(1, 0) |> fmap$(.+1) |> print
-```
-
-**Python:**
-_Can't be done without a complex `Expected` definition. See the compiled code for the Python syntax._
-
-### `call`
-
-**call**(_func_, /, *_args_, \*\*_kwargs_)
-
-Coconut's `call` simply implements function application. Thus, `call` is equivalent to
-```coconut
-def call(f, /, *args, **kwargs) = f(*args, **kwargs)
-```
-
-`call` is primarily useful as an [operator function](#operator-functions) for function application when writing in a point-free style.
-
-**DEPRECATED:** `of` is available as a deprecated alias for `call`. Note that deprecated features are disabled in `--strict` mode.
-
-### `safe_call`
-
-**safe_call**(_func_, /, *_args_, \*\*_kwargs_)
-
-Coconut's `safe_call` is a version of [`call`](#call) that catches any `Exception`s and returns an [`Expected`](#expected) containing either the result or the error.
-
-`safe_call` is effectively equivalent to:
-```coconut
-def safe_call(f, /, *args, **kwargs):
-    try:
-        return Expected(f(*args, **kwargs))
-    except Exception as err:
-        return Expected(error=err)
-```
-
-##### Example
-
-**Coconut:**
-```coconut
-res, err = safe_call(-> 1 / 0) |> fmap$(.+1)
-```
-
-**Python:**
-_Can't be done without a complex `Expected` definition. See the compiled code for the Python syntax._
-
-### `lift`
-
-**lift**(_func_)
-
-**lift**(_func_, *_func\_args_, **_func\_kwargs_)
-
-Coconut's `lift` built-in is a higher-order function that takes in a function and “lifts” it up so that all of its arguments are functions.
-
-As a simple example, for a binary function `f(x, y)` and two unary functions `g(z)` and `h(z)`, `lift` works as
-```coconut
-lift(f)(g, h)(z) == f(g(z), h(z))
-```
-such that in this case `lift` implements the `S'` combinator (`liftA2` or `liftM2` in Haskell).
-
-In the general case, `lift` is equivalent to a pickleable version of
-```coconut
-def lift(f) = (
-    (*func_args, **func_kwargs) ->
-        (*args, **kwargs) ->
-            f(
-                *(g(*args, **kwargs) for g in func_args),
-                **{k: h(*args, **kwargs) for k, h in func_kwargs.items()}
-            )
-)
-```
-
-`lift` also supports a shortcut form such that `lift(f, *func_args, **func_kwargs)` is equivalent to `lift(f)(*func_args, **func_kwargs)`.
-
-##### Example
-
-**Coconut:**
-```coconut
-xs_and_xsp1 = ident `lift(zip)` map$(->_+1)
-min_and_max = min `lift(,)` max
-```
-
-**Python:**
-```coconut_python
-def xs_and_xsp1(xs):
-    return zip(xs, map(lambda x: x + 1, xs))
-def min_and_max(xs):
-    return min(xs), max(xs)
-```
-
-### `flip`
-
-**flip**(_func_, _nargs_=`None`)
-
-Coconut's `flip(f, nargs=None)` is a higher-order function that, given a function `f`, returns a new function with reversed argument order. If `nargs` is passed, only the first `nargs` arguments are reversed.
-
-For the binary case, `flip` works as
-```coconut
-flip(f, 2)(x, y) == f(y, x)
-```
-such that `flip$(?, 2)` implements the `C` combinator (`flip` in Haskell).
-
-In the general case, `flip` is equivalent to a pickleable version of
-```coconut
-def flip(f, nargs=None) =
-    (*args, **kwargs) -> (
-        f(*args[::-1], **kwargs) if nargs is None
-        else f(*(args[nargs-1::-1] + args[nargs:]), **kwargs)
-    )
-```
-
-### `const`
-
-**const**(_value_)
-
-Coconut's `const` simply constructs a function that, whatever its arguments, just returns the given value. Thus, `const` is equivalent to a pickleable version of
-```coconut
-def const(value) = (*args, **kwargs) -> value
-```
-
-`const` is primarily useful when writing in a point-free style (e.g. in combination with [`lift`](#lift)).
-
-### `ident`
-
-**ident**(_x_, *, _side\_effect_=`None`)
-
-Coconut's `ident` is the identity function, generally equivalent to `x -> x`.
-
-`ident` also accepts one keyword-only argument, `side_effect`, which specifies a function to call on the argument before it is returned. Thus, `ident` is effectively equivalent to:
-```coconut
-def ident(x, *, side_effect=None):
-    if side_effect is not None:
-        side_effect(x)
-    return x
-```
-
-`ident` is primarily useful when writing in a point-free style (e.g. in combination with [`lift`](#lift)) or for debugging [pipes](#pipes) where `ident$(side_effect=print)` can let you see what is being piped.
-
-### `MatchError`
-
-A `MatchError` is raised when a [destructuring assignment](#destructuring-assignment) or [pattern-matching function](#pattern-matching-functions) fails, and thus `MatchError` is provided as a built-in for catching those errors. `MatchError` objects support three attributes: `pattern`, which is a string describing the failed pattern; `value`, which is the object that failed to match that pattern; and `message` which is the full error message. To avoid unnecessary `repr` calls, `MatchError` only computes the `message` once it is actually requested.
-
-Additionally, if you are using [view patterns](#match), you might need to raise your own `MatchError` (though you can also just use a destructuring assignment or pattern-matching function definition to do so). To raise your own `MatchError`, just `raise MatchError(pattern, value)` (both arguments are optional).
-
-### `TYPE_CHECKING`
+#### `TYPE_CHECKING`
 
 The `TYPE_CHECKING` variable is set to `False` at runtime and `True` during type_checking, allowing you to prevent your `typing` imports and `TypeVar` definitions from being executed at runtime. By wrapping your `typing` imports in an `if TYPE_CHECKING:` block, you can even use the [`typing`](https://docs.python.org/3/library/typing.html) module on Python versions that don't natively support it. Furthermore, `TYPE_CHECKING` can also be used to hide code that is mistyped by default.
 
@@ -3773,7 +3778,7 @@ else:
             return n * factorial(n-1)
 ```
 
-### `reveal_type` and `reveal_locals`
+#### `reveal_type` and `reveal_locals`
 
 When using MyPy, `reveal_type(<expr>)` will cause MyPy to print the type of `<expr>` and `reveal_locals()` will cause MyPy to print the types of the current `locals()`. At runtime, `reveal_type(x)` is always the identity function and `reveal_locals()` always returns `None`. See [the MyPy documentation](https://mypy.readthedocs.io/en/stable/common_issues.html#reveal-type) for more information.
 
@@ -3810,7 +3815,7 @@ reveal_type(fmap)
 ```{contents}
 ---
 local:
-depth: 1
+depth: 2
 ---
 ```
 

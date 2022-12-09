@@ -1004,6 +1004,11 @@ forward 2""") == 900
     assert arr_of_prod([5,2,1,4,3]) |> list == [24,60,120,30,40]
     assert safe_call(raise_exc).error `isinstance` Exception
     assert safe_call((.+1), 5).result == 6
+    assert getslice(range(3), stop=3) |> list == [0, 1, 2]
+    assert first_disjoint_n(4, "mjqjpqmgbl") == 7
+    assert reduce_n(4, (run, new) -> run + [new], "123456", []) |> map$("".join) |> list == ["1234", "2345", "3456"]
+    assert cycle_slide("123", slide=1)$[:9] |> "".join == "123231312"
+    assert window("1234", 2) |> map$("".join) |> list == ["12", "23", "34"]
 
     # must come at end
     assert fibs_calls[0] == 1
