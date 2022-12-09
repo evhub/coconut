@@ -138,6 +138,7 @@ callable = callable
 classmethod = classmethod
 all = all
 any = any
+bool = bool
 bytes = bytes
 dict = dict
 enumerate = enumerate

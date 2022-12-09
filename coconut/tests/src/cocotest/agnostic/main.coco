@@ -1341,6 +1341,8 @@ def main_test() -> bool:
     assert cycle((_ for _ in range(2)), 2) |> list == [0, 1, 0, 1]
     assert cycle(range(3)).count(0) == float("inf")
     assert cycle(range(3), 3).index(2) == 2
+    assert zip(range(2), range(2))[0] == (0, 0) == enumerate(range(2))[0]
+    assert reversed([0,1,3])[0] == 3
     return True
 
 def test_asyncio() -> bool:

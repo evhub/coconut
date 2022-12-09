@@ -4,7 +4,7 @@ import random
 import operator  # NOQA
 from contextlib import contextmanager
 from functools import wraps
-from collections import defaultdict
+from collections import defaultdict, deque
 
 __doc__ = "docstring"
 
@@ -145,6 +145,50 @@ def starproduct(*args) = product(args)
 flip2 = flip$(nargs=2)
 flip2_ = flip$(?, 2)
 def of_data(f, d) = f(**d._asdict())
+def getslice(arr, start=None, stop=None, step=None) = arr[start:stop:step]
+
+# Custom iterable tools:
+_reduce_n_sentinel = object()
+def reduce_n(n, func, seq, init=_reduce_n_sentinel):
+    """Reduce a binary function over a sequence where it sees n elements at a time, returning the result."""
+    assert n > 0
+    value = init
+    last_n = deque()
+    for item in seq:
+        last_n.append(item)
+        assert len(last_n) <= n
+        if len(last_n) == n:
+            if value is _reduce_n_sentinel:
+                value = tuple(last_n)
+            else:
+                value = func(value, tuple(last_n))
+            last_n.popleft()
+    return value
+
+def cycle_slide(it, times=None, slide=0):
+    i = 0
+    cache = deque() if slide else []
+    while times is None or i < times:
+        for x in it:
+            if cache is not None:
+                cache.append(x)
+            yield x
+        if cache is not None:
+            it = cache
+            cache = None
+        for _ in range(slide):
+            it.append(it.popleft())
+        i += 1
+
+def window(it, n):
+    """Yield a sliding window of length n over an iterable."""
+    assert n > 0
+    cache = deque()
+    for x in it:
+        cache.append(x)
+        if len(cache) == n:
+            yield tuple(cache)
+            cache.popleft()
 
 # Partial Applications:
 sum_ = reduce$((+))
@@ -1573,6 +1617,22 @@ def arr_of_prod(arr) = (
         arr[:i] :: arr[i+1:]
         |> reduce$(*)
     )
+)
+
+def first_disjoint_n(n, arr) = (
+    range(len(arr) - (n-1))
+    |> map$(
+        lift(slice)(
+            ident,
+            (.+n),
+        )
+        ..> arr[]
+        ..> set
+    )
+    |> enumerate
+    |> filter$(.[1] ..> len ..> (.==n))
+    |> map$(.[0] ..> (.+n))
+    |> .$[0]
 )
 
 
