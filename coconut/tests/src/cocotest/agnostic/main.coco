@@ -1343,6 +1343,17 @@ def main_test() -> bool:
     assert cycle(range(3), 3).index(2) == 2
     assert zip(range(2), range(2))[0] == (0, 0) == enumerate(range(2))[0]
     assert reversed([0,1,3])[0] == 3
+    assert cycle((), 0) |> list == []
+    assert windowed("1234", 2) |> map$("".join) |> list == ["12", "23", "34"]
+    assert len(windowed("1234", 2)) == 3
+    assert windowed("12345", 3, None) |> map$("".join) |> list == ["123", "234", "345"]
+    assert len(windowed("12345", 3, None)) == 3
+    assert windowed("1", 2) |> list == [] == windowed("1", 2, step=2) |> list
+    assert len(windowed("1", 2)) == 0 == len(windowed("1", 2, step=2))
+    assert windowed("1", 2, None) |> list == [("1", None)] == windowed("1", 2, None, 2) |> list
+    assert len(windowed("1", 2, None)) == 1 == len(windowed("1", 2, None, 2))
+    assert windowed("1234", 2, step=2) |> map$("".join) |> list == ["12", "34"] == windowed("1234", 2, fillvalue=None, step=2) |> map$("".join) |> list
+    assert len(windowed("1234", 2, step=2)) == 2 == len(windowed("1234", 2, fillvalue=None, step=2))
     return True
 
 def test_asyncio() -> bool:
