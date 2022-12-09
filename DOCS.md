@@ -427,7 +427,6 @@ To allow for better use of [`numpy`](https://numpy.org/) objects in Coconut, all
   * [`fmap`](#fmap) will use [`numpy.vectorize`](https://numpy.org/doc/stable/reference/generated/numpy.vectorize.html) to map over `numpy` arrays.
   * [`multi_enumerate`](#multi_enumerate) allows for easily looping over all the multi-dimensional indices in a `numpy` array.
   * [`cartesian_product`](#cartesian_product) can compute the Cartesian product of given `numpy` arrays as a `numpy` array.
-  * [`flatten`](#flatten) can flatten the first axis of a given `numpy` array.
   * [`all_equal`](#all_equal) allows for easily checking if all the elements in a `numpy` array are the same.
 - [`numpy.ndarray`](https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html) is registered as a [`collections.abc.Sequence`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence), enabling it to be used in [sequence patterns](#semantics-specification).
 - Coconut supports `@` for matrix multiplication of `numpy` arrays on all Python versions, as well as supplying the `(@)` [operator function](#operator-functions).
@@ -3030,8 +3029,6 @@ _Can't be done quickly without Coconut's iterator slicing, which requires many c
 
 Coconut's `cycle` is a modified version of `itertools.cycle` with a `times` parameter that controls the number of times to cycle through _iterable_ before stopping. `cycle` also supports `in`, slicing, `len`, `reversed`, `.count()`, `.index()`, and `repr`.
 
-When given a [`numpy`](#numpy-integration) array and a finite _times_, `cycle` will return a `numpy` array of _iterable_ concatenated with itself along the first axis _times_ times.
-
 ##### Python Docs
 
 **cycle**(_iterable_)
@@ -3219,9 +3216,7 @@ for x in input_data:
 
 Coconut provides an enhanced version of `itertools.chain.from_iterable` as a built-in under the name `flatten` with added support for `reversed`, `repr`, `in`, `.count()`, `.index()`, and `fmap`.
 
-Additionally, `flatten` includes special support for [`numpy`](#numpy-integration) objects, in which case a multidimensional array is returned instead of an iterator.
-
-Note that `flatten` only flattens the top level (first axis) of the given iterable/array.
+Note that `flatten` only flattens the top level of the given iterable/array.
 
 ##### Python Docs
 
