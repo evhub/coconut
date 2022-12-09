@@ -1355,6 +1355,7 @@ def main_test() -> bool:
     assert windows(2, "1234", step=2) |> map$("".join) |> list == ["12", "34"] == windows(2, "1234", fillvalue=None, step=2) |> map$("".join) |> list
     assert len(windows(2, "1234", step=2)) == 2 == len(windows(2, "1234", fillvalue=None, step=2))
     assert repr(windows(2, "1234", None, 3)) == "windows(2, '1234', fillvalue=None, step=3)"
+    assert lift(,)((+), (*))(2, 3) == (5, 6)
     return True
 
 def test_asyncio() -> bool:

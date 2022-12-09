@@ -2457,6 +2457,13 @@ depth: 2
 
 ### Built-In Function Decorators
 
+```{contents}
+---
+local:
+depth: 1
+---
+```
+
 #### `addpattern`
 
 **addpattern**(_base\_func_, _new\_pattern_=`None`, *, _allow\_any\_func_=`False`)
@@ -2687,6 +2694,13 @@ _Can't be done without a long decorator definition. The full definition of the d
 
 ### Built-In Types
 
+```{contents}
+---
+local:
+depth: 1
+---
+```
+
 #### `multiset`
 
 **multiset**(_iterable_=`None`, /, **kwds)
@@ -2771,6 +2785,13 @@ A `MatchError` is raised when a [destructuring assignment](#destructuring-assign
 Additionally, if you are using [view patterns](#match), you might need to raise your own `MatchError` (though you can also just use a destructuring assignment or pattern-matching function definition to do so). To raise your own `MatchError`, just `raise MatchError(pattern, value)` (both arguments are optional).
 
 ### Generic Built-In Functions
+
+```{contents}
+---
+local:
+depth: 1
+---
+```
 
 #### `makedata`
 
@@ -2912,7 +2933,8 @@ def lift(f) = (
 **Coconut:**
 ```coconut
 xs_and_xsp1 = ident `lift(zip)` map$(->_+1)
-min_and_max = min `lift(,)` max
+min_and_max = lift(,)(min, max)
+plus_and_times = (+) `lift(,)` (*)
 ```
 
 **Python:**
@@ -2921,6 +2943,8 @@ def xs_and_xsp1(xs):
     return zip(xs, map(lambda x: x + 1, xs))
 def min_and_max(xs):
     return min(xs), max(xs)
+def plus_and_times(x, y):
+    return x + y, x * y
 ```
 
 #### `flip`
@@ -2972,6 +2996,13 @@ def ident(x, *, side_effect=None):
 `ident` is primarily useful when writing in a point-free style (e.g. in combination with [`lift`](#lift)) or for debugging [pipes](#pipes) where `ident$(side_effect=print)` can let you see what is being piped.
 
 ### Built-Ins for Working with Iterators
+
+```{contents}
+---
+local:
+depth: 1
+---
+```
 
 #### Enhanced Built-Ins
 
@@ -3737,6 +3768,13 @@ collections.deque(map(print, map(lambda x: x**2, range(10))), maxlen=0)
 ```
 
 ### Typing-Specific Built-Ins
+
+```{contents}
+---
+local:
+depth: 1
+---
+```
 
 #### `TYPE_CHECKING`
 
