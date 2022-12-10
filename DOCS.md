@@ -3519,9 +3519,9 @@ for i in range(len(array)):
 
 #### `groupsof`
 
-**groupsof**(_n_, _iterable_)
+**groupsof**(_n_, _iterable_, _fillvalue_=`...`)
 
-Coconut provides the `groupsof` built-in to split an iterable into groups of a specific length. Specifically, `groupsof(n, iterable)` will split `iterable` into tuples of length `n`, with only the last tuple potentially of size `< n` if the length of `iterable` is not divisible by `n`.
+Coconut provides the `groupsof` built-in to split an iterable into groups of a specific length. Specifically, `groupsof(n, iterable)` will split `iterable` into tuples of length `n`, with only the last tuple potentially of size `< n` if the length of `iterable` is not divisible by `n`. If that is not the desired behavior, _fillvalue_ can be passed and will be used to pad the end of the last tuple to length `n`.
 
 Additionally, `groupsof` supports `len` when `iterable` supports `len`.
 
@@ -3551,7 +3551,7 @@ if group:
 
 `windowsof` produces an iterable that effectively mimics a sliding window over _iterable_ of size _size_. _step_ determines the spacing between windowsof.
 
-If _size_ is larger than _iterable_, `windowsof` will produce an empty iterable. If that is not the desired behavior, _fillvalue_ can be passed and will be used in place of missing values.
+If _size_ is larger than _iterable_, `windowsof` will produce an empty iterable. If that is not the desired behavior, _fillvalue_ can be passed and will be used in place of missing values. Also, if _fillvalue_ is passed and the length of the _iterable_ is not divisible by _step_, _fillvalue_ will be used in that case to pad the last window as well. Note that _fillvalue_ will only ever appear in the last window.
 
 Additionally, `windowsof` supports `len` when `iterable` supports `len`.
 

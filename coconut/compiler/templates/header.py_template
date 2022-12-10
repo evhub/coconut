@@ -1008,15 +1008,15 @@ class windowsof(_coconut_has_iter):
         return "windowsof(" + _coconut.repr(self.size) + ", " + _coconut.repr(self.iter) + (", fillvalue=" + _coconut.repr(self.fillvalue) if self.fillvalue is not _coconut_sentinel else "") + (", step=" + _coconut.repr(self.step) if self.step != 1 else "") + ")"
     def __iter__(self):
         cache = _coconut.collections.deque()
-        got_window = False
+        i = 0
         for x in self.iter:
+            i += 1
             cache.append(x)
             if _coconut.len(cache) == self.size:
                 yield _coconut.tuple(cache)
-                got_window = True
                 for _ in _coconut.range(self.step):
                     cache.popleft()
-        if not got_window and self.fillvalue is not _coconut_sentinel:
+        if self.fillvalue is not _coconut_sentinel and (i < self.size or i % self.step != 0):
             while _coconut.len(cache) < self.size:
                 cache.append(self.fillvalue)
             yield _coconut.tuple(cache)
@@ -1025,18 +1025,19 @@ class windowsof(_coconut_has_iter):
             return _coconut.NotImplemented
         if _coconut.len(self.iter) < self.size:
             return 0 if self.fillvalue is _coconut_sentinel else 1
-        return (_coconut.len(self.iter) - self.size + self.step) // self.step
+        return (_coconut.len(self.iter) - self.size + self.step) // self.step + _coconut.int(_coconut.len(self.iter) % self.step != 0 if self.fillvalue is not _coconut_sentinel else 0)
 class groupsof(_coconut_has_iter):
     """groupsof(n, iterable) splits iterable into groups of size n.
 
     If the length of the iterable is not divisible by n, the last group will be of size < n.
     """
-    __slots__ = ("group_size",)
-    def __new__(cls, n, iterable):
+    __slots__ = ("group_size", "fillvalue")
+    def __new__(cls, n, iterable, fillvalue=_coconut_sentinel):
         self = _coconut_has_iter.__new__(cls, iterable)
         self.group_size = _coconut.operator.index(n)
         if self.group_size <= 0:
             raise _coconut.ValueError("group size must be > 0; not %r" % (self.group_size,))
+        self.fillvalue = fillvalue
         return self
     def __iter__(self):
         iterator = _coconut.iter(self.iter)
@@ -1050,13 +1051,16 @@ class groupsof(_coconut_has_iter):
                     loop = False
                     break
             if group:
+                if not loop and self.fillvalue is not _coconut_sentinel:
+                    while _coconut.len(group) < self.group_size:
+                        group.append(self.fillvalue)
                 yield _coconut.tuple(group)
     def __len__(self):
         if not _coconut.isinstance(self.iter, _coconut.abc.Sized):
             return _coconut.NotImplemented
         return (_coconut.len(self.iter) + self.group_size - 1) // self.group_size
     def __repr__(self):
-        return "groupsof(%r, %s)" % (self.group_size, _coconut.repr(self.iter))
+        return "groupsof(" + _coconut.repr(self.group_size) + ", " + _coconut.repr(self.iter) + (", fillvalue=" + _coconut.repr(self.fillvalue) if self.fillvalue is not _coconut_sentinel else "") + ")"
     def __reduce__(self):
         return (self.__class__, (self.group_size, self.iter))
     def __copy__(self):

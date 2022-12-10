@@ -1366,6 +1366,17 @@ def main_test() -> bool:
         (def (("[","B","]")) -> "B"),
         (def ((_,_,_)) -> None),
     )) |> filter$((.is None) ..> (not)) |> list == ["A", "B"]
+    assert windowsof(3, "abcdefg", step=3) |> map$("".join) |> list == ["abc", "def"]
+    assert windowsof(3, "abcdefg", step=3) |> len == 2
+    assert windowsof(3, "abcdefg", step=3, fillvalue="") |> map$("".join) |> list == ["abc", "def", "g"]
+    assert windowsof(3, "abcdefg", step=3, fillvalue="") |> len == 3
+    assert windowsof(3, "abcdefg", step=2, fillvalue="") |> map$("".join) |> list == ["abc", "cde", "efg", "g"]
+    assert windowsof(3, "abcdefg", step=2, fillvalue="") |> len == 4
+    assert windowsof(5, "abc", step=2, fillvalue="") |> map$("".join) |> list == ["abc"]
+    assert windowsof(5, "abc", step=2, fillvalue="") |> len == 1
+    assert groupsof(2, "123", fillvalue="") |> map$("".join) |> list == ["12", "3"]
+    assert groupsof(2, "123", fillvalue="") |> len == 2
+    assert groupsof(2, "123", fillvalue="") |> repr == "groupsof(2, '123', fillvalue='')"
     return True
 
 def test_asyncio() -> bool:
