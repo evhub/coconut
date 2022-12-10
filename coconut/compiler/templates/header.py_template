@@ -12,7 +12,7 @@ def _coconut_super(type=None, object_or_type=None):
         return _coconut_py_super(cls, self)
     return _coconut_py_super(type, object_or_type)
 {set_super}class _coconut{object}:{COMMENT.EVERYTHING_HERE_MUST_BE_COPIED_TO_STUB_FILE}
-    import collections, copy, functools, types, itertools, operator, threading, os, warnings, contextlib, traceback, weakref, multiprocessing, math
+    import collections, copy, functools, types, itertools, operator, threading, os, warnings, contextlib, traceback, weakref, multiprocessing
     from multiprocessing import dummy as multiprocessing_dummy
 {maybe_bind_lru_cache}{import_copyreg}
 {import_asyncio}
@@ -982,29 +982,29 @@ class cycle(_coconut_has_iter):
         if elem not in self.iter:
             raise _coconut.ValueError(_coconut.repr(elem) + " not in " + _coconut.repr(self))
         return self.iter.index(elem)
-class windows(_coconut_has_iter):
+class windowsof(_coconut_has_iter):
     """Produces an iterable that effectively mimics a sliding window over iterable of the given size.
-    The step determines the spacing between windows.
+    The step determines the spacing between windowsof.
 
-    If the size is larger than the iterable, windows will produce an empty iterable.
+    If the size is larger than the iterable, windowsof will produce an empty iterable.
     If that is not the desired behavior, fillvalue can be passed and will be used in place of missing values."""
     __slots__ = ("size", "fillvalue", "step")
     def __new__(cls, size, iterable, fillvalue=_coconut_sentinel, step=1):
         self = _coconut_has_iter.__new__(cls, iterable)
         self.size = _coconut.operator.index(size)
         if self.size < 1:
-            raise _coconut.ValueError("windows: size must be >= 1; not %r" % (self.size,))
+            raise _coconut.ValueError("windowsof: size must be >= 1; not %r" % (self.size,))
         self.fillvalue = fillvalue
         self.step = _coconut.operator.index(step)
         if self.step < 1:
-            raise _coconut.ValueError("windows: step must be >= 1; not %r" % (self.step,))
+            raise _coconut.ValueError("windowsof: step must be >= 1; not %r" % (self.step,))
         return self
     def __reduce__(self):
         return (self.__class__, (self.size, self.iter, self.fillvalue, self.step))
     def __copy__(self):
         return self.__class__(self.size, self.get_new_iter(), self.fillvalue, self.step)
     def __repr__(self):
-        return "windows(" + _coconut.repr(self.size) + ", " + _coconut.repr(self.iter) + (", fillvalue=" + _coconut.repr(self.fillvalue) if self.fillvalue is not _coconut_sentinel else "") + (", step=" + _coconut.repr(self.step) if self.step != 1 else "") + ")"
+        return "windowsof(" + _coconut.repr(self.size) + ", " + _coconut.repr(self.iter) + (", fillvalue=" + _coconut.repr(self.fillvalue) if self.fillvalue is not _coconut_sentinel else "") + (", step=" + _coconut.repr(self.step) if self.step != 1 else "") + ")"
     def __iter__(self):
         cache = _coconut.collections.deque()
         got_window = False
@@ -1053,7 +1053,7 @@ class groupsof(_coconut_has_iter):
     def __len__(self):
         if not _coconut.isinstance(self.iter, _coconut.abc.Sized):
             return _coconut.NotImplemented
-        return _coconut.int(_coconut.math.ceil(_coconut.len(self.iter) / self.group_size))
+        return (_coconut.len(self.iter) + self.group_size - 1) // self.group_size
     def __repr__(self):
         return "groupsof(%r, %s)" % (self.group_size, _coconut.repr(self.iter))
     def __reduce__(self):
