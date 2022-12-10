@@ -378,7 +378,7 @@ class Command(object):
         return processed_source, processed_dest, package
 
     def register_exit_code(self, code=1, errmsg=None, err=None):
-        """Update the exit code."""
+        """Update the exit code and errmsg."""
         if err is not None:
             internal_assert(errmsg is None, "register_exit_code accepts only one of errmsg or err")
             if logger.verbose:

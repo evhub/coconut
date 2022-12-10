@@ -35,8 +35,9 @@ def _coconut_super(type=None, object_or_type=None):
     reiterables = abc.Sequence, abc.Mapping, abc.Set
     abc.Sequence.register(collections.deque)
     Ellipsis, NotImplemented, NotImplementedError, Exception, AttributeError, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, RuntimeError, all, any, bool, bytes, callable, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, locals, map, min, max, next, object, property, range, reversed, set, setattr, slice, str, sum, super, tuple, type, vars, zip, repr, print{comma_bytearray} = Ellipsis, NotImplemented, NotImplementedError, Exception, AttributeError, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, RuntimeError, all, any, bool, bytes, callable, classmethod, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, locals, map, min, max, next, object, property, range, reversed, set, setattr, slice, str, sum, {lstatic}super{rstatic}, tuple, type, vars, zip, {lstatic}repr{rstatic}, {lstatic}print{rstatic}{comma_bytearray}
-class _coconut_sentinel{object}:
+class _coconut_Sentinel{object}:
     __slots__ = ()
+_coconut_sentinel = _coconut_Sentinel()
 class _coconut_base_hashable{object}:
     __slots__ = ()
     def __reduce_ex__(self, _):
@@ -1473,7 +1474,7 @@ class Expected(_coconut.collections.namedtuple("Expected", ("result", "error")){
         return self.__class__ is other.__class__ and _coconut.tuple.__eq__(self, other)
     def __hash__(self):
         return _coconut.tuple.__hash__(self) ^ hash(self.__class__)
-    __match_args__ = ('result', 'error')
+    __match_args__ = ("result", "error")
     def __new__(cls, result=None, error=None):
         if result is not None and error is not None:
             raise _coconut.ValueError("Expected cannot have both a result and an error")

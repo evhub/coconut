@@ -924,9 +924,7 @@ def multi_index_lookup(iterable, item, indexable_types, default=None):
 
 def append_it(iterator, last_val):
     """Iterate through iterator then yield last_val."""
-    for x in iterator:
-        yield x
-    yield last_val
+    return itertools.chain(iterator, (last_val,))
 
 
 def join_args(*arglists):

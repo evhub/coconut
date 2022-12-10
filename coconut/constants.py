@@ -648,6 +648,8 @@ coconut_specific_builtins = (
     "py_repr",
     "py_breakpoint",
     "_namedtuple_of",
+    "reveal_type",
+    "reveal_locals",
 )
 
 coconut_exceptions = (
