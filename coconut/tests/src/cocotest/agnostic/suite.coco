@@ -1008,7 +1008,7 @@ forward 2""") == 900
     assert first_disjoint_n(4, "mjqjpqmgbl") == 7 == first_disjoint_n_(4, "mjqjpqmgbl")
     assert reduce_n(4, (run, new) -> run + [new], "123456", []) |> map$("".join) |> list == ["1234", "2345", "3456"]
     assert cycle_slide("123", slide=1)$[:9] |> "".join == "123231312"
-    assert "1234" |> windows_$(2) |> map$("".join) |> list == ["12", "23", "34"] == "1234" |> windows$(2) |> map$("".join) |> list
+    assert "1234" |> windowsof_$(2) |> map$("".join) |> list == ["12", "23", "34"] == "1234" |> windowsof$(2) |> map$("".join) |> list
 
     # must come at end
     assert fibs_calls[0] == 1

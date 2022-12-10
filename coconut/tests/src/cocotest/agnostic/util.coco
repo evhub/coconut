@@ -180,7 +180,7 @@ def cycle_slide(it, times=None, slide=0):
             it.append(it.popleft())
         i += 1
 
-def windows_(n, it):
+def windowsof_(n, it):
     """Yield a sliding window of length n over an iterable."""
     assert n > 0
     cache = deque()
@@ -1637,7 +1637,7 @@ def first_disjoint_n(n, arr) = (
 
 def first_disjoint_n_(n, arr) = (
     arr
-    |> windows$(n)
+    |> windowsof$(n)
     |> map$(set)
     |> enumerate
     |> filter$(.[1] ..> len ..> (.==n))

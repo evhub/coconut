@@ -3508,6 +3508,8 @@ for i in range(len(array)):
 
 Coconut provides the `groupsof` built-in to split an iterable into groups of a specific length. Specifically, `groupsof(n, iterable)` will split `iterable` into tuples of length `n`, with only the last tuple potentially of size `< n` if the length of `iterable` is not divisible by `n`.
 
+Additionally, `groupsof` supports `len` when `iterable` supports `len`.
+
 ##### Example
 
 **Coconut:**
@@ -3528,25 +3530,25 @@ if group:
     pairs.append(tuple(group))
 ```
 
-#### `windows`
+#### `windowsof`
 
-**windows**(_size_, _iterable_, _fillvalue_=`...`, _step_=`1`)
+**windowsof**(_size_, _iterable_, _fillvalue_=`...`, _step_=`1`)
 
-`windows` produces an iterable that effectively mimics a sliding window over _iterable_ of size _size_. _step_ determines the spacing between windows.
+`windowsof` produces an iterable that effectively mimics a sliding window over _iterable_ of size _size_. _step_ determines the spacing between windowsof.
 
-If _size_ is larger than _iterable_, `windows` will produce an empty iterable. If that is not the desired behavior, _fillvalue_ can be passed and will be used in place of missing values.
+If _size_ is larger than _iterable_, `windowsof` will produce an empty iterable. If that is not the desired behavior, _fillvalue_ can be passed and will be used in place of missing values.
 
-Additionally, `windows` supports `len` when `iterable` supports `len`.
+Additionally, `windowsof` supports `len` when `iterable` supports `len`.
 
 ##### Example
 
 **Coconut:**
 ```coconut
-assert "12345" |> windows$(3) |> list == [("1", "2", "3"), ("2", "3", "4"), ("3", "4", "5")]
+assert "12345" |> windowsof$(3) |> list == [("1", "2", "3"), ("2", "3", "4"), ("3", "4", "5")]
 ```
 
 **Python:**
-_Can't be done without the definition of `windows`; see the compiled header for the full definition._
+_Can't be done without the definition of `windowsof`; see the compiled header for the full definition._
 
 #### `collectby`
 

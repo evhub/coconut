@@ -28,7 +28,6 @@ import contextlib as _contextlib
 import traceback as _traceback
 import weakref as _weakref
 import multiprocessing as _multiprocessing
-import math as _math
 import pickle as _pickle
 from multiprocessing import dummy as _multiprocessing_dummy
 
@@ -100,7 +99,6 @@ contextlib = _contextlib
 traceback = _traceback
 weakref = _weakref
 multiprocessing = _multiprocessing
-math = _math
 multiprocessing_dummy = _multiprocessing_dummy
 
 copyreg = _copyreg

@@ -626,7 +626,7 @@ coconut_specific_builtins = (
     "cartesian_product",
     "multiset",
     "cycle",
-    "windows",
+    "windowsof",
     "py_chr",
     "py_hex",
     "py_input",
