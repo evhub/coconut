@@ -321,18 +321,34 @@ class _coconut_base_pattern_func:
 
 @_t.overload
 def addpattern(
-    base_func: _Callable,
-    new_pattern: None = None,
+    base_func: _t.Callable[[_T], _U],
+    allow_any_func: bool=False,
+) -> _t.Callable[[_t.Callable[[_V], _W]], _t.Callable[[_T | _V], _U | _W]]: ...
+@_t.overload
+def addpattern(
+    base_func: _t.Callable[..., _T],
+    allow_any_func: bool=False,
+) -> _t.Callable[[_t.Callable[..., _U]], _t.Callable[..., _T | _U]]: ...
+@_t.overload
+def addpattern(
+    base_func: _t.Callable[[_T], _U],
+    _add_func: _t.Callable[[_V], _W],
     *,
     allow_any_func: bool=False,
-    ) -> _t.Callable[[_Callable], _Callable]: ...
+) -> _t.Callable[[_T | _V], _U | _W]: ...
+@_t.overload
+def addpattern(
+    base_func: _t.Callable[..., _T],
+    _add_func: _t.Callable[..., _U],
+    *,
+    allow_any_func: bool=False,
+) -> _t.Callable[..., _T | _U]: ...
 @_t.overload
 def addpattern(
     base_func: _Callable,
-    new_pattern: _Callable,
-    *,
+    *add_funcs: _Callable,
     allow_any_func: bool=False,
-    ) -> _Callable: ...
+) -> _t.Callable[..., _t.Any]: ...
 _coconut_addpattern = prepattern = addpattern
 
 

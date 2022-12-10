@@ -1357,6 +1357,15 @@ def main_test() -> bool:
     assert len(windowsof(2, "1234", step=2)) == 2 == len(windowsof(2, "1234", fillvalue=None, step=2))
     assert repr(windowsof(2, "1234", None, 3)) == "windowsof(2, '1234', fillvalue=None, step=3)"
     assert lift(,)((+), (*))(2, 3) == (5, 6)
+    assert "abac" |> windowsof$(2) |> filter$(addpattern(
+        (def (("a", b) if b != "b") -> True),
+        (def ((_, _)) -> False),
+    )) |> list == [("a", "c")]
+    assert "[A], [B]" |> windowsof$(3) |> map$(addpattern(
+        (def (("[","A","]")) -> "A"),
+        (def (("[","B","]")) -> "B"),
+        (def ((_,_,_)) -> None),
+    )) |> filter$((.is None) ..> (not)) |> list == ["A", "B"]
     return True
 
 def test_asyncio() -> bool:

@@ -2466,26 +2466,30 @@ depth: 1
 
 #### `addpattern`
 
-**addpattern**(_base\_func_, _new\_pattern_=`None`, *, _allow\_any\_func_=`False`)
+**addpattern**(_base\_func_, *_add\_funcs_, _allow\_any\_func_=`False`)
 
-Takes one argument that is a [pattern-matching function](#pattern-matching-functions), and returns a decorator that adds the patterns in the existing function to the new function being decorated, where the existing patterns are checked first, then the new. Roughly equivalent to:
+Takes one argument that is a [pattern-matching function](#pattern-matching-functions), and returns a decorator that adds the patterns in the existing function to the new function being decorated, where the existing patterns are checked first, then the new. `addpattern` also supports a shortcut syntax where the new patterns can be passed in directly.
+
+Roughly equivalent to:
 ```
-def addpattern(base_func, new_pattern=None, *, allow_any_func=True):
+def _pattern_adder(base_func, add_func):
+    def add_pattern_func(*args, **kwargs):
+        try:
+            return base_func(*args, **kwargs)
+        except MatchError:
+            return add_func(*args, **kwargs)
+    return add_pattern_func
+def addpattern(base_func, *add_funcs, allow_any_func=True):
     """Decorator to add a new case to a pattern-matching function (where the new case is checked last).
 
     Pass allow_any_func=True to allow any object as the base_func rather than just pattern-matching functions.
-    If new_pattern is passed, addpattern(base_func, new_pattern) is equivalent to addpattern(base_func)(new_pattern).
+    If add_func is passed, addpattern(base_func, add_func) is equivalent to addpattern(base_func)(add_func).
     """
-    def pattern_adder(func):
-        def add_pattern_func(*args, **kwargs):
-            try:
-                return base_func(*args, **kwargs)
-            except MatchError:
-                return func(*args, **kwargs)
-        return add_pattern_func
-    if new_pattern is not None:
-        return pattern_adder(new_pattern)
-    return pattern_adder
+    if not add_funcs:
+        return addpattern$(base_func)
+    for add_func in add_funcs:
+        base_func = pattern_adder(base_func, add_func)
+    return base_func
 ```
 
 If you want to give an `addpattern` function a docstring, make sure to put it on the _last_ function.
@@ -2530,6 +2534,16 @@ def factorial(0) = 1
 @addpattern(factorial)
 def factorial(n) = n * factorial(n - 1)
 ```
+_Simple example of adding a new pattern to a pattern-matching function._
+
+```coconut
+"[A], [B]" |> windowsof$(3) |> map$(addpattern(
+    (def (("[","A","]")) -> "A"),
+    (def (("[","B","]")) -> "B"),
+    (def ((_,_,_)) -> None),
+)) |> filter$((.is None) ..> (not)) |> list |> print
+```
+_An example of a case where using the `addpattern` function is necessary over the [`addpattern` keyword](#addpattern-functions) due to the use of in-line pattern-matching [statement lambdas](#statement-lambdas)._
 
 **Python:**
 _Can't be done without a complicated decorator definition and a long series of checks for each pattern-matching. See the compiled code for the Python syntax._
