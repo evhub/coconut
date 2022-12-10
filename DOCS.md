@@ -2849,12 +2849,13 @@ For `dict`, or any other `collections.abc.Mapping`, `fmap` will map over the map
 
 For [`numpy`](#numpy-integration) objects, `fmap` will use [`np.vectorize`](https://docs.scipy.org/doc/numpy/reference/generated/numpy.vectorize.html) to produce the result.
 
-For asynchronous iterables, `fmap` will map asynchronously, making `fmap` equivalent in that case to:
+For asynchronous iterables, `fmap` will map asynchronously, making `fmap` equivalent in that case to
 ```coconut_python
 async def fmap_over_async_iters(func, async_iter):
     async for item in async_iter:
         yield func(item)
 ```
+such that `fmap` can effectively be used as an async map.
 
 For `None`, `fmap` will always return `None`, ignoring the function passed to it.
 
