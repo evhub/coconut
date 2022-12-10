@@ -827,7 +827,7 @@ min_versions = {
     "myst-parser": (0, 18),
     "mypy[python2]": (0, 991),
     ("jupyter-console", "py36"): (6, 4),
-    ("typing", "py<35"): (3, 1),
+    ("typing", "py<35"): (3, 10),
 
     # pinned reqs: (must be added to pinned_reqs below)
 
