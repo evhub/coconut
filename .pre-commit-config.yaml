@@ -1,6 +1,6 @@
 repos:
 -   repo: https://github.com/pre-commit/pre-commit-hooks.git
-    rev: v4.3.0
+    rev: v4.4.0
     hooks:
     -   id: check-added-large-files
     -   id: fix-byte-order-marker
@@ -23,8 +23,8 @@ repos:
     -   id: pretty-format-json
         args:
         - --autofix
--   repo: https://gitlab.com/pycqa/flake8
-    rev: 3.9.2
+-   repo: https://github.com/pycqa/flake8
+    rev: 6.0.0
     hooks:
     -   id: flake8
         args:
