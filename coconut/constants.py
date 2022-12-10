@@ -244,7 +244,7 @@ tabideal = 4  # spaces to indent code for displaying
 justify_len = 79  # ideal line length
 
 # for pattern-matching
-default_matcher_style = "python warn"
+default_matcher_style = "python warn on strict"
 wildcard = "_"
 
 keyword_vars = (
