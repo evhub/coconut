@@ -1169,19 +1169,19 @@ class _coconut_base_pattern_func(_coconut_base_hashable):{COMMENT.no_slots_to_al
 def _coconut_mark_as_match(base_func):{COMMENT._coconut_is_match_is_used_above_and_in_main_coco}
     base_func._coconut_is_match = True
     return base_func
-def addpattern(base_func, new_pattern=None, **kwargs):
+def addpattern(base_func, *add_funcs, **kwargs):
     """Decorator to add a new case to a pattern-matching function (where the new case is checked last).
 
     Pass allow_any_func=True to allow any object as the base_func rather than just pattern-matching functions.
-    If new_pattern is passed, addpattern(base_func, new_pattern) is equivalent to addpattern(base_func)(new_pattern).
+    If add_funcs are passed, addpattern(base_func, add_func) is equivalent to addpattern(base_func)(add_func).
     """
     allow_any_func = kwargs.pop("allow_any_func", False)
     if not allow_any_func and not _coconut.getattr(base_func, "_coconut_is_match", False):
         _coconut.warnings.warn("Possible misuse of addpattern with non-pattern-matching function " + _coconut.repr(base_func) + " (pass allow_any_func=True to dismiss)", stacklevel=2)
     if kwargs:
         raise _coconut.TypeError("addpattern() got unexpected keyword arguments " + _coconut.repr(kwargs))
-    if new_pattern is not None:
-        return _coconut_base_pattern_func(base_func, new_pattern)
+    if add_funcs:
+        return _coconut_base_pattern_func(base_func, *add_funcs)
     return _coconut.functools.partial(_coconut_base_pattern_func, base_func)
 _coconut_addpattern = addpattern
 {def_prepattern}
