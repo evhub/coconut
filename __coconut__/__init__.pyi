@@ -15,6 +15,14 @@ Description: MyPy stub file for __coconut__.py.
 import sys
 import typing as _t
 
+if sys.version_info >= (3, 11):
+    from typing import dataclass_transform as _dataclass_transform
+else:
+    try:
+        from typing_extensions import dataclass_transform as _dataclass_transform
+    except ImportError:
+        dataclass_transform = ...
+
 import _coconut as __coconut  # we mock _coconut as a package since mypy doesn't handle namespace classes very well
 _coconut = __coconut
 
@@ -37,14 +45,26 @@ _T = _t.TypeVar("_T")
 _U = _t.TypeVar("_U")
 _V = _t.TypeVar("_V")
 _W = _t.TypeVar("_W")
-_Xco = _t.TypeVar("_Xco", covariant=True)
-_Yco = _t.TypeVar("_Yco", covariant=True)
-_Zco = _t.TypeVar("_Zco", covariant=True)
+_X = _t.TypeVar("_X")
+_Y = _t.TypeVar("_Y")
+_Z = _t.TypeVar("_Z")
+
 _Tco = _t.TypeVar("_Tco", covariant=True)
 _Uco = _t.TypeVar("_Uco", covariant=True)
 _Vco = _t.TypeVar("_Vco", covariant=True)
 _Wco = _t.TypeVar("_Wco", covariant=True)
+_Xco = _t.TypeVar("_Xco", covariant=True)
+_Yco = _t.TypeVar("_Yco", covariant=True)
+_Zco = _t.TypeVar("_Zco", covariant=True)
+
 _Tcontra = _t.TypeVar("_Tcontra", contravariant=True)
+_Ucontra = _t.TypeVar("_Ucontra", contravariant=True)
+_Vcontra = _t.TypeVar("_Vcontra", contravariant=True)
+_Wcontra = _t.TypeVar("_Wcontra", contravariant=True)
+_Xcontra = _t.TypeVar("_Xcontra", contravariant=True)
+_Ycontra = _t.TypeVar("_Ycontra", contravariant=True)
+_Zcontra = _t.TypeVar("_Zcontra", contravariant=True)
+
 _Tfunc = _t.TypeVar("_Tfunc", bound=_Callable)
 _Ufunc = _t.TypeVar("_Ufunc", bound=_Callable)
 _Tfunc_contra = _t.TypeVar("_Tfunc_contra", bound=_Callable, contravariant=True)
@@ -52,6 +72,12 @@ _Titer = _t.TypeVar("_Titer", bound=_Iterable)
 _T_iter_func = _t.TypeVar("_T_iter_func", bound=_t.Callable[..., _Iterable])
 
 _P = _t.ParamSpec("_P")
+
+class _SupportsIndex(_t.Protocol):
+    def __index__(self) -> int: ...
+
+@_dataclass_transform()
+def _dataclass(cls: type[_T]) -> type[_T]: ...
 
 # -----------------------------------------------------------------------------------------------------------------------
 # STUB:
@@ -78,7 +104,7 @@ if sys.version_info < (3,):
         def __contains__(self, elem: int) -> bool: ...
 
         @_t.overload
-        def __getitem__(self, index: int) -> int: ...
+        def __getitem__(self, index: _SupportsIndex) -> int: ...
         @_t.overload
         def __getitem__(self, index: slice) -> _t.Iterable[int]: ...
 
@@ -159,8 +185,8 @@ _coconut_sentinel: _t.Any = ...
 
 
 def scan(
-    func: _t.Callable[[_T, _Uco], _T],
-    iterable: _t.Iterable[_Uco],
+    func: _t.Callable[[_T, _U], _T],
+    iterable: _t.Iterable[_U],
     initial: _T = ...,
 ) -> _t.Iterable[_T]: ...
 
@@ -184,120 +210,145 @@ def _coconut_tco(func: _Tfunc) -> _Tfunc:
 # any changes here should also be made to safe_call below
 @_t.overload
 def call(
-    _func: _t.Callable[[_T], _Uco],
+    _func: _t.Callable[[_T], _U],
     _x: _T,
-) -> _Uco: ...
+) -> _U: ...
 @_t.overload
 def call(
-    _func: _t.Callable[[_T, _U], _Vco],
-    _x: _T,
-    _y: _U,
-) -> _Vco: ...
-@_t.overload
-def call(
-    _func: _t.Callable[[_T, _U, _V], _Wco],
+    _func: _t.Callable[[_T, _U], _V],
     _x: _T,
     _y: _U,
-    _z: _V,
-) -> _Wco: ...
+) -> _V: ...
 @_t.overload
 def call(
-    _func: _t.Callable[_t.Concatenate[_T, _P], _Uco],
-    _x: _T,
-    *args: _t.Any,
-    **kwargs: _t.Any,
-) -> _Uco: ...
-@_t.overload
-def call(
-    _func: _t.Callable[_t.Concatenate[_T, _U, _P], _Vco],
-    _x: _T,
-    _y: _U,
-    *args: _t.Any,
-    **kwargs: _t.Any,
-) -> _Vco: ...
-@_t.overload
-def call(
-    _func: _t.Callable[_t.Concatenate[_T, _U, _V, _P], _Wco],
+    _func: _t.Callable[[_T, _U, _V], _W],
     _x: _T,
     _y: _U,
     _z: _V,
-    *args: _t.Any,
-    **kwargs: _t.Any,
-) -> _Wco: ...
+) -> _W: ...
 @_t.overload
 def call(
-    _func: _t.Callable[..., _Tco],
+    _func: _t.Callable[_t.Concatenate[_T, _P], _U],
+    _x: _T,
     *args: _t.Any,
     **kwargs: _t.Any,
-) -> _Tco: ...
-
+) -> _U: ...
+@_t.overload
+def call(
+    _func: _t.Callable[_t.Concatenate[_T, _U, _P], _V],
+    _x: _T,
+    _y: _U,
+    *args: _t.Any,
+    **kwargs: _t.Any,
+) -> _V: ...
+@_t.overload
+def call(
+    _func: _t.Callable[_t.Concatenate[_T, _U, _V, _P], _W],
+    _x: _T,
+    _y: _U,
+    _z: _V,
+    *args: _t.Any,
+    **kwargs: _t.Any,
+) -> _W: ...
+@_t.overload
+def call(
+    _func: _t.Callable[..., _T],
+    *args: _t.Any,
+    **kwargs: _t.Any,
+) -> _T: ...
 
 _coconut_tail_call = of = call
 
 
-class _base_Expected(_t.NamedTuple, _t.Generic[_T]):
+@_dataclass
+class Expected(_t.Generic[_T], _t.Tuple):
     result: _t.Optional[_T]
     error: _t.Optional[Exception]
-    def __fmap__(self, func: _t.Callable[[_T], _U]) -> Expected[_U]: ...
-class Expected(_base_Expected[_T]):
-    __slots__ = ()
+    @_t.overload
     def __new__(
+        cls,
+        result: _T,
+    ) -> Expected[_T]: ...
+    @_t.overload
+    def __new__(
+        cls,
+        result: None = None,
+        *,
+        error: Exception,
+    ) -> Expected[_t.Any]: ...
+    @_t.overload
+    def __new__(
+        cls,
+        result: None,
+        error: Exception,
+    ) -> Expected[_t.Any]: ...
+    @_t.overload
+    def __new__(
+        cls,
+    ) -> Expected[None]: ...
+    def __init__(
         self,
         result: _t.Optional[_T] = None,
-        error: _t.Optional[Exception] = None
-    ) -> Expected[_T]: ...
+        error: _t.Optional[Exception] = None,
+    ): ...
+    def __fmap__(self, func: _t.Callable[[_T], _U]) -> Expected[_U]: ...
+    def __iter__(self) -> _t.Iterator[_T | Exception | None]: ...
+    @_t.overload
+    def __getitem__(self, index: _SupportsIndex) -> _T | Exception | None: ...
+    @_t.overload
+    def __getitem__(self, index: slice) -> _t.Tuple[_T | Exception | None, ...]: ...
 _coconut_Expected = Expected
 
 
 # should match call above but with Expected
 @_t.overload
 def safe_call(
-    _func: _t.Callable[[_T], _Uco],
+    _func: _t.Callable[[_T], _U],
     _x: _T,
-) -> Expected[_Uco]: ...
+) -> Expected[_U]: ...
 @_t.overload
 def safe_call(
-    _func: _t.Callable[[_T, _U], _Vco],
-    _x: _T,
-    _y: _U,
-) -> Expected[_Vco]: ...
-@_t.overload
-def safe_call(
-    _func: _t.Callable[[_T, _U, _V], _Wco],
+    _func: _t.Callable[[_T, _U], _V],
     _x: _T,
     _y: _U,
-    _z: _V,
-) -> Expected[_Wco]: ...
+) -> Expected[_V]: ...
 @_t.overload
 def safe_call(
-    _func: _t.Callable[_t.Concatenate[_T, _P], _Uco],
-    _x: _T,
-    *args: _t.Any,
-    **kwargs: _t.Any,
-) -> Expected[_Uco]: ...
-@_t.overload
-def safe_call(
-    _func: _t.Callable[_t.Concatenate[_T, _U, _P], _Vco],
-    _x: _T,
-    _y: _U,
-    *args: _t.Any,
-    **kwargs: _t.Any,
-) -> Expected[_Vco]: ...
-@_t.overload
-def safe_call(
-    _func: _t.Callable[_t.Concatenate[_T, _U, _V, _P], _Wco],
+    _func: _t.Callable[[_T, _U, _V], _W],
     _x: _T,
     _y: _U,
     _z: _V,
-    *args: _t.Any,
-    **kwargs: _t.Any,
-) -> Expected[_Wco]: ...
+) -> Expected[_W]: ...
 @_t.overload
 def safe_call(
-    _func: _t.Callable[..., _Tco],
+    _func: _t.Callable[_t.Concatenate[_T, _P], _U],
+    _x: _T,
     *args: _t.Any,
     **kwargs: _t.Any,
-) -> Expected[_Tco]: ...
+) -> Expected[_U]: ...
+@_t.overload
+def safe_call(
+    _func: _t.Callable[_t.Concatenate[_T, _U, _P], _V],
+    _x: _T,
+    _y: _U,
+    *args: _t.Any,
+    **kwargs: _t.Any,
+) -> Expected[_V]: ...
+@_t.overload
+def safe_call(
+    _func: _t.Callable[_t.Concatenate[_T, _U, _V, _P], _W],
+    _x: _T,
+    _y: _U,
+    _z: _V,
+    *args: _t.Any,
+    **kwargs: _t.Any,
+) -> Expected[_W]: ...
+@_t.overload
+def safe_call(
+    _func: _t.Callable[..., _T],
+    *args: _t.Any,
+    **kwargs: _t.Any,
+) -> Expected[_T]: ...
 
 
 def recursive_iterator(func: _T_iter_func) -> _T_iter_func:
@@ -326,9 +377,9 @@ def addpattern(
 ) -> _t.Callable[[_t.Callable[[_V], _W]], _t.Callable[[_T | _V], _U | _W]]: ...
 @_t.overload
 def addpattern(
-    base_func: _t.Callable[..., _T],
+    base_func: _t.Callable[..., _U],
     allow_any_func: bool=False,
-) -> _t.Callable[[_t.Callable[..., _U]], _t.Callable[..., _T | _U]]: ...
+) -> _t.Callable[[_t.Callable[..., _W]], _t.Callable[..., _U | _W]]: ...
 @_t.overload
 def addpattern(
     base_func: _t.Callable[[_T], _U],
@@ -392,56 +443,56 @@ def _coconut_base_compose(
 
 # @_t.overload
 # def _coconut_forward_compose(
-#     _g: _t.Callable[[_T], _Uco],
-#     _f: _t.Callable[[_Uco], _Vco],
-#     ) -> _t.Callable[[_T], _Vco]: ...
+#     _g: _t.Callable[[_T], _U],
+#     _f: _t.Callable[[_U], _V],
+#     ) -> _t.Callable[[_T], _V]: ...
 # @_t.overload
 # def _coconut_forward_compose(
-#     _g: _t.Callable[[_T, _U], _Vco],
-#     _f: _t.Callable[[_Vco], _Wco],
-#     ) -> _t.Callable[[_T, _U], _Wco]: ...
+#     _g: _t.Callable[[_T, _U], _V],
+#     _f: _t.Callable[[_V], _W],
+#     ) -> _t.Callable[[_T, _U], _W]: ...
 # @_t.overload
 # def _coconut_forward_compose(
-#     _h: _t.Callable[[_T], _Uco],
-#     _g: _t.Callable[[_Uco], _Vco],
-#     _f: _t.Callable[[_Vco], _Wco],
-#     ) -> _t.Callable[[_T], _Wco]: ...
+#     _h: _t.Callable[[_T], _U],
+#     _g: _t.Callable[[_U], _V],
+#     _f: _t.Callable[[_V], _W],
+#     ) -> _t.Callable[[_T], _W]: ...
 @_t.overload
 def _coconut_forward_compose(
-    _g: _t.Callable[_P, _Tco],
-    _f: _t.Callable[[_Tco], _Uco],
-    ) -> _t.Callable[_P, _Uco]: ...
+    _g: _t.Callable[_P, _T],
+    _f: _t.Callable[[_T], _U],
+    ) -> _t.Callable[_P, _U]: ...
 @_t.overload
 def _coconut_forward_compose(
-    _h: _t.Callable[_P, _Tco],
-    _g: _t.Callable[[_Tco], _Uco],
-    _f: _t.Callable[[_Uco], _Vco],
-    ) -> _t.Callable[_P, _Vco]: ...
+    _h: _t.Callable[_P, _T],
+    _g: _t.Callable[[_T], _U],
+    _f: _t.Callable[[_U], _V],
+    ) -> _t.Callable[_P, _V]: ...
 @_t.overload
 def _coconut_forward_compose(
-    _h: _t.Callable[_P, _Tco],
-    _g: _t.Callable[[_Tco], _Uco],
-    _f: _t.Callable[[_Uco], _Vco],
-    _e: _t.Callable[[_Vco], _Wco],
-    ) -> _t.Callable[_P, _Wco]: ...
+    _h: _t.Callable[_P, _T],
+    _g: _t.Callable[[_T], _U],
+    _f: _t.Callable[[_U], _V],
+    _e: _t.Callable[[_V], _W],
+    ) -> _t.Callable[_P, _W]: ...
 @_t.overload
 def _coconut_forward_compose(
-    _g: _t.Callable[..., _Tco],
-    _f: _t.Callable[[_Tco], _Uco],
-    ) -> _t.Callable[..., _Uco]: ...
+    _g: _t.Callable[..., _T],
+    _f: _t.Callable[[_T], _U],
+    ) -> _t.Callable[..., _U]: ...
 @_t.overload
 def _coconut_forward_compose(
-    _h: _t.Callable[..., _Tco],
-    _g: _t.Callable[[_Tco], _Uco],
-    _f: _t.Callable[[_Uco], _Vco],
-    ) -> _t.Callable[..., _Vco]: ...
+    _h: _t.Callable[..., _T],
+    _g: _t.Callable[[_T], _U],
+    _f: _t.Callable[[_U], _V],
+    ) -> _t.Callable[..., _V]: ...
 @_t.overload
 def _coconut_forward_compose(
-    _h: _t.Callable[..., _Tco],
-    _g: _t.Callable[[_Tco], _Uco],
-    _f: _t.Callable[[_Uco], _Vco],
-    _e: _t.Callable[[_Vco], _Wco],
-    ) -> _t.Callable[..., _Wco]: ...
+    _h: _t.Callable[..., _T],
+    _g: _t.Callable[[_T], _U],
+    _f: _t.Callable[[_U], _V],
+    _e: _t.Callable[[_V], _W],
+    ) -> _t.Callable[..., _W]: ...
 @_t.overload
 def _coconut_forward_compose(*funcs: _Callable) -> _Callable: ...
 
@@ -451,33 +502,33 @@ _coconut_forward_dubstar_compose = _coconut_forward_compose
 
 @_t.overload
 def _coconut_back_compose(
-    _f: _t.Callable[[_Uco], _Vco],
-    _g: _t.Callable[[_Tco], _Uco],
-    ) -> _t.Callable[[_Tco], _Vco]: ...
+    _f: _t.Callable[[_U], _V],
+    _g: _t.Callable[[_T], _U],
+    ) -> _t.Callable[[_T], _V]: ...
 @_t.overload
 def _coconut_back_compose(
-    _f: _t.Callable[[_Vco], _Wco],
-    _g: _t.Callable[[_Uco], _Vco],
-    _h: _t.Callable[[_Tco], _Uco],
-    ) -> _t.Callable[[_Tco], _Wco]: ...
+    _f: _t.Callable[[_V], _W],
+    _g: _t.Callable[[_U], _V],
+    _h: _t.Callable[[_T], _U],
+    ) -> _t.Callable[[_T], _W]: ...
 @_t.overload
 def _coconut_back_compose(
-    _f: _t.Callable[[_Tco], _Uco],
-    _g: _t.Callable[..., _Tco],
-    ) -> _t.Callable[..., _Uco]: ...
+    _f: _t.Callable[[_T], _U],
+    _g: _t.Callable[..., _T],
+    ) -> _t.Callable[..., _U]: ...
 @_t.overload
 def _coconut_back_compose(
-    _f: _t.Callable[[_Uco], _Vco],
-    _g: _t.Callable[[_Tco], _Uco],
-    _h: _t.Callable[..., _Tco],
-    ) -> _t.Callable[..., _Vco]: ...
+    _f: _t.Callable[[_U], _V],
+    _g: _t.Callable[[_T], _U],
+    _h: _t.Callable[..., _T],
+    ) -> _t.Callable[..., _V]: ...
 @_t.overload
 def _coconut_back_compose(
-    _e: _t.Callable[[_Vco], _Wco],
-    _f: _t.Callable[[_Uco], _Vco],
-    _g: _t.Callable[[_Tco], _Uco],
-    _h: _t.Callable[..., _Tco],
-    ) -> _t.Callable[..., _Wco]: ...
+    _e: _t.Callable[[_V], _W],
+    _f: _t.Callable[[_U], _V],
+    _g: _t.Callable[[_T], _U],
+    _h: _t.Callable[..., _T],
+    ) -> _t.Callable[..., _W]: ...
 @_t.overload
 def _coconut_back_compose(*funcs: _Callable) -> _Callable: ...
 
@@ -487,42 +538,42 @@ _coconut_back_dubstar_compose = _coconut_back_compose
 
 def _coconut_pipe(
     x: _T,
-    f: _t.Callable[[_T], _Uco],
-) -> _Uco: ...
+    f: _t.Callable[[_T], _U],
+) -> _U: ...
 def _coconut_star_pipe(
     xs: _Iterable,
-    f: _t.Callable[..., _Tco],
-) -> _Tco: ...
+    f: _t.Callable[..., _T],
+) -> _T: ...
 def _coconut_dubstar_pipe(
     kws: _t.Dict[_t.Text, _t.Any],
-    f: _t.Callable[..., _Tco],
-) -> _Tco: ...
+    f: _t.Callable[..., _T],
+) -> _T: ...
 
 def _coconut_back_pipe(
-    f: _t.Callable[[_T], _Uco],
+    f: _t.Callable[[_T], _U],
     x: _T,
-) -> _Uco: ...
+) -> _U: ...
 def _coconut_back_star_pipe(
-    f: _t.Callable[..., _Tco],
+    f: _t.Callable[..., _T],
     xs: _Iterable,
-) -> _Tco: ...
+) -> _T: ...
 def _coconut_back_dubstar_pipe(
-    f: _t.Callable[..., _Tco],
+    f: _t.Callable[..., _T],
     kws: _t.Dict[_t.Text, _t.Any],
-) -> _Tco: ...
+) -> _T: ...
 
 def _coconut_none_pipe(
-    x: _t.Optional[_Tco],
-    f: _t.Callable[[_Tco], _Uco],
-) -> _t.Optional[_Uco]: ...
+    x: _t.Optional[_T],
+    f: _t.Callable[[_T], _U],
+) -> _t.Optional[_U]: ...
 def _coconut_none_star_pipe(
     xs: _t.Optional[_Iterable],
-    f: _t.Callable[..., _Tco],
-) -> _t.Optional[_Tco]: ...
+    f: _t.Callable[..., _T],
+) -> _t.Optional[_T]: ...
 def _coconut_none_dubstar_pipe(
     kws: _t.Optional[_t.Dict[_t.Text, _t.Any]],
-    f: _t.Callable[..., _Tco],
-) -> _t.Optional[_Tco]: ...
+    f: _t.Callable[..., _T],
+) -> _t.Optional[_T]: ...
 
 
 def _coconut_assert(cond: _t.Any, msg: _t.Optional[_t.Text] = None) -> None:
@@ -593,49 +644,49 @@ def multi_enumerate(iterable: _Iterable) -> _t.Iterable[_t.Tuple[_t.Tuple[int, .
 
 class _count(_t.Iterable[_T]):
     @_t.overload
-    def __new__(self) -> _count[int]: ...
+    def __new__(cls) -> _count[int]: ...
     @_t.overload
-    def __new__(self, start: _T) -> _count[_T]: ...
+    def __new__(cls, start: _T) -> _count[_T]: ...
     @_t.overload
-    def __new__(self, start: _T, step: _t.Optional[_T]) -> _count[_T]: ...
+    def __new__(cls, start: _T, step: _t.Optional[_T]) -> _count[_T]: ...
 
     def __iter__(self) -> _t.Iterator[_T]: ...
     def __contains__(self, elem: _T) -> bool: ...
 
     @_t.overload
-    def __getitem__(self, index: int) -> _T: ...
+    def __getitem__(self, index: _SupportsIndex) -> _T: ...
     @_t.overload
     def __getitem__(self, index: slice) -> _t.Iterable[_T]: ...
 
     def __hash__(self) -> int: ...
     def count(self, elem: _T) -> int | float: ...
     def index(self, elem: _T) -> int: ...
-    def __fmap__(self, func: _t.Callable[[_T], _Uco]) -> _count[_Uco]: ...
+    def __fmap__(self, func: _t.Callable[[_T], _U]) -> _count[_U]: ...
     def __copy__(self) -> _count[_T]: ...
 count = _coconut_count = _count  # necessary since we define .count()
 
 
 class cycle(_t.Iterable[_T]):
-    def __new__(self, iterable: _t.Iterable[_T], times: _t.Optional[int]=None) -> cycle[_T]: ...
+    def __new__(cls, iterable: _t.Iterable[_T], times: _t.Optional[int]=None) -> cycle[_T]: ...
     def __iter__(self) -> _t.Iterator[_T]: ...
     def __contains__(self, elem: _T) -> bool: ...
 
     @_t.overload
-    def __getitem__(self, index: int) -> _T: ...
+    def __getitem__(self, index: _SupportsIndex) -> _T: ...
     @_t.overload
     def __getitem__(self, index: slice) -> _t.Iterable[_T]: ...
 
     def __hash__(self) -> int: ...
     def count(self, elem: _T) -> int | float: ...
     def index(self, elem: _T) -> int: ...
-    def __fmap__(self, func: _t.Callable[[_T], _Uco]) -> _t.Iterable[_Uco]: ...
+    def __fmap__(self, func: _t.Callable[[_T], _U]) -> _t.Iterable[_U]: ...
     def __copy__(self) -> cycle[_T]: ...
     def __len__(self) -> int: ...
 
 
 class groupsof(_t.Generic[_T]):
     def __new__(
-        self,
+        cls,
         n: int,
         iterable: _t.Iterable[_T],
     ) -> groupsof[_T]: ...
@@ -643,12 +694,12 @@ class groupsof(_t.Generic[_T]):
     def __hash__(self) -> int: ...
     def __copy__(self) -> groupsof[_T]: ...
     def __len__(self) -> int: ...
-    def __fmap__(self, func: _t.Callable[[_t.Tuple[_T, ...]], _Uco]) -> _t.Iterable[_Uco]: ...
+    def __fmap__(self, func: _t.Callable[[_t.Tuple[_T, ...]], _U]) -> _t.Iterable[_U]: ...
 
 
 class windowsof(_t.Generic[_T]):
     def __new__(
-        self,
+        cls,
         size: int,
         iterable: _t.Iterable[_T],
         fillvalue: _T=...,
@@ -658,11 +709,11 @@ class windowsof(_t.Generic[_T]):
     def __hash__(self) -> int: ...
     def __copy__(self) -> windowsof[_T]: ...
     def __len__(self) -> int: ...
-    def __fmap__(self, func: _t.Callable[[_t.Tuple[_T, ...]], _Uco]) -> _t.Iterable[_Uco]: ...
+    def __fmap__(self, func: _t.Callable[[_t.Tuple[_T, ...]], _U]) -> _t.Iterable[_U]: ...
 
 
 class flatten(_t.Iterable[_T]):
-    def __new__(self, iterable: _t.Iterable[_t.Iterable[_T]]) -> flatten[_T]: ...
+    def __new__(cls, iterable: _t.Iterable[_t.Iterable[_T]]) -> flatten[_T]: ...
 
     def __iter__(self) -> _t.Iterator[_T]: ...
     def __reversed__(self) -> flatten[_T]: ...
@@ -671,13 +722,13 @@ class flatten(_t.Iterable[_T]):
     def __contains__(self, elem: _T) -> bool: ...
 
     @_t.overload
-    def __getitem__(self, index: int) -> _T: ...
+    def __getitem__(self, index: _SupportsIndex) -> _T: ...
     @_t.overload
     def __getitem__(self, index: slice) -> _t.Iterable[_T]: ...
 
     def count(self, elem: _T) -> int: ...
     def index(self, elem: _T) -> int: ...
-    def __fmap__(self, func: _t.Callable[[_T], _Uco]) -> flatten[_Uco]: ...
+    def __fmap__(self, func: _t.Callable[[_T], _U]) -> flatten[_U]: ...
 _coconut_flatten = flatten
 
 
@@ -697,27 +748,27 @@ class _FMappable(_t.Protocol[_Tfunc_contra, _Tco]):
 
 
 @_t.overload
-def fmap(func: _Tfunc, obj: _FMappable[_Tfunc, _Tco]) -> _Tco: ...
+def fmap(func: _Tfunc, obj: _FMappable[_Tfunc, _T]) -> _T: ...
 @_t.overload
-def fmap(func: _t.Callable[[_Tco], _Tco], obj: _Titer) -> _Titer: ...
+def fmap(func: _t.Callable[[_T], _T], obj: _Titer) -> _Titer: ...
 @_t.overload
-def fmap(func: _t.Callable[[_Tco], _Uco], obj: _t.List[_Tco]) -> _t.List[_Uco]: ...
+def fmap(func: _t.Callable[[_T], _U], obj: _t.List[_T]) -> _t.List[_U]: ...
 @_t.overload
-def fmap(func: _t.Callable[[_Tco], _Uco], obj: _t.Tuple[_Tco, ...]) -> _t.Tuple[_Uco, ...]: ...
+def fmap(func: _t.Callable[[_T], _U], obj: _t.Tuple[_T, ...]) -> _t.Tuple[_U, ...]: ...
 @_t.overload
-def fmap(func: _t.Callable[[_Tco], _Uco], obj: _t.Iterator[_Tco]) -> _t.Iterator[_Uco]: ...
+def fmap(func: _t.Callable[[_T], _U], obj: _t.Iterator[_T]) -> _t.Iterator[_U]: ...
 @_t.overload
-def fmap(func: _t.Callable[[_Tco], _Uco], obj: _t.Set[_Tco]) -> _t.Set[_Uco]: ...
+def fmap(func: _t.Callable[[_T], _U], obj: _t.Set[_T]) -> _t.Set[_U]: ...
 @_t.overload
-def fmap(func: _t.Callable[[_Tco], _Uco], obj: _t.AsyncIterable[_Tco]) -> _t.AsyncIterable[_Uco]: ...
+def fmap(func: _t.Callable[[_T], _U], obj: _t.AsyncIterable[_T]) -> _t.AsyncIterable[_U]: ...
 @_t.overload
-def fmap(func: _t.Callable[[_t.Tuple[_Tco, _Uco]], _t.Tuple[_Vco, _Wco]], obj: _t.Dict[_Tco, _Uco]) -> _t.Dict[_Vco, _Wco]: ...
+def fmap(func: _t.Callable[[_t.Tuple[_T, _U]], _t.Tuple[_V, _W]], obj: _t.Dict[_T, _U]) -> _t.Dict[_V, _W]: ...
 @_t.overload
-def fmap(func: _t.Callable[[_t.Tuple[_Tco, _Uco]], _t.Tuple[_Vco, _Wco]], obj: _t.Mapping[_Tco, _Uco]) -> _t.Mapping[_Vco, _Wco]: ...
+def fmap(func: _t.Callable[[_t.Tuple[_T, _U]], _t.Tuple[_V, _W]], obj: _t.Mapping[_T, _U]) -> _t.Mapping[_V, _W]: ...
 @_t.overload
-def fmap(func: _t.Callable[[_Tco, _Uco], _t.Tuple[_Vco, _Wco]], obj: _t.Dict[_Tco, _Uco], starmap_over_mappings: _t.Literal[True]) -> _t.Dict[_Vco, _Wco]: ...
+def fmap(func: _t.Callable[[_T, _U], _t.Tuple[_V, _W]], obj: _t.Dict[_T, _U], starmap_over_mappings: _t.Literal[True]) -> _t.Dict[_V, _W]: ...
 @_t.overload
-def fmap(func: _t.Callable[[_Tco, _Uco], _t.Tuple[_Vco, _Wco]], obj: _t.Mapping[_Tco, _Uco], starmap_over_mappings: _t.Literal[True]) -> _t.Mapping[_Vco, _Wco]: ...
+def fmap(func: _t.Callable[[_T, _U], _t.Tuple[_V, _W]], obj: _t.Mapping[_T, _U], starmap_over_mappings: _t.Literal[True]) -> _t.Mapping[_V, _W]: ...
 
 
 def _coconut_handle_cls_kwargs(**kwargs: _t.Dict[_t.Text, _t.Any]) -> _t.Callable[[_T], _T]: ...
@@ -730,9 +781,9 @@ _coconut_self_match_types: _t.Tuple[_t.Type, ...] = (bool, bytearray, bytes, dic
 
 
 @_t.overload
-def _coconut_dict_merge(*dicts: _t.Dict[_Tco, _Uco]) -> _t.Dict[_Tco, _Uco]: ...
+def _coconut_dict_merge(*dicts: _t.Dict[_T, _U]) -> _t.Dict[_T, _U]: ...
 @_t.overload
-def _coconut_dict_merge(*dicts: _t.Dict[_Tco, _t.Any]) -> _t.Dict[_Tco, _t.Any]: ...
+def _coconut_dict_merge(*dicts: _t.Dict[_T, _t.Any]) -> _t.Dict[_T, _t.Any]: ...
 
 
 @_t.overload
@@ -763,18 +814,18 @@ class _coconut_lifted_1(_t.Generic[_T, _W]):
     # @_t.overload
     # def __call__(
     #     self,
-    #     _g: _t.Callable[[_Xco], _T],
-    # ) -> _t.Callable[[_Xco], _W]: ...
+    #     _g: _t.Callable[[_X], _T],
+    # ) -> _t.Callable[[_X], _W]: ...
     @_t.overload
     def __call__(
         self,
-        _g: _t.Callable[[_Xco, _Yco], _T],
-    ) -> _t.Callable[[_Xco, _Yco], _W]: ...
+        _g: _t.Callable[[_X, _Y], _T],
+    ) -> _t.Callable[[_X, _Y], _W]: ...
     @_t.overload
     def __call__(
         self,
-        _g: _t.Callable[[_Xco, _Yco, _Zco], _T],
-    ) -> _t.Callable[[_Xco, _Yco, _Zco], _W]: ...
+        _g: _t.Callable[[_X, _Y, _Z], _T],
+    ) -> _t.Callable[[_X, _Y, _Z], _W]: ...
     @_t.overload
     def __call__(
         self,
@@ -796,21 +847,21 @@ class _coconut_lifted_2(_t.Generic[_T, _U, _W]):
     # @_t.overload
     # def __call__(
     #     self,
-    #     _g: _t.Callable[[_Xco], _T],
-    #     _h: _t.Callable[[_Xco], _U],
-    # ) -> _t.Callable[[_Xco], _W]: ...
+    #     _g: _t.Callable[[_X], _T],
+    #     _h: _t.Callable[[_X], _U],
+    # ) -> _t.Callable[[_X], _W]: ...
     @_t.overload
     def __call__(
         self,
-        _g: _t.Callable[[_Xco, _Yco], _T],
-        _h: _t.Callable[[_Xco, _Yco], _U],
-    ) -> _t.Callable[[_Xco, _Yco], _W]: ...
+        _g: _t.Callable[[_X, _Y], _T],
+        _h: _t.Callable[[_X, _Y], _U],
+    ) -> _t.Callable[[_X, _Y], _W]: ...
     @_t.overload
     def __call__(
         self,
-        _g: _t.Callable[[_Xco, _Yco, _Zco], _T],
-        _h: _t.Callable[[_Xco, _Yco, _Zco], _U],
-    ) -> _t.Callable[[_Xco, _Yco, _Zco], _W]: ...
+        _g: _t.Callable[[_X, _Y, _Z], _T],
+        _h: _t.Callable[[_X, _Y, _Z], _U],
+    ) -> _t.Callable[[_X, _Y, _Z], _W]: ...
     @_t.overload
     def __call__(
         self,
@@ -835,24 +886,24 @@ class _coconut_lifted_3(_t.Generic[_T, _U, _V, _W]):
     # @_t.overload
     # def __call__(
     #     self,
-    #     _g: _t.Callable[[_Xco], _T],
-    #     _h: _t.Callable[[_Xco], _U],
-    #     _i: _t.Callable[[_Xco], _V],
-    # ) -> _t.Callable[[_Xco], _W]: ...
+    #     _g: _t.Callable[[_X], _T],
+    #     _h: _t.Callable[[_X], _U],
+    #     _i: _t.Callable[[_X], _V],
+    # ) -> _t.Callable[[_X], _W]: ...
     @_t.overload
     def __call__(
         self,
-        _g: _t.Callable[[_Xco, _Yco], _T],
-        _h: _t.Callable[[_Xco, _Yco], _U],
-        _i: _t.Callable[[_Xco, _Yco], _V],
-    ) -> _t.Callable[[_Xco, _Yco], _W]: ...
+        _g: _t.Callable[[_X, _Y], _T],
+        _h: _t.Callable[[_X, _Y], _U],
+        _i: _t.Callable[[_X, _Y], _V],
+    ) -> _t.Callable[[_X, _Y], _W]: ...
     @_t.overload
     def __call__(
         self,
-        _g: _t.Callable[[_Xco, _Yco, _Zco], _T],
-        _h: _t.Callable[[_Xco, _Yco, _Zco], _U],
-        _i: _t.Callable[[_Xco, _Yco, _Zco], _V],
-    ) -> _t.Callable[[_Xco, _Yco, _Zco], _W]: ...
+        _g: _t.Callable[[_X, _Y, _Z], _T],
+        _h: _t.Callable[[_X, _Y, _Z], _U],
+        _i: _t.Callable[[_X, _Y, _Z], _V],
+    ) -> _t.Callable[[_X, _Y, _Z], _W]: ...
     @_t.overload
     def __call__(
         self,

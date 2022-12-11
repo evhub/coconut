@@ -77,7 +77,7 @@ test-all: clean
 # basic testing for the universal target
 .PHONY: test-univ
 test-univ: export COCONUT_USE_COLOR=TRUE
-test-univ:
+test-univ: clean
 	python ./coconut/tests --strict --line-numbers --keep-lines --force
 	python ./coconut/tests/dest/runner.py
 	python ./coconut/tests/dest/extras.py
@@ -86,7 +86,7 @@ test-univ:
 # should only be used when testing the tests not the compiler
 .PHONY: test-tests
 test-tests: export COCONUT_USE_COLOR=TRUE
-test-tests:
+test-tests: clean
 	python ./coconut/tests --strict --line-numbers --keep-lines
 	python ./coconut/tests/dest/runner.py
 	python ./coconut/tests/dest/extras.py
@@ -94,7 +94,7 @@ test-tests:
 # same as test-univ but uses Python 2
 .PHONY: test-py2
 test-py2: export COCONUT_USE_COLOR=TRUE
-test-py2:
+test-py2: clean
 	python2 ./coconut/tests --strict --line-numbers --keep-lines --force
 	python2 ./coconut/tests/dest/runner.py
 	python2 ./coconut/tests/dest/extras.py
@@ -102,7 +102,7 @@ test-py2:
 # same as test-univ but uses Python 3
 .PHONY: test-py3
 test-py3: export COCONUT_USE_COLOR=TRUE
-test-py3:
+test-py3: clean
 	python3 ./coconut/tests --strict --line-numbers --keep-lines --force
 	python3 ./coconut/tests/dest/runner.py
 	python3 ./coconut/tests/dest/extras.py
@@ -110,7 +110,7 @@ test-py3:
 # same as test-univ but uses PyPy
 .PHONY: test-pypy
 test-pypy: export COCONUT_USE_COLOR=TRUE
-test-pypy:
+test-pypy: clean
 	pypy ./coconut/tests --strict --line-numbers --keep-lines --force
 	pypy ./coconut/tests/dest/runner.py
 	pypy ./coconut/tests/dest/extras.py
@@ -118,7 +118,7 @@ test-pypy:
 # same as test-univ but uses PyPy3
 .PHONY: test-pypy3
 test-pypy3: export COCONUT_USE_COLOR=TRUE
-test-pypy3:
+test-pypy3: clean
 	pypy3 ./coconut/tests --strict --line-numbers --keep-lines --force
 	pypy3 ./coconut/tests/dest/runner.py
 	pypy3 ./coconut/tests/dest/extras.py
@@ -126,7 +126,7 @@ test-pypy3:
 # same as test-pypy3 but includes verbose output for better debugging
 .PHONY: test-pypy3-verbose
 test-pypy3-verbose: export COCONUT_USE_COLOR=TRUE
-test-pypy3-verbose:
+test-pypy3-verbose: clean
 	pypy3 ./coconut/tests --strict --line-numbers --keep-lines --force --verbose --jobs 0
 	pypy3 ./coconut/tests/dest/runner.py
 	pypy3 ./coconut/tests/dest/extras.py
@@ -134,7 +134,7 @@ test-pypy3-verbose:
 # same as test-univ but also runs mypy
 .PHONY: test-mypy
 test-mypy: export COCONUT_USE_COLOR=TRUE
-test-mypy:
+test-mypy: clean
 	python ./coconut/tests --strict --force --target sys --mypy --follow-imports silent --ignore-missing-imports --allow-redefinition
 	python ./coconut/tests/dest/runner.py
 	python ./coconut/tests/dest/extras.py
@@ -142,7 +142,7 @@ test-mypy:
 # same as test-mypy but uses the universal target
 .PHONY: test-mypy-univ
 test-mypy-univ: export COCONUT_USE_COLOR=TRUE
-test-mypy-univ:
+test-mypy-univ: clean
 	python ./coconut/tests --strict --force --mypy --follow-imports silent --ignore-missing-imports --allow-redefinition
 	python ./coconut/tests/dest/runner.py
 	python ./coconut/tests/dest/extras.py
@@ -150,7 +150,7 @@ test-mypy-univ:
 # same as test-univ but includes verbose output for better debugging
 .PHONY: test-verbose
 test-verbose: export COCONUT_USE_COLOR=TRUE
-test-verbose:
+test-verbose: clean
 	python ./coconut/tests --strict --line-numbers --keep-lines --force --verbose --jobs 0
 	python ./coconut/tests/dest/runner.py
 	python ./coconut/tests/dest/extras.py
@@ -158,7 +158,7 @@ test-verbose:
 # same as test-mypy but uses --verbose and --check-untyped-defs
 .PHONY: test-mypy-all
 test-mypy-all: export COCONUT_USE_COLOR=TRUE
-test-mypy-all:
+test-mypy-all: clean
 	python ./coconut/tests --strict --force --target sys --verbose --mypy --follow-imports silent --ignore-missing-imports --allow-redefinition --check-untyped-defs
 	python ./coconut/tests/dest/runner.py
 	python ./coconut/tests/dest/extras.py
@@ -166,7 +166,7 @@ test-mypy-all:
 # same as test-univ but also tests easter eggs
 .PHONY: test-easter-eggs
 test-easter-eggs: export COCONUT_USE_COLOR=TRUE
-test-easter-eggs:
+test-easter-eggs: clean
 	python ./coconut/tests --strict --line-numbers --keep-lines --force
 	python ./coconut/tests/dest/runner.py --test-easter-eggs
 	python ./coconut/tests/dest/extras.py
@@ -179,7 +179,7 @@ test-pyparsing: test-univ
 # same as test-univ but uses --minify
 .PHONY: test-minify
 test-minify: export COCONUT_USE_COLOR=TRUE
-test-minify:
+test-minify: clean
 	python ./coconut/tests --strict --line-numbers --keep-lines --force --minify
 	python ./coconut/tests/dest/runner.py
 	python ./coconut/tests/dest/extras.py
@@ -187,7 +187,7 @@ test-minify:
 # same as test-univ but watches tests before running them
 .PHONY: test-watch
 test-watch: export COCONUT_USE_COLOR=TRUE
-test-watch:
+test-watch: clean
 	python ./coconut/tests --strict --line-numbers --keep-lines --force
 	coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --watch --strict --line-numbers --keep-lines
 	python ./coconut/tests/dest/runner.py
@@ -213,14 +213,15 @@ docs: clean
 
 .PHONY: clean
 clean:
-	rm -rf ./docs ./dist ./build ./coconut/tests/dest ./bbopt ./pyprover ./pyston ./coconut-prelude index.rst vprof.json profile.log ./.mypy_cache
-	-find . -name "*.pyc" -delete
-	-C:/GnuWin32/bin/find.exe . -name "*.pyc" -delete
+	rm -rf ./docs ./dist ./build ./coconut/tests/dest ./bbopt ./pyprover ./pyston ./coconut-prelude index.rst ./.mypy_cache
 	-find . -name "__pycache__" -delete
 	-C:/GnuWin32/bin/find.exe . -name "__pycache__" -delete
 
 .PHONY: wipe
 wipe: clean
+	rm -rf  vprof.json profile.log *.egg-info
+	-find . -name "*.pyc" -delete
+	-C:/GnuWin32/bin/find.exe . -name "*.pyc" -delete
 	-python -m coconut --site-uninstall
 	-python3 -m coconut --site-uninstall
 	-python2 -m coconut --site-uninstall
@@ -230,7 +231,6 @@ wipe: clean
 	-pip3 uninstall coconut-develop
 	-pip2 uninstall coconut
 	-pip2 uninstall coconut-develop
-	rm -rf *.egg-info
 
 .PHONY: build
 build:
@@ -242,7 +242,7 @@ just-upload: build
 	twine upload dist/*
 
 .PHONY: upload
-upload: clean dev just-upload
+upload: wipe dev just-upload
 
 .PHONY: check-reqs
 check-reqs:
