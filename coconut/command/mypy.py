@@ -25,6 +25,7 @@ from coconut.exceptions import CoconutException
 from coconut.terminal import logger
 from coconut.constants import (
     mypy_err_infixes,
+    mypy_non_err_infixes,
     mypy_silent_err_prefixes,
     mypy_silent_non_err_prefixes,
 )
@@ -42,6 +43,25 @@ except ImportError:
 # -----------------------------------------------------------------------------------------------------------------------
 
 
+def join_lines(lines):
+    """Join connected Mypy error lines."""
+    running = None
+    for line in lines:
+        if (
+            line.startswith(mypy_silent_err_prefixes + mypy_silent_non_err_prefixes)
+            or any(infix in line for infix in mypy_err_infixes + mypy_non_err_infixes)
+        ):
+            if running:
+                yield running
+            running = ""
+        if running is None:
+            yield line
+        else:
+            running += line
+    if running:
+        yield running
+
+
 def mypy_run(args):
     """Run mypy with given arguments and return the result."""
     logger.log_cmd(["mypy"] + args)
@@ -50,20 +70,7 @@ def mypy_run(args):
     except BaseException:
         logger.print_exc()
     else:
-
-        for line in stdout.splitlines(True):
+        for line in join_lines(stdout.splitlines(True)):
             yield line, False
-
-        running_error = None
-        for line in stderr.splitlines(True):
-            if (
-                line.startswith(mypy_silent_err_prefixes + mypy_silent_non_err_prefixes)
-                or any(infix in line for infix in mypy_err_infixes)
-            ):
-                if running_error:
-                    yield running_error, True
-                running_error = line
-            if running_error is None:
-                yield line, True
-            else:
-                running_error += line
+        for line in join_lines(stderr.splitlines(True)):
+            yield line, True

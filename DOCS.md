@@ -2728,7 +2728,7 @@ The new methods provided by `multiset` on top of `collections.Counter` are:
 - multiset.**discard**(_item_): Remove an element from a multiset if it is a member.
 - multiset.**remove**(_item_): Remove an element from a multiset; it must be a member.
 - multiset.**isdisjoint**(_other_): Return True if two multisets have a null intersection.
-- multiset.**__xor__**(_other_): Return the symmetric difference of two multisets as a new multiset. Specifically: `a ^ b = (a - b) | (b - a)`
+- multiset.**\_\_xor\_\_**(_other_): Return the symmetric difference of two multisets as a new multiset. Specifically: `a ^ b = (a - b) | (b - a)`
 - multiset.**count**(_item_): Return the number of times an element occurs in a multiset. Equivalent to `multiset[item]`, but additionally verifies the count is non-negative.
 
 Coconut also ensures that `multiset` supports [rich comparisons and `Counter.total()`](https://docs.python.org/3/library/collections.html#collections.Counter) on all Python versions.
@@ -2779,7 +2779,7 @@ data Expected[T](result: T?, error: Exception?):
 
 **Coconut:**
 ```coconut
-def try_divide(x, y):
+def try_divide(x: float, y: float) -> Expected[float]:
     try:
         return Expected(x / y)
     except Exception as err:

@@ -548,7 +548,6 @@ default_mypy_args = (
 verbose_mypy_args = (
     "--warn-unused-configs",
     "--warn-redundant-casts",
-    "--warn-unused-ignores",
     "--warn-return-any",
     "--show-error-context",
     "--warn-incomplete-stub",
@@ -562,6 +561,9 @@ mypy_silent_err_prefixes = (
 )
 mypy_err_infixes = (
     ": error: ",
+)
+mypy_non_err_infixes = (
+    ": note: ",
 )
 
 oserror_retcode = 127

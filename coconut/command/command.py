@@ -793,7 +793,7 @@ class Command(object):
                 args += ["-c", code]
             for line, is_err in mypy_run(args):
                 line = line.rstrip()
-                logger.log("[MyPy]", line)
+                logger.log("[MyPy:{std}]".format(std="err" if is_err else "out"), line)
                 if line.startswith(mypy_silent_err_prefixes):
                     if code is None:  # file
                         logger.printerr(line)

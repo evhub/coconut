@@ -1050,6 +1050,12 @@ def must_be_int_(int() as x) -> int: return cast(int, x)
 
 def (int() as x) `typed_plus` (int() as y) -> int = x + y
 
+def try_divide(x: float, y: float) -> Expected[float]:
+    try:
+        return Expected(x / y)
+    except Exception as err:
+        return Expected(error=err)
+
 # Enhanced Pattern-Matching
 
 def fact_(0, acc=1) = acc
