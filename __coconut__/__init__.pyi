@@ -426,7 +426,7 @@ class _coconut_partial(_t.Generic[_T]):
 @_t.overload
 def _coconut_iter_getitem(
     iterable: _t.Iterable[_T],
-    index: int,
+    index: _SupportsIndex,
     ) -> _T: ...
 @_t.overload
 def _coconut_iter_getitem(
@@ -667,7 +667,11 @@ count = _coconut_count = _count  # necessary since we define .count()
 
 
 class cycle(_t.Iterable[_T]):
-    def __new__(cls, iterable: _t.Iterable[_T], times: _t.Optional[int]=None) -> cycle[_T]: ...
+    def __new__(
+        cls,
+        iterable: _t.Iterable[_T],
+        times: _t.Optional[_SupportsIndex]=None,
+    ) -> cycle[_T]: ...
     def __iter__(self) -> _t.Iterator[_T]: ...
     def __contains__(self, elem: _T) -> bool: ...
 
@@ -687,7 +691,7 @@ class cycle(_t.Iterable[_T]):
 class groupsof(_t.Generic[_T]):
     def __new__(
         cls,
-        n: int,
+        n: _SupportsIndex,
         iterable: _t.Iterable[_T],
     ) -> groupsof[_T]: ...
     def __iter__(self) -> _t.Iterator[_t.Tuple[_T, ...]]: ...
@@ -700,10 +704,10 @@ class groupsof(_t.Generic[_T]):
 class windowsof(_t.Generic[_T]):
     def __new__(
         cls,
-        size: int,
+        size: _SupportsIndex,
         iterable: _t.Iterable[_T],
         fillvalue: _T=...,
-        step: int=1,
+        step: _SupportsIndex=1,
     ) -> windowsof[_T]: ...
     def __iter__(self) -> _t.Iterator[_t.Tuple[_T, ...]]: ...
     def __hash__(self) -> int: ...
@@ -713,7 +717,11 @@ class windowsof(_t.Generic[_T]):
 
 
 class flatten(_t.Iterable[_T]):
-    def __new__(cls, iterable: _t.Iterable[_t.Iterable[_T]]) -> flatten[_T]: ...
+    def __new__(
+        cls,
+        iterable: _t.Iterable[_t.Iterable[_T]],
+        levels: _t.Optional[_SupportsIndex]=1,
+    ) -> flatten[_T]: ...
 
     def __iter__(self) -> _t.Iterator[_T]: ...
     def __reversed__(self) -> flatten[_T]: ...
@@ -799,7 +807,7 @@ def flip(func: _t.Callable[[_T, _U, _V], _W], nargs: _t.Literal[3]) -> _t.Callab
 @_t.overload
 def flip(func: _t.Callable[[_T, _U, _V], _W], nargs: _t.Literal[2]) -> _t.Callable[[_U, _T, _V], _W]: ...
 @_t.overload
-def flip(func: _t.Callable[..., _T], nargs: _t.Optional[int]) -> _t.Callable[..., _T]: ...
+def flip(func: _t.Callable[..., _T], nargs: _t.Optional[_SupportsIndex]) -> _t.Callable[..., _T]: ...
 
 
 def ident(x: _T, *, side_effect: _t.Optional[_t.Callable[[_T], _t.Any]] = None) -> _T: ...

@@ -3025,10 +3025,11 @@ Coconut's `map`, `zip`, `filter`, `reversed`, and `enumerate` objects are enhanc
 
 - `reversed`
 - `repr`
-- Optimized normal (and iterator) indexing/slicing (`map`, `zip`, `reversed`, and `enumerate` but not `filter`)
-- `len` (all but `filter`) (though `bool` will still always yield `True`)
-- The ability to be iterated over multiple times if the underlying iterators can be iterated over multiple times
-- [PEP 618](https://www.python.org/dev/peps/pep-0618) `zip(..., strict=True)` support on all Python versions
+- Optimized normal (and iterator) indexing/slicing (`map`, `zip`, `reversed`, and `enumerate` but not `filter`).
+- `len` (all but `filter`) (though `bool` will still always yield `True`).
+- The ability to be iterated over multiple times if the underlying iterators can be iterated over multiple times.
+- [PEP 618](https://www.python.org/dev/peps/pep-0618) `zip(..., strict=True)` support on all Python versions.
+- Added `strict=True` support to `map` as well (enforces that iterables are the same length in the multi-iterable case).
 - Added attributes which subclasses can make use of to get at the original arguments to the object:
   * `map`: `func`, `iters`
   * `zip`: `iters`
@@ -3277,11 +3278,11 @@ positives = itertools.dropwhile(lambda x: x < 0, numiter)
 
 #### `flatten`
 
-**flatten**(_iterable_)
+**flatten**(_iterable_, _levels_=`1`)
 
 Coconut provides an enhanced version of `itertools.chain.from_iterable` as a built-in under the name `flatten` with added support for `reversed`, `repr`, `in`, `.count()`, `.index()`, and `fmap`.
 
-Note that `flatten` only flattens the top level of the given iterable/array.
+By default, `flatten` only flattens the top level of the given iterable/array. If _levels_ is passed, however, it can be used to control the number of levels flattened, with `0` meaning no flattening and `None` flattening as many iterables as are found. Note that if _levels_ is set to any non-`None` value, the first _levels_ levels must be iterables, or else an error will be raised.
 
 ##### Python Docs
 
@@ -3646,11 +3647,13 @@ all_equal([1, 1, 2])
 
 #### `parallel_map`
 
-**parallel\_map**(_function_, *_iterables_, *, _chunksize_=`1`)
+**parallel\_map**(_function_, *_iterables_, *, _chunksize_=`1`, _strict_=`False`)
 
 Coconut provides a parallel version of `map` under the name `parallel_map`. `parallel_map` makes use of multiple processes, and is therefore much faster than `map` for CPU-bound tasks. `parallel_map` never loads the entire input iterator into memory, though it does consume the entire input iterator as soon as a single output is requested. If any exceptions are raised inside of `parallel_map`, a traceback will be printed as soon as they are encountered.
 
 Because `parallel_map` uses multiple processes for its execution, it is necessary that all of its arguments be pickleable. Only objects defined at the module level, and not lambdas, objects defined inside of a function, or objects defined inside of the interpreter, are pickleable. Furthermore, on Windows, it is necessary that all calls to `parallel_map` occur inside of an `if __name__ == "__main__"` guard.
+
+`parallel_map` supports a `chunksize` argument, which determines how many items are passed to each process at a time. Larger values of _chunksize_ are recommended when dealing with very long iterables. Additionally, in the multi-iterable case, _strict_ can be set to `True` to ensure that all iterables are the same length.
 
 If multiple sequential calls to `parallel_map` need to be made, it is highly recommended that they be done inside of a `with parallel_map.multiple_sequential_calls():` block, which will cause the different calls to use the same process pool and result in `parallel_map` immediately returning a list rather than a `parallel_map` object. If multiple sequential calls are necessary and the laziness of parallel_map is required, then the `parallel_map` objects should be constructed before the `multiple_sequential_calls` block and then only iterated over once inside the block.
 
@@ -3681,7 +3684,7 @@ with Pool() as pool:
 
 #### `concurrent_map`
 
-**concurrent\_map**(_function_, *_iterables_, *, _chunksize_=`1`)
+**concurrent\_map**(_function_, *_iterables_, *, _chunksize_=`1`, _strict_=`False`)
 
 Coconut provides a concurrent version of [`parallel_map`](#parallel_map) under the name `concurrent_map`. `concurrent_map` behaves identically to `parallel_map` (including support for `concurrent_map.multiple_sequential_calls`) except that it uses multithreading instead of multiprocessing, and is therefore primarily useful only for IO-bound tasks due to CPython's Global Interpreter Lock.
 
