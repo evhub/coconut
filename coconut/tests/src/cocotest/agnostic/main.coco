@@ -1377,6 +1377,17 @@ def main_test() -> bool:
     assert groupsof(2, "123", fillvalue="") |> map$("".join) |> list == ["12", "3"]
     assert groupsof(2, "123", fillvalue="") |> len == 2
     assert groupsof(2, "123", fillvalue="") |> repr == "groupsof(2, '123', fillvalue='')"
+    assert flip((,), 0)(1, 2) == (1, 2)
+    assert flatten([1, 2, [3, 4]], 0) == [1, 2, [3, 4]]
+    assert flatten([1, 2, [3, 4]], None) |> list == [1, 2, 3, 4]
+    assert flatten([1, 2, [3, 4]], None) |> reversed |> list == [4, 3, 2, 1]
+    assert_raises(-> flatten([1, 2, [3, 4]]) |> list, TypeError)
+    assert flatten([[[1,2]], [[3], [4]]], 2) |> list == [1, 2, 3, 4]
+    assert flatten([[[1,2]], [[3], [4]]], 2) |> reversed |> list == [4, 3, 2, 1]
+    assert_raises(-> map((+), range(3), range(4), strict=True) |> list, ValueError)
+    assert map((+), range(3), range(4)$[:-1], strict=True) |> list == [0, 2, 4] == parallel_map((+), range(3), range(4)$[:-1], strict=True) |> list
+    assert range(3) |> map$((.+1), strict=True) |> list == [1, 2, 3] == range(3) |> parallel_map$((.+1), strict=True) |> list
+    assert cartesian_product((1, 2), (3, 4), repeat=0) |> list == [()]
     return True
 
 def test_asyncio() -> bool:

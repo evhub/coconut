@@ -198,6 +198,10 @@ test-watch: clean
 test-mini:
 	coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --force --jobs 0
 
+.PHONY: debug-test-crash
+debug-test-crash:
+	python -X dev ./coconut/tests/dest/runner.py
+
 .PHONY: diff
 diff:
 	git diff origin/develop
@@ -214,12 +218,12 @@ docs: clean
 .PHONY: clean
 clean:
 	rm -rf ./docs ./dist ./build ./coconut/tests/dest ./bbopt ./pyprover ./pyston ./coconut-prelude index.rst ./.mypy_cache
-	-find . -name "__pycache__" -delete
-	-C:/GnuWin32/bin/find.exe . -name "__pycache__" -delete
 
 .PHONY: wipe
 wipe: clean
 	rm -rf  vprof.json profile.log *.egg-info
+	-find . -name "__pycache__" -delete
+	-C:/GnuWin32/bin/find.exe . -name "__pycache__" -delete
 	-find . -name "*.pyc" -delete
 	-C:/GnuWin32/bin/find.exe . -name "*.pyc" -delete
 	-python -m coconut --site-uninstall
