@@ -3029,7 +3029,7 @@ Coconut's `map`, `zip`, `filter`, `reversed`, and `enumerate` objects are enhanc
 - `len` (all but `filter`) (though `bool` will still always yield `True`).
 - The ability to be iterated over multiple times if the underlying iterators can be iterated over multiple times.
 - [PEP 618](https://www.python.org/dev/peps/pep-0618) `zip(..., strict=True)` support on all Python versions.
-- Added `strict=True` support to `map` as well (enforces that iterables are the same length in the multi-iterable case).
+- Added `strict=True` support to `map` as well (enforces that iterables are the same length in the multi-iterable case; uses `zip` under the hood such that errors will show up as `zip(..., strict=True)` errors).
 - Added attributes which subclasses can make use of to get at the original arguments to the object:
   * `map`: `func`, `iters`
   * `zip`: `iters`
