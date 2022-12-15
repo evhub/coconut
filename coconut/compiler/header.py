@@ -200,6 +200,7 @@ def process_header_args(which, target, use_hash, no_tco, strict, no_wrap):
         module_docstring='"""Built-in Coconut utilities."""\n\n' if which == "__coconut__" else "",
         object="" if target_startswith == "3" else "(object)",
         comma_object="" if target_startswith == "3" else ", object",
+        comma_slash=", /" if target_info >= (3, 8) else "",
         report_this_text=report_this_text,
         numpy_modules=tuple_str_of(numpy_modules, add_quotes=True),
         jax_numpy_modules=tuple_str_of(jax_numpy_modules, add_quotes=True),

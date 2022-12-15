@@ -531,7 +531,7 @@ class flatten(_coconut_has_iter):{COMMENT.cant_implement_len_else_list_calls_bec
     def __contains__(self, elem):
         if self.levels == 1:
             return _coconut.any(elem in it for it in self.get_new_iter())
-        return _coconut.NotImplemented
+        raise _coconut.TypeError("flatten.__contains__ only supported for levels=1")
     def count(self, elem):
         """Count the number of times elem appears in the flattened iterable."""
         if self.levels != 1:
@@ -1491,7 +1491,7 @@ def ident(x, **kwargs):
     if side_effect is not None:
         side_effect(x)
     return x
-def call(_coconut_f, *args, **kwargs):
+def call(_coconut_f{comma_slash}, *args, **kwargs):
     """Function application operator function.
 
     Equivalent to:
@@ -1499,7 +1499,7 @@ def call(_coconut_f, *args, **kwargs):
     """
     return _coconut_f(*args, **kwargs)
 {of_is_call}
-def safe_call(_coconut_f, *args, **kwargs):
+def safe_call(_coconut_f{comma_slash}, *args, **kwargs):
     """safe_call is a version of call that catches any Exceptions and
     returns an Expected containing either the result or the error.
 

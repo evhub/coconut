@@ -109,15 +109,10 @@ class object(object):
         eq = self == other
         return _coconut.NotImplemented if eq is _coconut.NotImplemented else not eq
     def __nonzero__(self):
-        self_bool = _coconut.getattr(self, "__bool__", None)
-        if self_bool is not None:
-            try:
-                result = self_bool()
-            except _coconut.NotImplementedError:
-                pass
-            else:
-                if result is not _coconut.NotImplemented:
-                    return result
+        if _coconut.hasattr(self, "__bool__"):
+            got = self.__bool__()
+            if not _coconut.isinstance(got, _coconut.bool):
+                raise _coconut.TypeError("__bool__ should return bool, returned " + _coconut.type(got).__name__)
         return True
 class int(_coconut_py_int):
     __slots__ = ()
