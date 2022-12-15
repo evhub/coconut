@@ -1392,7 +1392,8 @@ def main_test() -> bool:
     assert (a=1, b=2)[1] == 2
     obj = object()
     assert_raises((def -> obj.abc = 123), AttributeError)  # type: ignore
-    assert weakref.ref(map((+), [1,2,3]))() is None
+    hardref = map((.+1), [1,2,3])
+    assert weakref.ref(hardref)() |> list == [2, 3, 4]
     return True
 
 def test_asyncio() -> bool:
