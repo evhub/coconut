@@ -32,6 +32,12 @@ else:
     from backports.functools_lru_cache import lru_cache as _lru_cache  # `pip install -U coconut[mypy]` to fix errors on this line
     _coconut.functools.lru_cache = _lru_cache  # type: ignore
 
+if sys.version_info >= (3, 7):
+    from dataclasses import dataclass as _dataclass
+else:
+    @_dataclass_transform()
+    def _dataclass(cls: type[_T], **kwargs: _t.Any) -> type[_T]: ...
+
 # -----------------------------------------------------------------------------------------------------------------------
 # TYPE VARS:
 # -----------------------------------------------------------------------------------------------------------------------
@@ -75,9 +81,6 @@ _P = _t.ParamSpec("_P")
 
 class _SupportsIndex(_t.Protocol):
     def __index__(self) -> int: ...
-
-@_dataclass_transform()
-def _dataclass(cls: type[_T]) -> type[_T]: ...
 
 # -----------------------------------------------------------------------------------------------------------------------
 # STUB:
@@ -260,7 +263,7 @@ def call(
 _coconut_tail_call = of = call
 
 
-@_dataclass
+@_dataclass(frozen=True, slots=True)
 class Expected(_t.Generic[_T], _t.Tuple):
     result: _t.Optional[_T]
     error: _t.Optional[Exception]
@@ -792,6 +795,8 @@ _coconut_self_match_types: _t.Tuple[_t.Type, ...] = (bool, bytearray, bytes, dic
 def _coconut_dict_merge(*dicts: _t.Dict[_T, _U]) -> _t.Dict[_T, _U]: ...
 @_t.overload
 def _coconut_dict_merge(*dicts: _t.Dict[_T, _t.Any]) -> _t.Dict[_T, _t.Any]: ...
+@_t.overload
+def _coconut_dict_merge(*dicts: _t.Dict[_t.Any, _t.Any]) -> _t.Dict[_t.Any, _t.Any]: ...
 
 
 @_t.overload
@@ -990,22 +995,22 @@ def _coconut_mk_anon_namedtuple(
 @_t.overload
 def _coconut_mk_anon_namedtuple(
     fields: _t.Tuple[_t.Text],
-    types: None,
+    types: None = None,
 ) -> _t.Callable[[_T], _t.Tuple[_T]]: ...
 @_t.overload
 def _coconut_mk_anon_namedtuple(
     fields: _t.Tuple[_t.Text, _t.Text],
-    types: None,
+    types: None = None,
 ) -> _t.Callable[[_T, _U], _t.Tuple[_T, _U]]: ...
 @_t.overload
 def _coconut_mk_anon_namedtuple(
     fields: _t.Tuple[_t.Text, _t.Text, _t.Text],
-    types: None,
+    types: None = None,
 ) -> _t.Callable[[_T, _U, _V], _t.Tuple[_T, _U, _V]]: ...
 @_t.overload
 def _coconut_mk_anon_namedtuple(
     fields: _t.Tuple[_t.Text, ...],
-    types: _t.Optional[_t.Tuple[_t.Any, ...]],
+    types: _t.Optional[_t.Tuple[_t.Any, ...]] = None,
 ) -> _t.Callable[..., _t.Tuple[_t.Any, ...]]: ...
 
 

@@ -39,7 +39,7 @@ class _coconut_Sentinel{object}:
     __slots__ = ()
 _coconut_sentinel = _coconut_Sentinel()
 class _coconut_base_hashable{object}:
-    __slots__ = ()
+    __slots__ = ("__weakref__",)
     def __reduce_ex__(self, _):
         return self.__reduce__()
     def __eq__(self, other):
@@ -739,27 +739,6 @@ class concurrent_map(_coconut_base_parallel_concurrent_map):
     @staticmethod
     def make_pool(max_workers=None):
         return _coconut.multiprocessing_dummy.Pool(_coconut.multiprocessing.cpu_count() * 5 if max_workers is None else max_workers)
-class filter(_coconut_base_hashable, _coconut.filter):
-    __slots__ = ("func", "iter")
-    __doc__ = getattr(_coconut.filter, "__doc__", "<see help(py_filter)>")
-    def __new__(cls, function, iterable):
-        self = _coconut.filter.__new__(cls, function, iterable)
-        self.func = function
-        self.iter = iterable
-        return self
-    def __reversed__(self):
-        return self.__class__(self.func, _coconut_reversed(self.iter))
-    def __repr__(self):
-        return "filter(%r, %s)" % (self.func, _coconut.repr(self.iter))
-    def __reduce__(self):
-        return (self.__class__, (self.func, self.iter))
-    def __copy__(self):
-        self.iter = _coconut_reiterable(self.iter)
-        return self.__class__(self.func, self.iter)
-    def __iter__(self):
-        return _coconut.iter(_coconut.filter(self.func, self.iter))
-    def __fmap__(self, func):
-        return _coconut_map(func, self)
 class zip(_coconut_base_hashable, _coconut.zip):
     __slots__ = ("iters", "strict")
     __doc__ = getattr(_coconut.zip, "__doc__", "<see help(py_zip)>")
@@ -840,6 +819,27 @@ class zip_longest(zip):
         return self.__class__(*self.iters, fillvalue=self.fillvalue)
     def __iter__(self):
         return _coconut.iter(_coconut.zip_longest(*self.iters, fillvalue=self.fillvalue))
+class filter(_coconut_base_hashable, _coconut.filter):
+    __slots__ = ("func", "iter")
+    __doc__ = getattr(_coconut.filter, "__doc__", "<see help(py_filter)>")
+    def __new__(cls, function, iterable):
+        self = _coconut.filter.__new__(cls, function, iterable)
+        self.func = function
+        self.iter = iterable
+        return self
+    def __reversed__(self):
+        return self.__class__(self.func, _coconut_reversed(self.iter))
+    def __repr__(self):
+        return "filter(%r, %s)" % (self.func, _coconut.repr(self.iter))
+    def __reduce__(self):
+        return (self.__class__, (self.func, self.iter))
+    def __copy__(self):
+        self.iter = _coconut_reiterable(self.iter)
+        return self.__class__(self.func, self.iter)
+    def __iter__(self):
+        return _coconut.iter(_coconut.filter(self.func, self.iter))
+    def __fmap__(self, func):
+        return _coconut_map(func, self)
 class enumerate(_coconut_base_hashable, _coconut.enumerate):
     __slots__ = ("iter", "start")
     __doc__ = getattr(_coconut.enumerate, "__doc__", "<see help(py_enumerate)>")

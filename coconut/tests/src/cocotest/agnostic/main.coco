@@ -2,6 +2,7 @@ import sys
 import itertools
 import collections
 import collections.abc
+import weakref
 from copy import copy
 
 operator log10
@@ -1388,6 +1389,10 @@ def main_test() -> bool:
     assert map((+), range(3), range(4)$[:-1], strict=True) |> list == [0, 2, 4] == parallel_map((+), range(3), range(4)$[:-1], strict=True) |> list
     assert range(3) |> map$((.+1), strict=True) |> list == [1, 2, 3] == range(3) |> parallel_map$((.+1), strict=True) |> list
     assert cartesian_product((1, 2), (3, 4), repeat=0) |> list == [()]
+    assert (a=1, b=2)[1] == 2
+    obj = object()
+    assert_raises((def -> obj.abc = 123), AttributeError)  # type: ignore
+    assert weakref.ref(map((+), [1,2,3]))() is None
     return True
 
 def test_asyncio() -> bool:
