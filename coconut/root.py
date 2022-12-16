@@ -113,6 +113,7 @@ class object(object):
             got = self.__bool__()
             if not _coconut.isinstance(got, _coconut.bool):
                 raise _coconut.TypeError("__bool__ should return bool, returned " + _coconut.type(got).__name__)
+            return got
         return True
 class int(_coconut_py_int):
     __slots__ = ()
