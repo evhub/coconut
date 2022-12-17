@@ -768,15 +768,15 @@ print(mod(x, 2))
 
 ### Custom Operators
 
-Coconut allows you to define your own custom operators with the syntax
+Coconut allows you to declare your own custom operators with the syntax
 ```
 operator <op>
 ```
 where `<op>` is whatever sequence of Unicode characters you want to use as a custom operator. The `operator` statement must appear at the top level and only affects code that comes after it.
 
-Once defined, you can use your custom operator anywhere where you would be able to use an [infix function](#infix-functions) as well as refer to the actual operator itself with the same `(<op>)` syntax as in other [operator functions](#operator-functions). Since custom operators work like infix functions, they always have the same precedence as infix functions and are always left-associative. Custom operators can be used as binary, unary, or none-ary operators, and both prefix and postfix notation for unary operators is supported.
+Once declared, you can use your custom operator anywhere where you would be able to use an [infix function](#infix-functions) as well as refer to the actual operator itself with the same `(<op>)` syntax as in other [operator functions](#operator-functions). Since custom operators work like infix functions, they always have the same precedence as infix functions and are always left-associative. Custom operators can be used as binary, unary, or none-ary operators, and both prefix and postfix notation for unary operators is supported.
 
-Some example syntaxes for defining custom operators:
+Some example syntaxes for defining custom operators once declared:
 ```
 def x <op> y: ...
 def <op> x = ...
@@ -1636,16 +1636,16 @@ Furthermore, when compiling type annotations to Python 3 versions without [PEP 5
 
 Additionally, Coconut adds special syntax for making type annotations easier and simpler to write. When inside of a type annotation, Coconut treats certain syntax constructs differently, compiling them to type annotations instead of what they would normally represent. Specifically, Coconut applies the following transformations:
 ```coconut
-<type> | <type>
-    => typing.Union[<type>, <type>]
-(<type>; <type>)
-    => typing.Tuple[<type>, <type>]
-<type>?
-    => typing.Optional[<type>]
-<type>[]
-    => typing.Sequence[<type>]
-<type>$[]
-    => typing.Iterable[<type>]
+A | B
+    => typing.Union[A, B]
+(A; B)
+    => typing.Tuple[A, B]
+A?
+    => typing.Optional[A]
+A[]
+    => typing.Sequence[A]
+A$[]
+    => typing.Iterable[A]
 () -> <ret>
     => typing.Callable[[], <ret>]
 <arg> -> <ret>
@@ -1671,7 +1671,7 @@ which will allow `<type>` to include Coconut's special type annotation syntax an
 
 Such type alias statements—as well as all `class`, `data`, and function definitions in Coconut—also support Coconut's [type parameter syntax](#type-parameter-syntax), allowing you to do things like `type OrStr[T] = T | str`.
 
-Importantly, note that `<type>[]` does not map onto `typing.List[<int>]` but onto `typing.Sequence[<int>]`. This is because, when writing in an idiomatic functional style, assignment should be rare and tuples should be common. Using `Sequence` covers both cases, accommodating tuples and lists and preventing indexed assignment. When an indexed assignment is attempted into a variable typed with `Sequence`, MyPy will generate an error:
+Importantly, note that `int[]` does not map onto `typing.List[int]` but onto `typing.Sequence[int]`. This is because, when writing in an idiomatic functional style, assignment should be rare and tuples should be common. Using `Sequence` covers both cases, accommodating tuples and lists and preventing indexed assignment. When an indexed assignment is attempted into a variable typed with `Sequence`, MyPy will generate an error:
 
 ```coconut
 foo: int[] = [0, 1, 2, 3, 4, 5]
@@ -1783,7 +1783,7 @@ _General showcase of how the different concatenation operators work using `numpy
 
 Coconut supports the creation of lazy lists, where the contents in the list will be treated as an iterator and not evaluated until they are needed. Unlike normal iterators, however, lazy lists can be iterated over multiple times and still return the same result. Lazy lists can be created in Coconut simply by surrounding a comma-separated list of items with `(|` and `|)` (so-called "banana brackets") instead of `[` and `]` for a list or `(` and `)` for a tuple.
 
-Lazy lists use [reiterable](#reiterable) under the hood to enable them to be iterated over multiple times.
+Lazy lists use [reiterable](#reiterable) under the hood to enable them to be iterated over multiple times. Lazy lists will even continue to be reiterable when combined with [lazy chaining](#iterator-chaining).
 
 ##### Rationale
 
@@ -1803,7 +1803,12 @@ _Can't be done without a complicated iterator comprehension in place of the lazy
 
 Coconut supports implicit function application of the form `f x y`, which is compiled to `f(x, y)` (note: **not** `f(x)(y)` as is common in many languages with automatic currying). Implicit function application has a lower precedence than attribute access, slices, normal function calls, etc. but a higher precedence than `await`.
 
-Supported arguments to implicit function application are highly restricted, and must be either variables/attributes or **non-string** constants (e.g. `f x 1` will work but `f x [1]`, `f x (1+2)`, and `f "abc"` will not). Strings are disallowed due to conflicting with [Python's implicit string concatenation](https://stackoverflow.com/questions/18842779/string-concatenation-without-operator). Implicit function application is only intended for simple use cases—for more complex cases, use either standard function application or [pipes](#pipes).
+Supported arguments to implicit function application are highly restricted, and must be:
+- variables/attributes (e.g. `a.b`),
+- literal constants (e.g. `True`), or
+- number literals (e.g. `1.5`).
+
+For example, `f x 1` will work but `f x [1]`, `f x (1+2)`, and `f "abc"` will not. Strings are disallowed due to conflicting with [Python's implicit string concatenation](https://stackoverflow.com/questions/18842779/string-concatenation-without-operator). Implicit function application is only intended for simple use cases—for more complex cases, use either standard function application or [pipes](#pipes).
 
 ##### Examples
 
@@ -2204,7 +2209,7 @@ Coconut fully supports [PEP 695](https://peps.python.org/pep-0695/) type paramet
 
 That includes type parameters for classes, [`data` types](#data), and [all types of function definition](#function-definition). For different types of function definition, the type parameters always come in brackets right after the function name. Coconut's [enhanced type annotation syntax](#enhanced-type-annotation) is supported for all type parameter bounds.
 
-Additionally, Coconut supports the alternative bounds syntax of `type NewType[T <: bound] = ...` rather than `type NewType[T: bound] = ...`, to make it more clear that it is an upper bound rather than a type. In `--strict` mode, `<:` is required over `:` for all type parameter bounds. _DEPRECATED:_ `<=` can also be used as an alternative to `<:`.
+Additionally, Coconut supports the alternative bounds syntax of `type NewType[T <: bound] = ...` rather than `type NewType[T: bound] = ...`, to make it more clear that it is an upper bound rather than a type. In `--strict` mode, `<:` is required over `:` for all type parameter bounds. _DEPRECATED: `<=` can also be used as an alternative to `<:`._
 
 _Note that, by default, all type declarations are wrapped in strings to enable forward references and improve runtime performance. If you don't want that—e.g. because you want to use type annotations at runtime—simply pass the `--no-wrap` flag._
 
@@ -2479,7 +2484,7 @@ def _pattern_adder(base_func, add_func):
         except MatchError:
             return add_func(*args, **kwargs)
     return add_pattern_func
-def addpattern(base_func, *add_funcs, allow_any_func=True):
+def addpattern(base_func, *add_funcs, allow_any_func=False):
     """Decorator to add a new case to a pattern-matching function (where the new case is checked last).
 
     Pass allow_any_func=True to allow any object as the base_func rather than just pattern-matching functions.
@@ -2654,6 +2659,8 @@ def fib(n):
 
 Coconut provides the `@override` decorator to allow declaring a method definition in a subclass as an override of some parent class method. When `@override` is used on a method, if a method of the same name does not exist on some parent class, the class definition will raise a `RuntimeError`.
 
+Additionally, `override` will present to type checkers as [`typing_extensions.override`](https://pypi.org/project/typing-extensions/).
+
 ##### Example
 
 **Coconut:**
@@ -2817,6 +2824,8 @@ Coconut provides the `makedata` function to construct a container given the desi
 
 Additionally, `makedata` can also be called with non-`data` type as the first argument, in which case it will do its best to construct the given type of object with the given arguments. This functionality is used internally by `fmap`.
 
+##### `datamaker`
+
 **DEPRECATED:** Coconut also has a `datamaker` built-in, which partially applies `makedata`; `datamaker` is defined as:
 ```coconut
 def datamaker(data_type):
@@ -2841,11 +2850,11 @@ _Can't be done without a series of method definitions for each data type. See th
 
 **fmap**(_func_, _obj_, *, _starmap\_over\_mappings_=`False`)
 
-In functional programming, `fmap(func, obj)` takes a data type `obj` and returns a new data type with `func` mapped over the contents. Coconut's `fmap` function does the exact same thing in Coconut.
+In Haskell, `fmap(func, obj)` takes a data type `obj` and returns a new data type with `func` mapped over the contents. Coconut's `fmap` function does the exact same thing in Coconut.
 
-`fmap` can also be used on built-ins such as `str`, `list`, `set`, and `dict` as a variant of `map` that returns back an object of the same type. The behavior of `fmap` for a given object can be overridden by defining an `__fmap__(self, func)` magic method that will be called whenever `fmap` is invoked on that object.
+`fmap` can also be used on built-ins such as `str`, `list`, `set`, and `dict` as a variant of `map` that returns back an object of the same type. The behavior of `fmap` for a given object can be overridden by defining an `__fmap__(self, func)` magic method that will be called whenever `fmap` is invoked on that object. Note that `__fmap__` implementations should always satisfy the [Functor Laws](https://wiki.haskell.org/Functor).
 
-For `dict`, or any other `collections.abc.Mapping`, `fmap` will map over the mapping's `.items()` instead of the default iteration through its `.keys()`, with the new mapping reconstructed from the mapped over items. Additionally, for backwards compatibility with old versions of Coconut, `fmap$(starmap_over_mappings=True)` will `starmap` over the `.items()` instead of `map` over them.
+For `dict`, or any other `collections.abc.Mapping`, `fmap` will map over the mapping's `.items()` instead of the default iteration through its `.keys()`, with the new mapping reconstructed from the mapped over items. _DEPRECATED: `fmap$(starmap_over_mappings=True)` will `starmap` over the `.items()` instead of `map` over them._
 
 For [`numpy`](#numpy-integration) objects, `fmap` will use [`np.vectorize`](https://docs.scipy.org/doc/numpy/reference/generated/numpy.vectorize.html) to produce the result.
 
@@ -2888,7 +2897,7 @@ def call(f, /, *args, **kwargs) = f(*args, **kwargs)
 
 `call` is primarily useful as an [operator function](#operator-functions) for function application when writing in a point-free style.
 
-**DEPRECATED:** `of` is available as a deprecated alias for `call`. Note that deprecated features are disabled in `--strict` mode.
+_DEPRECATED: `of` is available as a deprecated alias for `call`. Note that deprecated features are disabled in `--strict` mode._
 
 #### `safe_call`
 
