@@ -135,7 +135,7 @@ test-pypy3-verbose: clean
 .PHONY: test-mypy
 test-mypy: export COCONUT_USE_COLOR=TRUE
 test-mypy: clean
-	python ./coconut/tests --strict --force --target sys --mypy --follow-imports silent --ignore-missing-imports --allow-redefinition
+	python ./coconut/tests --strict --force --target sys --keep-lines --mypy --follow-imports silent --ignore-missing-imports --allow-redefinition
 	python ./coconut/tests/dest/runner.py
 	python ./coconut/tests/dest/extras.py
 
@@ -143,7 +143,7 @@ test-mypy: clean
 .PHONY: test-mypy-univ
 test-mypy-univ: export COCONUT_USE_COLOR=TRUE
 test-mypy-univ: clean
-	python ./coconut/tests --strict --force --mypy --follow-imports silent --ignore-missing-imports --allow-redefinition
+	python ./coconut/tests --strict --force --keep-lines --mypy --follow-imports silent --ignore-missing-imports --allow-redefinition
 	python ./coconut/tests/dest/runner.py
 	python ./coconut/tests/dest/extras.py
 
@@ -159,7 +159,7 @@ test-verbose: clean
 .PHONY: test-mypy-all
 test-mypy-all: export COCONUT_USE_COLOR=TRUE
 test-mypy-all: clean
-	python ./coconut/tests --strict --force --target sys --verbose --mypy --follow-imports silent --ignore-missing-imports --allow-redefinition --check-untyped-defs
+	python ./coconut/tests --strict --force --target sys --verbose --keep-lines --mypy --follow-imports silent --ignore-missing-imports --allow-redefinition --check-untyped-defs
 	python ./coconut/tests/dest/runner.py
 	python ./coconut/tests/dest/extras.py
 

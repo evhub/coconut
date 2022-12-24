@@ -49,9 +49,8 @@ class _coconut_base_hashable{object}:
     def __setstate__(self, setvars):{COMMENT.fixes_unpickling_with_slots}
         for k, v in setvars.items():
             _coconut.setattr(self, k, v)
-class MatchError(_coconut_base_hashable, Exception):
-    """Pattern-matching error. Has attributes .pattern, .value, and .message."""
-    __slots__ = ("pattern", "value", "_message")
+class MatchError(_coconut_base_hashable, _coconut_base_MatchError):
+    """Pattern-matching error. Has attributes .pattern, .value, and .message."""{COMMENT.no_slots_to_allow_setattr_below}
     max_val_repr_len = 500
     def __init__(self, pattern=None, value=None):
         self.pattern = pattern
@@ -74,7 +73,14 @@ class MatchError(_coconut_base_hashable, Exception):
         self.message
         return Exception.__unicode__(self)
     def __reduce__(self):
-        return (self.__class__, (self.pattern, self.value))
+        return (self.__class__, (self.pattern, self.value), {lbrace}"_message": self._message{rbrace})
+if _coconut_base_MatchError is not Exception:
+    for _coconut_MatchError_k in dir(MatchError):
+        try:
+            setattr(_coconut_base_MatchError, _coconut_MatchError_k, getattr(MatchError, _coconut_MatchError_k))
+        except (AttributeError, TypeError):
+            pass
+    MatchError = _coconut_base_MatchError
 class _coconut_tail_call{object}:
     __slots__ = ("func", "args", "kwargs")
     def __init__(self, _coconut_func, *args, **kwargs):
@@ -1515,7 +1521,20 @@ def safe_call(_coconut_f{comma_slash}, *args, **kwargs):
     except _coconut.Exception as err:
         return _coconut_Expected(error=err)
 class Expected(_coconut.collections.namedtuple("Expected", ("result", "error")){comma_object}):
-    """TODO"""
+    """Coconut's Expected built-in is a Coconut data that represents a value
+    that may or may not be an error, similar to Haskell's Either.
+
+    Effectively equivalent to:
+        data Expected[T](result: T?, error: Exception?):
+            def __new__(cls, result: T?=None, error: Exception?=None) -> Expected[T]:
+                if result is not None and error is not None:
+                    raise ValueError("Expected cannot have both a result and an error")
+                return makedata(cls, result, error)
+            def __bool__(self) -> bool:
+                return self.error is None
+            def __fmap__[U](self, func: T -> U) -> Expected[U]:
+                return self.__class__(func(self.result)) if self else self
+    """
     _coconut_is_data = True
     __slots__ = ()
     def __add__(self, other): return _coconut.NotImplemented

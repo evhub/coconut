@@ -1420,11 +1420,24 @@ def mypy_test() -> bool:
     assert reveal_locals() is None
     return True
 
+def package_test(outer_MatchError) -> bool:
+    from __coconut__ import MatchError as coconut_MatchError
+    assert MatchError is coconut_MatchError, (MatchError, coconut_MatchError)
+    assert MatchError() `isinstance` outer_MatchError, (MatchError, outer_MatchError)
+    assert outer_MatchError() `isinstance` MatchError, (outer_MatchError, MatchError)
+    assert_raises((raise)$(outer_MatchError), MatchError)
+    assert_raises((raise)$(MatchError), outer_MatchError)
+    def raises_outer_MatchError(obj=None):
+        raise outer_MatchError("raises_outer_MatchError")
+    match raises_outer_MatchError -> None in 10:
+        assert False
+    return True
+
 def tco_func() = tco_func()
 
 def print_dot() = print(".", end="", flush=True)
 
-def run_main(test_easter_eggs=False) -> bool:
+def run_main(outer_MatchError, test_easter_eggs=False) -> bool:
     """Asserts arguments and executes tests."""
     using_tco = "_coconut_tco" in globals() or "_coconut_tco" in locals()
 
@@ -1462,6 +1475,8 @@ def run_main(test_easter_eggs=False) -> bool:
     if using_tco:
         assert hasattr(tco_func, "_coconut_tco_func")
         assert tco_test() is True
+    if outer_MatchError.__module__ != "__main__":
+        assert package_test(outer_MatchError) is True
 
     print_dot()  # ......
     if sys.version_info < (3,):

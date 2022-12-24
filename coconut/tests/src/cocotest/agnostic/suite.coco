@@ -1010,6 +1010,8 @@ forward 2""") == 900
     assert cycle_slide("123", slide=1)$[:9] |> "".join == "123231312"
     assert "1234" |> windowsof_$(2) |> map$("".join) |> list == ["12", "23", "34"] == "1234" |> windowsof$(2) |> map$("".join) |> list
     assert try_divide(1, 2) |> fmap$(.+1) == Expected(1.5)
+    assert sum_evens(0, 5) == 6 == sum_evens(1, 6)
+    assert sum_evens(7, 3) == 0 == sum_evens(4, 4)
 
     # must come at end
     assert fibs_calls[0] == 1

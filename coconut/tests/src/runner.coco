@@ -12,7 +12,10 @@ from cocotest.main import run_main
 def main() -> bool:
     print(".", end="", flush=True)  # .
     assert cocotest.__doc__
-    assert run_main(test_easter_eggs="--test-easter-eggs" in sys.argv) is True
+    assert run_main(
+        outer_MatchError=MatchError,
+        test_easter_eggs="--test-easter-eggs" in sys.argv,
+    ) is True
     return True
 
 

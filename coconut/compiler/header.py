@@ -165,6 +165,16 @@ else:
     return out
 
 
+def make_py_str(str_contents, target_startswith, after_py_str_defined=False):
+    """Get code that effectively wraps the given code in py_str."""
+    return (
+        repr(str_contents) if target_startswith == "3"
+        else "b" + repr(str_contents) if target_startswith == "2"
+        else "py_str(" + repr(str_contents) + ")" if after_py_str_defined
+        else "str(" + repr(str_contents) + ")"
+    )
+
+
 # -----------------------------------------------------------------------------------------------------------------------
 # FORMAT DICTIONARY:
 # -----------------------------------------------------------------------------------------------------------------------
@@ -198,6 +208,8 @@ def process_header_args(which, target, use_hash, no_tco, strict, no_wrap):
         typing_line="# type: ignore\n" if which == "__coconut__" else "",
         VERSION_STR=VERSION_STR,
         module_docstring='"""Built-in Coconut utilities."""\n\n' if which == "__coconut__" else "",
+        __coconut__=make_py_str("__coconut__", target_startswith),
+        _coconut_cached_module=make_py_str("_coconut_cached_module", target_startswith),
         object="" if target_startswith == "3" else "(object)",
         comma_object="" if target_startswith == "3" else ", object",
         comma_slash=", /" if target_info >= (3, 8) else "",
@@ -655,15 +667,18 @@ def getheader(which, target, use_hash, no_tco, strict, no_wrap):
     elif target_info >= (3, 5):
         header += "from __future__ import generator_stop\n"
 
+    header += "import sys as _coconut_sys\n"
+
     if which.startswith("package"):
         levels_up = int(which[len("package:"):])
         coconut_file_dir = "_coconut_os.path.dirname(_coconut_os.path.abspath(__file__))"
         for _ in range(levels_up):
             coconut_file_dir = "_coconut_os.path.dirname(" + coconut_file_dir + ")"
-        return header + '''import sys as _coconut_sys, os as _coconut_os
+        return header + '''import os as _coconut_os
 _coconut_file_dir = {coconut_file_dir}
 _coconut_cached_module = _coconut_sys.modules.get({__coconut__})
 if _coconut_cached_module is not None and _coconut_os.path.dirname(_coconut_cached_module.__file__) != _coconut_file_dir:  # type: ignore
+    _coconut_sys.modules[{_coconut_cached_module}] = _coconut_cached_module
     del _coconut_sys.modules[{__coconut__}]
 _coconut_sys.path.insert(0, _coconut_file_dir)
 _coconut_module_name = _coconut_os.path.splitext(_coconut_os.path.basename(_coconut_file_dir))[0]
@@ -685,23 +700,19 @@ from __coconut__ import {underscore_imports}
 _coconut_sys.path.pop(0)
 '''.format(
             coconut_file_dir=coconut_file_dir,
-            __coconut__=(
-                '"__coconut__"' if target_startswith == "3"
-                else 'b"__coconut__"' if target_startswith == "2"
-                else 'str("__coconut__")'
-            ),
             **format_dict
         ) + section("Compiled Coconut")
 
     if which == "sys":
-        return header + '''import sys as _coconut_sys
-from coconut.__coconut__ import *
+        return header + '''from coconut.__coconut__ import *
 from coconut.__coconut__ import {underscore_imports}
 '''.format(**format_dict)
 
     # __coconut__, code, file
 
-    header += "import sys as _coconut_sys\n"
+    header += '''_coconut_cached_module = _coconut_sys.modules.get({_coconut_cached_module}, _coconut_sys.modules.get({__coconut__}))
+_coconut_base_MatchError = Exception if _coconut_cached_module is None else getattr(_coconut_cached_module, "MatchError", Exception)
+'''.format(**format_dict)
 
     if target_info >= (3, 7):
         header += PY37_HEADER
