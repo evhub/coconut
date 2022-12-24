@@ -74,7 +74,7 @@ class MatchError(_coconut_base_hashable, Exception):
         return Exception.__unicode__(self)
     def __reduce__(self):
         return (self.__class__, (self.pattern, self.value), {lbrace}"_message": self._message{rbrace})
-_coconut_cached_MatchError = None if _coconut_cached_module is None else getattr(_coconut_cached_module, "MatchError", None)
+_coconut_cached_MatchError = None if _coconut_cached__coconut__ is None else getattr(_coconut_cached__coconut__, "MatchError", None)
 if _coconut_cached_MatchError is not None:{patch_cached_MatchError}
     MatchError = _coconut_cached_MatchError
 class _coconut_tail_call{object}:
