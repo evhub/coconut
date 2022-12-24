@@ -735,7 +735,7 @@ if _coconut_pop_path:
             newline=True,
         ).format(
             coconut_file_dir=coconut_file_dir,
-            **format_dict,
+            **format_dict
         ) + section("Compiled Coconut")
 
     if which == "sys":
