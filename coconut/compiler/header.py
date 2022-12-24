@@ -216,7 +216,7 @@ def process_header_args(which, use_hash, target, no_tco, strict, no_wrap):
         VERSION_STR=VERSION_STR,
         module_docstring='"""Built-in Coconut utilities."""\n\n' if which == "__coconut__" else "",
         __coconut__=make_py_str("__coconut__", target_startswith),
-        _coconut_cached_module=make_py_str("_coconut_cached_module", target_startswith),
+        _coconut_cached__coconut__=make_py_str("_coconut_cached__coconut__", target_startswith),
         object="" if target_startswith == "3" else "(object)",
         comma_object="" if target_startswith == "3" else ", object",
         comma_slash=", /" if target_info >= (3, 8) else "",
@@ -533,7 +533,7 @@ class typing_mock{object}:
     TYPE_CHECKING = False
     Any = Ellipsis
     def cast(self, t, x):
-        """typing.cast[TT <: Type, T <: TT](t: TT, x: Any) -> T = x"""
+        """typing.cast[T](t: Type[T], x: Any) -> T = x"""
         return x
     def __getattr__(self, name):
         raise _coconut.ImportError("the typing module is not available at runtime in Python 3.4 or earlier; try hiding your typedefs behind an 'if TYPE_CHECKING:' block")
@@ -701,26 +701,27 @@ def getheader(which, use_hash, target, no_tco, strict, no_wrap):
         for _ in range(levels_up):
             coconut_file_dir = "_coconut_os.path.dirname(" + coconut_file_dir + ")"
         return header + '''import os as _coconut_os
-_coconut_cached_module = _coconut_sys.modules.get({__coconut__})
-if _coconut_cached_module is not None and getattr(_coconut_cached_module, "_coconut_header_info", None) != _coconut_header_info:  # type: ignore
-    _coconut_sys.modules[{_coconut_cached_module}] = _coconut_cached_module
-    del _coconut_sys.modules[{__coconut__}]
 _coconut_file_dir = {coconut_file_dir}
 _coconut_sys.path.insert(0, _coconut_file_dir)
-_coconut_module_name = _coconut_os.path.splitext(_coconut_os.path.basename(_coconut_file_dir))[0]
-if _coconut_module_name and _coconut_module_name[0].isalpha() and all(c.isalpha() or c.isdigit() for c in _coconut_module_name) and "__init__.py" in _coconut_os.listdir(_coconut_file_dir):
-    _coconut_full_module_name = str(_coconut_module_name + ".__coconut__")
-    import __coconut__ as _coconut__coconut__
-    _coconut__coconut__.__name__ = _coconut_full_module_name
-    for _coconut_v in vars(_coconut__coconut__).values():
-        if getattr(_coconut_v, "__module__", None) == {__coconut__}:
-            try:
-                _coconut_v.__module__ = _coconut_full_module_name
-            except AttributeError:
-                _coconut_v_type = type(_coconut_v)
-                if getattr(_coconut_v_type, "__module__", None) == {__coconut__}:
-                    _coconut_v_type.__module__ = _coconut_full_module_name
-    _coconut_sys.modules[_coconut_full_module_name] = _coconut__coconut__
+_coconut_cached__coconut__ = _coconut_sys.modules.get({__coconut__})
+if _coconut_cached__coconut__ is None or getattr(_coconut_cached__coconut__, "_coconut_header_info", None) != _coconut_header_info:
+    if _coconut_cached__coconut__ is not None:
+        _coconut_sys.modules[{_coconut_cached__coconut__}] = _coconut_cached__coconut__
+        del _coconut_sys.modules[{__coconut__}]
+    _coconut_module_name = _coconut_os.path.splitext(_coconut_os.path.basename(_coconut_file_dir))[0]
+    if _coconut_module_name and _coconut_module_name[0].isalpha() and all(c.isalpha() or c.isdigit() for c in _coconut_module_name) and "__init__.py" in _coconut_os.listdir(_coconut_file_dir):
+        _coconut_full_module_name = str(_coconut_module_name + ".__coconut__")
+        import __coconut__ as _coconut__coconut__
+        _coconut__coconut__.__name__ = _coconut_full_module_name
+        for _coconut_v in vars(_coconut__coconut__).values():
+            if getattr(_coconut_v, "__module__", None) == {__coconut__}:
+                try:
+                    _coconut_v.__module__ = _coconut_full_module_name
+                except AttributeError:
+                    _coconut_v_type = type(_coconut_v)
+                    if getattr(_coconut_v_type, "__module__", None) == {__coconut__}:
+                        _coconut_v_type.__module__ = _coconut_full_module_name
+        _coconut_sys.modules[_coconut_full_module_name] = _coconut__coconut__
 from __coconut__ import *
 from __coconut__ import {underscore_imports}
 _coconut_sys.path.pop(0)
@@ -738,7 +739,7 @@ from coconut.__coconut__ import {underscore_imports}
 
     header += prepare(
         '''
-_coconut_cached_module = _coconut_sys.modules.get({_coconut_cached_module}, _coconut_sys.modules.get({__coconut__}))
+_coconut_cached__coconut__ = _coconut_sys.modules.get({_coconut_cached__coconut__}, _coconut_sys.modules.get({__coconut__}))
         ''',
         newline=True,
     ).format(**format_dict)
