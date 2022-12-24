@@ -1394,6 +1394,7 @@ def main_test() -> bool:
     assert_raises((def -> obj.abc = 123), AttributeError)  # type: ignore
     hardref = map((.+1), [1,2,3])
     assert weakref.ref(hardref)() |> list == [2, 3, 4]
+    assert parallel_map(ident, [MatchError]) |> list == [MatchError]
     return True
 
 def test_asyncio() -> bool:
