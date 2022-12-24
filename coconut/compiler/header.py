@@ -701,13 +701,14 @@ def getheader(which, use_hash, target, no_tco, strict, no_wrap):
         for _ in range(levels_up):
             coconut_file_dir = "_coconut_os.path.dirname(" + coconut_file_dir + ")"
         return header + '''import os as _coconut_os
-_coconut_file_dir = {coconut_file_dir}
-_coconut_sys.path.insert(0, _coconut_file_dir)
+_coconut_file_dir = None
 _coconut_cached__coconut__ = _coconut_sys.modules.get({__coconut__})
 if _coconut_cached__coconut__ is None or getattr(_coconut_cached__coconut__, "_coconut_header_info", None) != _coconut_header_info:
     if _coconut_cached__coconut__ is not None:
         _coconut_sys.modules[{_coconut_cached__coconut__}] = _coconut_cached__coconut__
         del _coconut_sys.modules[{__coconut__}]
+    _coconut_file_dir = {coconut_file_dir}
+    _coconut_sys.path.insert(0, _coconut_file_dir)
     _coconut_module_name = _coconut_os.path.splitext(_coconut_os.path.basename(_coconut_file_dir))[0]
     if _coconut_module_name and _coconut_module_name[0].isalpha() and all(c.isalpha() or c.isdigit() for c in _coconut_module_name) and "__init__.py" in _coconut_os.listdir(_coconut_file_dir):
         _coconut_full_module_name = str(_coconut_module_name + ".__coconut__")
@@ -724,7 +725,8 @@ if _coconut_cached__coconut__ is None or getattr(_coconut_cached__coconut__, "_c
         _coconut_sys.modules[_coconut_full_module_name] = _coconut__coconut__
 from __coconut__ import *
 from __coconut__ import {underscore_imports}
-_coconut_sys.path.pop(0)
+if _coconut_file_dir is not None:
+    _coconut_sys.path.pop(0)
 '''.format(
             coconut_file_dir=coconut_file_dir,
             **format_dict
