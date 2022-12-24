@@ -1496,6 +1496,12 @@ dict_zip = (
     ..> collectby$(.[0], value_func=.[1])
 )
 
+sum_evens = (
+    range
+    ..> filter$((.%2) ..> (.==0))
+    ..> sum
+)
+
 
 # n-ary reduction
 def binary_reduce(binop, it) = (
