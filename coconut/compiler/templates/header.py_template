@@ -49,7 +49,7 @@ class _coconut_base_hashable{object}:
     def __setstate__(self, setvars):{COMMENT.fixes_unpickling_with_slots}
         for k, v in setvars.items():
             _coconut.setattr(self, k, v)
-class MatchError(_coconut_base_hashable, _coconut_base_MatchError):
+class MatchError(_coconut_base_hashable, Exception):
     """Pattern-matching error. Has attributes .pattern, .value, and .message."""{COMMENT.no_slots_to_allow_setattr_below}
     max_val_repr_len = 500
     def __init__(self, pattern=None, value=None):
@@ -74,13 +74,9 @@ class MatchError(_coconut_base_hashable, _coconut_base_MatchError):
         return Exception.__unicode__(self)
     def __reduce__(self):
         return (self.__class__, (self.pattern, self.value), {lbrace}"_message": self._message{rbrace})
-if _coconut_base_MatchError is not Exception:
-    for _coconut_MatchError_k in dir(MatchError):
-        try:
-            setattr(_coconut_base_MatchError, _coconut_MatchError_k, getattr(MatchError, _coconut_MatchError_k))
-        except (AttributeError, TypeError):
-            pass
-    MatchError = _coconut_base_MatchError
+_coconut_cached_MatchError = None if _coconut_cached_module is None else getattr(_coconut_cached_module, "MatchError", None)
+if _coconut_cached_MatchError is not None:{patch_cached_MatchError}
+    MatchError = _coconut_cached_MatchError
 class _coconut_tail_call{object}:
     __slots__ = ("func", "args", "kwargs")
     def __init__(self, _coconut_func, *args, **kwargs):

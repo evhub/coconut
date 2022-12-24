@@ -867,8 +867,8 @@ class Compiler(Grammar, pickleable_obj):
         """Get a formatted header."""
         header = getheader(
             which,
-            target=self.target,
             use_hash=use_hash,
+            target=self.target,
             no_tco=self.no_tco,
             strict=self.strict,
             no_wrap=self.no_wrap,

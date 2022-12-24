@@ -26,7 +26,7 @@ import sys as _coconut_sys
 VERSION = "2.1.1"
 VERSION_NAME = "The Spanish Inquisition"
 # False for release, int >= 1 for develop
-DEVELOP = 37
+DEVELOP = 38
 ALPHA = False  # for pre releases rather than post releases
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -34,9 +34,9 @@ ALPHA = False  # for pre releases rather than post releases
 # -----------------------------------------------------------------------------------------------------------------------
 
 
-def _indent(code, by=1, tabsize=4, newline=False, strip=False):
+def _indent(code, by=1, tabsize=4, strip=False, newline=False, initial_newline=False):
     """Indents every nonempty line of the given code."""
-    return "".join(
+    return ("\n" if initial_newline else "") + "".join(
         (" " * (tabsize * by) if line.strip() else "") + line
         for line in (code.strip() if strip else code).splitlines(True)
     ) + ("\n" if newline else "")
