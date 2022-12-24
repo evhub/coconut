@@ -53,6 +53,7 @@ from coconut.constants import (
     icoconut_default_kernel_names,
     icoconut_custom_kernel_name,
     mypy_err_infixes,
+    get_bool_env_var,
 )
 
 from coconut.convenience import (
@@ -327,8 +328,10 @@ def comp(path=None, folder=None, file=None, args=[], **kwargs):
     call_coconut([source, compdest] + args, **kwargs)
 
 
-def rm_path(path):
+def rm_path(path, allow_keep=False):
     """Delete a path."""
+    if allow_keep and get_bool_env_var("COCONUT_KEEP_TEST_FILES"):
+        return
     if os.path.isdir(path):
         try:
             shutil.rmtree(path)
@@ -347,7 +350,7 @@ def using_path(path):
         yield
     finally:
         try:
-            rm_path(path)
+            rm_path(path, allow_keep=True)
         except OSError:
             logger.print_exc()
 
@@ -364,7 +367,7 @@ def using_dest(dest=dest):
         yield
     finally:
         try:
-            rm_path(dest)
+            rm_path(dest, allow_keep=True)
         except OSError:
             logger.print_exc()
 

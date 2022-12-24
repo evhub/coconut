@@ -99,11 +99,11 @@ test-py2: clean
 	python2 ./coconut/tests/dest/runner.py
 	python2 ./coconut/tests/dest/extras.py
 
-# same as test-univ but uses Python 3
+# same as test-univ but uses Python 3 and --target 3
 .PHONY: test-py3
 test-py3: export COCONUT_USE_COLOR=TRUE
 test-py3: clean
-	python3 ./coconut/tests --strict --line-numbers --keep-lines --force
+	python3 ./coconut/tests --strict --line-numbers --keep-lines --force --target 3
 	python3 ./coconut/tests/dest/runner.py
 	python3 ./coconut/tests/dest/extras.py
 

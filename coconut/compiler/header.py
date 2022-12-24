@@ -529,7 +529,8 @@ for _coconut_varname in dir(MatchError):
             if_ge="import typing",
             if_lt='''
 class typing_mock{object}:
-    """The typing module is not available at runtime in Python 3.4 or earlier; try hiding your typedefs behind an 'if TYPE_CHECKING:' block."""
+    """The typing module is not available at runtime in Python 3.4 or earlier;
+    try hiding your typedefs behind an 'if TYPE_CHECKING:' block."""
     TYPE_CHECKING = False
     Any = Ellipsis
     def cast(self, t, x):
@@ -700,15 +701,18 @@ def getheader(which, use_hash, target, no_tco, strict, no_wrap):
         coconut_file_dir = "_coconut_os.path.dirname(_coconut_os.path.abspath(__file__))"
         for _ in range(levels_up):
             coconut_file_dir = "_coconut_os.path.dirname(" + coconut_file_dir + ")"
-        return header + '''import os as _coconut_os
-_coconut_file_dir = None
+        return header + prepare(
+            '''
+import os as _coconut_os
 _coconut_cached__coconut__ = _coconut_sys.modules.get({__coconut__})
-if _coconut_cached__coconut__ is None or getattr(_coconut_cached__coconut__, "_coconut_header_info", None) != _coconut_header_info:
+_coconut_file_dir = {coconut_file_dir}
+_coconut_pop_path = False
+if _coconut_cached__coconut__ is None or getattr(_coconut_cached__coconut__, "_coconut_header_info", None) != _coconut_header_info and _coconut_os.path.dirname(_coconut_cached__coconut__.__file__ or "") != _coconut_file_dir:
     if _coconut_cached__coconut__ is not None:
         _coconut_sys.modules[{_coconut_cached__coconut__}] = _coconut_cached__coconut__
         del _coconut_sys.modules[{__coconut__}]
-    _coconut_file_dir = {coconut_file_dir}
     _coconut_sys.path.insert(0, _coconut_file_dir)
+    _coconut_pop_path = True
     _coconut_module_name = _coconut_os.path.splitext(_coconut_os.path.basename(_coconut_file_dir))[0]
     if _coconut_module_name and _coconut_module_name[0].isalpha() and all(c.isalpha() or c.isdigit() for c in _coconut_module_name) and "__init__.py" in _coconut_os.listdir(_coconut_file_dir):
         _coconut_full_module_name = str(_coconut_module_name + ".__coconut__")
@@ -725,11 +729,13 @@ if _coconut_cached__coconut__ is None or getattr(_coconut_cached__coconut__, "_c
         _coconut_sys.modules[_coconut_full_module_name] = _coconut__coconut__
 from __coconut__ import *
 from __coconut__ import {underscore_imports}
-if _coconut_file_dir is not None:
+if _coconut_pop_path:
     _coconut_sys.path.pop(0)
-'''.format(
+            ''',
+            newline=True,
+        ).format(
             coconut_file_dir=coconut_file_dir,
-            **format_dict
+            **format_dict,
         ) + section("Compiled Coconut")
 
     if which == "sys":
