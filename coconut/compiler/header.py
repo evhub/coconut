@@ -113,7 +113,12 @@ def section(name, newline_before=True):
     )
 
 
-def base_pycondition(target, ver, if_lt=None, if_ge=None, indent=None, newline=False, fallback=""):
+def prepare(code, indent=0, **kwargs):
+    """Prepare a piece of code for the header."""
+    return _indent(code, by=indent, strip=True, **kwargs)
+
+
+def base_pycondition(target, ver, if_lt=None, if_ge=None, indent=None, newline=False, initial_newline=False, fallback=""):
     """Produce code that depends on the Python version for the given target."""
     internal_assert(isinstance(ver, tuple), "invalid pycondition version")
     internal_assert(if_lt or if_ge, "either if_lt or if_ge must be specified")
@@ -160,6 +165,8 @@ else:
 
     if indent is not None:
         out = _indent(out, by=indent)
+    if initial_newline:
+        out = "\n" + out
     if newline:
         out += "\n"
     return out
@@ -191,7 +198,7 @@ class Comment(object):
 COMMENT = Comment()
 
 
-def process_header_args(which, target, use_hash, no_tco, strict, no_wrap):
+def process_header_args(which, use_hash, target, no_tco, strict, no_wrap):
     """Create the dictionary passed to str.format in the header."""
     target_startswith = one_num_ver(target)
     target_info = get_target_info(target)
@@ -231,12 +238,13 @@ import pickle
             ''',
             indent=1,
         ),
-        import_OrderedDict=_indent(
-            r'''OrderedDict = collections.OrderedDict if _coconut_sys.version_info >= (2, 7) else dict'''
-            if not target
+        import_OrderedDict=prepare(
+            r'''
+OrderedDict = collections.OrderedDict if _coconut_sys.version_info >= (2, 7) else dict
+            ''' if not target
             else "OrderedDict = collections.OrderedDict" if target_info >= (2, 7)
             else "OrderedDict = dict",
-            by=1,
+            indent=1,
         ),
         import_collections_abc=pycondition(
             (3, 3),
@@ -248,17 +256,18 @@ import collections.abc as abc
             ''',
             indent=1,
         ),
-        set_zip_longest=_indent(
-            r'''zip_longest = itertools.zip_longest if _coconut_sys.version_info >= (3,) else itertools.izip_longest'''
-            if not target
+        set_zip_longest=prepare(
+            r'''
+zip_longest = itertools.zip_longest if _coconut_sys.version_info >= (3,) else itertools.izip_longest
+            ''' if not target
             else "zip_longest = itertools.zip_longest" if target_info >= (3,)
             else "zip_longest = itertools.izip_longest",
-            by=1,
+            indent=1,
         ),
         comma_bytearray=", bytearray" if target_startswith != "3" else "",
         lstatic="staticmethod(" if target_startswith != "3" else "",
         rstatic=")" if target_startswith != "3" else "",
-        zip_iter=_indent(
+        zip_iter=prepare(
             r'''
 for items in _coconut.iter(_coconut.zip(*self.iters, strict=self.strict) if _coconut_sys.version_info >= (3, 10) else _coconut.zip_longest(*self.iters, fillvalue=_coconut_sentinel) if self.strict else _coconut.zip(*self.iters)):
     if self.strict and _coconut_sys.version_info < (3, 10) and _coconut.any(x is _coconut_sentinel for x in items):
@@ -277,8 +286,7 @@ for items in _coconut.iter(_coconut.zip_longest(*self.iters, fillvalue=_coconut_
         raise _coconut.ValueError("zip(..., strict=True) arguments have mismatched lengths")
     yield items
             ''',
-            by=2,
-            strip=True,
+            indent=2,
         ),
         # disabled mocks must have different docstrings so the
         #  interpreter can tell them apart from the real thing
@@ -475,7 +483,7 @@ def __lt__(self, other):
         tco_comma="_coconut_tail_call, _coconut_tco, " if not no_tco else "",
         call_set_names_comma="_coconut_call_set_names, " if target_info < (3, 6) else "",
         handle_cls_args_comma="_coconut_handle_cls_kwargs, _coconut_handle_cls_stargs, " if target_startswith != "3" else "",
-        async_def_anext=_indent(
+        async_def_anext=prepare(
             r'''
 async def __anext__(self):
     return self.func(await self.aiter.__anext__())
@@ -496,8 +504,19 @@ _coconut_exec("""def __anext__(self):
 __anext__ = _coconut.asyncio.coroutine(_coconut_anext_ns["__anext__"])
                 ''',
             ),
-            by=1,
-            strip=True,
+            indent=1,
+        ),
+        patch_cached_MatchError=pycondition(
+            (3,),
+            if_ge=r'''
+for _coconut_varname in dir(MatchError):
+    try:
+        setattr(_coconut_cached_MatchError, _coconut_varname, getattr(MatchError, _coconut_varname))
+    except (AttributeError, TypeError):
+        pass
+            ''',
+            indent=1,
+            initial_newline=True,
         ),
     )
 
@@ -615,8 +634,12 @@ except ImportError:
 # -----------------------------------------------------------------------------------------------------------------------
 
 
-def getheader(which, target, use_hash, no_tco, strict, no_wrap):
-    """Generate the specified header."""
+def getheader(which, use_hash, target, no_tco, strict, no_wrap):
+    """Generate the specified header.
+
+    IMPORTANT: Any new arguments to this function must be duplicated to
+    header_info and process_header_args.
+    """
     internal_assert(
         which.startswith("package") or which in (
             "none", "initial", "__coconut__", "sys", "code", "file",
@@ -628,12 +651,12 @@ def getheader(which, target, use_hash, no_tco, strict, no_wrap):
     if which == "none":
         return ""
 
-    target_startswith = one_num_ver(target)
-    target_info = get_target_info(target)
-
     # initial, __coconut__, package:n, sys, code, file
 
-    format_dict = process_header_args(which, target, use_hash, no_tco, strict, no_wrap)
+    target_startswith = one_num_ver(target)
+    target_info = get_target_info(target)
+    header_info = tuple_str_of((VERSION, target, no_tco, strict, no_wrap), add_quotes=True)
+    format_dict = process_header_args(which, use_hash, target, no_tco, strict, no_wrap)
 
     if which == "initial" or which == "__coconut__":
         header = '''#!/usr/bin/env python{target_startswith}
@@ -669,17 +692,20 @@ def getheader(which, target, use_hash, no_tco, strict, no_wrap):
 
     header += "import sys as _coconut_sys\n"
 
+    if which.startswith("package") or which == "__coconut__":
+        header += "_coconut_header_info = " + header_info + "\n"
+
     if which.startswith("package"):
         levels_up = int(which[len("package:"):])
         coconut_file_dir = "_coconut_os.path.dirname(_coconut_os.path.abspath(__file__))"
         for _ in range(levels_up):
             coconut_file_dir = "_coconut_os.path.dirname(" + coconut_file_dir + ")"
         return header + '''import os as _coconut_os
-_coconut_file_dir = {coconut_file_dir}
 _coconut_cached_module = _coconut_sys.modules.get({__coconut__})
-if _coconut_cached_module is not None and _coconut_os.path.dirname(_coconut_cached_module.__file__) != _coconut_file_dir:  # type: ignore
+if _coconut_cached_module is not None and getattr(_coconut_cached_module, "_coconut_header_info", None) != _coconut_header_info:  # type: ignore
     _coconut_sys.modules[{_coconut_cached_module}] = _coconut_cached_module
     del _coconut_sys.modules[{__coconut__}]
+_coconut_file_dir = {coconut_file_dir}
 _coconut_sys.path.insert(0, _coconut_file_dir)
 _coconut_module_name = _coconut_os.path.splitext(_coconut_os.path.basename(_coconut_file_dir))[0]
 if _coconut_module_name and _coconut_module_name[0].isalpha() and all(c.isalpha() or c.isdigit() for c in _coconut_module_name) and "__init__.py" in _coconut_os.listdir(_coconut_file_dir):
@@ -710,9 +736,12 @@ from coconut.__coconut__ import {underscore_imports}
 
     # __coconut__, code, file
 
-    header += '''_coconut_cached_module = _coconut_sys.modules.get({_coconut_cached_module}, _coconut_sys.modules.get({__coconut__}))
-_coconut_base_MatchError = Exception if _coconut_cached_module is None else getattr(_coconut_cached_module, "MatchError", Exception)
-'''.format(**format_dict)
+    header += prepare(
+        '''
+_coconut_cached_module = _coconut_sys.modules.get({_coconut_cached_module}, _coconut_sys.modules.get({__coconut__}))
+        ''',
+        newline=True,
+    ).format(**format_dict)
 
     if target_info >= (3, 7):
         header += PY37_HEADER
