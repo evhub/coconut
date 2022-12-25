@@ -2778,9 +2778,20 @@ data Expected[T](result: T?, error: Exception?):
         return self.error is None
     def __fmap__[U](self, func: T -> U) -> Expected[U]:
         return self.__class__(func(self.result)) if self else self
+    def and_then[U](self, func: T -> Expected[U]) -> Expected[U]:
+        """Maps a T -> Expected[U] over an Expected[T] to produce an Expected[U].
+        Implements a monadic bind. Equivalent to fmap ..> .join()."""
+        return self |> fmap$(func) |> .join()
+    def join(self: Expected[Expected[T]]) -> Expected[T]:
+        """Monadic join. Converts Expected[Expected[T]] to Expected[T]."""
+        if not self:
+            return self
+        if not self.result `isinstance` Expected:
+            raise TypeError("Expected.join() requires an Expected[Expected[T]]")
+        return self.result
 ```
 
-`Expected` is primarily used as the return type for [`safe_call`](#safe_call). Generally, the best way to use `Expected` is with [`fmap`](#fmap), which will apply a function to the result if it exists, or otherwise retain the error.
+`Expected` is primarily used as the return type for [`safe_call`](#safe_call). Generally, the best way to use `Expected` is with [`fmap`](#fmap), which will apply a function to the result if it exists, or otherwise retain the error. If you want to sequence multiple `Expected`-returning operations, `.and_then` should be used instead of `fmap`.
 
 ##### Example
 
