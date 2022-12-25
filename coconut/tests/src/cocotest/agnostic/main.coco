@@ -1399,6 +1399,11 @@ def main_test() -> bool:
     hardref = map((.+1), [1,2,3])
     assert weakref.ref(hardref)() |> list == [2, 3, 4]
     assert parallel_map(ident, [MatchError]) |> list == [MatchError]
+    assert_raises(Expected, TypeError)
+    assert Expected(10).result_or(0) == 10 == Expected(error=TypeError()).result_or(10)
+    assert Expected(None)
+    assert Expected(10).unwrap() == 10
+    assert_raises(Expected(error=TypeError()).unwrap, TypeError)
     return True
 
 def test_asyncio() -> bool:

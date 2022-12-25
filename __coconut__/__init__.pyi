@@ -271,6 +271,7 @@ class Expected(_t.Generic[_T], _t.Tuple):
     def __new__(
         cls,
         result: _T,
+        error: None = None,
     ) -> Expected[_T]: ...
     @_t.overload
     def __new__(
@@ -285,10 +286,6 @@ class Expected(_t.Generic[_T], _t.Tuple):
         result: None,
         error: Exception,
     ) -> Expected[_t.Any]: ...
-    @_t.overload
-    def __new__(
-        cls,
-    ) -> Expected[None]: ...
     def __init__(
         self,
         result: _t.Optional[_T] = None,
@@ -302,6 +299,8 @@ class Expected(_t.Generic[_T], _t.Tuple):
     def __getitem__(self, index: slice) -> _t.Tuple[_T | Exception | None, ...]: ...
     def and_then(self, func: _t.Callable[[_T], Expected[_U]]) -> Expected[_U]: ...
     def join(self: Expected[Expected[_T]]) -> Expected[_T]: ...
+    def result_or(self, default: _U) -> _T | _U: ...
+    def unwrap(self) -> _T: ...
 
 _coconut_Expected = Expected
 

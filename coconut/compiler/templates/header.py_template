@@ -1524,7 +1524,7 @@ class Expected(_coconut.collections.namedtuple("Expected", ("result", "error")){
         data Expected[T](result: T?, error: Exception?):
             def __new__(cls, result: T?=None, error: Exception?=None) -> Expected[T]:
                 if result is not None and error is not None:
-                    raise ValueError("Expected cannot have both a result and an error")
+                    raise TypeError("Expected cannot have both a result and an error")
                 return makedata(cls, result, error)
             def __bool__(self) -> bool:
                 return self.error is None
@@ -1541,6 +1541,14 @@ class Expected(_coconut.collections.namedtuple("Expected", ("result", "error")){
                 if not self.result `isinstance` Expected:
                     raise TypeError("Expected.join() requires an Expected[Expected[T]]")
                 return self.result
+            def result_or[U](self, default: U) -> Expected(T | U):
+                """Return the result if it exists, otherwise return the default."""
+                return self.result if self else default
+            def unwrap(self) -> T:
+                """Unwrap the result or raise the error."""
+                if not self:
+                    raise self.error
+                return self.result
     '''
     _coconut_is_data = True
     __slots__ = ()
@@ -1553,9 +1561,13 @@ class Expected(_coconut.collections.namedtuple("Expected", ("result", "error")){
     def __hash__(self):
         return _coconut.tuple.__hash__(self) ^ hash(self.__class__)
     __match_args__ = ("result", "error")
-    def __new__(cls, result=None, error=None):
-        if result is not None and error is not None:
-            raise _coconut.ValueError("Expected cannot have both a result and an error")
+    def __new__(cls, result=_coconut_sentinel, error=None):
+        if result is not _coconut_sentinel and error is not None:
+            raise _coconut.TypeError("Expected cannot have both a result and an error")
+        if result is _coconut_sentinel and error is None:
+            raise _coconut.TypeError("Expected must have either a result or an error")
+        if result is _coconut_sentinel:
+            result = None
         return _coconut.tuple.__new__(cls, (result, error))
     def __fmap__(self, func):
         return self if not self else self.__class__(func(self.result))
@@ -1572,6 +1584,14 @@ class Expected(_coconut.collections.namedtuple("Expected", ("result", "error")){
         """Maps a T -> Expected[U] over an Expected[T] to produce an Expected[U].
         Implements a monadic bind. Equivalent to fmap ..> .join()."""
         return self.__fmap__(func).join()
+    def result_or(self, default):
+        """Return the result if it exists, otherwise return the default."""
+        return self.result if self else default
+    def unwrap(self):
+        """Unwrap the result or raise the error."""
+        if not self:
+            raise self.error
+        return self.result
 class flip(_coconut_base_hashable):
     """Given a function, return a new function with inverse argument order.
     If nargs is passed, only the first nargs arguments are reversed."""
