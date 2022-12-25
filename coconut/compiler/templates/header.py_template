@@ -1521,8 +1521,8 @@ class Expected(_coconut.collections.namedtuple("Expected", ("result", "error")){
     that may or may not be an error, similar to Haskell's Either.
 
     Effectively equivalent to:
-        data Expected[T](result: T?, error: Exception?):
-            def __new__(cls, result: T?=None, error: Exception?=None) -> Expected[T]:
+        data Expected[T](result: T?, error: BaseException?):
+            def __new__(cls, result: T?=None, error: BaseException?=None) -> Expected[T]:
                 if result is not None and error is not None:
                     raise TypeError("Expected cannot have both a result and an error")
                 return makedata(cls, result, error)
@@ -1539,11 +1539,17 @@ class Expected(_coconut.collections.namedtuple("Expected", ("result", "error")){
                 if not self:
                     return self
                 if not self.result `isinstance` Expected:
-                    raise TypeError("Expected.join() requires an Expected[Expected[T]]")
+                    raise TypeError("Expected.join() requires an Expected[Expected[_]]")
                 return self.result
-            def result_or[U](self, default: U) -> Expected(T | U):
+            def or_else[U](self, func: BaseException -> Expected[U]) -> Expected[T | U]:
+                """Return self if no error, otherwise return the result of evaluating func on the error."""
+                return self if self else func(self.error)
+            def result_or[U](self, default: U) -> T | U:
                 """Return the result if it exists, otherwise return the default."""
                 return self.result if self else default
+            def result_or_else[U](self, func: BaseException -> U) -> T | U:
+                """Return the result if it exists, otherwise return the result of evaluating func on the error."""
+                return self.result if self else func(self.error)
             def unwrap(self) -> T:
                 """Unwrap the result or raise the error."""
                 if not self:
@@ -1569,24 +1575,35 @@ class Expected(_coconut.collections.namedtuple("Expected", ("result", "error")){
         if result is _coconut_sentinel:
             result = None
         return _coconut.tuple.__new__(cls, (result, error))
-    def __fmap__(self, func):
-        return self if not self else self.__class__(func(self.result))
     def __bool__(self):
         return self.error is None
+    def __fmap__(self, func):
+        return self if not self else self.__class__(func(self.result))
+    def and_then(self, func):
+        """Maps a T -> Expected[U] over an Expected[T] to produce an Expected[U].
+        Implements a monadic bind. Equivalent to fmap ..> .join()."""
+        return self.__fmap__(func).join()
     def join(self):
         """Monadic join. Converts Expected[Expected[T]] to Expected[T]."""
         if not self:
             return self
         if not _coconut.isinstance(self.result, _coconut_Expected):
-            raise _coconut.TypeError("Expected.join() requires an Expected[Expected[T]]")
+            raise _coconut.TypeError("Expected.join() requires an Expected[Expected[_]]")
         return self.result
-    def and_then(self, func):
-        """Maps a T -> Expected[U] over an Expected[T] to produce an Expected[U].
-        Implements a monadic bind. Equivalent to fmap ..> .join()."""
-        return self.__fmap__(func).join()
+    def or_else(self, func):
+        """Return self if no error, otherwise return the result of evaluating func on the error."""
+        if self:
+            return self
+        got = func(self.error)
+        if not _coconut.isinstance(got, _coconut_Expected):
+            raise _coconut.TypeError("Expected.or_else() requires a function that returns an Expected")
+        return got
     def result_or(self, default):
         """Return the result if it exists, otherwise return the default."""
         return self.result if self else default
+    def result_or_else(self, func):
+        """Return the result if it exists, otherwise return the result of evaluating func on the error."""
+        return self.result if self else func(self.error)
     def unwrap(self):
         """Unwrap the result or raise the error."""
         if not self:

@@ -1267,8 +1267,9 @@ def main_test() -> bool:
     ys = (_ for _ in range(2)) :: (_ for _ in range(2))
     assert ys |> list == [0, 1, 0, 1]
     assert ys |> list == []
-    assert Expected(10) |> fmap$(.+1) == Expected(11)
+
     some_err = ValueError()
+    assert Expected(10) |> fmap$(.+1) == Expected(11)
     assert Expected(error=some_err) |> fmap$(.+1) == Expected(error=some_err)
     res, err = Expected(10)
     assert (res, err) == (10, None)
@@ -1284,6 +1285,16 @@ def main_test() -> bool:
     assert Expected(error=some_err).and_then(safe_call$(.*2)) == Expected(error=some_err)
     assert Expected(Expected(10)).join() == Expected(10)
     assert Expected(error=some_err).join() == Expected(error=some_err)
+    assert_raises(Expected, TypeError)
+    assert Expected(10).result_or(0) == 10 == Expected(error=TypeError()).result_or(10)
+    assert Expected(10).result_or_else(const 0) == 10 == Expected(error=TypeError()).result_or_else(const 10)
+    assert Expected(error=some_err).result_or_else(ident) is some_err
+    assert Expected(None)
+    assert Expected(10).unwrap() == 10
+    assert_raises(Expected(error=TypeError()).unwrap, TypeError)
+    assert_raises(Expected(error=KeyboardInterrupt()).unwrap, KeyboardInterrupt)
+    assert Expected(10).or_else(const <| Expected(20)) == Expected(10) == Expected(error=TypeError()).or_else(const <| Expected(10))
+
     recit = ([1,2,3] :: recit) |> map$(.+1)
     assert tee(recit)
     rawit = (_ for _ in (0, 1))
@@ -1399,11 +1410,6 @@ def main_test() -> bool:
     hardref = map((.+1), [1,2,3])
     assert weakref.ref(hardref)() |> list == [2, 3, 4]
     assert parallel_map(ident, [MatchError]) |> list == [MatchError]
-    assert_raises(Expected, TypeError)
-    assert Expected(10).result_or(0) == 10 == Expected(error=TypeError()).result_or(10)
-    assert Expected(None)
-    assert Expected(10).unwrap() == 10
-    assert_raises(Expected(error=TypeError()).unwrap, TypeError)
     return True
 
 def test_asyncio() -> bool:
