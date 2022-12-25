@@ -2769,8 +2769,8 @@ Coconut's `Expected` built-in is a Coconut [`data` type](#data) that represents 
 
 `Expected` is effectively equivalent to the following:
 ```coconut
-data Expected[T](result: T?, error: Exception?):
-    def __new__(cls, result: T?=None, error: Exception?=None) -> Expected[T]:
+data Expected[T](result: T?, error: BaseException?):
+    def __new__(cls, result: T?=None, error: BaseException?=None) -> Expected[T]:
         if result is not None and error is not None:
             raise TypeError("Expected cannot have both a result and an error")
         return makedata(cls, result, error)
@@ -2787,11 +2787,17 @@ data Expected[T](result: T?, error: Exception?):
         if not self:
             return self
         if not self.result `isinstance` Expected:
-            raise TypeError("Expected.join() requires an Expected[Expected[T]]")
+            raise TypeError("Expected.join() requires an Expected[Expected[_]]")
         return self.result
-    def result_or[U](self, default: U) -> Expected(T | U):
+    def or_else[U](self, func: BaseException -> Expected[U]) -> Expected[T | U]:
+        """Return self if no error, otherwise return the result of evaluating func on the error."""
+        return self if self else func(self.error)
+    def result_or[U](self, default: U) -> T | U:
         """Return the result if it exists, otherwise return the default."""
         return self.result if self else default
+    def result_or_else[U](self, func: BaseException -> U) -> T | U:
+        """Return the result if it exists, otherwise return the result of evaluating func on the error."""
+        return self.result if self else func(self.error)
     def unwrap(self) -> T:
         """Unwrap the result or raise the error."""
         if not self:
