@@ -1517,7 +1517,7 @@ def safe_call(_coconut_f{comma_slash}, *args, **kwargs):
     except _coconut.Exception as err:
         return _coconut_Expected(error=err)
 class Expected(_coconut.collections.namedtuple("Expected", ("result", "error")){comma_object}):
-    """Coconut's Expected built-in is a Coconut data that represents a value
+    '''Coconut's Expected built-in is a Coconut data that represents a value
     that may or may not be an error, similar to Haskell's Either.
 
     Effectively equivalent to:
@@ -1530,7 +1530,18 @@ class Expected(_coconut.collections.namedtuple("Expected", ("result", "error")){
                 return self.error is None
             def __fmap__[U](self, func: T -> U) -> Expected[U]:
                 return self.__class__(func(self.result)) if self else self
-    """
+            def and_then[U](self, func: T -> Expected[U]) -> Expected[U]:
+                """Maps a T -> Expected[U] over an Expected[T] to produce an Expected[U].
+                Implements a monadic bind. Equivalent to fmap ..> .join()."""
+                return self |> fmap$(func) |> .join()
+            def join(self: Expected[Expected[T]]) -> Expected[T]:
+                """Monadic join. Converts Expected[Expected[T]] to Expected[T]."""
+                if not self:
+                    return self
+                if not self.result `isinstance` Expected:
+                    raise TypeError("Expected.join() requires an Expected[Expected[T]]")
+                return self.result
+    '''
     _coconut_is_data = True
     __slots__ = ()
     def __add__(self, other): return _coconut.NotImplemented
@@ -1547,9 +1558,20 @@ class Expected(_coconut.collections.namedtuple("Expected", ("result", "error")){
             raise _coconut.ValueError("Expected cannot have both a result and an error")
         return _coconut.tuple.__new__(cls, (result, error))
     def __fmap__(self, func):
-        return self if self.error is not None else self.__class__(func(self.result))
+        return self if not self else self.__class__(func(self.result))
     def __bool__(self):
         return self.error is None
+    def join(self):
+        """Monadic join. Converts Expected[Expected[T]] to Expected[T]."""
+        if not self:
+            return self
+        if not _coconut.isinstance(self.result, _coconut_Expected):
+            raise _coconut.TypeError("Expected.join() requires an Expected[Expected[T]]")
+        return self.result
+    def and_then(self, func):
+        """Maps a T -> Expected[U] over an Expected[T] to produce an Expected[U].
+        Implements a monadic bind. Equivalent to fmap ..> .join()."""
+        return self.__fmap__(func).join()
 class flip(_coconut_base_hashable):
     """Given a function, return a new function with inverse argument order.
     If nargs is passed, only the first nargs arguments are reversed."""

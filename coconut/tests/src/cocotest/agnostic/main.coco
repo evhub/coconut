@@ -1280,6 +1280,10 @@ def main_test() -> bool:
     res, err = safe_call(-> 1 / 0) |> fmap$(.+1)
     assert res is None
     assert err `isinstance` ZeroDivisionError
+    assert Expected(10).and_then(safe_call$(.*2)) == Expected(20)
+    assert Expected(error=some_err).and_then(safe_call$(.*2)) == Expected(error=some_err)
+    assert Expected(Expected(10)).join() == Expected(10)
+    assert Expected(error=some_err).join() == Expected(error=some_err)
     recit = ([1,2,3] :: recit) |> map$(.+1)
     assert tee(recit)
     rawit = (_ for _ in (0, 1))
