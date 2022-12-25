@@ -2772,7 +2772,7 @@ Coconut's `Expected` built-in is a Coconut [`data` type](#data) that represents 
 data Expected[T](result: T?, error: Exception?):
     def __new__(cls, result: T?=None, error: Exception?=None) -> Expected[T]:
         if result is not None and error is not None:
-            raise ValueError("Expected cannot have both a result and an error")
+            raise TypeError("Expected cannot have both a result and an error")
         return makedata(cls, result, error)
     def __bool__(self) -> bool:
         return self.error is None
@@ -2788,6 +2788,14 @@ data Expected[T](result: T?, error: Exception?):
             return self
         if not self.result `isinstance` Expected:
             raise TypeError("Expected.join() requires an Expected[Expected[T]]")
+        return self.result
+    def result_or[U](self, default: U) -> Expected(T | U):
+        """Return the result if it exists, otherwise return the default."""
+        return self.result if self else default
+    def unwrap(self) -> T:
+        """Unwrap the result or raise the error."""
+        if not self:
+            raise self.error
         return self.result
 ```
 
