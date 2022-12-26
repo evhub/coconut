@@ -1294,6 +1294,10 @@ def main_test() -> bool:
     assert_raises(Expected(error=TypeError()).unwrap, TypeError)
     assert_raises(Expected(error=KeyboardInterrupt()).unwrap, KeyboardInterrupt)
     assert Expected(10).or_else(const <| Expected(20)) == Expected(10) == Expected(error=TypeError()).or_else(const <| Expected(10))
+    Expected(x) = Expected(10)
+    assert x == 10
+    Expected(error=err) = Expected(error=some_err)
+    assert err is some_err
 
     recit = ([1,2,3] :: recit) |> map$(.+1)
     assert tee(recit)
@@ -1410,6 +1414,35 @@ def main_test() -> bool:
     hardref = map((.+1), [1,2,3])
     assert weakref.ref(hardref)() |> list == [2, 3, 4]
     assert parallel_map(ident, [MatchError]) |> list == [MatchError]
+    match data tuple(1, 2) in (1, 2, 3):
+        assert False
+    data TestDefaultMatching(x="x default", y="y default")
+    TestDefaultMatching(got_x) = TestDefaultMatching(1)
+    assert got_x == 1
+    TestDefaultMatching(y=got_y) = TestDefaultMatching(y=10)
+    assert got_y == 10
+    TestDefaultMatching() = TestDefaultMatching()
+    data HasStar(x, y, *zs)
+    HasStar(x, *ys) = HasStar(1, 2, 3, 4)
+    assert x == 1
+    assert ys == (2, 3, 4)
+    HasStar(x, y, z) = HasStar(1, 2, 3)
+    assert (x, y, z) == (1, 2, 3)
+    HasStar(5, y=10) = HasStar(5, 10)
+    HasStar(1, 2, 3, zs=(3,)) = HasStar(1, 2, 3)
+    HasStar(x=1, y=2) = HasStar(1, 2)
+    match HasStar(x) in HasStar(1, 2):
+        assert False
+    match HasStar(x, y) in HasStar(1, 2, 3):
+        assert False
+    data HasStarAndDef(x, y="y", *zs)
+    HasStarAndDef(1, "y") = HasStarAndDef(1)
+    HasStarAndDef(1) = HasStarAndDef(1)
+    HasStarAndDef(x=1) = HasStarAndDef(1)
+    HasStarAndDef(1, 2, 3, zs=(3,)) = HasStarAndDef(1, 2, 3)
+    HasStarAndDef(1, y=2) = HasStarAndDef(1, 2)
+    match HasStarAndDef(x, y) in HasStarAndDef(1, 2, 3):
+        assert False
     return True
 
 def test_asyncio() -> bool:

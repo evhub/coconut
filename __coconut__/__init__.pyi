@@ -264,9 +264,14 @@ _coconut_tail_call = of = call
 
 
 @_dataclass(frozen=True, slots=True)
-class Expected(_t.Generic[_T], _t.Tuple):
+class _BaseExpected(_t.Generic[_T], _t.Tuple):
     result: _t.Optional[_T]
     error: _t.Optional[BaseException]
+class Expected(_BaseExpected[_T]):
+    __slots__ = ()
+    _coconut_is_data = True
+    __match_args__ = ("result", "error")
+    _coconut_data_defaults: _t.Mapping[int, None] = ...
     @_t.overload
     def __new__(
         cls,

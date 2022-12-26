@@ -39,6 +39,7 @@ from coconut.constants import (
     function_match_error_var,
     match_set_name_var,
     is_data_var,
+    data_defaults_var,
     default_matcher_style,
     self_match_types,
 )
@@ -47,6 +48,7 @@ from coconut.compiler.util import (
     handle_indentation,
     add_int_and_strs,
     ordered_items,
+    tuple_str_of,
 )
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -1039,15 +1041,8 @@ if _coconut.len({match_args_var}) < {num_pos_matches}:
 
         self.add_check("_coconut.isinstance(" + item + ", " + cls_name + ")")
 
-        if star_match is None:
-            self.add_check(
-                '_coconut.len({item}) == {total_len}'.format(
-                    item=item,
-                    total_len=len(pos_matches) + len(name_matches),
-                ),
-            )
         # avoid checking >= 0
-        elif len(pos_matches):
+        if len(pos_matches):
             self.add_check(
                 "_coconut.len({item}) >= {min_len}".format(
                     item=item,
@@ -1063,6 +1058,34 @@ if _coconut.len({match_args_var}) < {num_pos_matches}:
         # handle keyword args
         self.match_class_names(name_matches, item)
 
+        # handle data types with defaults for some arguments
+        if star_match is None:
+            # use a def so we can type ignore it
+            temp_var = self.get_temp_var()
+            self.add_def(
+                (
+                    '{temp_var} ='
+                    ' _coconut.len({item}) <= _coconut.max({min_len}, _coconut.len({item}.__match_args__))'
+                    ' and _coconut.all('
+                    'i in _coconut.getattr({item}, "{data_defaults_var}", {{}})'
+                    ' and {item}[i] == _coconut.getattr({item}, "{data_defaults_var}", {{}})[i]'
+                    ' for i in _coconut.range({min_len}, _coconut.len({item}.__match_args__))'
+                    ' if {item}.__match_args__[i] not in {name_matches}'
+                    ') if _coconut.hasattr({item}, "__match_args__")'
+                    ' else _coconut.len({item}) == {min_len}'
+                    ' {type_ignore}'
+                ).format(
+                    item=item,
+                    temp_var=temp_var,
+                    data_defaults_var=data_defaults_var,
+                    min_len=len(pos_matches),
+                    name_matches=tuple_str_of(name_matches, add_quotes=True),
+                    type_ignore=self.comp.type_ignore_comment(),
+                ),
+            )
+            with self.down_a_level():
+                self.add_check(temp_var)
+
     def match_data_or_class(self, tokens, item):
         """Matches an ambiguous data or class match."""
         cls_name, matches = tokens
@@ -1071,13 +1094,13 @@ if _coconut.len({match_args_var}) < {num_pos_matches}:
         self.add_def(
             handle_indentation(
                 """
-{is_data_result_var} = _coconut.getattr({cls_name}, "{is_data_var}", False) or _coconut.isinstance({cls_name}, _coconut.tuple) and _coconut.all(_coconut.getattr(_coconut_x, "{is_data_var}", False) for _coconut_x in {cls_name}){type_comment}
+{is_data_result_var} = _coconut.getattr({cls_name}, "{is_data_var}", False) or _coconut.isinstance({cls_name}, _coconut.tuple) and _coconut.all(_coconut.getattr(_coconut_x, "{is_data_var}", False) for _coconut_x in {cls_name}){type_ignore}
             """,
             ).format(
                 is_data_result_var=is_data_result_var,
                 is_data_var=is_data_var,
                 cls_name=cls_name,
-                type_comment=self.comp.type_ignore_comment(),
+                type_ignore=self.comp.type_ignore_comment(),
             ),
         )
 

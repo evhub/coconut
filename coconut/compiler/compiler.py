@@ -69,6 +69,7 @@ from coconut.constants import (
     format_var,
     none_coalesce_var,
     is_data_var,
+    data_defaults_var,
     funcwrapper,
     non_syntactic_newline,
     indchars,
@@ -157,6 +158,7 @@ from coconut.compiler.util import (
     split_leading_whitespace,
     ordered_items,
     tuple_str_of_str,
+    dict_to_str,
 )
 from coconut.compiler.header import (
     minify_header,
@@ -2564,8 +2566,8 @@ def __new__(_coconut_cls, *{match_to_args_var}, **{match_to_kwargs_var}):
         base_args = []  # names of all the non-starred args
         req_args = 0  # number of required arguments
         starred_arg = None  # starred arg if there is one else None
-        saw_defaults = False  # whether there have been any default args so far
         types = {}  # arg position to typedef for arg
+        arg_defaults = {}  # arg position to default for arg
         for i, arg in enumerate(original_args):
 
             star, default, typedef = False, None, None
@@ -2586,13 +2588,14 @@ def __new__(_coconut_cls, *{match_to_args_var}, **{match_to_kwargs_var}):
             if argname.startswith("_"):
                 raise CoconutDeferredSyntaxError("data fields cannot start with an underscore", loc)
             if star:
+                internal_assert(default is None, "invalid default in starred data field", default)
                 if i != len(original_args) - 1:
                     raise CoconutDeferredSyntaxError("starred data field must come last", loc)
                 starred_arg = argname
             else:
-                if default:
-                    saw_defaults = True
-                elif saw_defaults:
+                if default is not None:
+                    arg_defaults[i] = "__new__.__defaults__[{i}]".format(i=len(arg_defaults))
+                elif arg_defaults:
                     raise CoconutDeferredSyntaxError("data fields with defaults must come after data fields without", loc)
                 else:
                     req_args += 1
@@ -2668,7 +2671,7 @@ def {arg}(self):
                     arg=starred_arg,
                     kwd_only=("*, " if self.target.startswith("3") else ""),
                 )
-        elif saw_defaults:
+        elif arg_defaults:
             extra_stmts += handle_indentation(
                 '''
 def __new__(_coconut_cls, {all_args}):
@@ -2680,10 +2683,22 @@ def __new__(_coconut_cls, {all_args}):
                 base_args_tuple=tuple_str_of(base_args),
             )
 
+        if arg_defaults:
+            extra_stmts += handle_indentation(
+                '''
+{data_defaults_var} = {arg_defaults} {type_ignore}
+                ''',
+                add_newline=True,
+            ).format(
+                data_defaults_var=data_defaults_var,
+                arg_defaults=dict_to_str(arg_defaults),
+                type_ignore=self.type_ignore_comment(),
+            )
+
         namedtuple_args = base_args + ([] if starred_arg is None else [starred_arg])
         namedtuple_call = self.make_namedtuple_call(name, namedtuple_args, types)
 
-        return self.assemble_data(decorators, name, namedtuple_call, inherit, extra_stmts, stmts, namedtuple_args, paramdefs)
+        return self.assemble_data(decorators, name, namedtuple_call, inherit, extra_stmts, stmts, base_args, paramdefs)
 
     def make_namedtuple_call(self, name, namedtuple_args, types=None):
         """Construct a namedtuple call."""
@@ -2727,8 +2742,9 @@ def __new__(_coconut_cls, {all_args}):
         # add universal statements
         all_extra_stmts = handle_indentation(
             """
-{is_data_var} = True
 __slots__ = ()
+{is_data_var} = True
+__match_args__ = {match_args}
 def __add__(self, other): return _coconut.NotImplemented
 def __mul__(self, other): return _coconut.NotImplemented
 def __rmul__(self, other): return _coconut.NotImplemented
@@ -2741,9 +2757,8 @@ def __hash__(self):
             add_newline=True,
         ).format(
             is_data_var=is_data_var,
+            match_args=tuple_str_of(match_args, add_quotes=True),
         )
-        if self.target_info < (3, 10):
-            all_extra_stmts += "__match_args__ = " + tuple_str_of(match_args, add_quotes=True) + "\n"
         all_extra_stmts += extra_stmts
 
         # manage docstring

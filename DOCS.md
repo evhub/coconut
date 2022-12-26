@@ -1057,7 +1057,7 @@ base_pattern ::= (
   - View Patterns (`(<expression>) -> <pattern>`): calls `<expression>` on the item being matched and matches the result to `<pattern>`. The match fails if a [`MatchError`](#matcherror) is raised. `<expression>` may be unparenthesized only when it is a single atom.
 - Class and Data Type Matching:
   - Classes or Data Types (`<name>(<args>)`): will match as a data type if given [a Coconut `data` type](#data) (or a tuple of Coconut data types) and a class otherwise.
-  - Data Types (`data <name>(<args>)`): will check that whatever is in that position is of data type `<name>` and will match the attributes to `<args>`. Includes support for positional arguments, named arguments, and starred arguments. Also supports strict attribute by prepending a dot to the attribute name that raises `AttributError` if the attribute is not present rather than failing the match (e.g. `data MyData(.my_attr=<some_pattern>)`).
+  - Data Types (`data <name>(<args>)`): will check that whatever is in that position is of data type `<name>` and will match the attributes to `<args>`. Includes support for positional arguments, named arguments, default arguments, and starred arguments. Also supports strict attributes by prepending a dot to the attribute name that raises `AttributError` if the attribute is not present rather than failing the match (e.g. `data MyData(.my_attr=<some_pattern>)`).
   - Classes (`class <name>(<args>)`): does [PEP-634-style class matching](https://www.python.org/dev/peps/pep-0634/#class-patterns). Also supports strict attribute matching as above.
 - Mapping Destructuring:
   - Dicts (`{<key>: <value>, ...}`): will match any mapping (`collections.abc.Mapping`) with the given keys and values that match the value patterns. Keys must be constants or equality checks.
@@ -2769,11 +2769,7 @@ Coconut's `Expected` built-in is a Coconut [`data` type](#data) that represents 
 
 `Expected` is effectively equivalent to the following:
 ```coconut
-data Expected[T](result: T?, error: BaseException?):
-    def __new__(cls, result: T?=None, error: BaseException?=None) -> Expected[T]:
-        if result is not None and error is not None:
-            raise TypeError("Expected cannot have both a result and an error")
-        return makedata(cls, result, error)
+data Expected[T](result: T? = None, error: BaseException? = None):
     def __bool__(self) -> bool:
         return self.error is None
     def __fmap__[U](self, func: T -> U) -> Expected[U]:
@@ -2806,6 +2802,12 @@ data Expected[T](result: T?, error: BaseException?):
 ```
 
 `Expected` is primarily used as the return type for [`safe_call`](#safe_call). Generally, the best way to use `Expected` is with [`fmap`](#fmap), which will apply a function to the result if it exists, or otherwise retain the error. If you want to sequence multiple `Expected`-returning operations, `.and_then` should be used instead of `fmap`.
+
+To match against an `Expected`, just:
+```
+Expected(res) = Expected("result")
+Expected(error=err) = Expected(error=TypeError())
+```
 
 ##### Example
 
