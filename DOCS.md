@@ -1057,7 +1057,7 @@ base_pattern ::= (
   - View Patterns (`(<expression>) -> <pattern>`): calls `<expression>` on the item being matched and matches the result to `<pattern>`. The match fails if a [`MatchError`](#matcherror) is raised. `<expression>` may be unparenthesized only when it is a single atom.
 - Class and Data Type Matching:
   - Classes or Data Types (`<name>(<args>)`): will match as a data type if given [a Coconut `data` type](#data) (or a tuple of Coconut data types) and a class otherwise.
-  - Data Types (`data <name>(<args>)`): will check that whatever is in that position is of data type `<name>` and will match the attributes to `<args>`. Includes support for positional arguments, named arguments, default arguments, and starred arguments. Also supports strict attributes by prepending a dot to the attribute name that raises `AttributError` if the attribute is not present rather than failing the match (e.g. `data MyData(.my_attr=<some_pattern>)`).
+  - Data Types (`data <name>(<args>)`): will check that whatever is in that position is of data type `<name>` and will match the attributes to `<args>`. Generally, `data <name>(<args>)` will match any data type that could have been constructed with `makedata(<name>, <args>)`. Includes support for positional arguments, named arguments, default arguments, and starred arguments. Also supports strict attributes by prepending a dot to the attribute name that raises `AttributError` if the attribute is not present rather than failing the match (e.g. `data MyData(.my_attr=<some_pattern>)`).
   - Classes (`class <name>(<args>)`): does [PEP-634-style class matching](https://www.python.org/dev/peps/pep-0634/#class-patterns). Also supports strict attribute matching as above.
 - Mapping Destructuring:
   - Dicts (`{<key>: <value>, ...}`): will match any mapping (`collections.abc.Mapping`) with the given keys and values that match the value patterns. Keys must be constants or equality checks.
@@ -1532,8 +1532,6 @@ A very common thing to do in functional programming is to make use of function v
 (..**>)     => # keyword arg forward function composition
 (::)        => (itertools.chain)  # will not evaluate its arguments lazily
 ($)         => (functools.partial)
-.[]         => (operator.getitem)
-.$[]        => # iterator slicing operator
 (.)         => (getattr)
 (,)         => (*args) -> args  # (but pickleable)
 (+)         => (operator.add)
@@ -1563,6 +1561,9 @@ A very common thing to do in functional programming is to make use of function v
 (in)        => (operator.contains)
 (assert)    => def (cond, msg=None) -> assert cond, msg  # (but a better msg if msg is None)
 (raise)     => def (exc=None, from_exc=None) -> raise exc from from_exc  # or just raise if exc is None
+# there are two operator functions that don't require parentheses:
+.[]         => (operator.getitem)
+.$[]        => # iterator slicing operator
 ```
 
 _For an operator function for function application, see [`call`](#call)._
@@ -2850,6 +2851,8 @@ depth: 1
 Coconut provides the `makedata` function to construct a container given the desired type and contents. This is particularly useful when writing alternative constructors for [`data`](#data) types by overwriting `__new__`, since it allows direct access to the base constructor of the data type created with the Coconut `data` statement.
 
 `makedata` takes the data type to construct as the first argument, and the objects to put in that container as the rest of the arguments.
+
+`makedata` can also be used to extract the underlying constructor for [`match data`](#match-data) types that bypasses the normal pattern-matching constructor.
 
 Additionally, `makedata` can also be called with non-`data` type as the first argument, in which case it will do its best to construct the given type of object with the given arguments. This functionality is used internally by `fmap`.
 
