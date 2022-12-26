@@ -1521,11 +1521,7 @@ class Expected(_coconut.collections.namedtuple("Expected", ("result", "error")){
     that may or may not be an error, similar to Haskell's Either.
 
     Effectively equivalent to:
-        data Expected[T](result: T?, error: BaseException?):
-            def __new__(cls, result: T?=None, error: BaseException?=None) -> Expected[T]:
-                if result is not None and error is not None:
-                    raise TypeError("Expected cannot have both a result and an error")
-                return makedata(cls, result, error)
+        data Expected[T](result: T? = None, error: BaseException? = None):
             def __bool__(self) -> bool:
                 return self.error is None
             def __fmap__[U](self, func: T -> U) -> Expected[U]:
@@ -1556,8 +1552,10 @@ class Expected(_coconut.collections.namedtuple("Expected", ("result", "error")){
                     raise self.error
                 return self.result
     '''
-    _coconut_is_data = True
     __slots__ = ()
+    {is_data_var} = True
+    __match_args__ = ("result", "error")
+    {data_defaults_var} = {lbrace}0: None, 1: None{rbrace}
     def __add__(self, other): return _coconut.NotImplemented
     def __mul__(self, other): return _coconut.NotImplemented
     def __rmul__(self, other): return _coconut.NotImplemented
@@ -1566,7 +1564,6 @@ class Expected(_coconut.collections.namedtuple("Expected", ("result", "error")){
         return self.__class__ is other.__class__ and _coconut.tuple.__eq__(self, other)
     def __hash__(self):
         return _coconut.tuple.__hash__(self) ^ hash(self.__class__)
-    __match_args__ = ("result", "error")
     def __new__(cls, result=_coconut_sentinel, error=None):
         if result is not _coconut_sentinel and error is not None:
             raise _coconut.TypeError("Expected cannot have both a result and an error")

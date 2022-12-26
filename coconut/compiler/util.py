@@ -994,6 +994,14 @@ def tuple_str_of_str(argstr, add_parens=True):
     return out
 
 
+def dict_to_str(inputdict, quote_keys=False, quote_values=False):
+    """Convert a dictionary of code snippets to a dict literal."""
+    return "{" + ", ".join(
+        (repr(key) if quote_keys else str(key)) + ": " + (repr(value) if quote_values else str(value))
+        for key, value in ordered_items(inputdict)
+    ) + "}"
+
+
 def split_comment(line, move_indents=False):
     """Split line into base and comment."""
     if move_indents:

@@ -35,6 +35,8 @@ from coconut.constants import (
     numpy_modules,
     jax_numpy_modules,
     self_match_types,
+    is_data_var,
+    data_defaults_var,
 )
 from coconut.util import (
     univ_open,
@@ -209,6 +211,8 @@ def process_header_args(which, use_hash, target, no_tco, strict, no_wrap):
         empty_dict="{}",
         lbrace="{",
         rbrace="}",
+        is_data_var=is_data_var,
+        data_defaults_var=data_defaults_var,
         target_startswith=target_startswith,
         default_encoding=default_encoding,
         hash_line=hash_prefix + use_hash + "\n" if use_hash is not None else "",

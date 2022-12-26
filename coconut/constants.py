@@ -201,6 +201,8 @@ func_var = reserved_prefix + "_func"
 format_var = reserved_prefix + "_format"
 is_data_var = reserved_prefix + "_is_data"
 custom_op_var = reserved_prefix + "_op"
+is_data_var = reserved_prefix + "_is_data"
+data_defaults_var = reserved_prefix + "_data_defaults"
 
 # prefer Matcher.get_temp_var to proliferating more vars here
 match_to_args_var = reserved_prefix + "_match_args"
