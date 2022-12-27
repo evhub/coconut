@@ -58,7 +58,9 @@ from coconut.constants import (
     errwrapper,
     lnwrapper,
     unwrapper,
-    holds,
+    open_chars,
+    close_chars,
+    hold_chars,
     tabideal,
     match_to_args_var,
     match_to_kwargs_var,
@@ -159,6 +161,7 @@ from coconut.compiler.util import (
     ordered_items,
     tuple_str_of_str,
     dict_to_str,
+    close_char_for,
 )
 from coconut.compiler.header import (
     minify_header,
@@ -884,14 +887,19 @@ class Compiler(Grammar, pickleable_obj):
         """Return information on the current target as a version tuple."""
         return get_target_info(self.target)
 
-    def make_err(self, errtype, message, original, loc=0, ln=None, extra=None, reformat=True, include_endpoint=False, include_causes=False, **kwargs):
+    def make_err(self, errtype, message, original, loc=0, ln=None, extra=None, reformat=True, endpoint=False, include_causes=False, **kwargs):
         """Generate an error of the specified type."""
         # move loc back to end of most recent actual text
         while loc >= 2 and original[loc - 1:loc + 1].rstrip("".join(indchars) + default_whitespace_chars) == "":
             loc -= 1
 
         # get endpoint and line number
-        endpoint = clip(get_highest_parse_loc() + 1, min=loc) if include_endpoint else loc
+        if endpoint is False:
+            endpoint = loc
+        elif endpoint is True:
+            endpoint = clip(get_highest_parse_loc() + 1, min=loc)
+        else:
+            endpoint = clip(endpoint, min=loc)
         if ln is None:
             ln = self.adjust(lineno(loc, original))
 
@@ -935,7 +943,7 @@ class Compiler(Grammar, pickleable_obj):
     def make_syntax_err(self, err, original):
         """Make a CoconutSyntaxError from a CoconutDeferredSyntaxError."""
         msg, loc = err.args
-        return self.make_err(CoconutSyntaxError, msg, original, loc, include_endpoint=True)
+        return self.make_err(CoconutSyntaxError, msg, original, loc, endpoint=True)
 
     def make_parse_err(self, err, msg=None, include_ln=True, **kwargs):
         """Make a CoconutParseError from a ParseBaseException."""
@@ -943,12 +951,12 @@ class Compiler(Grammar, pickleable_obj):
         loc = err.loc
         ln = self.adjust(err.lineno) if include_ln else None
 
-        return self.make_err(CoconutParseError, msg, original, loc, ln, include_endpoint=True, include_causes=True, **kwargs)
+        return self.make_err(CoconutParseError, msg, original, loc, ln, endpoint=True, include_causes=True, **kwargs)
 
     def make_internal_syntax_err(self, original, loc, msg, item, extra):
         """Make a CoconutInternalSyntaxError."""
         message = msg + ": " + repr(item)
-        return self.make_err(CoconutInternalSyntaxError, message, original, loc, extra=extra, include_endpoint=True)
+        return self.make_err(CoconutInternalSyntaxError, message, original, loc, extra=extra, endpoint=True)
 
     def internal_assert(self, cond, original, loc, msg=None, item=None):
         """Version of internal_assert that raises CoconutInternalSyntaxErrors."""
@@ -1132,7 +1140,7 @@ class Compiler(Grammar, pickleable_obj):
                     x -= 1
             elif c == "#":
                 hold = [""]  # [_comment]
-            elif c in holds:
+            elif c in hold_chars:
                 found = c
             else:
                 out.append(c)
@@ -1282,13 +1290,15 @@ class Compiler(Grammar, pickleable_obj):
         return "".join(leading_ws)
 
     def ind_proc(self, inputstring, **kwargs):
-        """Process indentation."""
+        """Process indentation and ensures balanced parentheses."""
         lines = tuple(logical_lines(inputstring))
         new = []  # new lines
-        opens = []  # (line, col, adjusted ln) at which open parens were seen, newest first
         current = None  # indentation level of previous line
         levels = []  # indentation levels of all previous blocks, newest at end
         skips = self.copy_skips()
+
+        # [(open_char, line, col_ind, adj_ln, line_id) at which the open was seen, oldest to newest]
+        opens = []
 
         for ln in range(1, len(lines) + 1):  # ln is 1-indexed
             line = lines[ln - 1]  # lines is 0-indexed
@@ -1332,23 +1342,35 @@ class Compiler(Grammar, pickleable_obj):
                     raise self.make_err(CoconutSyntaxError, "illegal dedent to unused indentation level", line, 0, self.adjust(ln))
                 new.append(line)
 
-            count = paren_change(line)  # num closes - num opens
-            if count > len(opens):
-                raise self.make_err(CoconutSyntaxError, "unmatched close parenthesis", new[-1], 0, self.adjust(len(new)))
-            elif count > 0:  # closes > opens
-                for _ in range(count):
-                    opens.pop()
-            elif count < 0:  # opens > closes
-                opens += [(new[-1], self.adjust(len(new)))] * (-count)
+            # handle parentheses/brackets/braces
+            line_id = object()
+            for i, c in enumerate(line):
+                if c in open_chars:
+                    opens.append((c, line, i, self.adjust(len(new)), line_id))
+                elif c in close_chars:
+                    if not opens:
+                        raise self.make_err(CoconutSyntaxError, "unmatched close " + repr(c), line, i, self.adjust(len(new)))
+                    open_char, _, open_col_ind, _, open_line_id = opens.pop()
+                    if c != close_char_for(open_char):
+                        if open_line_id is line_id:
+                            err_kwargs = {"loc": open_col_ind, "endpoint": i + 1}
+                        else:
+                            err_kwargs = {"loc": i}
+                        raise self.make_err(
+                            CoconutSyntaxError,
+                            "mismatched open " + repr(open_char) + " and close " + repr(c),
+                            original=line,
+                            ln=self.adjust(len(new)),
+                            **err_kwargs
+                        ).set_point_to_endpoint(True)
 
         self.set_skips(skips)
         if new:
             last_line = rem_comment(new[-1])
             if last_line.endswith("\\"):
                 raise self.make_err(CoconutSyntaxError, "illegal final backslash continuation", new[-1], len(last_line), self.adjust(len(new)))
-            if opens:
-                open_line, adj_ln = opens[0]
-                raise self.make_err(CoconutSyntaxError, "unclosed open parenthesis", open_line, 0, adj_ln)
+        for open_char, open_line, open_col_ind, open_adj_ln, _ in opens:
+            raise self.make_err(CoconutSyntaxError, "unclosed open " + repr(open_char), open_line, open_col_ind, open_adj_ln)
         new.append(closeindent * len(levels))
         return "\n".join(new)
 

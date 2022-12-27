@@ -1070,8 +1070,8 @@ if _coconut.len({match_args_var}) < {num_pos_matches}:
                     'i in _coconut.getattr({item}, "{data_defaults_var}", {{}})'
                     ' and {item}[i] == _coconut.getattr({item}, "{data_defaults_var}", {{}})[i]'
                     ' for i in _coconut.range({min_len}, _coconut.len({item}.__match_args__))'
-                    ' if {item}.__match_args__[i] not in {name_matches}'
-                    ') if _coconut.hasattr({item}, "__match_args__")'
+                    + (' if {item}.__match_args__[i] not in {name_matches}' if name_matches else '')
+                    + ') if _coconut.hasattr({item}, "__match_args__")'
                     ' else _coconut.len({item}) == {min_len}'
                     ' {type_ignore}'
                 ).format(

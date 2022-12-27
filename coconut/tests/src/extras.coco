@@ -123,6 +123,38 @@ def test_setup_none() -> bool:
     assert_raises(-> parse("def f(x) = return x"), CoconutSyntaxError)
     assert_raises(-> parse("def f(x) =\n return x"), CoconutSyntaxError)
 
+    assert_raises(-> parse("()[(())"), CoconutSyntaxError, err_has="""
+unclosed open '[' (line 1)
+  ()[(())
+    ^
+    """.strip())
+    assert_raises(-> parse("{}(([])"), CoconutSyntaxError, err_has="""
+unclosed open '(' (line 1)
+  {}(([])
+    ^
+    """.strip())
+    assert_raises(-> parse("{[]{}}}()"), CoconutSyntaxError, err_has="""
+unmatched close '}' (line 1)
+  {[]{}}}()
+        ^
+    """.strip())
+    assert_raises(-> parse("[([){[}"), CoconutSyntaxError, err_has="""
+mismatched open '[' and close ')' (line 1)
+  [([){[}
+    ~^
+    """.strip())
+    assert_raises(-> parse("[())]"), CoconutSyntaxError, err_has="""
+mismatched open '[' and close ')' (line 1)
+  [())]
+  ~~~^
+    """.strip())
+    assert_raises(-> parse("[[\n])"), CoconutSyntaxError, err_has="""
+mismatched open '[' and close ')' (line 1)
+  ])
+   ^
+    """.strip())
+
+    assert_raises(-> parse("(.+1) .. x -> x * 2"), CoconutSyntaxError, err_has="<..")
     assert_raises(-> parse('f"Black holes {*all_black_holes} and revelations"'), CoconutSyntaxError, err_has="format string")
     assert_raises(-> parse("operator ++\noperator ++"), CoconutSyntaxError, err_has="custom operator already declared")
     assert_raises(

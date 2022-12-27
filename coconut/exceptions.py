@@ -180,6 +180,11 @@ class CoconutSyntaxError(CoconutException):
         err.lineno = args[3]
         return err
 
+    def set_point_to_endpoint(self, point_to_endpoint):
+        """Sets whether to point to the endpoint."""
+        self.point_to_endpoint = point_to_endpoint
+        return self
+
 
 class CoconutStyleError(CoconutSyntaxError):
     """Coconut --strict error."""
