@@ -75,8 +75,8 @@ from coconut.terminal import (
 )
 from coconut.constants import (
     CPYTHON,
-    opens,
-    closes,
+    open_chars,
+    close_chars,
     openindent,
     closeindent,
     default_whitespace_chars,
@@ -956,7 +956,7 @@ def count_end(teststr, testchar):
     return count
 
 
-def paren_change(inputstr, opens=opens, closes=closes):
+def paren_change(inputstr, opens=open_chars, closes=close_chars):
     """Determine the parenthetical change of level (num closes - num opens)."""
     count = 0
     for c in inputstr:
@@ -965,6 +965,16 @@ def paren_change(inputstr, opens=opens, closes=closes):
         elif c in closes:  # close parens/brackets/braces
             count += 1
     return count
+
+
+def close_char_for(open_char):
+    """Get the close char for the given open char."""
+    return close_chars[open_chars.index(open_char)]
+
+
+def open_char_for(close_char):
+    """Get the open char for the given close char."""
+    return open_chars[close_chars.index(close_char)]
 
 
 def ind_change(inputstr):

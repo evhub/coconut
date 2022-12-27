@@ -224,12 +224,14 @@ funcwrapper = "def:"
 indchars = (openindent, closeindent, "\n")
 comment_chars = ("#", lnwrapper)
 
-opens = "([{"  # opens parenthetical
-closes = ")]}"  # closes parenthetical
-holds = "'\""  # string open/close chars
+# open_chars and close_chars MUST BE IN THE SAME ORDER
+open_chars = "([{"  # opens parenthetical
+close_chars = ")]}"  # closes parenthetical
+
+hold_chars = "'\""  # string open/close chars
 
 # together should include all the constants defined above
-delimiter_symbols = tuple(opens + closes + holds) + (
+delimiter_symbols = tuple(open_chars + close_chars + hold_chars) + (
     strwrapper,
     errwrapper,
     early_passthrough_wrapper,

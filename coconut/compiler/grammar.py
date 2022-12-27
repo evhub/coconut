@@ -1317,7 +1317,15 @@ class Grammar(object):
     await_expr_ref = await_kwd.suppress() + impl_call_item
     await_item = await_expr | impl_call_item
 
-    compose_item = attach(tokenlist(await_item, dotdot, allow_trailing=False), compose_item_handle)
+    lambdef = Forward()
+
+    compose_item = attach(
+        tokenlist(
+            await_item,
+            dotdot + Optional(invalid_syntax(lambdef, "lambdas only allowed after composition pipe operators '..>' and '<..', not '..' (replace '..' with '<..' to fix)")),
+            allow_trailing=False,
+        ), compose_item_handle,
+    )
 
     factor = Forward()
     unary = plus | neg_minus | tilde
@@ -1347,8 +1355,6 @@ class Grammar(object):
     or_expr = typedef_or_expr | exprlist(xor_expr, bar)
 
     chain_expr = attach(tokenlist(or_expr, dubcolon, allow_trailing=False), chain_handle)
-
-    lambdef = Forward()
 
     infix_op <<= backtick.suppress() + test_no_infix + backtick.suppress()
     infix_expr = Forward()
