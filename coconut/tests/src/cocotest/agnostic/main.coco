@@ -1261,7 +1261,7 @@ def main_test() -> bool:
     assert cartesian_product(v, v).count((2, 1)) == 1 == cartesian_product(v, repeat=2).count((2, 1))
     assert cartesian_product(v, v).count((2, 0)) == 0 == cartesian_product(v, repeat=2).count((2, 0))
     assert not range(0, 0)
-    assert None |> fmap$(.+1) is None
+    assert_raises(const None ..> fmap$(.+1), TypeError)
     xs = [1] :: [2]
     assert xs |> list == [1, 2] == xs |> list
     ys = (_ for _ in range(2)) :: (_ for _ in range(2))

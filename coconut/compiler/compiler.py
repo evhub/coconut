@@ -1290,7 +1290,7 @@ class Compiler(Grammar, pickleable_obj):
         return "".join(leading_ws)
 
     def ind_proc(self, inputstring, **kwargs):
-        """Process indentation and ensures balanced parentheses."""
+        """Process indentation and ensure balanced parentheses."""
         lines = tuple(logical_lines(inputstring))
         new = []  # new lines
         current = None  # indentation level of previous line

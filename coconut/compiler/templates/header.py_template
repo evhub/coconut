@@ -1384,8 +1384,6 @@ def fmap(func, obj, **kwargs):
     starmap_over_mappings = kwargs.pop("starmap_over_mappings", False)
     if kwargs:
         raise _coconut.TypeError("fmap() got unexpected keyword arguments " + _coconut.repr(kwargs))
-    if obj is None:
-        return None
     obj_fmap = _coconut.getattr(obj, "__fmap__", None)
     if obj_fmap is not None:
         try:
