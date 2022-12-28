@@ -994,7 +994,7 @@ def does_raise_exc(func):
 
 # Returns
 
-def ret_none(n):
+def ret_none(n=0):
     if n != 0:
         return ret_none(n - 1)
 

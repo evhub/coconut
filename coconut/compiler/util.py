@@ -874,12 +874,12 @@ def any_len_perm(*optional, **kwargs):
 # UTILITIES:
 # -----------------------------------------------------------------------------------------------------------------------
 
-def ordered_items(inputdict):
-    """Return the items of inputdict in a deterministic order."""
+def ordered(items):
+    """Return the items in a deterministic order."""
     if PY2:
-        return sorted(inputdict.items())
+        return sorted(items)
     else:
-        return inputdict.items()
+        return items
 
 
 def pprint_tokens(tokens):
@@ -1008,7 +1008,7 @@ def dict_to_str(inputdict, quote_keys=False, quote_values=False):
     """Convert a dictionary of code snippets to a dict literal."""
     return "{" + ", ".join(
         (repr(key) if quote_keys else str(key)) + ": " + (repr(value) if quote_values else str(value))
-        for key, value in ordered_items(inputdict)
+        for key, value in ordered(inputdict.items())
     ) + "}"
 
 

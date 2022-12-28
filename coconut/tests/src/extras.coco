@@ -154,6 +154,10 @@ mismatched open '[' and close ')' (line 1)
    ^
     """.strip())
 
+    assert_raises(-> parse("(|*?>)"), CoconutSyntaxError, err_has="'|?*>'")
+    assert_raises(-> parse("(|**?>)"), CoconutSyntaxError, err_has="'|?**>'")
+    assert_raises(-> parse("(<?*|)"), CoconutSyntaxError, err_has="'<*?|'")
+    assert_raises(-> parse("(<?**|)"), CoconutSyntaxError, err_has="'<**?|'")
     assert_raises(-> parse("(.+1) .. x -> x * 2"), CoconutSyntaxError, err_has="<..")
     assert_raises(-> parse('f"Black holes {*all_black_holes} and revelations"'), CoconutSyntaxError, err_has="format string")
     assert_raises(-> parse("operator ++\noperator ++"), CoconutSyntaxError, err_has="custom operator already declared")

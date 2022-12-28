@@ -449,9 +449,11 @@ def _coconut_iter_getitem(
 
 def _coconut_base_compose(
     func: _t.Callable[[_T], _t.Any],
-    *funcstars: _t.Tuple[_Callable, int],
+    *func_infos: _t.Tuple[_Callable, int, bool],
     ) -> _t.Callable[[_T], _t.Any]: ...
 
+
+# all forward/backward/none composition functions MUST be kept in sync:
 
 # @_t.overload
 # def _coconut_forward_compose(
@@ -469,6 +471,32 @@ def _coconut_base_compose(
 #     _g: _t.Callable[[_U], _V],
 #     _f: _t.Callable[[_V], _W],
 #     ) -> _t.Callable[[_T], _W]: ...
+# @_t.overload
+# def _coconut_forward_compose(
+#     _h: _t.Callable[_P, _T],
+#     _g: _t.Callable[[_T], _U],
+#     _f: _t.Callable[[_U], _V],
+#     ) -> _t.Callable[_P, _V]: ...
+# @_t.overload
+# def _coconut_forward_compose(
+#     _h: _t.Callable[_P, _T],
+#     _g: _t.Callable[[_T], _U],
+#     _f: _t.Callable[[_U], _V],
+#     _e: _t.Callable[[_V], _W],
+#     ) -> _t.Callable[_P, _W]: ...
+# @_t.overload
+# def _coconut_forward_compose(
+#     _h: _t.Callable[..., _T],
+#     _g: _t.Callable[[_T], _U],
+#     _f: _t.Callable[[_U], _V],
+#     ) -> _t.Callable[..., _V]: ...
+# @_t.overload
+# def _coconut_forward_compose(
+#     _h: _t.Callable[..., _T],
+#     _g: _t.Callable[[_T], _U],
+#     _f: _t.Callable[[_U], _V],
+#     _e: _t.Callable[[_V], _W],
+#     ) -> _t.Callable[..., _W]: ...
 @_t.overload
 def _coconut_forward_compose(
     _g: _t.Callable[_P, _T],
@@ -476,76 +504,239 @@ def _coconut_forward_compose(
     ) -> _t.Callable[_P, _U]: ...
 @_t.overload
 def _coconut_forward_compose(
-    _h: _t.Callable[_P, _T],
-    _g: _t.Callable[[_T], _U],
-    _f: _t.Callable[[_U], _V],
-    ) -> _t.Callable[_P, _V]: ...
-@_t.overload
-def _coconut_forward_compose(
-    _h: _t.Callable[_P, _T],
-    _g: _t.Callable[[_T], _U],
-    _f: _t.Callable[[_U], _V],
-    _e: _t.Callable[[_V], _W],
-    ) -> _t.Callable[_P, _W]: ...
-@_t.overload
-def _coconut_forward_compose(
     _g: _t.Callable[..., _T],
     _f: _t.Callable[[_T], _U],
     ) -> _t.Callable[..., _U]: ...
-@_t.overload
-def _coconut_forward_compose(
-    _h: _t.Callable[..., _T],
-    _g: _t.Callable[[_T], _U],
-    _f: _t.Callable[[_U], _V],
-    ) -> _t.Callable[..., _V]: ...
-@_t.overload
-def _coconut_forward_compose(
-    _h: _t.Callable[..., _T],
-    _g: _t.Callable[[_T], _U],
-    _f: _t.Callable[[_U], _V],
-    _e: _t.Callable[[_V], _W],
-    ) -> _t.Callable[..., _W]: ...
 @_t.overload
 def _coconut_forward_compose(*funcs: _Callable) -> _Callable: ...
 
-_coconut_forward_star_compose = _coconut_forward_compose
-_coconut_forward_dubstar_compose = _coconut_forward_compose
-
-
 @_t.overload
 def _coconut_back_compose(
-    _f: _t.Callable[[_U], _V],
-    _g: _t.Callable[[_T], _U],
-    ) -> _t.Callable[[_T], _V]: ...
-@_t.overload
-def _coconut_back_compose(
-    _f: _t.Callable[[_V], _W],
-    _g: _t.Callable[[_U], _V],
-    _h: _t.Callable[[_T], _U],
-    ) -> _t.Callable[[_T], _W]: ...
+    _f: _t.Callable[[_T], _U],
+    _g: _t.Callable[_P, _T],
+    ) -> _t.Callable[_P, _U]: ...
 @_t.overload
 def _coconut_back_compose(
     _f: _t.Callable[[_T], _U],
     _g: _t.Callable[..., _T],
     ) -> _t.Callable[..., _U]: ...
 @_t.overload
-def _coconut_back_compose(
-    _f: _t.Callable[[_U], _V],
-    _g: _t.Callable[[_T], _U],
-    _h: _t.Callable[..., _T],
-    ) -> _t.Callable[..., _V]: ...
-@_t.overload
-def _coconut_back_compose(
-    _e: _t.Callable[[_V], _W],
-    _f: _t.Callable[[_U], _V],
-    _g: _t.Callable[[_T], _U],
-    _h: _t.Callable[..., _T],
-    ) -> _t.Callable[..., _W]: ...
-@_t.overload
 def _coconut_back_compose(*funcs: _Callable) -> _Callable: ...
 
-_coconut_back_star_compose = _coconut_back_compose
-_coconut_back_dubstar_compose = _coconut_back_compose
+
+@_t.overload
+def _coconut_forward_none_compose(
+    _g: _t.Callable[_P, _t.Optional[_T]],
+    _f: _t.Callable[[_T], _U],
+    ) -> _t.Callable[_P, _t.Optional[_U]]: ...
+@_t.overload
+def _coconut_forward_none_compose(
+    _g: _t.Callable[..., _t.Optional[_T]],
+    _f: _t.Callable[[_T], _U],
+    ) -> _t.Callable[..., _t.Optional[_U]]: ...
+@_t.overload
+def _coconut_forward_none_compose(*funcs: _Callable) -> _Callable: ...
+
+@_t.overload
+def _coconut_back_none_compose(
+    _f: _t.Callable[[_T], _U],
+    _g: _t.Callable[_P, _t.Optional[_T]],
+    ) -> _t.Callable[_P, _t.Optional[_U]]: ...
+@_t.overload
+def _coconut_back_none_compose(
+    _f: _t.Callable[[_T], _U],
+    _g: _t.Callable[..., _t.Optional[_T]],
+    ) -> _t.Callable[..., _t.Optional[_U]]: ...
+@_t.overload
+def _coconut_back_none_compose(*funcs: _Callable) -> _Callable: ...
+
+
+@_t.overload
+def _coconut_forward_star_compose(
+    _g: _t.Callable[_P, _t.Tuple[_T]],
+    _f: _t.Callable[[_T], _U],
+    ) -> _t.Callable[_P, _U]: ...
+@_t.overload
+def _coconut_forward_star_compose(
+    _g: _t.Callable[_P, _t.Tuple[_T, _U]],
+    _f: _t.Callable[[_T, _U], _V],
+    ) -> _t.Callable[_P, _V]: ...
+@_t.overload
+def _coconut_forward_star_compose(
+    _g: _t.Callable[_P, _t.Tuple[_T, _U, _V]],
+    _f: _t.Callable[[_T, _U, _V], _W],
+    ) -> _t.Callable[_P, _W]: ...
+@_t.overload
+def _coconut_forward_star_compose(
+    _g: _t.Callable[..., _t.Tuple[_T]],
+    _f: _t.Callable[[_T], _U],
+    ) -> _t.Callable[..., _U]: ...
+@_t.overload
+def _coconut_forward_star_compose(
+    _g: _t.Callable[..., _t.Tuple[_T, _U]],
+    _f: _t.Callable[[_T, _U], _V],
+    ) -> _t.Callable[..., _V]: ...
+@_t.overload
+def _coconut_forward_star_compose(
+    _g: _t.Callable[..., _t.Tuple[_T, _U, _V]],
+    _f: _t.Callable[[_T, _U, _V], _W],
+    ) -> _t.Callable[..., _W]: ...
+@_t.overload
+def _coconut_forward_star_compose(*funcs: _Callable) -> _Callable: ...
+
+@_t.overload
+def _coconut_back_star_compose(
+    _f: _t.Callable[[_T], _U],
+    _g: _t.Callable[_P, _t.Tuple[_T]],
+    ) -> _t.Callable[_P, _U]: ...
+@_t.overload
+def _coconut_back_star_compose(
+    _f: _t.Callable[[_T, _U], _V],
+    _g: _t.Callable[_P, _t.Tuple[_T, _U]],
+    ) -> _t.Callable[_P, _V]: ...
+@_t.overload
+def _coconut_back_star_compose(
+    _f: _t.Callable[[_T, _U, _V], _W],
+    _g: _t.Callable[_P, _t.Tuple[_T, _U, _V]],
+    ) -> _t.Callable[_P, _W]: ...
+@_t.overload
+def _coconut_back_star_compose(
+    _f: _t.Callable[[_T], _U],
+    _g: _t.Callable[..., _t.Tuple[_T]],
+    ) -> _t.Callable[..., _U]: ...
+@_t.overload
+def _coconut_back_star_compose(
+    _f: _t.Callable[[_T, _U], _V],
+    _g: _t.Callable[..., _t.Tuple[_T, _U]],
+    ) -> _t.Callable[..., _V]: ...
+@_t.overload
+def _coconut_back_star_compose(
+    _f: _t.Callable[[_T, _U, _V], _W],
+    _g: _t.Callable[..., _t.Tuple[_T, _U, _V]],
+    ) -> _t.Callable[..., _W]: ...
+@_t.overload
+def _coconut_back_star_compose(*funcs: _Callable) -> _Callable: ...
+
+
+@_t.overload
+def _coconut_forward_none_star_compose(
+    _g: _t.Callable[_P, _t.Optional[_t.Tuple[_T]]],
+    _f: _t.Callable[[_T], _U],
+    ) -> _t.Callable[_P, _t.Optional[_U]]: ...
+@_t.overload
+def _coconut_forward_none_star_compose(
+    _g: _t.Callable[_P, _t.Optional[_t.Tuple[_T, _U]]],
+    _f: _t.Callable[[_T, _U], _V],
+    ) -> _t.Callable[_P, _t.Optional[_V]]: ...
+@_t.overload
+def _coconut_forward_none_star_compose(
+    _g: _t.Callable[_P, _t.Optional[_t.Tuple[_T, _U, _V]]],
+    _f: _t.Callable[[_T, _U, _V], _W],
+    ) -> _t.Callable[_P, _t.Optional[_W]]: ...
+@_t.overload
+def _coconut_forward_none_star_compose(
+    _g: _t.Callable[..., _t.Optional[_t.Tuple[_T]]],
+    _f: _t.Callable[[_T], _U],
+    ) -> _t.Callable[..., _t.Optional[_U]]: ...
+@_t.overload
+def _coconut_forward_none_star_compose(
+    _g: _t.Callable[..., _t.Optional[_t.Tuple[_T, _U]]],
+    _f: _t.Callable[[_T, _U], _V],
+    ) -> _t.Callable[..., _t.Optional[_V]]: ...
+@_t.overload
+def _coconut_forward_none_star_compose(
+    _g: _t.Callable[..., _t.Optional[_t.Tuple[_T, _U, _V]]],
+    _f: _t.Callable[[_T, _U, _V], _W],
+    ) -> _t.Callable[..., _t.Optional[_W]]: ...
+@_t.overload
+def _coconut_forward_none_star_compose(*funcs: _Callable) -> _Callable: ...
+
+@_t.overload
+def _coconut_back_none_star_compose(
+    _f: _t.Callable[[_T], _U],
+    _g: _t.Callable[_P, _t.Optional[_t.Tuple[_T]]],
+    ) -> _t.Callable[_P, _t.Optional[_U]]: ...
+@_t.overload
+def _coconut_back_none_star_compose(
+    _f: _t.Callable[[_T, _U], _V],
+    _g: _t.Callable[_P, _t.Optional[_t.Tuple[_T, _U]]],
+    ) -> _t.Callable[_P, _t.Optional[_V]]: ...
+@_t.overload
+def _coconut_back_none_star_compose(
+    _f: _t.Callable[[_T, _U, _V], _W],
+    _g: _t.Callable[_P, _t.Optional[_t.Tuple[_T, _U, _V]]],
+    ) -> _t.Callable[_P, _t.Optional[_W]]: ...
+@_t.overload
+def _coconut_back_none_star_compose(
+    _f: _t.Callable[[_T], _U],
+    _g: _t.Callable[..., _t.Optional[_t.Tuple[_T]]],
+    ) -> _t.Callable[..., _t.Optional[_U]]: ...
+@_t.overload
+def _coconut_back_none_star_compose(
+    _f: _t.Callable[[_T, _U], _V],
+    _g: _t.Callable[..., _t.Optional[_t.Tuple[_T, _U]]],
+    ) -> _t.Callable[..., _t.Optional[_V]]: ...
+@_t.overload
+def _coconut_back_none_star_compose(
+    _f: _t.Callable[[_T, _U, _V], _W],
+    _g: _t.Callable[..., _t.Optional[_t.Tuple[_T, _U, _V]]],
+    ) -> _t.Callable[..., _t.Optional[_W]]: ...
+@_t.overload
+def _coconut_back_none_star_compose(*funcs: _Callable) -> _Callable: ...
+
+
+@_t.overload
+def _coconut_forward_dubstar_compose(
+    _g: _t.Callable[_P, _t.Dict[_t.Text, _t.Any]],
+    _f: _t.Callable[..., _T],
+    ) -> _t.Callable[_P, _T]: ...
+# @_t.overload
+# def _coconut_forward_dubstar_compose(
+#     _g: _t.Callable[..., _t.Dict[_t.Text, _t.Any]],
+#     _f: _t.Callable[..., _T],
+#     ) -> _t.Callable[..., _T]: ...
+@_t.overload
+def _coconut_forward_dubstar_compose(*funcs: _Callable) -> _Callable: ...
+
+@_t.overload
+def _coconut_back_dubstar_compose(
+    _f: _t.Callable[..., _T],
+    _g: _t.Callable[_P, _t.Dict[_t.Text, _t.Any]],
+    ) -> _t.Callable[_P, _T]: ...
+# @_t.overload
+# def _coconut_back_dubstar_compose(
+#     _f: _t.Callable[..., _T],
+#     _g: _t.Callable[..., _t.Dict[_t.Text, _t.Any]],
+#     ) -> _t.Callable[..., _T]: ...
+@_t.overload
+def _coconut_back_dubstar_compose(*funcs: _Callable) -> _Callable: ...
+
+
+@_t.overload
+def _coconut_forward_none_dubstar_compose(
+    _g: _t.Callable[_P, _t.Optional[_t.Dict[_t.Text, _t.Any]]],
+    _f: _t.Callable[..., _T],
+    ) -> _t.Callable[_P, _t.Optional[_T]]: ...
+# @_t.overload
+# def _coconut_forward_none_dubstar_compose(
+#     _g: _t.Callable[..., _t.Optional[_t.Dict[_t.Text, _t.Any]]],
+#     _f: _t.Callable[..., _T],
+#     ) -> _t.Callable[..., _t.Optional[_T]]: ...
+@_t.overload
+def _coconut_forward_none_dubstar_compose(*funcs: _Callable) -> _Callable: ...
+
+@_t.overload
+def _coconut_back_none_dubstar_compose(
+    _f: _t.Callable[..., _T],
+    _g: _t.Callable[_P, _t.Optional[_t.Dict[_t.Text, _t.Any]]],
+    ) -> _t.Callable[_P, _t.Optional[_T]]: ...
+# @_t.overload
+# def _coconut_back_none_dubstar_compose(
+#     _f: _t.Callable[..., _T],
+#     _g: _t.Callable[..., _t.Optional[_t.Dict[_t.Text, _t.Any]]],
+#     ) -> _t.Callable[..., _t.Optional[_T]]: ...
+@_t.overload
+def _coconut_back_none_dubstar_compose(*funcs: _Callable) -> _Callable: ...
 
 
 def _coconut_pipe(
@@ -585,6 +776,19 @@ def _coconut_none_star_pipe(
 def _coconut_none_dubstar_pipe(
     kws: _t.Optional[_t.Dict[_t.Text, _t.Any]],
     f: _t.Callable[..., _T],
+) -> _t.Optional[_T]: ...
+
+def _coconut_back_none_pipe(
+    f: _t.Callable[[_T], _U],
+    x: _t.Optional[_T],
+) -> _t.Optional[_U]: ...
+def _coconut_back_none_star_pipe(
+    f: _t.Callable[..., _T],
+    xs: _t.Optional[_Iterable],
+) -> _t.Optional[_T]: ...
+def _coconut_back_none_dubstar_pipe(
+    f: _t.Callable[..., _T],
+    kws: _t.Optional[_t.Dict[_t.Text, _t.Any]],
 ) -> _t.Optional[_T]: ...
 
 

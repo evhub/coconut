@@ -85,6 +85,7 @@ from coconut.constants import (
     reserved_command_symbols,
     streamline_grammar_for_len,
     all_builtins,
+    in_place_op_funcs,
 )
 from coconut.util import (
     pickleable_obj,
@@ -158,7 +159,7 @@ from coconut.compiler.util import (
     try_parse,
     prep_grammar,
     split_leading_whitespace,
-    ordered_items,
+    ordered,
     tuple_str_of_str,
     dict_to_str,
     close_char_for,
@@ -918,16 +919,15 @@ class Compiler(Grammar, pickleable_obj):
         # determine possible causes
         if include_causes:
             self.internal_assert(extra is None, original, loc, "make_err cannot include causes with extra")
-            causes = []
+            causes = set()
             for cause, _, _ in all_matches(self.parse_err_msg, snippet[loc_in_snip:]):
-                causes.append(cause)
+                causes.add(cause)
             for cause, _, _ in all_matches(self.parse_err_msg, snippet[endpt_in_snip:]):
-                if cause not in causes:
-                    causes.append(cause)
+                causes.add(cause)
             if causes:
                 extra = "possible cause{s}: {causes}".format(
                     s="s" if len(causes) > 1 else "",
-                    causes=", ".join(causes),
+                    causes=", ".join(ordered(causes)),
                 )
             else:
                 extra = None
@@ -2050,7 +2050,7 @@ if {temp_var} is not None:
 
             # look for add_code_before regexes
             else:
-                for name, raw_code in ordered_items(self.add_code_before):
+                for name, raw_code in ordered(self.add_code_before.items()):
                     if name in ignore_names:
                         continue
 
@@ -2448,24 +2448,8 @@ while True:
             return name + " = " + name + "(*(" + item + "))"
         elif op == "<**|=":
             return name + " = " + name + "(**(" + item + "))"
-        elif op == "|?>=":
-            return name + " = _coconut_none_pipe(" + name + ", (" + item + "))"
-        elif op == "|?*>=":
-            return name + " = _coconut_none_star_pipe(" + name + ", (" + item + "))"
-        elif op == "|?**>=":
-            return name + " = _coconut_none_dubstar_pipe(" + name + ", (" + item + "))"
-        elif op == "..=" or op == "<..=":
-            return name + " = _coconut_forward_compose((" + item + "), " + name + ")"
-        elif op == "..>=":
-            return name + " = _coconut_forward_compose(" + name + ", (" + item + "))"
-        elif op == "<*..=":
-            return name + " = _coconut_forward_star_compose((" + item + "), " + name + ")"
-        elif op == "..*>=":
-            return name + " = _coconut_forward_star_compose(" + name + ", (" + item + "))"
-        elif op == "<**..=":
-            return name + " = _coconut_forward_dubstar_compose((" + item + "), " + name + ")"
-        elif op == "..**>=":
-            return name + " = _coconut_forward_dubstar_compose(" + name + ", (" + item + "))"
+        elif op in in_place_op_funcs:
+            return name + " = " + in_place_op_funcs[op] + "(" + name + ", (" + item + "))"
         elif op == "??=":
             return name + " = " + item + " if " + name + " is None else " + name
         elif op == "::=":
