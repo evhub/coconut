@@ -23,10 +23,10 @@ import sys as _coconut_sys
 # VERSION:
 # -----------------------------------------------------------------------------------------------------------------------
 
-VERSION = "2.1.1"
-VERSION_NAME = "The Spanish Inquisition"
+VERSION = "2.2.0"
+VERSION_NAME = None
 # False for release, int >= 1 for develop
-DEVELOP = 47
+DEVELOP = False
 ALPHA = False  # for pre releases rather than post releases
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -51,7 +51,7 @@ assert DEVELOP or not ALPHA, "alpha releases are only for develop"
 
 if DEVELOP:
     VERSION += "-" + ("a" if ALPHA else "post") + "_dev" + str(int(DEVELOP))
-VERSION_STR = VERSION + " [" + VERSION_NAME + "]"
+VERSION_STR = VERSION + (" [" + VERSION_NAME + "]" if VERSION_NAME else "")
 
 PY2 = _coconut_sys.version_info < (3,)
 PY26 = _coconut_sys.version_info < (2, 7)
