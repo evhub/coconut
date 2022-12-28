@@ -1911,7 +1911,7 @@ users = [
 
 ### Set Literals
 
-Coconut allows an optional `s` to be prepended in front of Python set literals. While in most cases this does nothing, in the case of the empty set it lets Coconut know that it is an empty set and not an empty dictionary.
+Coconut allows an optional `s` to be prepended in front of Python set literals. While in most cases this does nothing, in the case of the empty set it lets Coconut know that it is an empty set and not an empty dictionary. Set literals also support unpacking syntax (e.g. `s{*xs}`).
 
 Additionally, Coconut also supports replacing the `s` with an `f` to generate a `frozenset` or an `m` to generate a Coconut [`multiset`](#multiset).
 
@@ -2935,8 +2935,6 @@ async def fmap_over_async_iters(func, async_iter):
         yield func(item)
 ```
 such that `fmap` can effectively be used as an async map.
-
-For `None`, `fmap` will always return `None`, ignoring the function passed to it.
 
 ##### Example
 
