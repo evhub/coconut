@@ -23,6 +23,18 @@ def assert_raises(c, exc):
 
 def primary_test() -> bool:
     """Basic no-dependency tests."""
+    # must come at start so that local sys binding is correct
+    import queue as q, builtins, email.mime.base
+    assert q.Queue  # type: ignore
+    assert builtins.len([1, 1]) == 2
+    assert email.mime.base
+    from email.mime import base as mimebase
+    assert mimebase
+    from io import StringIO, BytesIO
+    sio = StringIO("derp")
+    assert sio.read() == "derp"
+    bio = BytesIO(b"herp")
+    assert bio.read() == b"herp"
     if TYPE_CHECKING or sys.version_info >= (3, 5):
         from typing import Iterable, Any
 
@@ -150,12 +162,6 @@ def primary_test() -> bool:
         assert err
     else:
         assert False
-    import queue as q, builtins, email.mime.base
-    assert q.Queue  # type: ignore
-    assert builtins.len([1, 1]) == 2
-    assert email.mime.base
-    from email.mime import base as mimebase
-    assert mimebase
     from_err = TypeError()
     try:
         raise ValueError() from from_err
@@ -413,11 +419,6 @@ def primary_test() -> bool:
     assert (10,)[0] == 10
     x, x = 1, 2
     assert x == 2
-    from io import StringIO, BytesIO
-    sio = StringIO("derp")
-    assert sio.read() == "derp"
-    bio = BytesIO(b"herp")
-    assert bio.read() == b"herp"
     assert 1 ?? 2 == 1 == (??)(1, 2)
     assert None ?? 2 == 2 == (??)(None, 2)
     one = 1
