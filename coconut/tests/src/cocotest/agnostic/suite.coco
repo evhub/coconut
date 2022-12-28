@@ -811,6 +811,8 @@ def suite_test() -> bool:
     assert range(10)$[:`end`] == range(10) == range(10)[:`end`]
     assert range(10)$[:`end-0`] == range(10) == range(10)[:`end-0`]
     assert range(10)$[:`end-1`] == range(10)[:-1] == range(10)[:`end-1`]
+    assert not end
+    assert end - 1
     assert final_pos("""
 forward 5
 down 5

@@ -1535,6 +1535,7 @@ data End(offset `isinstance` int = 0 if offset <= 0):  # type: ignore
         End(self.offset - operator.index(other))
     def __index__(self if self.offset < 0) = self.offset
     def __call__(self) = self.offset or None
+    def __bool__(self) = self.offset != 0
 
 end = End()
 
