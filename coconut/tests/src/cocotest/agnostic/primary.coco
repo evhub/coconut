@@ -1414,7 +1414,10 @@ def primary_test() -> bool:
     assert_raises((def -> obj.abc = 123), AttributeError)  # type: ignore
     hardref = map((.+1), [1,2,3])
     assert weakref.ref(hardref)() |> list == [2, 3, 4]
-    assert parallel_map(ident, [MatchError]) |> list == [MatchError]
+    my_match_err = MatchError("my match error", 123)
+    assert parallel_map(ident, [my_match_err]) |> list |> str == str([my_match_err])
+    # repeat the same thin again now that my_match_err.str has been called
+    assert parallel_map(ident, [my_match_err]) |> list |> str == str([my_match_err])
     match data tuple(1, 2) in (1, 2, 3):
         assert False
     data TestDefaultMatching(x="x default", y="y default")
