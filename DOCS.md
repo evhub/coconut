@@ -615,9 +615,14 @@ Coconut uses pipe operators for pipeline-style function application. All the ope
 (|?>)   => None-aware pipe forward
 (|?*>)  => None-aware multi-arg pipe forward
 (|?**>) => None-aware keyword arg pipe forward
+(<?|)   => None-aware pipe backward
+(<*?|)  => None-aware multi-arg pipe backward
+(<**?|) => None-aware keyword arg pipe backward
 ```
 
-Additionally, all pipe operators support a lambda as the last argument, despite lambdas having a lower precedence. Thus, `a |> x -> b |> c` is equivalent to `a |> (x -> b |> c)`, not `a |> (x -> b) |> c`. Note also that the None-aware pipe operators here are equivalent to a [monadic bind](https://en.wikipedia.org/wiki/Monad_(functional_programming)) treating the object as a `Maybe` monad composed of either `None` or the given object.
+Additionally, all pipe operators support a lambda as the last argument, despite lambdas having a lower precedence. Thus, `a |> x -> b |> c` is equivalent to `a |> (x -> b |> c)`, not `a |> (x -> b) |> c`.
+
+The None-aware pipe operators here are equivalent to a [monadic bind](https://en.wikipedia.org/wiki/Monad_(functional_programming)) treating the object as a `Maybe` monad composed of either `None` or the given object. Note that only the object being piped, not the function being piped into, may be `None` for `None`-aware pipes.
 
 _Note: To visually spread operations across several lines, just use [parenthetical continuation](#enhanced-parenthetical-continuation)._
 
@@ -654,11 +659,29 @@ print(sq(operator.add(1, 2)))
 
 ### Function Composition
 
-Coconut has three basic function composition operators: `..`, `..>`, and `<..`. Both `..` and `<..` use math-style "backwards" function composition, where the first function is called last, while `..>` uses "forwards" function composition, where the first function is called first. Forwards and backwards function composition pipes cannot be used together in the same expression (unlike normal pipes) and have precedence in-between `None`-coalescing and normal pipes. The `..>` and `<..` function composition pipe operators also have `..*>` and `<*..` forms which are, respectively, the equivalents of `|*>` and `<*|` as well as `..**>` and `<**..` forms which correspond to `|**>` and `<**|`.
+Coconut has three basic function composition operators: `..`, `..>`, and `<..`. Both `..` and `<..` use math-style "backwards" function composition, where the first function is called last, while `..>` uses "forwards" function composition, where the first function is called first. Forwards and backwards function composition pipes cannot be used together in the same expression (unlike normal pipes) and have precedence in-between `None`-coalescing and normal pipes.
+
+The `..>` and `<..` function composition pipe operators also have multi-arg, keyword, and None variants as with [normal pipes](#pipes). The full list of function composition pipe operators is:
+```
+..>    => forwards function composition pipe
+<..    => backwards function composition pipe
+..*>   => forwards multi-arg function composition pipe
+<*..   => backwards multi-arg function composition pipe
+..**>  => forwards keyword arg function composition pipe
+<**..  => backwards keyword arg function composition pipe
+..?>   => forwards None-aware function composition pipe
+<?..   => backwards None-aware function composition pipe
+..?*>  => forwards None-aware multi-arg function composition pipe
+<*?..  => backwards None-aware multi-arg function composition pipe
+..?**> => forwards None-aware keyword arg function composition pipe
+<**?.. => backwards None-aware keyword arg function composition pipe
+```
+
+Note that `None`-aware function composition pipes don't allow either function to be `None`—rather, they allow the return of the first evaluated function to be `None`, in which case `None` is returned immediately rather than calling the next function.
 
 The `..` operator has lower precedence than `await` but higher precedence than `**` while the `..>` pipe operators have a precedence directly higher than normal pipes.
 
-The in-place function composition operators are `..=`, `..>=`, `<..=`, `..*>=`, `<*..=`, `..**>=`, and `..**>=`.
+All function composition operators also have in-place versions (e.g. `..=`).
 
 ##### Example
 
@@ -880,7 +903,7 @@ When using a `None`-aware operator for member access, either for a method or an 
 
 The `None`-aware indexing operator is used identically to normal indexing, using `?[]` instead of `[]`. `seq?[index]` is equivalent to the expression `seq[index] is seq is not None else seq`. Using this operator will not prevent an `IndexError` if `index` is outside the bounds of `seq`.
 
-Coconut also supports None-aware [pipe operators](#pipes).
+Coconut also supports None-aware [pipe operators](#pipes) and [function composition pipes](#function-composition).
 
 ##### Example
 
@@ -913,23 +936,10 @@ Coconut supports Unicode alternatives to many different operator symbols. The Un
 
 ```
 → (\u2192)                  => "->"
-↦ (\u21a6)                  => "|>"
-↤ (\u21a4)                  => "<|"
-*↦ (*\u21a6)                => "|*>"
-↤* (\u21a4*)                => "<*|"
-**↦ (**\u21a6)              => "|**>"
-↤** (\u21a4**)              => "<**|"
 × (\xd7)                    => "*"
 ↑ (\u2191)                  => "**"
 ÷ (\xf7)                    => "/"
 ÷/ (\xf7/)                  => "//"
-∘ (\u2218)                  => ".."
-∘> (\u2218>)                => "..>"
-<∘ (<\u2218)                => "<.."
-∘*> (\u2218*>)              => "..*>"
-<*∘ (<*\u2218)              => "<*.."
-∘**> (\u2218**>)            => "..**>"
-<**∘ (<**\u2218)            => "<**.."
 ⁻ (\u207b)                  => "-" (only negation)
 ≠ (\u2260) or ¬= (\xac=)    => "!="
 ≤ (\u2264) or ⊆ (\u2286)    => "<="
@@ -943,6 +953,31 @@ Coconut supports Unicode alternatives to many different operator symbols. The Un
 » (\xbb)                    => ">>"
 … (\u2026)                  => "..."
 λ (\u03bb)                  => "lambda"
+↦ (\u21a6)                  => "|>"
+↤ (\u21a4)                  => "<|"
+*↦ (*\u21a6)                => "|*>"
+↤* (\u21a4*)                => "<*|"
+**↦ (**\u21a6)              => "|**>"
+↤** (\u21a4**)              => "<**|"
+?↦ (?\u21a6)                => "|?>"
+↤? (?\u21a4)                => "<?|"
+?*↦ (?*\u21a6)              => "|?*>"
+↤*? (\u21a4*?)              => "<*?|"
+?**↦ (?**\u21a6)            => "|?**>"
+↤**? (\u21a4**?)            => "<**?|"
+∘ (\u2218)                  => ".."
+∘> (\u2218>)                => "..>"
+<∘ (<\u2218)                => "<.."
+∘*> (\u2218*>)              => "..*>"
+<*∘ (<*\u2218)              => "<*.."
+∘**> (\u2218**>)            => "..**>"
+<**∘ (<**\u2218)            => "<**.."
+∘?> (\u2218?>)              => "..?>"
+<?∘ (<?\u2218)              => "<?.."
+∘?*> (\u2218?*>)            => "..?*>"
+<*?∘ (<*?\u2218)            => "<*?.."
+∘?**> (\u2218?**>)          => "..?**>"
+<**?∘ (<**?\u2218)          => "<**?.."
 ```
 
 ## Keywords
@@ -1515,21 +1550,6 @@ A very common thing to do in functional programming is to make use of function v
 ##### Full List
 
 ```coconut
-(|>)        => # pipe forward
-(|*>)       => # multi-arg pipe forward
-(|**>)      => # keyword arg pipe forward
-(<|)        => # pipe backward
-(<*|)       => # multi-arg pipe backward
-(<**|)      => # keyword arg pipe backward
-(|?>)       => # None-aware pipe forward
-(|?*>)      => # None-aware multi-arg pipe forward
-(|?**>)     => # None-aware keyword arg pipe forward
-(..), (<..) => # backward function composition
-(..>)       => # forward function composition
-(<*..)      => # multi-arg backward function composition
-(..*>)      => # multi-arg forward function composition
-(<**..)     => # keyword arg backward function composition
-(..**>)     => # keyword arg forward function composition
 (::)        => (itertools.chain)  # will not evaluate its arguments lazily
 ($)         => (functools.partial)
 (.)         => (getattr)
@@ -1554,6 +1574,24 @@ A very common thing to do in functional programming is to make use of function v
 (!=)        => (operator.ne)
 (~)         => (operator.inv)
 (@)         => (operator.matmul)
+(|>)        => # pipe forward
+(|*>)       => # multi-arg pipe forward
+(|**>)      => # keyword arg pipe forward
+(<|)        => # pipe backward
+(<*|)       => # multi-arg pipe backward
+(<**|)      => # keyword arg pipe backward
+(|?>)       => # None-aware pipe forward
+(|?*>)      => # None-aware multi-arg pipe forward
+(|?**>)     => # None-aware keyword arg pipe forward
+(<?|)       => # None-aware pipe backward
+(<*?|)      => # None-aware multi-arg pipe backward
+(<**?|)     => # None-aware keyword arg pipe backward
+(..), (<..) => # backward function composition
+(..>)       => # forward function composition
+(<*..)      => # multi-arg backward function composition
+(..*>)      => # multi-arg forward function composition
+(<**..)     => # keyword arg backward function composition
+(..**>)     => # keyword arg forward function composition
 (not)       => (operator.not_)
 (and)       => # boolean and
 (or)        => # boolean or

@@ -203,26 +203,24 @@ def comp_pipe_handle(loc, tokens):
     """Process pipe function composition."""
     internal_assert(len(tokens) >= 3 and len(tokens) % 2 == 1, "invalid composition pipe tokens", tokens)
     funcs = [tokens[0]]
-    stars_per_func = []
+    info_per_func = []
     direction = None
     for i in range(1, len(tokens), 2):
         op, fn = tokens[i], tokens[i + 1]
         new_direction, stars, none_aware = pipe_info(op)
-        if none_aware:
-            raise CoconutInternalException("found unsupported None-aware composition pipe", op)
         if direction is None:
             direction = new_direction
         elif new_direction != direction:
             raise CoconutDeferredSyntaxError("cannot mix function composition pipe operators with different directions", loc)
         funcs.append(fn)
-        stars_per_func.append(stars)
+        info_per_func.append((stars, none_aware))
     if direction == "backwards":
         funcs.reverse()
-        stars_per_func.reverse()
+        info_per_func.reverse()
     func = funcs.pop(0)
-    funcstars = zip(funcs, stars_per_func)
+    func_infos = zip(funcs, info_per_func)
     return "_coconut_base_compose(" + func + ", " + ", ".join(
-        "(%s, %s)" % (f, star) for f, star in funcstars
+        "(%s, %s, %s)" % (f, stars, none_aware) for f, (stars, none_aware) in func_infos
     ) + ")"
 
 
@@ -649,11 +647,30 @@ class Grammar(object):
     back_star_pipe = Literal("<*|") | ~Literal("\u21a4**") + fixto(Literal("\u21a4*"), "<*|")
     back_dubstar_pipe = Literal("<**|") | fixto(Literal("\u21a4**"), "<**|")
     none_pipe = Literal("|?>") | fixto(Literal("?\u21a6"), "|?>")
-    none_star_pipe = Literal("|?*>") | fixto(Literal("?*\u21a6"), "|?*>")
-    none_dubstar_pipe = Literal("|?**>") | fixto(Literal("?**\u21a6"), "|?**>")
+    none_star_pipe = (
+        Literal("|?*>")
+        | fixto(Literal("?*\u21a6"), "|?*>")
+        | invalid_syntax("|*?>", "Coconut's None-aware forward multi-arg pipe is '|?*>', not '|*?>'")
+    )
+    none_dubstar_pipe = (
+        Literal("|?**>")
+        | fixto(Literal("?**\u21a6"), "|?**>")
+        | invalid_syntax("|**?>", "Coconut's None-aware forward keyword pipe is '|?**>', not '|**?>'")
+    )
+    back_none_pipe = Literal("<?|") | fixto(Literal("\u21a4?"), "<?|")
+    back_none_star_pipe = (
+        Literal("<*?|")
+        | fixto(Literal("\u21a4*?"), "<*?|")
+        | invalid_syntax("<?*|", "Coconut's None-aware backward multi-arg pipe is '<*?|', not '<?*|'")
+    )
+    back_none_dubstar_pipe = (
+        Literal("<**?|")
+        | fixto(Literal("\u21a4**?"), "<**?|")
+        | invalid_syntax("<?**|", "Coconut's None-aware backward keyword pipe is '<**?|', not '<?**|'")
+    )
     dotdot = (
-        ~Literal("...") + ~Literal("..>") + ~Literal("..*") + Literal("..")
-        | ~Literal("\u2218>") + ~Literal("\u2218*>") + fixto(Literal("\u2218"), "..")
+        ~Literal("...") + ~Literal("..>") + ~Literal("..*") + ~Literal("..?") + Literal("..")
+        | ~Literal("\u2218>") + ~Literal("\u2218*") + ~Literal("\u2218?") + fixto(Literal("\u2218"), "..")
     )
     comp_pipe = Literal("..>") | fixto(Literal("\u2218>"), "..>")
     comp_back_pipe = Literal("<..") | fixto(Literal("<\u2218"), "<..")
@@ -661,6 +678,28 @@ class Grammar(object):
     comp_back_star_pipe = Literal("<*..") | fixto(Literal("<*\u2218"), "<*..")
     comp_dubstar_pipe = Literal("..**>") | fixto(Literal("\u2218**>"), "..**>")
     comp_back_dubstar_pipe = Literal("<**..") | fixto(Literal("<**\u2218"), "<**..")
+    comp_none_pipe = Literal("..?>") | fixto(Literal("\u2218?>"), "..?>")
+    comp_back_none_pipe = Literal("<?..") | fixto(Literal("<?\u2218"), "<?..")
+    comp_none_star_pipe = (
+        Literal("..?*>")
+        | fixto(Literal("\u2218?*>"), "..?*>")
+        | invalid_syntax("..*?>", "Coconut's None-aware forward multi-arg composition pipe is '..?*>', not '..*?>'")
+    )
+    comp_back_none_star_pipe = (
+        Literal("<*?..")
+        | fixto(Literal("<*?\u2218"), "<*?..")
+        | invalid_syntax("<?*..", "Coconut's None-aware backward multi-arg composition pipe is '<*?..', not '<?*..'")
+    )
+    comp_none_dubstar_pipe = (
+        Literal("..?**>")
+        | fixto(Literal("\u2218?**>"), "..?**>")
+        | invalid_syntax("..**?>", "Coconut's None-aware forward keyword composition pipe is '..?**>', not '..**?>'")
+    )
+    comp_back_none_dubstar_pipe = (
+        Literal("<**?..")
+        | fixto(Literal("<**?\u2218"), "<**?..")
+        | invalid_syntax("<?**..", "Coconut's None-aware backward keyword composition pipe is '<**?..', not '<?**..'")
+    )
     amp = Literal("&") | fixto(Literal("\u2227") | Literal("\u2229"), "&")
     caret = Literal("^") | fixto(Literal("\u22bb"), "^")
     unsafe_bar = ~Literal("|>") + ~Literal("|*") + Literal("|") | fixto(Literal("\u2228") | Literal("\u222a"), "|")
@@ -836,6 +875,9 @@ class Grammar(object):
         | combine(none_pipe + equals)
         | combine(none_star_pipe + equals)
         | combine(none_dubstar_pipe + equals)
+        | combine(back_none_pipe + equals)
+        | combine(back_none_star_pipe + equals)
+        | combine(back_none_dubstar_pipe + equals)
     )
     augassign = (
         pipe_augassign
@@ -846,6 +888,12 @@ class Grammar(object):
         | combine(comp_back_star_pipe + equals)
         | combine(comp_dubstar_pipe + equals)
         | combine(comp_back_dubstar_pipe + equals)
+        | combine(comp_none_pipe + equals)
+        | combine(comp_back_none_pipe + equals)
+        | combine(comp_none_star_pipe + equals)
+        | combine(comp_back_none_star_pipe + equals)
+        | combine(comp_none_dubstar_pipe + equals)
+        | combine(comp_back_none_dubstar_pipe + equals)
         | combine(unsafe_dubcolon + equals)
         | combine(div_dubslash + equals)
         | combine(div_slash + equals)
@@ -923,20 +971,29 @@ class Grammar(object):
         fixto(dubstar_pipe, "_coconut_dubstar_pipe")
         | fixto(back_dubstar_pipe, "_coconut_back_dubstar_pipe")
         | fixto(none_dubstar_pipe, "_coconut_none_dubstar_pipe")
+        | fixto(back_none_dubstar_pipe, "_coconut_back_none_dubstar_pipe")
         | fixto(star_pipe, "_coconut_star_pipe")
         | fixto(back_star_pipe, "_coconut_back_star_pipe")
         | fixto(none_star_pipe, "_coconut_none_star_pipe")
+        | fixto(back_none_star_pipe, "_coconut_back_none_star_pipe")
         | fixto(pipe, "_coconut_pipe")
         | fixto(back_pipe, "_coconut_back_pipe")
         | fixto(none_pipe, "_coconut_none_pipe")
+        | fixto(back_none_pipe, "_coconut_back_none_pipe")
 
         # must go dubstar then star then no star
         | fixto(comp_dubstar_pipe, "_coconut_forward_dubstar_compose")
         | fixto(comp_back_dubstar_pipe, "_coconut_back_dubstar_compose")
+        | fixto(comp_none_dubstar_pipe, "_coconut_forward_none_dubstar_compose")
+        | fixto(comp_back_none_dubstar_pipe, "_coconut_back_none_dubstar_compose")
         | fixto(comp_star_pipe, "_coconut_forward_star_compose")
         | fixto(comp_back_star_pipe, "_coconut_back_star_compose")
+        | fixto(comp_none_star_pipe, "_coconut_forward_none_star_compose")
+        | fixto(comp_back_none_star_pipe, "_coconut_back_none_star_compose")
         | fixto(comp_pipe, "_coconut_forward_compose")
         | fixto(dotdot | comp_back_pipe, "_coconut_back_compose")
+        | fixto(comp_none_pipe, "_coconut_forward_none_compose")
+        | fixto(comp_back_none_pipe, "_coconut_back_none_compose")
 
         # neg_minus must come after minus
         | fixto(minus, "_coconut_minus")
@@ -1379,6 +1436,12 @@ class Grammar(object):
         | comp_back_star_pipe
         | comp_dubstar_pipe
         | comp_back_dubstar_pipe
+        | comp_none_dubstar_pipe
+        | comp_back_none_dubstar_pipe
+        | comp_none_star_pipe
+        | comp_back_none_star_pipe
+        | comp_none_pipe
+        | comp_back_none_pipe
     )
     comp_pipe_item = attach(
         OneOrMore(none_coalesce_expr + comp_pipe_op) + (lambdef | none_coalesce_expr),
@@ -1399,6 +1462,9 @@ class Grammar(object):
         | none_pipe
         | none_star_pipe
         | none_dubstar_pipe
+        | back_none_pipe
+        | back_none_star_pipe
+        | back_none_dubstar_pipe
     )
     pipe_item = (
         # we need the pipe_op since any of the atoms could otherwise be the start of an expression

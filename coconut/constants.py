@@ -251,6 +251,28 @@ justify_len = 79  # ideal line length
 default_matcher_style = "python warn on strict"
 wildcard = "_"
 
+in_place_op_funcs = {
+    "|?>=": "_coconut_none_pipe",
+    "|?*>=": "_coconut_none_star_pipe",
+    "|?**>=": "_coconut_none_dubstar_pipe",
+    "<?|=": "_coconut_back_none_pipe",
+    "<*?|=": "_coconut_back_none_star_pipe",
+    "<**?|=": "_coconut_back_none_dubstar_pipe",
+    "..=": "_coconut_back_compose",
+    "<..=": "_coconut_back_compose",
+    "..>=": "_coconut_forward_compose",
+    "<*..=": "_coconut_back_star_compose",
+    "..*>=": "_coconut_forward_star_compose",
+    "<**..=": "_coconut_back_dubstar_compose",
+    "..**>=": "_coconut_forward_dubstar_compose",
+    "<?..=": "_coconut_back_none_compose",
+    "..?>=": "_coconut_forward_none_compose",
+    "<*?..=": "_coconut_back_none_star_compose",
+    "..?*>=": "_coconut_forward_none_star_compose",
+    "<**?..=": "_coconut_back_none_dubstar_compose",
+    "..?**>=": "_coconut_forward_none_dubstar_compose",
+}
+
 keyword_vars = (
     "and",
     "as",
@@ -675,16 +697,16 @@ new_operators = (
     r"`",
     r"::",
     r";+",
-    r"(?:<\*?\*?)?(?!\.\.\.)\.\.(?:\*?\*?>)?",  # ..
+    r"(?:<\*?\*?\??)?(?!\.\.\.)\.\.(?:\??\*?\*?>)?",  # ..
     r"\|\??\*?\*?>",
-    r"<\*?\*?\|",
+    r"<\*?\*?\??\|",
     r"->",
     r"\?\??",
     r"<:",
     "\u2192",  # ->
     "\\??\\*?\\*?\u21a6",  # |>
-    "\u21a4\\*?\\*?",  # <|
-    "<?\\*?\\*?\u2218\\*?\\*?>?",  # ..
+    "\u21a4\\*?\\*?\\??",  # <|
+    "<?\\*?\\*?\\??\u2218\\??\\*?\\*?>?",  # ..
     "\xd7",  # *
     "\u2191",  # **
     "\xf7",  # /

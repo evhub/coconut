@@ -26,7 +26,7 @@ import sys as _coconut_sys
 VERSION = "2.1.1"
 VERSION_NAME = "The Spanish Inquisition"
 # False for release, int >= 1 for develop
-DEVELOP = 45
+DEVELOP = 46
 ALPHA = False  # for pre releases rather than post releases
 
 # -----------------------------------------------------------------------------------------------------------------------

@@ -1,0 +1,1500 @@
+import sys
+import itertools
+import collections
+import collections.abc
+import weakref
+from copy import copy
+
+operator log10
+from math import \log10 as (log10)
+
+# need to be at top level to avoid binding sys as a local in primary_test
+from importlib import reload  # NOQA
+from enum import Enum  # noqa
+
+def assert_raises(c, exc):
+    """Test whether callable c raises an exception of type exc."""
+    try:
+        c()
+    except exc:
+        return True
+    else:
+        raise AssertionError("%r failed to raise exception %r" % (c, exc))
+
+def primary_test() -> bool:
+    """Basic no-dependency tests."""
+    if TYPE_CHECKING or sys.version_info >= (3, 5):
+        from typing import Iterable, Any
+
+    assert 1 | 2 == 3
+    assert "\n" == (
+
+'''
+'''
+
+) == """
+"""
+    assert \(_coconut)
+    assert "_coconut" in globals()
+    assert "_coconut" not in locals()
+    x = 5
+    assert x == 5
+    x == 6
+    assert x == 5
+    assert r"hello, world" == "hello, world" == "hello," " " "world"
+    assert "\n " == """
+ """
+    assert "\\" "\"" == "\\\""
+    assert """
+
+""" == "\n\n"
+    assert {"a":5}["a"] == 5
+    a, = [24]
+    assert a == 24
+    assert set((1, 2, 3)) == {1, 2, 3}
+    olist = [0,1,2]
+    olist[1] += 4
+    assert olist == [0,5,2]
+    assert +5e+5 == +5 * +10**+5
+    assert repr(3) == "3" == ascii(3)
+    assert 5 |> (-)$(2) |> (*)$(2) == -6
+    assert map(pow$(2), 0 `range` 5) |> list == [1,2,4,8,16]
+    range10 = range(0,10)
+    reiter_range10 = reiterable(range10)
+    reiter_iter_range10 = reiterable(iter(range10))
+    for iter1, iter2 in [
+        tee(range10),
+        tee(iter(range10)),
+        (reiter_range10, reiter_range10),
+        (reiter_iter_range10, reiter_iter_range10),
+    ]:
+        assert iter1$[2:8] |> list == [2, 3, 4, 5, 6, 7] == (.$[])(iter2, slice(2, 8)) |> list, (iter1, iter2)
+    \data = 5
+    assert \data == 5
+    \\data = 3
+    \\assert data == 3
+    \\def backslash_test():
+        return (x) -> x
+    assert \(1) == 1 == backslash_test()(1)
+    assert True is (\(
+            "hello"
+        ) == "hello" == \(
+            'hello'
+        ))
+    \\def multiline_backslash_test(
+                                   x,
+                                   y):
+        return x + y
+    assert multiline_backslash_test(1, 2) == 3
+    \\ assert True
+    class one_line_class: pass
+    assert isinstance(one_line_class(), one_line_class)
+    assert (.join)("")(["1", "2", "3"]) == "123"
+    assert "" |> .join <| ["1","2","3"] == "123"
+    assert "". <| "join" <| ["1","2","3"] == "123"
+    assert 1 |> [1,2,3][] == 2 == 1 |> [1,2,3]$[]
+    assert 1 |> "123"[] == "2" == 1 |> "123"$[]
+    assert (| -1, 0, |) :: range(1, 5) |> list == [-1, 0, 1, 2, 3, 4]
+    assert (| 1 |) :: (| 2 |) |> list == [1, 2]
+    assert not isinstance(map((+)$(2), [1,2,3]), list)
+    assert not isinstance(range(10), list)
+    longint: int = 10**100
+    assert isinstance(longint, int)
+    assert chr(1000)
+    assert 3 + 4i |> abs == 5
+    assert 3.14j == 3.14i
+    assert 10.j == 10.i
+    assert 10j == 10i
+    assert .001j == .001i
+    assert 1e100j == 1e100i
+    assert 3.14e-10j == 3.14e-10i
+    {"text": text, "tags": [first] + rest} = {"text": "abc", "tags": [1, 2, 3]}  # type: ignore
+    assert text == "abc"
+    assert first == 1
+    assert rest == [2, 3]
+    assert isinstance("a", str)
+    assert isinstance(b"a", bytes)
+    global (glob_a,
+            glob_b)
+    glob_a, glob_b = 0, 0  # type: ignore
+    assert glob_a == 0 == glob_b  # type: ignore
+    def set_globs(x):
+        global (glob_a, glob_b)
+        glob_a, glob_b = x, x
+    set_globs(2)
+    assert glob_a == 2 == glob_b  # type: ignore
+    def set_globs_again(x):
+        global (glob_a, glob_b) = (x, x)
+    set_globs_again(10)
+    assert glob_a == 10 == glob_b  # type: ignore
+    def inc_globs(x):
+        global glob_a += x
+        global glob_b += x
+    inc_globs(1)
+    assert glob_a == 11 == glob_b  # type: ignore
+    assert (-)(1) == -1 == (-)$(1)(2)
+    assert 3 `(<=)` 3
+    assert range(10) |> consume |> list == []
+    assert range(10) |> consume$(keep_last=2) |> list == [8, 9]
+    i = int()
+    try:
+        i.x = 12  # type: ignore
+    except AttributeError as err:
+        assert err
+    else:
+        assert False
+    r = range(10)
+    try:
+        r.x = 12  # type: ignore
+    except AttributeError as err:
+        assert err
+    else:
+        assert False
+    import queue as q, builtins, email.mime.base
+    assert q.Queue  # type: ignore
+    assert builtins.len([1, 1]) == 2
+    assert email.mime.base
+    from email.mime import base as mimebase
+    assert mimebase
+    from_err = TypeError()
+    try:
+        raise ValueError() from from_err
+    except ValueError as err:
+        assert err.__cause__ is from_err
+    else:
+        assert False
+    data doc: "doc"
+    data doc_:
+        """doc"""
+    assert doc.__doc__ == "doc" == doc_.__doc__
+    assert 10000000.0 == 10_000_000.0
+    assert (||) |> tuple == ()
+    assert isinstance([], collections.abc.Sequence)
+    assert isinstance(range(1), collections.abc.Sequence)
+    assert collections.defaultdict(int)[5] == 0  # type: ignore
+    assert len(range(10)) == 10
+    assert range(4) |> reversed |> tuple == (3,2,1,0)
+    assert range(5)[1:] |> tuple == (1,2,3,4) == range(5)$[1:] |> tuple
+    assert range(10)[-3:-1] |> tuple == (7,8) == range(10)$[-3:-1] |> tuple
+    assert map(abs, (1,-2,-5,2))$[:] |> tuple == (1,2,5,2)  # type: ignore
+    assert (|1,2|)$[-1] == 2 == (|1,2|) |> iter |> .$[-1]
+    assert (|0,1,2,3|)$[-2:] |> tuple == (2,3) == (|0,1,2,3|) |> iter |> .$[-2:] |> tuple
+    assert (|0,1,2,3|)$[:-2] |> tuple == (0,1) == (|0,1,2,3|) |> iter |> .$[:-2] |> tuple
+    assert map((+), (|10, 20|), (|1, 2|))$[-1] == 22 == map((+), (|10, 20|), (|1, 2|))[-1]  # type: ignore
+    assert map((x)->x+1, range(10**9))$[-1] == 10**9 == count()$[10**9]
+    assert count()$[10:15] |> tuple == (10,11,12,13,14) == count()[10:15] |> tuple
+    assert zip((1,2), (3,4)) |> tuple == ((1,3),(2,4)) == zip((1,2), (3,4))$[:] |> tuple
+    assert zip((|10, 20|), (|1, 2|))$[-1] |> tuple == (20,2) == zip((|10, 20|), (|1, 2|))[-1] |> tuple  # type: ignore
+    assert zip(count(), count())$[10**9] |> tuple == (10**9, 10**9) == zip(count(), count())[10**9] |> tuple  # type: ignore
+    assert count(1.5, 0.5)$[0] == 1.5 == (1.5,2,2.5,3)$[0]
+    assert count(1.5, 0.5)$[1:3] |> tuple == (2,2.5) == (1.5,2,2.5,3)$[1:3] |> tuple
+    assert iter((0,1,2,3,4))$[::2] |> tuple == (0,2,4), (iter((0,1,2,3,4)), iter((0,1,2,3,4))$[::2], iter((0,1,2,3,4))$[::2] |> tuple)
+    assert iter((0,1,2,3,4))$[::-1] |> tuple == (4,3,2,1,0), (iter((0,1,2,3,4)), iter((0,1,2,3,4))$[::-1], iter((0,1,2,3,4))$[::-1] |> tuple)
+    assert {x:x for x in range(5)} == {0:0, 1:1, 2:2, 3:3, 4:4}
+    match x = 12  # type: ignore
+    assert x == 12
+    get_int = () -> int
+    x `isinstance` get_int() = 5  # type: ignore
+    assert x == 5
+    class a(get_int()): pass  # type: ignore
+    assert isinstance(a(), int)  # type: ignore
+    assert map((+), range(5), range(6)) |> len == 5 == zip(range(5), range(6)) |> len  # type: ignore
+    assert map((-), range(5)).func(3) == -3  # type: ignore
+    assert map((-), range(5)).iters[0] |> tuple == range(5) |> tuple == zip(range(5), range(6)).iters[0] |> tuple  # type: ignore
+    assert repr(zip((0,1), (1,2))) == "zip((0, 1), (1, 2))"
+    assert repr(map((-), range(5))).startswith("map(")  # type: ignore
+    assert repr(parallel_map((-), range(5))).startswith("parallel_map(")  # type: ignore
+    assert parallel_map((-), range(5)) |> tuple == (0, -1, -2, -3, -4) == parallel_map(map$((-)), (range(5),))$[0] |> tuple  # type: ignore
+    assert parallel_map(zip, (range(2),), (range(2),)) |> map$(tuple) |> tuple == (((0,0), (1,1)),)  # type: ignore
+    assert parallel_map(zip_longest$(fillvalue=10), (range(1),), (range(2),)) |> map$(tuple) |> tuple == (((0,0), (10,1)),)  # type: ignore
+    assert (range(0, 5), range(5, 10)) |*> map$(+) |> tuple == (5, 7, 9, 11, 13)
+    assert parallel_map((*)$(2)..(+)$(1), range(5)) |> tuple == (2, 4, 6, 8, 10)
+    assert parallel_map((+), range(5), range(5), chunksize=2) |> list == map((*)$(2), range(5)) |> list == concurrent_map((+), range(5), range(5), chunksize=2) |> list  # type: ignore
+    assert repr(concurrent_map((-), range(5))).startswith("concurrent_map(")  # type: ignore
+    with concurrent_map.multiple_sequential_calls(max_workers=4):  # type: ignore
+        assert concurrent_map((-), range(5)) |> tuple == (0, -1, -2, -3, -4) == concurrent_map(map$((-)), (range(5),))$[0] |> tuple  # type: ignore
+    assert concurrent_map(zip, (range(2),), (range(2),)) |> map$(tuple) |> tuple == (((0,0), (1,1)),)  # type: ignore
+    assert (range(0, 5), range(5, 10)) |*> map$(+) |> tuple == (5, 7, 9, 11, 13)
+    assert concurrent_map((*)$(2)..(+)$(1), range(5)) |> tuple == (2, 4, 6, 8, 10)
+    assert 0 in range(1)
+    assert range(1).count(0) == 1
+    assert 2 in range(5)
+    assert range(5).count(2) == 1
+    assert 10 not in range(3)
+    assert range(3).count(10) == 0
+    assert 1 in range(1,2,3)
+    assert range(1,2,3).count(1) == 1
+    assert range(1,2,3).index(1) == 0
+    assert range(1,2,3)[0] == 1
+    assert range(1,5,3).index(4) == 1
+    assert range(1,5,3)[1] == 4
+    assert_raises(-> range(1,2,3).index(2), ValueError)
+    assert 0 in count()  # type: ignore
+    assert count().count(0) == 1  # type: ignore
+    assert -1 not in count()  # type: ignore
+    assert count().count(-1) == 0  # type: ignore
+    assert 1 not in count(5)
+    assert count(5).count(1) == 0
+    assert 2 not in count(1,2)
+    assert count(1,2).count(2) == 0
+    assert_raises(-> count(1,2).index(2), ValueError)
+    assert count(1,3).index(1) == 0
+    assert count(1,3)[0] == 1
+    assert count(1,3).index(4) == 1
+    assert count(1,3)[1] == 4
+    assert len <| map((x) -> x, [1, 2]) == 2  # type: ignore
+    assert repr("hello") == "'hello'" == ascii("hello")
+    assert count(1,3) |> .index(1) == 0 == (.index(1))(count(1, 3))
+    assert copy(count(1))$[0] == 1 == (.$[])(count(1), 0)
+    assert tee(count()) |> map$((t) -> isinstance(t, count)) |> all
+    assert tee(range(10)) |> map$((t) -> isinstance(t, range)) |> all
+    assert tee([1, 2, 3]) |> map$((t) -> isinstance(t, list)) |> all
+    assert (-> 5)() == 5  # type: ignore
+    assert (-> _[0])([1, 2, 3]) == 1  # type: ignore
+    assert iter(range(10))$[-8:-5] |> list == [2, 3, 4] == (.$[])(iter(range(10)), slice(-8, -5)) |> list
+    assert iter(range(10))$[-2:] |> list == [8, 9] == (.$[])(iter(range(10)), slice(-2, None)) |> list
+    assert (.[1])(range(1, 5)) == 2 == (.$[1])(range(1, 5))
+    assert range(1, 5) |> .[1] == 2 == range(1, 5) |> .$[1]
+    assert (.[:5])(range(10)) |> list == [0, 1, 2, 3, 4] == (.$[:5])(range(10)) |> list  # type: ignore
+    assert range(10) |> .[:5] |> list == [0, 1, 2, 3, 4] == range(10) |> .$[:5] |> list
+    assert range(10) |> map$(def (x) -> y = x) |> list == [None]*10
+    assert range(5) |> map$(def (x) -> yield x) |> map$(list) |> list == [[0], [1], [2], [3], [4]]
+    def do_stuff(x) = True
+    assert (def (x=3) -> do_stuff(x))() is True
+    assert (def (x=4) -> do_stuff(x); x)() == 4
+    assert (def (x=5) -> do_stuff(x);)() is None
+    (def (x=6) -> do_stuff(x); assert x)()
+    assert (def (x=7) -> do_stuff(x); assert x; yield x)() |> list == [7]
+    assert (def -> do_stuff(_); assert _; _)(8) == 8
+    assert (def (x=9) -> x)() == 9
+    assert (def (x=10) -> do_stuff(x); x)() == 10
+    assert (def -> def -> 11)()() == 11
+    assert (def -> 12)() == 12 == (def -> 12)()
+    assert ((def (x) -> -> x)(x) for x in range(5)) |> map$(-> _()) |> list == [0, 1, 2, 3, 4]  # type: ignore
+    herpaderp = 5
+    def derp():
+        herp = 10
+        return (def -> herpaderp + herp)  # type: ignore
+    assert derp()() == 15
+    data abc(xyz)
+    data abc_(xyz: int)
+    assert abc(10).xyz == 10 == abc_(10).xyz
+    assert issubclass(abc, object)
+    assert issubclass(abc_, object)
+    assert isinstance(abc(10), object)
+    assert isinstance(abc_(10), object)
+    assert hash(abc(10)) == hash(abc(10))
+    assert hash(abc(10)) != hash(abc_(10)) != hash((10,))
+    class aclass
+    assert issubclass(aclass, object)
+    assert isinstance(aclass(), object)
+    assert tee((1,2)) |*> (is)
+    assert tee(f{1,2}) |*> (is)
+    assert (x -> 2 / x)(4) == 1/2
+    :match [a, *b, c] = range(10)  # type: ignore
+    assert a == 0
+    assert b == [1, 2, 3, 4, 5, 6, 7, 8]
+    assert c == 9
+    match [a, *b, a] in range(10):  # type: ignore
+        assert False
+    else:
+        assert True
+    a = 1; b = 1  # type: ignore
+    assert a == 1 == b
+    assert count(5) == count(5)
+    assert count(5) != count(3)
+    assert {count(5): True}[count(5)]
+    assert (def x -> x)(1) == 1
+    assert (def ([x] + xs) -> x, xs) <| range(5) == (0, [1,2,3,4])
+    s: str = "hello"
+    assert s == "hello"
+    assert pow$(?, 2)(3) == 9
+    assert [] |> reduce$((+), ?, ()) == ()
+    assert pow$(?, 2) |> repr == "<built-in function pow>$(?, 2)"
+    assert parallel_map(pow$(?, 2), range(10)) |> tuple == (0, 1, 4, 9, 16, 25, 36, 49, 64, 81)
+    assert pow$(?, 2).args == (None, 2)
+    assert range(20) |> filter$((x) -> x < 5) |> reversed |> tuple == (4,3,2,1,0) == (0,1,2,3,4,5,6,7,8,9) |> filter$((x) -> x < 5) |> reversed |> tuple  # type: ignore
+    assert (range(10) |> map$((x) -> x) |> reversed) `isinstance` map  # type: ignore
+
+    assert range(10) |> reversed |> reversed |> tuple == range(10) |> tuple  # type: ignore
+    assert range(10) |> reversed |> len == 10  # type: ignore
+    assert range(10) |> reversed |> .[1] == 8  # type: ignore
+    assert range(10) |> reversed |> .[-1] == 0  # type: ignore
+    assert range(10) |> reversed |> .[:-1] |> tuple == range(1, 10) |> reversed |> tuple  # type: ignore
+    assert range(10) |> reversed |> .[1:] |> tuple == range(9) |> reversed |> tuple  # type: ignore
+    assert range(10) |> reversed |> .[2:-3] |> tuple == range(3, 8) |> reversed |> tuple  # type: ignore
+    assert 5 in (range(10) |> reversed)
+    assert (range(10) |> reversed).count(3) == 1  # type: ignore
+    assert (range(10) |> reversed).count(10) == 0  # type: ignore
+    assert (range(10) |> reversed).index(3)  # type: ignore
+
+    range10 = range(10) |> list  # type: ignore
+    assert range10 |> reversed |> reversed == range10  # type: ignore
+    assert range10 |> reversed |> len == 10  # type: ignore
+    assert range10 |> reversed |> .[1] == 8  # type: ignore
+    assert range10 |> reversed |> .[-1] == 0  # type: ignore
+    assert range10 |> reversed |> .[:-1] |> tuple == range(1, 10) |> reversed |> tuple  # type: ignore
+    assert range10 |> reversed |> .[1:] |> tuple == range(9) |> reversed |> tuple  # type: ignore
+    assert range10 |> reversed |> .[2:-3] |> tuple == range(3, 8) |> reversed |> tuple  # type: ignore
+    assert 5 in (range10 |> reversed)
+    assert (range10 |> reversed).count(3) == 1  # type: ignore
+    assert (range10 |> reversed).count(10) == 0  # type: ignore
+    assert (range10 |> reversed).index(3)  # type: ignore
+
+    assert range(1,11) |> groupsof$(1) |> list == [(1,),(2,),(3,),(4,),(5,),(6,),(7,),(8,),(9,),(10,)]
+    assert range(1,11) |> groupsof$(2) |> list == [(1,2),(3,4),(5,6),(7,8),(9,10)]
+    assert range(1,11) |> groupsof$(3) |> list == [(1,2,3),(4,5,6),(7,8,9),(10,)]
+    assert range(1,11) |> groupsof$(4) |> list == [(1,2,3,4),(5,6,7,8),(9,10)]
+    assert_raises(() -> range(1,11) |> groupsof$("A"), TypeError)  # type: ignore
+    assert_raises(() -> range(1,11) |> groupsof$(0), ValueError)
+    assert_raises(() -> range(1,11) |> groupsof$(-1), ValueError)
+    assert range(1,11) |> groupsof$(4) |> len == 3
+    assert range(1,11) |> groupsof$(3) |> len == 4 == range(10) |> groupsof$(3) |> len
+
+    assert range(1, 3) |> enumerate |> list == [(0, 1), (1, 2)]
+    assert range(2) |> enumerate$(start=1) |> list == [(1, 0), (2, 1)]
+    assert range(10) |> enumerate |> len == 10  # type: ignore
+    assert range(10) |> enumerate |> .[1] == (1, 1)  # type: ignore
+    assert range(10) |> enumerate |> .[:1] |> list == [(0, 0)]  # type: ignore
+    assert range(10) |> enumerate |> .[1:3] |> list == [(1, 1), (2, 2)]  # type: ignore
+    assert range(10) |> enumerate |> .[-1:] |> list == [(9, 9)]  # type: ignore
+    assert range(3, 0, -1) |> tuple == (3, 2, 1)
+    assert range(10, 0, -1)[9:1:-1] |> tuple == tuple(range(10, 0, -1))[9:1:-1]
+    assert count(1)[1:] == count(2)
+    assert reversed(x for x in range(10))[2:-3] |> tuple == range(3, 8) |> reversed |> tuple  # type: ignore
+    assert count(1, 2)[:3] |> tuple == (1, 3, 5)
+    assert count(0.5, 0.5)[:3] |> tuple == (0.5, 1, 1.5)
+    assert [1, 2, 3] |> fmap$(x -> x+1) == [2, 3, 4]
+    assert (1, 2, 3) |> fmap$(x -> x+1) == (2, 3, 4)
+    assert "abc" |> fmap$(.+"!") == "a!b!c!"
+    assert {1, 2, 3} |> fmap$(-> _+1) == {2, 3, 4}  # type: ignore
+    assert [[1, 2, 3]] |> fmap$((+)$([0])) == [[0, 1, 2, 3]]
+    assert range(3) |> fmap$(-> _+1) |> tuple == (1, 2, 3) == (|0, 1, 2|) |> iter |> fmap$(-> _+1) |> tuple  # type: ignore
+    assert issubclass(int, py_int)
+    class pyobjsub(py_object)
+    class objsub(\(object))
+    assert not issubclass(pyobjsub, objsub)
+    assert issubclass(objsub, object)
+    assert issubclass(objsub, py_object)
+    assert not issubclass(objsub, pyobjsub)
+    pos = pyobjsub()
+    os = objsub()
+    assert not isinstance(pos, objsub)
+    assert isinstance(os, objsub)
+    assert isinstance(os, object)
+    assert not isinstance(os, pyobjsub)
+    assert [] == \([)\(])
+    "a" + b + "c" = "abc"  # type: ignore
+    assert b == "b"
+    "a" + bc = "abc"  # type: ignore
+    assert bc == "bc"
+    ab + "c" = "abc"  # type: ignore
+    assert ab == "ab"
+    match "a" + b in 5:  # type: ignore
+        assert False
+    "ab" + cd + "ef" = "abcdef"  # type: ignore
+    assert cd == "cd"
+    b"ab" + cd + b"ef" = b"abcdef"  # type: ignore
+    assert cd == b"cd"
+    assert 400 == 10 |> x -> x*2 |> x -> x**2
+    assert 100 == 10 |> x -> x*2 |> y -> x**2
+    assert 3 == 1 `(x, y) -> x + y` 2
+    match {"a": a, **rest} = {"a": 2, "b": 3}  # type: ignore
+    assert a == 2
+    assert rest == {"b": 3}
+    _ = None
+    match {"a": a **_} = {"a": 4, "b": 5}  # type: ignore
+    assert a == 4
+    assert _ is None
+    a = 1,  # type: ignore
+    assert a == (1,)
+    (x,) = a  # type: ignore
+    assert x == 1 == a[0]  # type: ignore
+    assert (10,)[0] == 10
+    x, x = 1, 2
+    assert x == 2
+    from io import StringIO, BytesIO
+    sio = StringIO("derp")
+    assert sio.read() == "derp"
+    bio = BytesIO(b"herp")
+    assert bio.read() == b"herp"
+    assert 1 ?? 2 == 1 == (??)(1, 2)
+    assert None ?? 2 == 2 == (??)(None, 2)
+    one = 1
+    two = 2
+    none = None
+    assert one ?? two == one == (??)(one, two)
+    assert none ?? two == two == (??)(none, two)
+    timeout: int? = None
+    local_timeout: int? = 60
+    global_timeout: int = 300
+    def ret_timeout() -> int? = timeout
+    def ret_local_timeout() -> int? = local_timeout
+    def ret_global_timeout() -> int = global_timeout
+    assert timeout ?? local_timeout ?? global_timeout == 60
+    assert ret_timeout() ?? ret_local_timeout() ?? ret_global_timeout() == 60
+    local_timeout = None
+    assert timeout ?? local_timeout ?? global_timeout == 300
+    assert ret_timeout() ?? ret_local_timeout() ?? ret_global_timeout() == 300
+    timeout ??= 10
+    assert timeout == 10
+    global_timeout ??= 10
+    assert global_timeout == 300
+    assert (not None ?? True) is False
+    assert 1 == None ?? 1
+    assert 'foo' in None ?? ['foo', 'bar']
+    assert 3 == 1 + (None ?? 2)
+    requested_quantity: int? = 0
+    default_quantity: int = 1
+    price = 100
+    assert 0 == (requested_quantity ?? default_quantity) * price
+    assert range(10) |> .[1] .. .[1:] == 2 == range(10) |> .[1:] |> .[1]
+    assert None?.herp(derp) is None  # type: ignore
+    assert None?[herp].derp is None  # type: ignore
+    assert None?(derp)[herp] is None  # type: ignore
+    assert None?$(herp)(derp) is None  # type: ignore
+    assert "a b c" == (" ". ?? "not gonna happen")("join")("abc")
+    a: int[]? = None  # type: ignore
+    assert a is None
+    assert range(5) |> iter |> reiterable |> .[1] == 1
+    assert range(5) |> reiterable |> fmap$(-> _ + 1) |> list == [1, 2, 3, 4, 5]
+
+    a: Iterable[int] = [1] :: [2] :: [3]  # type: ignore
+    a = a |> reiterable
+    b = a |> reiterable
+    assert b |> list == [1, 2, 3]
+    assert b |> list == [1, 2, 3]
+    assert a |> list == [1, 2, 3]
+    assert a |> list == [1, 2, 3]
+
+    assert (+) ..*> (+) |> repr == "<built-in function add> ..*> <built-in function add>"
+    assert scan((+), [1,2,3,4,5]) |> list == [1,3,6,10,15]
+    assert scan((*), [1,2,3,4,5]) |> list == [1,2,6,24,120]
+    assert scan((+), [1,2,3,4], 0) |> list == [0,1,3,6,10]
+    assert scan((*), [1,2,3,4], -1) |> list == [-1,-1,-2,-6,-24]
+    input_data = [3, 4, 6, 2, 1, 9, 0, 7, 5, 8]
+    assert input_data |> scan$(*) |> list == [3, 12, 72, 144, 144, 1296, 0, 0, 0, 0]
+    assert input_data |> scan$(max) |> list == [3, 4, 6, 6, 6, 9, 9, 9, 9, 9]
+    a: str = "test"  # type: ignore
+    assert a == "test" and isinstance(a, str)
+    where = ten where:
+        ten = 10
+    assert where == 10 == \where
+    assert true where: true = True
+    assert a == 5 where:
+        {"a": a} = {"a": 5}
+    assert (None ?? False is False) is True
+    one = 1
+    false = False
+    assert (one ?? false is false) is false
+    assert ... is Ellipsis
+    assert 1or 2
+    two = None
+    cases False:
+        case False:
+            match False in True:
+                two = 1
+            else:
+                two = 2
+        case True:
+            two = 3
+    else:
+        two = 4
+    assert two == 2
+    assert makedata(list, 1, 2, 3) == [1, 2, 3]
+    assert makedata(str, "a", "b", "c") == "abc"
+    assert makedata(dict, ("a", 1), ("b", 2)) == {"a": 1, "b": 2}
+    [a] `isinstance` list = [1]
+    assert a == 1
+    assert makedata(type(iter(())), 1, 2) == (1, 2)
+    all_none = count(None, 0) |> reversed
+    assert all_none$[0] is None
+    assert all_none$[:3] |> list == [None, None, None]
+    assert None in all_none
+    assert (+) not in all_none
+    assert all_none.count(0) == 0
+    assert all_none.count(None) == float("inf")
+    assert all_none.index(None) == 0
+    match [] not in [1]:
+        assert True
+    else:
+        assert False
+    match [h] + t not in []:
+        assert True
+    else:
+        assert False
+    assert 4 == range(2,20) |> filter$(i-> i > 3) |> .$[0]
+    x = 1
+    y = "2"
+    assert f"{x} == {y}" == "1 == 2"
+    assert f"{x!r} == {y!r}" == "1 == " + py_repr("2")
+    assert f"{({})}" == "{}" == f"{({})!r}"
+    assert f"{{" == "{"
+    assert f"}}" == "}"
+    assert f"{1, 2}" == "(1, 2)"
+    assert f"{[] |> len}" == "0"
+    match {"a": {"b": x }} or {"a": {"b": {"c": x}}} = {"a": {"b": {"c": "x"}}}
+    assert x == {"c": "x"}
+    assert py_repr("x") == ("u'x'" if sys.version_info < (3,) else "'x'")
+    def foo(int() as x) = x
+    try:
+        foo(["foo"] * 100000)
+    except MatchError as err:
+        assert len(repr(err)) < 1000
+    (assert)(True)
+    try:
+        (assert)(False, "msg")
+    except AssertionError as err:
+        assert "msg" in str(err)
+    else:
+        assert False
+    try:
+        (assert)([])
+    except AssertionError as err:
+        assert "(assert) got falsey value []" in str(err)
+    else:
+        assert False
+    from itertools import filterfalse as py_filterfalse
+    assert py_filterfalse
+    from itertools import zip_longest as py_zip_longest
+    assert py_zip_longest
+    assert reversed(reiterable(range(10)))[-1] == 0
+    assert count("derp", None)[10] == "derp"
+    assert count("derp", None)[5:10] |> list == ["derp"] * 5
+    assert count("derp", None)[5:] == count("derp", None)
+    assert count("derp", None)[:5] |> list == ["derp"] * 5
+    match def f(a, /, b) = a, b
+    assert f(1, 2) == (1, 2)
+    assert f(1, b=2) == (1, 2)
+    assert_raises(-> f(a=1, b=2), MatchError)
+    class A
+    a = A()
+    f = 10
+    def a.f(x) = x  # type: ignore
+    assert f == 10
+    assert a.f 1 == 1
+    def f(x, y) = (x, y)  # type: ignore
+    assert f 1 2 == (1, 2)
+    def f(0) = 'a'  # type: ignore
+    assert f 0 == 'a'
+    a = 1
+    assert f"xx{a=}yy" == "xxa=1yy"
+    def f(x) = x + 1  # type: ignore
+    assert f"{1 |> f=}" == "1 |> f=2"
+    assert f"{'abc'=}" == "'abc'=abc"
+    assert a == 3 where:
+        (1, 2, a) = (1, 2, 3)
+    assert a == 2 == b where:
+        a = 2
+        b = 2
+    assert a == 3 where:
+        a = 2
+        a = a + 1
+    assert a == 5 where:
+        def six() = 6
+        a = six()
+        a -= 1
+    assert 1 == 1.0 == 1.
+    assert 1i == 1.0i == 1.i
+    exc = MatchError("pat", "val")
+    assert exc._message is None
+    expected_msg = "pattern-matching failed for 'pat' in 'val'"
+    assert exc.message == expected_msg
+    assert exc._message == expected_msg
+    try:
+        int() as x = "a"
+    except MatchError as err:
+        assert str(err) == "pattern-matching failed for 'int() as x = \"a\"' in 'a'"
+    else:
+        assert False
+    for base_it in [
+        map((+)$(1), range(10)),
+        zip(range(10), range(5, 15)),
+        filter(x -> x > 5, range(10)),
+        reversed(range(10)),
+        enumerate(range(10)),
+    ]:
+        it1 = iter(base_it)
+        item1 = next(it1)
+        it2 = iter(base_it)
+        item2 = next(it2)
+        assert item1 == item2
+        it3 = iter(it2)
+        item3 = next(it3)
+        assert item3 != item2
+    for map_func in (parallel_map, concurrent_map):
+        m1 = map_func((+)$(1), range(5))
+        assert m1 `isinstance` map_func
+        with map_func.multiple_sequential_calls():  # type: ignore
+            m2 = map_func((+)$(1), range(5))
+            assert m2 `isinstance` list
+            assert m1.result is None
+            assert m2 == [1, 2, 3, 4, 5] == list(m1)
+        assert m1.result == [1, 2, 3, 4, 5] == list(m1)
+    for it in ((), [], (||)):
+        assert_raises(-> it$[0], IndexError)
+        assert_raises(-> it$[-1], IndexError)
+    z = zip_longest(range(2), range(5))
+    r = [(0, 0), (1, 1), (None, 2), (None, 3), (None, 4)]
+    assert list(z) == r
+    assert [z[i] for i in range(5)] == r == list(z[:])
+    assert_raises(-> z[5], IndexError)
+    assert z[-1] == (None, 4)
+    assert list(z[1:-1]) == r[1:-1]
+    assert list(z[10:]) == []
+    hook = getattr(sys, "breakpointhook", None)
+    try:
+        def sys.breakpointhook() = 5
+        assert breakpoint() == 5
+    finally:
+        if hook is None:
+            del sys.breakpointhook
+        else:
+            sys.breakpointhook = hook
+    x = 5
+    assert f"{f'{x}'}" == "5"
+    abcd = (| d(a), d(b), d(c) |)
+    def d(n) = n + 1
+    a = 1
+    assert abcd$[0] == 2
+    b = 2
+    assert abcd$[1] == 3
+    c = 3
+    assert abcd$[2] == 4
+    def f([x] as y or [x, y]) = (y, x)  # type: ignore
+    assert f([1]) == ([1], 1)
+    assert f([1, 2]) == (2, 1)
+    class a:  # type: ignore
+        b = 1
+    def must_be_a_b(==a.b) = True
+    assert must_be_a_b(1)
+    assert_raises(-> must_be_a_b(2), MatchError)
+    a.b = 2
+    assert must_be_a_b(2)
+    assert_raises(-> must_be_a_b(1), MatchError)
+    def must_be_1_1i(1 + 1i) = True
+    assert must_be_1_1i(1 + 1i)
+    assert_raises(-> must_be_1_1i(1 + 2i), MatchError)
+    def must_be_neg_1(-1) = True
+    assert must_be_neg_1(-1)
+    assert_raises(-> must_be_neg_1(1), MatchError)
+    match x, y in 1, 2:
+        assert (x, y) == (1, 2)
+    else:
+        assert False
+    match x, *rest in 1, 2, 3:
+        assert (x, rest) == (1, [2, 3])
+    else:
+        assert False
+    1, two = 1, 2
+    assert two == 2
+    match {"a": a, **{}} = {"a": 1}
+    assert a == 1
+    big_d = {"a": 1, "b": 2}
+    {"a": a} = big_d
+    assert a == 1
+    match {"a": a, **{}} in big_d:
+        assert False
+    match {"a": a, **_} in big_d:
+        pass
+    else:
+        assert False
+    class A:  # type: ignore
+        def __init__(self, x):
+            self.x = x
+    a1 = A(1)
+    try:
+        A(1) = a1
+    except TypeError:
+        pass
+    else:
+        assert False
+    try:
+        A(x=2) = a1
+    except MatchError:
+        pass
+    else:
+        assert False
+    x = 1
+    try:
+        x() = x
+    except TypeError:
+        pass
+    else:
+        assert False
+    class A(x=1) = a1
+    class A  # type: ignore
+    try:
+        class B(A):
+            @override
+            def f(self): pass
+    except RuntimeError:
+        pass
+    else:
+        assert False
+    class C:
+        def f(self): pass
+    class D(C):
+        @override
+        def f(self) = self
+    d = D()
+    assert d.f() is d
+    def d.f(self) = 1  # type: ignore
+    assert d.f(d) == 1
+    class E(D):
+        @override
+        def f(self) = 2
+    e = E()
+    assert e.f() == 2
+    data A  # type: ignore
+    try:
+        data B from A:  # type: ignore
+            @override
+            def f(self): pass
+    except RuntimeError:
+        pass
+    else:
+        assert False
+    data C:  # type: ignore
+        def f(self): pass
+    data D from C:  # type: ignore
+        @override
+        def f(self) = self
+    d = D()
+    assert d.f() is d
+    try:
+        d.f = 1
+    except AttributeError:
+        pass
+    else:
+        assert False
+    def f1(0) = 0
+    f2 = def (0) -> 0
+    assert f1(0) == 0 == f2(0)
+    assert \(f1._coconut_is_match) is True is \(f2._coconut_is_match)
+    f = match def (int() as x) -> x + 1
+    assert f(1) == 2
+    assert_raises(-> f("a"), MatchError)
+    assert zip((|1, 2|), (|3, 4|), strict=True) |> list == [(1, 3), (2, 4)]
+    assert_raises(-> zip((|1, 2|), (|3, 4, 5|), strict=True) |> list, ValueError)
+    assert zip([1], [2], strict=True) |> repr == "zip([1], [2], strict=True)"
+    (|x, y|) = (|1, 2|)  # type: ignore
+    assert (x, y) == (1, 2)
+    def f(x):  # type: ignore
+        if x > 0:
+            return f(x-1)
+        return 0
+    g = f
+    def f(x) = x  # type: ignore
+    assert g(5) == 4
+    @func -> f -> f(2)
+    def returns_f_of_2(f) = f(1)
+    assert returns_f_of_2((+)$(1)) == 3
+    assert (x for x in range(1, 4))$[::-1] |> list == [3, 2, 1]
+    ufl = [[1, 2], [3, 4]]
+    fl = ufl |> flatten
+    assert fl |> list == [1, 2, 3, 4] == itertools.chain.from_iterable(ufl) |> list
+    assert fl |> reversed |> list == [4, 3, 2, 1]
+    assert 3 in fl
+    assert fl.count(4) == 1
+    assert fl.index(4) == 3
+    assert fl |> fmap$((+)$(1)) |> list == [2, 3, 4, 5]
+    assert (|(x for x in range(1, 3)), (x for x in range(3, 5))|) |> iter |> flatten |> list == [1, 2, 3, 4]
+    assert [(|1, 2|) |> iter, (|3, 4|) |> iter] |> flatten |> list == [1, 2, 3, 4] == (|[1, 2], [3, 4]|) |> iter |> flatten |> list
+    assert (|1, 2, 3|) |> iter |> reiterable |> list == [1, 2, 3]
+    assert (range(2) for _ in range(2)) |> flatten |> list == [0, 1, 0, 1] == (range(2) for _ in range(2)) |> flatten |> iter |> list
+    :match [x, y] = 1, 2
+    assert (x, y) == (1, 2)
+    def \match(x) = (+)$(1) <| x
+    assert match(1) == 2
+    try:
+        match[0] = 1  # type: ignore
+    except TypeError:
+        pass
+    else:
+        assert False
+    x = 1
+    assert f"a" f"b" == "ab" == f"a" "b" == "a" f"b"
+    assert f"{x}" f"{x}" == "11"
+    assert f"{x}" "{x}" == "1{x}"
+    assert "{x}" f"{x}" == "{x}1"
+    assert (if False then 1 else 2) == 2 == (if False then 1 else if True then 2 else 3)
+    class metaA(type):
+        def __instancecheck__(cls, inst):
+            return True
+    class A(metaclass=metaA): pass  # type: ignore
+    assert isinstance(A(), A)
+    assert isinstance("", A)
+    assert isinstance(5, A)
+    class B(*()): pass  # type: ignore
+    assert isinstance(B(), B)
+    match a, b, *c in [1, 2, 3, 4]:
+        pass
+    assert a == 1
+    assert b == 2
+    assert c == [3, 4]
+    class list([1,2,3]) = [1, 2, 3]
+    class bool(True) = True
+    class float(1) = 1.0
+    class int(1) = 1
+    class tuple([]) = ()
+    class str("abc") = "abc"
+    class dict({1: v}) = {1: 2}
+    assert v == 2
+    "1" | "2" as x = "2"
+    assert x == "2"
+    1 | 2 as x = 1
+    assert x == 1
+    y = None
+    "1" as x or "2" as y = "1"
+    assert x == "1"
+    assert y is None
+    "1" as x or "2" as y = "2"
+    assert y == "2"
+    1 as _ = 1
+    assert _ == 1
+    10 as x as y = 10
+    assert x == 10 == y
+    match x and (1 or 2) in 3:
+        assert False
+    assert x == 10
+    match (1 | 2) and ("1" | "2") in 1:
+        assert False
+    assert (1, *(2, 3), 4) == (1, 2, 3, 4)
+    assert [*(1, 2), *(3, 4)] == [1, 2, 3, 4]
+    assert {"a": 1, **{"b": 2}, "c": 3} == {"a": 1, "b": 2, "c": 3}
+    assert {**{"a": 2, "b": 2}, **{"a": 1}} == {"a": 1, "b": 2}
+    def f(x, y) = x, *y  # type: ignore
+    def g(x, y): return x, *y  # type: ignore
+    assert f(1, (2, 3)) == (1, 2, 3) == g(1, (2, 3))
+    empty = *(), *()
+    assert empty == () == (*(), *())
+    assert [*(1, 2)] == [1, 2]
+    as x = 6
+    assert x == 6
+    {"a": as x} = {"a": 5}
+    assert x == 5
+    ns = {}
+    assert exec("x = 1", ns) is None
+    assert ns[py_str("x")] == 1
+    assert [range(5), range(1)] |> .[0][3] == 3 == (.[0][3])([range(5), range(1)])
+    assert (| (| 0, 1, 2 |) |) |> .$[0]$[1] == 1 == (.$[0]$[1])((| (| 0, 1, 2 |) |))
+    x `isinstance` int = 10
+    assert x == 10
+    l = range(5)
+    l |>= map$(-> _+1)
+    assert list(l) == [1, 2, 3, 4, 5]
+    a = 1
+    a |>= (-> _+1) |> (f -> x -> (f(x), f(x)))
+    assert a == (2, 2)
+    isinstance$(?, int) -> True = 1
+    (isinstance$(?, int) -> True) as x, 4 = 3, 4
+    assert x == 3
+    class int() as x = 3
+    assert x == 3
+    data XY(x, y)
+    data Z(z) from XY  # type: ignore
+    assert Z(1).z == 1
+    assert const(5)(1, 2, x=3, a=4) == 5
+    assert "abc" |> reversed |> repr == "reversed('abc')"
+    assert "abc" |> enumerate |> repr == "enumerate('abc', 0)"
+    assert [1,2,3] `.[]` 1 == 2
+    one = 1
+    two = 2
+    assert ((.+one) .. .)(.*two)(3) == 7
+    assert f"{':'}" == ":"
+    assert f"{1 != 0}" == "True"
+    str_to_index = "012345"
+    indexes = list(range(-4, len(str_to_index) + 4)) + [None]
+    steps = [1, 2, 3, 4, -1, -2, -3, -4]
+    for slice_args in itertools.product(indexes, indexes, steps):
+        got = iter(str_to_index)$[slice(*slice_args)] |> list
+        want = str_to_index[slice(*slice_args)] |> list
+        assert got == want, f"got {str_to_index}$[{':'.join(str(i) for i in slice_args)}] == {got}; wanted {want}"
+    assert count() |> iter |> .$[10:] |> .$[:10] |> .$[::2] |> list == [10, 12, 14, 16, 18]
+    rng_to_index = range(10)
+    slice_opts = (None, 1, 2, 7, -1)
+    for slice_args in itertools.product(slice_opts, slice_opts, slice_opts):
+        got = iter(rng_to_index)$[slice(*slice_args)] |> list
+        want = rng_to_index[slice(*slice_args)] |> list
+        assert got == want, f"got {rng_to_index}$[{':'.join(str(i) for i in slice_args)}] == {got}; wanted {want}"
+    class Empty
+    match Empty(x=1) in Empty():
+        assert False
+    class BadMatchArgs:
+        __match_args__ = "x"
+    try:
+        BadMatchArgs(1) = BadMatchArgs()
+    except TypeError:
+        pass
+    else:
+        assert False
+    f = False
+    is f = False
+    match is f in True:
+        assert False
+    assert count(1, 0)$[:10] |> all_equal
+    assert all_equal([])
+    assert all_equal((| |))
+    assert all_equal((| 1 |))
+    assert all_equal((| 1, 1 |))
+    assert all_equal((| 1, 1, 1 |))
+    assert not all_equal((| 2, 1, 1 |))
+    assert not all_equal((| 1, 1, 2 |))
+    assert 1 `(,)` 2 == (1, 2) == (,) 1 2
+    assert (-1+.)(2) == 1
+    ==-1 = -1
+    assert collectby((def -> assert False), [], (def (x,y) -> assert False)) == {}
+    assert collectby(ident, range(5)) == {0: [0], 1: [1], 2: [2], 3: [3], 4: [4]}
+    assert collectby(.[1], zip(range(5), reversed(range(5)))) == {0: [(4, 0)], 1: [(3, 1)], 2: [(2, 2)], 3: [(1, 3)], 4: [(0, 4)]}
+    assert collectby(ident, range(5) :: range(5)) == {0: [0, 0], 1: [1, 1], 2: [2, 2], 3: [3, 3], 4: [4, 4]}
+    assert collectby(ident, range(5) :: range(5), reduce_func=(+)) == {0: 0, 1: 2, 2: 4, 3: 6, 4: 8} == collectby(ident, range(5) :: range(5), ident, (+))
+    def dub(xs) = xs :: xs
+    assert collectby(.[0], dub <| zip(range(5), reversed(range(5))), value_func=.[1], reduce_func=(+)) == {0: 8, 1: 6, 2: 4, 3: 2, 4: 0}
+    assert int(1e9) in range(2**31-1)
+    assert (a=1, b=2) == (1, 2) == (a:int=1, b=2)
+    assert (a=1, b: int = 2) == (1, 2) == (a: int=1, b: int=2)
+    assert "_namedtuple_of" in repr((a=1,))
+    assert "b=2" in repr <| call$(?, a=1, b=2)
+    assert lift((,), (.*2), (.**2))(3) == (6, 9)
+    assert_raises(-> (⁻)(1, 2), TypeError)
+    assert -1 == ⁻1
+    \(
+    def ret_abc():
+        return "abc"
+    )
+    assert ret_abc() == "abc"
+    assert """" """ == '" '
+    assert "" == """"""
+    assert (,)(*(1, 2), 3) == (1, 2, 3)
+    assert (,)(1, *(2, 3), 4, *(5, 6)) == (1, 2, 3, 4, 5, 6)
+    l = []
+    assert 10 |> ident$(side_effect=l.append) == 10
+    assert l == [10]
+    @ident
+    @(def f -> f)
+    def ret1() = 1
+    assert ret1() == 1
+    assert (.,2)(1) == (1, 2) == (1,.)(2)
+    assert [[];] == []
+    assert [[];;] == [[]]
+    assert [1;] == [1] == [[1];]
+    assert [1;;] == [[1]] == [[1];;]
+    assert [[[1]];;] == [[1]] == [[1;];;]
+    assert [1;;;] == [[[1]]] == [[1];;;]
+    assert [[1;;];;;] == [[[1]]] == [[1;;;];;;]
+    assert [1;2] == [1, 2] == [1,2;]
+    assert [[1];[2]] == [1, 2] == [[1;];[2;]]
+    assert [range(3);4] == [0,1,2,4] == [*range(3), 4]
+    assert [1, 2; 3, 4] == [1,2,3,4] == [[1,2]; [3,4];]
+    assert [1;;2] == [[1], [2]] == [1;;2;;]
+    assert [1; ;; 2;] == [[1], [2]] == [1; ;; 2; ;;]
+    assert [1; ;; 2] == [[1], [2]] == [1 ;; 2;]
+    assert [1, 2 ;; 3, 4] == [[1, 2], [3, 4]] == [1, 2, ;; 3, 4,]
+    assert [1; 2 ;; 3; 4] == [[1, 2], [3, 4]] == [1, 2 ;; 3, 4;]
+    assert [1, 2 ;; 3; 4] == [[1, 2], [3, 4]] == [1, 2 ;; 3; 4]
+    assert [1, 2 ;; 3, 4;;] == [[1, 2], [3, 4]] == [1; 2 ;; 3; 4;;]
+    assert [[1;2] ;; [3;4]] == [[1, 2], [3, 4]] == [[1,2] ;; [3,4]]
+    assert [[1;2;] ;; [3;4;]] == [[1, 2], [3, 4]] == [[1,2;] ;; [3,4;]]
+    assert [1, 2 ;; 3, 4;;] == [[1, 2], [3, 4]] == [1; 2 ;; 3; 4;;]
+    assert [1; 2; ;; 3; 4;] == [[1, 2], [3, 4]] == [1, 2; ;; 3, 4;]
+    assert [range(3) ; x+1 for x in range(3)] == [0, 1, 2, 1, 2, 3]
+    assert [range(3) |> list ;; x+1 for x in range(3)] == [[0, 1, 2], [1, 2, 3]]
+    assert [1;;2;;3;;4] == [[1],[2],[3],[4]] == [[1;;2];;[3;;4]]
+    assert [1,2,3,4;;] == [[1,2,3,4]] == [1;2;3;4;;]
+    assert [[1;;2] ; [3;;4]] == [[1, 3], [2, 4]] == [[1; ;;2; ;;] ; [3; ;;4; ;;] ;]
+    assert [1,2 ;;; 3,4] == [[[1,2]], [[3, 4]]] == [[1,2;] ;;; [3,4;]]
+    assert [[1,2;;] ;;; [3,4;;]] == [[[1,2]], [[3, 4]]] == [[[1,2;];;] ;;; [[3,4;];;]]
+    assert [1, 2 ; 3, 4 ;; 5, 6 ; 7, 8] == [[1, 2, 3, 4], [5, 6, 7, 8]] == [1, 2 ; 3, 4 ;; 5, 6 ; 7, 8 ;]
+    assert [1, 2 ;;
+     3, 4
+     ;;;
+     5, 6 ;;
+     7, 8] == [[[1, 2], [3, 4]], [[5, 6], [7, 8]]]
+    a = [1,2 ;; 3,4]
+    assert [a; a] == [[1,2,1,2], [3,4,3,4]]
+    assert [a;; a] == [[1,2],[3,4],[1,2],[3,4]] == [*a, *a]
+    assert [a ;;; a] == [[[1,2],[3,4]], [[1,2],[3,4]]] == [a, a]
+    assert [a ;;;; a] == [[a], [a]]
+    assert [a ;;; a ;;;;] == [[a, a]]
+    intlist = []
+    match for int(x) in range(10):
+        intlist.append(x)
+    assert intlist == range(10) |> list
+    try:
+        for str(x) in range(10): pass
+    except MatchError:
+        pass
+    else:
+        assert False
+    assert consume(range(10)) `isinstance` collections.abc.Sequence
+    assert consume(range(10), keep_last=5) `isinstance` collections.abc.Sequence
+    assert range(5) |> reduce$((+), ?, 10) == 20
+    assert range(5) |> scan$((+), initial=10) |> list == [10, 10, 11, 13, 16, 20]
+    assert 4.5 // 2 == 2 == (//)(4.5, 2)
+    x = 1
+    \(x) |>= (.+3)
+    assert x == 4
+    assert range(5) |> lift(zip, ident, ident) |> map$(ident ..*> (+)) |> list == [0, 2, 4, 6, 8]
+    astr: str? = None
+    assert astr?.join([]) is None
+    match (x, {"a": 1, **x}) in ({"b": 10}, {"a": 1, "b": 2}):
+        assert False
+    match (x, [1] + x) in ([10], [1, 2]):
+        assert False
+    ((.-1) -> (x and 10)) or x = 10
+    assert x == 10
+    match "abc" + x + "bcd" in "abcd":
+        assert False
+    match a, b, *c in (|1, 2, 3, 4|):
+        assert (a, b, c) == (1, 2, [3, 4])
+        assert c `isinstance` list
+    else:
+        assert False
+    match a, b in (|1, 2|):
+        assert (a, b) == (1, 2)
+    else:
+        assert False
+    init :: (3,) = (|1, 2, 3|)
+    assert init == (1, 2)
+    assert "a\"z""a"'"'"z" == 'a"za"z'
+    assert b"ab" b"cd" == b"abcd" == rb"ab" br"cd"
+    "a" + "c" = "ac"
+    b"a" + b"c" = b"ac"
+    "a" "c" = "ac"
+    b"a" b"c" = b"ac"
+    (1, *xs, 4) = (|1, 2, 3, 4|)
+    assert xs == [2, 3]
+    assert xs `isinstance` list
+    (1, *(2, 3), 4) = (|1, 2, 3, 4|)
+    assert f"a" r"b" fr"c" rf"d" == "abcd"
+    assert "a" fr"b" == "ab" == "a" rf"b"
+    int(1) = 1
+    [1] + [2] + m + [3] + [4] = [1,2,"?",3,4]
+    assert m == ["?"]
+    [1, 2] + xs + [5, 6] + ys + [9, 10] = range(1, 11)
+    assert xs == [3, 4]
+    assert ys == [7, 8]
+    (1, 2, *(3, 4), 5, 6, *(7, 8), 9, 10) = range(1, 11)
+    "ab" + cd + "ef" + gh + "ij" = "abcdefghij"
+    assert cd == "cd"
+    assert gh == "gh"
+    b"ab" + b_cd + b"ef" + b_gh + b"ij" = b"abcdefghij"
+    assert b_cd == b"cd"
+    assert b_gh == b"gh"
+    "a:" + _1 + ",b:" + _1 = "a:1,b:1"
+    assert _1 == "1"
+    match "a:" + _1 + ",b:" + _1 in "a:1,b:2":
+        assert False
+    cs + [","] + cs = "12,12"
+    assert cs == ["1", "2"]
+    match cs + [","] + cs in "12,34":
+        assert False
+    [] + xs + [] + ys + [] = (1, 2, 3)
+    assert xs == []
+    assert ys == [1, 2, 3]
+    [] :: ixs :: [] :: iys :: [] = (x for x in (1, 2, 3))
+    assert ixs |> list == []
+    assert iys |> list == [1, 2, 3]
+    "" + s_xs + "" + s_ys + "" = "123"
+    assert s_xs == ""
+    assert s_ys == "123"
+    def early_bound(xs=[]) = xs
+    match def late_bound(xs=[]) = xs
+    early_bound().append(1)
+    assert early_bound() == [1]
+    late_bound().append(1)
+    assert late_bound() == []
+    assert groupsof(2, [1, 2, 3, 4]) |> list == [(1, 2), (3, 4)]
+    assert_raises(-> groupsof(2.5, [1, 2, 3, 4]), TypeError)
+    assert_raises(-> (|1,2,3|)$[0.5], TypeError)
+    assert_raises(-> (|1,2,3|)$[0.5:], TypeError)
+    assert_raises(-> (|1,2,3|)$[:2.5], TypeError)
+    assert_raises(-> (|1,2,3|)$[::1.5], TypeError)
+    try:
+        (raise)(TypeError(), ValueError())
+    except TypeError as err:
+        assert err.__cause__ `isinstance` ValueError
+    else:
+        assert False
+    [] = ()
+    () = []
+    _ `isinstance$(?, int)` = 5
+    x = a = None
+    x `isinstance$(?, int)` or a = "abc"
+    assert x is None
+    assert a == "abc"
+    class HasSuper1:
+        \super = 10
+    class HasSuper2:
+        def \super(self) = 10
+    assert HasSuper1().super == 10 == HasSuper2().super()
+    class HasSuper3:
+        class super:
+            def __call__(self) = 10
+    class HasSuper4:
+        class HasSuper(HasSuper3.super):
+            def __call__(self) = super().__call__()
+    assert HasSuper3.super()() == 10 == HasSuper4.HasSuper()()
+    class HasSuper5:
+        class HasHasSuper:
+            class HasSuper(HasSuper3.super):
+                def __call__(self) = super().__call__()
+    class HasSuper6:
+        def get_HasSuper(self) =
+            class HasSuper(HasSuper5.HasHasSuper.HasSuper):
+                def __call__(self) = super().__call__()
+            HasSuper
+    assert HasSuper5.HasHasSuper.HasSuper()() == 10 == HasSuper6().get_HasSuper()()()
+    assert parallel_map((.+(10,)), [
+        (a=1, b=2),
+        (x=3, y=4),
+    ]) |> list == [(1, 2, 10), (3, 4, 10)]
+    assert f"{'a' + 'b'}" == "ab"
+    int_str_tup: (int; str) = (1, "a")
+    key = "abc"
+    f"{key}: " + value = "abc: xyz"
+    assert value == "xyz"
+    f"{key}" ": " + value = "abc: 123"
+    assert value == "123"
+    "{" f"{key}" ": " + value + "}" = "{abc: aaa}"
+    assert value == "aaa"
+    try:
+        2 @ 3  # type: ignore
+    except TypeError as err:
+        assert err
+    else:
+        assert False
+    assert -1 in count(0, -1)
+    assert 1 not in count(0, -1)
+    assert 0 in count(0, -1)
+    assert -1 not in count(0, -2)
+    assert 0 not in count(-1, -1)
+    assert -1 in count(-1, -1)
+    assert -2 in count(-1, -1)
+    assert 1 not in count(0, 2)
+    in (1, 2, 3) = 2
+    match in (1, 2, 3) in 4:
+        assert False
+    operator = ->_
+    assert operator(1) == 1
+    operator()
+    assert isinstance((), tuple)
+    assert [1,2;;3,4;;;5,6;;7,8] |> multi_enumerate |> list == [((0, 0, 0), 1), ((0, 0, 1), 2), ((0, 1, 0), 3), ((0, 1, 1), 4), ((1, 0, 0), 5), ((1, 0, 1), 6), ((1, 1, 0), 7), ((1, 1, 1), 8)]
+    assert [1,2;;3,4;;;5,6;;7,8] |> multi_enumerate |> .[1:3] |> list == [((0, 0, 1), 2), ((0, 1, 0), 3)]  # type: ignore
+    chirps = [0]
+    def `chirp`: chirps[0] += 1
+    `chirp`
+    assert chirps[0] == 1
+    assert 100 log10 == 2
+    xs = []
+    for x in *(1, 2), *(3, 4):
+        xs.append(x)
+    assert xs == [1, 2, 3, 4]
+    assert \_coconut.typing.NamedTuple
+    class Asup:
+        a = 1
+    class Bsup(Asup):
+        def get_super_1(self) = super()
+        def get_super_2(self) = super(Bsup, self)
+        def get_super_3(self) = py_super(Bsup, self)
+    bsup = Bsup()
+    assert bsup.get_super_1().a == 1
+    assert bsup.get_super_2().a == 1
+    assert bsup.get_super_3().a == 1
+    e = exec
+    test: dict = {}
+    e("a=1", test)
+    assert test["a"] == 1
+    class SupSup:
+        sup = "sup"
+    class Sup(SupSup):
+        def \super(self) = super()
+    assert Sup().super().sup == "sup"
+    assert s{1, 2} ⊆ s{1, 2, 3}
+    try:
+        assert (False, "msg")
+    except AssertionError:
+        pass
+    else:
+        assert False
+    mut = [0]
+    (def -> mut[0] += 1)()
+    assert mut[0] == 1
+    to_int: ... -> int = -> 5
+    to_int_: (...) -> int = -> 5
+    assert to_int() + to_int_() == 10
+    assert 3 |> (./2) == 3/2 == (./2) <| 3
+    assert 2 |> (3/.) == 3/2 == (3/.) <| 2
+    x = 3
+    x |>= (./2)
+    assert x == 3/2
+    x = 2
+    x |>= (3/.)
+    assert x == 3/2
+    assert (./2) |> (.`call`3) == 3/2
+    assert 5 |> (.*2) |> (2/.) == 1/5 == 5 |> (2*.) |> (./2) |> (1/.)
+    def test_list():
+        \list = [1, 2, 3]
+        return \list
+    assert test_list() == list((1, 2, 3))
+    match def one_or_two(1) = one_or_two.one
+    addpattern def one_or_two(2) = one_or_two.two  # type: ignore
+    one_or_two.one = 10
+    one_or_two.two = 20
+    assert one_or_two(1) == 10
+    assert one_or_two(2) == 20
+    assert cartesian_product() |> list == [()] == cartesian_product(repeat=10) |> list
+    assert cartesian_product() |> len == 1 == cartesian_product(repeat=10) |> len
+    assert () in cartesian_product()
+    assert () in cartesian_product(repeat=10)
+    assert (1,) not in cartesian_product()
+    assert (1,) not in cartesian_product(repeat=10)
+    assert cartesian_product().count(()) == 1 == cartesian_product(repeat=10).count(())
+    v = [1, 2]
+    assert cartesian_product(v, v) |> list == [(1, 1), (1, 2), (2, 1), (2, 2)] == cartesian_product(v, repeat=2) |> list
+    assert cartesian_product(v, v) |> len == 4 == cartesian_product(v, repeat=2) |> len
+    assert (2, 2) in cartesian_product(v, v)
+    assert (2, 2) in cartesian_product(v, repeat=2)
+    assert (2, 3) not in cartesian_product(v, v)
+    assert (2, 3) not in cartesian_product(v, repeat=2)
+    assert cartesian_product(v, v).count((2, 1)) == 1 == cartesian_product(v, repeat=2).count((2, 1))
+    assert cartesian_product(v, v).count((2, 0)) == 0 == cartesian_product(v, repeat=2).count((2, 0))
+    assert not range(0, 0)
+    assert_raises(const None ..> fmap$(.+1), TypeError)
+    xs = [1] :: [2]
+    assert xs |> list == [1, 2] == xs |> list
+    ys = (_ for _ in range(2)) :: (_ for _ in range(2))
+    assert ys |> list == [0, 1, 0, 1]
+    assert ys |> list == []
+
+    some_err = ValueError()
+    assert Expected(10) |> fmap$(.+1) == Expected(11)
+    assert Expected(error=some_err) |> fmap$(.+1) == Expected(error=some_err)
+    res, err = Expected(10)
+    assert (res, err) == (10, None)
+    assert Expected("abc")
+    assert not Expected(error=TypeError())
+    assert all(it `isinstance` flatten for it in tee(flatten([[1], [2]])))
+    fl12 = flatten([[1], [2]])
+    assert fl12.get_new_iter() is fl12.get_new_iter()  # type: ignore
+    res, err = safe_call(-> 1 / 0) |> fmap$(.+1)
+    assert res is None
+    assert err `isinstance` ZeroDivisionError
+    assert Expected(10).and_then(safe_call$(.*2)) == Expected(20)
+    assert Expected(error=some_err).and_then(safe_call$(.*2)) == Expected(error=some_err)
+    assert Expected(Expected(10)).join() == Expected(10)
+    assert Expected(error=some_err).join() == Expected(error=some_err)
+    assert_raises(Expected, TypeError)
+    assert Expected(10).result_or(0) == 10 == Expected(error=TypeError()).result_or(10)
+    assert Expected(10).result_or_else(const 0) == 10 == Expected(error=TypeError()).result_or_else(const 10)
+    assert Expected(error=some_err).result_or_else(ident) is some_err
+    assert Expected(None)
+    assert Expected(10).unwrap() == 10
+    assert_raises(Expected(error=TypeError()).unwrap, TypeError)
+    assert_raises(Expected(error=KeyboardInterrupt()).unwrap, KeyboardInterrupt)
+    assert Expected(10).or_else(const <| Expected(20)) == Expected(10) == Expected(error=TypeError()).or_else(const <| Expected(10))
+    Expected(x) = Expected(10)
+    assert x == 10
+    Expected(error=err) = Expected(error=some_err)
+    assert err is some_err
+
+    recit = ([1,2,3] :: recit) |> map$(.+1)
+    assert tee(recit)
+    rawit = (_ for _ in (0, 1))
+    t1, t2 = tee(rawit)
+    t1a, t1b = tee(t1)
+    assert (list(t1a), list(t1b), list(t2)) == ([0, 1], [0, 1], [0, 1])
+    assert m{1, 3, 1}[1] == 2
+    assert m{1, 2} |> repr in ("multiset({1: 1, 2: 1})", "multiset({2: 1, 1: 1})")
+    m = m{}
+    m.add(1)
+    m.add(1)
+    m.add(2)
+    assert m == m{1, 1, 2}
+    assert m != m{1, 2}
+    m.discard(2)
+    m.discard(2)
+    assert m == m{1, 1}
+    assert m != m{1}
+    m.remove(1)
+    assert m == m{1}
+    m.remove(1)
+    assert m == m{}
+    assert_raises(-> m.remove(1), KeyError)
+    assert 1 not in m
+    assert 2 not in m
+    assert m{1, 2}.isdisjoint(m{3, 4})
+    assert not m{1, 2}.isdisjoint(m{2, 3})
+    assert m{1, 2} ^ m{2, 3} == m{1, 3}
+    assert m{1, 1} ^ m{1} == m{1}
+    assert multiset((1, 2)) == m{1, 2} == multiset(m{1, 2})
+    assert multiset({1: 2, 2: 1}) == m{1, 1, 2}
+    assert m{} `isinstance` multiset
+    assert m{} `isinstance` collections.abc.Set
+    assert m{} `isinstance` collections.abc.MutableSet
+    assert True `isinstance` bool
+    class HasBool:
+        def __bool__(self) = False
+    assert not HasBool()
+    assert m{1}.count(2) == 0
+    assert m{1, 1}.count(1) == 2
+    bad_m = m{}
+    bad_m[1] = -1
+    assert_raises(-> bad_m.count(1), ValueError)
+    assert len(m{1, 1}) == 1
+    assert m{1, 1}.total() == 2 == m{1, 2}.total()
+    weird_m = m{1, 2}
+    weird_m[3] = 0
+    assert weird_m == m{1, 2}
+    assert not (weird_m != m{1, 2})
+    assert m{} <= m{} < m{1, 2} < m{1, 1, 2} <= m{1, 1, 2}
+    assert m{1, 1, 2} >= m{1, 1, 2} > m{1, 2} > m{} >= m{}
+    assert m{1} != {1:1, 2:0}
+    assert not (m{1} == {1:1, 2:0})
+    assert s{1, 2, *(2, 3, 4), *(4, 5)} == s{1, 2, 3, 4, 5}
+    assert m{1, 2, *(2, 3, 4), *(4, 5)} == m{1, 2, 2, 3, 4, 4, 5}
+    assert {*(1, 2)} == {1, 2}
+    assert cycle(range(3))[:5] |> list == [0, 1, 2, 0, 1] == cycle(range(3)) |> iter |> .$[:5] |> list
+    assert cycle(range(2), 2)[:5] |> list == [0, 1, 0, 1] == cycle(range(2), 2) |> iter |> .$[:5] |> list
+    assert 2 in cycle(range(3))
+    assert reversed(cycle(range(2), 2)) |> list == [1, 0, 1, 0]
+    assert cycle((_ for _ in range(2)), 2) |> list == [0, 1, 0, 1]
+    assert cycle(range(3)).count(0) == float("inf")
+    assert cycle(range(3), 3).index(2) == 2
+    assert zip(range(2), range(2))[0] == (0, 0) == enumerate(range(2))[0]
+    assert reversed([0,1,3])[0] == 3
+    assert cycle((), 0) |> list == []
+    assert "1234" |> windowsof$(2) |> map$("".join) |> list == ["12", "23", "34"]
+    assert len(windowsof(2, "1234")) == 3
+    assert windowsof(3, "12345", None) |> map$("".join) |> list == ["123", "234", "345"]
+    assert len(windowsof(3, "12345", None)) == 3
+    assert windowsof(3, "1") |> list == [] == windowsof(2, "1", step=2) |> list
+    assert len(windowsof(2, "1")) == 0 == len(windowsof(2, "1", step=2))
+    assert windowsof(2, "1", None) |> list == [("1", None)] == windowsof(2, "1", None, 2) |> list
+    assert len(windowsof(2, "1", None)) == 1 == len(windowsof(2, "1", None, 2))
+    assert windowsof(2, "1234", step=2) |> map$("".join) |> list == ["12", "34"] == windowsof(2, "1234", fillvalue=None, step=2) |> map$("".join) |> list
+    assert len(windowsof(2, "1234", step=2)) == 2 == len(windowsof(2, "1234", fillvalue=None, step=2))
+    assert repr(windowsof(2, "1234", None, 3)) == "windowsof(2, '1234', fillvalue=None, step=3)"
+    assert lift(,)((+), (*))(2, 3) == (5, 6)
+    assert "abac" |> windowsof$(2) |> filter$(addpattern(
+        (def (("a", b) if b != "b") -> True),
+        (def ((_, _)) -> False),
+    )) |> list == [("a", "c")]
+    assert "[A], [B]" |> windowsof$(3) |> map$(addpattern(
+        (def (("[","A","]")) -> "A"),
+        (def (("[","B","]")) -> "B"),
+        (def ((_,_,_)) -> None),
+    )) |> filter$((.is None) ..> (not)) |> list == ["A", "B"]
+    assert windowsof(3, "abcdefg", step=3) |> map$("".join) |> list == ["abc", "def"]
+    assert windowsof(3, "abcdefg", step=3) |> len == 2
+    assert windowsof(3, "abcdefg", step=3, fillvalue="") |> map$("".join) |> list == ["abc", "def", "g"]
+    assert windowsof(3, "abcdefg", step=3, fillvalue="") |> len == 3
+    assert windowsof(3, "abcdefg", step=2, fillvalue="") |> map$("".join) |> list == ["abc", "cde", "efg", "g"]
+    assert windowsof(3, "abcdefg", step=2, fillvalue="") |> len == 4
+    assert windowsof(5, "abc", step=2, fillvalue="") |> map$("".join) |> list == ["abc"]
+    assert windowsof(5, "abc", step=2, fillvalue="") |> len == 1
+    assert groupsof(2, "123", fillvalue="") |> map$("".join) |> list == ["12", "3"]
+    assert groupsof(2, "123", fillvalue="") |> len == 2
+    assert groupsof(2, "123", fillvalue="") |> repr == "groupsof(2, '123', fillvalue='')"
+    assert flip((,), 0)(1, 2) == (1, 2)
+    assert flatten([1, 2, [3, 4]], 0) == [1, 2, [3, 4]]
+    assert flatten([1, 2, [3, 4]], None) |> list == [1, 2, 3, 4]
+    assert flatten([1, 2, [3, 4]], None) |> reversed |> list == [4, 3, 2, 1]
+    assert_raises(-> flatten([1, 2, [3, 4]]) |> list, TypeError)
+    assert flatten([[[1,2]], [[3], [4]]], 2) |> list == [1, 2, 3, 4]
+    assert flatten([[[1,2]], [[3], [4]]], 2) |> reversed |> list == [4, 3, 2, 1]
+    assert_raises(-> map((+), range(3), range(4), strict=True) |> list, ValueError)
+    assert map((+), range(3), range(4)$[:-1], strict=True) |> list == [0, 2, 4] == parallel_map((+), range(3), range(4)$[:-1], strict=True) |> list
+    assert range(3) |> map$((.+1), strict=True) |> list == [1, 2, 3] == range(3) |> parallel_map$((.+1), strict=True) |> list
+    assert cartesian_product((1, 2), (3, 4), repeat=0) |> list == [()]
+    assert (a=1, b=2)[1] == 2
+    obj = object()
+    assert_raises((def -> obj.abc = 123), AttributeError)  # type: ignore
+    hardref = map((.+1), [1,2,3])
+    assert weakref.ref(hardref)() |> list == [2, 3, 4]
+    assert parallel_map(ident, [MatchError]) |> list == [MatchError]
+    match data tuple(1, 2) in (1, 2, 3):
+        assert False
+    data TestDefaultMatching(x="x default", y="y default")
+    TestDefaultMatching(got_x) = TestDefaultMatching(1)
+    assert got_x == 1
+    TestDefaultMatching(y=got_y) = TestDefaultMatching(y=10)
+    assert got_y == 10
+    TestDefaultMatching() = TestDefaultMatching()
+    data HasStar(x, y, *zs)
+    HasStar(x, *ys) = HasStar(1, 2, 3, 4)
+    assert x == 1
+    assert ys == (2, 3, 4)
+    HasStar(x, y, z) = HasStar(1, 2, 3)
+    assert (x, y, z) == (1, 2, 3)
+    HasStar(5, y=10) = HasStar(5, 10)
+    HasStar(1, 2, 3, zs=(3,)) = HasStar(1, 2, 3)
+    HasStar(x=1, y=2) = HasStar(1, 2)
+    match HasStar(x) in HasStar(1, 2):
+        assert False
+    match HasStar(x, y) in HasStar(1, 2, 3):
+        assert False
+    data HasStarAndDef(x, y="y", *zs)
+    HasStarAndDef(1, "y") = HasStarAndDef(1)
+    HasStarAndDef(1) = HasStarAndDef(1)
+    HasStarAndDef(x=1) = HasStarAndDef(1)
+    HasStarAndDef(1, 2, 3, zs=(3,)) = HasStarAndDef(1, 2, 3)
+    HasStarAndDef(1, y=2) = HasStarAndDef(1, 2)
+    match HasStarAndDef(x, y) in HasStarAndDef(1, 2, 3):
+        assert False
+
+    assert (.+1) <?| None is None
+    assert (.+1) <?| 5 == 6
+    assert (<?|)((.+1), None) is None
+    assert (<?|)((.+1), 5) == 6
+    optx: Any = (.+1)
+    optx <?|= None
+    assert optx is None
+    optx = (.+1)
+    optx <?|= 5
+    assert optx == 6
+    assert (+) <*?| None is None
+    assert (+) <*?| (3, 4) == 7
+    assert (<*?|)((+), None) is None
+    assert (<*?|)((+), (3, 4)) == 7
+    optx = (+)
+    optx <*?|= None
+    assert optx is None
+    optx = (+)
+    optx <*?|= (3, 4)
+    assert optx == 7
+    assert ((**kwargs) -> kwargs) <**?| None is None
+    assert ((**kwargs) -> kwargs) <**?| {"a": 1, "b": 2} == {"a": 1, "b": 2}
+    assert (<**?|)((**kwargs) -> kwargs, None) is None
+    assert (<**?|)((**kwargs) -> kwargs, {"a": 1, "b": 2}) == {"a": 1, "b": 2}
+    optx = (**kwargs) -> kwargs
+    optx <**?|= None
+    assert optx is None
+    optx = (**kwargs) -> kwargs
+    optx <**?|= {"a": 1, "b": 2}
+    assert optx == {"a": 1, "b": 2}
+
+    assert `const None ..?> (.+1)` is None is (..?>)(const None, (.+1))()
+    assert `(.+1) <?.. const None` is None is (<?..)((.+1), const None)()
+    assert `const 5 ..?> (.+1)` == 6 == (..?>)(const 5, (.+1))()
+    assert `(.+1) <?.. const 5` == 6 == (<?..)((.+1), const 5)()
+    assert `const None ..?*> (+)` is None is (..?*>)(const None, (+))()
+    assert `(+) <*?.. const None` is None is (<*?..)((+), const None)()
+    assert `const((5, 2)) ..?*> (+)` == 7 == (..?*>)(const((5, 2)), (+))()
+    assert `(+) <*?.. const((5, 2))` == 7 == (<*?..)((+), const((5, 2)))()
+    assert `const None ..?**> (**kwargs) -> kwargs` is None is (..?**>)(const None, (**kwargs) -> kwargs)()
+    assert `((**kwargs) -> kwargs) <**?.. const None` is None is (<**?..)((**kwargs) -> kwargs, const None)()
+    assert `const({"a": 1}) ..?**> (**kwargs) -> kwargs` == {"a": 1} == (..?**>)(const({"a": 1}), (**kwargs) -> kwargs)()
+    assert `((**kwargs) -> kwargs) <**?.. const({"a": 1})` == {"a": 1} == (<**?..)((**kwargs) -> kwargs, const({"a": 1}))()
+    optx = const None
+    optx ..?>= (.+1)
+    optx ..?*>= (+)
+    optx ..?**>= (,)
+    assert optx() is None
+    optx = (.+1)
+    optx <?..= (+)
+    optx <*?..= (,)
+    optx <**?..= const None
+    assert optx() is None
+    return True

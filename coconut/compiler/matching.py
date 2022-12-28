@@ -47,7 +47,7 @@ from coconut.compiler.util import (
     paren_join,
     handle_indentation,
     add_int_and_strs,
-    ordered_items,
+    ordered,
     tuple_str_of,
 )
 
@@ -434,7 +434,7 @@ class Matcher(object):
         # length checking
         max_len = None if allow_star_args else len(pos_only_match_args) + len(match_args)
         self.check_len_in(req_len, max_len, args)
-        for i, (lt_check, ge_check) in ordered_items(arg_checks):
+        for i, (lt_check, ge_check) in ordered(arg_checks.items()):
             if i < req_len:
                 if lt_check is not None:
                     self.add_check(lt_check)
