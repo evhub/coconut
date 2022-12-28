@@ -73,7 +73,6 @@ def test_setup_none() -> bool:
 
     assert consume(range(10), keep_last=1)[0] == 9 == coc_consume(range(10), keep_last=1)[0]
     assert version() == version("num")
-    assert version("name")
     assert version("spec")
     assert version("tag")
     assert version("-v")
