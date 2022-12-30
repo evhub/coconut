@@ -26,7 +26,7 @@ import sys as _coconut_sys
 VERSION = "2.2.0"
 VERSION_NAME = None
 # False for release, int >= 1 for develop
-DEVELOP = False
+DEVELOP = 1
 ALPHA = False  # for pre releases rather than post releases
 
 # -----------------------------------------------------------------------------------------------------------------------
