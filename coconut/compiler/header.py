@@ -231,7 +231,7 @@ def process_header_args(which, use_hash, target, no_tco, strict, no_wrap):
         self_match_types=tuple_str_of(self_match_types),
         set_super=(
             # we have to use _coconut_super even on the universal target, since once we set __class__ it becomes a local variable
-            "super = _coconut_super\n" if target_startswith != 3 else ""
+            "\nsuper = _coconut_super" if target_startswith != 3 else ""
         ),
         import_pickle=pycondition(
             (3,),
@@ -602,7 +602,7 @@ import asyncio
 _coconut_amap = None
             ''',
             if_ge=r'''
-class _coconut_amap(_coconut_base_hashable):
+class _coconut_amap(_coconut_baseclass):
     __slots__ = ("func", "aiter")
     def __init__(self, func, aiter):
         self.func = func
