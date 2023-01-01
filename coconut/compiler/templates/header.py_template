@@ -151,10 +151,10 @@ class _coconut_has_iter(_coconut_base_hashable):
     def get_new_iter(self):
         """Tee the underlying iterator."""
         with self.lock:
-            self.iter = _coconut_reiterable(self.iter)
+            self.iter = {_coconut_}reiterable(self.iter)
         return self.iter
     def __fmap__(self, func):
-        return _coconut_map(func, self)
+        return {_coconut_}map(func, self)
 class reiterable(_coconut_has_iter):
     """Allow an iterator to be iterated over multiple times with the same results."""
     __slots__ = ()
@@ -165,7 +165,7 @@ class reiterable(_coconut_has_iter):
     def get_new_iter(self):
         """Tee the underlying iterator."""
         with self.lock:
-            self.iter, new_iter = _coconut_tee(self.iter)
+            self.iter, new_iter = {_coconut_}tee(self.iter)
         return new_iter
     def __iter__(self):
         return _coconut.iter(self.get_new_iter())
@@ -178,7 +178,7 @@ class reiterable(_coconut_has_iter):
     def __getitem__(self, index):
         return _coconut_iter_getitem(self.get_new_iter(), index)
     def __reversed__(self):
-        return _coconut_reversed(self.get_new_iter())
+        return {_coconut_}reversed(self.get_new_iter())
     def __len__(self):
         if not _coconut.isinstance(self.iter, _coconut.abc.Sized):
             return _coconut.NotImplemented
@@ -258,7 +258,7 @@ def _coconut_iter_getitem(iterable, index):
                 return ()
             if n < -start or step != 1:
                 cache = _coconut.itertools.islice(cache, 0, n, step)
-            return _coconut_map(_coconut.operator.itemgetter(1), cache)
+            return {_coconut_}map(_coconut.operator.itemgetter(1), cache)
         elif stop is None or stop >= 0:
             return _coconut.itertools.islice(iterable, start, stop, step)
         else:
@@ -273,7 +273,7 @@ def _coconut_iter_getitem(iterable, index):
                 i, j = start, stop
             else:
                 i, j = _coconut.min(start - len_iter, -1), None
-            return _coconut_map(_coconut.operator.itemgetter(1), _coconut.tuple(cache)[i:j:step])
+            return {_coconut_}map(_coconut.operator.itemgetter(1), _coconut.tuple(cache)[i:j:step])
         else:
             if stop is not None:
                 m = stop + 1
@@ -517,7 +517,7 @@ class reversed(_coconut_has_iter):
         """Find the index of elem in the reversed iterable."""
         return _coconut.len(self.iter) - self.iter.index(elem) - 1
     def __fmap__(self, func):
-        return self.__class__(_coconut_map(func, self.iter))
+        return self.__class__({_coconut_}map(func, self.iter))
 class flatten(_coconut_has_iter):{COMMENT.cant_implement_len_else_list_calls_become_very_innefficient}
     """Flatten an iterable of iterables into a single iterable.
     Only flattens the top level of the iterable."""
@@ -538,9 +538,9 @@ class flatten(_coconut_has_iter):{COMMENT.cant_implement_len_else_list_calls_bec
         with self.lock:
             if not self._made_reit:
                 for i in _coconut.reversed(_coconut.range(0 if self.levels is None else self.levels + 1)):
-                    mapper = _coconut_reiterable
+                    mapper = {_coconut_}reiterable
                     for _ in _coconut.range(i):
-                        mapper = _coconut.functools.partial(_coconut_map, mapper)
+                        mapper = _coconut.functools.partial({_coconut_}map, mapper)
                     self.iter = mapper(self.iter)
                 self._made_reit = True
         return self.iter
@@ -564,9 +564,9 @@ class flatten(_coconut_has_iter):{COMMENT.cant_implement_len_else_list_calls_bec
             return _coconut.reversed(_coconut.tuple(self._iter_all_levels(new=True)))
         reversed_iter = self.get_new_iter()
         for i in _coconut.reversed(_coconut.range(self.levels + 1)):
-            reverser = _coconut_reversed
+            reverser = {_coconut_}reversed
             for _ in _coconut.range(i):
-                reverser = _coconut.functools.partial(_coconut_map, reverser)
+                reverser = _coconut.functools.partial({_coconut_}map, reverser)
             reversed_iter = reverser(reversed_iter)
         return self.__class__(reversed_iter, self.levels)
     def __repr__(self):
@@ -597,8 +597,8 @@ class flatten(_coconut_has_iter):{COMMENT.cant_implement_len_else_list_calls_bec
         raise ValueError("%r not in %r" % (elem, self))
     def __fmap__(self, func):
         if self.levels == 1:
-            return self.__class__(_coconut_map(_coconut.functools.partial(_coconut_map, func), self.get_new_iter()))
-        return _coconut_map(func, self)
+            return self.__class__({_coconut_}map(_coconut.functools.partial({_coconut_}map, func), self.get_new_iter()))
+        return {_coconut_}map(func, self)
 class cartesian_product(_coconut_base_hashable):
     __slots__ = ("iters", "repeat")
     __doc__ = getattr(_coconut.itertools.product, "__doc__", "Cartesian product of input iterables.") + """
@@ -635,7 +635,7 @@ Additionally supports Cartesian products of numpy arrays."""
     def __reduce__(self):
         return (self.__class__, self.iters, {lbrace}"repeat": self.repeat{rbrace})
     def __copy__(self):
-        self.iters = _coconut.tuple(_coconut_reiterable(it) for it in self.iters)
+        self.iters = _coconut.tuple({_coconut_}reiterable(it) for it in self.iters)
         return self.__class__(*self.iters, repeat=self.repeat)
     @property
     def all_iters(self):
@@ -663,7 +663,7 @@ Additionally supports Cartesian products of numpy arrays."""
                 return total_count
         return total_count
     def __fmap__(self, func):
-        return _coconut_map(func, self)
+        return {_coconut_}map(func, self)
 class map(_coconut_base_hashable, _coconut.map):
     __slots__ = ("func", "iters")
     __doc__ = getattr(_coconut.map, "__doc__", "<see help(py_map)>")
@@ -672,7 +672,7 @@ class map(_coconut_base_hashable, _coconut.map):
         if kwargs:
             raise _coconut.TypeError(cls.__name__ + "() got unexpected keyword arguments " + _coconut.repr(kwargs))
         if strict and _coconut.len(iterables) > 1:
-            return _coconut_starmap(function, _coconut_zip(*iterables, strict=True))
+            return {_coconut_}starmap(function, {_coconut_}zip(*iterables, strict=True))
         self = _coconut.map.__new__(cls, function, *iterables)
         self.func = function
         self.iters = iterables
@@ -682,7 +682,7 @@ class map(_coconut_base_hashable, _coconut.map):
             return self.__class__(self.func, *(_coconut_iter_getitem(it, index) for it in self.iters))
         return self.func(*(_coconut_iter_getitem(it, index) for it in self.iters))
     def __reversed__(self):
-        return self.__class__(self.func, *(_coconut_reversed(it) for it in self.iters))
+        return self.__class__(self.func, *({_coconut_}reversed(it) for it in self.iters))
     def __len__(self):
         if not _coconut.all(_coconut.isinstance(it, _coconut.abc.Sized) for it in self.iters):
             return _coconut.NotImplemented
@@ -692,7 +692,7 @@ class map(_coconut_base_hashable, _coconut.map):
     def __reduce__(self):
         return (self.__class__, (self.func,) + self.iters)
     def __copy__(self):
-        self.iters = _coconut.tuple(_coconut_reiterable(it) for it in self.iters)
+        self.iters = _coconut.tuple({_coconut_}reiterable(it) for it in self.iters)
         return self.__class__(self.func, *self.iters)
     def __iter__(self):
         return _coconut.iter(_coconut.map(self.func, *self.iters))
@@ -726,7 +726,7 @@ class _coconut_base_parallel_concurrent_map(map):
     def get_pool_stack(cls):
         return cls.threadlocal_ns.__dict__.setdefault("pool_stack", [None])
     def __new__(cls, function, *iterables, **kwargs):
-        self = _coconut_map.__new__(cls, function, *iterables)
+        self = {_coconut_}map.__new__(cls, function, *iterables)
         self.result = None
         self.chunksize = kwargs.pop("chunksize", 1)
         self.strict = kwargs.pop("strict", False)
@@ -754,10 +754,10 @@ class _coconut_base_parallel_concurrent_map(map):
                 if _coconut.len(self.iters) == 1:
                     self.result = _coconut.list(self.get_pool_stack()[-1].imap(_coconut_parallel_concurrent_map_func_wrapper(self.__class__, self.func, False), self.iters[0], self.chunksize))
                 elif self.strict:
-                    self.result = _coconut.list(self.get_pool_stack()[-1].imap(_coconut_parallel_concurrent_map_func_wrapper(self.__class__, self.func, True), _coconut_zip(*self.iters, strict=True), self.chunksize))
+                    self.result = _coconut.list(self.get_pool_stack()[-1].imap(_coconut_parallel_concurrent_map_func_wrapper(self.__class__, self.func, True), {_coconut_}zip(*self.iters, strict=True), self.chunksize))
                 else:
                     self.result = _coconut.list(self.get_pool_stack()[-1].imap(_coconut_parallel_concurrent_map_func_wrapper(self.__class__, self.func, True), _coconut.zip(*self.iters), self.chunksize))
-            self.func = _coconut_ident
+            self.func = {_coconut_}ident
             self.iters = (self.result,)
         return self.result
     def __iter__(self):
@@ -801,7 +801,7 @@ class zip(_coconut_base_hashable, _coconut.zip):
             return self.__class__(*(_coconut_iter_getitem(it, index) for it in self.iters), strict=self.strict)
         return _coconut.tuple(_coconut_iter_getitem(it, index) for it in self.iters)
     def __reversed__(self):
-        return self.__class__(*(_coconut_reversed(it) for it in self.iters), strict=self.strict)
+        return self.__class__(*({_coconut_}reversed(it) for it in self.iters), strict=self.strict)
     def __len__(self):
         if not _coconut.all(_coconut.isinstance(it, _coconut.abc.Sized) for it in self.iters):
             return _coconut.NotImplemented
@@ -811,17 +811,17 @@ class zip(_coconut_base_hashable, _coconut.zip):
     def __reduce__(self):
         return (self.__class__, self.iters, {lbrace}"strict": self.strict{rbrace})
     def __copy__(self):
-        self.iters = _coconut.tuple(_coconut_reiterable(it) for it in self.iters)
+        self.iters = _coconut.tuple({_coconut_}reiterable(it) for it in self.iters)
         return self.__class__(*self.iters, strict=self.strict)
     def __iter__(self):
 {zip_iter}
     def __fmap__(self, func):
-        return _coconut_map(func, self)
+        return {_coconut_}map(func, self)
 class zip_longest(zip):
     __slots__ = ("fillvalue",)
     __doc__ = getattr(_coconut.zip_longest, "__doc__", "Version of zip that fills in missing values with fillvalue.")
     def __new__(cls, *iterables, **kwargs):
-        self = _coconut_zip.__new__(cls, *iterables, strict=False)
+        self = {_coconut_}zip.__new__(cls, *iterables, strict=False)
         self.fillvalue = kwargs.pop("fillvalue", None)
         if kwargs:
             raise _coconut.TypeError(cls.__name__ + "() got unexpected keyword arguments " + _coconut.repr(kwargs))
@@ -862,7 +862,7 @@ class zip_longest(zip):
     def __reduce__(self):
         return (self.__class__, self.iters, {lbrace}"fillvalue": self.fillvalue{rbrace})
     def __copy__(self):
-        self.iters = _coconut.tuple(_coconut_reiterable(it) for it in self.iters)
+        self.iters = _coconut.tuple({_coconut_}reiterable(it) for it in self.iters)
         return self.__class__(*self.iters, fillvalue=self.fillvalue)
     def __iter__(self):
         return _coconut.iter(_coconut.zip_longest(*self.iters, fillvalue=self.fillvalue))
@@ -875,18 +875,18 @@ class filter(_coconut_base_hashable, _coconut.filter):
         self.iter = iterable
         return self
     def __reversed__(self):
-        return self.__class__(self.func, _coconut_reversed(self.iter))
+        return self.__class__(self.func, {_coconut_}reversed(self.iter))
     def __repr__(self):
         return "filter(%r, %s)" % (self.func, _coconut.repr(self.iter))
     def __reduce__(self):
         return (self.__class__, (self.func, self.iter))
     def __copy__(self):
-        self.iter = _coconut_reiterable(self.iter)
+        self.iter = {_coconut_}reiterable(self.iter)
         return self.__class__(self.func, self.iter)
     def __iter__(self):
         return _coconut.iter(_coconut.filter(self.func, self.iter))
     def __fmap__(self, func):
-        return _coconut_map(func, self)
+        return {_coconut_}map(func, self)
 class enumerate(_coconut_base_hashable, _coconut.enumerate):
     __slots__ = ("iter", "start")
     __doc__ = getattr(_coconut.enumerate, "__doc__", "<see help(py_enumerate)>")
@@ -899,11 +899,11 @@ class enumerate(_coconut_base_hashable, _coconut.enumerate):
     def __repr__(self):
         return "enumerate(%s, %r)" % (_coconut.repr(self.iter), self.start)
     def __fmap__(self, func):
-        return _coconut_map(func, self)
+        return {_coconut_}map(func, self)
     def __reduce__(self):
         return (self.__class__, (self.iter, self.start))
     def __copy__(self):
-        self.iter = _coconut_reiterable(self.iter)
+        self.iter = {_coconut_}reiterable(self.iter)
         return self.__class__(self.iter, self.start)
     def __iter__(self):
         return _coconut.iter(_coconut.enumerate(self.iter, self.start))
@@ -987,7 +987,7 @@ class count(_coconut_base_hashable):
             if self.step:
                 self.start += self.step
     def __fmap__(self, func):
-        return _coconut_map(func, self)
+        return {_coconut_}map(func, self)
     def __contains__(self, elem):
         if not self.step:
             return elem == self.start
@@ -1006,7 +1006,7 @@ class count(_coconut_base_hashable):
                     return self.__class__(new_start, new_step)
                 if self.step and _coconut.isinstance(self.start, _coconut.int) and _coconut.isinstance(self.step, _coconut.int):
                     return _coconut.range(new_start, self.start + self.step * index.stop, new_step)
-                return _coconut_map(self.__getitem__, _coconut.range(index.start if index.start is not None else 0, index.stop, index.step if index.step is not None else 1))
+                return {_coconut_}map(self.__getitem__, _coconut.range(index.start if index.start is not None else 0, index.stop, index.step if index.step is not None else 1))
             raise _coconut.IndexError("count() indices cannot be negative")
         if index < 0:
             raise _coconut.IndexError("count() indices cannot be negative")
@@ -1059,9 +1059,9 @@ class cycle(_coconut_has_iter):
                 raise _coconut.IndexError("cycle index out of range")
             return self.iter[index % _coconut.len(self.iter)]
         if self.times is None:
-            return _coconut_map(self.__getitem__, _coconut_count()[index])
+            return {_coconut_}map(self.__getitem__, {_coconut_}count()[index])
         else:
-            return _coconut_map(self.__getitem__, _coconut_range(0, _coconut.len(self))[index])
+            return {_coconut_}map(self.__getitem__, {_coconut_}range(0, _coconut.len(self))[index])
     def __len__(self):
         if self.times is None or not _coconut.isinstance(self.iter, _coconut.abc.Sized):
             return _coconut.NotImplemented
@@ -1069,7 +1069,7 @@ class cycle(_coconut_has_iter):
     def __reversed__(self):
         if self.times is None:
             raise _coconut.TypeError(_coconut.repr(self) + " object is not reversible")
-        return self.__class__(_coconut_reversed(self.get_new_iter()), self.times)
+        return self.__class__({_coconut_}reversed(self.get_new_iter()), self.times)
     def count(self, elem):
         """Count the number of times elem appears in the cycle."""
         return self.iter.count(elem) * (float("inf") if self.times is None else self.times)
@@ -1181,13 +1181,13 @@ class recursive_iterator(_coconut_base_hashable):
             for k, v in self.backup_reit_store:
                 if k == key:
                     return reit
-            reit = _coconut_reiterable(self.func(*args, **kwargs))
+            reit = {_coconut_}reiterable(self.func(*args, **kwargs))
             self.backup_reit_store.append([key, reit])
             return reit
         else:
             reit = self.reit_store.get(key)
             if reit is None:
-                reit = _coconut_reiterable(self.func(*args, **kwargs))
+                reit = {_coconut_}reiterable(self.func(*args, **kwargs))
                 self.reit_store[key] = reit
             return reit
     def __repr__(self):
@@ -1219,15 +1219,15 @@ def _coconut_get_function_match_error():
     try:
         ctx = _coconut_FunctionMatchErrorContext.get_contexts()[-1]
     except _coconut.IndexError:
-        return _coconut_MatchError
+        return {_coconut_}MatchError
     if ctx.taken:
-        return _coconut_MatchError
+        return {_coconut_}MatchError
     ctx.taken = True
     return ctx.exc_class
 class _coconut_base_pattern_func(_coconut_base_hashable):{COMMENT.no_slots_to_allow_func_attrs}
     _coconut_is_match = True
     def __init__(self, *funcs):
-        self.FunctionMatchError = _coconut.type(_coconut_py_str("MatchError"), (_coconut_MatchError,), {empty_dict})
+        self.FunctionMatchError = _coconut.type(_coconut_py_str("MatchError"), ({_coconut_}MatchError,), {empty_dict})
         self.patterns = []
         self.__doc__ = None
         self.__name__ = None
@@ -1356,7 +1356,7 @@ class starmap(_coconut_base_hashable, _coconut.itertools.starmap):
             return self.__class__(self.func, _coconut_iter_getitem(self.iter, index))
         return self.func(*_coconut_iter_getitem(self.iter, index))
     def __reversed__(self):
-        return self.__class__(self.func, *_coconut_reversed(self.iter))
+        return self.__class__(self.func, *{_coconut_}reversed(self.iter))
     def __len__(self):
         if not _coconut.isinstance(self.iter, _coconut.abc.Sized):
             return _coconut.NotImplemented
@@ -1366,7 +1366,7 @@ class starmap(_coconut_base_hashable, _coconut.itertools.starmap):
     def __reduce__(self):
         return (self.__class__, (self.func, self.iter))
     def __copy__(self):
-        self.iter = _coconut_reiterable(self.iter)
+        self.iter = {_coconut_}reiterable(self.iter)
         return self.__class__(self.func, self.iter)
     def __iter__(self):
         return _coconut.iter(_coconut.itertools.starmap(self.func, self.iter))
@@ -1453,9 +1453,9 @@ def fmap(func, obj, **kwargs):
             if aiter is not _coconut.NotImplemented:
                 return _coconut_amap(func, aiter)
     if starmap_over_mappings:
-        return _coconut_base_makedata(obj.__class__, _coconut_starmap(func, obj.items()) if _coconut.isinstance(obj, _coconut.abc.Mapping) else _coconut_map(func, obj))
+        return _coconut_base_makedata(obj.__class__, {_coconut_}starmap(func, obj.items()) if _coconut.isinstance(obj, _coconut.abc.Mapping) else {_coconut_}map(func, obj))
     else:
-        return _coconut_base_makedata(obj.__class__, _coconut_map(func, obj.items() if _coconut.isinstance(obj, _coconut.abc.Mapping) else obj))
+        return _coconut_base_makedata(obj.__class__, {_coconut_}map(func, obj.items() if _coconut.isinstance(obj, _coconut.abc.Mapping) else obj))
 def _coconut_memoize_helper(maxsize=None, typed=False):
     return maxsize, typed
 def memoize(*args, **kwargs):
@@ -1556,9 +1556,9 @@ def safe_call(_coconut_f{comma_slash}, *args, **kwargs):
                 return Expected(error=err)
     """
     try:
-        return _coconut_Expected(_coconut_f(*args, **kwargs))
+        return {_coconut_}Expected(_coconut_f(*args, **kwargs))
     except _coconut.Exception as err:
-        return _coconut_Expected(error=err)
+        return {_coconut_}Expected(error=err)
 class Expected(_coconut.collections.namedtuple("Expected", ("result", "error")){comma_object}):
     '''Coconut's Expected built-in is a Coconut data that represents a value
     that may or may not be an error, similar to Haskell's Either.
@@ -1580,6 +1580,9 @@ class Expected(_coconut.collections.namedtuple("Expected", ("result", "error")){
                 if not self.result `isinstance` Expected:
                     raise TypeError("Expected.join() requires an Expected[Expected[_]]")
                 return self.result
+            def map_error(self, func: BaseException -> BaseException) -> Expected[T]:
+                """Maps func over the error if it exists."""
+                return self if self else self.__class__(error=func(self.error))
             def or_else[U](self, func: BaseException -> Expected[U]) -> Expected[T | U]:
                 """Return self if no error, otherwise return the result of evaluating func on the error."""
                 return self if self else func(self.error)
@@ -1618,7 +1621,7 @@ class Expected(_coconut.collections.namedtuple("Expected", ("result", "error")){
     def __bool__(self):
         return self.error is None
     def __fmap__(self, func):
-        return self if not self else self.__class__(func(self.result))
+        return self.__class__(func(self.result)) if self else self
     def and_then(self, func):
         """Maps a T -> Expected[U] over an Expected[T] to produce an Expected[U].
         Implements a monadic bind. Equivalent to fmap ..> .join()."""
@@ -1627,15 +1630,18 @@ class Expected(_coconut.collections.namedtuple("Expected", ("result", "error")){
         """Monadic join. Converts Expected[Expected[T]] to Expected[T]."""
         if not self:
             return self
-        if not _coconut.isinstance(self.result, _coconut_Expected):
+        if not _coconut.isinstance(self.result, {_coconut_}Expected):
             raise _coconut.TypeError("Expected.join() requires an Expected[Expected[_]]")
         return self.result
+    def map_error(self, func):
+        """Maps func over the error if it exists."""
+        return self if self else self.__class__(error=func(self.error))
     def or_else(self, func):
         """Return self if no error, otherwise return the result of evaluating func on the error."""
         if self:
             return self
         got = func(self.error)
-        if not _coconut.isinstance(got, _coconut_Expected):
+        if not _coconut.isinstance(got, {_coconut_}Expected):
             raise _coconut.TypeError("Expected.or_else() requires a function that returns an Expected")
         return got
     def result_or(self, default):

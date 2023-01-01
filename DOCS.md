@@ -2824,6 +2824,9 @@ data Expected[T](result: T? = None, error: BaseException? = None):
         if not self.result `isinstance` Expected:
             raise TypeError("Expected.join() requires an Expected[Expected[_]]")
         return self.result
+    def map_error(self, func: BaseException -> BaseException) -> Expected[T]:
+        """Maps func over the error if it exists."""
+        return self if self else self.__class__(error=func(self.error))
     def or_else[U](self, func: BaseException -> Expected[U]) -> Expected[T | U]:
         """Return self if no error, otherwise return the result of evaluating func on the error."""
         return self if self else func(self.error)

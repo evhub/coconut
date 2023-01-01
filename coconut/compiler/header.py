@@ -217,6 +217,7 @@ def process_header_args(which, use_hash, target, no_tco, strict, no_wrap):
         default_encoding=default_encoding,
         hash_line=hash_prefix + use_hash + "\n" if use_hash is not None else "",
         typing_line="# type: ignore\n" if which == "__coconut__" else "",
+        _coconut_="_coconut_" if which != "__coconut__" else "",  # only for aliases defined at the end of the header
         VERSION_STR=VERSION_STR,
         module_docstring='"""Built-in Coconut utilities."""\n\n' if which == "__coconut__" else "",
         __coconut__=make_py_str("__coconut__", target_startswith),
@@ -483,6 +484,7 @@ def __lt__(self, other):
             indent=1,
             newline=True,
         ),
+
         # used in the second round
         tco_comma="_coconut_tail_call, _coconut_tco, " if not no_tco else "",
         call_set_names_comma="_coconut_call_set_names, " if target_info < (3, 6) else "",
@@ -525,6 +527,7 @@ for _coconut_varname in dir(MatchError):
     )
 
     # second round for format dict elements that use the format dict
+    #  (extra_format_dict is to keep indentation levels matching)
     extra_format_dict = dict(
         # when anything is added to this list it must also be added to *both* __coconut__ stub files
         underscore_imports="{tco_comma}{call_set_names_comma}{handle_cls_args_comma}_namedtuple_of, _coconut, _coconut_super, _coconut_Expected, _coconut_MatchError, _coconut_iter_getitem, _coconut_base_compose, _coconut_forward_compose, _coconut_back_compose, _coconut_forward_star_compose, _coconut_back_star_compose, _coconut_forward_dubstar_compose, _coconut_back_dubstar_compose, _coconut_pipe, _coconut_star_pipe, _coconut_dubstar_pipe, _coconut_back_pipe, _coconut_back_star_pipe, _coconut_back_dubstar_pipe, _coconut_none_pipe, _coconut_none_star_pipe, _coconut_none_dubstar_pipe, _coconut_bool_and, _coconut_bool_or, _coconut_none_coalesce, _coconut_minus, _coconut_map, _coconut_partial, _coconut_get_function_match_error, _coconut_base_pattern_func, _coconut_addpattern, _coconut_sentinel, _coconut_assert, _coconut_raise, _coconut_mark_as_match, _coconut_reiterable, _coconut_self_match_types, _coconut_dict_merge, _coconut_exec, _coconut_comma_op, _coconut_multi_dim_arr, _coconut_mk_anon_namedtuple, _coconut_matmul, _coconut_py_str, _coconut_flatten, _coconut_multiset, _coconut_back_none_pipe, _coconut_back_none_star_pipe, _coconut_back_none_dubstar_pipe, _coconut_forward_none_compose, _coconut_back_none_compose, _coconut_forward_none_star_compose, _coconut_back_none_star_compose, _coconut_forward_none_dubstar_compose, _coconut_back_none_dubstar_compose".format(**format_dict),

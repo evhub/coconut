@@ -1299,6 +1299,8 @@ def primary_test() -> bool:
     assert x == 10
     Expected(error=err) = Expected(error=some_err)
     assert err is some_err
+    assert Expected(error=TypeError()).map_error(const some_err) == Expected(error=some_err)
+    assert Expected(10).map_error(const some_err) == Expected(10)
 
     recit = ([1,2,3] :: recit) |> map$(.+1)
     assert tee(recit)
