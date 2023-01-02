@@ -222,15 +222,17 @@ which will quietly compile and run `<source>`, passing any additional arguments 
 #!/usr/bin/env coconut-run
 ```
 
+_Note: to pass additional compilation arguments to `coconut-run` (e.g. `--no-tco`), put them before the `<source>` file._
+
 #### Naming Source Files
 
-Coconut source files should, so the compiler can recognize them, use the extension `.coco` (preferred), `.coc`, or `.coconut`. When Coconut compiles a `.coco` (or `.coc`/`.coconut`) file, it will compile to another file with the same name, except with `.py` instead of `.coco`, which will hold the compiled code. If an extension other than `.py` is desired for the compiled files, such as `.pyde` for [Python Processing](http://py.processing.org/), then that extension can be put before `.coco` in the source file name, and it will be used instead of `.py` for the compiled files. For example, `name.coco` will compile to `name.py`, whereas `name.pyde.coco` will compile to `name.pyde`.
+Coconut source files should, so the compiler can recognize them, use the extension `.coco` (preferred), `.coc`, or `.coconut`. When Coconut compiles a `.coco` file, it will compile to another file with the same name, except with `.py` instead of `.coco`, which will hold the compiled code. If an extension other than `.py` is desired for the compiled files, then that extension can be put before `.coco` in the source file name, and it will be used instead of `.py` for the compiled files. For example, `name.coco` will compile to `name.py`, whereas `name.abc.coco` will compile to `name.abc`.
 
 #### Compilation Modes
 
 Files compiled by the `coconut` command-line utility will vary based on compilation parameters. If an entire directory of files is compiled (which the compiler will search recursively for any folders containing `.coco`, `.coc`, or `.coconut` files), a `__coconut__.py` file will be created to house necessary functions (package mode), whereas if only a single file is compiled, that information will be stored within a header inside the file (standalone mode). Standalone mode is better for single files because it gets rid of the overhead involved in importing `__coconut__.py`, but package mode is better for large packages because it gets rid of the need to run the same Coconut header code again in every file, since it can just be imported from `__coconut__.py`.
 
-By default, if the `source` argument to the command-line utility is a file, it will perform standalone compilation on it, whereas if it is a directory, it will recursively search for all `.coco` (or `.coc` / `.coconut`) files and perform package compilation on them. Thus, in most cases, the mode chosen by Coconut automatically will be the right one. But if it is very important that no additional files like `__coconut__.py` be created, for example, then the command-line utility can also be forced to use a specific mode with the `--package` (`-p`) and `--standalone` (`-a`) flags.
+By default, if the `source` argument to the command-line utility is a file, it will perform standalone compilation on it, whereas if it is a directory, it will recursively search for all `.coco` files and perform package compilation on them. Thus, in most cases, the mode chosen by Coconut automatically will be the right one. But if it is very important that no additional files like `__coconut__.py` be created, for example, then the command-line utility can also be forced to use a specific mode with the `--package` (`-p`) and `--standalone` (`-a`) flags.
 
 #### Compatible Python Versions
 
@@ -263,8 +265,6 @@ _Note: Coconut's `repr` can be somewhat tricky, as it will attempt to remove the
 
 For standard library compatibility, **Coconut automatically maps imports under Python 3 names to imports under Python 2 names**. Thus, Coconut will automatically take care of any standard library modules that were renamed from Python 2 to Python 3 if just the Python 3 name is used. For modules or packages that only exist in Python 3, however, Coconut has no way of maintaining compatibility.
 
-Additionally, Coconut allows the [`__set_name__`](https://docs.python.org/3/reference/datamodel.html#object.__set_name__) magic method for descriptors to work on any Python version.
-
 Finally, while Coconut will try to compile Python-3-specific syntax to its universal equivalent, the following constructs have no equivalent in Python 2, and require the specification of a target of at least `3` to be used:
 
 - the `nonlocal` keyword,
@@ -274,6 +274,8 @@ Finally, while Coconut will try to compile Python-3-specific syntax to its unive
 - positional-only function parameters (use [pattern-matching function definition](#pattern-matching-functions) for universal code) (requires `--target 3.8`),
 - `a[x, *y]` variadic generic syntax (use [type parameter syntax](#type-parameter-syntax) for universal code) (requires `--target 3.11`), and
 - `except*` multi-except statements (requires `--target 3.11`).
+
+_Note: Coconut also universalizes many magic methods, including making `__bool__` and [`__set_name__`](https://docs.python.org/3/reference/datamodel.html#object.__set_name__) work on any Python version._
 
 #### Allowable Targets
 
@@ -295,7 +297,7 @@ If the version of Python that the compiled code will be running on is known ahea
 - `3.12` (will work on any Python `>= 3.12`), and
 - `sys` (chooses the target corresponding to the current Python version).
 
-_Note: Periods are ignored in target specifications, such that the target `27` is equivalent to the target `2.7`._
+_Note: Periods are optional in target specifications, such that the target `27` is equivalent to the target `2.7`._
 
 #### `strict` Mode
 
@@ -622,7 +624,7 @@ Coconut uses pipe operators for pipeline-style function application. All the ope
 
 Additionally, all pipe operators support a lambda as the last argument, despite lambdas having a lower precedence. Thus, `a |> x -> b |> c` is equivalent to `a |> (x -> b |> c)`, not `a |> (x -> b) |> c`.
 
-The None-aware pipe operators here are equivalent to a [monadic bind](https://en.wikipedia.org/wiki/Monad_(functional_programming)) treating the object as a `Maybe` monad composed of either `None` or the given object. Note that only the object being piped, not the function being piped into, may be `None` for `None`-aware pipes.
+The None-aware pipe operators here are equivalent to a [monadic bind](https://en.wikipedia.org/wiki/Monad_(functional_programming)) treating the object as a `Maybe` monad composed of either `None` or the given object. Thus, `x |?> f` is equivalent to `None if x is None else f(x)`. Note that only the object being piped, not the function being piped into, may be `None` for `None`-aware pipes.
 
 _Note: To visually spread operations across several lines, just use [parenthetical continuation](#enhanced-parenthetical-continuation)._
 
@@ -829,7 +831,7 @@ from <module> import operator <op>
 
 Custom operators will often need to be surrounded by whitespace (or parentheses when used as an operator function) to be parsed correctly.
 
-If a custom operator that is also a valid name is desired, you can use a backslash before the name to get back the name instead with Coconut's [keyword/variable disambiguation syntax](#handling-keywordvariable-name-overlap).
+If a custom operator that is also a valid name is desired, you can use a backslash before the name to get back the name instead using Coconut's [keyword/variable disambiguation syntax](#handling-keywordvariable-name-overlap).
 
 ##### Examples
 
@@ -1149,11 +1151,9 @@ data Node(l, r) from Tree
 
 def depth(Tree()) = 0
 
-@addpattern(depth)
-def depth(Tree(n)) = 1
+addpattern def depth(Tree(n)) = 1
 
-@addpattern(depth)
-def depth(Tree(l, r)) = 1 + max([depth(l), depth(r)])
+addpattern def depth(Tree(l, r)) = 1 + max([depth(l), depth(r)])
 
 Empty() |> depth |> print
 Leaf(5) |> depth |> print
@@ -1173,8 +1173,7 @@ _Showcases head-tail splitting, one of the most common uses of pattern-matching,
 def sieve([head] :: tail) =
     [head] :: sieve(n for n in tail if n % head)
 
-@addpattern(sieve)
-def sieve((||)) = []
+addpattern def sieve((||)) = []
 ```
 _Showcases how to match against iterators, namely that the empty iterator case (`(||)`) must come last, otherwise that case will exhaust the whole iterator before any other pattern has a chance to match against it._
 
@@ -1351,11 +1350,9 @@ data Node(l, r)
 
 def size(Empty()) = 0
 
-@addpattern(size)
-def size(Leaf(n)) = 1
+addpattern def size(Leaf(n)) = 1
 
-@addpattern(size)
-def size(Node(l, r)) = size(l) + size(r)
+addpattern def size(Node(l, r)) = size(l) + size(r)
 
 size(Node(Empty(), Leaf(10))) == 1
 ```
@@ -2027,12 +2024,10 @@ _Showcases tail recursion elimination._
 ```coconut
 # unlike in Python, neither of these functions will ever hit a maximum recursion depth error
 def is_even(0) = True
-@addpattern(is_even)
-def is_even(n `isinstance` int if n > 0) = is_odd(n-1)
+addpattern def is_even(n `isinstance` int if n > 0) = is_odd(n-1)
 
 def is_odd(0) = False
-@addpattern(is_odd)
-def is_odd(n `isinstance` int if n > 0) = is_even(n-1)
+addpattern def is_odd(n `isinstance` int if n > 0) = is_even(n-1)
 ```
 _Showcases tail call optimization._
 
