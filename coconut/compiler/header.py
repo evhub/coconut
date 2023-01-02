@@ -663,7 +663,8 @@ def getheader(which, use_hash, target, no_tco, strict, no_wrap):
 
     target_startswith = one_num_ver(target)
     target_info = get_target_info(target)
-    header_info = tuple_str_of((VERSION, target, no_tco, strict, no_wrap), add_quotes=True)
+    # header_info only includes arguments that affect __coconut__.py compatibility
+    header_info = tuple_str_of((VERSION, target, strict), add_quotes=True)
     format_dict = process_header_args(which, use_hash, target, no_tco, strict, no_wrap)
 
     if which == "initial" or which == "__coconut__":

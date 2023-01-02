@@ -396,7 +396,11 @@ class Compiler(Grammar, pickleable_obj):
         if target is None:
             target = ""
         else:
-            target = str(target).replace(".", "")
+            target = str(target)
+        if len(target) > 1 and target[1] == ".":
+            target = target[:1] + target[2:]
+        if "." in target:
+            raise CoconutException("target Python version must be major.minor, not major.minor.micro")
         if target == "sys":
             target = sys_target
         if target in pseudo_targets:
