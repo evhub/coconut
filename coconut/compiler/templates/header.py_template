@@ -1623,6 +1623,10 @@ class Expected(_coconut.collections.namedtuple("Expected", ("result", "error")){
     def __bool__(self):
         return self.error is None
     def __fmap__(self, func):
+        """Maps func over the result if it exists.
+
+        __fmap__ should be used directly only when fmap is not available (e.g. when consuming an Expected in vanilla Python).
+        """
         return self.__class__(func(self.result)) if self else self
     def and_then(self, func):
         """Maps a T -> Expected[U] over an Expected[T] to produce an Expected[U].

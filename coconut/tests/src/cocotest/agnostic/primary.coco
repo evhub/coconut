@@ -1270,8 +1270,8 @@ def primary_test() -> bool:
     assert ys |> list == []
 
     some_err = ValueError()
-    assert Expected(10) |> fmap$(.+1) == Expected(11)
-    assert Expected(error=some_err) |> fmap$(.+1) == Expected(error=some_err)
+    assert Expected(10) |> fmap$(.+1) == Expected(11) == Expected(10) |> .__fmap__(.+1)
+    assert Expected(error=some_err) |> fmap$(.+1) == Expected(error=some_err) == Expected(error=some_err) |> .__fmap__(.+1)
     res, err = Expected(10)
     assert (res, err) == (10, None)
     assert Expected("abc")
