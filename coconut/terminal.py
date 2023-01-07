@@ -99,7 +99,7 @@ def complain(error):
             error = error()
         else:
             return
-    if not isinstance(error, CoconutInternalException) and isinstance(error, CoconutException):
+    if not isinstance(error, BaseException) or (not isinstance(error, CoconutInternalException) and isinstance(error, CoconutException)):
         error = CoconutInternalException(str(error))
     if not DEVELOP:
         logger.warn_err(error)

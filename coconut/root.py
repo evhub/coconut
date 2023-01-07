@@ -23,11 +23,11 @@ import sys as _coconut_sys
 # VERSION:
 # -----------------------------------------------------------------------------------------------------------------------
 
-VERSION = "2.2.0"
+VERSION = "3.0.0"
 VERSION_NAME = None
 # False for release, int >= 1 for develop
-DEVELOP = 2
-ALPHA = False  # for pre releases rather than post releases
+DEVELOP = 1
+ALPHA = True  # for pre releases rather than post releases
 
 # -----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:

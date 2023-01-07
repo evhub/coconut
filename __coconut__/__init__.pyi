@@ -210,7 +210,7 @@ def _coconut_tco(func: _Tfunc) -> _Tfunc:
     return func
 
 
-# any changes here should also be made to safe_call below
+# any changes here should also be made to safe_call and call_or_coefficient below
 @_t.overload
 def call(
     _func: _t.Callable[[_T], _U],
@@ -362,6 +362,58 @@ def safe_call(
     *args: _t.Any,
     **kwargs: _t.Any,
 ) -> Expected[_T]: ...
+
+
+# based on call above
+@_t.overload
+def _coconut_call_or_coefficient(
+    _func: _t.Callable[[_T], _U],
+    _x: _T,
+) -> _U: ...
+@_t.overload
+def _coconut_call_or_coefficient(
+    _func: _t.Callable[[_T, _U], _V],
+    _x: _T,
+    _y: _U,
+) -> _V: ...
+@_t.overload
+def _coconut_call_or_coefficient(
+    _func: _t.Callable[[_T, _U, _V], _W],
+    _x: _T,
+    _y: _U,
+    _z: _V,
+) -> _W: ...
+@_t.overload
+def _coconut_call_or_coefficient(
+    _func: _t.Callable[_t.Concatenate[_T, _P], _U],
+    _x: _T,
+    *args: _t.Any,
+) -> _U: ...
+@_t.overload
+def _coconut_call_or_coefficient(
+    _func: _t.Callable[_t.Concatenate[_T, _U, _P], _V],
+    _x: _T,
+    _y: _U,
+    *args: _t.Any,
+) -> _V: ...
+@_t.overload
+def _coconut_call_or_coefficient(
+    _func: _t.Callable[_t.Concatenate[_T, _U, _V, _P], _W],
+    _x: _T,
+    _y: _U,
+    _z: _V,
+    *args: _t.Any,
+) -> _W: ...
+@_t.overload
+def _coconut_call_or_coefficient(
+    _func: _t.Callable[..., _T],
+    *args: _t.Any,
+) -> _T: ...
+@_t.overload
+def _coconut_call_or_coefficient(
+    _func: _T,
+    *args: _T,
+) -> _T: ...
 
 
 def recursive_iterator(func: _T_iter_func) -> _T_iter_func:

@@ -756,6 +756,7 @@ class Compiler(Grammar, pickleable_obj):
         try:
             yield
         except ParseBaseException as err:
+            # don't reformat, since we might have gotten here because reformat failed
             complain(self.make_parse_err(err, reformat=False, include_ln=False))
         except CoconutException as err:
             complain(err)
@@ -1397,6 +1398,11 @@ class Compiler(Grammar, pickleable_obj):
 
             indent, line = split_leading_indent(line)
             level += ind_change(indent)
+            if level < 0:
+                if not ignore_errors:
+                    logger.log_lambda(lambda: "failed to reindent:\n" + inputstring)
+                    complain("negative indentation level: " + repr(level))
+                level = 0
 
             if line:
                 line = " " * self.tabideal * (level + int(is_fake)) + line
@@ -1407,13 +1413,18 @@ class Compiler(Grammar, pickleable_obj):
             # handle indentation markers interleaved with comment/endline markers
             comment, change_in_level = rem_and_count_indents(comment)
             level += change_in_level
+            if level < 0:
+                if not ignore_errors:
+                    logger.log_lambda(lambda: "failed to reindent:\n" + inputstring)
+                    complain("negative indentation level: " + repr(level))
+                level = 0
 
             line = (line + comment).rstrip()
             out.append(line)
 
         if not ignore_errors and level != 0:
-            logger.log_lambda(lambda: "failed to reindent:\n" + "\n".join(out))
-            complain(CoconutInternalException("non-zero final indentation level ", level))
+            logger.log_lambda(lambda: "failed to reindent:\n" + inputstring)
+            complain("non-zero final indentation level: " + repr(level))
         return "\n".join(out)
 
     def ln_comment(self, ln):

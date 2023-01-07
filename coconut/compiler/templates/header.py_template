@@ -1822,5 +1822,11 @@ def _coconut_multi_dim_arr(arrs, dim):
     arr_dims.append(dim)
     max_arr_dim = _coconut.max(arr_dims)
     return _coconut_concatenate(arrs, max_arr_dim - dim)
+def _coconut_call_or_coefficient(func, *args):
+    if _coconut.callable(func):
+        return func(*args)
+    for x in args:
+        func *= x
+    return func
 _coconut_self_match_types = {self_match_types}
 _coconut_Expected, _coconut_MatchError, _coconut_count, _coconut_enumerate, _coconut_flatten, _coconut_filter, _coconut_ident, _coconut_map, _coconut_multiset, _coconut_range, _coconut_reiterable, _coconut_reversed, _coconut_starmap, _coconut_tee, _coconut_zip, TYPE_CHECKING, reduce, takewhile, dropwhile = Expected, MatchError, count, enumerate, flatten, filter, ident, map, multiset, range, reiterable, reversed, starmap, tee, zip, False, _coconut.functools.reduce, _coconut.itertools.takewhile, _coconut.itertools.dropwhile

@@ -467,10 +467,9 @@ In order of precedence, highest first, the operators supported in Coconut are:
 ====================== ==========================
 Symbol(s)              Associativity
 ====================== ==========================
-f x                    n/a
 await x                n/a
-..                     n/a
-**                     right
+**                     right (allows unary)
+f x                    n/a
 +, -, ~                unary
 *, /, //, %, @         left
 +, -                   left
@@ -479,6 +478,7 @@ await x                n/a
 ^                      left
 |                      left
 ::                     n/a (lazy)
+..                     n/a
 a `b` c,               left (captures lambda)
   all custom operators
 ??                     left (short-circuits)
@@ -681,7 +681,7 @@ The `..>` and `<..` function composition pipe operators also have multi-arg, key
 
 Note that `None`-aware function composition pipes don't allow either function to be `None`—rather, they allow the return of the first evaluated function to be `None`, in which case `None` is returned immediately rather than calling the next function.
 
-The `..` operator has lower precedence than `await` but higher precedence than `**` while the `..>` pipe operators have a precedence directly higher than normal pipes.
+The `..` operator has lower precedence than `::` but higher precedence than infix functions while the `..>` pipe operators have a precedence directly higher than normal pipes.
 
 All function composition operators also have in-place versions (e.g. `..=`).
 
@@ -1835,16 +1835,25 @@ Lazy lists, where sequences are only evaluated when their contents are requested
 **Python:**
 _Can't be done without a complicated iterator comprehension in place of the lazy list. See the compiled code for the Python syntax._
 
-### Implicit Function Application
+### Implicit Function Application and Coefficients
 
-Coconut supports implicit function application of the form `f x y`, which is compiled to `f(x, y)` (note: **not** `f(x)(y)` as is common in many languages with automatic currying). Implicit function application has a lower precedence than attribute access, slices, normal function calls, etc. but a higher precedence than `await`.
+Coconut supports implicit function application of the form `f x y`, which is compiled to `f(x, y)` (note: **not** `f(x)(y)` as is common in many languages with automatic currying).
 
-Supported arguments to implicit function application are highly restricted, and must be:
+Additionally, if the first argument is not callable, then the result is multiplication rather than function application, such that `2 x` is equivalent to `2*x`.
+
+Supported arguments are highly restricted, and must be:
 - variables/attributes (e.g. `a.b`),
-- literal constants (e.g. `True`), or
-- number literals (e.g. `1.5`).
+- literal constants (e.g. `True`),
+- number literals (e.g. `1.5`), or
+- one of the above followed by an exponent (e.g. `a**-5`).
 
-For example, `f x 1` will work but `f x [1]`, `f x (1+2)`, and `f "abc"` will not. Strings are disallowed due to conflicting with [Python's implicit string concatenation](https://stackoverflow.com/questions/18842779/string-concatenation-without-operator). Implicit function application is only intended for simple use cases—for more complex cases, use either standard function application or [pipes](#pipes).
+For example, `f x 1` will work but `f x [1]`, `f x (1+2)`, and `f "abc"` will not. Strings are disallowed due to conflicting with [Python's implicit string concatenation](https://stackoverflow.com/questions/18842779/string-concatenation-without-operator).
+
+Implicit function application and coefficient syntax is only intended for simple use cases—for more complex cases, use the standard multiplication operator `*`, standard function application, or [pipes](#pipes).
+
+Implicit function application and coefficient syntax has a lower precedence than `**` but a higher precedence than unary operators. As a result, `2 x**2 + 3 x` is equivalent to `2 * x**2 + 3 * x`.
+
+Note that, due to potential confusion, `await` is not allowed in front of implicit function application and coefficient syntax. To use `await`, simply parenthesize the expression, as in `await (f x)`.
 
 ##### Examples
 
@@ -1859,6 +1868,10 @@ def p1(x) = x + 1
 print <| p1 5
 ```
 
+```coconut
+quad = 5 x**2 + 3 x + 1
+```
+
 **Python:**
 ```coconut_python
 def f(x, y): return (x, y)
@@ -1868,6 +1881,10 @@ print(f(100, 5+6))
 ```coconut_python
 def p1(x): return x + 1
 print(p1(5))
+```
+
+```coconut_python
+quad = 5 * x**2 + 3 * x + 1
 ```
 
 ### Anonymous Namedtuples

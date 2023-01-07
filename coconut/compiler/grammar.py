@@ -468,7 +468,13 @@ def simple_kwd_assign_handle(tokens):
 simple_kwd_assign_handle.ignore_one_token = True
 
 
-def compose_item_handle(tokens):
+def impl_call_item_handle(tokens):
+    """Process implicit function application or coefficient syntax."""
+    internal_assert(len(tokens) >= 2, "invalid implicit call / coefficient tokens", tokens)
+    return "_coconut_call_or_coefficient(" + ", ".join(tokens) + ")"
+
+
+def compose_expr_handle(tokens):
     """Process function composition."""
     if len(tokens) == 1:
         return tokens[0]
@@ -476,13 +482,7 @@ def compose_item_handle(tokens):
     return "_coconut_forward_compose(" + ", ".join(reversed(tokens)) + ")"
 
 
-compose_item_handle.ignore_one_token = True
-
-
-def impl_call_item_handle(tokens):
-    """Process implicit function application."""
-    internal_assert(len(tokens) > 1, "invalid implicit function application tokens", tokens)
-    return tokens[0] + "(" + ", ".join(tokens[1:]) + ")"
+compose_expr_handle.ignore_one_token = True
 
 
 def tco_return_handle(tokens):
@@ -929,6 +929,7 @@ class Grammar(object):
     namedexpr_test = Forward()
     # for namedexpr locations only supported in Python 3.10
     new_namedexpr_test = Forward()
+    lambdef = Forward()
 
     negable_atom_item = condense(Optional(neg_minus) + atom_item)
 
@@ -1354,40 +1355,33 @@ class Grammar(object):
     type_alias_stmt = Forward()
     type_alias_stmt_ref = type_kwd.suppress() + setname + Optional(type_params) + equals.suppress() + typedef_test
 
-    impl_call_arg = disallow_keywords(reserved_vars) + (
+    await_expr = Forward()
+    await_expr_ref = await_kwd.suppress() + atom_item
+    await_item = await_expr | atom_item
+
+    factor = Forward()
+    unary = plus | neg_minus | tilde
+
+    power = condense(exp_dubstar + ZeroOrMore(unary) + await_item)
+
+    impl_call_arg = disallow_keywords(reserved_vars) + condense((
         keyword_atom
         | number
         | dotted_refname
-    )
+    ) + Optional(power))
     impl_call = attach(
         disallow_keywords(reserved_vars)
         + atom_item
         + OneOrMore(impl_call_arg),
         impl_call_item_handle,
     )
-    impl_call_item = (
-        atom_item + ~impl_call_arg
-        | impl_call
+
+    factor <<= condense(
+        ZeroOrMore(unary) + (
+            impl_call
+            | await_item + Optional(power)
+        ),
     )
-
-    await_expr = Forward()
-    await_expr_ref = await_kwd.suppress() + impl_call_item
-    await_item = await_expr | impl_call_item
-
-    lambdef = Forward()
-
-    compose_item = attach(
-        tokenlist(
-            await_item,
-            dotdot + Optional(invalid_syntax(lambdef, "lambdas only allowed after composition pipe operators '..>' and '<..', not '..' (replace '..' with '<..' to fix)")),
-            allow_trailing=False,
-        ), compose_item_handle,
-    )
-
-    factor = Forward()
-    unary = plus | neg_minus | tilde
-    power = trace(condense(compose_item + Optional(exp_dubstar + factor)))
-    factor <<= condense(ZeroOrMore(unary) + power)
 
     mulop = mul_star | div_slash | div_dubslash | percent | matrix_at
     addop = plus | sub_minus
@@ -1413,17 +1407,25 @@ class Grammar(object):
 
     chain_expr = attach(tokenlist(or_expr, dubcolon, allow_trailing=False), chain_handle)
 
+    compose_expr = attach(
+        tokenlist(
+            chain_expr,
+            dotdot + Optional(invalid_syntax(lambdef, "lambdas only allowed after composition pipe operators '..>' and '<..', not '..' (replace '..' with '<..' to fix)")),
+            allow_trailing=False,
+        ), compose_expr_handle,
+    )
+
     infix_op <<= backtick.suppress() + test_no_infix + backtick.suppress()
     infix_expr = Forward()
     infix_item = attach(
-        Group(Optional(chain_expr))
+        Group(Optional(compose_expr))
         + OneOrMore(
-            infix_op + Group(Optional(lambdef | chain_expr)),
+            infix_op + Group(Optional(lambdef | compose_expr)),
         ),
         infix_handle,
     )
     infix_expr <<= (
-        chain_expr + ~backtick
+        compose_expr + ~backtick
         | infix_item
     )
 
@@ -2435,7 +2437,7 @@ class Grammar(object):
 
     unsafe_equals = Literal("=")
 
-    kwd_err_msg = attach(any_keyword_in(keyword_vars), kwd_err_msg_handle)
+    kwd_err_msg = attach(any_keyword_in(keyword_vars + reserved_vars), kwd_err_msg_handle)
     parse_err_msg = (
         start_marker + (
             fixto(end_of_line, "misplaced newline (maybe missing ':')")

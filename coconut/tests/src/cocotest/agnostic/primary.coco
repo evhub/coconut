@@ -1503,4 +1503,10 @@ def primary_test() -> bool:
     optx <*?..= (,)
     optx <**?..= const None
     assert optx() is None
+
+    assert_raises(() :: 1 .. 2, TypeError)
+    assert 1.0 2 3 ** -4 5 == 2*5/3**4
+    x = 10
+    assert 2 x == 20
+    assert 2 x**2 + 3 x == 230
     return True
