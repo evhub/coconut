@@ -649,10 +649,10 @@ def classify(value):
             return "empty dict"
         else:
             return "dict"
-    match _ `isinstance` (set, frozenset) in value:
-        match s{} in value:
+    match s{*_} in value:
+        match s{*()} in value:
             return "empty set"
-        match {0} in value:
+        match {0, *()} in value:
             return "set of 0"
         return "set"
     raise TypeError()

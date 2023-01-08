@@ -76,6 +76,7 @@ from coconut.constants import (
     untcoable_funcs,
     early_passthrough_wrapper,
     new_operators,
+    wildcard,
 )
 from coconut.compiler.util import (
     combine,
@@ -110,6 +111,7 @@ from coconut.compiler.util import (
     any_len_perm,
     boundary,
     compile_regex,
+    always_match,
 )
 
 
@@ -1782,10 +1784,16 @@ class Grammar(object):
         | Optional(neg_minus) + number
         | match_dotted_name_const,
     )
+    empty_const = fixto(
+        lparen + rparen
+        | lbrack + rbrack
+        | set_letter + lbrace + rbrace,
+        "()",
+    )
 
-    matchlist_set = Group(Optional(tokenlist(match_const, comma)))
     match_pair = Group(match_const + colon.suppress() + match)
     matchlist_dict = Group(Optional(tokenlist(match_pair, comma)))
+    set_star = star.suppress() + (keyword(wildcard) | empty_const)
 
     matchlist_tuple_items = (
         match + OneOrMore(comma.suppress() + match) + Optional(comma.suppress())
@@ -1834,13 +1842,21 @@ class Grammar(object):
             | match_const("const")
             | (keyword_atom | keyword("is").suppress() + negable_atom_item)("is")
             | (keyword("in").suppress() + negable_atom_item)("in")
-            | (lbrace.suppress() + matchlist_dict + Optional(dubstar.suppress() + (setname | condense(lbrace + rbrace))) + rbrace.suppress())("dict")
-            | (Optional(set_s.suppress()) + lbrace.suppress() + matchlist_set + rbrace.suppress())("set")
             | iter_match
             | match_lazy("lazy")
             | sequence_match
             | star_match
             | (lparen.suppress() + match + rparen.suppress())("paren")
+            | (lbrace.suppress() + matchlist_dict + Optional(dubstar.suppress() + (setname | condense(lbrace + rbrace)) + Optional(comma.suppress())) + rbrace.suppress())("dict")
+            | (
+                Group(Optional(set_letter))
+                + lbrace.suppress()
+                + (
+                    Group(tokenlist(match_const, comma, allow_trailing=False)) + Optional(comma.suppress() + set_star + Optional(comma.suppress()))
+                    | Group(always_match) + set_star + Optional(comma.suppress())
+                    | Group(Optional(tokenlist(match_const, comma)))
+                ) + rbrace.suppress()
+            )("set")
             | (data_kwd.suppress() + dotted_refname + lparen.suppress() + matchlist_data + rparen.suppress())("data")
             | (keyword("class").suppress() + dotted_refname + lparen.suppress() + matchlist_data + rparen.suppress())("class")
             | (dotted_refname + lparen.suppress() + matchlist_data + rparen.suppress())("data_or_class")

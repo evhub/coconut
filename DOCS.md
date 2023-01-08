@@ -1035,7 +1035,10 @@ base_pattern ::= (
     | "class" NAME "(" patterns ")"  # classes
     | "{" pattern_pairs              # dictionaries
         ["," "**" (NAME | "{}")] "}" #  (keys must be constants or equality checks)
-    | ["s"] "{" pattern_consts "}"   # sets
+    | ["s" | "f" | "m"] "{"
+        pattern_consts
+        ["," ("*_" | "*()")]
+      "}"                            # sets
     | (EXPR) -> pattern              # view patterns
     | "(" patterns ")"               # sequences can be in tuple form
     | "[" patterns "]"               #  or in list form
@@ -1088,7 +1091,6 @@ base_pattern ::= (
   - Constants, Numbers, and Strings: will only match to the same constant, number, or string in the same position in the arguments.
   - Equality Checks (`==<expr>`): will check that whatever is in that position is `==` to the expression `<expr>`.
   - Identity Checks (`is <expr>`): will check that whatever is in that position `is` the expression `<expr>`.
-  - Sets (`{<constants>}`): will only match a set (`collections.abc.Set`) of the same length and contents.
 - Arbitrary Function Patterns:
   - Infix Checks (`` <pattern> `<op>` <expr> ``): will check that the operator `<op>$(?, <expr>)` returns a truthy value when called on whatever is in that position, then matches `<pattern>`. For example, `` x `isinstance` int `` will check that whatever is in that position `isinstance$(?, int)` and bind it to `x`. If `<expr>` is not given, will simply check `<op>` directly rather than `<op>$(<expr>)`. Additionally, `` `<op>` `` can instead be a [custom operator](#custom-operators) (in that case, no backticks should be used).
   - View Patterns (`(<expression>) -> <pattern>`): calls `<expression>` on the item being matched and matches the result to `<pattern>`. The match fails if a [`MatchError`](#matcherror) is raised. `<expression>` may be unparenthesized only when it is a single atom.
@@ -1099,6 +1101,11 @@ base_pattern ::= (
 - Mapping Destructuring:
   - Dicts (`{<key>: <value>, ...}`): will match any mapping (`collections.abc.Mapping`) with the given keys and values that match the value patterns. Keys must be constants or equality checks.
   - Dicts With Rest (`{<pairs>, **<rest>}`): will match a mapping (`collections.abc.Mapping`) containing all the `<pairs>`, and will put a `dict` of everything else into `<rest>`. If `<rest>` is `{}`, will enforce that the mapping is exactly the same length as `<pairs>`.
+- Set Destructuring:
+  - Sets (`s{<constants>, *_}`): will match a set (`collections.abc.Set`) that contains the given `<constants>`, though it may also contain other items. The `s` prefix and the `*_` are optional.
+  - Fixed-length Sets (`s{<constants>, *()}`): will match a `set` (`collections.abc.Set`) that contains the given `<constants>`, and nothing else.
+  - Frozensets (`f{<constants>}`): will match a `frozenset` (`frozenset`) that contains the given `<constants>`. May use either normal or fixed-length syntax.
+  - Multisets (`m{<constants>}`): will match a [`multiset`](#multiset) (`collections.Counter`) that contains at least the given `<constants>`. May use either normal or fixed-length syntax.
 - Sequence Destructuring:
   - Lists (`[<patterns>]`), Tuples (`(<patterns>)`): will only match a sequence (`collections.abc.Sequence`) of the same length, and will check the contents against `<patterns>` (Coconut automatically registers `numpy` arrays and `collections.deque` objects as sequences).
   - Lazy lists (`(|<patterns>|)`): same as list or tuple matching, but checks for an Iterable (`collections.abc.Iterable`) instead of a Sequence.

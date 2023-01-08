@@ -777,7 +777,8 @@ def stores_loc_action(loc, tokens):
 stores_loc_action.ignore_tokens = True
 
 
-stores_loc_item = attach(Empty(), stores_loc_action, make_copy=False)
+always_match = Empty()
+stores_loc_item = attach(always_match, stores_loc_action)
 
 
 def disallow_keywords(kwds, with_suffix=None):
