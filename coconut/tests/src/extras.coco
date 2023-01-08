@@ -198,7 +198,6 @@ def f() =
     assert_raises(-> parse("a ** b c"), CoconutParseError, err_has=" ~~~~~~~^")
 
     assert_raises(-> parse("return = 1"), CoconutParseError, err_has='invalid use of the keyword "return"')
-    assert_raises(-> parse("await f x"), CoconutParseError, err_has='invalid use of the keyword "await"')
     assert_raises(-> parse("if a = b: pass"), CoconutParseError, err_has="misplaced assignment")
     assert_raises(-> parse("while a == b"), CoconutParseError, err_has="misplaced newline")
 
@@ -288,6 +287,9 @@ else:
     assert_raises(-> parse("""case x:
     match x:
         pass"""), CoconutStyleError, err_has="case x:")
+
+    setup(strict=True, target="sys")
+    assert_raises(-> parse("await f x"), CoconutParseError, err_has='invalid use of the keyword "await"')
 
     setup(target="2.7")
     assert parse("from io import BytesIO", mode="lenient") == "from io import BytesIO"
