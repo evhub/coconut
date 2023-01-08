@@ -1532,7 +1532,7 @@ def primary_test() -> bool:
     s{1, *_,} = s{1, 2}
     {**{},} = {}
     m{} = collections.Counter()
-    match m{1, 1} in collections.Counter((1, 1)):
+    match m{1, 1} in collections.Counter((1,)):
         assert False
 
     assert_raises(() :: 1 .. 2, TypeError)
