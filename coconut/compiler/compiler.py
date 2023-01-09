@@ -157,6 +157,7 @@ from coconut.compiler.util import (
     rem_and_count_indents,
     normalize_indent_markers,
     try_parse,
+    does_parse,
     prep_grammar,
     split_leading_whitespace,
     ordered,
@@ -606,6 +607,7 @@ class Compiler(Grammar, pickleable_obj):
         cls.endline <<= attach(cls.endline_ref, cls.method("endline_handle"))
         cls.normal_pipe_expr <<= trace_attach(cls.normal_pipe_expr_tokens, cls.method("pipe_handle"))
         cls.return_typedef <<= trace_attach(cls.return_typedef_ref, cls.method("typedef_handle"))
+        cls.power_in_impl_call <<= trace_attach(cls.power, cls.method("power_in_impl_call_check"))
 
         # handle all atom + trailers constructs with item_handle
         cls.trailer_atom <<= trace_attach(cls.trailer_atom_ref, cls.method("item_handle"))
@@ -653,6 +655,7 @@ class Compiler(Grammar, pickleable_obj):
         cls.base_match_for_stmt <<= trace_attach(cls.base_match_for_stmt_ref, cls.method("base_match_for_stmt_handle"))
         cls.unsafe_typedef_tuple <<= trace_attach(cls.unsafe_typedef_tuple_ref, cls.method("unsafe_typedef_tuple_handle"))
         cls.funcname_typeparams <<= trace_attach(cls.funcname_typeparams_ref, cls.method("funcname_typeparams_handle"))
+        cls.impl_call <<= trace_attach(cls.impl_call_ref, cls.method("impl_call_handle"))
 
         # these handlers just do strict/target checking
         cls.u_string <<= trace_attach(cls.u_string_ref, cls.method("u_string_check"))
@@ -3731,6 +3734,17 @@ for {match_to_var} in {item}:
                 out += [op, term]
         return " ".join(out)
 
+    def impl_call_handle(self, loc, tokens):
+        """Process implicit function application or coefficient syntax."""
+        internal_assert(len(tokens) >= 2, "invalid implicit call / coefficient tokens", tokens)
+        first_is_num = does_parse(self.number, tokens[0])
+        if first_is_num:
+            if does_parse(self.number, tokens[1]):
+                raise CoconutDeferredSyntaxError("multiplying two or more numeric literals with implicit coefficient syntax is prohibited", loc)
+            return "(" + " * ".join(tokens) + ")"
+        else:
+            return "_coconut_call_or_coefficient(" + ", ".join(tokens) + ")"
+
 # end: HANDLERS
 # -----------------------------------------------------------------------------------------------------------------------
 # CHECKING HANDLERS:
@@ -3773,6 +3787,17 @@ for {match_to_var} in {item}:
     def match_check_equals_check(self, original, loc, tokens):
         """Check for old-style =item in pattern-matching."""
         return self.check_strict("deprecated equality-checking '=...' pattern; use '==...' instead", original, loc, tokens, always_warn=True)
+
+    def power_in_impl_call_check(self, original, loc, tokens):
+        """Check for exponentation in implicit function application / coefficient syntax."""
+        return self.check_strict(
+            "syntax with new behavior in Coconut v3; 'f x ** y' is now equivalent to 'f(x**y)' not 'f(x)**y'",
+            original,
+            loc,
+            tokens,
+            only_warn=True,
+            always_warn=True,
+        )
 
     def check_py(self, version, name, original, loc, tokens):
         """Check for Python-version-specific syntax."""

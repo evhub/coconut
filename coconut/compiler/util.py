@@ -403,37 +403,46 @@ def prep_grammar(grammar, streamline=False):
     return grammar.parseWithTabs()
 
 
-def parse(grammar, text, inner=True):
+def parse(grammar, text, inner=True, eval_parse_tree=True):
     """Parse text using grammar."""
     with parsing_context(inner):
-        return unpack(prep_grammar(grammar).parseString(text))
+        result = prep_grammar(grammar).parseString(text)
+        if eval_parse_tree:
+            result = unpack(result)
+        return result
 
 
-def try_parse(grammar, text, inner=True):
+def try_parse(grammar, text, inner=True, eval_parse_tree=True):
     """Attempt to parse text using grammar else None."""
     try:
-        return parse(grammar, text, inner)
+        return parse(grammar, text, inner, eval_parse_tree)
     except ParseBaseException:
         return None
 
 
-def all_matches(grammar, text, inner=True):
+def does_parse(grammar, text, inner=True):
+    """Determine if text can be parsed using grammar."""
+    return try_parse(grammar, text, inner, eval_parse_tree=False)
+
+
+def all_matches(grammar, text, inner=True, eval_parse_tree=True):
     """Find all matches for grammar in text."""
     with parsing_context(inner):
         for tokens, start, stop in prep_grammar(grammar).scanString(text):
-            yield unpack(tokens), start, stop
+            if eval_parse_tree:
+                tokens = unpack(tokens)
+            yield tokens, start, stop
 
 
 def parse_where(grammar, text, inner=True):
     """Determine where the first parse is."""
-    with parsing_context(inner):
-        for tokens, start, stop in prep_grammar(grammar).scanString(text):
-            return start, stop
+    for tokens, start, stop in all_matches(grammar, text, inner, eval_parse_tree=False):
+        return start, stop
     return None, None
 
 
 def match_in(grammar, text, inner=True):
-    """Determine if there is a match for grammar in text."""
+    """Determine if there is a match for grammar anywhere in text."""
     start, stop = parse_where(grammar, text, inner)
     internal_assert((start is None) == (stop is None), "invalid parse_where results", (start, stop))
     return start is not None

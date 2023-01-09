@@ -938,9 +938,9 @@ Coconut supports Unicode alternatives to many different operator symbols. The Un
 
 ```
 → (\u2192)                  => "->"
-× (\xd7)                    => "*"
-↑ (\u2191)                  => "**"
-÷ (\xf7)                    => "/"
+× (\xd7)                    => "*" (only multiplication)
+↑ (\u2191)                  => "**" (only exponentiation)
+÷ (\xf7)                    => "/" (only division)
 ÷/ (\xf7/)                  => "//"
 ⁻ (\u207b)                  => "-" (only negation)
 ≠ (\u2260) or ¬= (\xac=)    => "!="
@@ -1848,19 +1848,22 @@ Coconut supports implicit function application of the form `f x y`, which is com
 
 Additionally, if the first argument is not callable, then the result is multiplication rather than function application, such that `2 x` is equivalent to `2*x`.
 
-Supported arguments are highly restricted, and must be:
+Though the first item may be any atom, following arguments are highly restricted, and must be:
 - variables/attributes (e.g. `a.b`),
 - literal constants (e.g. `True`),
 - number literals (e.g. `1.5`), or
 - one of the above followed by an exponent (e.g. `a**-5`).
 
-For example, `f x 1` will work but `f x [1]`, `f x (1+2)`, and `f "abc"` will not. Strings are disallowed due to conflicting with [Python's implicit string concatenation](https://stackoverflow.com/questions/18842779/string-concatenation-without-operator).
+For example, `(f .. g) x 1` will work, but `f x [1]`, `f x (1+2)`, and `f "abc"` will not.
 
-Implicit function application and coefficient syntax is only intended for simple use cases—for more complex cases, use the standard multiplication operator `*`, standard function application, or [pipes](#pipes).
+Implicit function application and coefficient syntax is only intended for simple use cases. For more complex cases, use the standard multiplication operator `*`, standard function application, or [pipes](#pipes).
 
 Implicit function application and coefficient syntax has a lower precedence than `**` but a higher precedence than unary operators. As a result, `2 x**2 + 3 x` is equivalent to `2 * x**2 + 3 * x`.
 
-Note that, due to potential confusion, `await` is not allowed in front of implicit function application and coefficient syntax. To use `await`, simply parenthesize the expression, as in `await (f x)`.
+Due to potential confusion, some syntactic constructs are explicitly disallowed in implicit function application and coefficient syntax. Specifically:
+- Strings are always disallowed everywhere in implicit function application / coefficient syntax due to conflicting with [Python's implicit string concatenation](https://stackoverflow.com/questions/18842779/string-concatenation-without-operator).
+- Multiplying two or more numeric literals with implicit coefficient syntax is prohibited, so `10 20` is not allowed.
+- `await` is not allowed in front of implicit function application and coefficient syntax. To use `await`, simply parenthesize the expression, as in `await (f x)`.
 
 ##### Examples
 

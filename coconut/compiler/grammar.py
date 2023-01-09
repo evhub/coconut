@@ -470,12 +470,6 @@ def simple_kwd_assign_handle(tokens):
 simple_kwd_assign_handle.ignore_one_token = True
 
 
-def impl_call_item_handle(tokens):
-    """Process implicit function application or coefficient syntax."""
-    internal_assert(len(tokens) >= 2, "invalid implicit call / coefficient tokens", tokens)
-    return "_coconut_call_or_coefficient(" + ", ".join(tokens) + ")"
-
-
 def compose_expr_handle(tokens):
     """Process function composition."""
     if len(tokens) == 1:
@@ -810,16 +804,15 @@ class Grammar(object):
     bin_num = combine(CaselessLiteral("0b") + Optional(underscore.suppress()) + binint)
     oct_num = combine(CaselessLiteral("0o") + Optional(underscore.suppress()) + octint)
     hex_num = combine(CaselessLiteral("0x") + Optional(underscore.suppress()) + hexint)
-    number = addspace(
-        (
-            bin_num
-            | oct_num
-            | hex_num
-            | imag_num
-            | numitem
-        )
-        + Optional(condense(dot + unsafe_name)),
+    number = (
+        bin_num
+        | oct_num
+        | hex_num
+        | imag_num
+        | numitem
     )
+    # make sure that this gets addspaced not condensed so it doesn't produce a SyntaxError
+    num_atom = addspace(number + Optional(condense(dot + unsafe_name)))
 
     moduledoc_item = Forward()
     unwrap = Literal(unwrapper)
@@ -1246,7 +1239,7 @@ class Grammar(object):
     known_atom = trace(
         keyword_atom
         | string_atom
-        | number
+        | num_atom
         | list_item
         | dict_comp
         | dict_literal
@@ -1365,17 +1358,22 @@ class Grammar(object):
     unary = plus | neg_minus | tilde
 
     power = condense(exp_dubstar + ZeroOrMore(unary) + await_item)
+    power_in_impl_call = Forward()
 
-    impl_call_arg = disallow_keywords(reserved_vars) + condense((
+    impl_call_arg = condense((
         keyword_atom
         | number
-        | dotted_refname
-    ) + Optional(power))
-    impl_call = attach(
+        | disallow_keywords(reserved_vars) + dotted_refname
+    ) + Optional(power_in_impl_call))
+    impl_call_item = condense(
         disallow_keywords(reserved_vars)
+        + ~any_string
         + atom_item
-        + OneOrMore(impl_call_arg),
-        impl_call_item_handle,
+        + Optional(power_in_impl_call),
+    )
+    impl_call = Forward()
+    impl_call_ref = (
+        impl_call_item + OneOrMore(impl_call_arg)
     )
 
     factor <<= condense(
@@ -1897,8 +1895,10 @@ class Grammar(object):
         match_kwd.suppress()
         + many_match
         + addspace(Optional(keyword("not")) + keyword("in"))
-        - testlist_star_namedexpr
-        - match_guard
+        + testlist_star_namedexpr
+        + match_guard
+        # avoid match match-case blocks
+        + ~FollowedBy(colon + newline + indent + keyword("case", explicit_prefix=colon))
         - full_suite
     )
     match_stmt = trace(condense(full_match - Optional(else_stmt)))

@@ -121,6 +121,7 @@ def test_setup_none() -> bool:
     assert_raises(-> parse("f(**x, y)"), CoconutSyntaxError)
     assert_raises(-> parse("def f(x) = return x"), CoconutSyntaxError)
     assert_raises(-> parse("def f(x) =\n return x"), CoconutSyntaxError)
+    assert_raises(-> parse("10 20"), CoconutSyntaxError)
 
     assert_raises(-> parse("()[(())"), CoconutSyntaxError, err_has="""
 unclosed open '[' (line 1)
@@ -195,7 +196,7 @@ def f() =
     ))
     assert_raises(-> parse('b"abc" "def"'), CoconutParseError, err_has=" ~~~~~~~^")
     assert_raises(-> parse('"abc" b"def"'), CoconutParseError, err_has=" ~~~~~~^")
-    assert_raises(-> parse("a ** b c"), CoconutParseError, err_has=" ~~~~~~~^")
+    assert_raises(-> parse('"a" 10'), CoconutParseError, err_has=" ~~~~^")
 
     assert_raises(-> parse("return = 1"), CoconutParseError, err_has='invalid use of the keyword "return"')
     assert_raises(-> parse("if a = b: pass"), CoconutParseError, err_has="misplaced assignment")

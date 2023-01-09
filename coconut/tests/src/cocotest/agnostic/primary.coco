@@ -1536,8 +1536,21 @@ def primary_test() -> bool:
         assert False
 
     assert_raises(() :: 1 .. 2, TypeError)
-    assert 1.0 2 3 ** -4 5 == 2*5/3**4
+    two = 2
+    three = 3
+    five = 5
+    assert 1.0 two three ** -4 five == 2*5/3**4
     x = 10
     assert 2 x == 20
     assert 2 x**2 + 3 x == 230
+    match 1 in (1,):
+        case True:
+            pass
+        case _:
+            assert False
+    assert two**2 three**2 == 2**2 * 3**2
+    assert_raises(-> five (two + three), TypeError)
+    assert_raises(-> 5 (10), TypeError)
+    assert_raises(-> 5 [0], TypeError)
+    assert five ** 2 two == 50
     return True
