@@ -116,6 +116,8 @@ ignore_atexit_errors_with = (
 ignore_last_lines_with = (
     "DeprecationWarning: The distutils package is deprecated",
     "from distutils.version import LooseVersion",
+    ": SyntaxWarning: 'int' object is not ",
+    " assert_raises(",
 )
 
 kernel_installation_msg = (
