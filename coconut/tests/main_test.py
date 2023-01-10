@@ -267,7 +267,8 @@ def call(raw_cmd, assert_output=False, check_mypy=False, check_errors=True, stde
     for line in lines:
         for errstr in always_err_strs:
             assert errstr not in line, "{errstr!r} in {line!r}".format(errstr=errstr, line=line)
-        if check_errors:
+        # ignore SyntaxWarnings containing assert_raises
+        if check_errors and "assert_raises(" not in line:
             assert "Traceback (most recent call last):" not in line, "Traceback in " + repr(line)
             assert "Exception" not in line, "Exception in " + repr(line)
             assert "Error" not in line, "Error in " + repr(line)
