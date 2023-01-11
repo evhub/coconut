@@ -781,15 +781,16 @@ all_reqs = {
         ("ipython", "py3"),
         ("ipykernel", "py2"),
         ("ipykernel", "py3"),
-        ("jupyter-client", "py2"),
+        ("jupyter-client", "py<35"),
         ("jupyter-client", "py==35"),
         ("jupyter-client", "py36"),
-        "jedi",
+        ("jedi", "py<37"),
+        ("jedi", "py37"),
         ("pywinpty", "py2;windows"),
     ),
     "jupyter": (
         "jupyter",
-        ("jupyter-console", "py2"),
+        ("jupyter-console", "py<35"),
         ("jupyter-console", "py==35"),
         ("jupyter-console", "py36"),
         ("jupyterlab", "py35"),
@@ -852,12 +853,13 @@ min_versions = {
     ("numpy", "py2;cpy"): (1,),
     ("dataclasses", "py==36"): (0, 8),
     ("aenum", "py<34"): (3,),
-    "sphinx": (5, 3),
     "pydata-sphinx-theme": (0, 12),
     "myst-parser": (0, 18),
+    "sphinx": (5, 3),  # don't upgrade until myst-parser works with it
     "mypy[python2]": (0, 991),
     ("jupyter-console", "py36"): (6, 4),
     ("typing", "py<35"): (3, 10),
+    ("jedi", "py37"): (0, 18),
 
     # pinned reqs: (must be added to pinned_reqs below)
 
@@ -882,17 +884,16 @@ min_versions = {
     # don't upgrade this; it breaks on Python 3.4
     "pygments": (2, 3),
     # don't upgrade these; they break on Python 2
-    ("jupyter-client", "py2"): (5, 3),
+    ("jupyter-client", "py<35"): (5, 3),
     ("pywinpty", "py2;windows"): (0, 5),
-    ("jupyter-console", "py2"): (5, 2),
+    ("jupyter-console", "py<35"): (5, 2),
     ("ipython", "py2"): (5, 4),
     ("ipykernel", "py2"): (4, 10),
     ("prompt_toolkit", "mark2"): (1,),
     "watchdog": (0, 10),
     "papermill": (1, 2),
     # don't upgrade this; it breaks with old IPython versions
-    # "jedi": (0, 17),
-    "jedi": (0, 18),
+    ("jedi", "py<37"): (0, 17),
     # Coconut requires pyparsing 2
     "pyparsing": (2, 4, 7),
 }
@@ -901,7 +902,7 @@ min_versions = {
 pinned_reqs = (
     ("jupyter-client", "py36"),
     ("typing_extensions", "py36"),
-    ("jupyter-client", "py2"),
+    ("jupyter-client", "py<35"),
     ("ipykernel", "py3"),
     ("ipython", "py3"),
     ("jupyter-console", "py==35"),
@@ -915,13 +916,13 @@ pinned_reqs = (
     "vprof",
     "pygments",
     ("pywinpty", "py2;windows"),
-    ("jupyter-console", "py2"),
+    ("jupyter-console", "py<35"),
     ("ipython", "py2"),
     ("ipykernel", "py2"),
     ("prompt_toolkit", "mark2"),
     "watchdog",
     "papermill",
-    "jedi",
+    ("jedi", "py<37"),
     "pyparsing",
 )
 
@@ -934,7 +935,7 @@ max_versions = {
     "pyparsing": _,
     "cPyparsing": (_, _, _),
     ("prompt_toolkit", "mark2"): _,
-    # "jedi": _,
+    ("jedi", "py<37"): _,
     ("pywinpty", "py2;windows"): _,
 }
 

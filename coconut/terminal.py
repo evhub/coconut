@@ -30,6 +30,7 @@ else:
     from io import StringIO
 
 from coconut._pyparsing import (
+    MODERN_PYPARSING,
     lineno,
     col,
     ParserElement,
@@ -464,7 +465,7 @@ class Logger(object):
 
     def trace(self, item):
         """Traces a parse element (only enabled in develop)."""
-        if DEVELOP:
+        if DEVELOP and not MODERN_PYPARSING:
             item.debugActions = (
                 None,  # no start action
                 self._trace_success_action,
