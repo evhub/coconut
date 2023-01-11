@@ -891,7 +891,8 @@ min_versions = {
     "watchdog": (0, 10),
     "papermill": (1, 2),
     # don't upgrade this; it breaks with old IPython versions
-    "jedi": (0, 17),
+    # "jedi": (0, 17),
+    "jedi": (0, 18),
     # Coconut requires pyparsing 2
     "pyparsing": (2, 4, 7),
 }
@@ -933,7 +934,7 @@ max_versions = {
     "pyparsing": _,
     "cPyparsing": (_, _, _),
     ("prompt_toolkit", "mark2"): _,
-    "jedi": _,
+    # "jedi": _,
     ("pywinpty", "py2;windows"): _,
 }
 
