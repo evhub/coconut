@@ -109,7 +109,7 @@ class TestConstants(unittest.TestCase):
 
     def test_reqs(self):
         assert set(constants.pinned_reqs) <= set(constants.min_versions), "found old pinned requirement"
-        assert set(constants.max_versions) <= set(constants.pinned_reqs) | set(constants.allowed_constrained_but_unpinned_reqs), "found unlisted constrained but unpinned requirements"
+        assert set(constants.max_versions) <= set(constants.pinned_reqs) | set(("cPyparsing",)), "found unlisted constrained but unpinned requirements"
         for maxed_ver in constants.max_versions:
             assert isinstance(maxed_ver, tuple) or maxed_ver in ("pyparsing", "cPyparsing"), "maxed versions must be tagged to a specific Python version"
 

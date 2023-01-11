@@ -939,10 +939,6 @@ max_versions = {
     ("pywinpty", "py2;windows"): _,
 }
 
-allowed_constrained_but_unpinned_reqs = (
-    "cPyparsing",
-)
-
 classifiers = (
     "Development Status :: 5 - Production/Stable",
     "License :: OSI Approved :: Apache Software License",
