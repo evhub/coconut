@@ -531,11 +531,11 @@ def get_target_info_smart(target, mode="lowest"):
 class Wrap(ParseElementEnhance):
     """PyParsing token that wraps the given item in the given context manager."""
 
-    def __init__(self, item, wrapper, greedy=False, can_affect_parse_success=False):
+    def __init__(self, item, wrapper, greedy=False, include_in_packrat_context=False):
         super(Wrap, self).__init__(item)
         self.wrapper = wrapper
         self.greedy = greedy
-        self.can_affect_parse_success = can_affect_parse_success
+        self.include_in_packrat_context = include_in_packrat_context
 
     @property
     def wrapped_name(self):
@@ -547,7 +547,7 @@ class Wrap(ParseElementEnhance):
 
         Required to allow the packrat cache to distinguish between wrapped
         and unwrapped parses. Only supported natively on cPyparsing."""
-        if self.can_affect_parse_success and hasattr(self, "packrat_context"):
+        if self.include_in_packrat_context and hasattr(self, "packrat_context"):
             self.packrat_context.append(self.wrapper)
             try:
                 yield
@@ -596,7 +596,7 @@ def disable_inside(item, *elems, **kwargs):
         finally:
             level[0] -= 1
 
-    yield Wrap(item, manage_item, can_affect_parse_success=True)
+    yield Wrap(item, manage_item, include_in_packrat_context=True)
 
     @contextmanager
     def manage_elem(self, original, loc):
@@ -606,7 +606,7 @@ def disable_inside(item, *elems, **kwargs):
             raise ParseException(original, loc, self.errmsg, self)
 
     for elem in elems:
-        yield Wrap(elem, manage_elem, can_affect_parse_success=True)
+        yield Wrap(elem, manage_elem, include_in_packrat_context=True)
 
 
 def disable_outside(item, *elems):

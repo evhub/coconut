@@ -431,6 +431,7 @@ To allow for better use of [`numpy`](https://numpy.org/) objects in Coconut, all
   * [`cartesian_product`](#cartesian_product) can compute the Cartesian product of given `numpy` arrays as a `numpy` array.
   * [`all_equal`](#all_equal) allows for easily checking if all the elements in a `numpy` array are the same.
 - [`numpy.ndarray`](https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html) is registered as a [`collections.abc.Sequence`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence), enabling it to be used in [sequence patterns](#semantics-specification).
+- `numpy` objects are allowed seamlessly in Coconut's [implicit coefficient syntax](#implicit-function-application-and-coefficients), allowing the use of e.g. `A B**2` shorthand for `A * B**2` when `A` and `B` are `numpy` arrays (note: **not** `A @ B**2`).
 - Coconut supports `@` for matrix multiplication of `numpy` arrays on all Python versions, as well as supplying the `(@)` [operator function](#operator-functions).
 
 Additionally, Coconut provides the exact same support for [`pandas`](https://pandas.pydata.org/) and [`jax.numpy`](https://jax.readthedocs.io/en/latest/jax.numpy.html), including using `jax.numpy` methods over `numpy` methods when given `jax` arrays.
@@ -1846,7 +1847,7 @@ _Can't be done without a complicated iterator comprehension in place of the lazy
 
 Coconut supports implicit function application of the form `f x y`, which is compiled to `f(x, y)` (note: **not** `f(x)(y)` as is common in many languages with automatic currying).
 
-Additionally, if the first argument is not callable, then the result is multiplication rather than function application, such that `2 x` is equivalent to `2*x`.
+Additionally, if the first argument is not callable, and is instead an `int`, `float`, `complex`, or [`numpy`](#numpy-integration) object, then the result is multiplication rather than function application, such that `2 x` is equivalent to `2*x`.
 
 Though the first item may be any atom, following arguments are highly restricted, and must be:
 - variables/attributes (e.g. `a.b`),

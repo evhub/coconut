@@ -134,6 +134,7 @@ StopIteration = StopIteration
 RuntimeError = RuntimeError
 callable = callable
 classmethod = classmethod
+complex = complex
 all = all
 any = any
 bool = bool

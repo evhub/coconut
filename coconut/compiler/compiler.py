@@ -391,7 +391,7 @@ class Compiler(Grammar, pickleable_obj):
         """Creates a new compiler with the given parsing parameters."""
         self.setup(*args, **kwargs)
 
-    # changes here should be reflected in the stub for coconut.convenience.setup
+    # changes here should be reflected in __reduce__ and in the stub for coconut.convenience.setup
     def setup(self, target=None, strict=False, minify=False, line_numbers=False, keep_lines=False, no_tco=False, no_wrap=False):
         """Initializes parsing parameters."""
         if target is None:
@@ -455,8 +455,9 @@ class Compiler(Grammar, pickleable_obj):
     temp_var_counts = None
     operators = None
 
-    def reset(self, keep_state=False):
+    def reset(self, keep_state=False, filename=None):
         """Resets references."""
+        self.filename = filename
         self.indchar = None
         self.comments = {}
         self.refs = []
@@ -946,7 +947,7 @@ class Compiler(Grammar, pickleable_obj):
 
         if extra is not None:
             kwargs["extra"] = extra
-        return errtype(message, snippet, loc_in_snip, ln, endpoint=endpt_in_snip, **kwargs)
+        return errtype(message, snippet, loc_in_snip, ln, endpoint=endpt_in_snip, filename=self.filename, **kwargs)
 
     def make_syntax_err(self, err, original):
         """Make a CoconutSyntaxError from a CoconutDeferredSyntaxError."""
@@ -988,10 +989,10 @@ class Compiler(Grammar, pickleable_obj):
             return self.post(parsed, **postargs)
 
     @contextmanager
-    def parsing(self, keep_state=False):
+    def parsing(self, keep_state=False, filename=None):
         """Acquire the lock and reset the parser."""
         with self.lock:
-            self.reset(keep_state)
+            self.reset(keep_state, filename)
             self.current_compiler[0] = self
             yield
 
@@ -1025,9 +1026,9 @@ class Compiler(Grammar, pickleable_obj):
                             loc,
                         )
 
-    def parse(self, inputstring, parser, preargs, postargs, streamline=True, keep_state=False):
+    def parse(self, inputstring, parser, preargs, postargs, streamline=True, keep_state=False, filename=None):
         """Use the parser to parse the inputstring with appropriate setup and teardown."""
-        with self.parsing(keep_state):
+        with self.parsing(keep_state, filename):
             if streamline:
                 self.streamline(parser, inputstring)
             with logger.gather_parsing_stats():
@@ -2022,7 +2023,7 @@ if {temp_var} is not None:
 
         return out
 
-    def deferred_code_proc(self, inputstring, add_code_at_start=False, ignore_names=(), **kwargs):
+    def deferred_code_proc(self, inputstring, add_code_at_start=False, ignore_names=(), ignore_errors=False, **kwargs):
         """Process all forms of previously deferred code. All such deferred code needs to be handled here so we can properly handle nested deferred code."""
         # compile add_code_before regexes
         for name in self.add_code_before:
@@ -2037,9 +2038,12 @@ if {temp_var} is not None:
             line = self.base_passthrough_repl(line, wrap_char=early_passthrough_wrapper, **kwargs)
 
             # look for deferred errors
-            if errwrapper in raw_line:
-                err_ref = raw_line.split(errwrapper, 1)[1].split(unwrapper, 1)[0]
-                raise self.get_ref("error", err_ref)
+            while errwrapper in raw_line:
+                pre_err_line, err_line = raw_line.split(errwrapper, 1)
+                err_ref, post_err_line = err_line.split(unwrapper, 1)
+                if not ignore_errors:
+                    raise self.get_ref("error", err_ref)
+                raw_line = pre_err_line + " " + post_err_line
 
             # look for functions
             if line.startswith(funcwrapper):

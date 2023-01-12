@@ -1,4 +1,4 @@
-from io import StringIO  # type: ignore
+from io import StringIO
 if TYPE_CHECKING:
     from typing import Any
 

@@ -529,9 +529,9 @@ class Command(object):
                         self.execute_file(destpath, argv_source_path=codepath)
 
             if package is True:
-                self.submit_comp_job(codepath, callback, "parse_package", code, package_level=package_level)
+                self.submit_comp_job(codepath, callback, "parse_package", code, package_level=package_level, filename=os.path.basename(codepath))
             elif package is False:
-                self.submit_comp_job(codepath, callback, "parse_file", code)
+                self.submit_comp_job(codepath, callback, "parse_file", code, filename=os.path.basename(codepath))
             else:
                 raise CoconutInternalException("invalid value for package", package)
 

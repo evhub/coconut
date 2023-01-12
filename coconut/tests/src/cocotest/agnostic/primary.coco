@@ -12,14 +12,8 @@ from math import \log10 as (log10)
 from importlib import reload  # NOQA
 from enum import Enum  # noqa
 
-def assert_raises(c, exc):
-    """Test whether callable c raises an exception of type exc."""
-    try:
-        c()
-    except exc:
-        return True
-    else:
-        raise AssertionError("%r failed to raise exception %r" % (c, exc))
+from .util import assert_raises
+
 
 def primary_test() -> bool:
     """Basic no-dependency tests."""
@@ -1553,4 +1547,7 @@ def primary_test() -> bool:
     assert_raises(-> 5 (10), TypeError)
     assert_raises(-> 5 [0], TypeError)
     assert five ** 2 two == 50
+    assert 2i x == 20i
+    some_str = "some"
+    assert_raises(-> some_str five, TypeError)
     return True
