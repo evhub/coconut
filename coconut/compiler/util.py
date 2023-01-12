@@ -564,12 +564,12 @@ class Wrap(ParseElementEnhance):
         with logger.indent_tracing():
             with self.wrapper(self, original, loc):
                 with self.wrapped_packrat_context():
-                    parse_loc, evaluated_toks = super(Wrap, self).parseImpl(original, loc, *args, **kwargs)
+                    parse_loc, tokens = super(Wrap, self).parseImpl(original, loc, *args, **kwargs)
                     if self.greedy:
-                        evaluated_toks = evaluate_tokens(evaluated_toks)
+                        tokens = evaluate_tokens(tokens)
         if logger.tracing:  # avoid the overhead of the call if not tracing
-            logger.log_trace(self.wrapped_name, original, loc, evaluated_toks)
-        return parse_loc, evaluated_toks
+            logger.log_trace(self.wrapped_name, original, loc, tokens)
+        return parse_loc, tokens
 
     def __str__(self):
         return self.wrapped_name

@@ -1014,6 +1014,7 @@ forward 2""") == 900
     assert try_divide(1, 2) |> fmap$(.+1) == Expected(1.5)
     assert sum_evens(0, 5) == 6 == sum_evens(1, 6)
     assert sum_evens(7, 3) == 0 == sum_evens(4, 4)
+    assert num_it() |> list == [5]
 
     # must come at end
     assert fibs_calls[0] == 1

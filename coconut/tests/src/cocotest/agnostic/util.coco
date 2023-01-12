@@ -1379,6 +1379,9 @@ yield match def just_it_of_int(int() as x):
 match yield def just_it_of_int_(int() as x):
     yield x
 
+yield def num_it() -> int$[]:
+    yield 5
+
 # maximum difference
 def maxdiff1(ns) = (
     ns
