@@ -8,35 +8,8 @@ License: Apache 2.0
 Description: MyPy stub file for __coconut__.py.
 """
 
-# -----------------------------------------------------------------------------------------------------------------------
-# IMPORTS:
-# -----------------------------------------------------------------------------------------------------------------------
-
 import sys
 import typing as _t
-
-if sys.version_info >= (3, 11):
-    from typing import dataclass_transform as _dataclass_transform
-else:
-    try:
-        from typing_extensions import dataclass_transform as _dataclass_transform
-    except ImportError:
-        dataclass_transform = ...
-
-import _coconut as __coconut  # we mock _coconut as a package since mypy doesn't handle namespace classes very well
-_coconut = __coconut
-
-if sys.version_info >= (3, 2):
-    from functools import lru_cache as _lru_cache
-else:
-    from backports.functools_lru_cache import lru_cache as _lru_cache  # `pip install -U coconut[mypy]` to fix errors on this line
-    _coconut.functools.lru_cache = _lru_cache  # type: ignore
-
-if sys.version_info >= (3, 7):
-    from dataclasses import dataclass as _dataclass
-else:
-    @_dataclass_transform()
-    def _dataclass(cls: type[_T], **kwargs: _t.Any) -> type[_T]: ...
 
 # -----------------------------------------------------------------------------------------------------------------------
 # TYPE VARS:
@@ -81,6 +54,40 @@ _P = _t.ParamSpec("_P")
 
 class _SupportsIndex(_t.Protocol):
     def __index__(self) -> int: ...
+
+
+# -----------------------------------------------------------------------------------------------------------------------
+# IMPORTS:
+# -----------------------------------------------------------------------------------------------------------------------
+
+if sys.version_info >= (3, 11):
+    from typing import dataclass_transform as _dataclass_transform
+else:
+    try:
+        from typing_extensions import dataclass_transform as _dataclass_transform
+    except ImportError:
+        dataclass_transform = ...
+
+import _coconut as __coconut  # we mock _coconut as a package since mypy doesn't handle namespace classes very well
+_coconut = __coconut
+
+if sys.version_info >= (3, 2):
+    from functools import lru_cache as _lru_cache
+else:
+    from backports.functools_lru_cache import lru_cache as _lru_cache  # `pip install -U coconut[mypy]` to fix errors on this line
+    _coconut.functools.lru_cache = _lru_cache  # type: ignore
+
+if sys.version_info >= (3, 7):
+    from dataclasses import dataclass as _dataclass
+else:
+    @_dataclass_transform()
+    def _dataclass(cls: type[_T], **kwargs: _t.Any) -> type[_T]: ...
+
+try:
+    from typing_extensions import deprecated as _deprecated  # type: ignore
+except ImportError:
+    def _deprecated(message: _t.Text) -> _t.Callable[[_T], _T]: ...
+
 
 # -----------------------------------------------------------------------------------------------------------------------
 # STUB:
@@ -465,6 +472,7 @@ def addpattern(
     *add_funcs: _Callable,
     allow_any_func: bool=False,
 ) -> _t.Callable[..., _t.Any]: ...
+
 _coconut_addpattern = prepattern = addpattern
 
 
@@ -1010,6 +1018,7 @@ _coconut_flatten = flatten
 
 
 def makedata(data_type: _t.Type[_T], *args: _t.Any) -> _T: ...
+@_deprecated("use makedata instead")
 def datamaker(data_type: _t.Type[_T]) -> _t.Callable[..., _T]:
     return _coconut.functools.partial(makedata, data_type)
 

@@ -441,8 +441,9 @@ class Logger(object):
                         msg = displayable(str(item))
                         if "{" in msg:
                             head, middle = msg.split("{", 1)
-                            middle, tail = middle.rsplit("}", 1)
-                            msg = head + "{...}" + tail
+                            if "}" in middle:
+                                middle, tail = middle.rsplit("}", 1)
+                                msg = head + "{...}" + tail
                         out.append(msg)
                         add_line_col = False
                     elif len(item) == 1 and isinstance(item[0], str):

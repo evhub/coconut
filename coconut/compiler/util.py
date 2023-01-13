@@ -306,8 +306,7 @@ else:
 def add_action(item, action, make_copy=None):
     """Add a parse action to the given item."""
     if make_copy is None:
-        item_ref_count = sys.getrefcount(item) if CPYTHON else float("inf")
-        # keep this a lambda to prevent CPython refcounting changes from breaking release builds
+        item_ref_count = sys.getrefcount(item) if CPYTHON and not on_new_python else float("inf")
         internal_assert(lambda: item_ref_count >= temp_grammar_item_ref_count, "add_action got item with too low ref count", (item, type(item), item_ref_count))
         make_copy = item_ref_count > temp_grammar_item_ref_count
     if make_copy:
@@ -461,6 +460,7 @@ def transform(grammar, text, inner=True):
 # TARGETS:
 # -----------------------------------------------------------------------------------------------------------------------
 
+on_new_python = False
 
 raw_sys_target = str(sys.version_info[0]) + str(sys.version_info[1])
 if raw_sys_target in pseudo_targets:
@@ -469,6 +469,7 @@ elif raw_sys_target in specific_targets:
     sys_target = raw_sys_target
 elif sys.version_info > supported_py3_vers[-1]:
     sys_target = "".join(str(i) for i in supported_py3_vers[-1])
+    on_new_python = True
 elif sys.version_info < supported_py2_vers[0]:
     sys_target = "".join(str(i) for i in supported_py2_vers[0])
 elif sys.version_info < (3,):

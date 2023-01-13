@@ -781,6 +781,14 @@ class TestCompilation(unittest.TestCase):
         def test_no_wrap(self):
             run(["--no-wrap"])
 
+    if get_bool_env_var("COCONUT_TEST_VERBOSE"):
+        def test_verbose(self):
+            run(["--jobs", "0", "--verbose"])
+
+    if get_bool_env_var("COCONUT_TEST_TRACE"):
+        def test_trace(self):
+            run(["--jobs", "0", "--trace"], check_errors=False)
+
     # avoids a strange, unreproducable failure on appveyor
     if not (WINDOWS and sys.version_info[:2] == (3, 8)):
         def test_run(self):
