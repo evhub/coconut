@@ -130,7 +130,7 @@ USE_COMPUTATION_GRAPH = get_bool_env_var(
         and not PYPY  # experimentally determined
     ),
 )
-USE_COMPUTATION_GRAPH = True
+USE_COMPUTATION_GRAPH = False
 assert DEVELOP, "TODO: REMOVE THIS ^"
 
 if enable_pyparsing_warnings:
