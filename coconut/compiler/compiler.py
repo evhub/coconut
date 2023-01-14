@@ -3887,7 +3887,7 @@ for {match_to_var} in {item}:
                         return self.raise_or_wrap_error(
                             self.make_err(
                                 CoconutSyntaxError,
-                                "cannot reassign type variable '{name}'".format(name=name),
+                                "cannot reassign type variable '{name}'".format(name=name) + "; TYPEVAR_INFO: " + repr(typevar_info),
                                 original,
                                 loc,
                                 extra="use explicit '\\{name}' syntax if intended".format(name=name),
