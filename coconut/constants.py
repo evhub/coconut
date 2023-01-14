@@ -139,6 +139,7 @@ jax_numpy_modules = (
 numpy_modules = (
     "numpy",
     "pandas",
+    "torch",
 ) + jax_numpy_modules
 
 legal_indent_chars = " \t"  # the only Python-legal indent chars
@@ -748,8 +749,6 @@ license_name = "Apache 2.0"
 
 pure_python_env_var = "COCONUT_PURE_PYTHON"
 PURE_PYTHON = get_bool_env_var(pure_python_env_var)
-PURE_PYTHON = True
-assert DEVELOP, "TODO: REMOVE THIS ^"
 
 # the different categories here are defined in requirements.py,
 #  anything after a colon is ignored but allows different versions
