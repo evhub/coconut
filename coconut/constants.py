@@ -113,6 +113,8 @@ default_whitespace_chars = " \t\f"  # the only non-newline whitespace Python all
 
 varchars = string.ascii_letters + string.digits + "_"
 
+use_computation_graph_env_var = "COCONUT_USE_COMPUTATION_GRAPH"
+
 # -----------------------------------------------------------------------------------------------------------------------
 # COMPILER CONSTANTS:
 # -----------------------------------------------------------------------------------------------------------------------
@@ -517,6 +519,7 @@ main_prompt = ">>> "
 more_prompt = "    "
 
 mypy_path_env_var = "MYPYPATH"
+
 style_env_var = "COCONUT_STYLE"
 vi_mode_env_var = "COCONUT_VI_MODE"
 home_env_var = "COCONUT_HOME"
@@ -566,7 +569,7 @@ reserved_command_symbols = exit_chars + (
 # always use atomic --xxx=yyy rather than --xxx yyy
 coconut_run_args = ("--run", "--target=sys", "--line-numbers", "--quiet")
 coconut_run_verbose_args = ("--run", "--target=sys", "--line-numbers")
-coconut_import_hook_args = ("--target=sys", "--line-numbers", "--quiet")
+coconut_import_hook_args = ("--target=sys", "--line-numbers", "--keep-lines", "--quiet")
 
 default_mypy_args = (
     "--pretty",

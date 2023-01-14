@@ -305,6 +305,8 @@ else:
 
 def add_action(item, action, make_copy=None):
     """Add a parse action to the given item."""
+    make_copy = True
+    assert DEVELOP, "REMOVE THIS ^"
     if make_copy is None:
         item_ref_count = sys.getrefcount(item) if CPYTHON and not on_new_python else float("inf")
         internal_assert(lambda: item_ref_count >= temp_grammar_item_ref_count, "add_action got item with too low ref count", (item, type(item), item_ref_count))
