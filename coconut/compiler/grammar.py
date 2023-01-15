@@ -1340,10 +1340,11 @@ class Grammar(object):
 
     type_param = Forward()
     type_param_bound_op = lt_colon | colon | le
+    type_var_name = stores_loc_item + setname
     type_param_ref = (
-        (setname + Optional(type_param_bound_op + typedef_test))("TypeVar")
-        | (star.suppress() + setname)("TypeVarTuple")
-        | (dubstar.suppress() + setname)("ParamSpec")
+        (type_var_name + Optional(type_param_bound_op + typedef_test))("TypeVar")
+        | (star.suppress() + type_var_name)("TypeVarTuple")
+        | (dubstar.suppress() + type_var_name)("ParamSpec")
     )
     type_params = Group(lbrack.suppress() + tokenlist(type_param, comma) + rbrack.suppress())
 

@@ -3293,10 +3293,10 @@ __annotations__["{name}"] = {annotation}
         bounds = ""
         if "TypeVar" in tokens:
             TypeVarFunc = "TypeVar"
-            if len(tokens) == 1:
-                name, = tokens
+            if len(tokens) == 2:
+                name_loc, name = tokens
             else:
-                name, bound_op, bound = tokens
+                name_loc, name, bound_op, bound = tokens
                 if bound_op == "<=":
                     self.strict_err_or_warn(
                         "use of " + repr(bound_op) + " as a type parameter bound declaration operator is deprecated (Coconut style is to use '<:' operator)",
@@ -3314,21 +3314,29 @@ __annotations__["{name}"] = {annotation}
                 bounds = ", bound=" + self.wrap_typedef(bound, for_py_typedef=False)
         elif "TypeVarTuple" in tokens:
             TypeVarFunc = "TypeVarTuple"
-            name, = tokens
+            name_loc, name = tokens
         elif "ParamSpec" in tokens:
             TypeVarFunc = "ParamSpec"
-            name, = tokens
+            name_loc, name = tokens
         else:
             raise CoconutInternalException("invalid type_param tokens", tokens)
 
+        name_loc = int(name_loc)
+        internal_assert(name_loc == loc if TypeVarFunc == "TypeVar" else name_loc >= loc, "invalid name location for " + TypeVarFunc, (name_loc, loc, tokens))
+
         typevar_info = self.current_parsing_context("typevars")
         if typevar_info is not None:
-            if name in typevar_info["all_typevars"]:
-                raise CoconutDeferredSyntaxError("type variable {name!r} already defined", loc)
-            temp_name = self.get_temp_var("typevar_" + name)
-            typevar_info["all_typevars"][name] = temp_name
-            typevar_info["new_typevars"].append((TypeVarFunc, temp_name))
-            name = temp_name
+            # check to see if we already parsed this exact typevar, in which case just reuse the existing temp_name
+            if typevar_info["typevar_locs"].get(name, None) == name_loc:
+                name = typevar_info["all_typevars"][name]
+            else:
+                if name in typevar_info["all_typevars"]:
+                    raise CoconutDeferredSyntaxError("type variable {name!r} already defined".format(name=name), loc)
+                temp_name = self.get_temp_var("typevar_" + name)
+                typevar_info["all_typevars"][name] = temp_name
+                typevar_info["new_typevars"].append((TypeVarFunc, temp_name))
+                typevar_info["typevar_locs"][name] = name_loc
+                name = temp_name
 
         return '{name} = _coconut.typing.{TypeVarFunc}("{name}"{bounds})\n'.format(
             name=name,
@@ -3350,7 +3358,7 @@ __annotations__["{name}"] = {annotation}
                 else:
                     generics.append("_coconut.typing.Unpack[" + name + "]")
             else:
-                raise CoconutInternalException("invalid TypeVarFunc", TypeVarFunc)
+                raise CoconutInternalException("invalid TypeVarFunc", TypeVarFunc, "(", name, ")")
         return "_coconut.typing.Generic[" + ", ".join(generics) + "]"
 
     @contextmanager
@@ -3361,6 +3369,7 @@ __annotations__["{name}"] = {annotation}
         typevars_stack.append({
             "all_typevars": {} if prev_typevar_info is None else prev_typevar_info["all_typevars"].copy(),
             "new_typevars": [],
+            "typevar_locs": {},
         })
         try:
             yield
@@ -3883,17 +3892,21 @@ for {match_to_var} in {item}:
             if typevar_info is not None:
                 typevars = typevar_info["all_typevars"]
                 if name in typevars:
-                    if assign:
-                        return self.raise_or_wrap_error(
-                            self.make_err(
-                                CoconutSyntaxError,
-                                "cannot reassign type variable '{name}'".format(name=name) + "; TYPEVAR_INFO: " + repr(typevar_info),
-                                original,
-                                loc,
-                                extra="use explicit '\\{name}' syntax if intended".format(name=name),
-                            ),
-                        )
-                    return typevars[name]
+                    # if we're looking at the same position where the typevar was defined,
+                    #  then we shouldn't treat this as a typevar, since then it's either
+                    #  a reparse of a setname in a typevar, or not a typevar at all
+                    if typevar_info["typevar_locs"].get(name, None) != loc:
+                        if assign:
+                            return self.raise_or_wrap_error(
+                                self.make_err(
+                                    CoconutSyntaxError,
+                                    "cannot reassign type variable '{name}'".format(name=name),
+                                    original,
+                                    loc,
+                                    extra="use explicit '\\{name}' syntax if intended".format(name=name),
+                                ),
+                            )
+                        return typevars[name]
 
         if not assign:
             self.unused_imports.pop(name, None)

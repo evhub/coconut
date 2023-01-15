@@ -106,7 +106,7 @@ def py36_spec_test(tco: bool) -> bool:
     data D2[T <: int[]](xs: T)  # type: ignore
     assert D2((10, 20)).xs == (10, 20)
 
-    def myid[T](x: T) -> T = x
+    def myid[ T ]( x : T ) -> T = x
     assert myid(10) == 10
 
     def fst[T](x: T, y: T) -> T = x
