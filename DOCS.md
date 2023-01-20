@@ -122,10 +122,11 @@ depth: 1
 
 ```
 coconut [-h] [--and source [dest ...]] [-v] [-t version] [-i] [-p] [-a] [-l] [-k] [-w]
-        [-r] [-n] [-d] [-q] [-s] [--no-tco] [--no-wrap] [-c code] [-j processes] [-f]
-        [--minify] [--jupyter ...] [--mypy ...] [--argv ...] [--tutorial] [--docs]
-        [--style name] [--history-file path] [--vi-mode] [--recursion-limit limit]
-        [--site-install] [--site-uninstall] [--verbose] [--trace] [--profile]
+        [-r] [-n] [-d] [-q] [-s] [--no-tco] [--no-wrap-types] [-c code] [-j processes]
+        [-f] [--minify] [--jupyter ...] [--mypy ...] [--argv ...] [--tutorial]
+        [--docs] [--style name] [--history-file path] [--vi-mode]
+        [--recursion-limit limit] [--site-install] [--site-uninstall] [--verbose]
+        [--trace] [--profile]
         [source] [dest]
 ```
 
@@ -140,7 +141,6 @@ dest                destination directory for compiled files (defaults to
 ##### Optional Arguments
 
 ```
-optional arguments:
   -h, --help            show this help message and exit
   --and source [dest ...]
                         add an additional source/dest pair to compile
@@ -167,7 +167,8 @@ optional arguments:
                         runnable code to stdout)
   -s, --strict          enforce code cleanliness standards
   --no-tco, --notco     disable tail call optimization
-  --no-wrap, --nowrap   disable wrapping type annotations in strings and turn off 'from
+  --no-wrap-types, --nowraptypes
+                        disable wrapping type annotations in strings and turn off 'from
                         __future__ import annotations' behavior
   -c code, --code code  run Coconut passed in as a string (can also be piped into stdin)
   -j processes, --jobs processes
@@ -377,7 +378,7 @@ If Coconut is used as a kernel, all code in the console or notebook will be sent
 
 Simply installing Coconut should add a `Coconut` kernel to your Jupyter/IPython notebooks. If you are having issues accessing the Coconut kernel, however, the command `coconut --jupyter` will re-install the `Coconut` kernel to ensure it is using the current Python as well as add the additional kernels `Coconut (Default Python)`, `Coconut (Default Python 2)`, and `Coconut (Default Python 3)` which will use, respectively, the Python accessible as `python`, `python2`, and `python3` (these kernels are accessible in the console as `coconut_py`, `coconut_py2`, and `coconut_py3`). Furthermore, the Coconut kernel fully supports [`nb_conda_kernels`](https://github.com/Anaconda-Platform/nb_conda_kernels) to enable accessing the Coconut kernel in one Conda environment from another Conda environment.
 
-The Coconut kernel will always compile using the parameters: `--target sys --line-numbers --keep-lines --no-wrap`.
+The Coconut kernel will always compile using the parameters: `--target sys --line-numbers --keep-lines --no-wrap-types`.
 
 Coconut also provides the following convenience commands:
 
@@ -1676,7 +1677,7 @@ Since Coconut syntax is a superset of Python 3 syntax, it supports [Python 3 fun
 
 Since not all supported Python versions support the [`typing`](https://docs.python.org/3/library/typing.html) module, Coconut provides the [`TYPE_CHECKING`](#type_checking) built-in for hiding your `typing` imports and `TypeVar` definitions from being executed at runtime. Coconut will also automatically use [`typing_extensions`](https://pypi.org/project/typing-extensions/) over `typing` when importing objects not available in `typing` on the current Python version.
 
-Furthermore, when compiling type annotations to Python 3 versions without [PEP 563](https://www.python.org/dev/peps/pep-0563/) support, Coconut wraps annotation in strings to prevent them from being evaluated at runtime (note that `--no-wrap` disables all wrapping, including via PEP 563 support).
+Furthermore, when compiling type annotations to Python 3 versions without [PEP 563](https://www.python.org/dev/peps/pep-0563/) support, Coconut wraps annotation in strings to prevent them from being evaluated at runtime (note that `--no-wrap-types` disables all wrapping, including via PEP 563 support).
 
 Additionally, Coconut adds special syntax for making type annotations easier and simpler to write. When inside of a type annotation, Coconut treats certain syntax constructs differently, compiling them to type annotations instead of what they would normally represent. Specifically, Coconut applies the following transformations:
 ```coconut
@@ -2273,7 +2274,7 @@ That includes type parameters for classes, [`data` types](#data), and [all types
 
 Additionally, Coconut supports the alternative bounds syntax of `type NewType[T <: bound] = ...` rather than `type NewType[T: bound] = ...`, to make it more clear that it is an upper bound rather than a type. In `--strict` mode, `<:` is required over `:` for all type parameter bounds. _DEPRECATED: `<=` can also be used as an alternative to `<:`._
 
-_Note that, by default, all type declarations are wrapped in strings to enable forward references and improve runtime performance. If you don't want that—e.g. because you want to use type annotations at runtime—simply pass the `--no-wrap` flag._
+_Note that, by default, all type declarations are wrapped in strings to enable forward references and improve runtime performance. If you don't want that—e.g. because you want to use type annotations at runtime—simply pass the `--no-wrap-types` flag._
 
 ##### PEP 695 Docs
 

@@ -166,7 +166,7 @@ arguments.add_argument(
 )
 
 arguments.add_argument(
-    "--no-wrap", "--nowrap",
+    "--no-wrap-types", "--nowraptypes",
     action="store_true",
     help="disable wrapping type annotations in strings and turn off 'from __future__ import annotations' behavior",
 )

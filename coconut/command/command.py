@@ -253,7 +253,7 @@ class Command(object):
             line_numbers=args.line_numbers or args.mypy is not None,
             keep_lines=args.keep_lines,
             no_tco=args.no_tco,
-            no_wrap=args.no_wrap,
+            no_wrap=args.no_wrap_types,
         )
 
         # process mypy args and print timing info (must come after compiler setup)
