@@ -951,7 +951,7 @@ class multi_enumerate(_coconut_has_iter):
     in each inner iterable. Supports indexing.
 
     For numpy arrays, effectively equivalent to:
-        it = np.nditer(iterable, flags=["multi_index"])
+        it = np.nditer(iterable, flags=["multi_index", "refs_ok"])
         for x in it:
             yield it.multi_index, x
 
@@ -969,7 +969,7 @@ class multi_enumerate(_coconut_has_iter):
         return self.iter.__class__.__module__ in _coconut.numpy_modules
     def __iter__(self):
         if self.is_numpy:
-            it = _coconut.numpy.nditer(self.iter, flags=["multi_index"])
+            it = _coconut.numpy.nditer(self.iter, flags=["multi_index", "refs_ok"])
             for x in it:
                 yield it.multi_index, x
         else:

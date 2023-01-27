@@ -3598,7 +3598,7 @@ Coconut's `multi_enumerate` enumerates through an iterable of iterables. `multi_
 For [`numpy`](#numpy-integration) objects, effectively equivalent to:
 ```coconut_python
 def multi_enumerate(iterable):
-    it = np.nditer(iterable, flags=["multi_index"])
+    it = np.nditer(iterable, flags=["multi_index", "refs_ok"])
     for x in it:
         yield it.multi_index, x
 ```

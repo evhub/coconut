@@ -442,6 +442,8 @@ def test_numpy() -> bool:
     assert 10 A `np.array_equal` A * 10
     assert A 10 `np.array_equal` A * 10  # type: ignore
     assert A B `np.array_equal` A * B
+    obj_arr = np.array([[1, "a"], [2.3, "abc"]], dtype=object)
+    assert obj_arr |> multi_enumerate |> map$(.[0]) |> list == [(0, 0), (0, 1), (1, 0), (1, 1)]
 
     # must come at end; checks no modification
     assert A `np.array_equal` np.array([1, 2;; 3, 4])
