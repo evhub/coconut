@@ -706,6 +706,8 @@ class TestShell(unittest.TestCase):
             call(["coconut", "--jupyter"], assert_output=kernel_installation_msg)
             stdout, stderr, retcode = call_output(["jupyter", "kernelspec", "list"])
             stdout, stderr = "".join(stdout), "".join(stderr)
+            if not stdout:
+                stdout, stderr = stderr, ""
             assert not retcode and not stderr, stderr
             for kernel in (icoconut_custom_kernel_name,) + icoconut_default_kernel_names:
                 assert kernel in stdout
