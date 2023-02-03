@@ -66,6 +66,7 @@ from coconut.constants import (
     mypy_builtin_regex,
     coconut_pth_file,
     error_color_code,
+    jupyter_console_commands,
 )
 from coconut.util import (
     univ_open,
@@ -923,10 +924,9 @@ class Command(object):
                 logger.warn("could not find {name!r} kernel; using {kernel!r} kernel instead".format(name=icoconut_custom_kernel_name, kernel=kernel))
 
             # pass the kernel to the console or otherwise just launch Jupyter now that we know our kernel is available
-            if args[0] == "console":
-                run_args = jupyter + ["console", "--kernel", kernel] + args[1:]
-            else:
-                run_args = jupyter + args
+            if args[0] in jupyter_console_commands:
+                args += ["--kernel", kernel]
+            run_args = jupyter + args
 
         if newly_installed_kernels:
             logger.show_sig("Successfully installed Jupyter kernels: '" + "', '".join(newly_installed_kernels) + "'")

@@ -609,6 +609,8 @@ coconut_pth_file = os.path.join(base_dir, "command", "resources", "zcoconut.pth"
 
 interpreter_compiler_var = "__coconut_compiler__"
 
+jupyter_console_commands = ("console", "qtconsole")
+
 # -----------------------------------------------------------------------------------------------------------------------
 # HIGHLIGHTER CONSTANTS:
 # -----------------------------------------------------------------------------------------------------------------------
