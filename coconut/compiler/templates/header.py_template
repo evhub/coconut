@@ -969,8 +969,9 @@ class multi_enumerate(_coconut_has_iter):
         return self.iter.__class__.__module__ in _coconut.numpy_modules
     def __iter__(self):
         if self.is_numpy:
-            it = _coconut.numpy.nditer(self.iter, flags=["multi_index", "refs_ok"])
+            it = _coconut.numpy.nditer(self.iter, ["multi_index", "refs_ok"], [["readonly"]])
             for x in it:
+                x, = x.flatten()
                 yield it.multi_index, x
         else:
             ind = [-1]

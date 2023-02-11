@@ -3595,15 +3595,7 @@ assert list(product(v, v)) == [(1, 1), (1, 2), (2, 1), (2, 2)]
 
 Coconut's `multi_enumerate` enumerates through an iterable of iterables. `multi_enumerate` works like enumerate, but indexes through inner iterables and produces a tuple index representing the index in each inner iterable. Supports indexing.
 
-For [`numpy`](#numpy-integration) objects, effectively equivalent to:
-```coconut_python
-def multi_enumerate(iterable):
-    it = np.nditer(iterable, flags=["multi_index", "refs_ok"])
-    for x in it:
-        yield it.multi_index, x
-```
-
-Also supports `len` for [`numpy`](#numpy-integration).
+For [`numpy`](#numpy-integration) objects, uses [`np.nditer`](https://numpy.org/doc/stable/reference/generated/numpy.nditer.html) under the hood. Also supports `len` for [`numpy`](#numpy-integration) arrays.
 
 ##### Example
 
