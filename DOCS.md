@@ -1602,7 +1602,9 @@ A very common thing to do in functional programming is to make use of function v
 (and)       => # boolean and
 (or)        => # boolean or
 (is)        => (operator.is_)
+(is not)    => (operator.is_not)
 (in)        => (operator.contains)
+(not in)    => # negative containment
 (assert)    => def (cond, msg=None) -> assert cond, msg  # (but a better msg if msg is None)
 (raise)     => def (exc=None, from_exc=None) -> raise exc from from_exc  # or just raise if exc is None
 # there are two operator functions that don't require parentheses:

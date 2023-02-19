@@ -469,6 +469,9 @@ def _coconut_bool_and(a, b):
 def _coconut_bool_or(a, b):
     """Boolean or operator (or). Equivalent to (a, b) -> a or b."""
     return a or b
+def _coconut_not_in(a, b):
+    """Negative containment operator (not in). Equivalent to (a, b) -> a not in b."""
+    return a not in b
 def _coconut_none_coalesce(a, b):
     """None coalescing operator (??). Equivalent to (a, b) -> a if a is not None else b."""
     return b if a is None else a

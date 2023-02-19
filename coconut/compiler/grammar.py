@@ -1023,6 +1023,10 @@ class Grammar(object):
         | fixto(ne, "_coconut.operator.ne")
         | fixto(tilde, "_coconut.operator.inv")
         | fixto(matrix_at, "_coconut_matmul")
+        | fixto(keyword("is") + keyword("not"), "_coconut.operator.is_not")
+        | fixto(keyword("not") + keyword("in"), "_coconut_not_in")
+
+        # must come after is not / not in
         | fixto(keyword("not"), "_coconut.operator.not_")
         | fixto(keyword("is"), "_coconut.operator.is_")
         | fixto(keyword("in"), "_coconut.operator.contains")

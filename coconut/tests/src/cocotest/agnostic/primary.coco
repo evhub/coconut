@@ -1550,4 +1550,12 @@ def primary_test() -> bool:
     assert 2i x == 20i
     some_str = "some"
     assert_raises(-> some_str five, TypeError)
+    assert (not in)("a", "bcd")
+    assert not (not in)("a", "abc")
+    assert ("a" not in .)("bcd")
+    assert (. not in "abc")("d")
+    assert (is not)(1, True)
+    assert not (is not)(False, False)
+    assert (True is not .)(1)
+    assert (. is not True)(1)
     return True
