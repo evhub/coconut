@@ -2171,13 +2171,15 @@ match def func(...):
 ```
 syntax using the [`addpattern`](#addpattern) decorator.
 
+Additionally, `addpattern def` will act just like a normal [`match def`](#pattern-matching-functions) if the function has not previously been defined, allowing for `addpattern def` to be used for each case rather than requiring `match def` for the first case and `addpattern def` for future cases.
+
 If you want to put a decorator on an `addpattern def` function, make sure to put it on the _last_ pattern function.
 
 ##### Example
 
 **Coconut:**
 ```coconut
-def factorial(0) = 1
+addpattern def factorial(0) = 1
 addpattern def factorial(n) = n * factorial(n - 1)
 ```
 

@@ -225,7 +225,7 @@ operator ”
 (“) = (”) = (,) ..> map$(str) ..> "".join
 
 operator !
-match def (int(x))! = 0 if x else 1
+addpattern def (int(x))! = 0 if x else 1  # type: ignore
 addpattern def (float(x))! = 0.0 if x else 1.0  # type: ignore
 addpattern def x! if x = False  # type: ignore
 addpattern def x! = True  # type: ignore
@@ -617,7 +617,7 @@ match def fact(n) = fact(n, 1)  # type: ignore
 match addpattern def fact(0, acc) = acc  # type: ignore
 addpattern match def fact(n, acc) = fact(n-1, acc*n)  # type: ignore
 
-def factorial(0, acc=1) = acc
+addpattern def factorial(0, acc=1) = acc  # type: ignore
 addpattern def factorial(int() as n, acc=1 if n > 0) =  # type: ignore
     """this is a docstring"""
     factorial(n-1, acc*n)

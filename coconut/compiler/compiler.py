@@ -1791,6 +1791,7 @@ else:
         # process tokens
         raw_lines = list(logical_lines(funcdef, True))
         def_stmt = raw_lines.pop(0)
+        out = ""
 
         # detect addpattern functions
         if def_stmt.startswith("addpattern def"):
@@ -1867,7 +1868,20 @@ else:
             if func_name is None:
                 raise CoconutInternalException("could not find name in addpattern function definition", def_stmt)
             # binds most tightly, except for TCO
-            decorators += "@_coconut_addpattern(" + func_name + ")\n"
+            addpattern_decorator = self.get_temp_var("addpattern")
+            out += handle_indentation(
+                """
+try:
+    {addpattern_decorator} = _coconut_addpattern({func_name})
+except _coconut.NameError:
+    {addpattern_decorator} = lambda f: f
+                """,
+                add_newline=True,
+            ).format(
+                func_name=func_name,
+                addpattern_decorator=addpattern_decorator,
+            )
+            decorators += "@" + addpattern_decorator + "\n"
 
         # modify function definition to use def_name
         if def_name != func_name:
@@ -1999,7 +2013,7 @@ def {mock_var}({mock_paramdef}):
 
         # handle dotted function definition
         if undotted_name is not None:
-            out = handle_indentation(
+            out += handle_indentation(
                 '''
 {decorators}{def_stmt}{func_code}
 {def_name}.__name__ = _coconut_py_str("{undotted_name}")
@@ -2019,7 +2033,7 @@ if {temp_var} is not None:
                 temp_var=self.get_temp_var("qualname"),
             )
         else:
-            out = decorators + def_stmt + func_code
+            out += decorators + def_stmt + func_code
 
         return out
 
