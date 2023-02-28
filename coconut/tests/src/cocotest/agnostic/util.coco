@@ -1661,6 +1661,24 @@ def first_disjoint_n_(n, arr) = (
     |> .$[0]
 )
 
+shifted_left_sum = (
+    scan$((+), ?, 0)
+    ..> .$[:-1]
+)
+
+shifted_right_sum = (
+    reversed
+    ..> shifted_left_sum
+    ..> list
+    ..> reversed
+)
+
+left_right_diff = (
+    lift(zip)(shifted_left_sum, shifted_right_sum)
+    ..> starmap$(-)
+    ..> map$(abs)
+)  # type: ignore
+
 
 # Search patterns
 def first_twin(_ + [p, (.-2) -> p] + _) = (p, p+2)
