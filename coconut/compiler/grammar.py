@@ -523,7 +523,10 @@ def where_handle(tokens):
 def kwd_err_msg_handle(tokens):
     """Handle keyword parse error messages."""
     kwd, = tokens
-    return 'invalid use of the keyword "' + kwd + '"'
+    if kwd == "def":
+        return "invalid function definition"
+    else:
+        return 'invalid use of the keyword "' + kwd + '"'
 
 
 def alt_ternary_handle(tokens):
