@@ -242,6 +242,7 @@ While Coconut syntax is based off of the latest Python 3, Coconut code compiled 
 To make Coconut built-ins universal across Python versions, Coconut makes available on any Python version built-ins that only exist in later versions, including **automatically overwriting Python 2 built-ins with their Python 3 counterparts.** Additionally, Coconut also [overwrites some Python 3 built-ins for optimization and enhancement purposes](#enhanced-built-ins). If access to the original Python versions of any overwritten built-ins is desired, the old built-ins can be retrieved by prefixing them with `py_`. Specifically, the overwritten built-ins are:
 
 - `py_chr`
+- `py_dict`
 - `py_hex`
 - `py_input`
 - `py_int`

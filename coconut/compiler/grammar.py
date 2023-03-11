@@ -957,7 +957,8 @@ class Grammar(object):
         lbrace.suppress()
         + Optional(
             tokenlist(
-                Group(addspace(condense(test + colon) + test)) | dubstar_expr,
+                Group(test + colon + test)
+                | dubstar_expr,
                 comma,
             ),
         )

@@ -662,6 +662,7 @@ coconut_specific_builtins = (
     "cycle",
     "windowsof",
     "py_chr",
+    "py_dict",
     "py_hex",
     "py_input",
     "py_int",

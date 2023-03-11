@@ -1558,4 +1558,18 @@ def primary_test() -> bool:
     assert not (is not)(False, False)
     assert (True is not .)(1)
     assert (. is not True)(1)
+    a_dict = {}
+    a_dict[1] = 1
+    a_dict[3] = 2
+    a_dict[2] = 3
+    assert a_dict.keys() |> tuple == (1, 3, 2)
+    assert not a_dict.keys() `isinstance` list
+    assert not a_dict.values() `isinstance` list
+    assert not a_dict.items() `isinstance` list
+    assert {1: 1, 3: 2, 2: 3}.keys() |> tuple == (1, 3, 2)
+    assert {**[(1, 1), (3, 2), (2, 3)]}.keys() |> tuple == (1, 3, 2)
+    assert a_dict == {1: 1, 2: 3, 3: 2}
+    assert {1: 1} |> str == "{1: 1}" == {1: 1} |> repr
+    assert py_dict `issubclass` dict
+    assert py_dict() `isinstance` dict
     return True

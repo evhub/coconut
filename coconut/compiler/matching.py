@@ -504,8 +504,8 @@ class Matcher(object):
         if rest is not None and rest != wildcard:
             match_keys = [k for k, v in matches]
             rest_item = (
-                "dict((k, v) for k, v in "
-                + item + ".items() if k not in set(("
+                "_coconut.dict((k, v) for k, v in "
+                + item + ".items() if k not in _coconut.set(("
                 + ", ".join(match_keys) + ("," if len(match_keys) == 1 else "")
                 + ")))"
             )

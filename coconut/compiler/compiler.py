@@ -356,6 +356,48 @@ def reconstitute_paramdef(pos_only_args, req_args, default_args, star_arg, kwd_o
     return ", ".join(args_list)
 
 
+def split_star_expr_tokens(tokens, is_dict=False):
+    """Split testlist_star_expr or dict_literal tokens."""
+    groups = [[]]
+    has_star = False
+    has_comma = False
+    for tok_grp in tokens:
+        if tok_grp == ",":
+            has_comma = True
+        elif len(tok_grp) == 1:
+            internal_assert(not is_dict, "found non-star non-pair item in dict literal", tok_grp)
+            groups[-1].append(tok_grp[0])
+        elif len(tok_grp) == 2:
+            internal_assert(not tok_grp[0].lstrip("*"), "invalid star expr item signifier", tok_grp[0])
+            has_star = True
+            groups.append(tok_grp[1])
+            groups.append([])
+        elif len(tok_grp) == 3:
+            internal_assert(is_dict, "found dict key-value pair in non-dict tokens", tok_grp)
+            k, c, v = tok_grp
+            internal_assert(c == ":", "invalid colon in dict literal item", c)
+            groups[-1].append((k, v))
+        else:
+            raise CoconutInternalException("invalid testlist_star_expr tokens", tokens)
+    if not groups[-1]:
+        groups.pop()
+    return groups, has_star, has_comma
+
+
+def join_dict_group(group, as_tuples=False):
+    """Join group from split_star_expr_tokens$(is_dict=True)."""
+    items = []
+    for k, v in group:
+        if as_tuples:
+            items.append("(" + k + ", " + v + ")")
+        else:
+            items.append(k + ": " + v)
+    if as_tuples:
+        return tuple_str_of(items, add_parens=False)
+    else:
+        return ", ".join(items)
+
+
 # end: UTILITIES
 # -----------------------------------------------------------------------------------------------------------------------
 # COMPILER:
@@ -3011,7 +3053,7 @@ if {store_var} is not _coconut_sentinel:
         if self.target.startswith("3"):
             return "{" + key + ": " + val + " " + comp + "}"
         else:
-            return "dict(((" + key + "), (" + val + ")) " + comp + ")"
+            return "_coconut.dict(((" + key + "), (" + val + ")) " + comp + ")"
 
     def pattern_error(self, original, loc, value_var, check_var, match_error_class='_coconut_MatchError'):
         """Construct a pattern-matching error message."""
@@ -3594,30 +3636,9 @@ __annotations__["{name}"] = {annotation}
         else:
             return "_coconut.typing.Union[" + ", ".join(tokens) + "]"
 
-    def split_star_expr_tokens(self, tokens):
-        """Split testlist_star_expr or dict_literal tokens."""
-        groups = [[]]
-        has_star = False
-        has_comma = False
-        for tok_grp in tokens:
-            if tok_grp == ",":
-                has_comma = True
-            elif len(tok_grp) == 1:
-                groups[-1].append(tok_grp[0])
-            elif len(tok_grp) == 2:
-                internal_assert(not tok_grp[0].lstrip("*"), "invalid star expr item signifier", tok_grp[0])
-                has_star = True
-                groups.append(tok_grp[1])
-                groups.append([])
-            else:
-                raise CoconutInternalException("invalid testlist_star_expr tokens", tokens)
-        if not groups[-1]:
-            groups.pop()
-        return groups, has_star, has_comma
-
     def testlist_star_expr_handle(self, original, loc, tokens, is_list=False):
         """Handle naked a, *b."""
-        groups, has_star, has_comma = self.split_star_expr_tokens(tokens)
+        groups, has_star, has_comma = split_star_expr_tokens(tokens)
         is_sequence = has_comma or is_list
 
         if not is_sequence and not has_star:
@@ -3667,20 +3688,23 @@ __annotations__["{name}"] = {annotation}
     def dict_literal_handle(self, tokens):
         """Handle {**d1, **d2}."""
         if not tokens:
-            return "{}"
+            return "{}" if self.target.startswith("3") else "_coconut.dict()"
 
-        groups, has_star, _ = self.split_star_expr_tokens(tokens)
+        groups, has_star, _ = split_star_expr_tokens(tokens, is_dict=True)
 
         if not has_star:
             internal_assert(len(groups) == 1, "dict_literal group splitting failed on", tokens)
-            return "{" + ", ".join(groups[0]) + "}"
+            if self.target.startswith("3"):
+                return "{" + join_dict_group(groups[0]) + "}"
+            else:
+                return "_coconut.dict((" + join_dict_group(groups[0], as_tuples=True) + "))"
 
         # naturally supported on 3.5+
         elif self.target_info >= (3, 5):
             to_literal = []
             for g in groups:
                 if isinstance(g, list):
-                    to_literal.extend(g)
+                    to_literal.append(join_dict_group(g))
                 else:
                     to_literal.append("**" + g)
             return "{" + ", ".join(to_literal) + "}"
@@ -3690,7 +3714,7 @@ __annotations__["{name}"] = {annotation}
             to_merge = []
             for g in groups:
                 if isinstance(g, list):
-                    to_merge.append("{" + ", ".join(g) + "}")
+                    to_merge.append("{" + join_dict_group(g) + "}")
                 else:
                     to_merge.append(g)
             return "_coconut_dict_merge(" + ", ".join(to_merge) + ")"

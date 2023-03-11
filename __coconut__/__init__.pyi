@@ -133,6 +133,7 @@ if sys.version_info < (3, 7):
 
 
 py_chr = chr
+py_dict = dict
 py_hex = hex
 py_input = input
 py_int = int
