@@ -228,7 +228,7 @@ def gam_eps_rate(bitarr) = (
          ~~~~~^""" in err_str or """
       |> map$(int(?, 2))
 
-  ~~~~~~~~~~~~~~~~~^""" in err_str
+  ~~~~~~~~~~~~~~~~~^""" in err_str, err_str
     else:
         assert False
 
