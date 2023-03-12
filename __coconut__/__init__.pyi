@@ -1142,18 +1142,18 @@ class _coconut_lifted_2(_t.Generic[_T, _U, _W]):
     #     _g: _t.Callable[[_X], _T],
     #     _h: _t.Callable[[_X], _U],
     # ) -> _t.Callable[[_X], _W]: ...
-    @_t.overload
-    def __call__(
-        self,
-        _g: _t.Callable[[_X, _Y], _T],
-        _h: _t.Callable[[_X, _Y], _U],
-    ) -> _t.Callable[[_X, _Y], _W]: ...
-    @_t.overload
-    def __call__(
-        self,
-        _g: _t.Callable[[_X, _Y, _Z], _T],
-        _h: _t.Callable[[_X, _Y, _Z], _U],
-    ) -> _t.Callable[[_X, _Y, _Z], _W]: ...
+    # @_t.overload
+    # def __call__(
+    #     self,
+    #     _g: _t.Callable[[_X, _Y], _T],
+    #     _h: _t.Callable[[_X, _Y], _U],
+    # ) -> _t.Callable[[_X, _Y], _W]: ...
+    # @_t.overload
+    # def __call__(
+    #     self,
+    #     _g: _t.Callable[[_X, _Y, _Z], _T],
+    #     _h: _t.Callable[[_X, _Y, _Z], _U],
+    # ) -> _t.Callable[[_X, _Y, _Z], _W]: ...
     @_t.overload
     def __call__(
         self,
@@ -1182,20 +1182,20 @@ class _coconut_lifted_3(_t.Generic[_T, _U, _V, _W]):
     #     _h: _t.Callable[[_X], _U],
     #     _i: _t.Callable[[_X], _V],
     # ) -> _t.Callable[[_X], _W]: ...
-    @_t.overload
-    def __call__(
-        self,
-        _g: _t.Callable[[_X, _Y], _T],
-        _h: _t.Callable[[_X, _Y], _U],
-        _i: _t.Callable[[_X, _Y], _V],
-    ) -> _t.Callable[[_X, _Y], _W]: ...
-    @_t.overload
-    def __call__(
-        self,
-        _g: _t.Callable[[_X, _Y, _Z], _T],
-        _h: _t.Callable[[_X, _Y, _Z], _U],
-        _i: _t.Callable[[_X, _Y, _Z], _V],
-    ) -> _t.Callable[[_X, _Y, _Z], _W]: ...
+    # @_t.overload
+    # def __call__(
+    #     self,
+    #     _g: _t.Callable[[_X, _Y], _T],
+    #     _h: _t.Callable[[_X, _Y], _U],
+    #     _i: _t.Callable[[_X, _Y], _V],
+    # ) -> _t.Callable[[_X, _Y], _W]: ...
+    # @_t.overload
+    # def __call__(
+    #     self,
+    #     _g: _t.Callable[[_X, _Y, _Z], _T],
+    #     _h: _t.Callable[[_X, _Y, _Z], _U],
+    #     _i: _t.Callable[[_X, _Y, _Z], _V],
+    # ) -> _t.Callable[[_X, _Y, _Z], _W]: ...
     @_t.overload
     def __call__(
         self,
