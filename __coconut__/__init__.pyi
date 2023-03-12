@@ -1108,16 +1108,16 @@ class _coconut_lifted_1(_t.Generic[_T, _W]):
     #     self,
     #     _g: _t.Callable[[_X], _T],
     # ) -> _t.Callable[[_X], _W]: ...
-    @_t.overload
-    def __call__(
-        self,
-        _g: _t.Callable[[_X, _Y], _T],
-    ) -> _t.Callable[[_X, _Y], _W]: ...
-    @_t.overload
-    def __call__(
-        self,
-        _g: _t.Callable[[_X, _Y, _Z], _T],
-    ) -> _t.Callable[[_X, _Y, _Z], _W]: ...
+    # @_t.overload
+    # def __call__(
+    #     self,
+    #     _g: _t.Callable[[_X, _Y], _T],
+    # ) -> _t.Callable[[_X, _Y], _W]: ...
+    # @_t.overload
+    # def __call__(
+    #     self,
+    #     _g: _t.Callable[[_X, _Y, _Z], _T],
+    # ) -> _t.Callable[[_X, _Y, _Z], _W]: ...
     @_t.overload
     def __call__(
         self,
