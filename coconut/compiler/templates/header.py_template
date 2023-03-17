@@ -58,7 +58,7 @@ def _coconut_handle_cls_kwargs(**kwargs):
     return coconut_handle_cls_kwargs_wrapper
 def _coconut_handle_cls_stargs(*args):
     temp_names = ["_coconut_base_cls_%s" % (i,) for i in _coconut.range(_coconut.len(args))]
-    ns = _coconut.dict(_coconut.zip(temp_names, args))
+    ns = _coconut_py_dict(_coconut.zip(temp_names, args))
     _coconut_exec("class _coconut_cls_stargs_base(" + ", ".join(temp_names) + "): pass", ns)
     return ns["_coconut_cls_stargs_base"]
 class _coconut_baseclass{object}:
@@ -1259,7 +1259,7 @@ def _coconut_get_function_match_error():
 class _coconut_base_pattern_func(_coconut_baseclass):{COMMENT.no_slots_to_allow_func_attrs}
     _coconut_is_match = True
     def __init__(self, *funcs):
-        self.FunctionMatchError = _coconut.type(_coconut_py_str("MatchError"), ({_coconut_}MatchError,), {empty_dict})
+        self.FunctionMatchError = _coconut.type(_coconut_py_str("MatchError"), ({_coconut_}MatchError,), {empty_py_dict})
         self.patterns = []
         self.__doc__ = None
         self.__name__ = None
@@ -1707,7 +1707,7 @@ class _coconut_lifted(_coconut_baseclass):
     def __reduce__(self):
         return (self.__class__, (self.func,) + self.func_args, {lbrace}"func_kwargs": self.func_kwargs{rbrace})
     def __call__(self, *args, **kwargs):
-        return self.func(*(g(*args, **kwargs) for g in self.func_args), **_coconut.dict((k, h(*args, **kwargs)) for k, h in self.func_kwargs.items()))
+        return self.func(*(g(*args, **kwargs) for g in self.func_args), **_coconut_py_dict((k, h(*args, **kwargs)) for k, h in self.func_kwargs.items()))
     def __repr__(self):
         return "lift(%r)(%s%s)" % (self.func, ", ".join(_coconut.repr(g) for g in self.func_args), ", ".join(k + "=" + _coconut.repr(h) for k, h in self.func_kwargs.items()))
 class lift(_coconut_baseclass):

@@ -26,7 +26,7 @@ import sys as _coconut_sys
 VERSION = "3.0.0"
 VERSION_NAME = None
 # False for release, int >= 1 for develop
-DEVELOP = 12
+DEVELOP = 13
 ALPHA = True  # for pre releases rather than post releases
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -82,7 +82,7 @@ def breakpoint(*args, **kwargs):
 # if a new assignment is added below, a new builtins import should be added alongside it
 _base_py3_header = r'''from builtins import chr, dict, hex, input, int, map, object, oct, open, print, range, str, super, zip, filter, reversed, enumerate, repr
 py_chr, py_dict, py_hex, py_input, py_int, py_map, py_object, py_oct, py_open, py_print, py_range, py_str, py_super, py_zip, py_filter, py_reversed, py_enumerate, py_repr = chr, dict, hex, input, int, map, object, oct, open, print, range, str, super, zip, filter, reversed, enumerate, repr
-_coconut_py_str, _coconut_py_super = str, super
+_coconut_py_str, _coconut_py_super, _coconut_py_dict = str, super, dict
 from functools import wraps as _coconut_wraps
 exec("_coconut_exec = exec")
 '''

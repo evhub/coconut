@@ -1543,7 +1543,7 @@ data End(offset `isinstance` int = 0 if offset <= 0):  # type: ignore
 end = End()
 
 
-# advent of code
+# coding challenges
 proc_moves = (
     .strip()
     ..> .splitlines()
@@ -1678,6 +1678,15 @@ left_right_diff = (
     ..> starmap$(-)
     ..> map$(abs)
 )  # type: ignore
+
+num_until_neg_sum = (
+    sorted
+    ..> reversed
+    ..> scan$(+)
+    ..> filter$(.>0)
+    ..> list
+    ..> len
+)
 
 
 # Search patterns
