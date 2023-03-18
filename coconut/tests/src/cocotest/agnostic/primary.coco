@@ -1562,14 +1562,17 @@ def primary_test() -> bool:
     a_dict[1] = 1
     a_dict[3] = 2
     a_dict[2] = 3
+    assert a_dict |> str == "{1: 1, 3: 2, 2: 3}" == a_dict |> repr, a_dict
     assert a_dict.keys() |> tuple == (1, 3, 2)
     assert not a_dict.keys() `isinstance` list
     assert not a_dict.values() `isinstance` list
     assert not a_dict.items() `isinstance` list
+    assert len(a_dict.keys()) == len(a_dict.values()) == len(a_dict.items()) == 3
     assert {1: 1, 3: 2, 2: 3}.keys() |> tuple == (1, 3, 2)
     assert {**[(1, 1), (3, 2), (2, 3)]}.keys() |> tuple == (1, 3, 2)
     assert a_dict == {1: 1, 2: 3, 3: 2}
     assert {1: 1} |> str == "{1: 1}" == {1: 1} |> repr
     assert py_dict `issubclass` dict
     assert py_dict() `isinstance` dict
+    assert {5:0, 3:0, **{2:0, 6:0}, 8:0}.keys() |> tuple == (5, 3, 2, 6, 8)
     return True

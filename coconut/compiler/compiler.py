@@ -3685,22 +3685,26 @@ __annotations__["{name}"] = {annotation}
         """Handle non-comprehension list literals."""
         return self.testlist_star_expr_handle(original, loc, tokens, is_list=True)
 
+    def make_dict(self, tok_grp):
+        """Construct a dictionary literal out of the given group."""
+        if self.target_info >= (3, 7):
+            return "{" + join_dict_group(tok_grp) + "}"
+        else:
+            return "_coconut.dict((" + join_dict_group(tok_grp, as_tuples=True) + "))"
+
     def dict_literal_handle(self, tokens):
         """Handle {**d1, **d2}."""
         if not tokens:
-            return "{}" if self.target.startswith("3") else "_coconut.dict()"
+            return "{}" if self.target_info >= (3, 7) else "_coconut.dict()"
 
         groups, has_star, _ = split_star_expr_tokens(tokens, is_dict=True)
 
         if not has_star:
             internal_assert(len(groups) == 1, "dict_literal group splitting failed on", tokens)
-            if self.target.startswith("3"):
-                return "{" + join_dict_group(groups[0]) + "}"
-            else:
-                return "_coconut.dict((" + join_dict_group(groups[0], as_tuples=True) + "))"
+            return self.make_dict(groups[0])
 
-        # naturally supported on 3.5+
-        elif self.target_info >= (3, 5):
+        # supported on 3.5, but only guaranteed to be ordered on 3.7
+        elif self.target_info >= (3, 7):
             to_literal = []
             for g in groups:
                 if isinstance(g, list):
@@ -3714,7 +3718,7 @@ __annotations__["{name}"] = {annotation}
             to_merge = []
             for g in groups:
                 if isinstance(g, list):
-                    to_merge.append("{" + join_dict_group(g) + "}")
+                    to_merge.append(self.make_dict(g))
                 else:
                     to_merge.append(g)
             return "_coconut_dict_merge(" + ", ".join(to_merge) + ")"

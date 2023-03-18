@@ -208,8 +208,8 @@ def process_header_args(which, use_hash, target, no_tco, strict, no_wrap):
 
     format_dict = dict(
         COMMENT=COMMENT,
-        empty_dict="{}" if target_startswith == "3" else "_coconut.dict()",
-        empty_py_dict="{}" if target_startswith == "3" else "_coconut_py_dict()",
+        empty_dict="{}" if target_info >= (3, 7) else "_coconut.dict()",
+        empty_py_dict="{}" if target_info >= (3, 7) else "_coconut_py_dict()",
         lbrace="{",
         rbrace="}",
         is_data_var=is_data_var,

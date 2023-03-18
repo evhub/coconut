@@ -26,7 +26,7 @@ import sys as _coconut_sys
 VERSION = "3.0.0"
 VERSION_NAME = None
 # False for release, int >= 1 for develop
-DEVELOP = 13
+DEVELOP = 14
 ALPHA = True  # for pre releases rather than post releases
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -57,7 +57,19 @@ PY2 = _coconut_sys.version_info < (3,)
 PY26 = _coconut_sys.version_info < (2, 7)
 PY37 = _coconut_sys.version_info >= (3, 7)
 
-_non_py37_extras = r'''def _coconut_default_breakpointhook(*args, **kwargs):
+_non_py37_extras = r'''from collections import OrderedDict as _coconut_OrderedDict
+class dict(_coconut_OrderedDict):
+    __slots__ = ()
+    __doc__ = getattr(_coconut_OrderedDict, "__doc__", "<see help(py_dict)>")
+    class __metaclass__(type):
+        def __instancecheck__(cls, inst):
+            return _coconut.isinstance(inst, _coconut_py_dict)
+        def __subclasscheck__(cls, subcls):
+            return _coconut.issubclass(subcls, _coconut_py_dict)
+    __eq__ = _coconut_py_dict.__eq__
+    def __repr__(self):
+        return "{" + ", ".join("{k!r}: {v!r}".format(k=k, v=v) for k, v in self.items()) + "}"
+def _coconut_default_breakpointhook(*args, **kwargs):
     hookname = _coconut.os.getenv("PYTHONBREAKPOINT")
     if hookname != "0":
         if not hookname:
@@ -100,7 +112,7 @@ PY27_HEADER = r'''from __builtin__ import chr, dict, hex, input, int, map, objec
 py_chr, py_dict, py_hex, py_input, py_int, py_map, py_object, py_oct, py_open, py_print, py_range, py_str, py_super, py_zip, py_filter, py_reversed, py_enumerate, py_raw_input, py_xrange, py_repr = chr, dict, hex, input, int, map, object, oct, open, print, range, str, super, zip, filter, reversed, enumerate, raw_input, xrange, repr
 _coconut_py_raw_input, _coconut_py_xrange, _coconut_py_int, _coconut_py_long, _coconut_py_print, _coconut_py_str, _coconut_py_super, _coconut_py_unicode, _coconut_py_repr, _coconut_py_dict = raw_input, xrange, int, long, print, str, super, unicode, repr, dict
 from functools import wraps as _coconut_wraps
-from collections import Sequence as _coconut_Sequence, OrderedDict as _coconut_OrderedDict
+from collections import Sequence as _coconut_Sequence
 from future_builtins import *
 chr, str = unichr, unicode
 from io import open
@@ -124,20 +136,6 @@ class int(_coconut_py_int):
             return _coconut.isinstance(inst, (_coconut_py_int, _coconut_py_long))
         def __subclasscheck__(cls, subcls):
             return _coconut.issubclass(subcls, (_coconut_py_int, _coconut_py_long))
-class dict(_coconut_OrderedDict):
-    __slots__ = ()
-    __doc__ = getattr(_coconut_OrderedDict, "__doc__", "<see help(py_dict)>")
-    class __metaclass__(type):
-        def __instancecheck__(cls, inst):
-            return _coconut.isinstance(inst, _coconut_py_dict)
-        def __subclasscheck__(cls, subcls):
-            return _coconut.issubclass(subcls, _coconut_py_dict)
-    __eq__ = _coconut_py_dict.__eq__
-    __repr__ = _coconut_py_dict.__repr__
-    __str__ = _coconut_py_dict.__str__
-    keys = _coconut_OrderedDict.viewkeys
-    values = _coconut_OrderedDict.viewvalues
-    items = _coconut_OrderedDict.viewitems
 class range(object):
     __slots__ = ("_xrange",)
     __doc__ = getattr(_coconut_py_xrange, "__doc__", "<see help(py_xrange)>")
@@ -250,7 +248,10 @@ def _coconut_exec(obj, globals=None, locals=None):
     if globals is None:
         globals = _coconut_sys._getframe(1).f_globals
     exec(obj, globals, locals)
-''' + _non_py37_extras
+''' + _non_py37_extras + '''dict.keys = _coconut_OrderedDict.viewkeys
+dict.values = _coconut_OrderedDict.viewvalues
+dict.items = _coconut_OrderedDict.viewitems
+'''
 
 PY2_HEADER = PY27_HEADER + '''if _coconut_sys.version_info < (2, 7):
     import functools as _coconut_functools, copy_reg as _coconut_copy_reg
