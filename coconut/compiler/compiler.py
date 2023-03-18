@@ -1670,7 +1670,7 @@ class Compiler(Grammar, pickleable_obj):
             return handle_indentation(
                 """
 try:
-    {tre_check_var} = {func_name} is {func_store}
+    {tre_check_var} = {func_name} is {func_store} {type_ignore}
 except _coconut.NameError:
     {tre_check_var} = False
 if {tre_check_var}:
@@ -1685,6 +1685,7 @@ else:
                 func_store=func_store,
                 tre_recurse=tre_recurse,
                 tco_recurse=tco_recurse,
+                type_ignore=self.type_ignore_comment(),
             )
         return attach(
             self.get_tre_return_grammar(func_name),
@@ -1914,7 +1915,7 @@ else:
             out += handle_indentation(
                 """
 try:
-    {addpattern_decorator} = _coconut_addpattern({func_name})
+    {addpattern_decorator} = _coconut_addpattern({func_name}) {type_ignore}
 except _coconut.NameError:
     {addpattern_decorator} = lambda f: f
                 """,
@@ -1922,6 +1923,7 @@ except _coconut.NameError:
             ).format(
                 func_name=func_name,
                 addpattern_decorator=addpattern_decorator,
+                type_ignore=self.type_ignore_comment(),
             )
             decorators += "@" + addpattern_decorator + "\n"
 
@@ -2993,7 +2995,7 @@ def __hash__(self):
                 stmts.append(
                     handle_indentation("""
 try:
-    {store_var} = sys
+    {store_var} = sys {type_ignore}
 except _coconut.NameError:
     {store_var} = _coconut_sentinel
 sys = _coconut_sys
@@ -3009,6 +3011,7 @@ if {store_var} is not _coconut_sentinel:
                         new_imp="\n".join(self.single_import(new_imp, imp_as)),
                         # should only type: ignore the old import
                         old_imp="\n".join(self.single_import(old_imp, imp_as, type_ignore=type_ignore)),
+                        type_ignore=self.type_ignore_comment(),
                     ),
                 )
         return "\n".join(stmts)
@@ -3707,20 +3710,20 @@ __annotations__["{name}"] = {annotation}
         elif self.target_info >= (3, 7):
             to_literal = []
             for g in groups:
-                if isinstance(g, list):
-                    to_literal.append(join_dict_group(g))
-                else:
+                if not isinstance(g, list):
                     to_literal.append("**" + g)
+                elif g:
+                    to_literal.append(join_dict_group(g))
             return "{" + ", ".join(to_literal) + "}"
 
         # otherwise universalize
         else:
             to_merge = []
             for g in groups:
-                if isinstance(g, list):
-                    to_merge.append(self.make_dict(g))
-                else:
+                if not isinstance(g, list):
                     to_merge.append(g)
+                elif g:
+                    to_merge.append(self.make_dict(g))
             return "_coconut_dict_merge(" + ", ".join(to_merge) + ")"
 
     def new_testlist_star_expr_handle(self, tokens):

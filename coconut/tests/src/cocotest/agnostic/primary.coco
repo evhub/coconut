@@ -1569,7 +1569,7 @@ def primary_test() -> bool:
     assert not a_dict.items() `isinstance` list
     assert len(a_dict.keys()) == len(a_dict.values()) == len(a_dict.items()) == 3
     assert {1: 1, 3: 2, 2: 3}.keys() |> tuple == (1, 3, 2)
-    assert {**[(1, 1), (3, 2), (2, 3)]}.keys() |> tuple == (1, 3, 2)
+    assert {**{1: 0, 3: 0}, 2: 0}.keys() |> tuple == (1, 3, 2) == {**dict([(1, 1), (3, 2), (2, 3)])}.keys() |> tuple
     assert a_dict == {1: 1, 2: 3, 3: 2}
     assert {1: 1} |> str == "{1: 1}" == {1: 1} |> repr
     assert py_dict `issubclass` dict
