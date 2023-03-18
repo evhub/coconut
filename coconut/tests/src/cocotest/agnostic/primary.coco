@@ -1579,5 +1579,5 @@ def primary_test() -> bool:
     assert not a_multiset.keys() `isinstance` list
     assert not a_multiset.values() `isinstance` list
     assert not a_multiset.items() `isinstance` list
-    assert len(a_multiset.keys()) == len(a_multiset.values()) == len(a_multiset.items()) == 3
+    assert len(a_multiset.keys()) == len(a_multiset.values()) == len(a_multiset.items()) == 2
     return True
