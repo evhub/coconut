@@ -485,6 +485,16 @@ def __lt__(self, other):
             indent=1,
             newline=True,
         ),
+        assign_multiset_views=pycondition(
+            (3,),
+            if_lt='''
+keys = _coconut.collections.Counter.viewkeys
+values = _coconut.collections.Counter.viewvalues
+items = _coconut.collections.Counter.viewitems
+            ''',
+            indent=1,
+            newline=True,
+        ),
 
         # used in the second round
         tco_comma="_coconut_tail_call, _coconut_tco, " if not no_tco else "",

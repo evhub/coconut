@@ -26,7 +26,7 @@ import sys as _coconut_sys
 VERSION = "3.0.0"
 VERSION_NAME = None
 # False for release, int >= 1 for develop
-DEVELOP = 14
+DEVELOP = 16
 ALPHA = True  # for pre releases rather than post releases
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -58,17 +58,6 @@ PY26 = _coconut_sys.version_info < (2, 7)
 PY37 = _coconut_sys.version_info >= (3, 7)
 
 _non_py37_extras = r'''from collections import OrderedDict as _coconut_OrderedDict
-class dict(_coconut_OrderedDict):
-    __slots__ = ()
-    __doc__ = getattr(_coconut_OrderedDict, "__doc__", "<see help(py_dict)>")
-    class __metaclass__(type):
-        def __instancecheck__(cls, inst):
-            return _coconut.isinstance(inst, _coconut_py_dict)
-        def __subclasscheck__(cls, subcls):
-            return _coconut.issubclass(subcls, _coconut_py_dict)
-    __eq__ = _coconut_py_dict.__eq__
-    def __repr__(self):
-        return "{" + ", ".join("{k!r}: {v!r}".format(k=k, v=v) for k, v in self.items()) + "}"
 def _coconut_default_breakpointhook(*args, **kwargs):
     hookname = _coconut.os.getenv("PYTHONBREAKPOINT")
     if hookname != "0":
@@ -89,6 +78,18 @@ if not hasattr(_coconut_sys, "__breakpointhook__"):
     _coconut_sys.__breakpointhook__ = _coconut_default_breakpointhook
 def breakpoint(*args, **kwargs):
     return _coconut.getattr(_coconut_sys, "breakpointhook", _coconut_default_breakpointhook)(*args, **kwargs)
+class _coconut_dict_meta(type):
+    def __instancecheck__(cls, inst):
+        return _coconut.isinstance(inst, _coconut_py_dict)
+    def __subclasscheck__(cls, subcls):
+        return _coconut.issubclass(subcls, _coconut_py_dict)
+class _coconut_dict_base(_coconut_OrderedDict):
+    __slots__ = ()
+    __doc__ = getattr(_coconut_OrderedDict, "__doc__", "<see help(py_dict)>")
+    __eq__ = _coconut_py_dict.__eq__
+    def __repr__(self):
+        return "{" + ", ".join("{k!r}: {v!r}".format(k=k, v=v) for k, v in self.items()) + "}"
+dict = _coconut_dict_meta(py_str("dict"), _coconut_dict_base.__bases__, _coconut_dict_base.__dict__.copy())
 '''
 
 # if a new assignment is added below, a new builtins import should be added alongside it

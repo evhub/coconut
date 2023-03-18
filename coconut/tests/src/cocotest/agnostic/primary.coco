@@ -1575,4 +1575,9 @@ def primary_test() -> bool:
     assert py_dict `issubclass` dict
     assert py_dict() `isinstance` dict
     assert {5:0, 3:0, **{2:0, 6:0}, 8:0}.keys() |> tuple == (5, 3, 2, 6, 8)
+    a_multiset = m{1,1,2}
+    assert not a_multiset.keys() `isinstance` list
+    assert not a_multiset.values() `isinstance` list
+    assert not a_multiset.items() `isinstance` list
+    assert len(a_multiset.keys()) == len(a_multiset.values()) == len(a_multiset.items()) == 3
     return True
