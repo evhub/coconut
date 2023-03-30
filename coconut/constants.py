@@ -846,7 +846,7 @@ all_reqs = {
 # min versions are inclusive
 min_versions = {
     "cPyparsing": (2, 4, 7, 1, 2, 0),
-    ("pre-commit", "py3"): (2, 21),
+    ("pre-commit", "py3"): (3,),
     "psutil": (5,),
     "jupyter": (1, 0),
     "types-backports": (0, 1),
@@ -860,11 +860,11 @@ min_versions = {
     ("numpy", "py2;cpy"): (1,),
     ("dataclasses", "py==36"): (0, 8),
     ("aenum", "py<34"): (3,),
-    "pydata-sphinx-theme": (0, 12),
-    "myst-parser": (0, 18),
-    "sphinx": (5, 3),  # don't upgrade until myst-parser works with it
-    "mypy[python2]": (0, 991),
-    ("jupyter-console", "py36"): (6, 4),
+    "pydata-sphinx-theme": (0, 13),
+    "myst-parser": (1,),
+    "sphinx": (6,),
+    "mypy[python2]": (1, 1),
+    ("jupyter-console", "py36"): (6, 6),
     ("typing", "py<35"): (3, 10),
     ("jedi", "py37"): (0, 18),
 

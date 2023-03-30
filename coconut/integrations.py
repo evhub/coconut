@@ -86,9 +86,11 @@ def load_ipython_extension(ipython):
 
 class CoconutXontribLoader(object):
     """Implements Coconut's _load_xontrib_."""
-    timing_info = []
     compiler = None
     runner = None
+
+    def __init__(self):
+        self.timing_info = []
 
     def __call__(self, xsh, **kwargs):
         # hide imports to avoid circular dependencies
@@ -121,14 +123,30 @@ class CoconutXontribLoader(object):
             return execer.__class__.parse(execer, s, *args, **kwargs)
 
         main_parser = xsh.execer.parser
+        main_parser._coconut_old_parse = main_parser.parse
         main_parser.parse = MethodType(new_parse, main_parser)
 
         ctx_parser = xsh.execer.ctxtransformer.parser
+        ctx_parser._coconut_old_parse = ctx_parser.parse
         ctx_parser.parse = MethodType(new_parse, ctx_parser)
 
         self.timing_info.append(("load", get_clock_time() - start_time))
 
         return self.runner.vars
 
+    def unload(self, xsh):
+        # import here to avoid circular dependencies
+        from coconut.exceptions import CoconutException
+
+        main_parser = xsh.execer.parser
+        if not hasattr(main_parser, "_coconut_old_parse"):
+            raise CoconutException("attempting to unldoad Coconut xontrib but it was never loaded")
+        main_parser.parser = main_parser._coconut_old_parse
+
+        ctx_parser = xsh.execer.ctxtransformer.parser
+        ctx_parser.parse = ctx_parser._coconut_old_parse
+
 
 _load_xontrib_ = CoconutXontribLoader()
+
+_unload_xontrib_ = _load_xontrib_.unload
