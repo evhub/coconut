@@ -21,7 +21,10 @@ from coconut.root import *  # NOQA
 
 from types import MethodType
 
-from coconut.constants import coconut_kernel_kwargs
+from coconut.constants import (
+    coconut_kernel_kwargs,
+    disabled_xonsh_modes,
+)
 
 # -----------------------------------------------------------------------------------------------------------------------
 # IPYTHON:
@@ -88,9 +91,7 @@ class CoconutXontribLoader(object):
     """Implements Coconut's _load_xontrib_."""
     compiler = None
     runner = None
-
-    def __init__(self):
-        self.timing_info = []
+    timing_info = []
 
     def __call__(self, xsh, **kwargs):
         # hide imports to avoid circular dependencies
@@ -111,16 +112,17 @@ class CoconutXontribLoader(object):
 
         self.runner.update_vars(xsh.ctx)
 
-        def new_parse(execer, s, *args, **kwargs):
+        def new_parse(execer, code, mode="exec", *args, **kwargs):
             """Coconut-aware version of xonsh's _parse."""
-            parse_start_time = get_clock_time()
-            try:
-                s = self.compiler.parse_xonsh(s, keep_state=True)
-            except CoconutException as err:
-                err_str = format_error(err).splitlines()[0]
-                s += "  #" + err_str
-            self.timing_info.append(("parse", get_clock_time() - parse_start_time))
-            return execer.__class__.parse(execer, s, *args, **kwargs)
+            if mode not in disabled_xonsh_modes:
+                parse_start_time = get_clock_time()
+                try:
+                    code = self.compiler.parse_xonsh(code, keep_state=True)
+                except CoconutException as err:
+                    err_str = format_error(err).splitlines()[0]
+                    code += "  #" + err_str
+                self.timing_info.append(("parse", get_clock_time() - parse_start_time))
+            return execer.__class__.parse(execer, code, mode=mode, *args, **kwargs)
 
         main_parser = xsh.execer.parser
         main_parser._coconut_old_parse = main_parser.parse
@@ -140,7 +142,7 @@ class CoconutXontribLoader(object):
 
         main_parser = xsh.execer.parser
         if not hasattr(main_parser, "_coconut_old_parse"):
-            raise CoconutException("attempting to unldoad Coconut xontrib but it was never loaded")
+            raise CoconutException("attempting to unload Coconut xontrib but it was never loaded")
         main_parser.parser = main_parser._coconut_old_parse
 
         ctx_parser = xsh.execer.ctxtransformer.parser
