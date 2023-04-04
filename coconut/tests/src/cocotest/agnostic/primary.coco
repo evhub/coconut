@@ -1580,4 +1580,7 @@ def primary_test() -> bool:
     assert not a_multiset.values() `isinstance` list
     assert not a_multiset.items() `isinstance` list
     assert len(a_multiset.keys()) == len(a_multiset.values()) == len(a_multiset.items()) == 2
+    assert (in)(1, [1, 2])
+    assert not (1 not in .)([1, 2])
+    assert not (in)([[]], [])
     return True

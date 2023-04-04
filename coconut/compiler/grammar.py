@@ -1033,7 +1033,7 @@ class Grammar(object):
         # must come after is not / not in
         | fixto(keyword("not"), "_coconut.operator.not_")
         | fixto(keyword("is"), "_coconut.operator.is_")
-        | fixto(keyword("in"), "_coconut.operator.contains")
+        | fixto(keyword("in"), "_coconut_in")
     )
     partialable_op = base_op_item | infix_op
     partial_op_item_tokens = (
