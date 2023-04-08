@@ -1817,3 +1817,25 @@ data Arr(shape, arr):
             setind(new_arr, ind, func(getind(self.arr, ind)))
         return self.__class__(self.shape, new_arr)
     def __neg__(self) = self |> fmap$(-)
+
+
+# combinators
+
+def S(f, g) = lift(f)(ident, g)
+K = const
+I = ident
+KI = const(ident)
+def W(f) = lift(f)(ident, ident)
+def C(f, x) = flip(f)$(x)
+B = (..)
+def B1(f, g, x) = f .. g$(x)
+def B2(f, g, x, y) = f .. g$(x, y)
+def B3(f, g, h) = f .. g .. h
+def D(f, x, g) = lift(f)(const x, g)
+def Phi(f, g, h) = lift(f)(g, h)
+def Psi(f, g) = (,) ..> starmap$(g) ..*> f
+def D1(f, x, y, g) = lift(f)(const x, const y, g)
+def D2(f, g, x, h) = lift(f)(const(g x), h)
+def E(f, x, g, y) = lift(f)(const x, g$(y))
+def Phi1(f, g, h, x) = lift(f)(g$(x), h$(x))
+def BE(f, g, x, y, h, z) = lift(f)(const(g x y), h$(z))

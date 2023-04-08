@@ -1017,6 +1017,23 @@ forward 2""") == 900
     assert num_it() |> list == [5]
     assert left_right_diff([10,4,8,3]) |> list == [15, 1, 11, 22]
     assert num_until_neg_sum([2,-1,0,1,-3,3,-3]) == 6
+    assert S((+), (.*10)) <| 2 == 22
+    assert K 1 <| 2 == 1
+    assert I 1 == 1
+    assert KI 1 <| 2 == 2
+    assert W(+) <| 3 == 6
+    assert C((/), 5) <| 20 == 4
+    assert B((.+1), (.*2)) <| 3 == 7
+    assert B1((.*2), (+), 3) <| 4 == 14
+    assert B2(((0,)+.), (,), 1, 2) <| 3 == (0, 1, 2, 3)
+    assert B3((.+1), (.*2), (.**2)) <| 3 == 19
+    assert D((+), 5, (.+1)) <| 2 == 8
+    assert Phi((,), (.+1), (.-1)) <| 5 == (6, 4)
+    assert D1((,), 0, 1, (.+1)) <| 1 == (0, 1, 2)
+    assert D2((+), (.*2), 3, (.+1)) <| 4 == 11
+    assert E((+), 10, (*), 2) <| 3 == 16
+    assert Phi1((,), (+), (*), 2) <| 3 == (5, 6)
+    assert BE((,), (+), 10, 2, (*), 2) <| 3 == (12, 6)
 
     # must come at end
     assert fibs_calls[0] == 1
