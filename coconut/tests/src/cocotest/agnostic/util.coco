@@ -829,7 +829,7 @@ data trilen(h):
         return (a**2 + b**2)**0.5 |> datamaker(cls)
 
 # Inheritance:
-class A:
+class clsA:
     a = 1
     def true(self):
         return True
@@ -838,7 +838,7 @@ class A:
         return super().true()
     @classmethod
     def cls_true(cls) = True
-class inh_A(A):
+class inh_A(clsA):
     def inh_true1(self) =
         super().true()
     def inh_true2(self) =
@@ -850,11 +850,11 @@ class inh_A(A):
     inh_true5 = def (self) -> super().true()
     @classmethod
     def inh_cls_true(cls) = super().cls_true()
-class B:
+class clsB:
     b = 2
-class C:
+class clsC:
     c = 3
-class D:
+class clsD:
     d = 4
 
 class MyExc(Exception):

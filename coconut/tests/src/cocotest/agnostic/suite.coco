@@ -210,7 +210,7 @@ def suite_test() -> bool:
     assert not is_one([])
     assert is_one([1])
     assert trilen(3, 4).h == 5 == datamaker(trilen)(5).h
-    assert A().true() is True
+    assert clsA().true() is True
     inh_a = inh_A()
     assert inh_a.true() is True
     assert inh_a.inh_true1() is True
@@ -437,7 +437,7 @@ def suite_test() -> bool:
     assert myreduce((+), (1, 2, 3)) == 6
     assert recurse_n_times(10000)
     assert fake_recurse_n_times(10000)
-    a = A()
+    a = clsA()
     assert ((not)..a.true)() is False
     assert 10 % 4 % 3 == 2 == 10 `mod` 4 `mod` 3
     assert square_times2_plus1(3) == 19 == square_times2_plus1_(3)
@@ -706,7 +706,7 @@ def suite_test() -> bool:
     m = methtest2()
     assert m.inf_rec(5) == 10 == m.inf_rec_(5)
     assert reqs(lazy_client)$[:10] |> list == range(10) |> list == reqs(lazy_client_)$[:10] |> list
-    class T(A, B, *(C, D), metaclass=Meta, e=5)  # type: ignore
+    class T(clsA, clsB, *(clsC, clsD), metaclass=Meta, e=5)  # type: ignore
     assert T.a == 1
     assert T.b == 2
     assert T.c == 3
@@ -743,8 +743,8 @@ def suite_test() -> bool:
     assert just_it_of_int(1) |> list == [1] == just_it_of_int_(1) |> list
     assert must_be_int(4) == 4 == must_be_int_(4)
     assert typed_plus(1, 2) == 3
-    (class inh_A() `isinstance` A) `isinstance` object = inh_A()
-    class inh_A() `isinstance` A `isinstance` object = inh_A()
+    (class inh_A() `isinstance` clsA) `isinstance` object = inh_A()
+    class inh_A() `isinstance` clsA `isinstance` object = inh_A()
     for maxdiff in (maxdiff1, maxdiff2, maxdiff3, maxdiff_):
         assert maxdiff([7,1,4,5]) == 4, "failed for " + repr(maxdiff)
     assert all(r == 4 for r in parallel_map(call$(?, [7,1,4,5]), [maxdiff1, maxdiff2, maxdiff3]))
@@ -919,12 +919,12 @@ forward 2""") == 900
             )
         ),
     ))
-    A(.a=1) = A()
-    match A(.a=2) in A():
+    clsA(.a=1) = clsA()
+    match clsA(.a=2) in clsA():
         assert False
-    assert_raises((def -> A(.b=1) = A()), AttributeError)
+    assert_raises((def -> clsA(.b=1) = clsA()), AttributeError)
     assert MySubExc("derp") `isinstance` Exception
-    assert A().not_super() is True
+    assert clsA().not_super() is True
     match class store.A(1) = store.A(1)
     match data store.A(1) = store.A(1)
     match store.A(1) = store.A(1)
