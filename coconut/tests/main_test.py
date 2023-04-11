@@ -688,6 +688,8 @@ class TestShell(unittest.TestCase):
             p.expect("$")
             p.sendline("!(ls -la) |> bool")
             p.expect("True")
+            p.sendline("xontrib unload coconut")
+            p.expect("$")
             p.sendeof()
             if p.isalive():
                 p.terminate()
