@@ -1449,8 +1449,6 @@ c = a + b
 ### Handling Keyword/Variable Name Overlap
 
 In Coconut, the following keywords are also valid variable names:
-- `async` (keyword in Python 3.5)
-- `await` (keyword in Python 3.5)
 - `data`
 - `match`
 - `case`

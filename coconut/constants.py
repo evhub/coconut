@@ -307,6 +307,8 @@ keyword_vars = (
     "with",
     "yield",
     "nonlocal",
+    "async",
+    "await",
 )
 
 const_vars = (
@@ -317,8 +319,6 @@ const_vars = (
 
 # names that can be backslash-escaped
 reserved_vars = (
-    "async",
-    "await",
     "data",
     "match",
     "case",

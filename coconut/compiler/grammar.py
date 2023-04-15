@@ -720,8 +720,6 @@ class Grammar(object):
     except_star_kwd = combine(keyword("except") + star)
     except_kwd = ~except_star_kwd + keyword("except")
     lambda_kwd = keyword("lambda") | fixto(keyword("\u03bb", explicit_prefix=colon), "lambda")
-    async_kwd = keyword("async", explicit_prefix=colon)
-    await_kwd = keyword("await", explicit_prefix=colon)
     data_kwd = keyword("data", explicit_prefix=colon)
     match_kwd = keyword("match", explicit_prefix=colon)
     case_kwd = keyword("case", explicit_prefix=colon)
@@ -1360,7 +1358,7 @@ class Grammar(object):
     type_alias_stmt_ref = type_kwd.suppress() + setname + Optional(type_params) + equals.suppress() + typedef_test
 
     await_expr = Forward()
-    await_expr_ref = await_kwd.suppress() + atom_item
+    await_expr_ref = keyword("await").suppress() + atom_item
     await_item = await_expr | atom_item
 
     factor = Forward()
@@ -1558,7 +1556,7 @@ class Grammar(object):
     general_stmt_lambdef = (
         Group(
             any_len_perm(
-                async_kwd,
+                keyword("async"),
             ),
         ) + keyword("def").suppress()
         + stmt_lambdef_params
@@ -1569,7 +1567,7 @@ class Grammar(object):
         Group(
             any_len_perm(
                 match_kwd.suppress(),
-                async_kwd,
+                keyword("async"),
             ),
         ) + keyword("def").suppress()
         + stmt_lambdef_match_params
@@ -1593,7 +1591,7 @@ class Grammar(object):
         ),
     )
     unsafe_typedef_callable = attach(
-        Optional(async_kwd, default="")
+        Optional(keyword("async"), default="")
         + typedef_callable_params
         + arrow.suppress()
         + typedef_test,
@@ -1680,7 +1678,7 @@ class Grammar(object):
         | test_item
     )
     base_comp_for = addspace(keyword("for") + assignlist + keyword("in") + comp_it_item + Optional(comp_iter))
-    async_comp_for_ref = addspace(async_kwd + base_comp_for)
+    async_comp_for_ref = addspace(keyword("async") + base_comp_for)
     comp_for <<= async_comp_for | base_comp_for
     comp_if = addspace(keyword("if") + test_no_cond + Optional(comp_iter))
     comp_iter <<= comp_for | comp_if
@@ -2113,18 +2111,18 @@ class Grammar(object):
 
     async_stmt = Forward()
     async_stmt_ref = addspace(
-        async_kwd + (with_stmt | for_stmt | match_for_stmt)  # handles async [match] for
-        | match_kwd.suppress() + async_kwd + base_match_for_stmt,  # handles match async for
+        keyword("async") + (with_stmt | for_stmt | match_for_stmt)  # handles async [match] for
+        | match_kwd.suppress() + keyword("async") + base_match_for_stmt,  # handles match async for
     )
 
-    async_funcdef = async_kwd.suppress() + (funcdef | math_funcdef)
+    async_funcdef = keyword("async").suppress() + (funcdef | math_funcdef)
     async_match_funcdef = trace(
         addspace(
             any_len_perm(
                 match_kwd.suppress(),
                 # we don't suppress addpattern so its presence can be detected later
                 addpattern_kwd,
-                required=(async_kwd.suppress(),),
+                required=(keyword("async").suppress(),),
             ) + (def_match_funcdef | math_match_funcdef),
         ),
     )
@@ -2132,7 +2130,7 @@ class Grammar(object):
         trace(
             any_len_perm(
                 required=(
-                    async_kwd.suppress(),
+                    keyword("async").suppress(),
                     keyword("yield").suppress(),
                 ),
             ) + (funcdef | math_funcdef),
@@ -2147,7 +2145,7 @@ class Grammar(object):
                     # we don't suppress addpattern so its presence can be detected later
                     addpattern_kwd,
                     required=(
-                        async_kwd.suppress(),
+                        keyword("async").suppress(),
                         keyword("yield").suppress(),
                     ),
                 ) + (def_match_funcdef | math_match_funcdef),
