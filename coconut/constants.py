@@ -580,10 +580,11 @@ default_mypy_args = (
     "--pretty",
 )
 verbose_mypy_args = (
+    "--show-traceback",
+    "--show-error-context",
     "--warn-unused-configs",
     "--warn-redundant-casts",
     "--warn-return-any",
-    "--show-error-context",
     "--warn-incomplete-stub",
 )
 

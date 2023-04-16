@@ -96,6 +96,7 @@ from coconut.util import (
     clean,
     get_target_info,
     get_clock_time,
+    get_name,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -1053,7 +1054,7 @@ class Compiler(Grammar, pickleable_obj):
             prep_grammar(grammar, streamline=True)
             logger.log_lambda(
                 lambda: "Streamlined {grammar} in {time} seconds (streamlined due to receiving input of length {length}).".format(
-                    grammar=grammar.name,
+                    grammar=get_name(grammar),
                     time=get_clock_time() - start_time,
                     length=len(inputstring),
                 ),
