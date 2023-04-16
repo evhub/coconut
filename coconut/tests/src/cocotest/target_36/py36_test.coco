@@ -44,8 +44,8 @@ def py36_test() -> bool:
             pass
     l: typing.List[int] = []
     async def aiter_test():
-        await (range(10) |> toa |> fmap$(l.append) |> aconsume)
-        await (arange_(10) |> fmap$(l.append) |> aconsume)
+        range(10) |> toa |> fmap$(l.append) |> aconsume |> await
+        arange_(10) |> fmap$(l.append) |> aconsume |> await
     loop.run_until_complete(aiter_test())
     assert l == list(range(10)) + list(range(10))
 

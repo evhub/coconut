@@ -1481,7 +1481,8 @@ class Grammar(object):
     )
     pipe_item = (
         # we need the pipe_op since any of the atoms could otherwise be the start of an expression
-        labeled_group(attrgetter_atom_tokens, "attrgetter") + pipe_op
+        labeled_group(keyword("await"), "await") + pipe_op
+        | labeled_group(attrgetter_atom_tokens, "attrgetter") + pipe_op
         | labeled_group(itemgetter_atom_tokens, "itemgetter") + pipe_op
         | labeled_group(partial_atom_tokens, "partial") + pipe_op
         | labeled_group(partial_op_atom_tokens, "op partial") + pipe_op
@@ -1490,7 +1491,8 @@ class Grammar(object):
     )
     pipe_augassign_item = trace(
         # should match pipe_item but with pipe_op -> end_simple_stmt_item and no expr
-        labeled_group(attrgetter_atom_tokens, "attrgetter") + end_simple_stmt_item
+        labeled_group(keyword("await"), "await") + end_simple_stmt_item
+        | labeled_group(attrgetter_atom_tokens, "attrgetter") + end_simple_stmt_item
         | labeled_group(itemgetter_atom_tokens, "itemgetter") + end_simple_stmt_item
         | labeled_group(partial_atom_tokens, "partial") + end_simple_stmt_item
         | labeled_group(partial_op_atom_tokens, "op partial") + end_simple_stmt_item,
@@ -1499,6 +1501,7 @@ class Grammar(object):
         lambdef("expr")
         # we need longest here because there's no following pipe_op we can use as above
         | longest(
+            keyword("await")("await"),
             attrgetter_atom_tokens("attrgetter"),
             itemgetter_atom_tokens("itemgetter"),
             partial_atom_tokens("partial"),

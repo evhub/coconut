@@ -2258,6 +2258,9 @@ if {temp_var} is not None:
                 return "right op partial", (op, arg)
             else:
                 raise CoconutInternalException("invalid op partial tokens in pipe_item", inner_toks)
+        elif "await" in tokens:
+            internal_assert(len(tokens) == 1 and tokens[0] == "await", "invalid await pipe item tokens", tokens)
+            return "await", []
         else:
             raise CoconutInternalException("invalid pipe item tokens", tokens)
 
@@ -2284,6 +2287,8 @@ if {temp_var} is not None:
                 return itemgetter_handle(item)
             elif name == "right op partial":
                 return partial_op_item_handle(item)
+            elif name == "await":
+                raise CoconutDeferredSyntaxError("cannot pipe from await, only into await", loc)
             else:
                 raise CoconutInternalException("invalid split pipe item", split_item)
 
@@ -2349,6 +2354,11 @@ if {temp_var} is not None:
                         raise CoconutDeferredSyntaxError("cannot star pipe into operator partial", loc)
                     op, arg = split_item
                     return "({op})({x}, {arg})".format(op=op, x=subexpr, arg=arg)
+                elif name == "await":
+                    internal_assert(not split_item, "invalid split await pipe item tokens", split_item)
+                    if stars:
+                        raise CoconutDeferredSyntaxError("cannot star pipe into await", loc)
+                    return self.await_expr_handle(original, loc, [subexpr])
                 else:
                     raise CoconutInternalException("invalid split pipe item", split_item)
 

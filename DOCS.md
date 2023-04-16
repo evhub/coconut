@@ -625,9 +625,11 @@ Coconut uses pipe operators for pipeline-style function application. All the ope
 (<**?|) => None-aware keyword arg pipe backward
 ```
 
-Additionally, all pipe operators support a lambda as the last argument, despite lambdas having a lower precedence. Thus, `a |> x -> b |> c` is equivalent to `a |> (x -> b |> c)`, not `a |> (x -> b) |> c`.
-
 The None-aware pipe operators here are equivalent to a [monadic bind](https://en.wikipedia.org/wiki/Monad_(functional_programming)) treating the object as a `Maybe` monad composed of either `None` or the given object. Thus, `x |?> f` is equivalent to `None if x is None else f(x)`. Note that only the object being piped, not the function being piped into, may be `None` for `None`-aware pipes.
+
+For working with `async` functions in pipes, all non-starred pipes support piping into `await` to await the awaitable piped into them, such that `x |> await` is equivalent to `await x`.
+
+Additionally, all pipe operators support a lambda as the last argument, despite lambdas having a lower precedence. Thus, `a |> x -> b |> c` is equivalent to `a |> (x -> b |> c)`, not `a |> (x -> b) |> c`.
 
 _Note: To visually spread operations across several lines, just use [parenthetical continuation](#enhanced-parenthetical-continuation)._
 
@@ -647,7 +649,7 @@ If Coconut compiled each of the partials in the pipe syntax as an actual partial
 
 This applies even to in-place pipes such as `|>=`.
 
-##### Example
+##### Examples
 
 **Coconut:**
 ```coconut
@@ -655,11 +657,25 @@ def sq(x) = x**2
 (1, 2) |*> (+) |> sq |> print
 ```
 
+```coconut
+async def do_stuff(some_data) = (
+    some_data
+    |> async_func
+    |> await
+    |> post_proc
+)
+```
+
 **Python:**
 ```coconut_python
 import operator
 def sq(x): return x**2
 print(sq(operator.add(1, 2)))
+```
+
+```coconut_python
+async def do_stuff(some_data):
+    return post_proc(await async_func(some_data))
 ```
 
 ### Function Composition
@@ -1611,7 +1627,9 @@ A very common thing to do in functional programming is to make use of function v
 .$[]        => # iterator slicing operator
 ```
 
-_For an operator function for function application, see [`call`](#call)._
+For an operator function for function application, see [`call`](#call).
+
+Though no operator function is available for `await`, an equivalent syntax is available for [pipes](#pipes) in the form of `awaitable |> await`.
 
 ##### Example
 
