@@ -29,6 +29,7 @@ from coconut.root import *  # NOQA
 
 from collections import defaultdict
 from contextlib import contextmanager
+from functools import partial
 
 from coconut._pyparsing import (
     CaselessLiteral,
@@ -96,7 +97,7 @@ from coconut.compiler.util import (
     split_trailing_indent,
     split_leading_indent,
     collapse_indents,
-    keyword,
+    base_keyword,
     match_in,
     disallow_keywords,
     regex_item,
@@ -717,17 +718,20 @@ class Grammar(object):
     questionmark = ~dubquestion + Literal("?")
     bang = ~Literal("!=") + Literal("!")
 
+    keyword = partial(base_keyword, explicit_prefix=colon)
+
     except_star_kwd = combine(keyword("except") + star)
     except_kwd = ~except_star_kwd + keyword("except")
-    lambda_kwd = keyword("lambda") | fixto(keyword("\u03bb", explicit_prefix=colon), "lambda")
-    data_kwd = keyword("data", explicit_prefix=colon)
-    match_kwd = keyword("match", explicit_prefix=colon)
-    case_kwd = keyword("case", explicit_prefix=colon)
-    cases_kwd = keyword("cases", explicit_prefix=colon)
-    where_kwd = keyword("where", explicit_prefix=colon)
-    addpattern_kwd = keyword("addpattern", explicit_prefix=colon)
-    then_kwd = keyword("then", explicit_prefix=colon)
-    type_kwd = keyword("type", explicit_prefix=colon)
+    lambda_kwd = keyword("lambda") | fixto(keyword("\u03bb"), "lambda")
+    operator_kwd = keyword("operator", require_whitespace=True)
+    data_kwd = keyword("data")
+    match_kwd = keyword("match")
+    case_kwd = keyword("case")
+    cases_kwd = keyword("cases")
+    where_kwd = keyword("where")
+    addpattern_kwd = keyword("addpattern")
+    then_kwd = keyword("then")
+    type_kwd = keyword("type")
 
     ellipsis = Forward()
     ellipsis_tokens = Literal("...") | fixto(Literal("\u2026"), "...")
@@ -1905,7 +1909,7 @@ class Grammar(object):
         + testlist_star_namedexpr
         + match_guard
         # avoid match match-case blocks
-        + ~FollowedBy(colon + newline + indent + keyword("case", explicit_prefix=colon))
+        + ~FollowedBy(colon + newline + indent + case_kwd)
         - full_suite
     )
     match_stmt = trace(condense(full_match - Optional(else_stmt)))
@@ -2369,10 +2373,10 @@ class Grammar(object):
         """The TRE return grammar is parameterized by the name of the function being optimized."""
         return (
             self.start_marker
-            + keyword("return").suppress()
+            + self.keyword("return").suppress()
             + maybeparens(
                 self.lparen,
-                keyword(func_name, explicit_prefix=False).suppress()
+                base_keyword(func_name).suppress()
                 + self.original_function_call_tokens,
                 self.rparen,
             ) + self.end_marker
@@ -2421,8 +2425,8 @@ class Grammar(object):
             | ~comma + ~rparen + ~equals + any_char,
         ),
     )
-    tfpdef_tokens = unsafe_name - Optional(colon.suppress() - rest_of_tfpdef.suppress())
-    tfpdef_default_tokens = tfpdef_tokens - Optional(equals.suppress() - rest_of_tfpdef)
+    tfpdef_tokens = unsafe_name - Optional(colon - rest_of_tfpdef).suppress()
+    tfpdef_default_tokens = tfpdef_tokens - Optional(equals - rest_of_tfpdef)
     type_comment = Optional(
         comment_tokens.suppress()
         | passthrough_item.suppress(),
@@ -2481,7 +2485,6 @@ class Grammar(object):
 
     string_start = start_marker + quotedString
 
-    operator_kwd = keyword("operator", explicit_prefix=colon, require_whitespace=True)
     operator_stmt = (
         start_marker
         + operator_kwd.suppress()

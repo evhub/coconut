@@ -865,6 +865,17 @@ class MySubExc(MyExc):
     def __init__(self, m):
         super().__init__(m)
 
+class test_super_A:
+    @classmethod
+    addpattern def method(cls, {'somekey': str()}) = True
+
+
+class test_super_B(test_super_A):
+    @classmethod
+    addpattern def method(cls, {'someotherkey': int(), **rest}) =
+        super().method(rest)
+
+
 # Nesting:
 class Nest:
     class B:

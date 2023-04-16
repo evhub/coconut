@@ -85,7 +85,8 @@ pyprover_git = "https://github.com/evhub/pyprover.git"
 prelude_git = "https://github.com/evhub/coconut-prelude"
 bbopt_git = "https://github.com/evhub/bbopt.git"
 
-coconut_snip = r"msg = '<success>'; pmsg = print$(msg); `pmsg`"
+coconut_snip = "msg = '<success>'; pmsg = print$(msg); `pmsg`"
+target_3_snip = "assert super is py_super; print('<success>')"
 
 always_err_strs = (
     "CoconutInternalException",
@@ -644,6 +645,10 @@ class TestShell(unittest.TestCase):
 
     def test_code(self):
         call(["coconut", "-s", "-c", coconut_snip], assert_output=True)
+
+    if not PY2:
+        def test_target_3_snip(self):
+            call(["coconut", "-t3", "-c", target_3_snip], assert_output=True)
 
     def test_pipe(self):
         call('echo ' + escape(coconut_snip) + "| coconut -s", shell=True, assert_output=True)

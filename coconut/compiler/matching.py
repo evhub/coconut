@@ -42,6 +42,9 @@ from coconut.constants import (
     data_defaults_var,
     default_matcher_style,
     self_match_types,
+    match_first_arg_var,
+    match_to_args_var,
+    match_to_kwargs_var,
 )
 from coconut.compiler.util import (
     paren_join,
@@ -346,10 +349,33 @@ class Matcher(object):
         else:
             self.add_check(str(min_len) + " <= _coconut.len(" + item + ") <= " + str(max_len))
 
-    def match_function(self, args, kwargs, pos_only_match_args=(), match_args=(), star_arg=None, kwd_only_match_args=(), dubstar_arg=None):
+    def match_function(
+        self,
+        first_arg=match_first_arg_var,
+        args=match_to_args_var,
+        kwargs=match_to_kwargs_var,
+        pos_only_match_args=(),
+        match_args=(),
+        star_arg=None,
+        kwd_only_match_args=(),
+        dubstar_arg=None,
+    ):
         """Matches a pattern-matching function."""
         # before everything, pop the FunctionMatchError from context
         self.add_def(function_match_error_var + " = _coconut_get_function_match_error()")
+        # and fix args to include first_arg, which we have to do to make super work
+        self.add_def(
+            handle_indentation(
+                """
+if {first_arg} is not _coconut_sentinel:
+    {args} = ({first_arg},) + {args}
+            """,
+            ).format(
+                first_arg=first_arg,
+                args=args,
+            ),
+        )
+
         with self.down_a_level():
 
             self.match_in_args_kwargs(pos_only_match_args, match_args, args, kwargs, allow_star_args=star_arg is not None)

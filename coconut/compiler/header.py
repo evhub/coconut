@@ -174,11 +174,11 @@ else:
     return out
 
 
-def make_py_str(str_contents, target_startswith, after_py_str_defined=False):
+def make_py_str(str_contents, target, after_py_str_defined=False):
     """Get code that effectively wraps the given code in py_str."""
     return (
-        repr(str_contents) if target_startswith == "3"
-        else "b" + repr(str_contents) if target_startswith == "2"
+        repr(str_contents) if target.startswith("3")
+        else "b" + repr(str_contents) if target.startswith("2")
         else "py_str(" + repr(str_contents) + ")" if after_py_str_defined
         else "str(" + repr(str_contents) + ")"
     )
@@ -202,7 +202,6 @@ COMMENT = Comment()
 
 def process_header_args(which, use_hash, target, no_tco, strict, no_wrap):
     """Create the dictionary passed to str.format in the header."""
-    target_startswith = one_num_ver(target)
     target_info = get_target_info(target)
     pycondition = partial(base_pycondition, target)
 
@@ -214,17 +213,17 @@ def process_header_args(which, use_hash, target, no_tco, strict, no_wrap):
         rbrace="}",
         is_data_var=is_data_var,
         data_defaults_var=data_defaults_var,
-        target_startswith=target_startswith,
+        target_major=one_num_ver(target),
         default_encoding=default_encoding,
         hash_line=hash_prefix + use_hash + "\n" if use_hash is not None else "",
         typing_line="# type: ignore\n" if which == "__coconut__" else "",
         _coconut_="_coconut_" if which != "__coconut__" else "",  # only for aliases defined at the end of the header
         VERSION_STR=VERSION_STR,
         module_docstring='"""Built-in Coconut utilities."""\n\n' if which == "__coconut__" else "",
-        __coconut__=make_py_str("__coconut__", target_startswith),
-        _coconut_cached__coconut__=make_py_str("_coconut_cached__coconut__", target_startswith),
-        object="" if target_startswith == "3" else "(object)",
-        comma_object="" if target_startswith == "3" else ", object",
+        __coconut__=make_py_str("__coconut__", target),
+        _coconut_cached__coconut__=make_py_str("_coconut_cached__coconut__", target),
+        object="" if target.startswith("3") else "(object)",
+        comma_object="" if target.startswith("3") else ", object",
         comma_slash=", /" if target_info >= (3, 8) else "",
         report_this_text=report_this_text,
         numpy_modules=tuple_str_of(numpy_modules, add_quotes=True),
@@ -232,7 +231,7 @@ def process_header_args(which, use_hash, target, no_tco, strict, no_wrap):
         self_match_types=tuple_str_of(self_match_types),
         set_super=(
             # we have to use _coconut_super even on the universal target, since once we set __class__ it becomes a local variable
-            "\nsuper = _coconut_super" if target_startswith != 3 else ""
+            "super = py_super" if target.startswith("3") else "super = _coconut_super"
         ),
         import_pickle=pycondition(
             (3,),
@@ -270,9 +269,9 @@ zip_longest = itertools.zip_longest if _coconut_sys.version_info >= (3,) else it
             else "zip_longest = itertools.izip_longest",
             indent=1,
         ),
-        comma_bytearray=", bytearray" if target_startswith != "3" else "",
-        lstatic="staticmethod(" if target_startswith != "3" else "",
-        rstatic=")" if target_startswith != "3" else "",
+        comma_bytearray=", bytearray" if not target.startswith("3") else "",
+        lstatic="staticmethod(" if not target.startswith("3") else "",
+        rstatic=")" if not target.startswith("3") else "",
         zip_iter=prepare(
             r'''
 for items in _coconut.iter(_coconut.zip(*self.iters, strict=self.strict) if _coconut_sys.version_info >= (3, 10) else _coconut.zip_longest(*self.iters, fillvalue=_coconut_sentinel) if self.strict else _coconut.zip(*self.iters)):
@@ -348,7 +347,7 @@ return _coconut.types.MethodType(self.func, obj)
         set_name = _coconut.getattr(v, "__set_name__", None)
         if set_name is not None:
             set_name(cls, k)'''
-            if target_startswith == "2" else
+            if target.startswith("2") else
             r'''def _coconut_call_set_names(cls): pass'''
             if target_info >= (3, 6) else
             r'''def _coconut_call_set_names(cls):
@@ -499,7 +498,7 @@ items = _coconut.collections.Counter.viewitems
         # used in the second round
         tco_comma="_coconut_tail_call, _coconut_tco, " if not no_tco else "",
         call_set_names_comma="_coconut_call_set_names, " if target_info < (3, 6) else "",
-        handle_cls_args_comma="_coconut_handle_cls_kwargs, _coconut_handle_cls_stargs, " if target_startswith != "3" else "",
+        handle_cls_args_comma="_coconut_handle_cls_kwargs, _coconut_handle_cls_stargs, " if not target.startswith("3") else "",
         async_def_anext=prepare(
             r'''
 async def __anext__(self):
@@ -541,7 +540,7 @@ for _coconut_varname in dir(MatchError):
     #  (extra_format_dict is to keep indentation levels matching)
     extra_format_dict = dict(
         # when anything is added to this list it must also be added to *both* __coconut__ stub files
-        underscore_imports="{tco_comma}{call_set_names_comma}{handle_cls_args_comma}_namedtuple_of, _coconut, _coconut_super, _coconut_Expected, _coconut_MatchError, _coconut_iter_getitem, _coconut_base_compose, _coconut_forward_compose, _coconut_back_compose, _coconut_forward_star_compose, _coconut_back_star_compose, _coconut_forward_dubstar_compose, _coconut_back_dubstar_compose, _coconut_pipe, _coconut_star_pipe, _coconut_dubstar_pipe, _coconut_back_pipe, _coconut_back_star_pipe, _coconut_back_dubstar_pipe, _coconut_none_pipe, _coconut_none_star_pipe, _coconut_none_dubstar_pipe, _coconut_bool_and, _coconut_bool_or, _coconut_none_coalesce, _coconut_minus, _coconut_map, _coconut_partial, _coconut_get_function_match_error, _coconut_base_pattern_func, _coconut_addpattern, _coconut_sentinel, _coconut_assert, _coconut_raise, _coconut_mark_as_match, _coconut_reiterable, _coconut_self_match_types, _coconut_dict_merge, _coconut_exec, _coconut_comma_op, _coconut_multi_dim_arr, _coconut_mk_anon_namedtuple, _coconut_matmul, _coconut_py_str, _coconut_flatten, _coconut_multiset, _coconut_back_none_pipe, _coconut_back_none_star_pipe, _coconut_back_none_dubstar_pipe, _coconut_forward_none_compose, _coconut_back_none_compose, _coconut_forward_none_star_compose, _coconut_back_none_star_compose, _coconut_forward_none_dubstar_compose, _coconut_back_none_dubstar_compose, _coconut_call_or_coefficient, _coconut_in, _coconut_not_in".format(**format_dict),
+        underscore_imports="{tco_comma}{call_set_names_comma}{handle_cls_args_comma}_namedtuple_of, _coconut, _coconut_Expected, _coconut_MatchError, _coconut_iter_getitem, _coconut_base_compose, _coconut_forward_compose, _coconut_back_compose, _coconut_forward_star_compose, _coconut_back_star_compose, _coconut_forward_dubstar_compose, _coconut_back_dubstar_compose, _coconut_pipe, _coconut_star_pipe, _coconut_dubstar_pipe, _coconut_back_pipe, _coconut_back_star_pipe, _coconut_back_dubstar_pipe, _coconut_none_pipe, _coconut_none_star_pipe, _coconut_none_dubstar_pipe, _coconut_bool_and, _coconut_bool_or, _coconut_none_coalesce, _coconut_minus, _coconut_map, _coconut_partial, _coconut_get_function_match_error, _coconut_base_pattern_func, _coconut_addpattern, _coconut_sentinel, _coconut_assert, _coconut_raise, _coconut_mark_as_match, _coconut_reiterable, _coconut_self_match_types, _coconut_dict_merge, _coconut_exec, _coconut_comma_op, _coconut_multi_dim_arr, _coconut_mk_anon_namedtuple, _coconut_matmul, _coconut_py_str, _coconut_flatten, _coconut_multiset, _coconut_back_none_pipe, _coconut_back_none_star_pipe, _coconut_back_none_dubstar_pipe, _coconut_forward_none_compose, _coconut_back_none_compose, _coconut_forward_none_star_compose, _coconut_back_none_star_compose, _coconut_forward_none_dubstar_compose, _coconut_back_none_dubstar_compose, _coconut_call_or_coefficient, _coconut_in, _coconut_not_in".format(**format_dict),
         import_typing=pycondition(
             (3, 5),
             if_ge="import typing",
@@ -672,14 +671,13 @@ def getheader(which, use_hash, target, no_tco, strict, no_wrap):
 
     # initial, __coconut__, package:n, sys, code, file
 
-    target_startswith = one_num_ver(target)
     target_info = get_target_info(target)
     # header_info only includes arguments that affect __coconut__.py compatibility
     header_info = tuple_str_of((VERSION, target, strict), add_quotes=True)
     format_dict = process_header_args(which, use_hash, target, no_tco, strict, no_wrap)
 
     if which == "initial" or which == "__coconut__":
-        header = '''#!/usr/bin/env python{target_startswith}
+        header = '''#!/usr/bin/env python{target_major}
 # -*- coding: {default_encoding} -*-
 {hash_line}{typing_line}
 # Compiled with Coconut version {VERSION_STR}
@@ -697,7 +695,7 @@ def getheader(which, use_hash, target, no_tco, strict, no_wrap):
 
     header += section("Coconut Header", newline_before=False)
 
-    if target_startswith != "3":
+    if not target.startswith("3"):
         header += "from __future__ import print_function, absolute_import, unicode_literals, division\n"
     # including generator_stop here is fine, even though to universalize
     #  generator returns we raise StopIteration errors, since we only do so
@@ -773,11 +771,11 @@ _coconut_cached__coconut__ = _coconut_sys.modules.get({_coconut_cached__coconut_
 
     if target_info >= (3, 7):
         header += PY37_HEADER
-    elif target_startswith == "3":
+    elif target.startswith("3"):
         header += PY3_HEADER
     elif target_info >= (2, 7):
         header += PY27_HEADER
-    elif target_startswith == "2":
+    elif target.startswith("2"):
         header += PY2_HEADER
     else:
         header += PYCHECK_HEADER

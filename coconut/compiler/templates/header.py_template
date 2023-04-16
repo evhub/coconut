@@ -10,7 +10,8 @@ def _coconut_super(type=None, object_or_type=None):
             raise _coconut.RuntimeError("super(): __class__ cell not found")
         self = frame.f_locals[frame.f_code.co_varnames[0]]
         return _coconut_py_super(cls, self)
-    return _coconut_py_super(type, object_or_type){set_super}
+    return _coconut_py_super(type, object_or_type)
+{set_super}
 class _coconut{object}:{COMMENT.EVERYTHING_HERE_MUST_BE_COPIED_TO_STUB_FILE}
     import collections, copy, functools, types, itertools, operator, threading, os, warnings, contextlib, traceback, weakref, multiprocessing
     from multiprocessing import dummy as multiprocessing_dummy

@@ -208,6 +208,7 @@ is_data_var = reserved_prefix + "_is_data"
 data_defaults_var = reserved_prefix + "_data_defaults"
 
 # prefer Matcher.get_temp_var to proliferating more vars here
+match_first_arg_var = reserved_prefix + "_match_first_arg"
 match_to_args_var = reserved_prefix + "_match_args"
 match_to_kwargs_var = reserved_prefix + "_match_kwargs"
 function_match_error_var = reserved_prefix + "_FunctionMatchError"
@@ -276,6 +277,11 @@ in_place_op_funcs = {
     "..?**>=": "_coconut_forward_none_dubstar_compose",
 }
 
+allow_explicit_keyword_vars = (
+    "async",
+    "await",
+)
+
 keyword_vars = (
     "and",
     "as",
@@ -307,9 +313,7 @@ keyword_vars = (
     "with",
     "yield",
     "nonlocal",
-    "async",
-    "await",
-)
+) + allow_explicit_keyword_vars
 
 const_vars = (
     "True",
@@ -685,6 +689,11 @@ coconut_specific_builtins = (
     "_namedtuple_of",
     "reveal_type",
     "reveal_locals",
+)
+
+# builtins that must be imported from the exact right target header
+must_use_specific_target_builtins = (
+    "super",
 )
 
 coconut_exceptions = (

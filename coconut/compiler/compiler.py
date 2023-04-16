@@ -86,6 +86,7 @@ from coconut.constants import (
     streamline_grammar_for_len,
     all_builtins,
     in_place_op_funcs,
+    match_first_arg_var,
 )
 from coconut.util import (
     pickleable_obj,
@@ -174,6 +175,13 @@ from coconut.compiler.header import (
 # -----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
 # -----------------------------------------------------------------------------------------------------------------------
+
+
+match_func_paramdef = "{match_first_arg_var}=_coconut_sentinel, *{match_to_args_var}, **{match_to_kwargs_var}".format(
+    match_first_arg_var=match_first_arg_var,
+    match_to_args_var=match_to_args_var,
+    match_to_kwargs_var=match_to_kwargs_var,
+)
 
 
 def set_to_tuple(tokens):
@@ -1901,10 +1909,7 @@ else:
             def_name = self.get_temp_var(undotted_name)
 
         # detect pattern-matching functions
-        is_match_func = func_paramdef == "*{match_to_args_var}, **{match_to_kwargs_var}".format(
-            match_to_args_var=match_to_args_var,
-            match_to_kwargs_var=match_to_kwargs_var,
-        )
+        is_match_func = func_paramdef == match_func_paramdef
 
         # handle addpattern functions
         if addpattern:
@@ -2612,14 +2617,20 @@ while True:
         matcher = self.get_matcher(original, loc, check_var, name_list=[])
 
         pos_only_args, req_args, default_args, star_arg, kwd_only_args, dubstar_arg = split_args_list(matches, loc)
-        matcher.match_function(match_to_args_var, match_to_kwargs_var, pos_only_args, req_args + default_args, star_arg, kwd_only_args, dubstar_arg)
+        matcher.match_function(
+            pos_only_match_args=pos_only_args,
+            match_args=req_args + default_args,
+            star_arg=star_arg,
+            kwd_only_match_args=kwd_only_args,
+            dubstar_arg=dubstar_arg,
+        )
 
         if cond is not None:
             matcher.add_guard(cond)
 
         extra_stmts = handle_indentation(
             '''
-def __new__(_coconut_cls, *{match_to_args_var}, **{match_to_kwargs_var}):
+def __new__(_coconut_cls, {match_func_paramdef}):
     {check_var} = False
     {matching}
     {pattern_error}
@@ -2627,8 +2638,7 @@ def __new__(_coconut_cls, *{match_to_args_var}, **{match_to_kwargs_var}):
             ''',
             add_newline=True,
         ).format(
-            match_to_args_var=match_to_args_var,
-            match_to_kwargs_var=match_to_kwargs_var,
+            match_func_paramdef=match_func_paramdef,
             check_var=check_var,
             matching=matcher.out(),
             pattern_error=self.pattern_error(original, loc, match_to_args_var, check_var, function_match_error_var),
@@ -3129,15 +3139,18 @@ if not {check_var}:
         matcher = self.get_matcher(original, loc, check_var)
 
         pos_only_args, req_args, default_args, star_arg, kwd_only_args, dubstar_arg = split_args_list(matches, loc)
-        matcher.match_function(match_to_args_var, match_to_kwargs_var, pos_only_args, req_args + default_args, star_arg, kwd_only_args, dubstar_arg)
+        matcher.match_function(
+            pos_only_match_args=pos_only_args,
+            match_args=req_args + default_args,
+            star_arg=star_arg,
+            kwd_only_match_args=kwd_only_args,
+            dubstar_arg=dubstar_arg,
+        )
 
         if cond is not None:
             matcher.add_guard(cond)
 
-        before_colon = (
-            "def " + func
-            + "(*" + match_to_args_var + ", **" + match_to_kwargs_var + ")"
-        )
+        before_colon = "def " + func + "(" + match_func_paramdef + ")"
         after_docstring = (
             openindent
             + check_var + " = False\n"

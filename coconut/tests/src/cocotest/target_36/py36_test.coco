@@ -8,9 +8,9 @@ def py36_test() -> bool:
     loop = asyncio.new_event_loop()
 
     async def ayield(x) = x
-    async def arange(n):
+    :async def arange(n):
         for i in range(n):
-            yield await ayield(i)
+            yield :await ayield(i)
     async def afor_test():
         # syntax 1
         got = []

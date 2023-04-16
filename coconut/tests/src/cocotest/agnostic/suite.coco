@@ -1036,6 +1036,7 @@ forward 2""") == 900
     assert Phi1((,), (+), (*), 2) <| 3 == (5, 6)
     assert BE((,), (+), 10, 2, (*), 2) <| 3 == (12, 6)
     assert (+) `on` (.*2) <*| (3, 5) == 16
+    assert test_super_B().method({'somekey': 'string', 'someotherkey': 42})
 
     # must come at end
     assert fibs_calls[0] == 1

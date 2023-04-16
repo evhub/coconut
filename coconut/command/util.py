@@ -73,6 +73,7 @@ from coconut.constants import (
     interpreter_uses_auto_compilation,
     interpreter_uses_coconut_breakpoint,
     interpreter_compiler_var,
+    must_use_specific_target_builtins,
 )
 
 if PY26:
@@ -568,7 +569,7 @@ class Runner(object):
         """Fix pickling of Coconut header objects."""
         from coconut import __coconut__  # this is expensive, so only do it here
         for var in self.vars:
-            if not var.startswith("__") and var in dir(__coconut__):
+            if not var.startswith("__") and var in dir(__coconut__) and var not in must_use_specific_target_builtins:
                 cur_val = self.vars[var]
                 static_val = getattr(__coconut__, var)
                 if getattr(cur_val, "__doc__", None) == getattr(static_val, "__doc__", None):

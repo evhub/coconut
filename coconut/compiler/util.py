@@ -93,6 +93,7 @@ from coconut.constants import (
     indchars,
     comment_chars,
     non_syntactic_newline,
+    allow_explicit_keyword_vars,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -794,15 +795,15 @@ stores_loc_item = attach(always_match, stores_loc_action)
 def disallow_keywords(kwds, with_suffix=None):
     """Prevent the given kwds from matching."""
     item = ~(
-        keyword(kwds[0], explicit_prefix=False)
+        base_keyword(kwds[0])
         if with_suffix is None else
-        keyword(kwds[0], explicit_prefix=False) + with_suffix
+        base_keyword(kwds[0]) + with_suffix
     )
     for k in kwds[1:]:
         item += ~(
-            keyword(k, explicit_prefix=False)
+            base_keyword(k)
             if with_suffix is None else
-            keyword(k, explicit_prefix=False) + with_suffix
+            base_keyword(k) + with_suffix
         )
     return item
 
@@ -813,20 +814,13 @@ def any_keyword_in(kwds):
 
 
 @memoize()
-def keyword(name, explicit_prefix=None, require_whitespace=False):
+def base_keyword(name, explicit_prefix=False, require_whitespace=False):
     """Construct a grammar which matches name as a Python keyword."""
-    if explicit_prefix is not False:
-        internal_assert(
-            (name in reserved_vars) is (explicit_prefix is not None),
-            "invalid keyword call for", name,
-            extra="pass explicit_prefix to keyword for all reserved_vars and only reserved_vars",
-        )
-
     base_kwd = regex_item(name + r"\b" + (r"(?=\s)" if require_whitespace else ""))
-    if explicit_prefix in (None, False):
-        return base_kwd
-    else:
+    if explicit_prefix and name in reserved_vars + allow_explicit_keyword_vars:
         return combine(Optional(explicit_prefix.suppress()) + base_kwd)
+    else:
+        return base_kwd
 
 
 boundary = regex_item(r"\b")
