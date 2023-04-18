@@ -1283,7 +1283,7 @@ class Grammar(object):
         Group(condense(dollar + lbrack) + subscriptgroup + rbrack.suppress())  # $[
         | Group(condense(dollar + lbrack + rbrack))  # $[]
         | Group(condense(lbrack + rbrack))  # []
-        | Group(dot + ~unsafe_name + ~lbrack)  # .
+        | Group(dot + ~unsafe_name + ~lbrack + ~dot)  # .
         | Group(questionmark)  # ?
     ) + ~questionmark
     partial_trailer = (

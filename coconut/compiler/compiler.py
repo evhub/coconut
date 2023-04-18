@@ -1310,7 +1310,7 @@ class Compiler(Grammar, pickleable_obj):
                 any_delimiter = r"|".join(re.escape(sym) for sym in delimiter_symbols)
                 self.operator_repl_table.append((
                     compile_regex(r"(^|\s|(?<!\\)\b|" + any_delimiter + r")" + re.escape(op) + r"(?=\s|\b|$|" + any_delimiter + r")"),
-                    1,
+                    "prepend group 1",
                     "`" + op_name + "`",
                 ))
 
@@ -1320,7 +1320,7 @@ class Compiler(Grammar, pickleable_obj):
                     if repl_type is None:
                         def sub_func(match):
                             return repl_to
-                    elif repl_type == 1:
+                    elif repl_type == "prepend group 1":
                         def sub_func(match):
                             return match.group(1) + repl_to
                     else:
@@ -1662,7 +1662,8 @@ class Compiler(Grammar, pickleable_obj):
         def tre_return_handle(loc, tokens):
             args = ", ".join(tokens)
 
-            # we have to use func_name not func_store here since we use this when we fail to verify that func_name is func_store
+            # we have to use func_name not func_store here since we use
+            #  this when we fail to verify that func_name is func_store
             if self.no_tco:
                 tco_recurse = "return " + func_name + "(" + args + ")"
             else:
