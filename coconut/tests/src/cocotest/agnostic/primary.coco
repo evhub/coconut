@@ -97,7 +97,6 @@ def primary_test() -> bool:
     assert isinstance(one_line_class(), one_line_class)
     assert (.join)("")(["1", "2", "3"]) == "123"
     assert "" |> .join <| ["1","2","3"] == "123"
-    assert "". <| "join" <| ["1","2","3"] == "123"
     assert 1 |> [1,2,3][] == 2 == 1 |> [1,2,3]$[]
     assert 1 |> "123"[] == "2" == 1 |> "123"$[]
     assert (| -1, 0, |) :: range(1, 5) |> list == [-1, 0, 1, 2, 3, 4]
@@ -448,7 +447,6 @@ def primary_test() -> bool:
     assert None?[herp].derp is None  # type: ignore
     assert None?(derp)[herp] is None  # type: ignore
     assert None?$(herp)(derp) is None  # type: ignore
-    assert "a b c" == (" ". ?? "not gonna happen")("join")("abc")
     a: int[]? = None  # type: ignore
     assert a is None
     assert range(5) |> iter |> reiterable |> .[1] == 1
@@ -1583,4 +1581,5 @@ def primary_test() -> bool:
     assert (in)(1, [1, 2])
     assert not (1 not in .)([1, 2])
     assert not (in)([[]], [])
+    assert ("{a}" . .)("format")(a=1) == "1"
     return True

@@ -80,6 +80,8 @@ def non_strict_test() -> bool:
     assert weird_func()()(5) == 5
     a_dict: TextMap[str, int] = {"a": 1}
     assert a_dict["a"] == 1
+    assert "". <| "join" <| ["1","2","3"] == "123"
+    assert "a b c" == (" ". ?? "not gonna happen")("join")("abc")
     return True
 
 if __name__ == "__main__":

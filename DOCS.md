@@ -1650,7 +1650,6 @@ Coconut supports a number of different syntactical aliases for common partial ap
 ```coconut
 .attr           =>      operator.attrgetter("attr")
 .method(args)   =>      operator.methodcaller("method", args)
-obj.            =>      getattr$(obj)
 func$           =>      ($)$(func)
 seq[]           =>      operator.getitem$(seq)
 iter$[]         =>      # the equivalent of seq[] for iterators

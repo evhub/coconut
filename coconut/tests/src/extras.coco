@@ -292,6 +292,7 @@ else:
     assert_raises(-> parse("""case x:
     match x:
         pass"""), CoconutStyleError, err_has="case x:")
+    assert_raises(-> parse("obj."), CoconutStyleError, err_has="getattr")
 
     setup(strict=True, target="sys")
     assert_raises(-> parse("await f x"), CoconutParseError, err_has='invalid use of the keyword "await"')

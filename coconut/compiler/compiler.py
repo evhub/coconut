@@ -2290,7 +2290,7 @@ if {temp_var} is not None:
             elif name == "right op partial":
                 return partial_op_item_handle(item)
             elif name == "await":
-                raise CoconutDeferredSyntaxError("cannot pipe from await, only into await", loc)
+                raise CoconutDeferredSyntaxError("await in pipe must have something piped into it", loc)
             else:
                 raise CoconutInternalException("invalid split pipe item", split_item)
 
@@ -2367,7 +2367,7 @@ if {temp_var} is not None:
             else:
                 raise CoconutInternalException("invalid pipe operator direction", direction)
 
-    def item_handle(self, loc, tokens):
+    def item_handle(self, original, loc, tokens):
         """Process trailers."""
         out = tokens.pop(0)
         for i, trailer in enumerate(tokens):
@@ -2381,6 +2381,7 @@ if {temp_var} is not None:
                 elif trailer[0] == "[]":
                     out = "_coconut.functools.partial(_coconut.operator.getitem, " + out + ")"
                 elif trailer[0] == ".":
+                    self.strict_err_or_warn("'obj.' as a shorthand for 'getattr$(obj)' is deprecated (just use the getattr partial)", original, loc)
                     out = "_coconut.functools.partial(_coconut.getattr, " + out + ")"
                 elif trailer[0] == "type:[]":
                     out = "_coconut.typing.Sequence[" + out + "]"
@@ -2395,7 +2396,7 @@ if {temp_var} is not None:
                         raise CoconutDeferredSyntaxError("None-coalescing '?' must have something after it", loc)
                     not_none_tokens = [none_coalesce_var]
                     not_none_tokens.extend(rest_of_trailers)
-                    not_none_expr = self.item_handle(loc, not_none_tokens)
+                    not_none_expr = self.item_handle(original, loc, not_none_tokens)
                     # := changes meaning inside lambdas, so we must disallow it when wrapping
                     #  user expressions in lambdas (and naive string analysis is safe here)
                     if ":=" in not_none_expr:

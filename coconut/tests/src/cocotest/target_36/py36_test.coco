@@ -49,6 +49,18 @@ def py36_test() -> bool:
     loop.run_until_complete(aiter_test())
     assert l == list(range(10)) + list(range(10))
 
+    async def arec(x) = await arec(x-1) if x else x
+    async def atest():
+        assert (
+            10
+            |> arec
+            |> await
+            |> (.+10)
+            |> arec
+            |> await
+        ) == 0
+    loop.run_until_complete(atest())
+
     loop.close()
 
     return True
