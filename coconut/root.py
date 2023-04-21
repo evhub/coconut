@@ -26,7 +26,7 @@ import sys as _coconut_sys
 VERSION = "3.0.0"
 VERSION_NAME = None
 # False for release, int >= 1 for develop
-DEVELOP = 25
+DEVELOP = 26
 ALPHA = True  # for pre releases rather than post releases
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -89,6 +89,17 @@ class _coconut_dict_base(_coconut_OrderedDict):
     __eq__ = _coconut_py_dict.__eq__
     def __repr__(self):
         return "{" + ", ".join("{k!r}: {v!r}".format(k=k, v=v) for k, v in self.items()) + "}"
+    def __or__(self, other):
+        out = self.copy()
+        out.update(other)
+        return out
+    def __ror__(self, other):
+        out = self.__class__(other)
+        out.update(self)
+        return out
+    def __ior__(self, other):
+        self.update(other)
+        return self
 dict = _coconut_dict_meta(py_str("dict"), _coconut_dict_base.__bases__, _coconut_dict_base.__dict__.copy())
 '''
 

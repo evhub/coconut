@@ -155,6 +155,7 @@ iter = iter
 len: _t.Callable[..., int] = ...  # pattern-matching needs an untyped _coconut.len to avoid type errors
 list = list
 locals = locals
+globals = globals
 map = map
 min = min
 max = max

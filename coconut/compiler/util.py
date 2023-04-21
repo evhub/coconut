@@ -813,7 +813,6 @@ def any_keyword_in(kwds):
     return regex_item(r"|".join(k + r"\b" for k in kwds))
 
 
-@memoize()
 def base_keyword(name, explicit_prefix=False, require_whitespace=False):
     """Construct a grammar which matches name as a Python keyword."""
     base_kwd = regex_item(name + r"\b" + (r"(?=\s)" if require_whitespace else ""))
@@ -871,6 +870,17 @@ def any_len_perm(*optional, **kwargs):
 
     groups_and_elems = []
     groups_and_elems.extend(optional)
+    groups_and_elems.extend(enumerate(required))
+    return any_len_perm_with_one_of_each_group(*groups_and_elems)
+
+
+def any_len_perm_at_least_one(*elems, **kwargs):
+    """Any length permutation of elems that includes at least one of the elems and all the required."""
+    required = kwargs.pop("required", ())
+    internal_assert(not kwargs, "invalid any_len_perm kwargs", kwargs)
+
+    groups_and_elems = []
+    groups_and_elems.extend((-1, e) for e in elems)
     groups_and_elems.extend(enumerate(required))
     return any_len_perm_with_one_of_each_group(*groups_and_elems)
 

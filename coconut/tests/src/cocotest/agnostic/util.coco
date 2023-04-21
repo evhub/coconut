@@ -1852,3 +1852,42 @@ def Phi1(f, g, h, x) = lift(f)(g$(x), h$(x))
 def BE(f, g, x, y, h, z) = lift(f)(const(g x y), h$(z))
 
 def on(b, u) = (,) ..> map$(u) ..*> b
+
+
+# copyclosure
+
+def outer_func_normal():
+    funcs = []
+    for x in range(5):
+        def inner_func() = x
+        funcs.append(inner_func)
+    return funcs
+
+def outer_func_1():
+    funcs = []
+    for x in range(5):
+        copyclosure def inner_func() = x
+        funcs.append(inner_func)
+    return funcs
+
+def outer_func_2():
+    funcs = []
+    for x in range(5):
+        funcs.append(copyclosure def -> x)
+    return funcs
+
+def outer_func_3():
+    funcs = []
+    for x in range(5):
+        class inner_cls
+        copyclosure def inner_cls.inner_func() = x
+        funcs.append(inner_cls.inner_func)
+    return funcs
+
+def outer_func_4():
+    funcs = []
+    for x in range(5):
+        match def inner_func(x) = x
+        addpattern copyclosure def inner_func() = x
+        funcs.append(inner_func)
+    return funcs

@@ -332,6 +332,7 @@ reserved_vars = (
     "then",
     "operator",
     "type",
+    "copyclosure",
     "\u03bb",  # lambda
 )
 

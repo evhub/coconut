@@ -1037,6 +1037,9 @@ forward 2""") == 900
     assert BE((,), (+), 10, 2, (*), 2) <| 3 == (12, 6)
     assert (+) `on` (.*2) <*| (3, 5) == 16
     assert test_super_B().method({'somekey': 'string', 'someotherkey': 42})
+    assert outer_func_normal() |> map$(call) |> list == [4] * 5
+    for outer_func in (outer_func_1, outer_func_2, outer_func_3, outer_func_4):
+        assert outer_func() |> map$(call) |> list == range(5) |> list
 
     # must come at end
     assert fibs_calls[0] == 1

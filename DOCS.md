@@ -2146,7 +2146,7 @@ print(binexp(5))
 
 Coconut pattern-matching functions are just normal functions, except where the arguments are patterns to be matched against instead of variables to be assigned to. The syntax for pattern-matching function definition is
 ```coconut
-[async] [match] def <name>(<arg>, <arg>, ... [if <cond>]) [-> <return_type>]:
+[match] def <name>(<arg>, <arg>, ... [if <cond>]) [-> <return_type>]:
     <body>
 ```
 where `<arg>` is defined as
@@ -2161,7 +2161,7 @@ In addition to supporting pattern-matching in their arguments, pattern-matching 
 - If pattern-matching function definition fails, it will raise a [`MatchError`](#matcherror) (just like [destructuring assignment](#destructuring-assignment)) instead of a `TypeError`.
 - All defaults in pattern-matching function definition are late-bound rather than early-bound. Thus, `match def f(xs=[]) = xs` will instantiate a new list for each call where `xs` is not given, unlike `def f(xs=[]) = xs`, which will use the same list for all calls where `xs` is unspecified.
 
-_Note: Pattern-matching function definition can be combined with assignment and/or infix function definition._
+Pattern-matching function definition can also be combined with `async` functions, [`copyclosure` functions](#copyclosure-functions), [`yield` functions](#explicit-generators), [infix function definition](#infix-functions), and [assignment function syntax](#assignment-functions). The various keywords in front of the `def` can be put in any order.
 
 ##### Example
 
@@ -2204,16 +2204,65 @@ addpattern def factorial(n) = n * factorial(n - 1)
 **Python:**
 _Can't be done without a complicated decorator definition and a long series of checks for each pattern-matching. See the compiled code for the Python syntax._
 
+### `copyclosure` Functions
+
+Coconut supports the syntax
+```
+copyclosure def <name>(<args>):
+    <body>
+```
+to define a function that uses as its closure a shallow copy of its enclosing scopes at the time that the function is defined, rather than a reference to those scopes (as with normal Python functions).
+
+For example,`in
+```coconut
+def outer_func():
+    funcs = []
+    for x in range(10):
+        copyclosure def inner_func():
+            return x
+        funcs.append(inner_func)
+    return funcs
+```
+the resulting `inner_func`s will each return a _different_ `x` value rather than all the same `x` value, since they look at what `x` was bound to at function definition time rather than during function execution.
+
+`copyclosure` functions can also be combined with `async` functions, [`yield` functions](#explicit-generators), [pattern-matching functions](#pattern-matching-functions), [infix function definition](#infix-functions), and [assignment function syntax](#assignment-functions). The various keywords in front of the `def` can be put in any order.
+
+##### Example
+
+**Coconut:**
+```coconut
+def outer_func():
+    funcs = []
+    for x in range(10):
+        copyclosure def inner_func():
+            return x
+        funcs.append(inner_func)
+    return funcs
+```
+
+**Python:**
+```coconut_python
+from functools import partial
+
+def outer_func():
+    funcs = []
+    for x in range(10):
+        def inner_func(_x):
+            return _x
+        funcs.append(partial(inner_func, x))
+    return funcs
+```
+
 ### Explicit Generators
 
 Coconut supports the syntax
 ```
-[async] yield def <name>(<args>):
+yield def <name>(<args>):
     <body>
 ```
-to denote that you are explicitly defining a generator function. This is useful to ensure that, even if all the `yield`s in your function are removed, it'll always be a generator function. Note that the `async` and `yield` keywords can be in any order.
+to denote that you are explicitly defining a generator function. This is useful to ensure that, even if all the `yield`s in your function are removed, it'll always be a generator function.
 
-Explicit generator functions also support [pattern-matching syntax](#pattern-matching-functions), [infix function definition](#infix-functions), and [assignment function syntax](#assignment-functions) (though note that assignment function syntax here creates a generator return).
+Explicit generator functions can also be combined with `async` functions, [`copyclosure` functions](#copyclosure-functions), [pattern-matching functions](#pattern-matching-functions), [infix function definition](#infix-functions), and [assignment function syntax](#assignment-functions) (though note that assignment function syntax here creates a generator return). The various keywords in front of the `def` can be put in any order.
 
 ##### Example
 

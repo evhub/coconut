@@ -427,6 +427,7 @@ class Compiler(Grammar, pickleable_obj):
     ]
 
     reformatprocs = [
+        # deferred_code_proc must come first
         lambda self: self.deferred_code_proc,
         lambda self: self.reind_proc,
         lambda self: self.endline_repl,
@@ -670,6 +671,10 @@ class Compiler(Grammar, pickleable_obj):
         cls.string_atom <<= trace_attach(cls.string_atom_ref, cls.method("string_atom_handle"))
         cls.f_string_atom <<= trace_attach(cls.f_string_atom_ref, cls.method("string_atom_handle"))
 
+        # handle all keyword funcdefs with keyword_funcdef_handle
+        cls.keyword_funcdef <<= trace_attach(cls.keyword_funcdef_ref, cls.method("keyword_funcdef_handle"))
+        cls.async_keyword_funcdef <<= trace_attach(cls.async_keyword_funcdef_ref, cls.method("keyword_funcdef_handle"))
+
         # standard handlers of the form name <<= trace_attach(name_tokens, method("name_handle")) (implies name_tokens is reused)
         cls.function_call <<= trace_attach(cls.function_call_tokens, cls.method("function_call_handle"))
         cls.testlist_star_namedexpr <<= trace_attach(cls.testlist_star_namedexpr_tokens, cls.method("testlist_star_expr_handle"))
@@ -755,6 +760,10 @@ class Compiler(Grammar, pickleable_obj):
                 need_unskipped -= i - adj_ln - 1
                 adj_ln = i
         return adj_ln + need_unskipped
+
+    def reformat_post_deferred_code_proc(self, snip):
+        """Do post-processing that comes after deferred_code_proc."""
+        return self.apply_procs(self.reformatprocs[1:], snip, reformatting=True, log=False)
 
     def reformat(self, snip, *indices, **kwargs):
         """Post process a preprocessed snippet."""
@@ -1841,19 +1850,25 @@ else:
     def proc_funcdef(self, original, loc, decorators, funcdef, is_async, in_method, is_stmt_lambda):
         """Determines if TCO or TRE can be done and if so does it,
         handles dotted function names, and universalizes async functions."""
-        # process tokens
         raw_lines = list(logical_lines(funcdef, True))
         def_stmt = raw_lines.pop(0)
-        out = ""
+        out = []
 
-        # detect addpattern functions
-        if def_stmt.startswith("addpattern def"):
-            def_stmt = def_stmt[len("addpattern "):]
-            addpattern = True
-        elif def_stmt.startswith("def"):
-            addpattern = False
-        else:
-            raise CoconutInternalException("invalid function definition statement", funcdef)
+        # detect addpattern/copyclosure functions
+        addpattern = False
+        copyclosure = False
+        done = False
+        while not done:
+            if def_stmt.startswith("addpattern "):
+                def_stmt = def_stmt[len("addpattern "):]
+                addpattern = True
+            elif def_stmt.startswith("copyclosure "):
+                def_stmt = def_stmt[len("copyclosure "):]
+                copyclosure = True
+            elif def_stmt.startswith("def"):
+                done = True
+            else:
+                raise CoconutInternalException("invalid function definition statement", funcdef)
 
         # extract information about the function
         with self.complain_on_err():
@@ -1919,18 +1934,20 @@ else:
                 raise CoconutInternalException("could not find name in addpattern function definition", def_stmt)
             # binds most tightly, except for TCO
             addpattern_decorator = self.get_temp_var("addpattern")
-            out += handle_indentation(
-                """
+            out.append(
+                handle_indentation(
+                    """
 try:
     {addpattern_decorator} = _coconut_addpattern({func_name}) {type_ignore}
 except _coconut.NameError:
     {addpattern_decorator} = lambda f: f
                 """,
-                add_newline=True,
-            ).format(
-                func_name=func_name,
-                addpattern_decorator=addpattern_decorator,
-                type_ignore=self.type_ignore_comment(),
+                    add_newline=True,
+                ).format(
+                    func_name=func_name,
+                    addpattern_decorator=addpattern_decorator,
+                    type_ignore=self.type_ignore_comment(),
+                ),
             )
             decorators += "@" + addpattern_decorator + "\n"
 
@@ -2064,8 +2081,9 @@ def {mock_var}({mock_paramdef}):
 
         # handle dotted function definition
         if undotted_name is not None:
-            out += handle_indentation(
-                '''
+            out.append(
+                handle_indentation(
+                    '''
 {decorators}{def_stmt}{func_code}
 {def_name}.__name__ = _coconut_py_str("{undotted_name}")
 {temp_var} = _coconut.getattr({def_name}, "__qualname__", None)
@@ -2073,20 +2091,38 @@ if {temp_var} is not None:
     {def_name}.__qualname__ = _coconut_py_str("{func_name}" if "." not in {temp_var} else {temp_var}.rsplit(".", 1)[0] + ".{func_name}")
 {func_name} = {def_name}
                 ''',
-                add_newline=True,
-            ).format(
-                def_name=def_name,
-                decorators=decorators,
-                def_stmt=def_stmt,
-                func_code=func_code,
-                func_name=func_name,
-                undotted_name=undotted_name,
-                temp_var=self.get_temp_var("qualname"),
+                    add_newline=True,
+                ).format(
+                    def_name=def_name,
+                    decorators=decorators,
+                    def_stmt=def_stmt,
+                    func_code=func_code,
+                    func_name=func_name,
+                    undotted_name=undotted_name,
+                    temp_var=self.get_temp_var("qualname"),
+                ),
             )
         else:
-            out += decorators + def_stmt + func_code
+            out += [decorators, def_stmt, func_code]
 
-        return out
+        # handle copyclosure functions
+        if copyclosure:
+            return handle_indentation(
+                '''
+{vars_var} = _coconut.globals().copy()
+{vars_var}.update(_coconut.locals().copy())
+_coconut_exec({func_code_str}, {vars_var})
+{func_name} = {vars_var}["{def_name}"]
+                ''',
+                add_newline=True,
+            ).format(
+                func_name=func_name,
+                def_name=def_name,
+                vars_var=self.get_temp_var("func_vars"),
+                func_code_str=self.wrap_str_of(self.reformat_post_deferred_code_proc("".join(out))),
+            )
+        else:
+            return "".join(out)
 
     def deferred_code_proc(self, inputstring, add_code_at_start=False, ignore_names=(), ignore_errors=False, **kwargs):
         """Process all forms of previously deferred code. All such deferred code needs to be handled here so we can properly handle nested deferred code."""
@@ -3227,13 +3263,16 @@ if not {check_var}:
 
     def stmt_lambdef_handle(self, original, loc, tokens):
         """Process multi-line lambdef statements."""
-        kwds, params, stmts_toks = tokens
+        got_kwds, params, stmts_toks = tokens
 
         is_async = False
-        for kwd in kwds:
+        add_kwds = []
+        for kwd in got_kwds:
             if kwd == "async":
                 self.internal_assert(not is_async, original, loc, "duplicate stmt_lambdef async keyword", kwd)
                 is_async = True
+            elif kwd == "copyclosure":
+                add_kwds.append(kwd)
             else:
                 raise CoconutInternalException("invalid stmt_lambdef keyword", kwd)
 
@@ -3264,6 +3303,8 @@ if not {check_var}:
                 + after_docstring
                 + body
             )
+
+        funcdef = " ".join(add_kwds + [funcdef])
 
         self.add_code_before[name] = self.decoratable_funcdef_stmt_handle(original, loc, [decorators, funcdef], is_async, is_stmt_lambda=True)
 
@@ -3828,6 +3869,25 @@ for {match_to_var} in {item}:
             return "(" + " * ".join(tokens) + ")"
         else:
             return "_coconut_call_or_coefficient(" + ", ".join(tokens) + ")"
+
+    def keyword_funcdef_handle(self, tokens):
+        """Process function definitions with keywords in front."""
+        keywords, funcdef = tokens
+        for kwd in keywords:
+            if kwd == "yield":
+                funcdef += handle_indentation(
+                    """
+if False:
+    yield
+                    """,
+                    add_newline=True,
+                    extra_indent=1,
+                )
+            else:
+                # new keywords here must be replicated in def_regex and handled in proc_funcdef
+                internal_assert(kwd in ("addpattern", "copyclosure"), "unknown deferred funcdef keyword", kwd)
+                funcdef = kwd + " " + funcdef
+        return funcdef
 
 # end: HANDLERS
 # -----------------------------------------------------------------------------------------------------------------------

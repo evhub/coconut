@@ -101,14 +101,18 @@ class CoconutXontribLoader(object):
             from coconut.exceptions import CoconutException
             from coconut.terminal import format_error
             from coconut.util import get_clock_time
+            from coconut.terminal import logger
 
             parse_start_time = get_clock_time()
+            quiet, logger.quiet = logger.quiet, True
             try:
                 code = self.compiler.parse_xonsh(code, keep_state=True)
             except CoconutException as err:
                 err_str = format_error(err).splitlines()[0]
                 code += "  #" + err_str
-            self.timing_info.append(("parse", get_clock_time() - parse_start_time))
+            finally:
+                logger.quiet = quiet
+                self.timing_info.append(("parse", get_clock_time() - parse_start_time))
         return parser.__class__.parse(parser, code, mode=mode, *args, **kwargs)
 
     def new_try_subproc_toks(self, ctxtransformer, *args, **kwargs):

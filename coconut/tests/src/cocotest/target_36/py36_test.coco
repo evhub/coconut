@@ -50,6 +50,12 @@ def py36_test() -> bool:
     assert l == list(range(10)) + list(range(10))
 
     async def arec(x) = await arec(x-1) if x else x
+    async def outer_func():
+        funcs = []
+        for x in range(5):
+            funcs.append(async copyclosure def -> x)
+        return funcs
+    async def await_all(xs) = [await x for x in xs]
     async def atest():
         assert (
             10
@@ -59,6 +65,13 @@ def py36_test() -> bool:
             |> arec
             |> await
         ) == 0
+        assert (
+            outer_func()
+            |> await
+            |> map$(call)
+            |> await_all
+            |> await
+        ) == range(5) |> list
     loop.run_until_complete(atest())
 
     loop.close()
