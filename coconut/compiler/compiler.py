@@ -407,6 +407,16 @@ def join_dict_group(group, as_tuples=False):
         return ", ".join(items)
 
 
+def call_decorators(decorators, func_name):
+    """Convert decorators into function calls on func_name."""
+    out = func_name
+    for decorator in reversed(decorators.splitlines()):
+        internal_assert(decorator.startswith("@"), "invalid decorator", decorator)
+        base_decorator = rem_comment(decorator[1:])
+        out = "(" + base_decorator + ")(" + out + ")"
+    return out
+
+
 # end: UTILITIES
 # -----------------------------------------------------------------------------------------------------------------------
 # COMPILER:
@@ -2084,12 +2094,11 @@ def {mock_var}({mock_paramdef}):
             out.append(
                 handle_indentation(
                     '''
-{decorators}{def_stmt}{func_code}
+{def_stmt}{func_code}
 {def_name}.__name__ = _coconut_py_str("{undotted_name}")
 {temp_var} = _coconut.getattr({def_name}, "__qualname__", None)
 if {temp_var} is not None:
     {def_name}.__qualname__ = _coconut_py_str("{func_name}" if "." not in {temp_var} else {temp_var}.rsplit(".", 1)[0] + ".{func_name}")
-{func_name} = {def_name}
                 ''',
                     add_newline=True,
                 ).format(
@@ -2102,27 +2111,39 @@ if {temp_var} is not None:
                     temp_var=self.get_temp_var("qualname"),
                 ),
             )
+            # decorating the function must come after __name__ has been set,
+            #  and if it's a copyclosure function, it has to happen outside the exec
+            if not copyclosure:
+                out += [func_name, " = ", call_decorators(decorators, def_name), "\n"]
         else:
             out += [decorators, def_stmt, func_code]
 
         # handle copyclosure functions
         if copyclosure:
-            return handle_indentation(
-                '''
+            vars_var = self.get_temp_var("func_vars")
+            out = [
+                handle_indentation(
+                    '''
 {vars_var} = _coconut.globals().copy()
 {vars_var}.update(_coconut.locals().copy())
 _coconut_exec({func_code_str}, {vars_var})
-{func_name} = {vars_var}["{def_name}"]
                 ''',
-                add_newline=True,
-            ).format(
-                func_name=func_name,
-                def_name=def_name,
-                vars_var=self.get_temp_var("func_vars"),
-                func_code_str=self.wrap_str_of(self.reformat_post_deferred_code_proc("".join(out))),
-            )
-        else:
-            return "".join(out)
+                    add_newline=True,
+                ).format(
+                    func_name=func_name,
+                    def_name=def_name,
+                    vars_var=vars_var,
+                    func_code_str=self.wrap_str_of(self.reformat_post_deferred_code_proc("".join(out))),
+                ),
+            ]
+
+            func_from_vars = vars_var + '["' + def_name + '"]'
+            # for dotted copyclosure function definition, decoration was deferred until now
+            if undotted_name is not None:
+                func_from_vars = call_decorators(decorators, func_from_vars)
+            out += [func_name, " = ", func_from_vars, "\n"]
+
+        return "".join(out)
 
     def deferred_code_proc(self, inputstring, add_code_at_start=False, ignore_names=(), ignore_errors=False, **kwargs):
         """Process all forms of previously deferred code. All such deferred code needs to be handled here so we can properly handle nested deferred code."""

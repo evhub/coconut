@@ -2280,7 +2280,7 @@ def empty_it():
 
 ### Dotted Function Definition
 
-Coconut allows for function definition using a dotted name to assign a function as a method of an object as specified in [PEP 542](https://www.python.org/dev/peps/pep-0542/).
+Coconut allows for function definition using a dotted name to assign a function as a method of an object as specified in [PEP 542](https://www.python.org/dev/peps/pep-0542/). Dotted function definition can be combined with all other types of function definition above.
 
 ##### Example
 

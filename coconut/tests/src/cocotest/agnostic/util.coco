@@ -1880,6 +1880,7 @@ def outer_func_3():
     funcs = []
     for x in range(5):
         class inner_cls
+        @staticmethod
         copyclosure def inner_cls.inner_func() = x
         funcs.append(inner_cls.inner_func)
     return funcs
