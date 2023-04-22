@@ -1302,6 +1302,13 @@ def ret_globals() =
     abc = 1
     locals()
 
+global glob = 0
+copyclosure def wrong_get_set_glob(x):
+    global glob
+    old_glob, glob = glob, x
+    return old_glob
+def get_glob() = glob
+
 
 # Pos/kwd only args
 match def pos_only(a, b, /) = a, b

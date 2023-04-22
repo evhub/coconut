@@ -26,7 +26,7 @@ import sys as _coconut_sys
 VERSION = "3.0.0"
 VERSION_NAME = None
 # False for release, int >= 1 for develop
-DEVELOP = 28
+DEVELOP = 29
 ALPHA = True  # for pre releases rather than post releases
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -197,8 +197,7 @@ def _coconut_exec(obj, globals=None, locals=None):
     exec(obj, globals, locals)
 '''
 
-_non_py37_extras = r'''from collections import OrderedDict as _coconut_OrderedDict
-def _coconut_default_breakpointhook(*args, **kwargs):
+_non_py37_extras = r'''def _coconut_default_breakpointhook(*args, **kwargs):
     hookname = _coconut.os.getenv("PYTHONBREAKPOINT")
     if hookname != "0":
         if not hookname:
@@ -220,17 +219,7 @@ def breakpoint(*args, **kwargs):
     return _coconut.getattr(_coconut_sys, "breakpointhook", _coconut_default_breakpointhook)(*args, **kwargs)
 '''
 
-_non_py39_extras = '''class _coconut_dict_meta(type):
-    def __instancecheck__(cls, inst):
-        return _coconut.isinstance(inst, _coconut_py_dict)
-    def __subclasscheck__(cls, subcls):
-        return _coconut.issubclass(subcls, _coconut_py_dict)
-class _coconut_dict_base(_coconut_OrderedDict):
-    __slots__ = ()
-    __doc__ = getattr(_coconut_OrderedDict, "__doc__", "<see help(py_dict)>")
-    __eq__ = _coconut_py_dict.__eq__
-    def __repr__(self):
-        return "{" + ", ".join("{k!r}: {v!r}".format(k=k, v=v) for k, v in self.items()) + "}"
+_finish_dict_def = '''
     def __or__(self, other):
         out = self.copy()
         out.update(other)
@@ -242,8 +231,25 @@ class _coconut_dict_base(_coconut_OrderedDict):
     def __ior__(self, other):
         self.update(other)
         return self
+class _coconut_dict_meta(type):
+    def __instancecheck__(cls, inst):
+        return _coconut.isinstance(inst, _coconut_py_dict)
+    def __subclasscheck__(cls, subcls):
+        return _coconut.issubclass(subcls, _coconut_py_dict)
 dict = _coconut_dict_meta(py_str("dict"), _coconut_dict_base.__bases__, _coconut_dict_base.__dict__.copy())
 '''
+
+_below_py37_extras = '''from collections import OrderedDict as _coconut_OrderedDict
+class _coconut_dict_base(_coconut_OrderedDict):
+    __slots__ = ()
+    __doc__ = getattr(_coconut_OrderedDict, "__doc__", "<see help(py_dict)>")
+    __eq__ = _coconut_py_dict.__eq__
+    def __repr__(self):
+        return "{" + ", ".join("{k!r}: {v!r}".format(k=k, v=v) for k, v in self.items()) + "}"''' + _finish_dict_def
+
+_py37_py38_extras = '''class _coconut_dict_base(_coconut_py_dict):
+    __slots__ = ()
+    __doc__ = getattr(_coconut_py_dict, "__doc__", "<see help(py_dict)>")''' + _finish_dict_def
 
 _py26_extras = '''if _coconut_sys.version_info < (2, 7):
     import functools as _coconut_functools, copy_reg as _coconut_copy_reg
@@ -298,11 +304,15 @@ def _get_root_header(version="universal"):
         if version == "2":
             header += _py26_extras
 
-    if version in ("3", "37"):
+    if version == "3":
+        header += r'''if _coconut_sys.version_info < (3, 7):
+''' + _indent(_below_py37_extras) + r'''elif _coconut_sys.version_info < (3, 9):
+''' + _indent(_py37_py38_extras)
+    elif version == "37":
         header += r'''if _coconut_sys.version_info < (3, 9):
-''' + _indent(_non_py39_extras)
+''' + _indent(_py37_py38_extras)
     elif version.startswith("2"):
-        header += _non_py39_extras + '''dict.keys = _coconut_OrderedDict.viewkeys
+        header += _below_py37_extras + '''dict.keys = _coconut_OrderedDict.viewkeys
 dict.values = _coconut_OrderedDict.viewvalues
 dict.items = _coconut_OrderedDict.viewitems
 '''

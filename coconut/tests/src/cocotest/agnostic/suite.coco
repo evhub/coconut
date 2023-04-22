@@ -1040,6 +1040,10 @@ forward 2""") == 900
     assert outer_func_normal() |> map$(call) |> list == [4] * 5
     for outer_func in (outer_func_1, outer_func_2, outer_func_3, outer_func_4):
         assert outer_func() |> map$(call) |> list == range(5) |> list
+    assert get_glob() == 0
+    assert wrong_get_set_glob(10) == 0
+    assert get_glob() == 0
+    assert wrong_get_set_glob(20) == 10
 
     # must come at end
     assert fibs_calls[0] == 1

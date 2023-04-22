@@ -1521,9 +1521,9 @@ The statement lambda syntax is an extension of the [normal lambda syntax](#lambd
 
 The syntax for a statement lambda is
 ```
-[async] [match] def (arguments) -> statement; statement; ...
+[async|match|copyclosure] def (arguments) -> statement; statement; ...
 ```
-where `arguments` can be standard function arguments or [pattern-matching function definition](#pattern-matching-functions) arguments and `statement` can be an assignment statement or a keyword statement. Note that the `async` and `match` keywords can be in any order.
+where `arguments` can be standard function arguments or [pattern-matching function definition](#pattern-matching-functions) arguments and `statement` can be an assignment statement or a keyword statement. Note that the `async`, `match`, and [`copyclosure`](#copyclosure-functions) keywords can be combined and can be in any order.
 
 If the last `statement` (not followed by a semicolon) in a statement lambda is an `expression`, it will automatically be returned.
 
@@ -2226,6 +2226,8 @@ def outer_func():
 the resulting `inner_func`s will each return a _different_ `x` value rather than all the same `x` value, since they look at what `x` was bound to at function definition time rather than during function execution.
 
 `copyclosure` functions can also be combined with `async` functions, [`yield` functions](#explicit-generators), [pattern-matching functions](#pattern-matching-functions), [infix function definition](#infix-functions), and [assignment function syntax](#assignment-functions). The various keywords in front of the `def` can be put in any order.
+
+If `global` or `nonlocal` are used in a `copyclosure` function, they will not be able to modify variables in enclosing scopes. However, they will allow state to be preserved accross multiple calls to the `copyclosure` function.
 
 _Note: due to the way `copyclosure` functions are compiled, [type checking](#mypy-integration) won't work for them._
 
