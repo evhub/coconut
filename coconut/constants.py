@@ -810,8 +810,8 @@ all_reqs = {
     "jupyter": (
         "jupyter",
         ("jupyter-console", "py<35"),
-        ("jupyter-console", "py==35"),
-        ("jupyter-console", "py36"),
+        ("jupyter-console", "py>=35;py<37"),
+        ("jupyter-console", "py37"),
         ("jupyterlab", "py35"),
         ("jupytext", "py3"),
         "papermill",
@@ -876,7 +876,7 @@ min_versions = {
     "myst-parser": (1,),
     "sphinx": (6,),
     "mypy[python2]": (1, 1),
-    ("jupyter-console", "py36"): (6, 6),
+    ("jupyter-console", "py37"): (6, 6),
     ("typing", "py<35"): (3, 10),
     ("jedi", "py37"): (0, 18),
 
@@ -888,7 +888,7 @@ min_versions = {
     # don't upgrade these; they break on Python 3.5
     ("ipykernel", "py3"): (5, 5),
     ("ipython", "py3"): (7, 9),
-    ("jupyter-console", "py==35"): (6, 1),
+    ("jupyter-console", "py>=35;py<37"): (6, 1),
     ("jupyter-client", "py==35"): (6, 1, 12),
     ("jupytext", "py3"): (1, 8),
     ("jupyterlab", "py35"): (2, 2),
@@ -924,7 +924,7 @@ pinned_reqs = (
     ("jupyter-client", "py<35"),
     ("ipykernel", "py3"),
     ("ipython", "py3"),
-    ("jupyter-console", "py==35"),
+    ("jupyter-console", "py>=35;py<37"),
     ("jupyter-client", "py==35"),
     ("jupytext", "py3"),
     ("jupyterlab", "py35"),
