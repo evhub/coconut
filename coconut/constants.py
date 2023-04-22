@@ -186,6 +186,7 @@ pseudo_targets = {
     "26": "2",
     "32": "3",
 }
+assert all(v in specific_targets or v in pseudo_targets for v in ROOT_HEADER_VERSIONS)
 
 targets = ("",) + specific_targets
 

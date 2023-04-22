@@ -2227,6 +2227,8 @@ the resulting `inner_func`s will each return a _different_ `x` value rather than
 
 `copyclosure` functions can also be combined with `async` functions, [`yield` functions](#explicit-generators), [pattern-matching functions](#pattern-matching-functions), [infix function definition](#infix-functions), and [assignment function syntax](#assignment-functions). The various keywords in front of the `def` can be put in any order.
 
+_Note: due to the way `copyclosure` functions are compiled, [type checking](#mypy-integration) won't work for them._
+
 ##### Example
 
 **Coconut:**

@@ -3153,7 +3153,8 @@ raise {raise_from_var}
     def dict_comp_handle(self, loc, tokens):
         """Process Python 2.7 dictionary comprehension."""
         key, val, comp = tokens
-        if self.target.startswith("3"):
+        # on < 3.9 have to use _coconut.dict since it's different than py_dict
+        if self.target_info >= (3, 9):
             return "{" + key + ": " + val + " " + comp + "}"
         else:
             return "_coconut.dict(((" + key + "), (" + val + ")) " + comp + ")"
@@ -3806,7 +3807,8 @@ __annotations__["{name}"] = {annotation}
 
     def make_dict(self, tok_grp):
         """Construct a dictionary literal out of the given group."""
-        if self.target_info >= (3, 7):
+        # on < 3.9 have to use _coconut.dict since it's different than py_dict
+        if self.target_info >= (3, 9):
             return "{" + join_dict_group(tok_grp) + "}"
         else:
             return "_coconut.dict((" + join_dict_group(tok_grp, as_tuples=True) + "))"
@@ -3814,7 +3816,8 @@ __annotations__["{name}"] = {annotation}
     def dict_literal_handle(self, tokens):
         """Handle {**d1, **d2}."""
         if not tokens:
-            return "{}" if self.target_info >= (3, 7) else "_coconut.dict()"
+            # on < 3.9 have to use _coconut.dict since it's different than py_dict
+            return "{}" if self.target_info >= (3, 9) else "_coconut.dict()"
 
         groups, has_star, _ = split_star_expr_tokens(tokens, is_dict=True)
 

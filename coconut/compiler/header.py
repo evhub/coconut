@@ -22,7 +22,7 @@ from coconut.root import *  # NOQA
 import os.path
 from functools import partial
 
-from coconut.root import _indent
+from coconut.root import _indent, _get_root_header
 from coconut.exceptions import CoconutInternalException
 from coconut.terminal import internal_assert
 from coconut.constants import (
@@ -769,16 +769,18 @@ _coconut_cached__coconut__ = _coconut_sys.modules.get({_coconut_cached__coconut_
         newline=True,
     ).format(**format_dict)
 
+    if target_info >= (3, 9):
+        header += _get_root_header("39")
     if target_info >= (3, 7):
-        header += PY37_HEADER
+        header += _get_root_header("37")
     elif target.startswith("3"):
-        header += PY3_HEADER
+        header += _get_root_header("3")
     elif target_info >= (2, 7):
-        header += PY27_HEADER
+        header += _get_root_header("27")
     elif target.startswith("2"):
-        header += PY2_HEADER
+        header += _get_root_header("2")
     else:
-        header += PYCHECK_HEADER
+        header += _get_root_header("universal")
 
     header += get_template("header").format(**format_dict)
 
