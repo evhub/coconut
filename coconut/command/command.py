@@ -120,9 +120,14 @@ class Command(object):
     mypy_args = None  # corresponds to --mypy flag
     argv_args = None  # corresponds to --argv flag
 
-    def __init__(self):
-        """Create the CLI."""
-        self.prompt = Prompt()
+    _prompt = None
+
+    @property
+    def prompt(self):
+        """Delay creation of a Prompt() until it's needed."""
+        if self._prompt is None:
+            self._prompt = Prompt()
+        return self._prompt
 
     def start(self, run=False):
         """Endpoint for coconut and coconut-run."""
@@ -308,6 +313,9 @@ class Command(object):
 
         # handle extra cli tasks
         if args.code is not None:
+            # TODO: REMOVE
+            if args.code == "TEST":
+                args.code = "def f(x) = x"
             self.execute(self.parse_block(args.code))
         got_stdin = False
         if args.jupyter is not None:

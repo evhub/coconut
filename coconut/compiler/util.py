@@ -389,8 +389,9 @@ def parsing_context(inner_parse=True):
     finally:
         if inner_parse and use_packrat_parser:
             ParserElement.packrat_cache = old_cache
-            ParserElement.packrat_cache_stats[0] += old_cache_stats[0]
-            ParserElement.packrat_cache_stats[1] += old_cache_stats[1]
+            if logger.verbose:
+                ParserElement.packrat_cache_stats[0] += old_cache_stats[0]
+                ParserElement.packrat_cache_stats[1] += old_cache_stats[1]
 
 
 def prep_grammar(grammar, streamline=False):

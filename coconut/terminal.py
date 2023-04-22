@@ -24,6 +24,7 @@ import os
 import traceback
 import logging
 from contextlib import contextmanager
+from collections import defaultdict
 if sys.version_info < (2, 7):
     from StringIO import StringIO
 else:
@@ -491,18 +492,26 @@ class Logger(object):
         else:
             yield
 
+    total_block_time = defaultdict(int)
+
+    @contextmanager
+    def time_block(self, name):
+        start_time = get_clock_time()
+        try:
+            yield
+        finally:
+            elapsed_time = get_clock_time() - start_time
+            self.total_block_time[name] += elapsed_time
+            self.printlog("Time while running", name + ":", elapsed_time, "secs (total so far:", self.total_block_time[name], "secs)")
+
     def time_func(self, func):
         """Decorator to print timing info for a function."""
         def timed_func(*args, **kwargs):
             """Function timed by logger.time_func."""
             if not DEVELOP or self.quiet:
                 return func(*args, **kwargs)
-            start_time = get_clock_time()
-            try:
+            with self.time_block(func.__name__):
                 return func(*args, **kwargs)
-            finally:
-                elapsed_time = get_clock_time() - start_time
-                self.printlog("Time while running", func.__name__ + ":", elapsed_time, "secs")
         return timed_func
 
     def patch_logging(self):

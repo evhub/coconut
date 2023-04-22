@@ -1163,7 +1163,7 @@ class Compiler(Grammar, pickleable_obj):
             if hold is not None:
                 if len(hold) == 1:  # hold == [_comment]
                     if c == "\n":
-                        out.append(self.wrap_comment(hold[_comment], reformat=False) + c)
+                        out += [self.wrap_comment(hold[_comment], reformat=False), c]
                         hold = None
                     else:
                         hold[_comment] += c
@@ -1227,9 +1227,9 @@ class Compiler(Grammar, pickleable_obj):
 
         if hold is not None or found is not None:
             raise self.make_err(CoconutSyntaxError, "unclosed string", inputstring, x, reformat=False)
-        else:
-            self.set_skips(skips)
-            return "".join(out)
+
+        self.set_skips(skips)
+        return "".join(out)
 
     def passthrough_proc(self, inputstring, **kwargs):
         """Process python passthroughs."""
@@ -1266,7 +1266,7 @@ class Compiler(Grammar, pickleable_obj):
                     count = -1
                     multiline = True
                 else:
-                    out.append("\\" + c)
+                    out += ["\\", c]
                     found = None
             elif c == "\\":
                 found = True
@@ -1347,7 +1347,7 @@ class Compiler(Grammar, pickleable_obj):
                     new_line = repl.sub(sub_func, new_line)
                 out.append(new_line)
             elif imp_from is not None:
-                out.append("from " + imp_from + " import " + op_name + "\n")
+                out += ["from ", imp_from, " import ", op_name, "\n"]
             else:
                 skips = addskip(skips, self.adjust(ln))
 
@@ -1460,7 +1460,7 @@ class Compiler(Grammar, pickleable_obj):
 
     def reind_proc(self, inputstring, ignore_errors=False, **kwargs):
         """Add back indentation."""
-        out = []
+        out_lines = []
         level = 0
 
         next_line_is_fake = False
@@ -1494,12 +1494,12 @@ class Compiler(Grammar, pickleable_obj):
                 level = 0
 
             line = (line + comment).rstrip()
-            out.append(line)
+            out_lines.append(line)
 
         if not ignore_errors and level != 0:
             logger.log_lambda(lambda: "failed to reindent:\n" + inputstring)
             complain("non-zero final indentation level: " + repr(level))
-        return "\n".join(out)
+        return "\n".join(out_lines)
 
     def ln_comment(self, ln):
         """Get an end line comment."""
@@ -1539,7 +1539,7 @@ class Compiler(Grammar, pickleable_obj):
 
     def endline_repl(self, inputstring, reformatting=False, ignore_errors=False, **kwargs):
         """Add end of line comments."""
-        out = []
+        out_lines = []
         ln = 1  # line number in pre-processed original
         for line in logical_lines(inputstring):
             add_one_to_ln = False
@@ -1569,10 +1569,10 @@ class Compiler(Grammar, pickleable_obj):
                 if not ignore_errors:
                     complain(err)
 
-            out.append(line)
+            out_lines.append(line)
             if add_one_to_ln and ln <= self.num_lines - 1:
                 ln += 1
-        return "\n".join(out)
+        return "\n".join(out_lines)
 
     def base_passthrough_repl(self, inputstring, wrap_char, ignore_errors=False, **kwargs):
         """Add back passthroughs."""
@@ -1589,7 +1589,7 @@ class Compiler(Grammar, pickleable_obj):
                         out.append(ref)
                         index = None
                     elif c != wrap_char or index:
-                        out.append(wrap_char + index)
+                        out += [wrap_char, index]
                         if c is not None:
                             out.append(c)
                         index = None
@@ -1603,7 +1603,7 @@ class Compiler(Grammar, pickleable_obj):
                 if not ignore_errors:
                     complain(err)
                 if index is not None:
-                    out.append(wrap_char + index)
+                    out += [wrap_char, index]
                     index = None
                 if c is not None:
                     out.append(c)
@@ -1628,7 +1628,7 @@ class Compiler(Grammar, pickleable_obj):
                             out[-1] = out[-1].rstrip(" ")
                             if not self.minify:
                                 out[-1] += "  "  # put two spaces before comment
-                        out.append("#" + ref)
+                        out += ["#", ref]
                         comment = None
                     else:
                         raise CoconutInternalException("invalid comment marker in", getline(i, inputstring))
@@ -1637,7 +1637,7 @@ class Compiler(Grammar, pickleable_obj):
                         string += c
                     elif c == unwrapper and string:
                         text, strchar = self.get_ref("str", string)
-                        out.append(strchar + text + strchar)
+                        out += [strchar, text, strchar]
                         string = None
                     else:
                         raise CoconutInternalException("invalid string marker in", getline(i, inputstring))
@@ -1654,10 +1654,10 @@ class Compiler(Grammar, pickleable_obj):
                     complain(err)
                 if comment is not None:
                     internal_assert(string is None, "invalid detection of string and comment markers in", inputstring)
-                    out.append("#" + comment)
+                    out += ["#", comment]
                     comment = None
                 if string is not None:
-                    out.append(strwrapper + string)
+                    out += [strwrapper, string]
                     string = None
                 if c is not None:
                     out.append(c)
@@ -2071,16 +2071,28 @@ def {mock_var}({mock_paramdef}):
                 indent, base, dedent = split_leading_trailing_indent(rest, 1)
                 base, base_dedent = split_trailing_indent(base)
                 docstring, base = self.split_docstring(base)
-                func_code = (
-                    comment + indent
-                    + (docstring + "\n" if docstring is not None else "")
-                    + mock_def
-                    + "while True:\n"
-                    + openindent + base + base_dedent
-                    + ("\n" if "\n" not in base_dedent else "") + "return None"
-                    + ("\n" if "\n" not in dedent else "") + closeindent + dedent
-                    + func_store + " = " + def_name + "\n"
-                )
+
+                func_code_out = [
+                    comment,
+                    indent,
+                ]
+                if docstring is not None:
+                    func_code_out += [docstring, "\n"]
+                func_code_out += [
+                    mock_def,
+                    "while True:\n",
+                    openindent, base, base_dedent,
+                ]
+                if "\n" not in base_dedent:
+                    func_code_out.append("\n")
+                func_code_out.append("return None")
+                if "\n" not in dedent:
+                    func_code_out.append("\n")
+                func_code_out += [
+                    closeindent, dedent,
+                    func_store, " = ", def_name, "\n",
+                ]
+                func_code = "".join(func_code_out)
 
             if tco:
                 decorators += "@_coconut_tco\n"  # binds most tightly (aside from below)
@@ -2214,14 +2226,10 @@ _coconut_exec({func_code_str}, {vars_var})
                         if add_code_at_start:
                             out.insert(0, code_to_add + "\n")
                         else:
-                            out.append(bef_ind)
-                            out.append(code_to_add)
-                            out.append("\n")
+                            out += [bef_ind, code_to_add, "\n"]
                             bef_ind = ""
 
-                out.append(bef_ind)
-                out.append(line)
-                out.append(aft_ind)
+                out += [bef_ind, line, aft_ind]
 
         return "".join(out)
 
@@ -2560,7 +2568,7 @@ while True:
         out = []
         ln = lineno(loc, original)
         for endline in lines:
-            out.append(self.wrap_line_number(ln) + endline)
+            out += [self.wrap_line_number(ln), endline]
             ln += 1
         return "".join(out)
 
@@ -2893,17 +2901,24 @@ def __new__(_coconut_cls, {all_args}):
         definition of Expected in header.py_template.
         """
         # create class
-        out = (
-            "".join(paramdefs)
-            + decorators
-            + "class " + name + "("
-            + namedtuple_call
-            + (", " + inherit if inherit is not None else "")
-            + (", " + self.get_generic_for_typevars() if paramdefs else "")
-            + (", _coconut.object" if not self.target.startswith("3") else "")
-            + "):\n"
-            + openindent
-        )
+        out = [
+            "".join(paramdefs),
+            decorators,
+            "class ",
+            name,
+            "(",
+            namedtuple_call,
+        ]
+        if inherit is not None:
+            out += [", ", inherit]
+        if paramdefs:
+            out += [", ", self.get_generic_for_typevars()]
+        if not self.target.startswith("3"):
+            out.append(", _coconut.object")
+        out += [
+            "):\n",
+            openindent,
+        ]
 
         # add universal statements
         all_extra_stmts = handle_indentation(
@@ -2930,31 +2945,31 @@ def __hash__(self):
         # manage docstring
         rest = None
         if "simple" in stmts and len(stmts) == 1:
-            out += all_extra_stmts
+            out += [all_extra_stmts]
             rest = stmts[0]
         elif "docstring" in stmts and len(stmts) == 1:
-            out += stmts[0] + all_extra_stmts
+            out += [stmts[0], all_extra_stmts]
         elif "complex" in stmts and len(stmts) == 1:
-            out += all_extra_stmts
+            out += [all_extra_stmts]
             rest = "".join(stmts[0])
         elif "complex" in stmts and len(stmts) == 2:
-            out += stmts[0] + all_extra_stmts
+            out += [stmts[0], all_extra_stmts]
             rest = "".join(stmts[1])
         elif "empty" in stmts and len(stmts) == 1:
-            out += all_extra_stmts.rstrip() + stmts[0]
+            out += [all_extra_stmts.rstrip(), stmts[0]]
         else:
             raise CoconutInternalException("invalid inner data tokens", stmts)
 
         # create full data definition
         if rest is not None and rest != "pass\n":
-            out += rest
-        out += closeindent
+            out.append(rest)
+        out.append(closeindent)
 
         # add override detection
         if self.target_info < (3, 6):
-            out += "_coconut_call_set_names(" + name + ")\n"
+            out += ["_coconut_call_set_names(", name, ")\n"]
 
-        return out
+        return "".join(out)
 
     def anon_namedtuple_handle(self, tokens):
         """Handle anonymous named tuples."""
@@ -3123,11 +3138,16 @@ if {store_var} is not _coconut_sentinel:
         if self.target.startswith("3"):
             return "raise " + raise_expr + " from " + from_expr
         else:
-            raise_from_var = self.get_temp_var("raise_from")
-            return (
-                raise_from_var + " = " + raise_expr + "\n"
-                + raise_from_var + ".__cause__ = " + from_expr + "\n"
-                + "raise " + raise_from_var
+            return handle_indentation(
+                '''
+{raise_from_var} = {raise_expr}
+{raise_from_var}.__cause__ = {from_expr}
+raise {raise_from_var}
+                ''',
+            ).format(
+                raise_from_var=self.get_temp_var("raise_from"),
+                raise_expr=raise_expr,
+                from_expr=from_expr,
             )
 
     def dict_comp_handle(self, loc, tokens):
@@ -3181,9 +3201,15 @@ if not {check_var}:
         matching.match(matches, match_to_var)
         if cond:
             matching.add_guard(cond)
-        return (
-            match_to_var + " = " + item + "\n"
-            + matching.build(stmts, invert=invert)
+        return handle_indentation(
+            '''
+{match_to_var} = {item}
+{match}
+            ''',
+        ).format(
+            match_to_var=match_to_var,
+            item=item,
+            match=matching.build(stmts, invert=invert),
         )
 
     def destructuring_stmt_handle(self, original, loc, tokens):
@@ -3405,12 +3431,14 @@ if not {check_var}:
         if self.target_info >= (3, 6):
             return name + ": " + self.wrap_typedef(typedef, for_py_typedef=True) + ("" if value is None else " = " + value)
         else:
-            return handle_indentation('''
+            return handle_indentation(
+                '''
 {name} = {value}{comment}
 if "__annotations__" not in _coconut.locals():
     __annotations__ = {{}}
 __annotations__["{name}"] = {annotation}
-            ''').format(
+                ''',
+            ).format(
                 name=name,
                 value=(
                     value if value is not None

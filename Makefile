@@ -229,7 +229,7 @@ clean:
 
 .PHONY: wipe
 wipe: clean
-	rm -rf  vprof.json profile.log *.egg-info
+	rm -rf vprof.json profile.log *.egg-info
 	-find . -name "__pycache__" -delete
 	-C:/GnuWin32/bin/find.exe . -name "__pycache__" -delete
 	-find . -name "*.pyc" -delete
@@ -266,14 +266,12 @@ profile-parser:
 	coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --force --profile --verbose --recursion-limit 4096 2>&1 | tee ./profile.log
 
 .PHONY: profile-time
-profile-time: export COCONUT_PURE_PYTHON=TRUE
 profile-time:
-	vprof -c h "coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --force" --output-file ./vprof.json
+	vprof -c h "./coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --force" --output-file ./vprof.json
 
 .PHONY: profile-memory
-profile-memory: export COCONUT_PURE_PYTHON=TRUE
 profile-memory:
-	vprof -c m "coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --force" --output-file ./vprof.json
+	vprof -c m "./coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --force" --output-file ./vprof.json
 
 .PHONY: view-profile
 view-profile:
