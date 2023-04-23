@@ -587,7 +587,7 @@ def disable_inside(item, *elems, **kwargs):
     Returns (item with elem disabled, *new versions of elems).
     """
     _invert = kwargs.pop("_invert", False)
-    internal_assert(not kwargs, "excess keyword arguments passed to disable_inside")
+    internal_assert(not kwargs, "excess keyword arguments passed to disable_inside", kwargs)
 
     level = [0]  # number of wrapped items deep we are; in a list to allow modification
 

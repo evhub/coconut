@@ -67,8 +67,6 @@ from coconut.constants import (
     coconut_pth_file,
     error_color_code,
     jupyter_console_commands,
-    coconut_mypy_config,
-    mypy_config_files,
 )
 from coconut.util import (
     univ_open,
@@ -781,15 +779,6 @@ class Command(object):
                 self.mypy_args += [
                     "--python-executable",
                     sys.executable,
-                ]
-
-            if (
-                not any(arg.startswith("--config-file") for arg in self.mypy_args)
-                and not any(fname in mypy_config_files for fname in os.listdir(os.getcwd()))
-            ):
-                self.mypy_args += [
-                    "--config-file",
-                    coconut_mypy_config,
                 ]
 
             add_mypy_args = default_mypy_args + (verbose_mypy_args if logger.verbose else ())

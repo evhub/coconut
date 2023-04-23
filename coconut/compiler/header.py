@@ -426,17 +426,6 @@ def _coconut_matmul(a, b, **kwargs):
     raise _coconut.TypeError("unsupported operand type(s) for @: " + _coconut.repr(_coconut.type(a)) + " and " + _coconut.repr(_coconut.type(b)))
             ''',
         ),
-        import_typing_NamedTuple=pycondition(
-            (3, 6),
-            if_lt='''
-def NamedTuple(name, fields):
-    return _coconut.collections.namedtuple(name, [x for x, t in fields])
-typing.NamedTuple = NamedTuple
-NamedTuple = staticmethod(NamedTuple)
-            ''',
-            indent=1,
-            newline=True,
-        ),
         def_total_and_comparisons=pycondition(
             (3, 10),
             if_lt='''
@@ -560,7 +549,32 @@ typing = typing_mock()
             indent=1,
         ),
         # all typing_extensions imports must be added to the _coconut stub file
-        import_typing_TypeAlias_ParamSpec_Concatenate=pycondition(
+        import_typing_36=pycondition(
+            (3, 6),
+            if_lt='''
+def NamedTuple(name, fields):
+    return _coconut.collections.namedtuple(name, [x for x, t in fields])
+typing.NamedTuple = NamedTuple
+NamedTuple = staticmethod(NamedTuple)
+            ''',
+            indent=1,
+            newline=True,
+        ),
+        import_typing_38=pycondition(
+            (3, 8),
+            if_lt='''
+try:
+    from typing_extensions import Protocol
+except ImportError:
+    class YouNeedToInstallTypingExtensions{object}:
+        __slots__ = ()
+    Protocol = YouNeedToInstallTypingExtensions
+typing.Protocol = Protocol
+            '''.format(**format_dict),
+            indent=1,
+            newline=True,
+        ),
+        import_typing_310=pycondition(
             (3, 10),
             if_lt='''
 try:
@@ -576,7 +590,7 @@ typing.Concatenate = Concatenate
             indent=1,
             newline=True,
         ),
-        import_typing_TypeVarTuple_Unpack=pycondition(
+        import_typing_311=pycondition(
             (3, 11),
             if_lt='''
 try:

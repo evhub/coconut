@@ -518,10 +518,14 @@ class Compiler(Grammar, pickleable_obj):
     operators = None
 
     def reset(self, keep_state=False, filename=None):
-        """Resets references."""
+        """Reset references.
+
+        IMPORTANT: When adding anything here, consider whether it should also be added to inner_environment.
+        """
         self.filename = filename
         self.indchar = None
         self.comments = {}
+        self.wrapped_type_ignore = None
         self.refs = []
         self.skips = []
         self.docstring = ""
@@ -536,19 +540,10 @@ class Compiler(Grammar, pickleable_obj):
         if self.operators is None or not keep_state:
             self.operators = []
             self.operator_repl_table = []
-        self.add_code_before = {
-            "_coconut_ProtocolIntersection": handle_indentation(
-                """
-if _coconut.typing.TYPE_CHECKING or "_coconut_ProtocolIntersection" not in _coconut.locals() and "_coconut_ProtocolIntersection" not in _coconut.globals():
-    from typing_protocol_intersection import ProtocolIntersection as _coconut_ProtocolIntersection
-                """,
-            ).format(
-                object="" if self.target.startswith("3") else "(object)",
-                type_ignore=self.type_ignore_comment(),
-            ),
-        }
+        self.add_code_before = {}
         self.add_code_before_regexes = {}
         self.add_code_before_replacements = {}
+        self.add_code_before_ignore_names = {}
 
     @contextmanager
     def inner_environment(self):
@@ -556,6 +551,7 @@ if _coconut.typing.TYPE_CHECKING or "_coconut_ProtocolIntersection" not in _coco
         line_numbers, self.line_numbers = self.line_numbers, False
         keep_lines, self.keep_lines = self.keep_lines, False
         comments, self.comments = self.comments, {}
+        wrapped_type_ignore, self.wrapped_type_ignore = self.wrapped_type_ignore, None
         skips, self.skips = self.skips, []
         docstring, self.docstring = self.docstring, ""
         parsing_context, self.parsing_context = self.parsing_context, defaultdict(list)
@@ -567,6 +563,7 @@ if _coconut.typing.TYPE_CHECKING or "_coconut_ProtocolIntersection" not in _coco
             self.line_numbers = line_numbers
             self.keep_lines = keep_lines
             self.comments = comments
+            self.wrapped_type_ignore = wrapped_type_ignore
             self.skips = skips
             self.docstring = docstring
             self.parsing_context = parsing_context
@@ -733,6 +730,7 @@ if _coconut.typing.TYPE_CHECKING or "_coconut_ProtocolIntersection" not in _coco
         cls.unsafe_typedef_tuple <<= trace_attach(cls.unsafe_typedef_tuple_ref, cls.method("unsafe_typedef_tuple_handle"))
         cls.funcname_typeparams <<= trace_attach(cls.funcname_typeparams_ref, cls.method("funcname_typeparams_handle"))
         cls.impl_call <<= trace_attach(cls.impl_call_ref, cls.method("impl_call_handle"))
+        cls.protocol_intersect_expr <<= trace_attach(cls.protocol_intersect_expr_ref, cls.method("protocol_intersect_expr_handle"))
 
         # these handlers just do strict/target checking
         cls.u_string <<= trace_attach(cls.u_string_ref, cls.method("u_string_check"))
@@ -927,7 +925,10 @@ if _coconut.typing.TYPE_CHECKING or "_coconut_ProtocolIntersection" not in _coco
             return self.wrap_error(error)
 
     def type_ignore_comment(self):
-        return self.wrap_comment(" type: ignore", reformat=False)
+        """Get a "type: ignore" comment."""
+        if self.wrapped_type_ignore is None:
+            self.wrapped_type_ignore = self.wrap_comment(" type: ignore", reformat=False)
+        return self.wrapped_type_ignore
 
     def wrap_line_number(self, ln):
         """Wrap a line number."""
@@ -949,13 +950,18 @@ if _coconut.typing.TYPE_CHECKING or "_coconut_ProtocolIntersection" not in _coco
 
     def pre(self, inputstring, **kwargs):
         """Perform pre-processing."""
+        log = kwargs.get("log", True)
         out = self.apply_procs(self.preprocs, str(inputstring), **kwargs)
-        logger.log_tag("skips", self.skips)
+        if log:
+            logger.log_tag("skips", self.skips)
         return out
 
     def post(self, result, **kwargs):
         """Perform post-processing."""
         internal_assert(isinstance(result, str), "got non-string parse result", result)
+        log = kwargs.get("log", True)
+        if log:
+            logger.log_tag("before post-processing", result, multiline=True)
         return self.apply_procs(self.postprocs, result, **kwargs)
 
     def getheader(self, which, use_hash=None, polish=True):
@@ -1586,6 +1592,10 @@ if _coconut.typing.TYPE_CHECKING or "_coconut_ProtocolIntersection" not in _coco
 
     def base_passthrough_repl(self, inputstring, wrap_char, ignore_errors=False, **kwargs):
         """Add back passthroughs."""
+        # this gets called a lot but passthroughs are rare, so short-circuit if we know there are none
+        if wrap_char not in inputstring:
+            return inputstring
+
         out = []
         index = None
         for c in append_it(inputstring, None):
@@ -2167,12 +2177,45 @@ _coconut_exec({func_code_str}, {vars_var})
 
         return "".join(out)
 
-    def deferred_code_proc(self, inputstring, add_code_at_start=False, ignore_names=(), ignore_errors=False, **kwargs):
-        """Process all forms of previously deferred code. All such deferred code needs to be handled here so we can properly handle nested deferred code."""
-        # compile add_code_before regexes
+    def add_code_before_marker_with_replacement(self, replacement, *add_code_before, **kwargs):
+        """Add code before a marker that will later be replaced."""
+        add_spaces = kwargs.pop("add_spaces", True)
+        ignore_names = kwargs.pop("ignore_names", None)
+        internal_assert(not kwargs, "excess kwargs passed to add_code_before_marker_with_replacement", kwargs)
+
+        # temp_marker will be set back later, but needs to be a unique name until then for add_code_before
+        temp_marker = self.get_temp_var("add_code_before_marker")
+
+        self.add_code_before[temp_marker] = "\n".join(add_code_before)
+        self.add_code_before_replacements[temp_marker] = replacement
+        if ignore_names is not None:
+            self.add_code_before_ignore_names[temp_marker] = ignore_names
+
+        return " " + temp_marker + " " if add_spaces else temp_marker
+
+    @contextmanager
+    def separate_add_code_before(self, inputstring):
+        """Separate out all code to be added before the given code."""
+        self.compile_add_code_before_regexes()
+        removed_add_code_before = {}
+        for name in tuple(self.add_code_before):
+            regex = self.add_code_before_regexes[name]
+            if regex.match(inputstring):
+                removed_add_code_before[name] = self.add_code_before.pop(name)
+        try:
+            yield (tuple(removed_add_code_before.keys()), removed_add_code_before.values())
+        finally:
+            self.add_code_before.update(removed_add_code_before)
+
+    def compile_add_code_before_regexes(self):
+        """Compile all add_code_before regexes."""
         for name in self.add_code_before:
             if name not in self.add_code_before_regexes:
                 self.add_code_before_regexes[name] = compile_regex(r"\b%s\b" % (name,))
+
+    def deferred_code_proc(self, inputstring, add_code_at_start=False, ignore_names=(), ignore_errors=False, **kwargs):
+        """Process all forms of previously deferred code. All such deferred code needs to be handled here so we can properly handle nested deferred code."""
+        self.compile_add_code_before_regexes()
 
         out = []
         for raw_line in inputstring.splitlines(True):
@@ -2219,25 +2262,26 @@ _coconut_exec({func_code_str}, {vars_var})
                 for name, raw_code in ordered(self.add_code_before.items()):
                     if name in ignore_names:
                         continue
+                    inner_ignore_names = ignore_names + (name,) + self.add_code_before_ignore_names.get(name, ())
 
                     regex = self.add_code_before_regexes[name]
-                    replacement = self.add_code_before_replacements.get(name)
+                    if regex.search(line):
+                        # handle replacement
+                        replacement = self.add_code_before_replacements.get(name)
+                        if replacement is not None:
+                            replacement = self.deferred_code_proc(replacement, ignore_names=inner_ignore_names, **kwargs)
+                            line, _ = regex.subn(lambda match: replacement, line)
 
-                    if replacement is None:
-                        saw_name = regex.search(line)
-                    else:
-                        line, saw_name = regex.subn(lambda match: replacement, line)
+                        if raw_code:
+                            # process inner code
+                            code_to_add = self.deferred_code_proc(raw_code, ignore_names=inner_ignore_names, **kwargs)
 
-                    if saw_name:
-                        # process inner code
-                        code_to_add = self.deferred_code_proc(raw_code, ignore_names=ignore_names + (name,), **kwargs)
-
-                        # add code and update indents
-                        if add_code_at_start:
-                            out.insert(0, code_to_add + "\n")
-                        else:
-                            out += [bef_ind, code_to_add, "\n"]
-                            bef_ind = ""
+                            # add code and update indents
+                            if add_code_at_start:
+                                out.insert(0, code_to_add + "\n")
+                            else:
+                                out += [bef_ind, code_to_add, "\n"]
+                                bef_ind = ""
 
                 out += [bef_ind, line, aft_ind]
 
@@ -2558,7 +2602,6 @@ while True:
         {ret_val_name} = {yield_err_var}.args[0] if _coconut.len({yield_err_var}.args) > 0 else None
         break
                 ''',
-                add_newline=True,
             ).format(
                 expr=expr,
                 yield_from_var=self.get_temp_var("yield_from"),
@@ -3407,15 +3450,32 @@ if not {check_var}:
         if self.no_wrap or for_py_typedef and self.target_info >= (3, 7):
             return typedef
         else:
-            return self.wrap_str_of(self.reformat(typedef, ignore_errors=False))
+            with self.separate_add_code_before(typedef) as (ignore_names, add_code_before):
+                reformatted_typedef = self.reformat(typedef, ignore_errors=False)
+                wrapped = self.wrap_str_of(reformatted_typedef)
+            return self.add_code_before_marker_with_replacement(wrapped, *add_code_before, ignore_names=ignore_names)
+
+    def wrap_type_comment(self, typedef, is_return=False, add_newline=False):
+        with self.separate_add_code_before(typedef) as (ignore_names, add_code_before):
+            reformatted_typedef = self.reformat(typedef, ignore_errors=False)
+            if is_return:
+                type_comment = " type: (...) -> " + reformatted_typedef
+            else:
+                type_comment = " type: " + reformatted_typedef
+            wrapped = self.wrap_comment(type_comment)
+            if add_newline:
+                wrapped = self.wrap_passthrough(wrapped + non_syntactic_newline, early=True)
+        return self.add_code_before_marker_with_replacement(wrapped, *add_code_before, ignore_names=ignore_names)
 
     def typedef_handle(self, tokens):
         """Process Python 3 type annotations."""
         if len(tokens) == 1:  # return typedef
+            typedef, = tokens
             if self.target.startswith("3"):
-                return " -> " + self.wrap_typedef(tokens[0], for_py_typedef=True) + ":"
+                return " -> " + self.wrap_typedef(typedef, for_py_typedef=True) + ":"
             else:
-                return ":\n" + self.wrap_comment(" type: (...) -> " + tokens[0])
+                TODO = self.wrap_type_comment(typedef, is_return=True)
+                return ":\n" + TODO
         else:  # argument typedef
             if len(tokens) == 3:
                 varname, typedef, comma = tokens
@@ -3427,7 +3487,7 @@ if not {check_var}:
             if self.target.startswith("3"):
                 return varname + ": " + self.wrap_typedef(typedef, for_py_typedef=True) + default + comma
             else:
-                return varname + default + comma + self.wrap_passthrough(self.wrap_comment(" type: " + typedef) + non_syntactic_newline, early=True)
+                return varname + default + comma + self.wrap_type_comment(typedef, add_newline=True)
 
     def typed_assign_stmt_handle(self, tokens):
         """Process Python 3.6 variable type annotations."""
@@ -3446,7 +3506,7 @@ if not {check_var}:
                 '''
 {name} = {value}{comment}
 if "__annotations__" not in _coconut.locals():
-    __annotations__ = {{}}
+    __annotations__ = {{}} {type_ignore}
 __annotations__["{name}"] = {annotation}
                 ''',
             ).format(
@@ -3455,8 +3515,9 @@ __annotations__["{name}"] = {annotation}
                     value if value is not None
                     else "_coconut.typing.cast(_coconut.typing.Any, {ellipsis})".format(ellipsis=self.ellipsis_handle())
                 ),
-                comment=self.wrap_comment(" type: " + typedef),
+                comment=self.wrap_type_comment(typedef),
                 annotation=self.wrap_typedef(typedef, for_py_typedef=False),
+                type_ignore=self.type_ignore_comment(),
             )
 
     def funcname_typeparams_handle(self, tokens):
@@ -3466,11 +3527,7 @@ __annotations__["{name}"] = {annotation}
             return name
         else:
             name, paramdefs = tokens
-            # temp_marker will be set back later, but needs to be a unique name until then for add_code_before
-            temp_marker = self.get_temp_var("type_param_func")
-            self.add_code_before[temp_marker] = "".join(paramdefs)
-            self.add_code_before_replacements[temp_marker] = name
-            return temp_marker
+            return self.add_code_before_marker_with_replacement(name, "".join(paramdefs), add_spaces=False)
 
     funcname_typeparams_handle.ignore_one_token = True
 
@@ -3951,6 +4008,23 @@ if False:
                 funcdef = kwd + " " + funcdef
         return funcdef
 
+    def protocol_intersect_expr_handle(self, tokens):
+        if len(tokens) == 1:
+            return tokens[0]
+        internal_assert(len(tokens) >= 2, "invalid protocol intersection tokens", tokens)
+        protocol_var = self.get_temp_var("protocol_intersection")
+        self.add_code_before[protocol_var] = handle_indentation(
+            '''
+class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
+            ''',
+        ).format(
+            protocol_var=protocol_var,
+            tokens=", ".join(tokens),
+        )
+        return protocol_var
+
+    protocol_intersect_expr_handle.ignore_one_token = True
+
 # end: HANDLERS
 # -----------------------------------------------------------------------------------------------------------------------
 # CHECKING HANDLERS:
@@ -4140,11 +4214,7 @@ if False:
             if self.in_method:
                 cls_context = self.current_parsing_context("class")
                 enclosing_cls = cls_context["name_prefix"] + cls_context["name"]
-                # temp_marker will be set back later, but needs to be a unique name until then for add_code_before
-                temp_marker = self.get_temp_var("super")
-                self.add_code_before[temp_marker] = "__class__ = " + enclosing_cls + "\n"
-                self.add_code_before_replacements[temp_marker] = name
-                return temp_marker
+                return self.add_code_before_marker_with_replacement(name, "__class__ = " + enclosing_cls + "\n", add_spaces=False)
             else:
                 return name
         elif not escaped and name.startswith(reserved_prefix) and name not in self.operators:

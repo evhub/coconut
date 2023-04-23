@@ -21,7 +21,7 @@ class _coconut{object}:{COMMENT.EVERYTHING_HERE_MUST_BE_COPIED_TO_STUB_FILE}
 {import_OrderedDict}
 {import_collections_abc}
 {import_typing}
-{import_typing_NamedTuple}{import_typing_TypeAlias_ParamSpec_Concatenate}{import_typing_TypeVarTuple_Unpack}{set_zip_longest}
+{import_typing_36}{import_typing_38}{import_typing_310}{import_typing_311}{set_zip_longest}
     try:
         import numpy
     except ImportError:

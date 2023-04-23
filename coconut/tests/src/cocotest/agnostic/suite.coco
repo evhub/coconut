@@ -1044,6 +1044,7 @@ forward 2""") == 900
     assert wrong_get_set_glob(10) == 0
     assert get_glob() == 0
     assert wrong_get_set_glob(20) == 10
+    assert take_xy(xy("a", "b")) == ("a", "b")
 
     # must come at end
     assert fibs_calls[0] == 1

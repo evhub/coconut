@@ -60,12 +60,20 @@ except ImportError:
 else:
     _abc.Sequence.register(_numpy.ndarray)
 
+if sys.version_info < (3, 8):
+    try:
+        from typing_extensions import Protocol
+    except ImportError:
+        Protocol = ...
+    typing.Protocol = Protocol
+
 if sys.version_info < (3, 10):
     try:
         from typing_extensions import TypeAlias, ParamSpec, Concatenate
     except ImportError:
         TypeAlias = ...
         ParamSpec = ...
+        Concatenate = ...
     typing.TypeAlias = TypeAlias
     typing.ParamSpec = ParamSpec
     typing.Concatenate = Concatenate

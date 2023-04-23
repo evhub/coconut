@@ -408,8 +408,6 @@ You can also run `mypy`—or any other static type checker—directly on the com
 1. run `coconut --mypy install` and
 2. tell your static type checker of choice to look in `~/.coconut_stubs` for stub files (for `mypy`, this is done by adding it to your [`MYPYPATH`](https://mypy.readthedocs.io/en/latest/running_mypy.html#how-imports-are-found)).
 
-Note that `coconut --mypy` will by default use a custom Coconut `mypy.ini` file (for compatibility with Coconut's [protocol intersection operator](#protocol-intersection)) rather than any global `mypy` config files, though this can still be overridden by putting a `mypy.ini` or `.mypy.ini` file in the current working directory.
-
 To distribute your code with checkable type annotations, you'll need to include `coconut` as a dependency (though a `--no-deps` install should be fine), as installing it is necessary to make the requisite stub files available. You'll also probably want to include a [`py.typed`](https://peps.python.org/pep-0561/) file.
 
 ##### Syntax
@@ -967,34 +965,53 @@ import functools
 
 ### Protocol Intersection
 
-Coconut uses the `&:` operator to indicate protocol intersection, making use of [`typing-protocol-intersection`](https://pypi.org/project/typing-protocol-intersection/), which must be installed for `&:` to work (`pip install coconut[mypy]` will install `typing-protocol-intersection` by default).
-
-Specifically,
-```coconut
-Protocol1 &: Protocol2
-```
-will compile to
-```coconut_python
-ProtocolIntersection[Protocol1, Protocol2]
-```
-
-Note that, for `mypy` to properly type-check protocol intersections, the [`typing-protocol-intersection`](https://pypi.org/project/typing-protocol-intersection/) `mypy` plugin must be enabled. If no `mypy.ini`/`.mypy.ini` is present in the current working directory, Coconut will do this by default when calling `coconut --mypy`. Otherwise, you'll need to add
-```
-[mypy]
-plugins = typing_protocol_intersection.mypy_plugin
-```
-to your `mypy` configuration file.
+Coconut uses the `&:` operator to indicate protocol intersection. That is, for two [`typing.Protocol`s](https://docs.python.org/3/library/typing.html#typing.Protocol) `Protocol1` and `Protocol1`, `Protocol1 &: Protocol2` is equivalent to a `Protocol` that combines the requirements of both `Protocol1` and `Protocol2`.
 
 ##### Example
 
 **Coconut:**
 ```coconut
-TODO
+from typing import Protocol
+
+class X(Protocol):
+    x: str
+
+class Y(Protocol):
+    y: str
+
+class xy:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+def foo(xy: X &: Y) -> None:
+    print(xy.x, xy.y)
+
+foo(xy("a", "b"))
 ```
 
 **Python:**
 ```coconut_python
-TODO
+from typing import Protocol
+
+class X(Protocol):
+    x: str
+
+class Y(Protocol):
+    y: str
+
+class XY(X, Y, Protocol):
+    pass
+
+class xy:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+def foo(xy: XY) -> None:
+    print(xy.x, xy.y)
+
+foo(xy("a", "b"))
 ```
 
 ### Unicode Alternatives
@@ -1643,7 +1660,6 @@ A very common thing to do in functional programming is to make use of function v
 (!=)        => (operator.ne)
 (~)         => (operator.inv)
 (@)         => (operator.matmul)
-(&:)        => (typing_protocol_intersection.ProtocolIntersection)
 (|>)        => # pipe forward
 (|*>)       => # multi-arg pipe forward
 (|**>)      => # keyword arg pipe forward
@@ -1721,6 +1737,8 @@ Additionally, Coconut also supports implicit operator function partials for arbi
 (<arg> `<name>` .)
 ```
 based on Coconut's [infix notation](#infix-functions) where `<name>` is the name of the function. Additionally, `` `<name>` `` can instead be a [custom operator](#custom-operators) (in that case, no backticks should be used).
+
+_DEPRECATED: Coconut also supports `obj.` as an implicit partial for `getattr$(obj)`, but its usage is deprecated and will show a warning to switch to `getattr$(obj)` instead._
 
 ##### Example
 

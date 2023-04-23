@@ -1011,7 +1011,6 @@ class Grammar(object):
         | fixto(ne, "_coconut.operator.ne")
         | fixto(tilde, "_coconut.operator.inv")
         | fixto(matrix_at, "_coconut_matmul")
-        | fixto(amp_colon, "_coconut_ProtocolIntersection")
         | fixto(keyword("is") + keyword("not"), "_coconut.operator.is_not")
         | fixto(keyword("not") + keyword("in"), "_coconut_not_in")
 
@@ -1388,14 +1387,17 @@ class Grammar(object):
     # arith_expr = exprlist(term, addop)
     # shift_expr = exprlist(arith_expr, shift)
     # and_expr = exprlist(shift_expr, amp)
-    # xor_expr = exprlist(and_expr, caret)
-    xor_expr = exprlist(
+    and_expr = exprlist(
         term,
         addop
         | shift
-        | amp
-        | caret,
+        | amp,
     )
+
+    protocol_intersect_expr = Forward()
+    protocol_intersect_expr_ref = tokenlist(and_expr, amp_colon, allow_trailing=False)
+
+    xor_expr = exprlist(protocol_intersect_expr, caret)
 
     or_expr = typedef_or_expr | exprlist(xor_expr, bar)
 

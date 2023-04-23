@@ -1044,7 +1044,7 @@ class unrepresentable:
 
 # Typing
 if TYPE_CHECKING or sys.version_info >= (3, 5):
-    from typing import List, Dict, Any, cast
+    from typing import List, Dict, Any, cast, Protocol
 else:
     def cast(typ, value) = value
 
@@ -1066,6 +1066,21 @@ def try_divide(x: float, y: float) -> Expected[float]:
         return Expected(x / y)
     except Exception as err:
         return Expected(error=err)
+
+class X(Protocol):
+    x: str
+
+class Y(Protocol):
+    y: str
+
+class xy:
+    def __init__(self, x: str, y: str):
+        self.x: str = x
+        self.y: str = y
+
+def take_xy(xy: X &: Y) -> (str; str) =
+    xy.x, xy.y
+
 
 # Enhanced Pattern-Matching
 
