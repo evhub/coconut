@@ -399,6 +399,8 @@ _Note: Unlike the normal Coconut command-line, `%%coconut` defaults to the `sys`
 
 #### MyPy Integration
 
+##### Setup
+
 Coconut has the ability to integrate with [MyPy](http://mypy-lang.org/) to provide optional static type_checking, including for all Coconut built-ins. Simply pass `--mypy` to `coconut` to enable MyPy integration, though be careful to pass it only as the last argument, since all arguments after `--mypy` are passed to `mypy`, not Coconut.
 
 You can also run `mypy`—or any other static type checker—directly on the compiled Coconut. If the static type checker is unable to find the necessary stub files, however, then you may need to:
@@ -406,7 +408,24 @@ You can also run `mypy`—or any other static type checker—directly on the com
 1. run `coconut --mypy install` and
 2. tell your static type checker of choice to look in `~/.coconut_stubs` for stub files (for `mypy`, this is done by adding it to your [`MYPYPATH`](https://mypy.readthedocs.io/en/latest/running_mypy.html#how-imports-are-found)).
 
-To explicitly annotate your code with types to be checked, Coconut supports [Python 3 function type annotations](https://www.python.org/dev/peps/pep-0484/), [Python 3.6 variable type annotations](https://www.python.org/dev/peps/pep-0526/), and even Coconut's own [enhanced type annotation syntax](#enhanced-type-annotation). By default, all type annotations are compiled to Python-2-compatible type comments, which means it all works on any Python version. Coconut also supports [PEP 695 type parameter syntax](#type-parameter-syntax) for easily adding type parameters to classes, functions, [`data` types](#data), and type aliases.
+Note that `coconut --mypy` will by default use a custom Coconut `mypy.ini` file (for compatibility with Coconut's [protocol intersection operator](#protocol-intersection)) rather than any global `mypy` config files, though this can still be overridden by putting a `mypy.ini` or `.mypy.ini` file in the current working directory.
+
+To distribute your code with checkable type annotations, you'll need to include `coconut` as a dependency (though a `--no-deps` install should be fine), as installing it is necessary to make the requisite stub files available. You'll also probably want to include a [`py.typed`](https://peps.python.org/pep-0561/) file.
+
+##### Syntax
+
+To explicitly annotate your code with types to be checked, Coconut supports:
+* [Python 3 function type annotations](https://www.python.org/dev/peps/pep-0484/),
+* [Python 3.6 variable type annotations](https://www.python.org/dev/peps/pep-0526/),
+* [PEP 695 type parameter syntax](#type-parameter-syntax) for easily adding type parameters to classes, functions, [`data` types](#data), and type aliases,
+* Coconut's [protocol intersection operator](#protocol-intersection), and
+* Coconut's own [enhanced type annotation syntax](#enhanced-type-annotation).
+
+By default, all type annotations are compiled to Python-2-compatible type comments, which means it all works on any Python version.
+
+Sometimes, MyPy will not know how to handle certain Coconut constructs, such as `addpattern`. For the `addpattern` case, it is recommended to pass `--allow-redefinition` to MyPy (i.e. run `coconut <args> --mypy --allow-redefinition`), though in some cases `--allow-redefinition` may not be sufficient. In that case, either hide the offending code using [`TYPE_CHECKING`](#type_checking) or put a `# type: ignore` comment on the Coconut line which is generating the line MyPy is complaining about and the comment will be added to every generated line.
+
+##### Interpreter
 
 Coconut even supports `--mypy` in the interpreter, which will intelligently scan each new line of code, in the context of previous lines, for newly-introduced MyPy errors. For example:
 ```coconut_pycon
@@ -417,10 +436,6 @@ Coconut even supports `--mypy` in the interpreter, which will intelligently scan
 <string>:19: note: Revealed type is 'builtins.unicode'
 ```
 _For more information on `reveal_type`, see [`reveal_type` and `reveal_locals`](#reveal-type-and-reveal-locals)._
-
-Sometimes, MyPy will not know how to handle certain Coconut constructs, such as `addpattern`. For the `addpattern` case, it is recommended to pass `--allow-redefinition` to MyPy (i.e. run `coconut <args> --mypy --allow-redefinition`), though in some cases `--allow-redefinition` may not be sufficient. In that case, either hide the offending code using [`TYPE_CHECKING`](#type_checking) or put a `# type: ignore` comment on the Coconut line which is generating the line MyPy is complaining about and the comment will be added to every generated line.
-
-To distribute your code with checkable type annotations, you'll need to include `coconut` as a dependency (though a `--no-deps` install should be fine), as installing it is necessary to make the requisite stub files available. You'll also probably want to include a [`py.typed`](https://peps.python.org/pep-0561/) file.
 
 #### `numpy` Integration
 
@@ -478,6 +493,7 @@ f x                    n/a
 +, -                   left
 <<, >>                 left
 &                      left
+&:                     left
 ^                      left
 |                      left
 ::                     n/a (lazy)
@@ -947,6 +963,38 @@ import functools
 (lambda result: None if result is None else functools.partial(result, arg))(could_be_none())
 (lambda result: None if result is None else result[0])(could_be_none())
 (lambda result: None if result is None else result.attr[index].method())(could_be_none())
+```
+
+### Protocol Intersection
+
+Coconut uses the `&:` operator to indicate protocol intersection, making use of [`typing-protocol-intersection`](https://pypi.org/project/typing-protocol-intersection/), which must be installed for `&:` to work (`pip install coconut[mypy]` will install `typing-protocol-intersection` by default).
+
+Specifically,
+```coconut
+Protocol1 &: Protocol2
+```
+will compile to
+```coconut_python
+ProtocolIntersection[Protocol1, Protocol2]
+```
+
+Note that, for `mypy` to properly type-check protocol intersections, the [`typing-protocol-intersection`](https://pypi.org/project/typing-protocol-intersection/) `mypy` plugin must be enabled. If no `mypy.ini`/`.mypy.ini` is present in the current working directory, Coconut will do this by default when calling `coconut --mypy`. Otherwise, you'll need to add
+```
+[mypy]
+plugins = typing_protocol_intersection.mypy_plugin
+```
+to your `mypy` configuration file.
+
+##### Example
+
+**Coconut:**
+```coconut
+TODO
+```
+
+**Python:**
+```coconut_python
+TODO
 ```
 
 ### Unicode Alternatives
@@ -1595,6 +1643,7 @@ A very common thing to do in functional programming is to make use of function v
 (!=)        => (operator.ne)
 (~)         => (operator.inv)
 (@)         => (operator.matmul)
+(&:)        => (typing_protocol_intersection.ProtocolIntersection)
 (|>)        => # pipe forward
 (|*>)       => # multi-arg pipe forward
 (|**>)      => # keyword arg pipe forward

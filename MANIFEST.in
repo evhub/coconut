@@ -8,6 +8,7 @@ global-include *.md
 global-include *.json
 global-include *.toml
 global-include *.coco
+global-include *.ini
 global-include py.typed
 prune coconut/tests/dest
 prune docs

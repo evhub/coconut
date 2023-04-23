@@ -612,7 +612,14 @@ mypy_builtin_regex = re.compile(r"\b(reveal_type|reveal_locals)\b")
 interpreter_uses_auto_compilation = True
 interpreter_uses_coconut_breakpoint = True
 
-coconut_pth_file = os.path.join(base_dir, "command", "resources", "zcoconut.pth")
+mypy_config_files = (
+    "mypy.ini",
+    ".mypy.ini",
+)
+
+command_resources_dir = os.path.join(base_dir, "command", "resources")
+coconut_pth_file = os.path.join(command_resources_dir, "zcoconut.pth")
+coconut_mypy_config = os.path.join(command_resources_dir, "mypy.ini")
 
 interpreter_compiler_var = "__coconut_compiler__"
 
@@ -821,6 +828,7 @@ all_reqs = {
         "types-backports",
         ("typing_extensions", "py==35"),
         ("typing_extensions", "py36"),
+        ("typing-protocol-intersection", "py37"),
     ),
     "watch": (
         "watchdog",
@@ -879,6 +887,7 @@ min_versions = {
     ("jupyter-console", "py37"): (6, 6),
     ("typing", "py<35"): (3, 10),
     ("jedi", "py37"): (0, 18),
+    ("typing-protocol-intersection", "py37"): (0, 3),
 
     # pinned reqs: (must be added to pinned_reqs below)
 

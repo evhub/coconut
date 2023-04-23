@@ -529,9 +529,6 @@ class Compiler(Grammar, pickleable_obj):
         if self.temp_var_counts is None or not keep_state:
             self.temp_var_counts = defaultdict(int)
         self.parsing_context = defaultdict(list)
-        self.add_code_before = {}
-        self.add_code_before_regexes = {}
-        self.add_code_before_replacements = {}
         self.unused_imports = defaultdict(list)
         self.kept_lines = []
         self.num_lines = 0
@@ -539,6 +536,19 @@ class Compiler(Grammar, pickleable_obj):
         if self.operators is None or not keep_state:
             self.operators = []
             self.operator_repl_table = []
+        self.add_code_before = {
+            "_coconut_ProtocolIntersection": handle_indentation(
+                """
+if _coconut.typing.TYPE_CHECKING or "_coconut_ProtocolIntersection" not in _coconut.locals() and "_coconut_ProtocolIntersection" not in _coconut.globals():
+    from typing_protocol_intersection import ProtocolIntersection as _coconut_ProtocolIntersection
+                """,
+            ).format(
+                object="" if self.target.startswith("3") else "(object)",
+                type_ignore=self.type_ignore_comment(),
+            ),
+        }
+        self.add_code_before_regexes = {}
+        self.add_code_before_replacements = {}
 
     @contextmanager
     def inner_environment(self):

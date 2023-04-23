@@ -688,7 +688,8 @@ class Grammar(object):
         | fixto(Literal("<**?\u2218"), "<**?..")
         | invalid_syntax("<?**..", "Coconut's None-aware backward keyword composition pipe is '<**?..', not '<?**..'")
     )
-    amp = Literal("&") | fixto(Literal("\u2227") | Literal("\u2229"), "&")
+    amp_colon = Literal("&:")
+    amp = ~amp_colon + Literal("&") | fixto(Literal("\u2227") | Literal("\u2229"), "&")
     caret = Literal("^") | fixto(Literal("\u22bb"), "^")
     unsafe_bar = ~Literal("|>") + ~Literal("|*") + Literal("|") | fixto(Literal("\u2228") | Literal("\u222a"), "|")
     bar = ~rbanana + unsafe_bar | invalid_syntax("\xa6", "invalid broken bar character", greedy=True)
@@ -1010,6 +1011,7 @@ class Grammar(object):
         | fixto(ne, "_coconut.operator.ne")
         | fixto(tilde, "_coconut.operator.inv")
         | fixto(matrix_at, "_coconut_matmul")
+        | fixto(amp_colon, "_coconut_ProtocolIntersection")
         | fixto(keyword("is") + keyword("not"), "_coconut.operator.is_not")
         | fixto(keyword("not") + keyword("in"), "_coconut_not_in")
 
