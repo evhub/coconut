@@ -1044,9 +1044,32 @@ class unrepresentable:
 
 # Typing
 if TYPE_CHECKING or sys.version_info >= (3, 5):
-    from typing import List, Dict, Any, cast, Protocol
+    from typing import (
+        List,
+        Dict,
+        Any,
+        cast,
+        Protocol,
+        TypeVar,
+        Generic,
+    )
+
+    T = TypeVar("T", covariant=True)
+    U = TypeVar("U", contravariant=True)
+    V = TypeVar("V", covariant=True)
+
+    class SupportsAdd(Protocol, Generic[T, U, V]):
+        def __add__(self: T, other: U) -> V:
+            raise NotImplementedError
+
+    class SupportsMul(Protocol, Generic[T, U, V]):
+        def __mul__(self: T, other: U) -> V:
+            raise NotImplementedError
+
 else:
     def cast(typ, value) = value
+
+obj_with_add_and_mul: SupportsAdd &: SupportsMul = 10
 
 def args_kwargs_func(args: List[Any]=[], kwargs: Dict[Any, Any]={}) -> typing.Literal[True] =
     True

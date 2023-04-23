@@ -3445,7 +3445,7 @@ if not {check_var}:
         """Process type annotations without a comma after them."""
         return self.typedef_handle(tokens.asList() + [","])
 
-    def wrap_typedef(self, typedef, for_py_typedef):
+    def wrap_typedef(self, typedef, for_py_typedef, duplicate=False):
         """Wrap a type definition in a string to defer it unless --no-wrap or __future__.annotations."""
         if self.no_wrap or for_py_typedef and self.target_info >= (3, 7):
             return typedef
@@ -3453,6 +3453,9 @@ if not {check_var}:
             with self.separate_add_code_before(typedef) as (ignore_names, add_code_before):
                 reformatted_typedef = self.reformat(typedef, ignore_errors=False)
                 wrapped = self.wrap_str_of(reformatted_typedef)
+            # duplicate means that the necessary add_code_before will already have been done
+            if duplicate:
+                add_code_before = ()
             return self.add_code_before_marker_with_replacement(wrapped, *add_code_before, ignore_names=ignore_names)
 
     def wrap_type_comment(self, typedef, is_return=False, add_newline=False):
@@ -3516,7 +3519,7 @@ __annotations__["{name}"] = {annotation}
                     else "_coconut.typing.cast(_coconut.typing.Any, {ellipsis})".format(ellipsis=self.ellipsis_handle())
                 ),
                 comment=self.wrap_type_comment(typedef),
-                annotation=self.wrap_typedef(typedef, for_py_typedef=False),
+                annotation=self.wrap_typedef(typedef, for_py_typedef=False, duplicate=True),
                 type_ignore=self.type_ignore_comment(),
             )
 
