@@ -912,11 +912,8 @@ class Compiler(Grammar, pickleable_obj):
             out += "\n"
         return out
 
-    def wrap_comment(self, text, reformat=True):
+    def wrap_comment(self, text):
         """Wrap a comment."""
-        if reformat:
-            whitespace, base_comment = split_leading_whitespace(text)
-            text = whitespace + self.reformat(base_comment, ignore_errors=False)
         return "#" + self.add_ref("comment", text) + unwrapper
 
     def wrap_error(self, error):
@@ -933,7 +930,7 @@ class Compiler(Grammar, pickleable_obj):
     def type_ignore_comment(self):
         """Get a "type: ignore" comment."""
         if self.wrapped_type_ignore is None:
-            self.wrapped_type_ignore = self.wrap_comment(" type: ignore", reformat=False)
+            self.wrapped_type_ignore = self.wrap_comment(" type: ignore")
         return self.wrapped_type_ignore
 
     def wrap_line_number(self, ln):
@@ -1185,7 +1182,7 @@ class Compiler(Grammar, pickleable_obj):
             if hold is not None:
                 if len(hold) == 1:  # hold == [_comment]
                     if c == "\n":
-                        out += [self.wrap_comment(hold[_comment], reformat=False), c]
+                        out += [self.wrap_comment(hold[_comment]), c]
                         hold = None
                     else:
                         hold[_comment] += c
@@ -1557,7 +1554,7 @@ class Compiler(Grammar, pickleable_obj):
         else:
             return ""
 
-        return self.wrap_comment(comment, reformat=False)
+        return self.wrap_comment(comment)
 
     def endline_repl(self, inputstring, reformatting=False, ignore_errors=False, **kwargs):
         """Add end of line comments."""
@@ -3465,7 +3462,7 @@ if not {check_var}:
             type_comment = " type: (...) -> " + reformatted_typedef
         else:
             type_comment = " type: " + reformatted_typedef
-        wrapped = self.wrap_comment(type_comment, reformat=False)
+        wrapped = self.wrap_comment(type_comment)
         if add_newline:
             wrapped += non_syntactic_newline
         return self.add_code_before_marker_with_replacement(wrapped, *add_code_before, ignore_names=ignore_names)
