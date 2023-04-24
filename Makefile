@@ -206,6 +206,12 @@ test-watch: clean
 test-mini:
 	coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --force --jobs 0
 
+.PHONY: debug-comp-crash
+debug-comp-crash: export COCONUT_USE_COLOR=TRUE
+debug-comp-crash: export COCONUT_PURE_PYTHON=TRUE
+debug-comp-crash:
+	python -X dev -m coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --strict --line-numbers --keep-lines --force --jobs 0
+
 .PHONY: debug-test-crash
 debug-test-crash:
 	python -X dev ./coconut/tests/dest/runner.py
@@ -261,6 +267,7 @@ check-reqs:
 	python ./coconut/requirements.py
 
 .PHONY: profile-parser
+profile-parser: export COCONUT_USE_COLOR=TRUE
 profile-parser: export COCONUT_PURE_PYTHON=TRUE
 profile-parser:
 	coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --force --profile --verbose --recursion-limit 4096 2>&1 | tee ./profile.log

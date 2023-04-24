@@ -125,8 +125,8 @@ coconut [-h] [--and source [dest ...]] [-v] [-t version] [-i] [-p] [-a] [-l] [-k
         [-r] [-n] [-d] [-q] [-s] [--no-tco] [--no-wrap-types] [-c code] [-j processes]
         [-f] [--minify] [--jupyter ...] [--mypy ...] [--argv ...] [--tutorial]
         [--docs] [--style name] [--history-file path] [--vi-mode]
-        [--recursion-limit limit] [--site-install] [--site-uninstall] [--verbose]
-        [--trace] [--profile]
+        [--recursion-limit limit] [--stack-size limit] [--site-install]
+        [--site-uninstall] [--verbose] [--trace] [--profile]
         [source] [dest]
 ```
 
@@ -196,7 +196,10 @@ dest                destination directory for compiled files (defaults to
   --vi-mode, --vimode   enable vi mode in the interpreter (currently set to False) (can be
                         modified by setting COCONUT_VI_MODE environment variable)
   --recursion-limit limit, --recursionlimit limit
-                        set maximum recursion depth in compiler (defaults to 2090)
+                        set maximum recursion depth in compiler (defaults to 2000)
+  --stack-size limit, --stacksize limit
+                        run the compiler in a separate thread with the given stack size (in
+                        kilobytes)
   --site-install, --siteinstall
                         set up coconut.convenience to be imported on Python start
   --site-uninstall, --siteuninstall

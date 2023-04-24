@@ -23,6 +23,7 @@ import sys
 import os
 import subprocess
 import shutil
+import threading
 from select import select
 from contextlib import contextmanager
 from functools import partial
@@ -74,6 +75,8 @@ from coconut.constants import (
     interpreter_uses_coconut_breakpoint,
     interpreter_compiler_var,
     must_use_specific_target_builtins,
+    kilobyte,
+    min_stack_size_kbs,
 )
 
 if PY26:
@@ -426,6 +429,19 @@ def invert_mypy_arg(arg):
         return None
 
 
+def run_with_stack_size(stack_kbs, func, *args, **kwargs):
+    """Run the given function with a stack of the given size in KBs."""
+    if stack_kbs < min_stack_size_kbs:
+        raise CoconutException("--stack-size must be at least " + str(min_stack_size_kbs) + " KB")
+    threading.stack_size(stack_kbs * kilobyte)
+    out = []
+    thread = threading.Thread(target=lambda *args, **kwargs: out.append(func(*args, **kwargs)), args=args, kwargs=kwargs)
+    thread.start()
+    thread.join()
+    internal_assert(len(out) == 1, "invalid threading results", out)
+    return out[0]
+
+
 # -----------------------------------------------------------------------------------------------------------------------
 # CLASSES:
 # -----------------------------------------------------------------------------------------------------------------------
@@ -650,21 +666,26 @@ class multiprocess_wrapper(pickleable_obj):
     """Wrapper for a method that needs to be multiprocessed."""
     __slots__ = ("base", "method", "rec_limit", "logger", "argv")
 
-    def __init__(self, base, method, _rec_limit=None, _logger=None, _argv=None):
+    def __init__(self, base, method, stack_size=None, _rec_limit=None, _logger=None, _argv=None):
         """Create new multiprocessable method."""
         self.base = base
         self.method = method
+        self.stack_size = stack_size
         self.rec_limit = sys.getrecursionlimit() if _rec_limit is None else _rec_limit
         self.logger = logger.copy() if _logger is None else _logger
         self.argv = sys.argv if _argv is None else _argv
 
     def __reduce__(self):
         """Pickle for transfer across processes."""
-        return (self.__class__, (self.base, self.method, self.rec_limit, self.logger, self.argv))
+        return (self.__class__, (self.base, self.method, self.stack_size, self.rec_limit, self.logger, self.argv))
 
     def __call__(self, *args, **kwargs):
         """Call the method."""
         sys.setrecursionlimit(self.rec_limit)
         logger.copy_from(self.logger)
         sys.argv = self.argv
-        return getattr(self.base, self.method)(*args, **kwargs)
+        func = getattr(self.base, self.method)
+        if self.stack_size:
+            return run_with_stack_size(self.stack_size, func, args, kwargs)
+        else:
+            return func(*args, **kwargs)

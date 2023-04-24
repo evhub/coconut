@@ -127,7 +127,8 @@ assert not embed_on_internal_exc or DEVELOP, "embed_on_internal_exc should never
 temp_grammar_item_ref_count = 3 if PY311 else 5
 
 minimum_recursion_limit = 128
-default_recursion_limit = 2090
+# shouldn't be raised any higher to avoid stack overflows
+default_recursion_limit = 2000
 
 if sys.getrecursionlimit() < default_recursion_limit:
     sys.setrecursionlimit(default_recursion_limit)
@@ -621,6 +622,9 @@ mypy_non_err_infixes = (
 )
 
 oserror_retcode = 127
+
+kilobyte = 1024
+min_stack_size_kbs = 160
 
 mypy_install_arg = "install"
 

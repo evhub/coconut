@@ -259,6 +259,13 @@ arguments.add_argument(
 )
 
 arguments.add_argument(
+    "--stack-size", "--stacksize",
+    metavar="limit",
+    type=int,
+    help="run the compiler in a separate thread with the given stack size (in kilobytes)",
+)
+
+arguments.add_argument(
     "--site-install", "--siteinstall",
     action="store_true",
     help="set up coconut.convenience to be imported on Python start",

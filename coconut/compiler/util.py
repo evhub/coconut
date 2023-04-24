@@ -1052,15 +1052,22 @@ def should_indent(code):
     return last_line.endswith((":", "=", "\\")) or paren_change(last_line) < 0
 
 
-def split_leading_comment(inputstr):
-    """Split into leading comment and rest.
-    Comment must be at very start of string."""
-    if inputstr.startswith(comment_chars):
-        comment_line, rest = inputstr.split("\n", 1)
-        comment, indent = split_trailing_indent(comment_line)
-        return comment + "\n", indent + rest
-    else:
-        return "", inputstr
+def split_leading_comments(inputstr):
+    """Split into leading comments and rest."""
+    comments = ""
+    indent, base = split_leading_indent(inputstr)
+
+    while base.startswith(comment_chars):
+        comment_line, rest = base.split("\n", 1)
+
+        got_comment, got_indent = split_trailing_indent(comment_line)
+        comments += got_comment + "\n"
+        indent += got_indent
+
+        got_indent, base = split_leading_indent(rest)
+        indent += got_indent
+
+    return comments, indent + base
 
 
 def split_trailing_comment(inputstr):
@@ -1076,7 +1083,7 @@ def split_trailing_comment(inputstr):
 
 def split_leading_indent(inputstr, max_indents=None):
     """Split inputstr into leading indent and main."""
-    indent = ""
+    indents = []
     while (
         (max_indents is None or max_indents > 0)
         and inputstr.startswith(indchars)
@@ -1085,13 +1092,13 @@ def split_leading_indent(inputstr, max_indents=None):
         # max_indents only refers to openindents/closeindents, not all indchars
         if max_indents is not None and got_ind in (openindent, closeindent):
             max_indents -= 1
-        indent += got_ind
-    return indent, inputstr
+        indents.append(got_ind)
+    return "".join(indents), inputstr
 
 
 def split_trailing_indent(inputstr, max_indents=None, handle_comments=True):
     """Split inputstr into leading indent and main."""
-    indent = ""
+    indents_from_end = []
     while (
         (max_indents is None or max_indents > 0)
         and inputstr.endswith(indchars)
@@ -1100,13 +1107,13 @@ def split_trailing_indent(inputstr, max_indents=None, handle_comments=True):
         # max_indents only refers to openindents/closeindents, not all indchars
         if max_indents is not None and got_ind in (openindent, closeindent):
             max_indents -= 1
-        indent = got_ind + indent
+        indents_from_end.append(got_ind)
     if handle_comments:
         inputstr, comment = split_trailing_comment(inputstr)
         inputstr, inner_indent = split_trailing_indent(inputstr, max_indents, handle_comments=False)
         inputstr = inputstr + comment
-        indent = inner_indent + indent
-    return inputstr, indent
+        indents_from_end.append(inner_indent)
+    return inputstr, "".join(reversed(indents_from_end))
 
 
 def split_leading_trailing_indent(line, max_indents=None):
@@ -1284,6 +1291,8 @@ def should_trim_arity(func):
     try:
         func_args = get_func_args(func)
     except TypeError:
+        return True
+    if not func_args:
         return True
     if func_args[0] == "self":
         func_args.pop(0)

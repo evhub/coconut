@@ -144,7 +144,7 @@ from coconut.compiler.util import (
     parse,
     all_matches,
     get_target_info_smart,
-    split_leading_comment,
+    split_leading_comments,
     compile_regex,
     append_it,
     interleaved_join,
@@ -1137,7 +1137,7 @@ class Compiler(Grammar, pickleable_obj):
                 except RuntimeError as err:
                     raise CoconutException(
                         str(err), extra="try again with --recursion-limit greater than the current "
-                        + str(sys.getrecursionlimit()),
+                        + str(sys.getrecursionlimit()) + " (you may also need to increase --stack-size)",
                     )
             self.run_final_checks(pre_procd, keep_state)
         return out
@@ -2093,7 +2093,7 @@ def {mock_var}({mock_paramdef}):
                     )
 
                 # assemble tre'd function
-                comment, rest = split_leading_comment(func_code)
+                comment, rest = split_leading_comments(func_code)
                 indent, base, dedent = split_leading_trailing_indent(rest, 1)
                 base, base_dedent = split_trailing_indent(base)
                 docstring, base = self.split_docstring(base)
@@ -2107,7 +2107,8 @@ def {mock_var}({mock_paramdef}):
                 func_code_out += [
                     mock_def,
                     "while True:\n",
-                    openindent, base, base_dedent,
+                    openindent,
+                    base, base_dedent,
                 ]
                 if "\n" not in base_dedent:
                     func_code_out.append("\n")
@@ -2252,13 +2253,17 @@ _coconut_exec({func_code_str}, {vars_var})
 
             # look for add_code_before regexes
             else:
+                inner_ignore_names = ignore_names
                 for name, raw_code in ordered(self.add_code_before.items()):
                     if name in ignore_names:
                         continue
-                    inner_ignore_names = ignore_names + (name,) + self.add_code_before_ignore_names.get(name, ())
 
                     regex = self.add_code_before_regexes[name]
                     if regex.search(line):
+
+                        # once a name is found, don't search for it again in the same line
+                        inner_ignore_names += (name,) + self.add_code_before_ignore_names.get(name, ())
+
                         # handle replacement
                         replacement = self.add_code_before_replacements.get(name)
                         if replacement is not None:
@@ -3438,7 +3443,9 @@ if not {check_var}:
 
     def unsafe_typedef_handle(self, tokens):
         """Process type annotations without a comma after them."""
-        return self.typedef_handle(tokens.asList() + [","])
+        # we add an empty string token to take the place of the comma,
+        #  but it should be empty so we don't actually put a comma in
+        return self.typedef_handle(tokens.asList() + [""])
 
     def wrap_typedef(self, typedef, for_py_typedef, duplicate=False):
         """Wrap a type definition in a string to defer it unless --no-wrap or __future__.annotations."""
@@ -3458,9 +3465,9 @@ if not {check_var}:
             type_comment = " type: (...) -> " + reformatted_typedef
         else:
             type_comment = " type: " + reformatted_typedef
-        wrapped = self.wrap_comment(type_comment)
+        wrapped = self.wrap_comment(type_comment, reformat=False)
         if add_newline:
-            wrapped = self.wrap_passthrough(wrapped + non_syntactic_newline, early=True)
+            wrapped += non_syntactic_newline
         return self.add_code_before_marker_with_replacement(wrapped, *add_code_before, ignore_names=ignore_names)
 
     def typedef_handle(self, tokens):
@@ -3470,8 +3477,7 @@ if not {check_var}:
             if self.target.startswith("3"):
                 return " -> " + self.wrap_typedef(typedef, for_py_typedef=True) + ":"
             else:
-                TODO = self.wrap_type_comment(typedef, is_return=True)
-                return ":\n" + TODO
+                return ":\n" + self.wrap_type_comment(typedef, is_return=True)
         else:  # argument typedef
             if len(tokens) == 3:
                 varname, typedef, comma = tokens

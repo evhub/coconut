@@ -2443,9 +2443,9 @@ class Grammar(object):
     tfpdef_tokens = unsafe_name - Optional(colon - rest_of_tfpdef).suppress()
     tfpdef_default_tokens = tfpdef_tokens - Optional(equals - rest_of_tfpdef)
     type_comment = Optional(
-        comment_tokens.suppress()
-        | passthrough_item.suppress(),
-    )
+        comment_tokens
+        | passthrough_item,
+    ).suppress()
     parameters_tokens = Group(
         Optional(
             tokenlist(

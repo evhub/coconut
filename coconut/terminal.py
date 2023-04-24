@@ -25,6 +25,7 @@ import traceback
 import logging
 from contextlib import contextmanager
 from collections import defaultdict
+from functools import wraps
 if sys.version_info < (2, 7):
     from StringIO import StringIO
 else:
@@ -506,6 +507,7 @@ class Logger(object):
 
     def time_func(self, func):
         """Decorator to print timing info for a function."""
+        @wraps(func)
         def timed_func(*args, **kwargs):
             """Function timed by logger.time_func."""
             if not DEVELOP or self.quiet:
@@ -513,6 +515,24 @@ class Logger(object):
             with self.time_block(func.__name__):
                 return func(*args, **kwargs)
         return timed_func
+
+    def debug_func(self, func):
+        """Decorates a function to print the input/output behavior."""
+        @wraps(func)
+        def printing_func(*args, **kwargs):
+            """Function decorated by logger.debug_func."""
+            if not DEVELOP or self.quiet:
+                return func(*args, **kwargs)
+            if not kwargs:
+                self.printerr(func, "<*|", args)
+            elif not args:
+                self.printerr(func, "<**|", kwargs)
+            else:
+                self.printerr(func, "<<|", args, kwargs)
+            out = func(*args, **kwargs)
+            self.printerr(func, "=>", repr(out))
+            return out
+        return printing_func
 
     def patch_logging(self):
         """Patches built-in Python logging if necessary."""
