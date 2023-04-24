@@ -81,7 +81,7 @@ if sys.version_info >= (3, 7):
     from dataclasses import dataclass as _dataclass
 else:
     @_dataclass_transform()
-    def _dataclass(cls: type[_T], **kwargs: _t.Any) -> type[_T]: ...
+    def _dataclass(cls: t_coype[_T], **kwargs: _t.Any) -> type[_T]: ...
 
 try:
     from typing_extensions import deprecated as _deprecated  # type: ignore
@@ -1334,3 +1334,62 @@ def _coconut_multi_dim_arr(
 
 @_t.overload
 def _coconut_multi_dim_arr(arrs: _Tuple, dim: int) -> _Sequence: ...
+
+
+class _coconut_SupportsAdd(_t.Protocol, _t.Generic[_Tco, _Ucontra, _Vco]):
+    def __add__(self: _Tco, other: _Ucontra) -> _Vco:
+        raise NotImplementedError
+
+class _coconut_SupportsMinus(_t.Protocol, _t.Generic[_Tco, _Ucontra, _Vco]):
+    def __sub__(self: _Tco, other: _Ucontra) -> _Vco:
+        raise NotImplementedError
+    def __neg__(self: _Tco) -> _Vco:
+        raise NotImplementedError
+
+class _coconut_SupportsMul(_t.Protocol, _t.Generic[_Tco, _Ucontra, _Vco]):
+    def __mul__(self: _Tco, other: _Ucontra) -> _Vco:
+        raise NotImplementedError
+
+class _coconut_SupportsPow(_t.Protocol, _t.Generic[_Tco, _Ucontra, _Vco]):
+    def __pow__(self: _Tco, other: _Ucontra) -> _Vco:
+        raise NotImplementedError
+
+class _coconut_SupportsTruediv(_t.Protocol, _t.Generic[_Tco, _Ucontra, _Vco]):
+    def __truediv__(self: _Tco, other: _Ucontra) -> _Vco:
+        raise NotImplementedError
+
+class _coconut_SupportsFloordiv(_t.Protocol, _t.Generic[_Tco, _Ucontra, _Vco]):
+    def __floordiv__(self: _Tco, other: _Ucontra) -> _Vco:
+        raise NotImplementedError
+
+class _coconut_SupportsMod(_t.Protocol, _t.Generic[_Tco, _Ucontra, _Vco]):
+    def __mod__(self: _Tco, other: _Ucontra) -> _Vco:
+        raise NotImplementedError
+
+class _coconut_SupportsAnd(_t.Protocol, _t.Generic[_Tco, _Ucontra, _Vco]):
+    def __and__(self: _Tco, other: _Ucontra) -> _Vco:
+        raise NotImplementedError
+
+class _coconut_SupportsXor(_t.Protocol, _t.Generic[_Tco, _Ucontra, _Vco]):
+    def __xor__(self: _Tco, other: _Ucontra) -> _Vco:
+        raise NotImplementedError
+
+class _coconut_SupportsOr(_t.Protocol, _t.Generic[_Tco, _Ucontra, _Vco]):
+    def __or__(self: _Tco, other: _Ucontra) -> _Vco:
+        raise NotImplementedError
+
+class _coconut_SupportsLshift(_t.Protocol, _t.Generic[_Tco, _Ucontra, _Vco]):
+    def __lshift__(self: _Tco, other: _Ucontra) -> _Vco:
+        raise NotImplementedError
+
+class _coconut_SupportsRshift(_t.Protocol, _t.Generic[_Tco, _Ucontra, _Vco]):
+    def __rshift__(self: _Tco, other: _Ucontra) -> _Vco:
+        raise NotImplementedError
+
+class _coconut_SupportsMatmul(_t.Protocol, _t.Generic[_Tco, _Ucontra, _Vco]):
+    def __matmul__(self: _Tco, other: _Ucontra) -> _Vco:
+        raise NotImplementedError
+
+class _coconut_SupportsInv(_t.Protocol, _t.Generic[_Tco, _Vco]):
+    def __invert__(self: _Tco) -> _Vco:
+        raise NotImplementedError

@@ -1132,7 +1132,6 @@ Another useful Coconut feature is implicit partials. Coconut supports a number o
 ```coconut
 .attr
 .method(args)
-obj.
 func$
 seq[]
 iter$[]

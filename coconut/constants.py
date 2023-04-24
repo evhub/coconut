@@ -278,6 +278,23 @@ in_place_op_funcs = {
     "..?**>=": "_coconut_forward_none_dubstar_compose",
 }
 
+op_func_protocols = {
+    "add": "_coconut_SupportsAdd",
+    "minus": "_coconut_SupportsMinus",
+    "mul": "_coconut_SupportsMul",
+    "pow": "_coconut_SupportsPow",
+    "truediv": "_coconut_SupportsTruediv",
+    "floordiv": "_coconut_SupportsFloordiv",
+    "mod": "_coconut_SupportsMod",
+    "and": "_coconut_SupportsAnd",
+    "xor": "_coconut_SupportsXor",
+    "or": "_coconut_SupportsOr",
+    "lshift": "_coconut_SupportsLshift",
+    "rshift": "_coconut_SupportsRshift",
+    "matmul": "_coconut_SupportsMatmul",
+    "inv": "_coconut_SupportsInv",
+}
+
 allow_explicit_keyword_vars = (
     "async",
     "await",

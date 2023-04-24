@@ -60,39 +60,45 @@ except ImportError:
 else:
     _abc.Sequence.register(_numpy.ndarray)
 
+# -----------------------------------------------------------------------------------------------------------------------
+# TYPING:
+# -----------------------------------------------------------------------------------------------------------------------
+
+typing = _t
+
+from typing_extensions import TypeVar
+typing.TypeVar = TypeVar  # type: ignore
+
 if sys.version_info < (3, 8):
     try:
         from typing_extensions import Protocol
     except ImportError:
-        Protocol = ...
-    typing.Protocol = Protocol
+        Protocol = ...  # type: ignore
+    typing.Protocol = Protocol  # type: ignore
 
 if sys.version_info < (3, 10):
     try:
         from typing_extensions import TypeAlias, ParamSpec, Concatenate
     except ImportError:
-        TypeAlias = ...
-        ParamSpec = ...
-        Concatenate = ...
-    typing.TypeAlias = TypeAlias
-    typing.ParamSpec = ParamSpec
-    typing.Concatenate = Concatenate
-
+        TypeAlias = ...  # type: ignore
+        ParamSpec = ...  # type: ignore
+        Concatenate = ...  # type: ignore
+    typing.TypeAlias = TypeAlias  # type: ignore
+    typing.ParamSpec = ParamSpec  # type: ignore
+    typing.Concatenate = Concatenate  # type: ignore
 
 if sys.version_info < (3, 11):
     try:
         from typing_extensions import TypeVarTuple, Unpack
     except ImportError:
-        TypeVarTuple = ...
-        Unpack = ...
-    typing.TypeVarTuple = TypeVarTuple
-    typing.Unpack = Unpack
+        TypeVarTuple = ...  # type: ignore
+        Unpack = ...  # type: ignore
+    typing.TypeVarTuple = TypeVarTuple  # type: ignore
+    typing.Unpack = Unpack  # type: ignore
 
 # -----------------------------------------------------------------------------------------------------------------------
 # STUB:
 # -----------------------------------------------------------------------------------------------------------------------
-
-typing = _t
 
 collections = _collections
 copy = _copy
@@ -116,8 +122,10 @@ if sys.version_info >= (2, 7):
     OrderedDict = collections.OrderedDict
 else:
     OrderedDict = dict
+
 abc = _abc
 abc.Sequence.register(collections.deque)
+
 numpy = _numpy
 npt = _npt  # Fake, like typing
 zip_longest = _zip_longest

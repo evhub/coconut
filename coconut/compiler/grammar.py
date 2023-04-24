@@ -79,6 +79,7 @@ from coconut.constants import (
     early_passthrough_wrapper,
     new_operators,
     wildcard,
+    op_func_protocols,
 )
 from coconut.compiler.util import (
     combine,
@@ -591,6 +592,23 @@ def array_literal_handle(loc, tokens):
     return "_coconut_multi_dim_arr(" + tuple_str_of(array_elems) + ", " + str(sep_level) + ")"
 
 
+def typedef_op_item_handle(loc, tokens):
+    """Converts operator functions in type contexts into Protocols."""
+    op_name, = tokens
+    op_name = op_name.strip("_")
+    if op_name.startswith("coconut"):
+        op_name = op_name[len("coconut"):]
+    op_name = op_name.lstrip("._")
+    if op_name.startswith("operator."):
+        op_name = op_name[len("operator."):]
+
+    proto = op_func_protocols.get(op_name)
+    if proto is None:
+        raise CoconutDeferredSyntaxError("operator Protocol for " + repr(op_name) + " operator not supported", loc)
+
+    return proto
+
+
 # end: HANDLERS
 # -----------------------------------------------------------------------------------------------------------------------
 # MAIN GRAMMAR:
@@ -913,6 +931,14 @@ class Grammar(object):
     new_namedexpr_test = Forward()
     lambdef = Forward()
 
+    typedef = Forward()
+    typedef_default = Forward()
+    unsafe_typedef_default = Forward()
+    typedef_test = Forward()
+    typedef_tuple = Forward()
+    typedef_ellipsis = Forward()
+    typedef_op_item = Forward()
+
     negable_atom_item = condense(Optional(neg_minus) + atom_item)
 
     testlist = trace(itemlist(test, comma, suppress_trailing=False))
@@ -1025,16 +1051,13 @@ class Grammar(object):
         | labeled_group(test_no_infix + partialable_op + dot.suppress(), "left partial")
     )
     partial_op_item = attach(partial_op_item_tokens, partial_op_item_handle)
-    op_item = trace(partial_op_item | base_op_item)
+    op_item = trace(
+        typedef_op_item
+        | partial_op_item
+        | base_op_item,
+    )
 
     partial_op_atom_tokens = lparen.suppress() + partial_op_item_tokens + rparen.suppress()
-
-    typedef = Forward()
-    typedef_default = Forward()
-    unsafe_typedef_default = Forward()
-    typedef_test = Forward()
-    typedef_tuple = Forward()
-    typedef_ellipsis = Forward()
 
     # we include (var)arg_comma to ensure the pattern matches the whole arg
     arg_comma = comma | fixto(FollowedBy(rparen), "")
@@ -1607,19 +1630,23 @@ class Grammar(object):
 
     unsafe_typedef_ellipsis = ellipsis_tokens
 
-    _typedef_test, typedef_callable, _typedef_trailer, _typedef_or_expr, _typedef_tuple, _typedef_ellipsis = disable_outside(
+    unsafe_typedef_op_item = attach(base_op_item, typedef_op_item_handle)
+
+    _typedef_test, typedef_callable, _typedef_trailer, _typedef_or_expr, _typedef_tuple, _typedef_ellipsis, _typedef_op_item = disable_outside(
         test,
         unsafe_typedef_callable,
         unsafe_typedef_trailer,
         unsafe_typedef_or_expr,
         unsafe_typedef_tuple,
         unsafe_typedef_ellipsis,
+        unsafe_typedef_op_item,
     )
     typedef_test <<= _typedef_test
     typedef_trailer <<= _typedef_trailer
     typedef_or_expr <<= _typedef_or_expr
     typedef_tuple <<= _typedef_tuple
     typedef_ellipsis <<= _typedef_ellipsis
+    typedef_op_item <<= _typedef_op_item
 
     alt_ternary_expr = attach(keyword("if").suppress() + test_item + keyword("then").suppress() + test_item + keyword("else").suppress() + test, alt_ternary_handle)
     test <<= (

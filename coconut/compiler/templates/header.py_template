@@ -1839,5 +1839,49 @@ def _coconut_call_or_coefficient(func, *args):
     for x in args:
         func = func * x{COMMENT.no_times_equals_to_avoid_modification}
     return func
+class _coconut_SupportsAdd(_coconut.typing.Protocol):
+    def __add__(self, other):
+        raise NotImplementedError("Protocol methods cannot be called at runtime ((+) in a typing context is a Protocol)")
+class _coconut_SupportsMinus(_coconut.typing.Protocol):
+    def __sub__(self, other):
+        raise NotImplementedError("Protocol methods cannot be called at runtime ((-) in a typing context is a Protocol)")
+    def __neg__(self):
+        raise NotImplementedError("Protocol methods cannot be called at runtime ((-) in a typing context is a Protocol)")
+class _coconut_SupportsMul(_coconut.typing.Protocol):
+    def __mul__(self, other):
+        raise NotImplementedError("Protocol methods cannot be called at runtime ((*) in a typing context is a Protocol)")
+class _coconut_SupportsPow(_coconut.typing.Protocol):
+    def __pow__(self, other):
+        raise NotImplementedError("Protocol methods cannot be called at runtime ((**) in a typing context is a Protocol)")
+class _coconut_SupportsTruediv(_coconut.typing.Protocol):
+    def __truediv__(self, other):
+        raise NotImplementedError("Protocol methods cannot be called at runtime ((/) in a typing context is a Protocol)")
+class _coconut_SupportsFloordiv(_coconut.typing.Protocol):
+    def __floordiv__(self, other):
+        raise NotImplementedError("Protocol methods cannot be called at runtime ((//) in a typing context is a Protocol)")
+class _coconut_SupportsMod(_coconut.typing.Protocol):
+    def __mod__(self, other):
+        raise NotImplementedError("Protocol methods cannot be called at runtime ((%) in a typing context is a Protocol)")
+class _coconut_SupportsAnd(_coconut.typing.Protocol):
+    def __and__(self, other):
+        raise NotImplementedError("Protocol methods cannot be called at runtime ((&) in a typing context is a Protocol)")
+class _coconut_SupportsXor(_coconut.typing.Protocol):
+    def __xor__(self, other):
+        raise NotImplementedError("Protocol methods cannot be called at runtime ((^) in a typing context is a Protocol)")
+class _coconut_SupportsOr(_coconut.typing.Protocol):
+    def __or__(self, other):
+        raise NotImplementedError("Protocol methods cannot be called at runtime ((|) in a typing context is a Protocol)")
+class _coconut_SupportsLshift(_coconut.typing.Protocol):
+    def __lshift__(self, other):
+        raise NotImplementedError("Protocol methods cannot be called at runtime ((<<) in a typing context is a Protocol)")
+class _coconut_SupportsRshift(_coconut.typing.Protocol):
+    def __rshift__(self, other):
+        raise NotImplementedError("Protocol methods cannot be called at runtime ((>>) in a typing context is a Protocol)")
+class _coconut_SupportsMatmul(_coconut.typing.Protocol):
+    def __matmul__(self, other):
+        raise NotImplementedError("Protocol methods cannot be called at runtime ((@) in a typing context is a Protocol)")
+class _coconut_SupportsInv(_coconut.typing.Protocol):
+    def __invert__(self):
+        raise NotImplementedError("Protocol methods cannot be called at runtime ((~) in a typing context is a Protocol)")
 _coconut_self_match_types = {self_match_types}
 _coconut_Expected, _coconut_MatchError, _coconut_count, _coconut_enumerate, _coconut_flatten, _coconut_filter, _coconut_ident, _coconut_map, _coconut_multiset, _coconut_range, _coconut_reiterable, _coconut_reversed, _coconut_starmap, _coconut_tee, _coconut_zip, TYPE_CHECKING, reduce, takewhile, dropwhile = Expected, MatchError, count, enumerate, flatten, filter, ident, map, multiset, range, reiterable, reversed, starmap, tee, zip, False, _coconut.functools.reduce, _coconut.itertools.takewhile, _coconut.itertools.dropwhile

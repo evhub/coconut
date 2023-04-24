@@ -1070,6 +1070,21 @@ else:
     def cast(typ, value) = value
 
 obj_with_add_and_mul: SupportsAdd &: SupportsMul = 10
+an_int: (
+    (+)
+    &: (-)
+    &: (*)
+    &: (**)
+    &: (/)
+    &: (//)
+    &: (%)
+    &: (&)
+    &: (^)
+    &: (|)
+    &: (<<)
+    &: (>>)
+    &: (~)
+) = 10
 
 def args_kwargs_func(args: List[Any]=[], kwargs: Dict[Any, Any]={}) -> typing.Literal[True] =
     True

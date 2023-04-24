@@ -397,9 +397,9 @@ The line magic `%load_ext coconut` will load Coconut as an extension, providing 
 
 _Note: Unlike the normal Coconut command-line, `%%coconut` defaults to the `sys` target rather than the `universal` target._
 
-#### MyPy Integration
+#### Type Checking
 
-##### Setup
+##### MyPy Integration
 
 Coconut has the ability to integrate with [MyPy](http://mypy-lang.org/) to provide optional static type_checking, including for all Coconut built-ins. Simply pass `--mypy` to `coconut` to enable MyPy integration, though be careful to pass it only as the last argument, since all arguments after `--mypy` are passed to `mypy`, not Coconut.
 
@@ -416,8 +416,8 @@ To explicitly annotate your code with types to be checked, Coconut supports:
 * [Python 3 function type annotations](https://www.python.org/dev/peps/pep-0484/),
 * [Python 3.6 variable type annotations](https://www.python.org/dev/peps/pep-0526/),
 * [PEP 695 type parameter syntax](#type-parameter-syntax) for easily adding type parameters to classes, functions, [`data` types](#data), and type aliases,
-* Coconut's [protocol intersection operator](#protocol-intersection), and
-* Coconut's own [enhanced type annotation syntax](#enhanced-type-annotation).
+* Coconut's own [enhanced type annotation syntax](#enhanced-type-annotation), and
+* Coconut's [protocol intersection operator](#protocol-intersection).
 
 By default, all type annotations are compiled to Python-2-compatible type comments, which means it all works on any Python version.
 
@@ -967,6 +967,10 @@ import functools
 
 Coconut uses the `&:` operator to indicate protocol intersection. That is, for two [`typing.Protocol`s](https://docs.python.org/3/library/typing.html#typing.Protocol) `Protocol1` and `Protocol1`, `Protocol1 &: Protocol2` is equivalent to a `Protocol` that combines the requirements of both `Protocol1` and `Protocol2`.
 
+The recommended way to use Coconut's protocol intersection operator is in combination with Coconut's [operator `Protocol`s](#supported-protocols). Note, however, that while `&:` will work anywhere, operator `Protocol`s will only work inside type annotations (which means, for example, you'll need to do `type HasAdd = (+)` instead of just `HasAdd = (+)`).
+
+See Coconut's [enhanced type annotation](#enhanced-type-annotation) for more information on how Coconut handles type annotations more generally.
+
 ##### Example
 
 **Coconut:**
@@ -979,20 +983,15 @@ class X(Protocol):
 class Y(Protocol):
     y: str
 
-class xy:
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-
 def foo(xy: X &: Y) -> None:
     print(xy.x, xy.y)
 
-foo(xy("a", "b"))
+type CanAddAndSub = (+) &: (-)
 ```
 
 **Python:**
 ```coconut_python
-from typing import Protocol
+from typing import Protocol, TypeVar, Generic
 
 class X(Protocol):
     x: str
@@ -1003,15 +1002,20 @@ class Y(Protocol):
 class XY(X, Y, Protocol):
     pass
 
-class xy:
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-
 def foo(xy: XY) -> None:
     print(xy.x, xy.y)
 
-foo(xy("a", "b"))
+T = TypeVar("T", infer_variance=True)
+U = TypeVar("U", infer_variance=True)
+V = TypeVar("V", infer_variance=True)
+
+class CanAddAndSub(Protocol, Generic[T, U, V]):
+    def __add__(self: T, other: U) -> V:
+        raise NotImplementedError
+    def __sub__(self: T, other: U) -> V:
+        raise NotImplementedError
+    def __neg__(self: T) -> V:
+        raise NotImplementedError
 ```
 
 ### Unicode Alternatives
@@ -1791,6 +1795,8 @@ async (<args>) -> <ret>
 ```
 where `typing` is the Python 3.5 built-in [`typing` module](https://docs.python.org/3/library/typing.html). For more information on the Callable syntax, see [PEP 677](https://peps.python.org/pep-0677), which Coconut fully supports.
 
+Additionally, many of Coconut's [operator functions](#operator-functions) will compile into equivalent [`Protocol`s](https://docs.python.org/3/library/typing.html#typing.Protocol) instead when inside a type annotation. See below for the full list and specification.
+
 _Note: The transformation to `Union` is not done on Python 3.10 as Python 3.10 has native [PEP 604](https://www.python.org/dev/peps/pep-0604) support._
 
 To use these transformations in a [type alias](https://peps.python.org/pep-0484/#type-aliases), use the syntax
@@ -1801,7 +1807,52 @@ which will allow `<type>` to include Coconut's special type annotation syntax an
 
 Such type alias statements—as well as all `class`, `data`, and function definitions in Coconut—also support Coconut's [type parameter syntax](#type-parameter-syntax), allowing you to do things like `type OrStr[T] = T | str`.
 
-Importantly, note that `int[]` does not map onto `typing.List[int]` but onto `typing.Sequence[int]`. This is because, when writing in an idiomatic functional style, assignment should be rare and tuples should be common. Using `Sequence` covers both cases, accommodating tuples and lists and preventing indexed assignment. When an indexed assignment is attempted into a variable typed with `Sequence`, MyPy will generate an error:
+##### Supported Protocols
+
+Using Coconut's [operator function](#operator-functions) syntax inside of a type annotation will instead produce a [`Protocol`](https://docs.python.org/3/library/typing.html#typing.Protocol) corresponding to that operator (or raise a syntax error if no such `Protocol` is available). All available `Protocol`s are listed below.
+
+For the operator functions
+```
+(+)
+(*)
+(**)
+(/)
+(//)
+(%)
+(&)
+(^)
+(|)
+(<<)
+(>>)
+(@)
+```
+the resulting `Protocol` is
+```coconut
+class SupportsOp[T, U, V](Protocol):
+    def __op__(self: T, other: U) -> V:
+        raise NotImplementedError(...)
+```
+where `__op__` is the magic method corresponding to that operator.
+
+For the operator function `(-)`, the resulting `Protocol` is:
+```coconut
+class SupportsMinus[T, U, V](Protocol):
+    def __sub__(self: T, other: U) -> V:
+        raise NotImplementedError
+    def __neg__(self: T) -> V:
+        raise NotImplementedError
+```
+
+For the operator function `(~)`, the resulting `Protocol` is:
+```coconut
+class SupportsInv[T, V](Protocol):
+    def __invert__(self: T) -> V:
+        raise NotImplementedError(...)
+```
+
+##### `List` vs. `Sequence`
+
+Importantly, note that `T[]` does not map onto `typing.List[T]` but onto `typing.Sequence[T]`. This allows the resulting type to be covariant, such that if `U` is a subtype of `T`, then `U[]` is a subtype of `T[]`. Additionally, `Sequence[T]` allows for tuples, and when writing in an idiomatic functional style, assignment should be rare and tuples should be common. Using `Sequence` covers both cases, accommodating tuples and lists and preventing indexed assignment. When an indexed assignment is attempted into a variable typed with `Sequence`, MyPy will generate an error:
 
 ```coconut
 foo: int[] = [0, 1, 2, 3, 4, 5]
@@ -1821,17 +1872,31 @@ def int_map(
     xs: int[],
 ) -> int[] =
     xs |> map$(f) |> list
+
+type CanAddAndSub = (+) &: (-)
 ```
 
 **Python:**
 ```coconut_python
 import typing  # unlike this typing import, Coconut produces universal code
+
 def int_map(
     f,  # type: typing.Callable[[int], int]
     xs,  # type: typing.Sequence[int]
 ):
     # type: (...) -> typing.Sequence[int]
     return list(map(f, xs))
+
+T = typing.TypeVar("T", infer_variance=True)
+U = typing.TypeVar("U", infer_variance=True)
+V = typing.TypeVar("V", infer_variance=True)
+class CanAddAndSub(typing.Protocol, typing.Generic[T, U, V]):
+    def __add__(self: T, other: U) -> V:
+        raise NotImplementedError
+    def __sub__(self: T, other: U) -> V:
+        raise NotImplementedError
+    def __neg__(self: T) -> V:
+        raise NotImplementedError
 ```
 
 ### Multidimensional Array Literal/Concatenation Syntax
@@ -2296,7 +2361,7 @@ the resulting `inner_func`s will each return a _different_ `x` value rather than
 
 If `global` or `nonlocal` are used in a `copyclosure` function, they will not be able to modify variables in enclosing scopes. However, they will allow state to be preserved accross multiple calls to the `copyclosure` function.
 
-_Note: due to the way `copyclosure` functions are compiled, [type checking](#mypy-integration) won't work for them._
+_Note: due to the way `copyclosure` functions are compiled, [type checking](#type-checking) won't work for them._
 
 ##### Example
 
@@ -2411,6 +2476,8 @@ _Can't be done without a long series of checks in place of the destructuring ass
 Coconut fully supports [PEP 695](https://peps.python.org/pep-0695/) type parameter syntax (with the caveat that all type variables are invariant rather than inferred).
 
 That includes type parameters for classes, [`data` types](#data), and [all types of function definition](#function-definition). For different types of function definition, the type parameters always come in brackets right after the function name. Coconut's [enhanced type annotation syntax](#enhanced-type-annotation) is supported for all type parameter bounds.
+
+_Warning: until `mypy` adds support for `infer_variance=True` in `TypeVar`, `TypeVar`s created this way will always be invariant._
 
 Additionally, Coconut supports the alternative bounds syntax of `type NewType[T <: bound] = ...` rather than `type NewType[T: bound] = ...`, to make it more clear that it is an upper bound rather than a type. In `--strict` mode, `<:` is required over `:` for all type parameter bounds. _DEPRECATED: `<=` can also be used as an alternative to `<:`._
 

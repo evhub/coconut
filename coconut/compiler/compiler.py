@@ -797,6 +797,12 @@ class Compiler(Grammar, pickleable_obj):
                 + tuple(len(self.reformat(snip[:index], **kwargs)) for index in indices)
             )
 
+    def reformat_without_adding_code_before(self, code, **kwargs):
+        """Reformats without adding code before and instead returns what would have been added."""
+        got_code_to_add_before = {}
+        reformatted_code = self.reformat(code, put_code_to_add_before_in=got_code_to_add_before, **kwargs)
+        return reformatted_code, tuple(got_code_to_add_before.keys()), got_code_to_add_before.values()
+
     def literal_eval(self, code):
         """Version of ast.literal_eval that reformats first."""
         return literal_eval(self.reformat(code, ignore_errors=False))
@@ -2193,20 +2199,6 @@ _coconut_exec({func_code_str}, {vars_var})
 
         return " " + temp_marker + " " if add_spaces else temp_marker
 
-    @contextmanager
-    def separate_add_code_before(self, inputstring):
-        """Separate out all code to be added before the given code."""
-        self.compile_add_code_before_regexes()
-        removed_add_code_before = {}
-        for name in tuple(self.add_code_before):
-            regex = self.add_code_before_regexes[name]
-            if regex.match(inputstring):
-                removed_add_code_before[name] = self.add_code_before.pop(name)
-        try:
-            yield (tuple(removed_add_code_before.keys()), removed_add_code_before.values())
-        finally:
-            self.add_code_before.update(removed_add_code_before)
-
     def compile_add_code_before_regexes(self):
         """Compile all add_code_before regexes."""
         for name in self.add_code_before:
@@ -2215,6 +2207,7 @@ _coconut_exec({func_code_str}, {vars_var})
 
     def deferred_code_proc(self, inputstring, add_code_at_start=False, ignore_names=(), ignore_errors=False, **kwargs):
         """Process all forms of previously deferred code. All such deferred code needs to be handled here so we can properly handle nested deferred code."""
+        put_code_to_add_before_in = kwargs.get("put_code_to_add_before_in", None)  # keep put_code_to_add_before_in in kwargs
         self.compile_add_code_before_regexes()
 
         out = []
@@ -2277,7 +2270,9 @@ _coconut_exec({func_code_str}, {vars_var})
                             code_to_add = self.deferred_code_proc(raw_code, ignore_names=inner_ignore_names, **kwargs)
 
                             # add code and update indents
-                            if add_code_at_start:
+                            if put_code_to_add_before_in is not None:
+                                put_code_to_add_before_in[name] = code_to_add
+                            elif add_code_at_start:
                                 out.insert(0, code_to_add + "\n")
                             else:
                                 out += [bef_ind, code_to_add, "\n"]
@@ -3450,24 +3445,22 @@ if not {check_var}:
         if self.no_wrap or for_py_typedef and self.target_info >= (3, 7):
             return typedef
         else:
-            with self.separate_add_code_before(typedef) as (ignore_names, add_code_before):
-                reformatted_typedef = self.reformat(typedef, ignore_errors=False)
-                wrapped = self.wrap_str_of(reformatted_typedef)
+            reformatted_typedef, ignore_names, add_code_before = self.reformat_without_adding_code_before(typedef, ignore_errors=False)
+            wrapped = self.wrap_str_of(reformatted_typedef)
             # duplicate means that the necessary add_code_before will already have been done
             if duplicate:
                 add_code_before = ()
             return self.add_code_before_marker_with_replacement(wrapped, *add_code_before, ignore_names=ignore_names)
 
     def wrap_type_comment(self, typedef, is_return=False, add_newline=False):
-        with self.separate_add_code_before(typedef) as (ignore_names, add_code_before):
-            reformatted_typedef = self.reformat(typedef, ignore_errors=False)
-            if is_return:
-                type_comment = " type: (...) -> " + reformatted_typedef
-            else:
-                type_comment = " type: " + reformatted_typedef
-            wrapped = self.wrap_comment(type_comment)
-            if add_newline:
-                wrapped = self.wrap_passthrough(wrapped + non_syntactic_newline, early=True)
+        reformatted_typedef, ignore_names, add_code_before = self.reformat_without_adding_code_before(typedef, ignore_errors=False)
+        if is_return:
+            type_comment = " type: (...) -> " + reformatted_typedef
+        else:
+            type_comment = " type: " + reformatted_typedef
+        wrapped = self.wrap_comment(type_comment)
+        if add_newline:
+            wrapped = self.wrap_passthrough(wrapped + non_syntactic_newline, early=True)
         return self.add_code_before_marker_with_replacement(wrapped, *add_code_before, ignore_names=ignore_names)
 
     def typedef_handle(self, tokens):
@@ -3537,6 +3530,7 @@ __annotations__["{name}"] = {annotation}
     def type_param_handle(self, original, loc, tokens):
         """Compile a type param into an assignment."""
         bounds = ""
+        kwargs = ""
         if "TypeVar" in tokens:
             TypeVarFunc = "TypeVar"
             if len(tokens) == 2:
@@ -3558,6 +3552,9 @@ __annotations__["{name}"] = {annotation}
                 else:
                     self.internal_assert(bound_op == "<:", original, loc, "invalid type_param bound_op", bound_op)
                 bounds = ", bound=" + self.wrap_typedef(bound, for_py_typedef=False)
+            # uncomment this line whenever mypy adds support for infer_variance in TypeVar
+            #  (and remove the warning about it in the DOCS)
+            # kwargs = ", infer_variance=True"
         elif "TypeVarTuple" in tokens:
             TypeVarFunc = "TypeVarTuple"
             name_loc, name = tokens
@@ -3584,10 +3581,11 @@ __annotations__["{name}"] = {annotation}
                 typevar_info["typevar_locs"][name] = name_loc
                 name = temp_name
 
-        return '{name} = _coconut.typing.{TypeVarFunc}("{name}"{bounds})\n'.format(
+        return '{name} = _coconut.typing.{TypeVarFunc}("{name}"{bounds}{kwargs})\n'.format(
             name=name,
             TypeVarFunc=TypeVarFunc,
             bounds=bounds,
+            kwargs=kwargs,
         )
 
     def get_generic_for_typevars(self):
