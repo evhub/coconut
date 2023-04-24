@@ -23,7 +23,6 @@ import traceback
 
 from coconut.integrations import embed
 from coconut.constants import (
-    PYPY,
     CPYTHON,
     PY34,
     IPY,
@@ -186,7 +185,6 @@ requirements = get_reqs("main")
 extras = {
     "kernel": get_reqs("kernel"),
     "watch": get_reqs("watch"),
-    "jobs": get_reqs("jobs"),
     "mypy": get_reqs("mypy"),
     "backports": get_reqs("backports"),
     "xonsh": get_reqs("xonsh"),
@@ -205,7 +203,6 @@ extras.update({
     "tests": uniqueify_all(
         get_reqs("tests"),
         extras["backports"],
-        extras["jobs"] if not PYPY else [],
         extras["jupyter"] if IPY else [],
         extras["mypy"] if MYPY else [],
         extras["xonsh"] if XONSH else [],

@@ -34,6 +34,7 @@ from coconut.constants import (
     prompt_histfile,
     home_env_var,
     py_version_str,
+    default_jobs,
 )
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -182,7 +183,7 @@ arguments.add_argument(
     "-j", "--jobs",
     metavar="processes",
     type=str,
-    help="number of additional processes to use (defaults to 0) (pass 'sys' to use machine default)",
+    help="number of additional processes to use (defaults to " + repr(default_jobs) + ") (0 is no additional processes; 'sys' uses machine default)",
 )
 
 arguments.add_argument(

@@ -57,11 +57,11 @@ install-py3: setup-py3
 	python3 -m pip install -e .[tests]
 
 .PHONY: install-pypy
-install-pypy:
+install-pypy: setup-pypy
 	pypy -m pip install -e .[tests]
 
 .PHONY: install-pypy3
-install-pypy3:
+install-pypy3: setup-pypy3
 	pypy3 -m pip install -e .[tests]
 
 .PHONY: format

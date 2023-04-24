@@ -67,6 +67,7 @@ from coconut.constants import (
     coconut_pth_file,
     error_color_code,
     jupyter_console_commands,
+    default_jobs,
 )
 from coconut.util import (
     univ_open,
@@ -236,10 +237,9 @@ class Command(object):
                     )
 
             # process general command args
+            self.set_jobs(args.jobs, args.profile)
             if args.recursion_limit is not None:
                 set_recursion_limit(args.recursion_limit)
-            if args.jobs is not None:
-                self.set_jobs(args.jobs)
             if args.display:
                 self.show = True
             if args.style is not None:
@@ -258,10 +258,6 @@ class Command(object):
                 self.site_install()
             if args.argv is not None:
                 self.argv_args = list(args.argv)
-
-            # additional validation after processing
-            if args.profile and self.jobs != 0:
-                raise CoconutException("--profile incompatible with --jobs {jobs}".format(jobs=args.jobs))
 
             # process general compiler args
             self.setup(
@@ -325,9 +321,6 @@ class Command(object):
 
             # handle extra cli tasks
             if args.code is not None:
-                # TODO: REMOVE
-                if args.code == "TEST":
-                    args.code = "def f(x) = x"
                 self.execute(self.parse_block(args.code))
             got_stdin = False
             if args.jupyter is not None:
@@ -603,8 +596,10 @@ class Command(object):
                         callback(result)
             future.add_done_callback(callback_wrapper)
 
-    def set_jobs(self, jobs):
+    def set_jobs(self, jobs, profile=False):
         """Set --jobs."""
+        if jobs is None:
+            jobs = 0 if profile else default_jobs
         if jobs == "sys":
             self.jobs = None
         else:
@@ -615,6 +610,9 @@ class Command(object):
             if jobs < 0:
                 raise CoconutException("--jobs must be an integer >= 0 or 'sys'")
             self.jobs = jobs
+        logger.log("Jobs:", self.jobs)
+        if profile and self.jobs != 0:
+            raise CoconutException("--profile incompatible with --jobs {jobs}".format(jobs=args.jobs))
 
     @property
     def using_jobs(self):

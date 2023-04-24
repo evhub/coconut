@@ -85,10 +85,9 @@ pip install coconut[opt_dep_1,opt_dep_2]
 
 The full list of optional dependencies is:
 
-- `all`: alias for `jupyter,watch,jobs,mypy,backports,xonsh` (this is the recommended way to install a feature-complete version of Coconut).
+- `all`: alias for `jupyter,watch,mypy,backports,xonsh` (this is the recommended way to install a feature-complete version of Coconut).
 - `jupyter`/`ipython`: enables use of the `--jupyter` / `--ipython` flag.
 - `watch`: enables use of the `--watch` flag.
-- `jobs`: improves use of the `--jobs` flag.
 - `mypy`: enables use of the `--mypy` flag.
 - `backports`: installs libraries that backport newer Python features to older versions, which Coconut will automatically use instead of the standard library if the standard library is not available. Specifically:
   - Installs [`typing`](https://pypi.org/project/typing/) and [`typing_extensions`](https://pypi.org/project/typing-extensions/) to backport [`typing`](https://docs.python.org/3/library/typing.html).
@@ -172,8 +171,8 @@ dest                destination directory for compiled files (defaults to
                         __future__ import annotations' behavior
   -c code, --code code  run Coconut passed in as a string (can also be piped into stdin)
   -j processes, --jobs processes
-                        number of additional processes to use (defaults to 0) (pass 'sys' to
-                        use machine default)
+                        number of additional processes to use (defaults to 'sys') (0 is no
+                        additional processes; 'sys' uses machine default)
   -f, --force           force re-compilation even when source code and compilation parameters
                         haven't changed
   --minify              reduce size of compiled Python

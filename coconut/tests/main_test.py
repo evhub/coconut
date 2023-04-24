@@ -304,8 +304,6 @@ def call_python(args, **kwargs):
 
 def call_coconut(args, **kwargs):
     """Calls Coconut."""
-    if "--jobs" not in args and not PYPY and not PY26:
-        args = ["--jobs", "sys"] + args
     if "--mypy" in args and "check_mypy" not in kwargs:
         kwargs["check_mypy"] = True
     if PY26:

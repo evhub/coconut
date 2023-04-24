@@ -626,6 +626,8 @@ oserror_retcode = 127
 kilobyte = 1024
 min_stack_size_kbs = 160
 
+default_jobs = "sys" if not PY26 else 0
+
 mypy_install_arg = "install"
 
 mypy_builtin_regex = re.compile(r"\b(reveal_type|reveal_locals)\b")
@@ -803,6 +805,7 @@ all_reqs = {
     ),
     "non-py26": (
         "pygments",
+        "psutil",
     ),
     "py2": (
         "futures",
@@ -814,9 +817,6 @@ all_reqs = {
     ),
     "py26": (
         "argparse",
-    ),
-    "jobs": (
-        "psutil",
     ),
     "kernel": (
         ("ipython", "py2"),
