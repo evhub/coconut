@@ -299,6 +299,10 @@ class Command(object):
                     )
                 ]
 
+                # enable jobs by default if it looks like we'll be compiling multiple things
+                if len(src_dest_package_triples) > 1 or any(package for _, _, package in src_dest_package_triples):
+                    self.use_jobs_by_default()
+
                 # do compilation
                 with self.running_jobs(exit_on_error=not args.watch):
                     filepaths = []
@@ -598,10 +602,8 @@ class Command(object):
 
     def set_jobs(self, jobs, profile=False):
         """Set --jobs."""
-        if jobs is None:
-            jobs = 0 if profile else default_jobs
-        if jobs == "sys":
-            self.jobs = None
+        if jobs in (None, "sys"):
+            self.jobs = jobs
         else:
             try:
                 jobs = int(jobs)
@@ -612,12 +614,29 @@ class Command(object):
             self.jobs = jobs
         logger.log("Jobs:", self.jobs)
         if profile and self.jobs != 0:
-            raise CoconutException("--profile incompatible with --jobs {jobs}".format(jobs=args.jobs))
+            raise CoconutException("--profile incompatible with --jobs {jobs}".format(jobs=jobs))
+
+    def use_jobs_by_default(self):
+        """Enable use of jobs if --jobs not passed."""
+        if self.jobs is None:
+            self.jobs = default_jobs
+            logger.log("Jobs:", self.jobs)
+
+    @property
+    def max_workers(self):
+        """Get the max_workers to use for creating ProcessPoolExecutor."""
+        if self.jobs is None:
+            return 0
+        elif self.jobs == "sys":
+            return None
+        else:
+            return self.jobs
 
     @property
     def using_jobs(self):
         """Determine whether or not multiprocessing is being used."""
-        return self.jobs is None or self.jobs > 1
+        max_workers = self.max_workers
+        return max_workers is None or max_workers > 1
 
     @contextmanager
     def running_jobs(self, exit_on_error=True):
@@ -626,7 +645,7 @@ class Command(object):
             if self.using_jobs:
                 from concurrent.futures import ProcessPoolExecutor
                 try:
-                    with ProcessPoolExecutor(self.jobs) as self.executor:
+                    with ProcessPoolExecutor(self.max_workers) as self.executor:
                         yield
                 finally:
                     self.executor = None

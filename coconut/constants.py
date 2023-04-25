@@ -857,7 +857,8 @@ all_reqs = {
         ("dataclasses", "py==36"),
         ("typing", "py<35"),
         ("typing_extensions", "py==35"),
-        ("typing_extensions", "py36"),
+        ("typing_extensions", "py==36"),
+        ("typing_extensions", "py37"),
     ),
     "dev": (
         ("pre-commit", "py3"),
@@ -902,12 +903,13 @@ min_versions = {
     ("jupyter-console", "py37"): (6, 6),
     ("typing", "py<35"): (3, 10),
     ("jedi", "py37"): (0, 18),
+    ("typing_extensions", "py37"): (4, 4),
 
     # pinned reqs: (must be added to pinned_reqs below)
 
     # don't upgrade this; it breaks on Python 3.6
     ("jupyter-client", "py36"): (7, 1, 2),
-    ("typing_extensions", "py36"): (4, 1),
+    ("typing_extensions", "py==36"): (4, 1),
     # don't upgrade these; they break on Python 3.5
     ("ipykernel", "py3"): (5, 5),
     ("ipython", "py3"): (7, 9),
@@ -943,7 +945,7 @@ min_versions = {
 # should match the reqs with comments above
 pinned_reqs = (
     ("jupyter-client", "py36"),
-    ("typing_extensions", "py36"),
+    ("typing_extensions", "py==36"),
     ("jupyter-client", "py<35"),
     ("ipykernel", "py3"),
     ("ipython", "py3"),
