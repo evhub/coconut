@@ -1066,25 +1066,28 @@ if TYPE_CHECKING or sys.version_info >= (3, 5):
         def __mul__(self: T, other: U) -> V:
             raise NotImplementedError
 
+    obj_with_add_and_mul: SupportsAdd &: SupportsMul
+    an_int: (
+        (+)
+        &: (-)
+        &: (*)
+        &: (**)
+        &: (/)
+        &: (//)
+        &: (%)
+        &: (&)
+        &: (^)
+        &: (|)
+        &: (<<)
+        &: (>>)
+        &: (~)
+    )
+
 else:
     def cast(typ, value) = value
 
-obj_with_add_and_mul: SupportsAdd &: SupportsMul = 10
-an_int: (
-    (+)
-    &: (-)
-    &: (*)
-    &: (**)
-    &: (/)
-    &: (//)
-    &: (%)
-    &: (&)
-    &: (^)
-    &: (|)
-    &: (<<)
-    &: (>>)
-    &: (~)
-) = 10
+obj_with_add_and_mul = 10
+an_int = 10
 
 def args_kwargs_func(args: List[Any]=[], kwargs: Dict[Any, Any]={}) -> typing.Literal[True] =
     True
