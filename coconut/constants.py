@@ -843,7 +843,8 @@ all_reqs = {
         "mypy[python2]",
         "types-backports",
         ("typing_extensions", "py==35"),
-        ("typing_extensions", "py36"),
+        ("typing_extensions", "py==36"),
+        ("typing_extensions", "py37"),
     ),
     "watch": (
         "watchdog",
