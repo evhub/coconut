@@ -1952,3 +1952,10 @@ def outer_func_4():
         addpattern copyclosure def inner_func() = x
         funcs.append(inner_func)
     return funcs
+
+def outer_func_5() -> (() -> int)[]:
+    funcs = []
+    for x in range(5):
+        copyclosure def inner_func() -> int = x
+        funcs.append(inner_func)
+    return funcs

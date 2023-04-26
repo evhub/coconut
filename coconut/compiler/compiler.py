@@ -2150,34 +2150,44 @@ if {temp_var} is not None:
             #  and if it's a copyclosure function, it has to happen outside the exec
             if not copyclosure:
                 out += [func_name, " = ", call_decorators(decorators, def_name), "\n"]
+                decorators = ""
         else:
             out += [decorators, def_stmt, func_code]
+            decorators = ""
 
         # handle copyclosure functions
         if copyclosure:
             vars_var = self.get_temp_var("func_vars")
+            func_from_vars = vars_var + '["' + def_name + '"]'
+            # for dotted copyclosure function definition, decoration was deferred until now
+            if decorators:
+                func_from_vars = call_decorators(decorators, func_from_vars)
+                decorators = ""
+            code = "".join(out)
             out = [
                 handle_indentation(
                     '''
-{vars_var} = _coconut.globals().copy()
-{vars_var}.update(_coconut.locals().copy())
-_coconut_exec({func_code_str}, {vars_var})
+if _coconut.typing.TYPE_CHECKING:
+    {code}
+    {vars_var} = {{"{def_name}": {def_name}}}
+else:
+    {vars_var} = _coconut.globals().copy()
+    {vars_var}.update(_coconut.locals().copy())
+    _coconut_exec({code_str}, {vars_var})
+{func_name} = {func_from_vars}
                 ''',
                     add_newline=True,
                 ).format(
                     func_name=func_name,
                     def_name=def_name,
                     vars_var=vars_var,
-                    func_code_str=self.wrap_str_of(self.reformat_post_deferred_code_proc("".join(out))),
+                    code=code,
+                    code_str=self.wrap_str_of(self.reformat_post_deferred_code_proc(code)),
+                    func_from_vars=func_from_vars,
                 ),
             ]
 
-            func_from_vars = vars_var + '["' + def_name + '"]'
-            # for dotted copyclosure function definition, decoration was deferred until now
-            if undotted_name is not None:
-                func_from_vars = call_decorators(decorators, func_from_vars)
-            out += [func_name, " = ", func_from_vars, "\n"]
-
+        internal_assert(not decorators, "unhandled decorators", decorators)
         return "".join(out)
 
     def add_code_before_marker_with_replacement(self, replacement, add_code_before, add_spaces=True, ignore_names=None):

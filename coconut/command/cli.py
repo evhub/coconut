@@ -183,7 +183,7 @@ arguments.add_argument(
     "-j", "--jobs",
     metavar="processes",
     type=str,
-    help="number of additional processes to use (defaults to " + repr(default_jobs) + ") (0 is no additional processes; 'sys' uses machine default)",
+    help="number of additional processes to use (defaults to " + ascii(default_jobs) + ") (0 is no additional processes; 'sys' uses machine default)",
 )
 
 arguments.add_argument(
@@ -256,14 +256,14 @@ arguments.add_argument(
     "--recursion-limit", "--recursionlimit",
     metavar="limit",
     type=int,
-    help="set maximum recursion depth in compiler (defaults to " + str(default_recursion_limit) + ")",
+    help="set maximum recursion depth in compiler (defaults to " + ascii(default_recursion_limit) + ")",
 )
 
 arguments.add_argument(
     "--stack-size", "--stacksize",
     metavar="limit",
     type=int,
-    help="run the compiler in a separate thread with the given stack size (in kilobytes)",
+    help="run the compiler in a separate thread with the given stack size in kilobytes",
 )
 
 arguments.add_argument(

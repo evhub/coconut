@@ -2363,8 +2363,6 @@ the resulting `inner_func`s will each return a _different_ `x` value rather than
 
 If `global` or `nonlocal` are used in a `copyclosure` function, they will not be able to modify variables in enclosing scopes. However, they will allow state to be preserved accross multiple calls to the `copyclosure` function.
 
-_Note: due to the way `copyclosure` functions are compiled, [type checking](#type-checking) won't work for them._
-
 ##### Example
 
 **Coconut:**

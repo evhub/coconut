@@ -220,7 +220,7 @@ def handling_broken_process_pool():
             yield
         except BrokenProcessPool:
             logger.log_exc()
-            raise BaseCoconutException("broken process pool")
+            raise BaseCoconutException("broken process pool (this can sometimes be triggered by a stack overflow; try re-running with a larger --stack-size)")
 
 
 def kill_children():
