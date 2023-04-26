@@ -223,6 +223,8 @@ class Command(object):
             logger.log("Parsed args:", args)
 
             # validate general command args
+            if args.stack_size and args.stack_size % 4 != 0:
+                logger.warn("--stack-size should generally be a multiple of 4, not {stack_size} (to support 4 KB pages)".format(stack_size=args.stack_size))
             if args.mypy is not None and args.line_numbers:
                 logger.warn("extraneous --line-numbers argument passed; --mypy implies --line-numbers")
             if args.site_install and args.site_uninstall:
@@ -593,13 +595,13 @@ class Command(object):
             with logger.in_path(path):  # pickle the compiler in the path context
                 future = self.executor.submit(multiprocess_wrapper(self.comp, method), *args, **kwargs)
 
-            def callback_wrapper(completed_future):
-                """Ensures that all errors are always caught, since errors raised in a callback won't be propagated."""
-                with logger.in_path(path):  # handle errors in the path context
-                    with self.handling_exceptions():
-                        result = completed_future.result()
-                        callback(result)
-            future.add_done_callback(callback_wrapper)
+                def callback_wrapper(completed_future):
+                    """Ensures that all errors are always caught, since errors raised in a callback won't be propagated."""
+                    with logger.in_path(path):  # handle errors in the path context
+                        with self.handling_exceptions():
+                            result = completed_future.result()
+                            callback(result)
+                future.add_done_callback(callback_wrapper)
 
     def set_jobs(self, jobs, profile=False):
         """Set --jobs."""

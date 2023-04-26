@@ -1492,7 +1492,7 @@ class Compiler(Grammar, pickleable_obj):
             level += ind_change(indent)
             if level < 0:
                 if not ignore_errors:
-                    logger.log_lambda(lambda: "failed to reindent:\n" + inputstring)
+                    logger.log_lambda(lambda: "failed to reindent:\n" + repr(inputstring) + "\nat line:\n" + line)
                     complain("negative indentation level: " + repr(level))
                 level = 0
 
@@ -1507,8 +1507,8 @@ class Compiler(Grammar, pickleable_obj):
             level += change_in_level
             if level < 0:
                 if not ignore_errors:
-                    logger.log_lambda(lambda: "failed to reindent:\n" + inputstring)
-                    complain("negative indentation level: " + repr(level))
+                    logger.log_lambda(lambda: "failed to reindent:\n" + repr(inputstring) + "\nat line:\n" + line)
+                    complain("negative interleaved indentation level: " + repr(level))
                 level = 0
 
             line = (line + comment).rstrip()
@@ -3456,7 +3456,7 @@ if not {check_var}:
         """Wrap code to add before by putting it behind a TYPE_CHECKING check."""
         if not add_code_before_list:
             return ""
-        return "if _coconut.typing.TYPE_CHECKING:" + openindent + "\n".join(add_code_before_list) + closeindent
+        return "if _coconut.typing.TYPE_CHECKING:\n" + openindent + "\n".join(add_code_before_list) + closeindent
 
     def wrap_typedef(self, typedef, for_py_typedef, duplicate=False):
         """Wrap a type definition in a string to defer it unless --no-wrap or __future__.annotations."""

@@ -68,7 +68,7 @@ auto_compilation(False)
 
 logger.verbose = property(lambda self: True, lambda self, value: print("WARNING: ignoring attempt to set logger.verbose = {value}".format(value=value)))
 
-default_stack_size = "300"
+default_stack_size = "512"
 
 base = os.path.dirname(os.path.relpath(__file__))
 src = os.path.join(base, "src")

@@ -199,7 +199,7 @@ class Logger(object):
             # necessary to resolve https://bugs.python.org/issue40134
             try:
                 os.system("")
-            except Exception:
+            except BaseException:
                 logger.log_exc()
             cls.colors_enabled = True
 
@@ -215,7 +215,18 @@ class Logger(object):
         """Make a copy of the logger."""
         return Logger(self)
 
-    def display(self, messages, sig="", end="\n", file=None, level="normal", color=None, **kwargs):
+    def display(
+        self,
+        messages,
+        sig="",
+        end="\n",
+        file=None,
+        level="normal",
+        color=None,
+        # flush by default to ensure our messages show up when printing from a child process
+        flush=True,
+        **kwargs
+    ):
         """Prints an iterator of messages."""
         if level == "normal":
             file = file or sys.stdout
@@ -251,8 +262,9 @@ class Logger(object):
         components.append(end)
         full_message = "".join(components)
 
-        # we use end="" to ensure atomic printing (and so we add the end in earlier)
-        print(full_message, file=file, end="", **kwargs)
+        if full_message:
+            # we use end="" to ensure atomic printing (and so we add the end in earlier)
+            print(full_message, file=file, end="", flush=flush, **kwargs)
 
     def print(self, *messages, **kwargs):
         """Print messages to stdout."""

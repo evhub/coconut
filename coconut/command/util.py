@@ -220,7 +220,7 @@ def handling_broken_process_pool():
             yield
         except BrokenProcessPool:
             logger.log_exc()
-            raise BaseCoconutException("broken process pool (this can sometimes be triggered by a stack overflow; try re-running with a larger --stack-size)")
+            raise BaseCoconutException("broken process pool (if this is due to a stack overflow, you may be able to fix by re-running with a larger '--stack-size', otherwise try disabling multiprocessing with '--jobs 0')")
 
 
 def kill_children():
@@ -230,7 +230,7 @@ def kill_children():
     except ImportError:
         logger.warn(
             "missing psutil; --jobs may not properly terminate",
-            extra="run '{python} -m pip install coconut[jobs]' to fix".format(python=sys.executable),
+            extra="run '{python} -m pip install psutil' to fix".format(python=sys.executable),
         )
     else:
         parent = psutil.Process()
@@ -433,11 +433,12 @@ def run_with_stack_size(stack_kbs, func, *args, **kwargs):
     """Run the given function with a stack of the given size in KBs."""
     if stack_kbs < min_stack_size_kbs:
         raise CoconutException("--stack-size must be at least " + str(min_stack_size_kbs) + " KB")
-    threading.stack_size(stack_kbs * kilobyte)
+    old_stack_size = threading.stack_size(stack_kbs * kilobyte)
     out = []
     thread = threading.Thread(target=lambda *args, **kwargs: out.append(func(*args, **kwargs)), args=args, kwargs=kwargs)
     thread.start()
     thread.join()
+    logger.log("Stack size used:", old_stack_size, "->", stack_kbs * kilobyte)
     internal_assert(len(out) == 1, "invalid threading results", out)
     return out[0]
 

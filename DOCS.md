@@ -216,7 +216,7 @@ coconut-run <source> <args>
 ```
 as an alias for
 ```
-coconut --run --quiet --target sys <source> --argv <args>
+coconut --run --quiet --target sys --line-numbers <source> --argv <args>
 ```
 which will quietly compile and run `<source>`, passing any additional arguments to the script, mimicking how the `python` command works.
 
@@ -225,11 +225,15 @@ which will quietly compile and run `<source>`, passing any additional arguments 
 #!/usr/bin/env coconut-run
 ```
 
-_Note: to pass additional compilation arguments to `coconut-run` (e.g. `--no-tco`), put them before the `<source>` file._
+To pass additional compilation arguments to `coconut-run` (e.g. `--no-tco`), put them before the `<source>` file.
 
 #### Naming Source Files
 
-Coconut source files should, so the compiler can recognize them, use the extension `.coco` (preferred), `.coc`, or `.coconut`. When Coconut compiles a `.coco` file, it will compile to another file with the same name, except with `.py` instead of `.coco`, which will hold the compiled code. If an extension other than `.py` is desired for the compiled files, then that extension can be put before `.coco` in the source file name, and it will be used instead of `.py` for the compiled files. For example, `name.coco` will compile to `name.py`, whereas `name.abc.coco` will compile to `name.abc`.
+Coconut source files should, so the compiler can recognize them, use the extension `.coco` (preferred), `.coc`, or `.coconut`.
+
+When Coconut compiles a `.coco` file, it will compile to another file with the same name, except with `.py` instead of `.coco`, which will hold the compiled code.
+
+If an extension other than `.py` is desired for the compiled files, then that extension can be put before `.coco` in the source file name, and it will be used instead of `.py` for the compiled files. For example, `name.coco` will compile to `name.py`, whereas `name.abc.coco` will compile to `name.abc`.
 
 #### Compilation Modes
 
