@@ -161,7 +161,6 @@ from coconut.compiler.util import (
     try_parse,
     does_parse,
     prep_grammar,
-    split_leading_whitespace,
     ordered,
     tuple_str_of_str,
     dict_to_str,
@@ -2181,19 +2180,18 @@ _coconut_exec({func_code_str}, {vars_var})
 
         return "".join(out)
 
-    def add_code_before_marker_with_replacement(self, replacement, *add_code_before, **kwargs):
+    def add_code_before_marker_with_replacement(self, replacement, add_code_before, add_spaces=True, ignore_names=None):
         """Add code before a marker that will later be replaced."""
-        add_spaces = kwargs.pop("add_spaces", True)
-        ignore_names = kwargs.pop("ignore_names", None)
-        internal_assert(not kwargs, "excess kwargs passed to add_code_before_marker_with_replacement", kwargs)
-
         # temp_marker will be set back later, but needs to be a unique name until then for add_code_before
         temp_marker = self.get_temp_var("add_code_before_marker")
 
-        self.add_code_before[temp_marker] = "\n".join(add_code_before)
+        self.add_code_before[temp_marker] = add_code_before
         self.add_code_before_replacements[temp_marker] = replacement
         if ignore_names is not None:
             self.add_code_before_ignore_names[temp_marker] = ignore_names
+        if add_spaces:
+            # if we're adding spaces, modify the regex to remove them later
+            self.add_code_before_regexes[temp_marker] = compile_regex(r"( |\b)%s( |\b)" % (temp_marker,))
 
         return " " + temp_marker + " " if add_spaces else temp_marker
 
@@ -3444,20 +3442,29 @@ if not {check_var}:
         #  but it should be empty so we don't actually put a comma in
         return self.typedef_handle(tokens.asList() + [""])
 
+    def wrap_code_before(self, add_code_before_list):
+        """Wrap code to add before by putting it behind a TYPE_CHECKING check."""
+        if not add_code_before_list:
+            return ""
+        return "if _coconut.typing.TYPE_CHECKING:" + openindent + "\n".join(add_code_before_list) + closeindent
+
     def wrap_typedef(self, typedef, for_py_typedef, duplicate=False):
         """Wrap a type definition in a string to defer it unless --no-wrap or __future__.annotations."""
         if self.no_wrap or for_py_typedef and self.target_info >= (3, 7):
             return typedef
         else:
-            reformatted_typedef, ignore_names, add_code_before = self.reformat_without_adding_code_before(typedef, ignore_errors=False)
+            reformatted_typedef, ignore_names, add_code_before_list = self.reformat_without_adding_code_before(typedef, ignore_errors=False)
             wrapped = self.wrap_str_of(reformatted_typedef)
-            # duplicate means that the necessary add_code_before will already have been done
             if duplicate:
-                add_code_before = ()
-            return self.add_code_before_marker_with_replacement(wrapped, *add_code_before, ignore_names=ignore_names)
+                # duplicate means that the necessary add_code_before will already have been done
+                add_code_before = ""
+            else:
+                # since we're wrapping the typedef, also wrap the code to add before
+                add_code_before = self.wrap_code_before(add_code_before_list)
+            return self.add_code_before_marker_with_replacement(wrapped, add_code_before, ignore_names=ignore_names)
 
     def wrap_type_comment(self, typedef, is_return=False, add_newline=False):
-        reformatted_typedef, ignore_names, add_code_before = self.reformat_without_adding_code_before(typedef, ignore_errors=False)
+        reformatted_typedef, ignore_names, add_code_before_list = self.reformat_without_adding_code_before(typedef, ignore_errors=False)
         if is_return:
             type_comment = " type: (...) -> " + reformatted_typedef
         else:
@@ -3465,7 +3472,9 @@ if not {check_var}:
         wrapped = self.wrap_comment(type_comment)
         if add_newline:
             wrapped += non_syntactic_newline
-        return self.add_code_before_marker_with_replacement(wrapped, *add_code_before, ignore_names=ignore_names)
+        # since we're wrapping the typedef, also wrap the code to add before
+        add_code_before = self.wrap_code_before(add_code_before_list)
+        return self.add_code_before_marker_with_replacement(wrapped, add_code_before, ignore_names=ignore_names)
 
     def typedef_handle(self, tokens):
         """Process Python 3 type annotations."""

@@ -299,9 +299,9 @@ class Command(object):
                     )
                 ]
 
-                # enable jobs by default if it looks like we'll be compiling multiple things
-                if len(src_dest_package_triples) > 1 or any(package for _, _, package in src_dest_package_triples):
-                    self.use_jobs_by_default()
+                # disable jobs if we know we're only compiling one file
+                if len(src_dest_package_triples) <= 1 and not any(package for _, _, package in src_dest_package_triples):
+                    self.disable_jobs()
 
                 # do compilation
                 with self.running_jobs(exit_on_error=not args.watch):
@@ -318,6 +318,7 @@ class Command(object):
                 or args.package
                 or args.standalone
                 or args.watch
+                or args.jobs
             ):
                 raise CoconutException("a source file/folder must be specified when options that depend on the source are enabled")
             elif getattr(args, "and"):
@@ -616,26 +617,25 @@ class Command(object):
         if profile and self.jobs != 0:
             raise CoconutException("--profile incompatible with --jobs {jobs}".format(jobs=jobs))
 
-    def use_jobs_by_default(self):
-        """Enable use of jobs if --jobs not passed."""
-        if self.jobs is None:
-            self.jobs = default_jobs
-            logger.log("Jobs:", self.jobs)
+    def disable_jobs(self):
+        """Disables use of --jobs."""
+        if self.jobs not in (0, 1, None):
+            logger.warn("got --jobs {jobs} but only compiling one file; disabling --jobs".format(jobs=self.jobs))
+        self.jobs = 0
+        logger.log("Jobs:", self.jobs)
 
-    @property
-    def max_workers(self):
+    def get_max_workers(self):
         """Get the max_workers to use for creating ProcessPoolExecutor."""
-        if self.jobs is None:
-            return 0
-        elif self.jobs == "sys":
+        jobs = self.jobs if self.jobs is not None else default_jobs
+        if jobs == "sys":
             return None
         else:
-            return self.jobs
+            return jobs
 
     @property
     def using_jobs(self):
         """Determine whether or not multiprocessing is being used."""
-        max_workers = self.max_workers
+        max_workers = self.get_max_workers()
         return max_workers is None or max_workers > 1
 
     @contextmanager
@@ -645,7 +645,7 @@ class Command(object):
             if self.using_jobs:
                 from concurrent.futures import ProcessPoolExecutor
                 try:
-                    with ProcessPoolExecutor(self.max_workers) as self.executor:
+                    with ProcessPoolExecutor(self.get_max_workers()) as self.executor:
                         yield
                 finally:
                     self.executor = None
