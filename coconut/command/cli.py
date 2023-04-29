@@ -256,12 +256,12 @@ arguments.add_argument(
     "--recursion-limit", "--recursionlimit",
     metavar="limit",
     type=int,
-    help="set maximum recursion depth in compiler (defaults to " + ascii(default_recursion_limit) + ")",
+    help="set maximum recursion depth in compiler (defaults to " + ascii(default_recursion_limit) + ") (when increasing --recursion-limit, you may also need to increase --stack-size)",
 )
 
 arguments.add_argument(
     "--stack-size", "--stacksize",
-    metavar="limit",
+    metavar="kbs",
     type=int,
     help="run the compiler in a separate thread with the given stack size in kilobytes",
 )

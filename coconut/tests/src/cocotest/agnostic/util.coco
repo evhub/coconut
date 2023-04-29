@@ -1066,6 +1066,12 @@ if TYPE_CHECKING or sys.version_info >= (3, 5):
         def __mul__(self: T, other: U) -> V:
             raise NotImplementedError
 
+    class X(Protocol):
+        x: str
+
+    class Y(Protocol):
+        y: str
+
 else:
     def cast(typ, value) = value
 
@@ -1104,12 +1110,6 @@ def try_divide(x: float, y: float) -> Expected[float]:
         return Expected(x / y)
     except Exception as err:
         return Expected(error=err)
-
-class X(Protocol):
-    x: str
-
-class Y(Protocol):
-    y: str
 
 class xy:
     def __init__(self, x: str, y: str):

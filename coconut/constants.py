@@ -903,7 +903,7 @@ min_versions = {
     "myst-parser": (1,),
     "sphinx": (6,),
     "mypy[python2]": (1, 1),
-    ("jupyter-console", "py37"): (6, 6),
+    ("jupyter-console", "py37"): (6,),
     ("typing", "py<35"): (3, 10),
     ("jedi", "py37"): (0, 18),
     ("typing_extensions", "py37"): (4, 4),
