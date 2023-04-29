@@ -820,9 +820,11 @@ all_reqs = {
     ),
     "kernel": (
         ("ipython", "py2"),
-        ("ipython", "py3"),
+        ("ipython", "py3;py<39"),
+        ("ipython", "py39"),
         ("ipykernel", "py2"),
-        ("ipykernel", "py3"),
+        ("ipykernel", "py3;py<39"),
+        ("ipykernel", "py39"),
         ("jupyter-client", "py<35"),
         ("jupyter-client", "py==35"),
         ("jupyter-client", "py36"),
@@ -905,6 +907,8 @@ min_versions = {
     ("typing", "py<35"): (3, 10),
     ("jedi", "py37"): (0, 18),
     ("typing_extensions", "py37"): (4, 4),
+    ("ipython", "py39"): (8,),
+    ("ipykernel", "py39"): (6,),
 
     # pinned reqs: (must be added to pinned_reqs below)
 
@@ -912,8 +916,8 @@ min_versions = {
     ("jupyter-client", "py36"): (7, 1, 2),
     ("typing_extensions", "py==36"): (4, 1),
     # don't upgrade these; they break on Python 3.5
-    ("ipykernel", "py3"): (5, 5),
-    ("ipython", "py3"): (7, 9),
+    ("ipykernel", "py3;py<39"): (5, 5),
+    ("ipython", "py3;py<39"): (7, 9),
     ("jupyter-console", "py>=35;py<37"): (6, 1),
     ("jupyter-client", "py==35"): (6, 1, 12),
     ("jupytext", "py3"): (1, 8),
@@ -948,8 +952,8 @@ pinned_reqs = (
     ("jupyter-client", "py36"),
     ("typing_extensions", "py==36"),
     ("jupyter-client", "py<35"),
-    ("ipykernel", "py3"),
-    ("ipython", "py3"),
+    ("ipykernel", "py3;py<39"),
+    ("ipython", "py3;py<39"),
     ("jupyter-console", "py>=35;py<37"),
     ("jupyter-client", "py==35"),
     ("jupytext", "py3"),
@@ -982,6 +986,7 @@ max_versions = {
     ("prompt_toolkit", "mark2"): _,
     ("jedi", "py<37"): _,
     ("pywinpty", "py2;windows"): _,
+    ("ipython", "py3;py<39"): _,
 }
 
 classifiers = (
