@@ -128,7 +128,7 @@ temp_grammar_item_ref_count = 3 if PY311 else 5
 
 minimum_recursion_limit = 128
 # shouldn't be raised any higher to avoid stack overflows
-default_recursion_limit = 2000
+default_recursion_limit = 1920
 
 if sys.getrecursionlimit() < default_recursion_limit:
     sys.setrecursionlimit(default_recursion_limit)

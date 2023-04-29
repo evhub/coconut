@@ -587,13 +587,16 @@ typing.Protocol = Protocol
             (3, 10),
             if_lt='''
 try:
-    from typing_extensions import TypeAlias, ParamSpec, Concatenate
+    from typing_extensions import ParamSpec, TypeAlias, Concatenate
 except ImportError:
+    def ParamSpec(name, *args, **kwargs):
+        """Runtime mock of typing.ParamSpec for Python 3.9 and earlier."""
+        return _coconut.typing.TypeVar(name)
     class you_need_to_install_typing_extensions{object}:
         __slots__ = ()
-    TypeAlias = ParamSpec = Concatenate = you_need_to_install_typing_extensions()
-typing.TypeAlias = TypeAlias
+    TypeAlias = Concatenate = you_need_to_install_typing_extensions()
 typing.ParamSpec = ParamSpec
+typing.TypeAlias = TypeAlias
 typing.Concatenate = Concatenate
             '''.format(**format_dict),
             indent=1,
@@ -605,9 +608,12 @@ typing.Concatenate = Concatenate
 try:
     from typing_extensions import TypeVarTuple, Unpack
 except ImportError:
+    def TypeVarTuple(name, *args, **kwargs):
+        """Runtime mock of typing.TypeVarTuple for Python 3.10 and earlier."""
+        return _coconut.typing.TypeVar(name)
     class you_need_to_install_typing_extensions{object}:
         __slots__ = ()
-    TypeVarTuple = Unpack = you_need_to_install_typing_extensions()
+    Unpack = you_need_to_install_typing_extensions()
 typing.TypeVarTuple = TypeVarTuple
 typing.Unpack = Unpack
             '''.format(**format_dict),

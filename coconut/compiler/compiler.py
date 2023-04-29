@@ -1130,6 +1130,7 @@ class Compiler(Grammar, pickleable_obj):
                 except CoconutDeferredSyntaxError as err:
                     internal_assert(pre_procd is not None, "invalid deferred syntax error in pre-processing", err)
                     raise self.make_syntax_err(err, pre_procd)
+                # RuntimeError, not RecursionError, for Python < 3.5
                 except RuntimeError as err:
                     raise CoconutException(
                         str(err), extra="try again with --recursion-limit greater than the current "

@@ -68,7 +68,8 @@ auto_compilation(False)
 
 logger.verbose = property(lambda self: True, lambda self, value: print("WARNING: ignoring attempt to set logger.verbose = {value}".format(value=value)))
 
-default_stack_size = "512"
+default_recursion_limit = "2560"
+default_stack_size = "2048"
 
 base = os.path.dirname(os.path.relpath(__file__))
 src = os.path.join(base, "src")
@@ -306,7 +307,9 @@ def call_python(args, **kwargs):
 
 def call_coconut(args, **kwargs):
     """Calls Coconut."""
-    if "--stack-size" not in args:
+    if default_recursion_limit is not None and "--recursion-limit" not in args:
+        args = ["--recursion-limit", default_recursion_limit] + args
+    if default_stack_size is not None and "--stack-size" not in args:
         args = ["--stack-size", default_stack_size] + args
     if "--mypy" in args and "check_mypy" not in kwargs:
         kwargs["check_mypy"] = True
