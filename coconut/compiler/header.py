@@ -33,6 +33,7 @@ from coconut.constants import (
     justify_len,
     report_this_text,
     numpy_modules,
+    pandas_numpy_modules,
     jax_numpy_modules,
     self_match_types,
     is_data_var,
@@ -227,6 +228,7 @@ def process_header_args(which, use_hash, target, no_tco, strict, no_wrap):
         comma_slash=", /" if target_info >= (3, 8) else "",
         report_this_text=report_this_text,
         numpy_modules=tuple_str_of(numpy_modules, add_quotes=True),
+        pandas_numpy_modules=tuple_str_of(pandas_numpy_modules, add_quotes=True),
         jax_numpy_modules=tuple_str_of(jax_numpy_modules, add_quotes=True),
         self_match_types=tuple_str_of(self_match_types),
         set_super=(
@@ -420,7 +422,7 @@ def _coconut_matmul(a, b, **kwargs):
         else:
             if result is not _coconut.NotImplemented:
                 return result
-    if "numpy" in (a.__class__.__module__, b.__class__.__module__):
+    if "numpy" in (_coconut_get_base_module(a), _coconut_get_base_module(b)):
         from numpy import matmul
         return matmul(a, b)
     raise _coconut.TypeError("unsupported operand type(s) for @: " + _coconut.repr(_coconut.type(a)) + " and " + _coconut.repr(_coconut.type(b)))

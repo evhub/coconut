@@ -31,6 +31,7 @@ class _coconut{object}:{COMMENT.EVERYTHING_HERE_MUST_BE_COPIED_TO_STUB_FILE}
     else:
         abc.Sequence.register(numpy.ndarray)
     numpy_modules = {numpy_modules}
+    pandas_numpy_modules = {pandas_numpy_modules}
     jax_numpy_modules = {jax_numpy_modules}
     tee_type = type(itertools.tee((), 1)[0])
     reiterables = abc.Sequence, abc.Mapping, abc.Set
@@ -78,6 +79,8 @@ class _coconut_Sentinel(_coconut_baseclass):
     def __reduce__(self):
         return (self.__class__, ())
 _coconut_sentinel = _coconut_Sentinel()
+def _coconut_get_base_module(obj):
+    return obj.__class__.__module__.split(".", 1)[0]
 class MatchError(_coconut_baseclass, Exception):
     """Pattern-matching error. Has attributes .pattern, .value, and .message."""{COMMENT.no_slots_to_allow_setattr_below}
     max_val_repr_len = 500
@@ -650,17 +653,21 @@ Additionally supports Cartesian products of numpy arrays."""
             repeat = 1
         if repeat < 0:
             raise _coconut.ValueError("cartesian_product: repeat cannot be negative")
-        if iterables and _coconut.all(it.__class__.__module__ in _coconut.numpy_modules for it in iterables):
-            if _coconut.any(it.__class__.__module__ in _coconut.jax_numpy_modules for it in iterables):
-                from jax import numpy
-            else:
-                numpy = _coconut.numpy
-            iterables *= repeat
-            dtype = numpy.result_type(*iterables)
-            arr = numpy.empty([_coconut.len(a) for a in iterables] + [_coconut.len(iterables)], dtype=dtype)
-            for i, a in _coconut.enumerate(numpy.ix_(*iterables)):
-                arr[..., i] = a
-            return arr.reshape(-1, _coconut.len(iterables))
+        if iterables:
+            it_modules = [_coconut_get_base_module(it) for it in iterables]
+            if _coconut.all(mod in _coconut.numpy_modules for mod in it_modules):
+                if _coconut.any(mod in _coconut.pandas_numpy_modules for mod in it_modules):
+                    iterables = tuple((it.to_numpy() if _coconut_get_base_module(it) in _coconut.pandas_numpy_modules else it) for it in iterables)
+                if _coconut.any(mod in _coconut.jax_numpy_modules for mod in it_modules):
+                    from jax import numpy
+                else:
+                    numpy = _coconut.numpy
+                iterables *= repeat
+                dtype = numpy.result_type(*iterables)
+                arr = numpy.empty([_coconut.len(a) for a in iterables] + [_coconut.len(iterables)], dtype=dtype)
+                for i, a in _coconut.enumerate(numpy.ix_(*iterables)):
+                    arr[..., i] = a
+                return arr.reshape(-1, _coconut.len(iterables))
         self = _coconut.object.__new__(cls)
         self.iters = iterables
         self.repeat = repeat
@@ -973,7 +980,7 @@ class multi_enumerate(_coconut_has_iter):
         return self.__class__(self.get_new_iter())
     @property
     def is_numpy(self):
-        return self.iter.__class__.__module__ in _coconut.numpy_modules
+        return _coconut_get_base_module(self.iter) in _coconut.numpy_modules
     def __iter__(self):
         if self.is_numpy:
             it = _coconut.numpy.nditer(self.iter, ["multi_index", "refs_ok"], [["readonly"]])
@@ -1474,11 +1481,17 @@ def fmap(func, obj, **kwargs):
         else:
             if result is not _coconut.NotImplemented:
                 return result
-    if obj.__class__.__module__ in _coconut.jax_numpy_modules:
+    obj_module = _coconut_get_base_module(obj)
+    if obj_module in _coconut.jax_numpy_modules:
         import jax.numpy as jnp
         return jnp.vectorize(func)(obj)
-    if obj.__class__.__module__ in _coconut.numpy_modules:
-        return _coconut.numpy.vectorize(func)(obj)
+    if obj_module in _coconut.numpy_modules:
+        got = _coconut.numpy.vectorize(func)(obj)
+        if obj_module in _coconut.pandas_numpy_modules:
+            new_obj = obj.copy()
+            new_obj[:] = got
+            return new_obj
+        return got
     obj_aiter = _coconut.getattr(obj, "__aiter__", None)
     if obj_aiter is not None and _coconut_amap is not None:
         try:
@@ -1744,7 +1757,10 @@ def all_equal(iterable):
 
     Supports numpy arrays. Assumes transitivity and 'x != y' being equivalent to 'not (x == y)'.
     """
-    if iterable.__class__.__module__ in _coconut.numpy_modules:
+    iterable_module = _coconut_get_base_module(iterable)
+    if iterable_module in _coconut.numpy_modules:
+        if iterable_module in _coconut.pandas_numpy_modules:
+            iterable = iterable.to_numpy()
         return not _coconut.len(iterable) or (iterable == iterable[0]).all()
     first_item = _coconut_sentinel
     for item in iterable:
@@ -1787,22 +1803,27 @@ def _coconut_mk_anon_namedtuple(fields, types=None, of_kwargs=None):
         return NT
     return NT(**of_kwargs)
 def _coconut_ndim(arr):
-    if (arr.__class__.__module__ in _coconut.numpy_modules or _coconut.hasattr(arr.__class__, "__matconcat__")) and _coconut.hasattr(arr, "ndim"):
+    if (_coconut_get_base_module(arr) in _coconut.numpy_modules or _coconut.hasattr(arr.__class__, "__matconcat__")) and _coconut.hasattr(arr, "ndim"):
         return arr.ndim
-    if not _coconut.isinstance(arr, _coconut.abc.Sequence):
+    if not _coconut.isinstance(arr, _coconut.abc.Sequence) or _coconut.isinstance(arr, (_coconut.str, _coconut.bytes)):
         return 0
     if _coconut.len(arr) == 0:
         return 1
     arr_dim = 1
     inner_arr = arr[0]
+    if inner_arr == arr:
+        return 0
     while _coconut.isinstance(inner_arr, _coconut.abc.Sequence):
         arr_dim += 1
         if _coconut.len(inner_arr) < 1:
             break
-        inner_arr = inner_arr[0]
+        new_inner_arr = inner_arr[0]
+        if new_inner_arr == inner_arr:
+            break
+        inner_arr = new_inner_arr
     return arr_dim
 def _coconut_expand_arr(arr, new_dims):
-    if (arr.__class__.__module__ in _coconut.numpy_modules or _coconut.hasattr(arr.__class__, "__matconcat__")) and _coconut.hasattr(arr, "reshape"):
+    if (_coconut_get_base_module(arr) in _coconut.numpy_modules or _coconut.hasattr(arr.__class__, "__matconcat__")) and _coconut.hasattr(arr, "reshape"):
         return arr.reshape((1,) * new_dims + arr.shape)
     for _ in _coconut.range(new_dims):
         arr = [arr]
@@ -1810,17 +1831,21 @@ def _coconut_expand_arr(arr, new_dims):
 def _coconut_concatenate(arrs, axis):
     matconcat = None
     for a in arrs:
-        if a.__class__.__module__ in _coconut.jax_numpy_modules:
+        a_module = _coconut_get_base_module(a)
+        if a_module in _coconut.pandas_numpy_modules:
+            from pandas import concat as matconcat
+            break
+        if a_module in _coconut.jax_numpy_modules:
             from jax.numpy import concatenate as matconcat
             break
-        if a.__class__.__module__ in _coconut.numpy_modules:
+        if a_module in _coconut.numpy_modules:
             matconcat = _coconut.numpy.concatenate
             break
         if _coconut.hasattr(a.__class__, "__matconcat__"):
             matconcat = a.__class__.__matconcat__
             break
     if matconcat is not None:
-        return matconcat(arrs, axis)
+        return matconcat(arrs, axis=axis)
     if not axis:
         return _coconut.list(_coconut.itertools.chain.from_iterable(arrs))
     return [_coconut_concatenate(rows, axis - 1) for rows in _coconut.zip(*arrs)]
@@ -1833,7 +1858,7 @@ def _coconut_multi_dim_arr(arrs, dim):
 def _coconut_call_or_coefficient(func, *args):
     if _coconut.callable(func):
         return func(*args)
-    if not _coconut.isinstance(func, (_coconut.int, _coconut.float, _coconut.complex)) and func.__class__.__module__ not in _coconut.numpy_modules:
+    if not _coconut.isinstance(func, (_coconut.int, _coconut.float, _coconut.complex)) and _coconut_get_base_module(func) not in _coconut.numpy_modules:
         raise _coconut.TypeError("implicit function application and coefficient syntax only supported for Callable, int, float, complex, and numpy objects")
     func = func
     for x in args:

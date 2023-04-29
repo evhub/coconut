@@ -134,14 +134,19 @@ if sys.getrecursionlimit() < default_recursion_limit:
     sys.setrecursionlimit(default_recursion_limit)
 
 # modules that numpy-like arrays can live in
+pandas_numpy_modules = (
+    "pandas",
+)
 jax_numpy_modules = (
-    "jaxlib.xla_extension",
+    "jaxlib",
 )
 numpy_modules = (
     "numpy",
-    "pandas",
     "torch",
-) + jax_numpy_modules
+) + (
+    pandas_numpy_modules
+    + jax_numpy_modules
+)
 
 legal_indent_chars = " \t"  # the only Python-legal indent chars
 
@@ -828,8 +833,8 @@ all_reqs = {
         ("jupyter-client", "py<35"),
         ("jupyter-client", "py==35"),
         ("jupyter-client", "py36"),
-        ("jedi", "py<37"),
-        ("jedi", "py37"),
+        ("jedi", "py<39"),
+        ("jedi", "py39"),
         ("pywinpty", "py2;windows"),
     ),
     "jupyter": (
@@ -879,6 +884,7 @@ all_reqs = {
         "pexpect",
         ("numpy", "py34"),
         ("numpy", "py2;cpy"),
+        ("pandas", "py36"),
     ),
 }
 
@@ -905,14 +911,15 @@ min_versions = {
     "mypy[python2]": (1, 1),
     ("jupyter-console", "py37"): (6,),
     ("typing", "py<35"): (3, 10),
-    ("jedi", "py37"): (0, 18),
     ("typing_extensions", "py37"): (4, 4),
     ("ipython", "py39"): (8,),
     ("ipykernel", "py39"): (6,),
+    ("jedi", "py39"): (0, 18),
 
     # pinned reqs: (must be added to pinned_reqs below)
 
     # don't upgrade this; it breaks on Python 3.6
+    ("pandas", "py36"): (1,),
     ("jupyter-client", "py36"): (7, 1, 2),
     ("typing_extensions", "py==36"): (4, 1),
     # don't upgrade these; they break on Python 3.5
@@ -942,13 +949,14 @@ min_versions = {
     "watchdog": (0, 10),
     "papermill": (1, 2),
     # don't upgrade this; it breaks with old IPython versions
-    ("jedi", "py<37"): (0, 17),
+    ("jedi", "py<39"): (0, 17),
     # Coconut requires pyparsing 2
     "pyparsing": (2, 4, 7),
 }
 
 # should match the reqs with comments above
 pinned_reqs = (
+    ("pandas", "py36"),
     ("jupyter-client", "py36"),
     ("typing_extensions", "py==36"),
     ("jupyter-client", "py<35"),
@@ -971,7 +979,7 @@ pinned_reqs = (
     ("prompt_toolkit", "mark2"),
     "watchdog",
     "papermill",
-    ("jedi", "py<37"),
+    ("jedi", "py<39"),
     "pyparsing",
 )
 
@@ -984,7 +992,7 @@ max_versions = {
     "pyparsing": _,
     "cPyparsing": (_, _, _),
     ("prompt_toolkit", "mark2"): _,
-    ("jedi", "py<37"): _,
+    ("jedi", "py<39"): _,
     ("pywinpty", "py2;windows"): _,
     ("ipython", "py3;py<39"): _,
 }

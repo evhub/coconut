@@ -6,6 +6,7 @@ from coconut.constants import (
     PY2,
     PY34,
     PY35,
+    PY36,
     WINDOWS,
     PYPY,
 )  # type: ignore
@@ -464,9 +465,38 @@ def test_numpy() -> bool:
     return True
 
 
+def test_pandas() -> bool:
+    import pandas as pd
+    import numpy as np
+    d1 = pd.DataFrame({"nums": [1, 2, 3], "chars": ["a", "b", "c"]})
+    assert [d1; d1].keys() |> list == ["nums", "chars"] * 2  # type: ignore
+    assert [d1;; d1].itertuples() |> list == [(0, 1, 'a'), (1, 2, 'b'), (2, 3, 'c'), (0, 1, 'a'), (1, 2, 'b'), (2, 3, 'c')]  # type: ignore
+    d2 = pd.DataFrame({"a": range(3) |> list, "b": range(1, 4) |> list})
+    new_d2 = d2 |> fmap$(.+1)
+    assert new_d2["a"] |> list == range(1, 4) |> list
+    assert new_d2["b"] |> list == range(2, 5) |> list
+    assert multi_enumerate(d1) |> list == [((0, 0), 1), ((1, 0), 2), ((2, 0), 3), ((0, 1), 'a'), ((1, 1), 'b'), ((2, 1), 'c')]
+    assert not all_equal(d1)
+    assert not all_equal(d2)
+    assert cartesian_product(d1["nums"], d1["chars"]) `np.array_equal` np.array([
+        1; 'a';;
+        1; 'b';;
+        1; 'c';;
+        2; 'a';;
+        2; 'b';;
+        2; 'c';;
+        3; 'a';;
+        3; 'b';;
+        3; 'c';;
+    ], dtype=object)
+    return True
+
+
 def test_extras() -> bool:
     if not PYPY and (PY2 or PY34):
         assert test_numpy() is True
+    if not PYPY and PY36:
+        assert test_pandas() is True
     if CoconutKernel is not None:
         assert test_kernel() is True
     assert test_setup_none() is True

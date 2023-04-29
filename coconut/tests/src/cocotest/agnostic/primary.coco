@@ -1585,4 +1585,6 @@ def primary_test() -> bool:
     a_dict = {"a": 1, "b": 2}
     a_dict |= {"a": 10, "c": 20}
     assert a_dict == {"a": 10, "b": 2, "c": 20} == {"a": 1, "b": 2} | {"a": 10, "c": 20}
+    assert ["abc" ; "def"] == ['abc', 'def']
+    assert ["abc" ;; "def"] == [['abc'], ['def']]
     return True
