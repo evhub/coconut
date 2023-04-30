@@ -74,6 +74,11 @@ class _coconut_baseclass{object}:
     def __setstate__(self, setvars):{COMMENT.fixes_unpickling_with_slots}
         for k, v in setvars.items():
             _coconut.setattr(self, k, v)
+    def __iter_getitem__(self, index):
+        getitem = _coconut.getattr(self, "__getitem__", None)
+        if getitem is None:
+            raise _coconut.NotImplementedError
+        return getitem(index)
 class _coconut_Sentinel(_coconut_baseclass):
     __slots__ = ()
     def __reduce__(self):
@@ -237,12 +242,12 @@ def _coconut_iter_getitem_special_case(iterable, start, stop, step):
 def _coconut_iter_getitem(iterable, index):
     """Iterator slicing works just like sequence slicing, including support for negative indices and slices, and support for `slice` objects in the same way as can be done with normal slicing.
 
-    Coconut's iterator slicing is very similar to Python's `itertools.islice`, but unlike `itertools.islice`, Coconut's iterator slicing supports negative indices, and will preferentially call an object's `__iter_getitem__` (Coconut-specific magic method, preferred) or `__getitem__` (general Python magic method), if they exist. Coconut's iterator slicing is also optimized to work well with all of Coconut's built-in objects, only computing the elements of each that are actually necessary to extract the desired slice.
+    Coconut's iterator slicing is very similar to Python's `itertools.islice`, but unlike `itertools.islice`, Coconut's iterator slicing supports negative indices, and will preferentially call an object's `__iter_getitem__` (always used if available) or `__getitem__` (only used if the object is a collections.abc.Sequence). Coconut's iterator slicing is also optimized to work well with all of Coconut's built-in objects, only computing the elements of each that are actually necessary to extract the desired slice.
 
     Some code taken from more_itertools under the terms of its MIT license.
     """
     obj_iter_getitem = _coconut.getattr(iterable, "__iter_getitem__", None)
-    if obj_iter_getitem is None:
+    if obj_iter_getitem is None and _coconut.isinstance(iterable, _coconut.abc.Sequence):
         obj_iter_getitem = _coconut.getattr(iterable, "__getitem__", None)
     if obj_iter_getitem is not None:
         try:
@@ -250,8 +255,7 @@ def _coconut_iter_getitem(iterable, index):
         except _coconut.NotImplementedError:
             pass
         else:
-            if result is not _coconut.NotImplemented:
-                return result
+            return result
     if not _coconut.isinstance(index, _coconut.slice):
         index = _coconut.operator.index(index)
         if index < 0:

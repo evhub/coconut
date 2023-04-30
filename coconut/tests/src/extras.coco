@@ -469,6 +469,7 @@ def test_pandas() -> bool:
     import pandas as pd
     import numpy as np
     d1 = pd.DataFrame({"nums": [1, 2, 3], "chars": ["a", "b", "c"]})
+    assert d1$[0] == "nums"
     assert [d1; d1].keys() |> list == ["nums", "chars"] * 2  # type: ignore
     assert [d1;; d1].itertuples() |> list == [(0, 1, 'a'), (1, 2, 'b'), (2, 3, 'c'), (0, 1, 'a'), (1, 2, 'b'), (2, 3, 'c')]  # type: ignore
     d2 = pd.DataFrame({"a": range(3) |> list, "b": range(1, 4) |> list})
@@ -488,7 +489,7 @@ def test_pandas() -> bool:
         3; 'a';;
         3; 'b';;
         3; 'c';;
-    ], dtype=object)
+    ], dtype=object)  # type: ignore
     return True
 
 

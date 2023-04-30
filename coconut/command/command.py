@@ -429,7 +429,9 @@ class Command(object):
         except SystemExit as err:
             self.register_exit_code(err.code)
         except BaseException as err:
-            if isinstance(err, CoconutException):
+            if isinstance(err, GeneratorExit):
+                raise
+            elif isinstance(err, CoconutException):
                 logger.print_exc()
             elif not isinstance(err, KeyboardInterrupt):
                 logger.print_exc()
