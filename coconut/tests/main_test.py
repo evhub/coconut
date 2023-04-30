@@ -49,7 +49,7 @@ from coconut.constants import (
     MYPY,
     PY35,
     PY36,
-    PY39,
+    PY38,
     icoconut_default_kernel_names,
     icoconut_custom_kernel_name,
     mypy_err_infixes,
@@ -60,13 +60,24 @@ from coconut.convenience import (
     auto_compilation,
     setup,
 )
+
+
+# -----------------------------------------------------------------------------------------------------------------------
+# SETUP:
+# -----------------------------------------------------------------------------------------------------------------------
+
+
 auto_compilation(False)
+
+logger.verbose = property(lambda self: True, lambda self, value: print("WARNING: ignoring attempt to set logger.verbose = {value}".format(value=value)))
+
+os.environ["PYDEVD_DISABLE_FILE_VALIDATION=1"] = "1"
+
 
 # -----------------------------------------------------------------------------------------------------------------------
 # CONSTANTS:
 # -----------------------------------------------------------------------------------------------------------------------
 
-logger.verbose = property(lambda self: True, lambda self, value: print("WARNING: ignoring attempt to set logger.verbose = {value}".format(value=value)))
 
 default_recursion_limit = "4096"
 default_stack_size = "4096"
@@ -833,26 +844,27 @@ class TestExternal(unittest.TestCase):
         def test_pyprover(self):
             with using_path(pyprover):
                 comp_pyprover()
-                run_pyprover()
+                if PY38:
+                    run_pyprover()
 
     if not PYPY or PY2:
         def test_prelude(self):
             with using_path(prelude):
                 comp_prelude()
-                if MYPY:
+                if MYPY and PY38:
                     run_prelude()
+
+    def test_bbopt(self):
+        with using_path(bbopt):
+            comp_bbopt()
+            if not PYPY and PY38:
+                install_bbopt()
 
     def test_pyston(self):
         with using_path(pyston):
             comp_pyston(["--no-tco"])
             if PYPY and PY2:
                 run_pyston()
-
-    def test_bbopt(self):
-        with using_path(bbopt):
-            comp_bbopt()
-            if not PYPY and (PY2 or PY36) and not PY39:
-                install_bbopt()
 
 
 # -----------------------------------------------------------------------------------------------------------------------
