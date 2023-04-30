@@ -7,7 +7,6 @@ from coconut.constants import (
     PY34,
     PY35,
     PY36,
-    WINDOWS,
     PYPY,
 )  # type: ignore
 from coconut._pyparsing import USE_COMPUTATION_GRAPH  # type: ignore
@@ -26,7 +25,7 @@ from coconut.convenience import (
     coconut_eval,
 )
 
-if IPY and not WINDOWS:
+if IPY:
     if PY35:
         import asyncio
     from coconut.icoconut import CoconutKernel  # type: ignore

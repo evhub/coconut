@@ -809,7 +809,6 @@ all_reqs = {
         "pyparsing",
     ),
     "non-py26": (
-        "pygments",
         "psutil",
     ),
     "py2": (
@@ -822,6 +821,12 @@ all_reqs = {
     ),
     "py26": (
         "argparse",
+    ),
+    "py<39": (
+        ("pygments", "mark<39"),
+    ),
+    "py39": (
+        ("pygments", "mark39"),
     ),
     "kernel": (
         ("ipython", "py2"),
@@ -875,7 +880,8 @@ all_reqs = {
     ),
     "docs": (
         "sphinx",
-        "pygments",
+        ("pygments", "mark<39"),
+        ("pygments", "mark39"),
         "myst-parser",
         "pydata-sphinx-theme",
     ),
@@ -890,7 +896,7 @@ all_reqs = {
 
 # min versions are inclusive
 min_versions = {
-    "cPyparsing": (2, 4, 7, 1, 2, 0),
+    "cPyparsing": (2, 4, 7, 1, 2, 1),
     ("pre-commit", "py3"): (3,),
     "psutil": (5,),
     "jupyter": (1, 0),
@@ -907,7 +913,6 @@ min_versions = {
     ("aenum", "py<34"): (3,),
     "pydata-sphinx-theme": (0, 13),
     "myst-parser": (1,),
-    "sphinx": (7,),
     "mypy[python2]": (1, 2),
     ("jupyter-console", "py37"): (6,),
     ("typing", "py<35"): (3, 10),
@@ -915,9 +920,12 @@ min_versions = {
     ("ipython", "py38"): (8,),
     ("ipykernel", "py38"): (6,),
     ("jedi", "py39"): (0, 18),
+    ("pygments", "mark39"): (2, 15),
 
     # pinned reqs: (must be added to pinned_reqs below)
 
+    # don't upgrade until myst-parser supports the new version
+    "sphinx": (6,),
     # don't upgrade this; it breaks on Python 3.6
     ("pandas", "py36"): (1,),
     ("jupyter-client", "py36"): (7, 1, 2),
@@ -938,7 +946,7 @@ min_versions = {
     # don't upgrade this; it breaks on unix
     "vprof": (0, 36),
     # don't upgrade this; it breaks on Python 3.4
-    "pygments": (2, 3),
+    ("pygments", "mark<39"): (2, 3),
     # don't upgrade these; they break on Python 2
     ("jupyter-client", "py<35"): (5, 3),
     ("pywinpty", "py2;windows"): (0, 5),
@@ -956,6 +964,7 @@ min_versions = {
 
 # should match the reqs with comments above
 pinned_reqs = (
+    "sphinx",
     ("pandas", "py36"),
     ("jupyter-client", "py36"),
     ("typing_extensions", "py==36"),
@@ -971,7 +980,7 @@ pinned_reqs = (
     ("prompt_toolkit", "mark3"),
     "pytest",
     "vprof",
-    "pygments",
+    ("pygments", "mark<39"),
     ("pywinpty", "py2;windows"),
     ("jupyter-console", "py<35"),
     ("ipython", "py2"),
@@ -994,7 +1003,7 @@ max_versions = {
     ("prompt_toolkit", "mark2"): _,
     ("jedi", "py<39"): _,
     ("pywinpty", "py2;windows"): _,
-    ("ipython", "py3;py<39"): _,
+    ("ipython", "py3;py<38"): _,
 }
 
 classifiers = (

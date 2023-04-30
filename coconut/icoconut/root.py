@@ -214,7 +214,7 @@ def run_cell(self, raw_cell, store_history=False, silent=False, shell_futures=Tr
 
 if asyncio is not None:
     @override
-    {async_}def run_cell_async(self, raw_cell, store_history=False, silent=False, shell_futures=True, cell_id=None, **kwargs):
+    {coroutine}def run_cell_async(self, raw_cell, store_history=False, silent=False, shell_futures=True, cell_id=None, **kwargs):
         """Version of run_cell_async that always uses shell_futures."""
         # same as above
         return super({cls}, self).run_cell_async(raw_cell, store_history, silent, shell_futures=True, **kwargs)
@@ -233,8 +233,8 @@ def user_expressions(self, expressions):
 
     format_dict = dict(
         dict="{}",
-        async_=(
-            "async " if PY311 else
+        coroutine=(
+            "" if PY311 else
             """@asyncio.coroutine
     """
         ),

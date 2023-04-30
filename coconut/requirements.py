@@ -25,6 +25,7 @@ from coconut.integrations import embed
 from coconut.constants import (
     CPYTHON,
     PY34,
+    PY39,
     IPY,
     MYPY,
     XONSH,
@@ -237,6 +238,8 @@ if using_modern_setuptools:
     extras[":python_version>='2.7'"] = get_reqs("non-py26")
     extras[":python_version<'3'"] = get_reqs("py2")
     extras[":python_version>='3'"] = get_reqs("py3")
+    extras[":python_version<'3.9'"] = get_reqs("py<39")
+    extras[":python_version>='3.9'"] = get_reqs("py39")
 else:
     # old method
     if PY26:
@@ -247,6 +250,10 @@ else:
         requirements += get_reqs("py2")
     else:
         requirements += get_reqs("py3")
+    if PY39:
+        requirements += get_reqs("py39")
+    else:
+        requirements += get_reqs("py<39")
 
 # -----------------------------------------------------------------------------------------------------------------------
 # MAIN:
