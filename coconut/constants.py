@@ -79,7 +79,7 @@ PY311 = sys.version_info >= (3, 11)
 IPY = (
     ((PY2 and not PY26) or PY35)
     and not (PYPY and WINDOWS)
-    and not (PY311 and not WINDOWS)
+    and (PY37 or not PYPY)
 )
 MYPY = (
     PY37
@@ -825,11 +825,11 @@ all_reqs = {
     ),
     "kernel": (
         ("ipython", "py2"),
-        ("ipython", "py3;py<39"),
-        ("ipython", "py39"),
+        ("ipython", "py3;py<38"),
+        ("ipython", "py38"),
         ("ipykernel", "py2"),
-        ("ipykernel", "py3;py<39"),
-        ("ipykernel", "py39"),
+        ("ipykernel", "py3;py<38"),
+        ("ipykernel", "py38"),
         ("jupyter-client", "py<35"),
         ("jupyter-client", "py==35"),
         ("jupyter-client", "py36"),
@@ -911,9 +911,9 @@ min_versions = {
     "mypy[python2]": (1, 1),
     ("jupyter-console", "py37"): (6,),
     ("typing", "py<35"): (3, 10),
-    ("typing_extensions", "py37"): (4, 4),
-    ("ipython", "py39"): (8,),
-    ("ipykernel", "py39"): (6,),
+    ("typing_extensions", "py37"): (4, 5),
+    ("ipython", "py38"): (8,),
+    ("ipykernel", "py38"): (6,),
     ("jedi", "py39"): (0, 18),
 
     # pinned reqs: (must be added to pinned_reqs below)
@@ -923,8 +923,8 @@ min_versions = {
     ("jupyter-client", "py36"): (7, 1, 2),
     ("typing_extensions", "py==36"): (4, 1),
     # don't upgrade these; they break on Python 3.5
-    ("ipykernel", "py3;py<39"): (5, 5),
-    ("ipython", "py3;py<39"): (7, 9),
+    ("ipykernel", "py3;py<38"): (5, 5),
+    ("ipython", "py3;py<38"): (7, 9),
     ("jupyter-console", "py>=35;py<37"): (6, 1),
     ("jupyter-client", "py==35"): (6, 1, 12),
     ("jupytext", "py3"): (1, 8),
@@ -960,7 +960,7 @@ pinned_reqs = (
     ("jupyter-client", "py36"),
     ("typing_extensions", "py==36"),
     ("jupyter-client", "py<35"),
-    ("ipykernel", "py3;py<39"),
+    ("ipykernel", "py3;py<38"),
     ("ipython", "py3;py<39"),
     ("jupyter-console", "py>=35;py<37"),
     ("jupyter-client", "py==35"),
