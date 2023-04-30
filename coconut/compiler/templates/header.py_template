@@ -1834,6 +1834,9 @@ def _coconut_expand_arr(arr, new_dims):
 def _coconut_concatenate(arrs, axis):
     matconcat = None
     for a in arrs:
+        if _coconut.hasattr(a.__class__, "__matconcat__"):
+            matconcat = a.__class__.__matconcat__
+            break
         a_module = _coconut_get_base_module(a)
         if a_module in _coconut.pandas_numpy_modules:
             from pandas import concat as matconcat
@@ -1843,9 +1846,6 @@ def _coconut_concatenate(arrs, axis):
             break
         if a_module in _coconut.numpy_modules:
             matconcat = _coconut.numpy.concatenate
-            break
-        if _coconut.hasattr(a.__class__, "__matconcat__"):
-            matconcat = a.__class__.__matconcat__
             break
     if matconcat is not None:
         return matconcat(arrs, axis=axis)

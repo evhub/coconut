@@ -71,7 +71,7 @@ auto_compilation(False)
 
 logger.verbose = property(lambda self: True, lambda self, value: print("WARNING: ignoring attempt to set logger.verbose = {value}".format(value=value)))
 
-os.environ["PYDEVD_DISABLE_FILE_VALIDATION=1"] = "1"
+os.environ["PYDEVD_DISABLE_FILE_VALIDATION"] = "1"
 
 
 # -----------------------------------------------------------------------------------------------------------------------
