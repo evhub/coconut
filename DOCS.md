@@ -3168,6 +3168,8 @@ For `dict`, or any other `collections.abc.Mapping`, `fmap` will map over the map
 
 For [`numpy`](#numpy-integration) objects, `fmap` will use [`np.vectorize`](https://docs.scipy.org/doc/numpy/reference/generated/numpy.vectorize.html) to produce the result.
 
+For [`pandas`](https://pandas.pydata.org/) objects, `fmap` will use [`.apply`](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.apply.html) along the last axis (so row-wise for `DataFrame`'s, element-wise for `Series`'s).
+
 For asynchronous iterables, `fmap` will map asynchronously, making `fmap` equivalent in that case to
 ```coconut_python
 async def fmap_over_async_iters(func, async_iter):
@@ -3198,7 +3200,7 @@ _Can't be done without a series of method definitions for each data type. See th
 
 **call**(_func_, /, *_args_, \*\*_kwargs_)
 
-Coconut's `call` simply implements function application. Thus, `call` is equivalent to
+Coconut's `call` simply implements function application. Thus, `call` is effectively equivalent to
 ```coconut
 def call(f, /, *args, **kwargs) = f(*args, **kwargs)
 ```

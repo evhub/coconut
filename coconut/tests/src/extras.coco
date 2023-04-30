@@ -472,9 +472,9 @@ def test_pandas() -> bool:
     assert [d1; d1].keys() |> list == ["nums", "chars"] * 2  # type: ignore
     assert [d1;; d1].itertuples() |> list == [(0, 1, 'a'), (1, 2, 'b'), (2, 3, 'c'), (0, 1, 'a'), (1, 2, 'b'), (2, 3, 'c')]  # type: ignore
     d2 = pd.DataFrame({"a": range(3) |> list, "b": range(1, 4) |> list})
-    new_d2 = d2 |> fmap$(.+1)
-    assert new_d2["a"] |> list == range(1, 4) |> list
-    assert new_d2["b"] |> list == range(2, 5) |> list
+    d3 = d2 |> fmap$(fmap$(.+1))
+    assert d3["a"] |> list == range(1, 4) |> list
+    assert d3["b"] |> list == range(2, 5) |> list
     assert multi_enumerate(d1) |> list == [((0, 0), 1), ((1, 0), 2), ((2, 0), 3), ((0, 1), 'a'), ((1, 1), 'b'), ((2, 1), 'c')]
     assert not all_equal(d1)
     assert not all_equal(d2)
@@ -489,6 +489,8 @@ def test_pandas() -> bool:
         3; 'b';;
         3; 'c';;
     ], dtype=object)  # type: ignore
+    d4 = d1 |> fmap$(def r -> r["nums2"] = r["nums"]*2; r)
+    assert (d4["nums"] * 2 == d4["nums2"]).all()
     return True
 
 

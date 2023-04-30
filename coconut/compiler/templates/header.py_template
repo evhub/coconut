@@ -1486,16 +1486,15 @@ def fmap(func, obj, **kwargs):
             if result is not _coconut.NotImplemented:
                 return result
     obj_module = _coconut_get_base_module(obj)
+    if obj_module in _coconut.pandas_numpy_modules:
+        if obj.ndim <= 1:
+            return obj.apply(func)
+        return obj.apply(func, axis=obj.ndim-1)
     if obj_module in _coconut.jax_numpy_modules:
         import jax.numpy as jnp
         return jnp.vectorize(func)(obj)
     if obj_module in _coconut.numpy_modules:
-        got = _coconut.numpy.vectorize(func)(obj)
-        if obj_module in _coconut.pandas_numpy_modules:
-            new_obj = obj.copy()
-            new_obj[:] = got
-            return new_obj
-        return got
+        return _coconut.numpy.vectorize(func)(obj)
     obj_aiter = _coconut.getattr(obj, "__aiter__", None)
     if obj_aiter is not None and _coconut_amap is not None:
         try:
