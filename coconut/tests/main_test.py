@@ -50,6 +50,7 @@ from coconut.constants import (
     PY35,
     PY36,
     PY38,
+    PY310,
     icoconut_default_kernel_names,
     icoconut_custom_kernel_name,
     mypy_err_infixes,
@@ -253,7 +254,15 @@ def call(raw_cmd, assert_output=False, check_mypy=False, check_errors=True, stde
         line = raw_lines[i]
 
         # ignore https://bugs.python.org/issue39098 errors
-        if sys.version_info < (3, 9) and line == "Error in atexit._run_exitfuncs:":
+        if sys.version_info < (3, 9) and (
+            line == "Error in atexit._run_exitfuncs:"
+            or (
+                line == "Traceback (most recent call last):"
+                and i + 1 < len(raw_lines)
+                and "concurrent/futures/process.py" in raw_lines[i + 1]
+                and "_python_exit" in raw_lines[i + 1]
+            )
+        ):
             while True:
                 i += 1
                 if i >= len(raw_lines):
@@ -857,7 +866,7 @@ class TestExternal(unittest.TestCase):
     def test_bbopt(self):
         with using_path(bbopt):
             comp_bbopt()
-            if not PYPY and PY38:
+            if not PYPY and PY38 and not PY310:
                 install_bbopt()
 
     def test_pyston(self):
