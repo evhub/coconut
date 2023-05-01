@@ -26,8 +26,11 @@ import sys as _coconut_sys
 VERSION = "3.0.0"
 VERSION_NAME = None
 # False for release, int >= 1 for develop
-DEVELOP = 40
-ALPHA = True  # for pre releases rather than post releases
+DEVELOP = False
+ALPHA = False  # for pre releases rather than post releases
+
+assert DEVELOP is False or DEVELOP >= 1, "DEVELOP must be False or an int >= 1"
+assert DEVELOP or not ALPHA, "alpha releases are only for develop"
 
 # -----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
@@ -325,9 +328,6 @@ dict.items = _coconut_OrderedDict.viewitems
 # -----------------------------------------------------------------------------------------------------------------------
 # CONSTANTS:
 # -----------------------------------------------------------------------------------------------------------------------
-
-assert isinstance(DEVELOP, int) or DEVELOP is False, "DEVELOP must be an int or False"
-assert DEVELOP or not ALPHA, "alpha releases are only for develop"
 
 if DEVELOP:
     VERSION += "-" + ("a" if ALPHA else "post") + "_dev" + str(int(DEVELOP))
