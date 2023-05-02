@@ -21,7 +21,10 @@ from coconut.root import *  # NOQA
 
 from types import MethodType
 
-from coconut.constants import coconut_kernel_kwargs
+from coconut.constants import (
+    coconut_kernel_kwargs,
+    disabled_xonsh_modes,
+)
 
 # -----------------------------------------------------------------------------------------------------------------------
 # IPYTHON:
@@ -86,14 +89,45 @@ def load_ipython_extension(ipython):
 
 class CoconutXontribLoader(object):
     """Implements Coconut's _load_xontrib_."""
-    timing_info = []
+    loaded = False
     compiler = None
     runner = None
+    timing_info = []
+
+    def new_parse(self, parser, code, mode="exec", *args, **kwargs):
+        """Coconut-aware version of xonsh's _parse."""
+        if self.loaded and mode not in disabled_xonsh_modes:
+            # hide imports to avoid circular dependencies
+            from coconut.exceptions import CoconutException
+            from coconut.terminal import format_error
+            from coconut.util import get_clock_time
+            from coconut.terminal import logger
+
+            parse_start_time = get_clock_time()
+            quiet, logger.quiet = logger.quiet, True
+            try:
+                code = self.compiler.parse_xonsh(code, keep_state=True)
+            except CoconutException as err:
+                err_str = format_error(err).splitlines()[0]
+                code += "  #" + err_str
+            finally:
+                logger.quiet = quiet
+                self.timing_info.append(("parse", get_clock_time() - parse_start_time))
+        return parser.__class__.parse(parser, code, mode=mode, *args, **kwargs)
+
+    def new_try_subproc_toks(self, ctxtransformer, *args, **kwargs):
+        """Version of try_subproc_toks that handles the fact that Coconut
+        code may have different columns than Python code."""
+        mode = ctxtransformer.mode
+        if self.loaded:
+            ctxtransformer.mode = "eval"
+        try:
+            return ctxtransformer.__class__.try_subproc_toks(ctxtransformer, *args, **kwargs)
+        finally:
+            ctxtransformer.mode = mode
 
     def __call__(self, xsh, **kwargs):
         # hide imports to avoid circular dependencies
-        from coconut.exceptions import CoconutException
-        from coconut.terminal import format_error
         from coconut.util import get_clock_time
 
         start_time = get_clock_time()
@@ -109,26 +143,28 @@ class CoconutXontribLoader(object):
 
         self.runner.update_vars(xsh.ctx)
 
-        def new_parse(execer, s, *args, **kwargs):
-            """Coconut-aware version of xonsh's _parse."""
-            parse_start_time = get_clock_time()
-            try:
-                s = self.compiler.parse_xonsh(s, keep_state=True)
-            except CoconutException as err:
-                err_str = format_error(err).splitlines()[0]
-                s += "  #" + err_str
-            self.timing_info.append(("parse", get_clock_time() - parse_start_time))
-            return execer.__class__.parse(execer, s, *args, **kwargs)
-
         main_parser = xsh.execer.parser
-        main_parser.parse = MethodType(new_parse, main_parser)
+        main_parser.parse = MethodType(self.new_parse, main_parser)
 
-        ctx_parser = xsh.execer.ctxtransformer.parser
-        ctx_parser.parse = MethodType(new_parse, ctx_parser)
+        ctxtransformer = xsh.execer.ctxtransformer
+        ctx_parser = ctxtransformer.parser
+        ctx_parser.parse = MethodType(self.new_parse, ctx_parser)
+
+        ctxtransformer.try_subproc_toks = MethodType(self.new_try_subproc_toks, ctxtransformer)
 
         self.timing_info.append(("load", get_clock_time() - start_time))
+        self.loaded = True
 
         return self.runner.vars
 
+    def unload(self, xsh):
+        if not self.loaded:
+            # hide imports to avoid circular dependencies
+            from coconut.exceptions import CoconutException
+            raise CoconutException("attempting to unload Coconut xontrib but it was never loaded")
+        self.loaded = False
+
 
 _load_xontrib_ = CoconutXontribLoader()
+
+_unload_xontrib_ = _load_xontrib_.unload

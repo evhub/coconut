@@ -93,6 +93,7 @@ from coconut.constants import (
     indchars,
     comment_chars,
     non_syntactic_newline,
+    allow_explicit_keyword_vars,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -306,8 +307,7 @@ else:
 def add_action(item, action, make_copy=None):
     """Add a parse action to the given item."""
     if make_copy is None:
-        item_ref_count = sys.getrefcount(item) if CPYTHON else float("inf")
-        # keep this a lambda to prevent CPython refcounting changes from breaking release builds
+        item_ref_count = sys.getrefcount(item) if CPYTHON and not on_new_python else float("inf")
         internal_assert(lambda: item_ref_count >= temp_grammar_item_ref_count, "add_action got item with too low ref count", (item, type(item), item_ref_count))
         make_copy = item_ref_count > temp_grammar_item_ref_count
     if make_copy:
@@ -389,8 +389,9 @@ def parsing_context(inner_parse=True):
     finally:
         if inner_parse and use_packrat_parser:
             ParserElement.packrat_cache = old_cache
-            ParserElement.packrat_cache_stats[0] += old_cache_stats[0]
-            ParserElement.packrat_cache_stats[1] += old_cache_stats[1]
+            if logger.verbose:
+                ParserElement.packrat_cache_stats[0] += old_cache_stats[0]
+                ParserElement.packrat_cache_stats[1] += old_cache_stats[1]
 
 
 def prep_grammar(grammar, streamline=False):
@@ -403,37 +404,46 @@ def prep_grammar(grammar, streamline=False):
     return grammar.parseWithTabs()
 
 
-def parse(grammar, text, inner=True):
+def parse(grammar, text, inner=True, eval_parse_tree=True):
     """Parse text using grammar."""
     with parsing_context(inner):
-        return unpack(prep_grammar(grammar).parseString(text))
+        result = prep_grammar(grammar).parseString(text)
+        if eval_parse_tree:
+            result = unpack(result)
+        return result
 
 
-def try_parse(grammar, text, inner=True):
+def try_parse(grammar, text, inner=True, eval_parse_tree=True):
     """Attempt to parse text using grammar else None."""
     try:
-        return parse(grammar, text, inner)
+        return parse(grammar, text, inner, eval_parse_tree)
     except ParseBaseException:
         return None
 
 
-def all_matches(grammar, text, inner=True):
+def does_parse(grammar, text, inner=True):
+    """Determine if text can be parsed using grammar."""
+    return try_parse(grammar, text, inner, eval_parse_tree=False)
+
+
+def all_matches(grammar, text, inner=True, eval_parse_tree=True):
     """Find all matches for grammar in text."""
     with parsing_context(inner):
         for tokens, start, stop in prep_grammar(grammar).scanString(text):
-            yield unpack(tokens), start, stop
+            if eval_parse_tree:
+                tokens = unpack(tokens)
+            yield tokens, start, stop
 
 
 def parse_where(grammar, text, inner=True):
     """Determine where the first parse is."""
-    with parsing_context(inner):
-        for tokens, start, stop in prep_grammar(grammar).scanString(text):
-            return start, stop
+    for tokens, start, stop in all_matches(grammar, text, inner, eval_parse_tree=False):
+        return start, stop
     return None, None
 
 
 def match_in(grammar, text, inner=True):
-    """Determine if there is a match for grammar in text."""
+    """Determine if there is a match for grammar anywhere in text."""
     start, stop = parse_where(grammar, text, inner)
     internal_assert((start is None) == (stop is None), "invalid parse_where results", (start, stop))
     return start is not None
@@ -452,6 +462,7 @@ def transform(grammar, text, inner=True):
 # TARGETS:
 # -----------------------------------------------------------------------------------------------------------------------
 
+on_new_python = False
 
 raw_sys_target = str(sys.version_info[0]) + str(sys.version_info[1])
 if raw_sys_target in pseudo_targets:
@@ -460,6 +471,7 @@ elif raw_sys_target in specific_targets:
     sys_target = raw_sys_target
 elif sys.version_info > supported_py3_vers[-1]:
     sys_target = "".join(str(i) for i in supported_py3_vers[-1])
+    on_new_python = True
 elif sys.version_info < supported_py2_vers[0]:
     sys_target = "".join(str(i) for i in supported_py2_vers[0])
 elif sys.version_info < (3,):
@@ -522,11 +534,11 @@ def get_target_info_smart(target, mode="lowest"):
 class Wrap(ParseElementEnhance):
     """PyParsing token that wraps the given item in the given context manager."""
 
-    def __init__(self, item, wrapper, greedy=False, can_affect_parse_success=False):
+    def __init__(self, item, wrapper, greedy=False, include_in_packrat_context=False):
         super(Wrap, self).__init__(item)
         self.wrapper = wrapper
         self.greedy = greedy
-        self.can_affect_parse_success = can_affect_parse_success
+        self.include_in_packrat_context = include_in_packrat_context
 
     @property
     def wrapped_name(self):
@@ -538,7 +550,7 @@ class Wrap(ParseElementEnhance):
 
         Required to allow the packrat cache to distinguish between wrapped
         and unwrapped parses. Only supported natively on cPyparsing."""
-        if self.can_affect_parse_success and hasattr(self, "packrat_context"):
+        if self.include_in_packrat_context and hasattr(self, "packrat_context"):
             self.packrat_context.append(self.wrapper)
             try:
                 yield
@@ -555,12 +567,12 @@ class Wrap(ParseElementEnhance):
         with logger.indent_tracing():
             with self.wrapper(self, original, loc):
                 with self.wrapped_packrat_context():
-                    parse_loc, evaluated_toks = super(Wrap, self).parseImpl(original, loc, *args, **kwargs)
+                    parse_loc, tokens = super(Wrap, self).parseImpl(original, loc, *args, **kwargs)
                     if self.greedy:
-                        evaluated_toks = evaluate_tokens(evaluated_toks)
+                        tokens = evaluate_tokens(tokens)
         if logger.tracing:  # avoid the overhead of the call if not tracing
-            logger.log_trace(self.wrapped_name, original, loc, evaluated_toks)
-        return parse_loc, evaluated_toks
+            logger.log_trace(self.wrapped_name, original, loc, tokens)
+        return parse_loc, tokens
 
     def __str__(self):
         return self.wrapped_name
@@ -575,7 +587,7 @@ def disable_inside(item, *elems, **kwargs):
     Returns (item with elem disabled, *new versions of elems).
     """
     _invert = kwargs.pop("_invert", False)
-    internal_assert(not kwargs, "excess keyword arguments passed to disable_inside")
+    internal_assert(not kwargs, "excess keyword arguments passed to disable_inside", kwargs)
 
     level = [0]  # number of wrapped items deep we are; in a list to allow modification
 
@@ -587,7 +599,7 @@ def disable_inside(item, *elems, **kwargs):
         finally:
             level[0] -= 1
 
-    yield Wrap(item, manage_item, can_affect_parse_success=True)
+    yield Wrap(item, manage_item, include_in_packrat_context=True)
 
     @contextmanager
     def manage_elem(self, original, loc):
@@ -597,7 +609,7 @@ def disable_inside(item, *elems, **kwargs):
             raise ParseException(original, loc, self.errmsg, self)
 
     for elem in elems:
-        yield Wrap(elem, manage_elem, can_affect_parse_success=True)
+        yield Wrap(elem, manage_elem, include_in_packrat_context=True)
 
 
 def disable_outside(item, *elems):
@@ -777,21 +789,22 @@ def stores_loc_action(loc, tokens):
 stores_loc_action.ignore_tokens = True
 
 
-stores_loc_item = attach(Empty(), stores_loc_action, make_copy=False)
+always_match = Empty()
+stores_loc_item = attach(always_match, stores_loc_action)
 
 
 def disallow_keywords(kwds, with_suffix=None):
     """Prevent the given kwds from matching."""
     item = ~(
-        keyword(kwds[0], explicit_prefix=False)
+        base_keyword(kwds[0])
         if with_suffix is None else
-        keyword(kwds[0], explicit_prefix=False) + with_suffix
+        base_keyword(kwds[0]) + with_suffix
     )
     for k in kwds[1:]:
         item += ~(
-            keyword(k, explicit_prefix=False)
+            base_keyword(k)
             if with_suffix is None else
-            keyword(k, explicit_prefix=False) + with_suffix
+            base_keyword(k) + with_suffix
         )
     return item
 
@@ -801,21 +814,13 @@ def any_keyword_in(kwds):
     return regex_item(r"|".join(k + r"\b" for k in kwds))
 
 
-@memoize()
-def keyword(name, explicit_prefix=None, require_whitespace=False):
+def base_keyword(name, explicit_prefix=False, require_whitespace=False):
     """Construct a grammar which matches name as a Python keyword."""
-    if explicit_prefix is not False:
-        internal_assert(
-            (name in reserved_vars) is (explicit_prefix is not None),
-            "invalid keyword call for", name,
-            extra="pass explicit_prefix to keyword for all reserved_vars and only reserved_vars",
-        )
-
     base_kwd = regex_item(name + r"\b" + (r"(?=\s)" if require_whitespace else ""))
-    if explicit_prefix in (None, False):
-        return base_kwd
-    else:
+    if explicit_prefix and name in reserved_vars + allow_explicit_keyword_vars:
         return combine(Optional(explicit_prefix.suppress()) + base_kwd)
+    else:
+        return base_kwd
 
 
 boundary = regex_item(r"\b")
@@ -866,6 +871,17 @@ def any_len_perm(*optional, **kwargs):
 
     groups_and_elems = []
     groups_and_elems.extend(optional)
+    groups_and_elems.extend(enumerate(required))
+    return any_len_perm_with_one_of_each_group(*groups_and_elems)
+
+
+def any_len_perm_at_least_one(*elems, **kwargs):
+    """Any length permutation of elems that includes at least one of the elems and all the required."""
+    required = kwargs.pop("required", ())
+    internal_assert(not kwargs, "invalid any_len_perm kwargs", kwargs)
+
+    groups_and_elems = []
+    groups_and_elems.extend((-1, e) for e in elems)
     groups_and_elems.extend(enumerate(required))
     return any_len_perm_with_one_of_each_group(*groups_and_elems)
 
@@ -1036,15 +1052,22 @@ def should_indent(code):
     return last_line.endswith((":", "=", "\\")) or paren_change(last_line) < 0
 
 
-def split_leading_comment(inputstr):
-    """Split into leading comment and rest.
-    Comment must be at very start of string."""
-    if inputstr.startswith(comment_chars):
-        comment_line, rest = inputstr.split("\n", 1)
-        comment, indent = split_trailing_indent(comment_line)
-        return comment + "\n", indent + rest
-    else:
-        return "", inputstr
+def split_leading_comments(inputstr):
+    """Split into leading comments and rest."""
+    comments = ""
+    indent, base = split_leading_indent(inputstr)
+
+    while base.startswith(comment_chars):
+        comment_line, rest = base.split("\n", 1)
+
+        got_comment, got_indent = split_trailing_indent(comment_line)
+        comments += got_comment + "\n"
+        indent += got_indent
+
+        got_indent, base = split_leading_indent(rest)
+        indent += got_indent
+
+    return comments, indent + base
 
 
 def split_trailing_comment(inputstr):
@@ -1060,7 +1083,7 @@ def split_trailing_comment(inputstr):
 
 def split_leading_indent(inputstr, max_indents=None):
     """Split inputstr into leading indent and main."""
-    indent = ""
+    indents = []
     while (
         (max_indents is None or max_indents > 0)
         and inputstr.startswith(indchars)
@@ -1069,13 +1092,13 @@ def split_leading_indent(inputstr, max_indents=None):
         # max_indents only refers to openindents/closeindents, not all indchars
         if max_indents is not None and got_ind in (openindent, closeindent):
             max_indents -= 1
-        indent += got_ind
-    return indent, inputstr
+        indents.append(got_ind)
+    return "".join(indents), inputstr
 
 
 def split_trailing_indent(inputstr, max_indents=None, handle_comments=True):
     """Split inputstr into leading indent and main."""
-    indent = ""
+    indents_from_end = []
     while (
         (max_indents is None or max_indents > 0)
         and inputstr.endswith(indchars)
@@ -1084,13 +1107,13 @@ def split_trailing_indent(inputstr, max_indents=None, handle_comments=True):
         # max_indents only refers to openindents/closeindents, not all indchars
         if max_indents is not None and got_ind in (openindent, closeindent):
             max_indents -= 1
-        indent = got_ind + indent
+        indents_from_end.append(got_ind)
     if handle_comments:
         inputstr, comment = split_trailing_comment(inputstr)
         inputstr, inner_indent = split_trailing_indent(inputstr, max_indents, handle_comments=False)
         inputstr = inputstr + comment
-        indent = inner_indent + indent
-    return inputstr, indent
+        indents_from_end.append(inner_indent)
+    return inputstr, "".join(reversed(indents_from_end))
 
 
 def split_leading_trailing_indent(line, max_indents=None):
@@ -1268,6 +1291,8 @@ def should_trim_arity(func):
     try:
         func_args = get_func_args(func)
     except TypeError:
+        return True
+    if not func_args:
         return True
     if func_args[0] == "self":
         func_args.pop(0)

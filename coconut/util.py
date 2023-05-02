@@ -30,6 +30,7 @@ from zlib import crc32
 from warnings import warn
 from types import MethodType
 from contextlib import contextmanager
+from collections import defaultdict
 
 if sys.version_info >= (3, 2):
     from functools import lru_cache
@@ -54,11 +55,6 @@ from coconut.constants import (
 # -----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
 # -----------------------------------------------------------------------------------------------------------------------
-
-
-def printerr(*args, **kwargs):
-    """Prints to standard error."""
-    print(*args, file=sys.stderr, **kwargs)
 
 
 def univ_open(filename, opentype="r+", encoding=None, **kwargs):
@@ -213,6 +209,14 @@ def memoize(maxsize=None, *args, **kwargs):
         return lambda func: func
     else:
         return lru_cache(maxsize, *args, **kwargs)
+
+
+class keydefaultdict(defaultdict, object):
+    """Version of defaultdict that calls the factory with the key."""
+
+    def __missing__(self, key):
+        self[key] = self.default_factory(key)
+        return self[key]
 
 
 # -----------------------------------------------------------------------------------------------------------------------

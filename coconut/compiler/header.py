@@ -22,7 +22,7 @@ from coconut.root import *  # NOQA
 import os.path
 from functools import partial
 
-from coconut.root import _indent
+from coconut.root import _indent, _get_root_header
 from coconut.exceptions import CoconutInternalException
 from coconut.terminal import internal_assert
 from coconut.constants import (
@@ -33,6 +33,7 @@ from coconut.constants import (
     justify_len,
     report_this_text,
     numpy_modules,
+    pandas_numpy_modules,
     jax_numpy_modules,
     self_match_types,
     is_data_var,
@@ -174,11 +175,11 @@ else:
     return out
 
 
-def make_py_str(str_contents, target_startswith, after_py_str_defined=False):
+def make_py_str(str_contents, target, after_py_str_defined=False):
     """Get code that effectively wraps the given code in py_str."""
     return (
-        repr(str_contents) if target_startswith == "3"
-        else "b" + repr(str_contents) if target_startswith == "2"
+        repr(str_contents) if target.startswith("3")
+        else "b" + repr(str_contents) if target.startswith("2")
         else "py_str(" + repr(str_contents) + ")" if after_py_str_defined
         else "str(" + repr(str_contents) + ")"
     )
@@ -202,35 +203,37 @@ COMMENT = Comment()
 
 def process_header_args(which, use_hash, target, no_tco, strict, no_wrap):
     """Create the dictionary passed to str.format in the header."""
-    target_startswith = one_num_ver(target)
     target_info = get_target_info(target)
     pycondition = partial(base_pycondition, target)
 
     format_dict = dict(
         COMMENT=COMMENT,
-        empty_dict="{}",
+        empty_dict="{}" if target_info >= (3, 7) else "_coconut.dict()",
+        empty_py_dict="{}" if target_info >= (3, 7) else "_coconut_py_dict()",
         lbrace="{",
         rbrace="}",
         is_data_var=is_data_var,
         data_defaults_var=data_defaults_var,
-        target_startswith=target_startswith,
+        target_major=one_num_ver(target),
         default_encoding=default_encoding,
         hash_line=hash_prefix + use_hash + "\n" if use_hash is not None else "",
         typing_line="# type: ignore\n" if which == "__coconut__" else "",
+        _coconut_="_coconut_" if which != "__coconut__" else "",  # only for aliases defined at the end of the header
         VERSION_STR=VERSION_STR,
         module_docstring='"""Built-in Coconut utilities."""\n\n' if which == "__coconut__" else "",
-        __coconut__=make_py_str("__coconut__", target_startswith),
-        _coconut_cached__coconut__=make_py_str("_coconut_cached__coconut__", target_startswith),
-        object="" if target_startswith == "3" else "(object)",
-        comma_object="" if target_startswith == "3" else ", object",
+        __coconut__=make_py_str("__coconut__", target),
+        _coconut_cached__coconut__=make_py_str("_coconut_cached__coconut__", target),
+        object="" if target.startswith("3") else "(object)",
+        comma_object="" if target.startswith("3") else ", object",
         comma_slash=", /" if target_info >= (3, 8) else "",
         report_this_text=report_this_text,
         numpy_modules=tuple_str_of(numpy_modules, add_quotes=True),
+        pandas_numpy_modules=tuple_str_of(pandas_numpy_modules, add_quotes=True),
         jax_numpy_modules=tuple_str_of(jax_numpy_modules, add_quotes=True),
         self_match_types=tuple_str_of(self_match_types),
         set_super=(
             # we have to use _coconut_super even on the universal target, since once we set __class__ it becomes a local variable
-            "super = _coconut_super\n" if target_startswith != 3 else ""
+            "super = py_super" if target.startswith("3") else "super = _coconut_super"
         ),
         import_pickle=pycondition(
             (3,),
@@ -268,9 +271,9 @@ zip_longest = itertools.zip_longest if _coconut_sys.version_info >= (3,) else it
             else "zip_longest = itertools.izip_longest",
             indent=1,
         ),
-        comma_bytearray=", bytearray" if target_startswith != "3" else "",
-        lstatic="staticmethod(" if target_startswith != "3" else "",
-        rstatic=")" if target_startswith != "3" else "",
+        comma_bytearray=", bytearray" if not target.startswith("3") else "",
+        lstatic="staticmethod(" if not target.startswith("3") else "",
+        rstatic=")" if not target.startswith("3") else "",
         zip_iter=prepare(
             r'''
 for items in _coconut.iter(_coconut.zip(*self.iters, strict=self.strict) if _coconut_sys.version_info >= (3, 10) else _coconut.zip_longest(*self.iters, fillvalue=_coconut_sentinel) if self.strict else _coconut.zip(*self.iters)):
@@ -346,7 +349,7 @@ return _coconut.types.MethodType(self.func, obj)
         set_name = _coconut.getattr(v, "__set_name__", None)
         if set_name is not None:
             set_name(cls, k)'''
-            if target_startswith == "2" else
+            if target.startswith("2") else
             r'''def _coconut_call_set_names(cls): pass'''
             if target_info >= (3, 6) else
             r'''def _coconut_call_set_names(cls):
@@ -419,22 +422,11 @@ def _coconut_matmul(a, b, **kwargs):
         else:
             if result is not _coconut.NotImplemented:
                 return result
-    if "numpy" in (a.__class__.__module__, b.__class__.__module__):
+    if "numpy" in (_coconut_get_base_module(a), _coconut_get_base_module(b)):
         from numpy import matmul
         return matmul(a, b)
     raise _coconut.TypeError("unsupported operand type(s) for @: " + _coconut.repr(_coconut.type(a)) + " and " + _coconut.repr(_coconut.type(b)))
             ''',
-        ),
-        import_typing_NamedTuple=pycondition(
-            (3, 6),
-            if_lt='''
-def NamedTuple(name, fields):
-    return _coconut.collections.namedtuple(name, [x for x, t in fields])
-typing.NamedTuple = NamedTuple
-NamedTuple = staticmethod(NamedTuple)
-            ''',
-            indent=1,
-            newline=True,
         ),
         def_total_and_comparisons=pycondition(
             (3, 10),
@@ -483,10 +475,21 @@ def __lt__(self, other):
             indent=1,
             newline=True,
         ),
+        assign_multiset_views=pycondition(
+            (3,),
+            if_lt='''
+keys = _coconut.collections.Counter.viewkeys
+values = _coconut.collections.Counter.viewvalues
+items = _coconut.collections.Counter.viewitems
+            ''',
+            indent=1,
+            newline=True,
+        ),
+
         # used in the second round
         tco_comma="_coconut_tail_call, _coconut_tco, " if not no_tco else "",
         call_set_names_comma="_coconut_call_set_names, " if target_info < (3, 6) else "",
-        handle_cls_args_comma="_coconut_handle_cls_kwargs, _coconut_handle_cls_stargs, " if target_startswith != "3" else "",
+        handle_cls_args_comma="_coconut_handle_cls_kwargs, _coconut_handle_cls_stargs, " if not target.startswith("3") else "",
         async_def_anext=prepare(
             r'''
 async def __anext__(self):
@@ -525,9 +528,10 @@ for _coconut_varname in dir(MatchError):
     )
 
     # second round for format dict elements that use the format dict
+    #  (extra_format_dict is to keep indentation levels matching)
     extra_format_dict = dict(
         # when anything is added to this list it must also be added to *both* __coconut__ stub files
-        underscore_imports="{tco_comma}{call_set_names_comma}{handle_cls_args_comma}_namedtuple_of, _coconut, _coconut_super, _coconut_Expected, _coconut_MatchError, _coconut_iter_getitem, _coconut_base_compose, _coconut_forward_compose, _coconut_back_compose, _coconut_forward_star_compose, _coconut_back_star_compose, _coconut_forward_dubstar_compose, _coconut_back_dubstar_compose, _coconut_pipe, _coconut_star_pipe, _coconut_dubstar_pipe, _coconut_back_pipe, _coconut_back_star_pipe, _coconut_back_dubstar_pipe, _coconut_none_pipe, _coconut_none_star_pipe, _coconut_none_dubstar_pipe, _coconut_bool_and, _coconut_bool_or, _coconut_none_coalesce, _coconut_minus, _coconut_map, _coconut_partial, _coconut_get_function_match_error, _coconut_base_pattern_func, _coconut_addpattern, _coconut_sentinel, _coconut_assert, _coconut_raise, _coconut_mark_as_match, _coconut_reiterable, _coconut_self_match_types, _coconut_dict_merge, _coconut_exec, _coconut_comma_op, _coconut_multi_dim_arr, _coconut_mk_anon_namedtuple, _coconut_matmul, _coconut_py_str, _coconut_flatten, _coconut_multiset, _coconut_back_none_pipe, _coconut_back_none_star_pipe, _coconut_back_none_dubstar_pipe, _coconut_forward_none_compose, _coconut_back_none_compose, _coconut_forward_none_star_compose, _coconut_back_none_star_compose, _coconut_forward_none_dubstar_compose, _coconut_back_none_dubstar_compose".format(**format_dict),
+        underscore_imports="{tco_comma}{call_set_names_comma}{handle_cls_args_comma}_namedtuple_of, _coconut, _coconut_Expected, _coconut_MatchError, _coconut_SupportsAdd, _coconut_SupportsMinus, _coconut_SupportsMul, _coconut_SupportsPow, _coconut_SupportsTruediv, _coconut_SupportsFloordiv, _coconut_SupportsMod, _coconut_SupportsAnd, _coconut_SupportsXor, _coconut_SupportsOr, _coconut_SupportsLshift, _coconut_SupportsRshift, _coconut_SupportsMatmul, _coconut_SupportsInv, _coconut_iter_getitem, _coconut_base_compose, _coconut_forward_compose, _coconut_back_compose, _coconut_forward_star_compose, _coconut_back_star_compose, _coconut_forward_dubstar_compose, _coconut_back_dubstar_compose, _coconut_pipe, _coconut_star_pipe, _coconut_dubstar_pipe, _coconut_back_pipe, _coconut_back_star_pipe, _coconut_back_dubstar_pipe, _coconut_none_pipe, _coconut_none_star_pipe, _coconut_none_dubstar_pipe, _coconut_bool_and, _coconut_bool_or, _coconut_none_coalesce, _coconut_minus, _coconut_map, _coconut_partial, _coconut_get_function_match_error, _coconut_base_pattern_func, _coconut_addpattern, _coconut_sentinel, _coconut_assert, _coconut_raise, _coconut_mark_as_match, _coconut_reiterable, _coconut_self_match_types, _coconut_dict_merge, _coconut_exec, _coconut_comma_op, _coconut_multi_dim_arr, _coconut_mk_anon_namedtuple, _coconut_matmul, _coconut_py_str, _coconut_flatten, _coconut_multiset, _coconut_back_none_pipe, _coconut_back_none_star_pipe, _coconut_back_none_dubstar_pipe, _coconut_forward_none_compose, _coconut_back_none_compose, _coconut_forward_none_star_compose, _coconut_back_none_star_compose, _coconut_forward_none_dubstar_compose, _coconut_back_none_dubstar_compose, _coconut_call_or_coefficient, _coconut_in, _coconut_not_in".format(**format_dict),
         import_typing=pycondition(
             (3, 5),
             if_ge="import typing",
@@ -542,36 +546,76 @@ class typing_mock{object}:
         return x
     def __getattr__(self, name):
         raise _coconut.ImportError("the typing module is not available at runtime in Python 3.4 or earlier; try hiding your typedefs behind an 'if TYPE_CHECKING:' block")
+    def TypeVar(name, *args, **kwargs):
+        """Runtime mock of typing.TypeVar for Python 3.4 and earlier."""
+        return name
+    class Generic_mock{object}:
+        """Runtime mock of typing.Generic for Python 3.4 and earlier."""
+        __slots__ = ()
+        def __getitem__(self, vars):
+            return _coconut.object
+    Generic = Generic_mock()
 typing = typing_mock()
             '''.format(**format_dict),
             indent=1,
         ),
         # all typing_extensions imports must be added to the _coconut stub file
-        import_typing_TypeAlias_ParamSpec_Concatenate=pycondition(
+        import_typing_36=pycondition(
+            (3, 6),
+            if_lt='''
+def NamedTuple(name, fields):
+    return _coconut.collections.namedtuple(name, [x for x, t in fields])
+typing.NamedTuple = NamedTuple
+NamedTuple = staticmethod(NamedTuple)
+            ''',
+            indent=1,
+            newline=True,
+        ),
+        import_typing_38=pycondition(
+            (3, 8),
+            if_lt='''
+try:
+    from typing_extensions import Protocol
+except ImportError:
+    class YouNeedToInstallTypingExtensions{object}:
+        __slots__ = ()
+    Protocol = YouNeedToInstallTypingExtensions
+typing.Protocol = Protocol
+            '''.format(**format_dict),
+            indent=1,
+            newline=True,
+        ),
+        import_typing_310=pycondition(
             (3, 10),
             if_lt='''
 try:
-    from typing_extensions import TypeAlias, ParamSpec, Concatenate
+    from typing_extensions import ParamSpec, TypeAlias, Concatenate
 except ImportError:
+    def ParamSpec(name, *args, **kwargs):
+        """Runtime mock of typing.ParamSpec for Python 3.9 and earlier."""
+        return _coconut.typing.TypeVar(name)
     class you_need_to_install_typing_extensions{object}:
         __slots__ = ()
-    TypeAlias = ParamSpec = Concatenate = you_need_to_install_typing_extensions()
-typing.TypeAlias = TypeAlias
+    TypeAlias = Concatenate = you_need_to_install_typing_extensions()
 typing.ParamSpec = ParamSpec
+typing.TypeAlias = TypeAlias
 typing.Concatenate = Concatenate
             '''.format(**format_dict),
             indent=1,
             newline=True,
         ),
-        import_typing_TypeVarTuple_Unpack=pycondition(
+        import_typing_311=pycondition(
             (3, 11),
             if_lt='''
 try:
     from typing_extensions import TypeVarTuple, Unpack
 except ImportError:
+    def TypeVarTuple(name, *args, **kwargs):
+        """Runtime mock of typing.TypeVarTuple for Python 3.10 and earlier."""
+        return _coconut.typing.TypeVar(name)
     class you_need_to_install_typing_extensions{object}:
         __slots__ = ()
-    TypeVarTuple = Unpack = you_need_to_install_typing_extensions()
+    Unpack = you_need_to_install_typing_extensions()
 typing.TypeVarTuple = TypeVarTuple
 typing.Unpack = Unpack
             '''.format(**format_dict),
@@ -599,7 +643,7 @@ import asyncio
 _coconut_amap = None
             ''',
             if_ge=r'''
-class _coconut_amap(_coconut_base_hashable):
+class _coconut_amap(_coconut_baseclass):
     __slots__ = ("func", "aiter")
     def __init__(self, func, aiter):
         self.func = func
@@ -658,13 +702,13 @@ def getheader(which, use_hash, target, no_tco, strict, no_wrap):
 
     # initial, __coconut__, package:n, sys, code, file
 
-    target_startswith = one_num_ver(target)
     target_info = get_target_info(target)
-    header_info = tuple_str_of((VERSION, target, no_tco, strict, no_wrap), add_quotes=True)
+    # header_info only includes arguments that affect __coconut__.py compatibility
+    header_info = tuple_str_of((VERSION, target, strict), add_quotes=True)
     format_dict = process_header_args(which, use_hash, target, no_tco, strict, no_wrap)
 
     if which == "initial" or which == "__coconut__":
-        header = '''#!/usr/bin/env python{target_startswith}
+        header = '''#!/usr/bin/env python{target_major}
 # -*- coding: {default_encoding} -*-
 {hash_line}{typing_line}
 # Compiled with Coconut version {VERSION_STR}
@@ -682,7 +726,7 @@ def getheader(which, use_hash, target, no_tco, strict, no_wrap):
 
     header += section("Coconut Header", newline_before=False)
 
-    if target_startswith != "3":
+    if not target.startswith("3"):
         header += "from __future__ import print_function, absolute_import, unicode_literals, division\n"
     # including generator_stop here is fine, even though to universalize
     #  generator returns we raise StopIteration errors, since we only do so
@@ -756,16 +800,18 @@ _coconut_cached__coconut__ = _coconut_sys.modules.get({_coconut_cached__coconut_
         newline=True,
     ).format(**format_dict)
 
+    if target_info >= (3, 9):
+        header += _get_root_header("39")
     if target_info >= (3, 7):
-        header += PY37_HEADER
-    elif target_startswith == "3":
-        header += PY3_HEADER
+        header += _get_root_header("37")
+    elif target.startswith("3"):
+        header += _get_root_header("3")
     elif target_info >= (2, 7):
-        header += PY27_HEADER
-    elif target_startswith == "2":
-        header += PY2_HEADER
+        header += _get_root_header("27")
+    elif target.startswith("2"):
+        header += _get_root_header("2")
     else:
-        header += PYCHECK_HEADER
+        header += _get_root_header("universal")
 
     header += get_template("header").format(**format_dict)
 

@@ -28,8 +28,8 @@ from warnings import warn
 from collections import defaultdict
 
 from coconut.constants import (
-    PURE_PYTHON,
     PYPY,
+    PURE_PYTHON,
     use_fast_pyparsing_reprs,
     use_packrat_parser,
     packrat_cache_size,
@@ -39,6 +39,8 @@ from coconut.constants import (
     pure_python_env_var,
     enable_pyparsing_warnings,
     use_left_recursion_if_available,
+    get_bool_env_var,
+    use_computation_graph_env_var,
 )
 from coconut.util import get_clock_time  # NOQA
 from coconut.util import (
@@ -121,9 +123,12 @@ if MODERN_PYPARSING:
         + " (run either '{python} -m pip install cPyparsing<{max_ver}' or '{python} -m pip install pyparsing<{max_ver}' to fix)".format(python=sys.executable, max_ver=max_ver_str),
     )
 
-USE_COMPUTATION_GRAPH = (
-    not MODERN_PYPARSING  # not yet supported
-    and not PYPY  # experimentally determined
+USE_COMPUTATION_GRAPH = get_bool_env_var(
+    use_computation_graph_env_var,
+    default=(
+        not MODERN_PYPARSING  # not yet supported
+        and not PYPY  # experimentally determined
+    ),
 )
 
 if enable_pyparsing_warnings:

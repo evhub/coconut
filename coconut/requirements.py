@@ -23,9 +23,9 @@ import traceback
 
 from coconut.integrations import embed
 from coconut.constants import (
-    PYPY,
     CPYTHON,
     PY34,
+    PY39,
     IPY,
     MYPY,
     XONSH,
@@ -186,7 +186,6 @@ requirements = get_reqs("main")
 extras = {
     "kernel": get_reqs("kernel"),
     "watch": get_reqs("watch"),
-    "jobs": get_reqs("jobs"),
     "mypy": get_reqs("mypy"),
     "backports": get_reqs("backports"),
     "xonsh": get_reqs("xonsh"),
@@ -205,7 +204,6 @@ extras.update({
     "tests": uniqueify_all(
         get_reqs("tests"),
         extras["backports"],
-        extras["jobs"] if not PYPY else [],
         extras["jupyter"] if IPY else [],
         extras["mypy"] if MYPY else [],
         extras["xonsh"] if XONSH else [],
@@ -240,6 +238,8 @@ if using_modern_setuptools:
     extras[":python_version>='2.7'"] = get_reqs("non-py26")
     extras[":python_version<'3'"] = get_reqs("py2")
     extras[":python_version>='3'"] = get_reqs("py3")
+    extras[":python_version<'3.9'"] = get_reqs("py<39")
+    extras[":python_version>='3.9'"] = get_reqs("py39")
 else:
     # old method
     if PY26:
@@ -250,6 +250,10 @@ else:
         requirements += get_reqs("py2")
     else:
         requirements += get_reqs("py3")
+    if PY39:
+        requirements += get_reqs("py39")
+    else:
+        requirements += get_reqs("py<39")
 
 # -----------------------------------------------------------------------------------------------------------------------
 # MAIN:

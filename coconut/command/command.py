@@ -66,6 +66,8 @@ from coconut.constants import (
     mypy_builtin_regex,
     coconut_pth_file,
     error_color_code,
+    jupyter_console_commands,
+    default_jobs,
 )
 from coconut.util import (
     univ_open,
@@ -93,6 +95,7 @@ from coconut.command.util import (
     set_recursion_limit,
     can_parse,
     invert_mypy_arg,
+    run_with_stack_size,
 )
 from coconut.compiler.util import (
     should_indent,
@@ -110,18 +113,25 @@ from coconut.command.cli import arguments, cli_version
 class Command(object):
     """Coconut command-line interface."""
     comp = None  # current coconut.compiler.Compiler
-    show = False  # corresponds to --display flag
     runner = None  # the current Runner
-    jobs = 0  # corresponds to --jobs flag
     executor = None  # runs --jobs
     exit_code = 0  # exit status to return
     errmsg = None  # error message to display
+
+    show = False  # corresponds to --display flag
+    jobs = 0  # corresponds to --jobs flag
     mypy_args = None  # corresponds to --mypy flag
     argv_args = None  # corresponds to --argv flag
+    stack_size = 0  # corresponds to --stack-size flag
 
-    def __init__(self):
-        """Create the CLI."""
-        self.prompt = Prompt()
+    _prompt = None
+
+    @property
+    def prompt(self):
+        """Delay creation of a Prompt() until it's needed."""
+        if self._prompt is None:
+            self._prompt = Prompt()
+        return self._prompt
 
     def start(self, run=False):
         """Endpoint for coconut and coconut-run."""
@@ -144,20 +154,28 @@ class Command(object):
 
     def cmd(self, args=None, argv=None, interact=True, default_target=None):
         """Process command-line arguments."""
-        if args is None:
-            parsed_args = arguments.parse_args()
-        else:
-            parsed_args = arguments.parse_args(args)
-        if argv is not None:
-            if parsed_args.argv is not None:
-                raise CoconutException("cannot pass --argv/--args when using coconut-run (coconut-run interprets any arguments after the source file as --argv/--args)")
-            parsed_args.argv = argv
-        if parsed_args.target is None:
-            parsed_args.target = default_target
-        self.exit_code = 0
         with self.handling_exceptions():
-            self.use_args(parsed_args, interact, original_args=args)
+            if args is None:
+                parsed_args = arguments.parse_args()
+            else:
+                parsed_args = arguments.parse_args(args)
+            if argv is not None:
+                if parsed_args.argv is not None:
+                    raise CoconutException("cannot pass --argv/--args when using coconut-run (coconut-run interprets any arguments after the source file as --argv/--args)")
+                parsed_args.argv = argv
+            if parsed_args.target is None:
+                parsed_args.target = default_target
+            self.exit_code = 0
+            self.stack_size = parsed_args.stack_size
+            self.run_with_stack_size(self.execute_args, parsed_args, interact, original_args=args)
         self.exit_on_error()
+
+    def run_with_stack_size(self, func, *args, **kwargs):
+        """Execute func with the correct stack size."""
+        if self.stack_size:
+            return run_with_stack_size(self.stack_size, func, *args, **kwargs)
+        else:
+            return func(*args, **kwargs)
 
     def setup(self, *args, **kwargs):
         """Set parameters for the compiler."""
@@ -182,159 +200,162 @@ class Command(object):
                 kill_children()
             sys.exit(self.exit_code)
 
-    def use_args(self, args, interact=True, original_args=None):
+    def execute_args(self, args, interact=True, original_args=None):
         """Handle command-line arguments."""
-        # fix args
-        if not DEVELOP:
-            args.trace = args.profile = False
+        with self.handling_exceptions():
+            # fix args
+            if not DEVELOP:
+                args.trace = args.profile = False
 
-        # set up logger
-        logger.quiet, logger.verbose, logger.tracing = args.quiet, args.verbose, args.trace
-        if args.verbose or args.trace or args.profile:
-            set_grammar_names()
-        if args.trace or args.profile:
-            unset_fast_pyparsing_reprs()
-        if args.profile:
-            collect_timing_info()
-        logger.enable_colors()
+            # set up logger
+            logger.quiet, logger.verbose, logger.tracing = args.quiet, args.verbose, args.trace
+            if args.verbose or args.trace or args.profile:
+                set_grammar_names()
+            if args.trace or args.profile:
+                unset_fast_pyparsing_reprs()
+            if args.profile:
+                collect_timing_info()
+            logger.enable_colors()
 
-        logger.log(cli_version)
-        if original_args is not None:
-            logger.log("Directly passed args:", original_args)
-        logger.log("Parsed args:", args)
+            logger.log(cli_version)
+            if original_args is not None:
+                logger.log("Directly passed args:", original_args)
+            logger.log("Parsed args:", args)
 
-        # validate general command args
-        if args.mypy is not None and args.line_numbers:
-            logger.warn("extraneous --line-numbers argument passed; --mypy implies --line-numbers")
-        if args.site_install and args.site_uninstall:
-            raise CoconutException("cannot --site-install and --site-uninstall simultaneously")
-        for and_args in getattr(args, "and") or []:
-            if len(and_args) > 2:
-                raise CoconutException(
-                    "--and accepts at most two arguments, source and dest ({n} given: {args!r})".format(
-                        n=len(and_args),
-                        args=and_args,
-                    ),
-                )
+            # validate general command args
+            if args.stack_size and args.stack_size % 4 != 0:
+                logger.warn("--stack-size should generally be a multiple of 4, not {stack_size} (to support 4 KB pages)".format(stack_size=args.stack_size))
+            if args.mypy is not None and args.line_numbers:
+                logger.warn("extraneous --line-numbers argument passed; --mypy implies --line-numbers")
+            if args.site_install and args.site_uninstall:
+                raise CoconutException("cannot --site-install and --site-uninstall simultaneously")
+            for and_args in getattr(args, "and") or []:
+                if len(and_args) > 2:
+                    raise CoconutException(
+                        "--and accepts at most two arguments, source and dest ({n} given: {args!r})".format(
+                            n=len(and_args),
+                            args=and_args,
+                        ),
+                    )
 
-        # process general command args
-        if args.recursion_limit is not None:
-            set_recursion_limit(args.recursion_limit)
-        if args.jobs is not None:
-            self.set_jobs(args.jobs)
-        if args.display:
-            self.show = True
-        if args.style is not None:
-            self.prompt.set_style(args.style)
-        if args.history_file is not None:
-            self.prompt.set_history_file(args.history_file)
-        if args.vi_mode:
-            self.prompt.vi_mode = True
-        if args.docs:
-            launch_documentation()
-        if args.tutorial:
-            launch_tutorial()
-        if args.site_uninstall:
-            self.site_uninstall()
-        if args.site_install:
-            self.site_install()
-        if args.argv is not None:
-            self.argv_args = list(args.argv)
+            # process general command args
+            self.set_jobs(args.jobs, args.profile)
+            if args.recursion_limit is not None:
+                set_recursion_limit(args.recursion_limit)
+            if args.display:
+                self.show = True
+            if args.style is not None:
+                self.prompt.set_style(args.style)
+            if args.history_file is not None:
+                self.prompt.set_history_file(args.history_file)
+            if args.vi_mode:
+                self.prompt.vi_mode = True
+            if args.docs:
+                launch_documentation()
+            if args.tutorial:
+                launch_tutorial()
+            if args.site_uninstall:
+                self.site_uninstall()
+            if args.site_install:
+                self.site_install()
+            if args.argv is not None:
+                self.argv_args = list(args.argv)
 
-        # additional validation after processing
-        if args.profile and self.jobs != 0:
-            raise CoconutException("--profile incompatible with --jobs {jobs}".format(jobs=args.jobs))
-
-        # process general compiler args
-        self.setup(
-            target=args.target,
-            strict=args.strict,
-            minify=args.minify,
-            line_numbers=args.line_numbers or args.mypy is not None,
-            keep_lines=args.keep_lines,
-            no_tco=args.no_tco,
-            no_wrap=args.no_wrap,
-        )
-
-        # process mypy args and print timing info (must come after compiler setup)
-        if args.mypy is not None:
-            self.set_mypy_args(args.mypy)
-        logger.log("Grammar init time: " + str(self.comp.grammar_init_time) + " secs / Total init time: " + str(get_clock_time() - first_import_time) + " secs")
-
-        if args.source is not None:
-            # warnings if source is given
-            if args.interact and args.run:
-                logger.warn("extraneous --run argument passed; --interact implies --run")
-            if args.package and self.mypy:
-                logger.warn("extraneous --package argument passed; --mypy implies --package")
-
-            # errors if source is given
-            if args.standalone and args.package:
-                raise CoconutException("cannot compile as both --package and --standalone")
-            if args.standalone and self.mypy:
-                raise CoconutException("cannot compile as both --package (implied by --mypy) and --standalone")
-            if args.no_write and self.mypy:
-                raise CoconutException("cannot compile with --no-write when using --mypy")
-
-            # process all source, dest pairs
-            src_dest_package_triples = [
-                self.process_source_dest(src, dst, args)
-                for src, dst in (
-                    [(args.source, args.dest)]
-                    + (getattr(args, "and") or [])
-                )
-            ]
-
-            # do compilation
-            with self.running_jobs(exit_on_error=not args.watch):
-                filepaths = []
-                for source, dest, package in src_dest_package_triples:
-                    filepaths += self.compile_path(source, dest, package, run=args.run or args.interact, force=args.force)
-            self.run_mypy(filepaths)
-
-        # validate args if no source is given
-        elif (
-            args.run
-            or args.no_write
-            or args.force
-            or args.package
-            or args.standalone
-            or args.watch
-        ):
-            raise CoconutException("a source file/folder must be specified when options that depend on the source are enabled")
-        elif getattr(args, "and"):
-            raise CoconutException("--and should only be used for extra source/dest pairs, not the first source/dest pair")
-
-        # handle extra cli tasks
-        if args.code is not None:
-            self.execute(self.parse_block(args.code))
-        got_stdin = False
-        if args.jupyter is not None:
-            self.start_jupyter(args.jupyter)
-        elif stdin_readable():
-            logger.log("Reading piped input from stdin...")
-            self.execute(self.parse_block(sys.stdin.read()))
-            got_stdin = True
-        if args.interact or (
-            interact and not (
-                got_stdin
-                or args.source
-                or args.code
-                or args.tutorial
-                or args.docs
-                or args.watch
-                or args.site_uninstall
-                or args.site_install
-                or args.jupyter is not None
-                or args.mypy == [mypy_install_arg]
+            # process general compiler args
+            self.setup(
+                target=args.target,
+                strict=args.strict,
+                minify=args.minify,
+                line_numbers=args.line_numbers or args.mypy is not None,
+                keep_lines=args.keep_lines,
+                no_tco=args.no_tco,
+                no_wrap=args.no_wrap_types,
             )
-        ):
-            self.start_prompt()
-        if args.watch:
-            # src_dest_package_triples is always available here
-            self.watch(src_dest_package_triples, args.run, args.force)
-        if args.profile:
-            print_timing_info()
+
+            # process mypy args and print timing info (must come after compiler setup)
+            if args.mypy is not None:
+                self.set_mypy_args(args.mypy)
+            logger.log("Grammar init time: " + str(self.comp.grammar_init_time) + " secs / Total init time: " + str(get_clock_time() - first_import_time) + " secs")
+
+            if args.source is not None:
+                # warnings if source is given
+                if args.interact and args.run:
+                    logger.warn("extraneous --run argument passed; --interact implies --run")
+                if args.package and self.mypy:
+                    logger.warn("extraneous --package argument passed; --mypy implies --package")
+
+                # errors if source is given
+                if args.standalone and args.package:
+                    raise CoconutException("cannot compile as both --package and --standalone")
+                if args.standalone and self.mypy:
+                    raise CoconutException("cannot compile as both --package (implied by --mypy) and --standalone")
+                if args.no_write and self.mypy:
+                    raise CoconutException("cannot compile with --no-write when using --mypy")
+
+                # process all source, dest pairs
+                src_dest_package_triples = [
+                    self.process_source_dest(src, dst, args)
+                    for src, dst in (
+                        [(args.source, args.dest)]
+                        + (getattr(args, "and") or [])
+                    )
+                ]
+
+                # disable jobs if we know we're only compiling one file
+                if len(src_dest_package_triples) <= 1 and not any(package for _, _, package in src_dest_package_triples):
+                    self.disable_jobs()
+
+                # do compilation
+                with self.running_jobs(exit_on_error=not args.watch):
+                    filepaths = []
+                    for source, dest, package in src_dest_package_triples:
+                        filepaths += self.compile_path(source, dest, package, run=args.run or args.interact, force=args.force)
+                self.run_mypy(filepaths)
+
+            # validate args if no source is given
+            elif (
+                args.run
+                or args.no_write
+                or args.force
+                or args.package
+                or args.standalone
+                or args.watch
+                or args.jobs
+            ):
+                raise CoconutException("a source file/folder must be specified when options that depend on the source are enabled")
+            elif getattr(args, "and"):
+                raise CoconutException("--and should only be used for extra source/dest pairs, not the first source/dest pair")
+
+            # handle extra cli tasks
+            if args.code is not None:
+                self.execute(self.parse_block(args.code))
+            got_stdin = False
+            if args.jupyter is not None:
+                self.start_jupyter(args.jupyter)
+            elif stdin_readable():
+                logger.log("Reading piped input from stdin...")
+                self.execute(self.parse_block(sys.stdin.read()))
+                got_stdin = True
+            if args.interact or (
+                interact and not (
+                    got_stdin
+                    or args.source
+                    or args.code
+                    or args.tutorial
+                    or args.docs
+                    or args.watch
+                    or args.site_uninstall
+                    or args.site_install
+                    or args.jupyter is not None
+                    or args.mypy == [mypy_install_arg]
+                )
+            ):
+                self.start_prompt()
+            if args.watch:
+                # src_dest_package_triples is always available here
+                self.watch(src_dest_package_triples, args.run, args.force)
+            if args.profile:
+                print_timing_info()
 
     def process_source_dest(self, source, dest, args):
         """Determine the correct source, dest, package mode to use for the given source, dest, and args."""
@@ -408,7 +429,9 @@ class Command(object):
         except SystemExit as err:
             self.register_exit_code(err.code)
         except BaseException as err:
-            if isinstance(err, CoconutException):
+            if isinstance(err, GeneratorExit):
+                raise
+            elif isinstance(err, CoconutException):
                 logger.print_exc()
             elif not isinstance(err, KeyboardInterrupt):
                 logger.print_exc()
@@ -529,9 +552,9 @@ class Command(object):
                         self.execute_file(destpath, argv_source_path=codepath)
 
             if package is True:
-                self.submit_comp_job(codepath, callback, "parse_package", code, package_level=package_level)
+                self.submit_comp_job(codepath, callback, "parse_package", code, package_level=package_level, filename=os.path.basename(codepath))
             elif package is False:
-                self.submit_comp_job(codepath, callback, "parse_file", code)
+                self.submit_comp_job(codepath, callback, "parse_file", code, filename=os.path.basename(codepath))
             else:
                 raise CoconutInternalException("invalid value for package", package)
 
@@ -574,18 +597,18 @@ class Command(object):
             with logger.in_path(path):  # pickle the compiler in the path context
                 future = self.executor.submit(multiprocess_wrapper(self.comp, method), *args, **kwargs)
 
-            def callback_wrapper(completed_future):
-                """Ensures that all errors are always caught, since errors raised in a callback won't be propagated."""
-                with logger.in_path(path):  # handle errors in the path context
-                    with self.handling_exceptions():
-                        result = completed_future.result()
-                        callback(result)
-            future.add_done_callback(callback_wrapper)
+                def callback_wrapper(completed_future):
+                    """Ensures that all errors are always caught, since errors raised in a callback won't be propagated."""
+                    with logger.in_path(path):  # handle errors in the path context
+                        with self.handling_exceptions():
+                            result = completed_future.result()
+                            callback(result)
+                future.add_done_callback(callback_wrapper)
 
-    def set_jobs(self, jobs):
+    def set_jobs(self, jobs, profile=False):
         """Set --jobs."""
-        if jobs == "sys":
-            self.jobs = None
+        if jobs in (None, "sys"):
+            self.jobs = jobs
         else:
             try:
                 jobs = int(jobs)
@@ -594,11 +617,30 @@ class Command(object):
             if jobs < 0:
                 raise CoconutException("--jobs must be an integer >= 0 or 'sys'")
             self.jobs = jobs
+        logger.log("Jobs:", self.jobs)
+        if profile and self.jobs != 0:
+            raise CoconutException("--profile incompatible with --jobs {jobs}".format(jobs=jobs))
+
+    def disable_jobs(self):
+        """Disables use of --jobs."""
+        if self.jobs not in (0, 1, None):
+            logger.warn("got --jobs {jobs} but only compiling one file; disabling --jobs".format(jobs=self.jobs))
+        self.jobs = 0
+        logger.log("Jobs:", self.jobs)
+
+    def get_max_workers(self):
+        """Get the max_workers to use for creating ProcessPoolExecutor."""
+        jobs = self.jobs if self.jobs is not None else default_jobs
+        if jobs == "sys":
+            return None
+        else:
+            return jobs
 
     @property
     def using_jobs(self):
         """Determine whether or not multiprocessing is being used."""
-        return self.jobs is None or self.jobs > 1
+        max_workers = self.get_max_workers()
+        return max_workers is None or max_workers > 1
 
     @contextmanager
     def running_jobs(self, exit_on_error=True):
@@ -607,7 +649,7 @@ class Command(object):
             if self.using_jobs:
                 from concurrent.futures import ProcessPoolExecutor
                 try:
-                    with ProcessPoolExecutor(self.jobs) as self.executor:
+                    with ProcessPoolExecutor(self.get_max_workers()) as self.executor:
                         yield
                 finally:
                     self.executor = None
@@ -798,7 +840,10 @@ class Command(object):
                     if code is None:  # file
                         logger.printerr(line)
                         self.register_exit_code(errmsg="MyPy error")
-                elif not line.startswith(mypy_silent_non_err_prefixes):
+                elif line.startswith(mypy_silent_non_err_prefixes):
+                    if code is None:  # file
+                        logger.print("MyPy", line)
+                else:
                     if code is None:  # file
                         logger.printerr(line)
                         if any(infix in line for infix in mypy_err_infixes):
@@ -923,10 +968,9 @@ class Command(object):
                 logger.warn("could not find {name!r} kernel; using {kernel!r} kernel instead".format(name=icoconut_custom_kernel_name, kernel=kernel))
 
             # pass the kernel to the console or otherwise just launch Jupyter now that we know our kernel is available
-            if args[0] == "console":
-                run_args = jupyter + ["console", "--kernel", kernel] + args[1:]
-            else:
-                run_args = jupyter + args
+            if args[0] in jupyter_console_commands:
+                args += ["--kernel", kernel]
+            run_args = jupyter + args
 
         if newly_installed_kernels:
             logger.show_sig("Successfully installed Jupyter kernels: '" + "', '".join(newly_installed_kernels) + "'")

@@ -22,7 +22,7 @@ dev-py3: clean setup-py3
 .PHONY: setup
 setup:
 	python -m ensurepip
-	python -m pip install --upgrade "setuptools<58" wheel pip pytest_remotedata
+	python -m pip install --upgrade setuptools wheel pip pytest_remotedata
 
 .PHONY: setup-py2
 setup-py2:
@@ -32,7 +32,7 @@ setup-py2:
 .PHONY: setup-py3
 setup-py3:
 	python3 -m ensurepip
-	python3 -m pip install --upgrade "setuptools<58" wheel pip pytest_remotedata
+	python3 -m pip install --upgrade setuptools wheel pip pytest_remotedata
 
 .PHONY: setup-pypy
 setup-pypy:
@@ -42,7 +42,7 @@ setup-pypy:
 .PHONY: setup-pypy3
 setup-pypy3:
 	pypy3 -m ensurepip
-	pypy3 -m pip install --upgrade "setuptools<58" wheel pip pytest_remotedata
+	pypy3 -m pip install --upgrade setuptools wheel pip pytest_remotedata
 
 .PHONY: install
 install: setup
@@ -57,11 +57,11 @@ install-py3: setup-py3
 	python3 -m pip install -e .[tests]
 
 .PHONY: install-pypy
-install-pypy:
+install-pypy: setup-pypy
 	pypy -m pip install -e .[tests]
 
 .PHONY: install-pypy3
-install-pypy3:
+install-pypy3: setup-pypy3
 	pypy3 -m pip install -e .[tests]
 
 .PHONY: format
@@ -155,11 +155,19 @@ test-verbose: clean
 	python ./coconut/tests/dest/runner.py
 	python ./coconut/tests/dest/extras.py
 
-# same as test-mypy but uses --verbose and --check-untyped-defs
+# same as test-mypy but uses --verbose
+.PHONY: test-mypy-verbose
+test-mypy-verbose: export COCONUT_USE_COLOR=TRUE
+test-mypy-verbose: clean
+	python ./coconut/tests --strict --force --target sys --verbose --jobs 0 --keep-lines --mypy --follow-imports silent --ignore-missing-imports --allow-redefinition
+	python ./coconut/tests/dest/runner.py
+	python ./coconut/tests/dest/extras.py
+
+# same as test-mypy but uses --check-untyped-defs
 .PHONY: test-mypy-all
 test-mypy-all: export COCONUT_USE_COLOR=TRUE
 test-mypy-all: clean
-	python ./coconut/tests --strict --force --target sys --verbose --keep-lines --mypy --follow-imports silent --ignore-missing-imports --allow-redefinition --check-untyped-defs
+	python ./coconut/tests --strict --force --target sys --keep-lines --mypy --follow-imports silent --ignore-missing-imports --allow-redefinition --check-untyped-defs
 	python ./coconut/tests/dest/runner.py
 	python ./coconut/tests/dest/extras.py
 
@@ -198,6 +206,12 @@ test-watch: clean
 test-mini:
 	coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --force --jobs 0
 
+.PHONY: debug-comp-crash
+debug-comp-crash: export COCONUT_USE_COLOR=TRUE
+debug-comp-crash: export COCONUT_PURE_PYTHON=TRUE
+debug-comp-crash:
+	python -X dev -m coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --strict --line-numbers --keep-lines --force --jobs 0
+
 .PHONY: debug-test-crash
 debug-test-crash:
 	python -X dev ./coconut/tests/dest/runner.py
@@ -221,7 +235,7 @@ clean:
 
 .PHONY: wipe
 wipe: clean
-	rm -rf  vprof.json profile.log *.egg-info
+	rm -rf vprof.json profile.log *.egg-info
 	-find . -name "__pycache__" -delete
 	-C:/GnuWin32/bin/find.exe . -name "__pycache__" -delete
 	-find . -name "*.pyc" -delete
@@ -253,19 +267,18 @@ check-reqs:
 	python ./coconut/requirements.py
 
 .PHONY: profile-parser
+profile-parser: export COCONUT_USE_COLOR=TRUE
 profile-parser: export COCONUT_PURE_PYTHON=TRUE
 profile-parser:
 	coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --force --profile --verbose --recursion-limit 4096 2>&1 | tee ./profile.log
 
 .PHONY: profile-time
-profile-time: export COCONUT_PURE_PYTHON=TRUE
 profile-time:
-	vprof -c h "coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --force" --output-file ./vprof.json
+	vprof -c h "./coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --force" --output-file ./vprof.json
 
 .PHONY: profile-memory
-profile-memory: export COCONUT_PURE_PYTHON=TRUE
 profile-memory:
-	vprof -c m "coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --force" --output-file ./vprof.json
+	vprof -c m "./coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --force" --output-file ./vprof.json
 
 .PHONY: view-profile
 view-profile:

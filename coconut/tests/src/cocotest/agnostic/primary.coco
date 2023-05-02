@@ -12,14 +12,8 @@ from math import \log10 as (log10)
 from importlib import reload  # NOQA
 from enum import Enum  # noqa
 
-def assert_raises(c, exc):
-    """Test whether callable c raises an exception of type exc."""
-    try:
-        c()
-    except exc:
-        return True
-    else:
-        raise AssertionError("%r failed to raise exception %r" % (c, exc))
+from .util import assert_raises
+
 
 def primary_test() -> bool:
     """Basic no-dependency tests."""
@@ -103,7 +97,6 @@ def primary_test() -> bool:
     assert isinstance(one_line_class(), one_line_class)
     assert (.join)("")(["1", "2", "3"]) == "123"
     assert "" |> .join <| ["1","2","3"] == "123"
-    assert "". <| "join" <| ["1","2","3"] == "123"
     assert 1 |> [1,2,3][] == 2 == 1 |> [1,2,3]$[]
     assert 1 |> "123"[] == "2" == 1 |> "123"$[]
     assert (| -1, 0, |) :: range(1, 5) |> list == [-1, 0, 1, 2, 3, 4]
@@ -454,7 +447,6 @@ def primary_test() -> bool:
     assert None?[herp].derp is None  # type: ignore
     assert None?(derp)[herp] is None  # type: ignore
     assert None?$(herp)(derp) is None  # type: ignore
-    assert "a b c" == (" ". ?? "not gonna happen")("join")("abc")
     a: int[]? = None  # type: ignore
     assert a is None
     assert range(5) |> iter |> reiterable |> .[1] == 1
@@ -1270,8 +1262,8 @@ def primary_test() -> bool:
     assert ys |> list == []
 
     some_err = ValueError()
-    assert Expected(10) |> fmap$(.+1) == Expected(11)
-    assert Expected(error=some_err) |> fmap$(.+1) == Expected(error=some_err)
+    assert Expected(10) |> fmap$(.+1) == Expected(11) == Expected(10) |> .__fmap__(.+1)
+    assert Expected(error=some_err) |> fmap$(.+1) == Expected(error=some_err) == Expected(error=some_err) |> .__fmap__(.+1)
     res, err = Expected(10)
     assert (res, err) == (10, None)
     assert Expected("abc")
@@ -1299,6 +1291,8 @@ def primary_test() -> bool:
     assert x == 10
     Expected(error=err) = Expected(error=some_err)
     assert err is some_err
+    assert Expected(error=TypeError()).map_error(const some_err) == Expected(error=some_err)
+    assert Expected(10).map_error(const some_err) == Expected(10)
 
     recit = ([1,2,3] :: recit) |> map$(.+1)
     assert tee(recit)
@@ -1416,7 +1410,7 @@ def primary_test() -> bool:
     assert weakref.ref(hardref)() |> list == [2, 3, 4]
     my_match_err = MatchError("my match error", 123)
     assert parallel_map(ident, [my_match_err]) |> list |> str == str([my_match_err])
-    # repeat the same thin again now that my_match_err.str has been called
+    # repeat the same thing again now that my_match_err.str has been called
     assert parallel_map(ident, [my_match_err]) |> list |> str == str([my_match_err])
     match data tuple(1, 2) in (1, 2, 3):
         assert False
@@ -1501,4 +1495,98 @@ def primary_test() -> bool:
     optx <*?..= (,)
     optx <**?..= const None
     assert optx() is None
+
+    s{} = s{1, 2}
+    s{*_} = s{1, 2}
+    s{*()} = s{}
+    s{*[]} = s{}
+    s{*s{}} = s{}
+    s{*f{}} = s{}
+    s{*m{}} = s{}
+    match s{*()} in s{1, 2}:
+        assert False
+    s{} = f{1, 2}
+    f{1} = f{1, 2}
+    f{1, *_} = f{1, 2}
+    f{1, 2, *()} = f{1, 2}
+    match f{} in s{}:
+        assert False
+    s{} = m{1, 1}
+    s{1} = m{1}
+    m{1, 1} = m{1, 1}
+    m{1} = m{1, 1}
+    match m{1, 1} in m{1}:
+        assert False
+    m{1, *_} = m{1, 1}
+    match m{1, *()} in m{1, 1}:
+        assert False
+    s{*(),} = s{}
+    s{1, *_,} = s{1, 2}
+    {**{},} = {}
+    m{} = collections.Counter()
+    match m{1, 1} in collections.Counter((1,)):
+        assert False
+
+    assert_raises(() :: 1 .. 2, TypeError)
+    two = 2
+    three = 3
+    five = 5
+    assert 1.0 two three ** -4 five == 2*5/3**4
+    x = 10
+    assert 2 x == 20
+    assert 2 x**2 + 3 x == 230
+    match 1 in (1,):
+        case True:
+            pass
+        case _:
+            assert False
+    assert two**2 three**2 == 2**2 * 3**2
+    assert_raises(-> five (two + three), TypeError)
+    assert_raises(-> 5 (10), TypeError)
+    assert_raises(-> 5 [0], TypeError)
+    assert five ** 2 two == 50
+    assert 2i x == 20i
+    some_str = "some"
+    assert_raises(-> some_str five, TypeError)
+    assert (not in)("a", "bcd")
+    assert not (not in)("a", "abc")
+    assert ("a" not in .)("bcd")
+    assert (. not in "abc")("d")
+    assert (is not)(1, True)
+    assert not (is not)(False, False)
+    assert (True is not .)(1)
+    assert (. is not True)(1)
+    a_dict = {}
+    a_dict[1] = 1
+    a_dict[3] = 2
+    a_dict[2] = 3
+    assert a_dict |> str == "{1: 1, 3: 2, 2: 3}" == a_dict |> repr, a_dict
+    assert a_dict.keys() |> tuple == (1, 3, 2)
+    assert not a_dict.keys() `isinstance` list
+    assert not a_dict.values() `isinstance` list
+    assert not a_dict.items() `isinstance` list
+    assert len(a_dict.keys()) == len(a_dict.values()) == len(a_dict.items()) == 3
+    assert {1: 1, 3: 2, 2: 3}.keys() |> tuple == (1, 3, 2)
+    assert {**{1: 0, 3: 0}, 2: 0}.keys() |> tuple == (1, 3, 2) == {**dict([(1, 1), (3, 2), (2, 3)])}.keys() |> tuple
+    assert a_dict == {1: 1, 2: 3, 3: 2}
+    assert {1: 1} |> str == "{1: 1}" == {1: 1} |> repr
+    assert py_dict `issubclass` dict
+    assert py_dict() `isinstance` dict
+    assert {5:0, 3:0, **{2:0, 6:0}, 8:0}.keys() |> tuple == (5, 3, 2, 6, 8)
+    a_multiset = m{1,1,2}
+    assert not a_multiset.keys() `isinstance` list
+    assert not a_multiset.values() `isinstance` list
+    assert not a_multiset.items() `isinstance` list
+    assert len(a_multiset.keys()) == len(a_multiset.values()) == len(a_multiset.items()) == 2
+    assert (in)(1, [1, 2])
+    assert not (1 not in .)([1, 2])
+    assert not (in)([[]], [])
+    assert ("{a}" . .)("format")(a=1) == "1"
+    a_dict = {"a": 1, "b": 2}
+    a_dict |= {"a": 10, "c": 20}
+    assert a_dict == {"a": 10, "b": 2, "c": 20} == {"a": 1, "b": 2} | {"a": 10, "c": 20}
+    assert ["abc" ; "def"] == ['abc', 'def']
+    assert ["abc" ;; "def"] == [['abc'], ['def']]
+    assert {"a":0, "b":1}$[0] == "a"
+    assert (|0, NotImplemented, 2|)$[1] is NotImplemented
     return True

@@ -79,7 +79,7 @@ PY311 = sys.version_info >= (3, 11)
 IPY = (
     ((PY2 and not PY26) or PY35)
     and not (PYPY and WINDOWS)
-    and not (PY311 and not WINDOWS)
+    and (PY37 or not PYPY)
 )
 MYPY = (
     PY37
@@ -113,6 +113,8 @@ default_whitespace_chars = " \t\f"  # the only non-newline whitespace Python all
 
 varchars = string.ascii_letters + string.digits + "_"
 
+use_computation_graph_env_var = "COCONUT_USE_COMPUTATION_GRAPH"
+
 # -----------------------------------------------------------------------------------------------------------------------
 # COMPILER CONSTANTS:
 # -----------------------------------------------------------------------------------------------------------------------
@@ -125,19 +127,26 @@ assert not embed_on_internal_exc or DEVELOP, "embed_on_internal_exc should never
 temp_grammar_item_ref_count = 3 if PY311 else 5
 
 minimum_recursion_limit = 128
-default_recursion_limit = 2090
+# shouldn't be raised any higher to avoid stack overflows
+default_recursion_limit = 1920
 
 if sys.getrecursionlimit() < default_recursion_limit:
     sys.setrecursionlimit(default_recursion_limit)
 
 # modules that numpy-like arrays can live in
+pandas_numpy_modules = (
+    "pandas",
+)
 jax_numpy_modules = (
-    "jaxlib.xla_extension",
+    "jaxlib",
 )
 numpy_modules = (
     "numpy",
-    "pandas",
-) + jax_numpy_modules
+    "torch",
+) + (
+    pandas_numpy_modules
+    + jax_numpy_modules
+)
 
 legal_indent_chars = " \t"  # the only Python-legal indent chars
 
@@ -183,6 +192,7 @@ pseudo_targets = {
     "26": "2",
     "32": "3",
 }
+assert all(v in specific_targets or v in pseudo_targets for v in ROOT_HEADER_VERSIONS)
 
 targets = ("",) + specific_targets
 
@@ -205,6 +215,7 @@ is_data_var = reserved_prefix + "_is_data"
 data_defaults_var = reserved_prefix + "_data_defaults"
 
 # prefer Matcher.get_temp_var to proliferating more vars here
+match_first_arg_var = reserved_prefix + "_match_first_arg"
 match_to_args_var = reserved_prefix + "_match_args"
 match_to_kwargs_var = reserved_prefix + "_match_kwargs"
 function_match_error_var = reserved_prefix + "_FunctionMatchError"
@@ -248,7 +259,7 @@ tabideal = 4  # spaces to indent code for displaying
 justify_len = 79  # ideal line length
 
 # for pattern-matching
-default_matcher_style = "python warn on strict"
+default_matcher_style = "python warn"
 wildcard = "_"
 
 in_place_op_funcs = {
@@ -272,6 +283,28 @@ in_place_op_funcs = {
     "<**?..=": "_coconut_back_none_dubstar_compose",
     "..?**>=": "_coconut_forward_none_dubstar_compose",
 }
+
+op_func_protocols = {
+    "add": "_coconut_SupportsAdd",
+    "minus": "_coconut_SupportsMinus",
+    "mul": "_coconut_SupportsMul",
+    "pow": "_coconut_SupportsPow",
+    "truediv": "_coconut_SupportsTruediv",
+    "floordiv": "_coconut_SupportsFloordiv",
+    "mod": "_coconut_SupportsMod",
+    "and": "_coconut_SupportsAnd",
+    "xor": "_coconut_SupportsXor",
+    "or": "_coconut_SupportsOr",
+    "lshift": "_coconut_SupportsLshift",
+    "rshift": "_coconut_SupportsRshift",
+    "matmul": "_coconut_SupportsMatmul",
+    "inv": "_coconut_SupportsInv",
+}
+
+allow_explicit_keyword_vars = (
+    "async",
+    "await",
+)
 
 keyword_vars = (
     "and",
@@ -304,7 +337,7 @@ keyword_vars = (
     "with",
     "yield",
     "nonlocal",
-)
+) + allow_explicit_keyword_vars
 
 const_vars = (
     "True",
@@ -314,8 +347,6 @@ const_vars = (
 
 # names that can be backslash-escaped
 reserved_vars = (
-    "async",
-    "await",
     "data",
     "match",
     "case",
@@ -325,6 +356,7 @@ reserved_vars = (
     "then",
     "operator",
     "type",
+    "copyclosure",
     "\u03bb",  # lambda
 )
 
@@ -517,6 +549,7 @@ main_prompt = ">>> "
 more_prompt = "    "
 
 mypy_path_env_var = "MYPYPATH"
+
 style_env_var = "COCONUT_STYLE"
 vi_mode_env_var = "COCONUT_VI_MODE"
 home_env_var = "COCONUT_HOME"
@@ -566,16 +599,17 @@ reserved_command_symbols = exit_chars + (
 # always use atomic --xxx=yyy rather than --xxx yyy
 coconut_run_args = ("--run", "--target=sys", "--line-numbers", "--quiet")
 coconut_run_verbose_args = ("--run", "--target=sys", "--line-numbers")
-coconut_import_hook_args = ("--target=sys", "--line-numbers", "--quiet")
+coconut_import_hook_args = ("--target=sys", "--line-numbers", "--keep-lines", "--quiet")
 
 default_mypy_args = (
     "--pretty",
 )
 verbose_mypy_args = (
+    "--show-traceback",
+    "--show-error-context",
     "--warn-unused-configs",
     "--warn-redundant-casts",
     "--warn-return-any",
-    "--show-error-context",
     "--warn-incomplete-stub",
 )
 
@@ -594,6 +628,11 @@ mypy_non_err_infixes = (
 
 oserror_retcode = 127
 
+kilobyte = 1024
+min_stack_size_kbs = 160
+
+default_jobs = "sys" if not PY26 else 0
+
 mypy_install_arg = "install"
 
 mypy_builtin_regex = re.compile(r"\b(reveal_type|reveal_locals)\b")
@@ -601,9 +640,12 @@ mypy_builtin_regex = re.compile(r"\b(reveal_type|reveal_locals)\b")
 interpreter_uses_auto_compilation = True
 interpreter_uses_coconut_breakpoint = True
 
-coconut_pth_file = os.path.join(base_dir, "command", "resources", "zcoconut.pth")
+command_resources_dir = os.path.join(base_dir, "command", "resources")
+coconut_pth_file = os.path.join(command_resources_dir, "zcoconut.pth")
 
 interpreter_compiler_var = "__coconut_compiler__"
+
+jupyter_console_commands = ("console", "qtconsole")
 
 # -----------------------------------------------------------------------------------------------------------------------
 # HIGHLIGHTER CONSTANTS:
@@ -656,6 +698,7 @@ coconut_specific_builtins = (
     "cycle",
     "windowsof",
     "py_chr",
+    "py_dict",
     "py_hex",
     "py_input",
     "py_int",
@@ -678,6 +721,11 @@ coconut_specific_builtins = (
     "_namedtuple_of",
     "reveal_type",
     "reveal_locals",
+)
+
+# builtins that must be imported from the exact right target header
+must_use_specific_target_builtins = (
+    "super",
 )
 
 coconut_exceptions = (
@@ -703,6 +751,7 @@ new_operators = (
     r"->",
     r"\?\??",
     r"<:",
+    r"&:",
     "\u2192",  # ->
     "\\??\\*?\\*?\u21a6",  # |>
     "\u21a4\\*?\\*?\\??",  # <|
@@ -760,7 +809,7 @@ all_reqs = {
         "pyparsing",
     ),
     "non-py26": (
-        "pygments",
+        "psutil",
     ),
     "py2": (
         "futures",
@@ -773,25 +822,31 @@ all_reqs = {
     "py26": (
         "argparse",
     ),
-    "jobs": (
-        "psutil",
+    "py<39": (
+        ("pygments", "mark<39"),
+    ),
+    "py39": (
+        ("pygments", "mark39"),
     ),
     "kernel": (
         ("ipython", "py2"),
-        ("ipython", "py3"),
+        ("ipython", "py3;py<38"),
+        ("ipython", "py38"),
         ("ipykernel", "py2"),
-        ("ipykernel", "py3"),
-        ("jupyter-client", "py2"),
+        ("ipykernel", "py3;py<38"),
+        ("ipykernel", "py38"),
+        ("jupyter-client", "py<35"),
         ("jupyter-client", "py==35"),
         ("jupyter-client", "py36"),
-        "jedi",
+        ("jedi", "py<39"),
+        ("jedi", "py39"),
         ("pywinpty", "py2;windows"),
     ),
     "jupyter": (
         "jupyter",
-        ("jupyter-console", "py2"),
-        ("jupyter-console", "py==35"),
-        ("jupyter-console", "py36"),
+        ("jupyter-console", "py<35"),
+        ("jupyter-console", "py>=35;py<37"),
+        ("jupyter-console", "py37"),
         ("jupyterlab", "py35"),
         ("jupytext", "py3"),
         "papermill",
@@ -800,7 +855,8 @@ all_reqs = {
         "mypy[python2]",
         "types-backports",
         ("typing_extensions", "py==35"),
-        ("typing_extensions", "py36"),
+        ("typing_extensions", "py==36"),
+        ("typing_extensions", "py37"),
     ),
     "watch": (
         "watchdog",
@@ -814,7 +870,8 @@ all_reqs = {
         ("dataclasses", "py==36"),
         ("typing", "py<35"),
         ("typing_extensions", "py==35"),
-        ("typing_extensions", "py36"),
+        ("typing_extensions", "py==36"),
+        ("typing_extensions", "py37"),
     ),
     "dev": (
         ("pre-commit", "py3"),
@@ -823,7 +880,8 @@ all_reqs = {
     ),
     "docs": (
         "sphinx",
-        "pygments",
+        ("pygments", "mark<39"),
+        ("pygments", "mark39"),
         "myst-parser",
         "pydata-sphinx-theme",
     ),
@@ -832,13 +890,14 @@ all_reqs = {
         "pexpect",
         ("numpy", "py34"),
         ("numpy", "py2;cpy"),
+        ("pandas", "py36"),
     ),
 }
 
 # min versions are inclusive
 min_versions = {
-    "cPyparsing": (2, 4, 7, 1, 2, 0),
-    ("pre-commit", "py3"): (2, 21),
+    "cPyparsing": (2, 4, 7, 1, 2, 1),
+    ("pre-commit", "py3"): (3,),
     "psutil": (5,),
     "jupyter": (1, 0),
     "types-backports": (0, 1),
@@ -847,27 +906,34 @@ min_versions = {
     "argparse": (1, 4),
     "pexpect": (4,),
     ("trollius", "py2;cpy"): (2, 2),
-    "requests": (2, 28),
+    "requests": (2, 29),
     ("numpy", "py34"): (1,),
     ("numpy", "py2;cpy"): (1,),
     ("dataclasses", "py==36"): (0, 8),
     ("aenum", "py<34"): (3,),
-    "sphinx": (5, 3),
-    "pydata-sphinx-theme": (0, 12),
-    "myst-parser": (0, 18),
-    "mypy[python2]": (0, 991),
-    ("jupyter-console", "py36"): (6, 4),
+    "pydata-sphinx-theme": (0, 13),
+    "myst-parser": (1,),
+    "mypy[python2]": (1, 2),
+    ("jupyter-console", "py37"): (6,),
     ("typing", "py<35"): (3, 10),
+    ("typing_extensions", "py37"): (4, 5),
+    ("ipython", "py38"): (8,),
+    ("ipykernel", "py38"): (6,),
+    ("jedi", "py39"): (0, 18),
+    ("pygments", "mark39"): (2, 15),
 
     # pinned reqs: (must be added to pinned_reqs below)
 
+    # don't upgrade until myst-parser supports the new version
+    "sphinx": (6,),
     # don't upgrade this; it breaks on Python 3.6
+    ("pandas", "py36"): (1,),
     ("jupyter-client", "py36"): (7, 1, 2),
-    ("typing_extensions", "py36"): (4, 1),
+    ("typing_extensions", "py==36"): (4, 1),
     # don't upgrade these; they break on Python 3.5
-    ("ipykernel", "py3"): (5, 5),
-    ("ipython", "py3"): (7, 9),
-    ("jupyter-console", "py==35"): (6, 1),
+    ("ipykernel", "py3;py<38"): (5, 5),
+    ("ipython", "py3;py<38"): (7, 9),
+    ("jupyter-console", "py>=35;py<37"): (6, 1),
     ("jupyter-client", "py==35"): (6, 1, 12),
     ("jupytext", "py3"): (1, 8),
     ("jupyterlab", "py35"): (2, 2),
@@ -880,30 +946,32 @@ min_versions = {
     # don't upgrade this; it breaks on unix
     "vprof": (0, 36),
     # don't upgrade this; it breaks on Python 3.4
-    "pygments": (2, 3),
+    ("pygments", "mark<39"): (2, 3),
     # don't upgrade these; they break on Python 2
-    ("jupyter-client", "py2"): (5, 3),
+    ("jupyter-client", "py<35"): (5, 3),
     ("pywinpty", "py2;windows"): (0, 5),
-    ("jupyter-console", "py2"): (5, 2),
+    ("jupyter-console", "py<35"): (5, 2),
     ("ipython", "py2"): (5, 4),
     ("ipykernel", "py2"): (4, 10),
     ("prompt_toolkit", "mark2"): (1,),
     "watchdog": (0, 10),
     "papermill": (1, 2),
     # don't upgrade this; it breaks with old IPython versions
-    "jedi": (0, 17),
+    ("jedi", "py<39"): (0, 17),
     # Coconut requires pyparsing 2
     "pyparsing": (2, 4, 7),
 }
 
 # should match the reqs with comments above
 pinned_reqs = (
+    "sphinx",
+    ("pandas", "py36"),
     ("jupyter-client", "py36"),
-    ("typing_extensions", "py36"),
-    ("jupyter-client", "py2"),
-    ("ipykernel", "py3"),
-    ("ipython", "py3"),
-    ("jupyter-console", "py==35"),
+    ("typing_extensions", "py==36"),
+    ("jupyter-client", "py<35"),
+    ("ipykernel", "py3;py<38"),
+    ("ipython", "py3;py<38"),
+    ("jupyter-console", "py>=35;py<37"),
     ("jupyter-client", "py==35"),
     ("jupytext", "py3"),
     ("jupyterlab", "py35"),
@@ -912,15 +980,15 @@ pinned_reqs = (
     ("prompt_toolkit", "mark3"),
     "pytest",
     "vprof",
-    "pygments",
+    ("pygments", "mark<39"),
     ("pywinpty", "py2;windows"),
-    ("jupyter-console", "py2"),
+    ("jupyter-console", "py<35"),
     ("ipython", "py2"),
     ("ipykernel", "py2"),
     ("prompt_toolkit", "mark2"),
     "watchdog",
     "papermill",
-    "jedi",
+    ("jedi", "py<39"),
     "pyparsing",
 )
 
@@ -933,13 +1001,10 @@ max_versions = {
     "pyparsing": _,
     "cPyparsing": (_, _, _),
     ("prompt_toolkit", "mark2"): _,
-    "jedi": _,
+    ("jedi", "py<39"): _,
     ("pywinpty", "py2;windows"): _,
+    ("ipython", "py3;py<38"): _,
 }
-
-allowed_constrained_but_unpinned_reqs = (
-    "cPyparsing",
-)
 
 classifiers = (
     "Development Status :: 5 - Production/Stable",
@@ -1106,6 +1171,8 @@ mimetype = "text/x-python3"
 all_keywords = keyword_vars + const_vars + reserved_vars
 
 conda_build_env_var = "CONDA_BUILD"
+
+disabled_xonsh_modes = ("exec", "eval")
 
 # -----------------------------------------------------------------------------------------------------------------------
 # DOCUMENTATION CONSTANTS:

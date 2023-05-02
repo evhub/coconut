@@ -61,8 +61,8 @@ def asyncio_test() -> bool:
     aplus1: AsyncNumFunc[int] = async def x -> x + 1
     async def main():
         assert await async_map_test()
-        assert `(+)$(1) .. await aplus 1` 1 == 3
-        assert `(.+1) .. await aplus_ 1` 1 == 3
+        assert `(+)$(1) .. await (aplus 1)` 1 == 3
+        assert `(.+1) .. await (aplus_ 1)` 1 == 3
         assert await (async def (x, y) -> x + y)(1, 2) == 3
         assert await (async def (int(x), int(y)) -> x + y)(1, 2) == 3
         assert await (async match def (int(x), int(y)) -> x + y)(1, 2) == 3

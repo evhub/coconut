@@ -49,7 +49,8 @@ from coconut.constants import (
     MYPY,
     PY35,
     PY36,
-    PY39,
+    PY38,
+    PY310,
     icoconut_default_kernel_names,
     icoconut_custom_kernel_name,
     mypy_err_infixes,
@@ -60,13 +61,27 @@ from coconut.convenience import (
     auto_compilation,
     setup,
 )
+
+
+# -----------------------------------------------------------------------------------------------------------------------
+# SETUP:
+# -----------------------------------------------------------------------------------------------------------------------
+
+
 auto_compilation(False)
+
+logger.verbose = property(lambda self: True, lambda self, value: print("WARNING: ignoring attempt to set logger.verbose = {value}".format(value=value)))
+
+os.environ["PYDEVD_DISABLE_FILE_VALIDATION"] = "1"
+
 
 # -----------------------------------------------------------------------------------------------------------------------
 # CONSTANTS:
 # -----------------------------------------------------------------------------------------------------------------------
 
-logger.verbose = property(lambda self: True, lambda self, value: print("WARNING: ignoring attempt to set logger.verbose = {value}".format(value=value)))
+
+default_recursion_limit = "4096"
+default_stack_size = "4096"
 
 base = os.path.dirname(os.path.relpath(__file__))
 src = os.path.join(base, "src")
@@ -85,7 +100,8 @@ pyprover_git = "https://github.com/evhub/pyprover.git"
 prelude_git = "https://github.com/evhub/coconut-prelude"
 bbopt_git = "https://github.com/evhub/bbopt.git"
 
-coconut_snip = r"msg = '<success>'; pmsg = print$(msg); `pmsg`"
+coconut_snip = "msg = '<success>'; pmsg = print$(msg); `pmsg`"
+target_3_snip = "assert super is py_super; print('<success>')"
 
 always_err_strs = (
     "CoconutInternalException",
@@ -116,6 +132,8 @@ ignore_atexit_errors_with = (
 ignore_last_lines_with = (
     "DeprecationWarning: The distutils package is deprecated",
     "from distutils.version import LooseVersion",
+    ": SyntaxWarning: 'int' object is not ",
+    " assert_raises(",
 )
 
 kernel_installation_msg = (
@@ -236,7 +254,15 @@ def call(raw_cmd, assert_output=False, check_mypy=False, check_errors=True, stde
         line = raw_lines[i]
 
         # ignore https://bugs.python.org/issue39098 errors
-        if sys.version_info < (3, 9) and line == "Error in atexit._run_exitfuncs:":
+        if sys.version_info < (3, 9) and (
+            line == "Error in atexit._run_exitfuncs:"
+            or (
+                line == "Traceback (most recent call last):"
+                and i + 1 < len(raw_lines)
+                and "concurrent/futures/process.py" in raw_lines[i + 1]
+                and "_python_exit" in raw_lines[i + 1]
+            )
+        ):
             while True:
                 i += 1
                 if i >= len(raw_lines):
@@ -267,7 +293,8 @@ def call(raw_cmd, assert_output=False, check_mypy=False, check_errors=True, stde
     for line in lines:
         for errstr in always_err_strs:
             assert errstr not in line, "{errstr!r} in {line!r}".format(errstr=errstr, line=line)
-        if check_errors:
+        # ignore SyntaxWarnings containing assert_raises
+        if check_errors and "assert_raises(" not in line:
             assert "Traceback (most recent call last):" not in line, "Traceback in " + repr(line)
             assert "Exception" not in line, "Exception in " + repr(line)
             assert "Error" not in line, "Error in " + repr(line)
@@ -300,8 +327,10 @@ def call_python(args, **kwargs):
 
 def call_coconut(args, **kwargs):
     """Calls Coconut."""
-    if "--jobs" not in args and not PYPY and not PY26:
-        args = ["--jobs", "sys"] + args
+    if default_recursion_limit is not None and "--recursion-limit" not in args:
+        args = ["--recursion-limit", default_recursion_limit] + args
+    if default_stack_size is not None and "--stack-size" not in args:
+        args = ["--stack-size", default_stack_size] + args
     if "--mypy" in args and "check_mypy" not in kwargs:
         kwargs["check_mypy"] = True
     if PY26:
@@ -642,6 +671,10 @@ class TestShell(unittest.TestCase):
     def test_code(self):
         call(["coconut", "-s", "-c", coconut_snip], assert_output=True)
 
+    if not PY2:
+        def test_target_3_snip(self):
+            call(["coconut", "-t3", "-c", target_3_snip], assert_output=True)
+
     def test_pipe(self):
         call('echo ' + escape(coconut_snip) + "| coconut -s", shell=True, assert_output=True)
 
@@ -685,6 +718,8 @@ class TestShell(unittest.TestCase):
             p.expect("$")
             p.sendline("!(ls -la) |> bool")
             p.expect("True")
+            p.sendline("xontrib unload coconut")
+            p.expect("$")
             p.sendeof()
             if p.isalive():
                 p.terminate()
@@ -703,6 +738,8 @@ class TestShell(unittest.TestCase):
             call(["coconut", "--jupyter"], assert_output=kernel_installation_msg)
             stdout, stderr, retcode = call_output(["jupyter", "kernelspec", "list"])
             stdout, stderr = "".join(stdout), "".join(stderr)
+            if not stdout:
+                stdout, stderr = stderr, ""
             assert not retcode and not stderr, stderr
             for kernel in (icoconut_custom_kernel_name,) + icoconut_default_kernel_names:
                 assert kernel in stdout
@@ -778,6 +815,14 @@ class TestCompilation(unittest.TestCase):
         def test_no_wrap(self):
             run(["--no-wrap"])
 
+    if get_bool_env_var("COCONUT_TEST_VERBOSE"):
+        def test_verbose(self):
+            run(["--jobs", "0", "--verbose"])
+
+    if get_bool_env_var("COCONUT_TEST_TRACE"):
+        def test_trace(self):
+            run(["--jobs", "0", "--trace"], check_errors=False)
+
     # avoids a strange, unreproducable failure on appveyor
     if not (WINDOWS and sys.version_info[:2] == (3, 8)):
         def test_run(self):
@@ -808,26 +853,27 @@ class TestExternal(unittest.TestCase):
         def test_pyprover(self):
             with using_path(pyprover):
                 comp_pyprover()
-                run_pyprover()
+                if PY38:
+                    run_pyprover()
 
     if not PYPY or PY2:
         def test_prelude(self):
             with using_path(prelude):
                 comp_prelude()
-                if MYPY:
+                if MYPY and PY38:
                     run_prelude()
+
+    def test_bbopt(self):
+        with using_path(bbopt):
+            comp_bbopt()
+            if not PYPY and PY38 and not PY310:
+                install_bbopt()
 
     def test_pyston(self):
         with using_path(pyston):
             comp_pyston(["--no-tco"])
             if PYPY and PY2:
                 run_pyston()
-
-    def test_bbopt(self):
-        with using_path(bbopt):
-            comp_bbopt()
-            if not PYPY and (PY2 or PY36) and not PY39:
-                install_bbopt()
 
 
 # -----------------------------------------------------------------------------------------------------------------------

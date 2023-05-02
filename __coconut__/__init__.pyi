@@ -8,35 +8,8 @@ License: Apache 2.0
 Description: MyPy stub file for __coconut__.py.
 """
 
-# -----------------------------------------------------------------------------------------------------------------------
-# IMPORTS:
-# -----------------------------------------------------------------------------------------------------------------------
-
 import sys
 import typing as _t
-
-if sys.version_info >= (3, 11):
-    from typing import dataclass_transform as _dataclass_transform
-else:
-    try:
-        from typing_extensions import dataclass_transform as _dataclass_transform
-    except ImportError:
-        dataclass_transform = ...
-
-import _coconut as __coconut  # we mock _coconut as a package since mypy doesn't handle namespace classes very well
-_coconut = __coconut
-
-if sys.version_info >= (3, 2):
-    from functools import lru_cache as _lru_cache
-else:
-    from backports.functools_lru_cache import lru_cache as _lru_cache  # `pip install -U coconut[mypy]` to fix errors on this line
-    _coconut.functools.lru_cache = _lru_cache  # type: ignore
-
-if sys.version_info >= (3, 7):
-    from dataclasses import dataclass as _dataclass
-else:
-    @_dataclass_transform()
-    def _dataclass(cls: type[_T], **kwargs: _t.Any) -> type[_T]: ...
 
 # -----------------------------------------------------------------------------------------------------------------------
 # TYPE VARS:
@@ -82,6 +55,40 @@ _P = _t.ParamSpec("_P")
 class _SupportsIndex(_t.Protocol):
     def __index__(self) -> int: ...
 
+
+# -----------------------------------------------------------------------------------------------------------------------
+# IMPORTS:
+# -----------------------------------------------------------------------------------------------------------------------
+
+if sys.version_info >= (3, 11):
+    from typing import dataclass_transform as _dataclass_transform
+else:
+    try:
+        from typing_extensions import dataclass_transform as _dataclass_transform
+    except ImportError:
+        dataclass_transform = ...
+
+import _coconut as __coconut  # we mock _coconut as a package since mypy doesn't handle namespace classes very well
+_coconut = __coconut
+
+if sys.version_info >= (3, 2):
+    from functools import lru_cache as _lru_cache
+else:
+    from backports.functools_lru_cache import lru_cache as _lru_cache  # `pip install -U coconut[mypy]` to fix errors on this line
+    _coconut.functools.lru_cache = _lru_cache  # type: ignore
+
+if sys.version_info >= (3, 7):
+    from dataclasses import dataclass as _dataclass
+else:
+    @_dataclass_transform()
+    def _dataclass(cls: t_coype[_T], **kwargs: _t.Any) -> type[_T]: ...
+
+try:
+    from typing_extensions import deprecated as _deprecated  # type: ignore
+except ImportError:
+    def _deprecated(message: _t.Text) -> _t.Callable[[_T], _T]: ...  # type: ignore
+
+
 # -----------------------------------------------------------------------------------------------------------------------
 # STUB:
 # -----------------------------------------------------------------------------------------------------------------------
@@ -126,6 +133,7 @@ if sys.version_info < (3, 7):
 
 
 py_chr = chr
+py_dict = dict
 py_hex = hex
 py_input = input
 py_int = int
@@ -210,7 +218,7 @@ def _coconut_tco(func: _Tfunc) -> _Tfunc:
     return func
 
 
-# any changes here should also be made to safe_call below
+# any changes here should also be made to safe_call and call_or_coefficient below
 @_t.overload
 def call(
     _func: _t.Callable[[_T], _U],
@@ -304,6 +312,7 @@ class Expected(_BaseExpected[_T]):
     def __getitem__(self, index: slice) -> _t.Tuple[_T | BaseException | None, ...]: ...
     def and_then(self, func: _t.Callable[[_T], Expected[_U]]) -> Expected[_U]: ...
     def join(self: Expected[Expected[_T]]) -> Expected[_T]: ...
+    def map_error(self, func: _t.Callable[[BaseException], BaseException]) -> Expected[_T]: ...
     def or_else(self, func: _t.Callable[[BaseException], Expected[_U]]) -> Expected[_T | _U]: ...
     def result_or(self, default: _U) -> _T | _U: ...
     def result_or_else(self, func: _t.Callable[[BaseException], _U]) -> _T | _U: ...
@@ -363,6 +372,58 @@ def safe_call(
 ) -> Expected[_T]: ...
 
 
+# based on call above
+@_t.overload
+def _coconut_call_or_coefficient(
+    _func: _t.Callable[[_T], _U],
+    _x: _T,
+) -> _U: ...
+@_t.overload
+def _coconut_call_or_coefficient(
+    _func: _t.Callable[[_T, _U], _V],
+    _x: _T,
+    _y: _U,
+) -> _V: ...
+@_t.overload
+def _coconut_call_or_coefficient(
+    _func: _t.Callable[[_T, _U, _V], _W],
+    _x: _T,
+    _y: _U,
+    _z: _V,
+) -> _W: ...
+@_t.overload
+def _coconut_call_or_coefficient(
+    _func: _t.Callable[_t.Concatenate[_T, _P], _U],
+    _x: _T,
+    *args: _t.Any,
+) -> _U: ...
+@_t.overload
+def _coconut_call_or_coefficient(
+    _func: _t.Callable[_t.Concatenate[_T, _U, _P], _V],
+    _x: _T,
+    _y: _U,
+    *args: _t.Any,
+) -> _V: ...
+@_t.overload
+def _coconut_call_or_coefficient(
+    _func: _t.Callable[_t.Concatenate[_T, _U, _V, _P], _W],
+    _x: _T,
+    _y: _U,
+    _z: _V,
+    *args: _t.Any,
+) -> _W: ...
+@_t.overload
+def _coconut_call_or_coefficient(
+    _func: _t.Callable[..., _T],
+    *args: _t.Any,
+) -> _T: ...
+@_t.overload
+def _coconut_call_or_coefficient(
+    _func: _T,
+    *args: _T,
+) -> _T: ...
+
+
 def recursive_iterator(func: _T_iter_func) -> _T_iter_func:
     return func
 
@@ -412,6 +473,7 @@ def addpattern(
     *add_funcs: _Callable,
     allow_any_func: bool=False,
 ) -> _t.Callable[..., _t.Any]: ...
+
 _coconut_addpattern = prepattern = addpattern
 
 
@@ -812,6 +874,10 @@ def _coconut_bool_or(a: _t.Literal[False], b: _T) -> _T: ...
 def _coconut_bool_or(a: _T, b: _U) -> _t.Union[_T, _U]: ...
 
 
+def _coconut_in(a: _T, b: _t.Sequence[_T]) -> bool: ...
+_coconut_not_in = _coconut_in
+
+
 @_t.overload
 def _coconut_none_coalesce(a: _T, b: None) -> _T: ...
 @_t.overload
@@ -957,6 +1023,7 @@ _coconut_flatten = flatten
 
 
 def makedata(data_type: _t.Type[_T], *args: _t.Any) -> _T: ...
+@_deprecated("use makedata instead")
 def datamaker(data_type: _t.Type[_T]) -> _t.Callable[..., _T]:
     return _coconut.functools.partial(makedata, data_type)
 
@@ -985,10 +1052,10 @@ def fmap(func: _t.Callable[[_T], _U], obj: _t.Iterator[_T]) -> _t.Iterator[_U]: 
 def fmap(func: _t.Callable[[_T], _U], obj: _t.Set[_T]) -> _t.Set[_U]: ...
 @_t.overload
 def fmap(func: _t.Callable[[_T], _U], obj: _t.AsyncIterable[_T]) -> _t.AsyncIterable[_U]: ...
-@_t.overload
-def fmap(func: _t.Callable[[_t.Tuple[_T, _U]], _t.Tuple[_V, _W]], obj: _t.Dict[_T, _U]) -> _t.Dict[_V, _W]: ...
-@_t.overload
-def fmap(func: _t.Callable[[_t.Tuple[_T, _U]], _t.Tuple[_V, _W]], obj: _t.Mapping[_T, _U]) -> _t.Mapping[_V, _W]: ...
+# @_t.overload
+# def fmap(func: _t.Callable[[_t.Tuple[_T, _U]], _t.Tuple[_V, _W]], obj: _t.Dict[_T, _U]) -> _t.Dict[_V, _W]: ...
+# @_t.overload
+# def fmap(func: _t.Callable[[_t.Tuple[_T, _U]], _t.Tuple[_V, _W]], obj: _t.Mapping[_T, _U]) -> _t.Mapping[_V, _W]: ...
 @_t.overload
 def fmap(func: _t.Callable[[_T, _U], _t.Tuple[_V, _W]], obj: _t.Dict[_T, _U], starmap_over_mappings: _t.Literal[True]) -> _t.Dict[_V, _W]: ...
 @_t.overload
@@ -1042,16 +1109,16 @@ class _coconut_lifted_1(_t.Generic[_T, _W]):
     #     self,
     #     _g: _t.Callable[[_X], _T],
     # ) -> _t.Callable[[_X], _W]: ...
-    @_t.overload
-    def __call__(
-        self,
-        _g: _t.Callable[[_X, _Y], _T],
-    ) -> _t.Callable[[_X, _Y], _W]: ...
-    @_t.overload
-    def __call__(
-        self,
-        _g: _t.Callable[[_X, _Y, _Z], _T],
-    ) -> _t.Callable[[_X, _Y, _Z], _W]: ...
+    # @_t.overload
+    # def __call__(
+    #     self,
+    #     _g: _t.Callable[[_X, _Y], _T],
+    # ) -> _t.Callable[[_X, _Y], _W]: ...
+    # @_t.overload
+    # def __call__(
+    #     self,
+    #     _g: _t.Callable[[_X, _Y, _Z], _T],
+    # ) -> _t.Callable[[_X, _Y, _Z], _W]: ...
     @_t.overload
     def __call__(
         self,
@@ -1076,18 +1143,18 @@ class _coconut_lifted_2(_t.Generic[_T, _U, _W]):
     #     _g: _t.Callable[[_X], _T],
     #     _h: _t.Callable[[_X], _U],
     # ) -> _t.Callable[[_X], _W]: ...
-    @_t.overload
-    def __call__(
-        self,
-        _g: _t.Callable[[_X, _Y], _T],
-        _h: _t.Callable[[_X, _Y], _U],
-    ) -> _t.Callable[[_X, _Y], _W]: ...
-    @_t.overload
-    def __call__(
-        self,
-        _g: _t.Callable[[_X, _Y, _Z], _T],
-        _h: _t.Callable[[_X, _Y, _Z], _U],
-    ) -> _t.Callable[[_X, _Y, _Z], _W]: ...
+    # @_t.overload
+    # def __call__(
+    #     self,
+    #     _g: _t.Callable[[_X, _Y], _T],
+    #     _h: _t.Callable[[_X, _Y], _U],
+    # ) -> _t.Callable[[_X, _Y], _W]: ...
+    # @_t.overload
+    # def __call__(
+    #     self,
+    #     _g: _t.Callable[[_X, _Y, _Z], _T],
+    #     _h: _t.Callable[[_X, _Y, _Z], _U],
+    # ) -> _t.Callable[[_X, _Y, _Z], _W]: ...
     @_t.overload
     def __call__(
         self,
@@ -1116,20 +1183,20 @@ class _coconut_lifted_3(_t.Generic[_T, _U, _V, _W]):
     #     _h: _t.Callable[[_X], _U],
     #     _i: _t.Callable[[_X], _V],
     # ) -> _t.Callable[[_X], _W]: ...
-    @_t.overload
-    def __call__(
-        self,
-        _g: _t.Callable[[_X, _Y], _T],
-        _h: _t.Callable[[_X, _Y], _U],
-        _i: _t.Callable[[_X, _Y], _V],
-    ) -> _t.Callable[[_X, _Y], _W]: ...
-    @_t.overload
-    def __call__(
-        self,
-        _g: _t.Callable[[_X, _Y, _Z], _T],
-        _h: _t.Callable[[_X, _Y, _Z], _U],
-        _i: _t.Callable[[_X, _Y, _Z], _V],
-    ) -> _t.Callable[[_X, _Y, _Z], _W]: ...
+    # @_t.overload
+    # def __call__(
+    #     self,
+    #     _g: _t.Callable[[_X, _Y], _T],
+    #     _h: _t.Callable[[_X, _Y], _U],
+    #     _i: _t.Callable[[_X, _Y], _V],
+    # ) -> _t.Callable[[_X, _Y], _W]: ...
+    # @_t.overload
+    # def __call__(
+    #     self,
+    #     _g: _t.Callable[[_X, _Y, _Z], _T],
+    #     _h: _t.Callable[[_X, _Y, _Z], _U],
+    #     _i: _t.Callable[[_X, _Y, _Z], _V],
+    # ) -> _t.Callable[[_X, _Y, _Z], _W]: ...
     @_t.overload
     def __call__(
         self,
@@ -1267,3 +1334,62 @@ def _coconut_multi_dim_arr(
 
 @_t.overload
 def _coconut_multi_dim_arr(arrs: _Tuple, dim: int) -> _Sequence: ...
+
+
+class _coconut_SupportsAdd(_t.Protocol, _t.Generic[_Tco, _Ucontra, _Vco]):
+    def __add__(self: _Tco, other: _Ucontra) -> _Vco:
+        raise NotImplementedError
+
+class _coconut_SupportsMinus(_t.Protocol, _t.Generic[_Tco, _Ucontra, _Vco]):
+    def __sub__(self: _Tco, other: _Ucontra) -> _Vco:
+        raise NotImplementedError
+    def __neg__(self: _Tco) -> _Vco:
+        raise NotImplementedError
+
+class _coconut_SupportsMul(_t.Protocol, _t.Generic[_Tco, _Ucontra, _Vco]):
+    def __mul__(self: _Tco, other: _Ucontra) -> _Vco:
+        raise NotImplementedError
+
+class _coconut_SupportsPow(_t.Protocol, _t.Generic[_Tco, _Ucontra, _Vco]):
+    def __pow__(self: _Tco, other: _Ucontra) -> _Vco:
+        raise NotImplementedError
+
+class _coconut_SupportsTruediv(_t.Protocol, _t.Generic[_Tco, _Ucontra, _Vco]):
+    def __truediv__(self: _Tco, other: _Ucontra) -> _Vco:
+        raise NotImplementedError
+
+class _coconut_SupportsFloordiv(_t.Protocol, _t.Generic[_Tco, _Ucontra, _Vco]):
+    def __floordiv__(self: _Tco, other: _Ucontra) -> _Vco:
+        raise NotImplementedError
+
+class _coconut_SupportsMod(_t.Protocol, _t.Generic[_Tco, _Ucontra, _Vco]):
+    def __mod__(self: _Tco, other: _Ucontra) -> _Vco:
+        raise NotImplementedError
+
+class _coconut_SupportsAnd(_t.Protocol, _t.Generic[_Tco, _Ucontra, _Vco]):
+    def __and__(self: _Tco, other: _Ucontra) -> _Vco:
+        raise NotImplementedError
+
+class _coconut_SupportsXor(_t.Protocol, _t.Generic[_Tco, _Ucontra, _Vco]):
+    def __xor__(self: _Tco, other: _Ucontra) -> _Vco:
+        raise NotImplementedError
+
+class _coconut_SupportsOr(_t.Protocol, _t.Generic[_Tco, _Ucontra, _Vco]):
+    def __or__(self: _Tco, other: _Ucontra) -> _Vco:
+        raise NotImplementedError
+
+class _coconut_SupportsLshift(_t.Protocol, _t.Generic[_Tco, _Ucontra, _Vco]):
+    def __lshift__(self: _Tco, other: _Ucontra) -> _Vco:
+        raise NotImplementedError
+
+class _coconut_SupportsRshift(_t.Protocol, _t.Generic[_Tco, _Ucontra, _Vco]):
+    def __rshift__(self: _Tco, other: _Ucontra) -> _Vco:
+        raise NotImplementedError
+
+class _coconut_SupportsMatmul(_t.Protocol, _t.Generic[_Tco, _Ucontra, _Vco]):
+    def __matmul__(self: _Tco, other: _Ucontra) -> _Vco:
+        raise NotImplementedError
+
+class _coconut_SupportsInv(_t.Protocol, _t.Generic[_Tco, _Vco]):
+    def __invert__(self: _Tco) -> _Vco:
+        raise NotImplementedError

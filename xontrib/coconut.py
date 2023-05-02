@@ -19,7 +19,7 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 from coconut.root import *  # NOQA
 
-from coconut.integrations import _load_xontrib_
+from coconut.integrations import _load_xontrib_, _unload_xontrib_  # NOQA
 
 # -----------------------------------------------------------------------------------------------------------------------
 # MAIN:

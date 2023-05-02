@@ -42,6 +42,9 @@ from coconut.constants import (
     data_defaults_var,
     default_matcher_style,
     self_match_types,
+    match_first_arg_var,
+    match_to_args_var,
+    match_to_kwargs_var,
 )
 from coconut.compiler.util import (
     paren_join,
@@ -230,9 +233,12 @@ class Matcher(object):
         """Whether the current style uses PEP 622 rules."""
         return self.style.startswith("python")
 
-    def rule_conflict_warn(self, message, if_coconut=None, if_python=None, extra=None):
+    def rule_conflict_warn(self, message, if_coconut=None, if_python=None, extra=None, only_strict=False):
         """Warns on conflicting style rules if callback was given."""
-        if self.style.endswith("warn") or self.style.endswith("strict") and self.comp.strict:
+        if (
+            self.style.endswith("warn") and (not only_strict or self.comp.strict)
+            or self.style.endswith("strict") and self.comp.strict
+        ):
             full_msg = message
             if if_python or if_coconut:
                 full_msg += " (" + (if_python if self.using_python_rules else if_coconut) + ")"
@@ -343,10 +349,33 @@ class Matcher(object):
         else:
             self.add_check(str(min_len) + " <= _coconut.len(" + item + ") <= " + str(max_len))
 
-    def match_function(self, args, kwargs, pos_only_match_args=(), match_args=(), star_arg=None, kwd_only_match_args=(), dubstar_arg=None):
+    def match_function(
+        self,
+        first_arg=match_first_arg_var,
+        args=match_to_args_var,
+        kwargs=match_to_kwargs_var,
+        pos_only_match_args=(),
+        match_args=(),
+        star_arg=None,
+        kwd_only_match_args=(),
+        dubstar_arg=None,
+    ):
         """Matches a pattern-matching function."""
         # before everything, pop the FunctionMatchError from context
         self.add_def(function_match_error_var + " = _coconut_get_function_match_error()")
+        # and fix args to include first_arg, which we have to do to make super work
+        self.add_def(
+            handle_indentation(
+                """
+if {first_arg} is not _coconut_sentinel:
+    {args} = ({first_arg},) + {args}
+            """,
+            ).format(
+                first_arg=first_arg,
+                args=args,
+            ),
+        )
+
         with self.down_a_level():
 
             self.match_in_args_kwargs(pos_only_match_args, match_args, args, kwargs, allow_star_args=star_arg is not None)
@@ -475,15 +504,16 @@ class Matcher(object):
             self.rule_conflict_warn(
                 "found pattern with new behavior in Coconut v2; dict patterns now allow the dictionary being matched against to contain extra keys",
                 extra="use explicit '{..., **_}' or '{..., **{}}' syntax to resolve",
+                only_strict=True,
             )
-            check_len = not self.using_python_rules
+            strict_len = not self.using_python_rules
         elif rest == "{}":
-            check_len = True
+            strict_len = True
             rest = None
         else:
-            check_len = False
+            strict_len = False
 
-        if check_len:
+        if strict_len:
             self.add_check("_coconut.len(" + item + ") == " + str(len(matches)))
 
         seen_keys = set()
@@ -500,8 +530,8 @@ class Matcher(object):
         if rest is not None and rest != wildcard:
             match_keys = [k for k, v in matches]
             rest_item = (
-                "dict((k, v) for k, v in "
-                + item + ".items() if k not in set(("
+                "_coconut.dict((k, v) for k, v in "
+                + item + ".items() if k not in _coconut.set(("
                 + ", ".join(match_keys) + ("," if len(match_keys) == 1 else "")
                 + ")))"
             )
@@ -900,11 +930,48 @@ class Matcher(object):
 
     def match_set(self, tokens, item):
         """Matches a set."""
-        match, = tokens
-        self.add_check("_coconut.isinstance(" + item + ", _coconut.abc.Set)")
-        self.add_check("_coconut.len(" + item + ") == " + str(len(match)))
-        for const in match:
-            self.add_check(const + " in " + item)
+        if len(tokens) == 2:
+            letter_toks, match = tokens
+            star = None
+        else:
+            letter_toks, match, star = tokens
+
+        if letter_toks:
+            letter, = letter_toks
+        else:
+            letter = "s"
+
+        # process *() or *_
+        if star is None:
+            self.rule_conflict_warn(
+                "found pattern with new behavior in Coconut v3; set patterns now allow the set being matched against to contain extra items",
+                extra="use explicit '{..., *_}' or '{..., *()}' syntax to resolve",
+            )
+            strict_len = not self.using_python_rules
+        elif star == wildcard:
+            strict_len = False
+        else:
+            internal_assert(star == "()", "invalid set match tokens", tokens)
+            strict_len = True
+
+        # handle set letter
+        if letter == "s":
+            self.add_check("_coconut.isinstance(" + item + ", _coconut.abc.Set)")
+        elif letter == "f":
+            self.add_check("_coconut.isinstance(" + item + ", _coconut.frozenset)")
+        elif letter == "m":
+            self.add_check("_coconut.isinstance(" + item + ", _coconut.collections.Counter)")
+        else:
+            raise CoconutInternalException("invalid set match letter", letter)
+
+        # match set contents
+        if letter == "m":
+            self.add_check("_coconut_multiset(" + tuple_str_of(match) + ") " + ("== " if strict_len else "<= ") + item)
+        else:
+            if strict_len:
+                self.add_check("_coconut.len(" + item + ") == " + str(len(match)))
+            for const in match:
+                self.add_check(const + " in " + item)
 
     def split_data_or_class_match(self, tokens):
         """Split data/class match tokens into cls_name, pos_matches, name_matches, star_match."""

@@ -88,19 +88,28 @@ class CoconutException(BaseCoconutException, Exception):
 class CoconutSyntaxError(CoconutException):
     """Coconut SyntaxError."""
     point_to_endpoint = False
+    argnames = ("message", "source", "point", "ln", "extra", "endpoint", "filename")
 
-    def __init__(self, message, source=None, point=None, ln=None, extra=None, endpoint=None):
+    def __init__(self, message, source=None, point=None, ln=None, extra=None, endpoint=None, filename=None):
         """Creates the Coconut SyntaxError."""
-        self.args = (message, source, point, ln, extra, endpoint)
+        self.args = (message, source, point, ln, extra, endpoint, filename)
 
-    def message(self, message, source, point, ln, extra=None, endpoint=None):
+    @property
+    def kwargs(self):
+        """Get the arguments as keyword arguments."""
+        return dict(zip(self.args, self.argnames))
+
+    def message(self, message, source, point, ln, extra=None, endpoint=None, filename=None):
         """Creates a SyntaxError-like message."""
         if message is None:
             message = "parsing failed"
         if extra is not None:
             message += " (" + str(extra) + ")"
         if ln is not None:
-            message += " (line " + str(ln) + ")"
+            message += " (line " + str(ln)
+            if filename is not None:
+                message += " in " + repr(filename)
+            message += ")"
         if source:
             if point is None:
                 for line in source.splitlines():
@@ -174,10 +183,20 @@ class CoconutSyntaxError(CoconutException):
 
     def syntax_err(self):
         """Creates a SyntaxError."""
-        args = self.args[:2] + (None, None) + self.args[4:]
-        err = SyntaxError(self.message(*args))
-        err.offset = args[2]
-        err.lineno = args[3]
+        kwargs = self.kwargs
+        if self.point_to_endpoint and "endpoint" in kwargs:
+            point = kwargs.pop("endpoint")
+        else:
+            point = kwargs.pop("point")
+        kwargs["point"] = kwargs["endpoint"] = None
+        ln = kwargs.pop("ln")
+        filename = kwargs.pop("filename", None)
+
+        err = SyntaxError(self.message(**kwargs))
+        err.offset = point
+        err.lineno = ln
+        if filename is not None:
+            err.filename = filename
         return err
 
     def set_point_to_endpoint(self, point_to_endpoint):
@@ -189,25 +208,26 @@ class CoconutSyntaxError(CoconutException):
 class CoconutStyleError(CoconutSyntaxError):
     """Coconut --strict error."""
 
-    def __init__(self, message, source=None, point=None, ln=None, extra="remove --strict to dismiss", endpoint=None):
+    def __init__(self, message, source=None, point=None, ln=None, extra="remove --strict to dismiss", endpoint=None, filename=None):
         """Creates the --strict Coconut error."""
-        self.args = (message, source, point, ln, extra, endpoint)
+        self.args = (message, source, point, ln, extra, endpoint, filename)
 
 
 class CoconutTargetError(CoconutSyntaxError):
     """Coconut --target error."""
+    argnames = ("message", "source", "point", "ln", "target", "endpoint", "filename")
 
-    def __init__(self, message, source=None, point=None, ln=None, target=None, endpoint=None):
+    def __init__(self, message, source=None, point=None, ln=None, target=None, endpoint=None, filename=None):
         """Creates the --target Coconut error."""
-        self.args = (message, source, point, ln, target, endpoint)
+        self.args = (message, source, point, ln, target, endpoint, filename)
 
-    def message(self, message, source, point, ln, target, endpoint):
+    def message(self, message, source, point, ln, target, endpoint, filename):
         """Creates the --target Coconut error message."""
         if target is None:
             extra = None
         else:
             extra = "pass --target " + get_displayable_target(target) + " to fix"
-        return super(CoconutTargetError, self).message(message, source, point, ln, extra, endpoint)
+        return super(CoconutTargetError, self).message(message, source, point, ln, extra, endpoint, filename)
 
 
 class CoconutParseError(CoconutSyntaxError):

@@ -24,12 +24,15 @@ import os
 import traceback
 import logging
 from contextlib import contextmanager
+from collections import defaultdict
+from functools import wraps
 if sys.version_info < (2, 7):
     from StringIO import StringIO
 else:
     from io import StringIO
 
 from coconut._pyparsing import (
+    MODERN_PYPARSING,
     lineno,
     col,
     ParserElement,
@@ -99,7 +102,7 @@ def complain(error):
             error = error()
         else:
             return
-    if not isinstance(error, CoconutInternalException) and isinstance(error, CoconutException):
+    if not isinstance(error, BaseException) or (not isinstance(error, CoconutInternalException) and isinstance(error, CoconutException)):
         error = CoconutInternalException(str(error))
     if not DEVELOP:
         logger.warn_err(error)
@@ -196,7 +199,7 @@ class Logger(object):
             # necessary to resolve https://bugs.python.org/issue40134
             try:
                 os.system("")
-            except Exception:
+            except BaseException:
                 logger.log_exc()
             cls.colors_enabled = True
 
@@ -212,7 +215,18 @@ class Logger(object):
         """Make a copy of the logger."""
         return Logger(self)
 
-    def display(self, messages, sig="", end="\n", file=None, level="normal", color=None, **kwargs):
+    def display(
+        self,
+        messages,
+        sig="",
+        end="\n",
+        file=None,
+        level="normal",
+        color=None,
+        # flush by default to ensure our messages show up when printing from a child process
+        flush=True,
+        **kwargs
+    ):
         """Prints an iterator of messages."""
         if level == "normal":
             file = file or sys.stdout
@@ -248,8 +262,9 @@ class Logger(object):
         components.append(end)
         full_message = "".join(components)
 
-        # we use end="" to ensure atomic printing (and so we add the end in earlier)
-        print(full_message, file=file, end="", **kwargs)
+        if full_message:
+            # we use end="" to ensure atomic printing (and so we add the end in earlier)
+            print(full_message, file=file, end="", flush=flush, **kwargs)
 
     def print(self, *messages, **kwargs):
         """Print messages to stdout."""
@@ -440,8 +455,9 @@ class Logger(object):
                         msg = displayable(str(item))
                         if "{" in msg:
                             head, middle = msg.split("{", 1)
-                            middle, tail = middle.rsplit("}", 1)
-                            msg = head + "{...}" + tail
+                            if "}" in middle:
+                                middle, tail = middle.rsplit("}", 1)
+                                msg = head + "{...}" + tail
                         out.append(msg)
                         add_line_col = False
                     elif len(item) == 1 and isinstance(item[0], str):
@@ -464,7 +480,7 @@ class Logger(object):
 
     def trace(self, item):
         """Traces a parse element (only enabled in develop)."""
-        if DEVELOP:
+        if DEVELOP and not MODERN_PYPARSING:
             item.debugActions = (
                 None,  # no start action
                 self._trace_success_action,
@@ -489,19 +505,46 @@ class Logger(object):
         else:
             yield
 
+    total_block_time = defaultdict(int)
+
+    @contextmanager
+    def time_block(self, name):
+        start_time = get_clock_time()
+        try:
+            yield
+        finally:
+            elapsed_time = get_clock_time() - start_time
+            self.total_block_time[name] += elapsed_time
+            self.printlog("Time while running", name + ":", elapsed_time, "secs (total so far:", self.total_block_time[name], "secs)")
+
     def time_func(self, func):
         """Decorator to print timing info for a function."""
+        @wraps(func)
         def timed_func(*args, **kwargs):
             """Function timed by logger.time_func."""
             if not DEVELOP or self.quiet:
                 return func(*args, **kwargs)
-            start_time = get_clock_time()
-            try:
+            with self.time_block(func.__name__):
                 return func(*args, **kwargs)
-            finally:
-                elapsed_time = get_clock_time() - start_time
-                self.printlog("Time while running", func.__name__ + ":", elapsed_time, "secs")
         return timed_func
+
+    def debug_func(self, func):
+        """Decorates a function to print the input/output behavior."""
+        @wraps(func)
+        def printing_func(*args, **kwargs):
+            """Function decorated by logger.debug_func."""
+            if not DEVELOP or self.quiet:
+                return func(*args, **kwargs)
+            if not kwargs:
+                self.printerr(func, "<*|", args)
+            elif not args:
+                self.printerr(func, "<**|", kwargs)
+            else:
+                self.printerr(func, "<<|", args, kwargs)
+            out = func(*args, **kwargs)
+            self.printerr(func, "=>", repr(out))
+            return out
+        return printing_func
 
     def patch_logging(self):
         """Patches built-in Python logging if necessary."""

@@ -85,10 +85,9 @@ pip install coconut[opt_dep_1,opt_dep_2]
 
 The full list of optional dependencies is:
 
-- `all`: alias for `jupyter,watch,jobs,mypy,backports,xonsh` (this is the recommended way to install a feature-complete version of Coconut).
+- `all`: alias for `jupyter,watch,mypy,backports,xonsh` (this is the recommended way to install a feature-complete version of Coconut).
 - `jupyter`/`ipython`: enables use of the `--jupyter` / `--ipython` flag.
 - `watch`: enables use of the `--watch` flag.
-- `jobs`: improves use of the `--jobs` flag.
 - `mypy`: enables use of the `--mypy` flag.
 - `backports`: installs libraries that backport newer Python features to older versions, which Coconut will automatically use instead of the standard library if the standard library is not available. Specifically:
   - Installs [`typing`](https://pypi.org/project/typing/) and [`typing_extensions`](https://pypi.org/project/typing-extensions/) to backport [`typing`](https://docs.python.org/3/library/typing.html).
@@ -122,10 +121,11 @@ depth: 1
 
 ```
 coconut [-h] [--and source [dest ...]] [-v] [-t version] [-i] [-p] [-a] [-l] [-k] [-w]
-        [-r] [-n] [-d] [-q] [-s] [--no-tco] [--no-wrap] [-c code] [-j processes] [-f]
-        [--minify] [--jupyter ...] [--mypy ...] [--argv ...] [--tutorial] [--docs]
-        [--style name] [--history-file path] [--vi-mode] [--recursion-limit limit]
-        [--site-install] [--site-uninstall] [--verbose] [--trace] [--profile]
+        [-r] [-n] [-d] [-q] [-s] [--no-tco] [--no-wrap-types] [-c code] [-j processes]
+        [-f] [--minify] [--jupyter ...] [--mypy ...] [--argv ...] [--tutorial]
+        [--docs] [--style name] [--history-file path] [--vi-mode]
+        [--recursion-limit limit] [--stack-size kbs] [--site-install]
+        [--site-uninstall] [--verbose] [--trace] [--profile]
         [source] [dest]
 ```
 
@@ -140,7 +140,6 @@ dest                destination directory for compiled files (defaults to
 ##### Optional Arguments
 
 ```
-optional arguments:
   -h, --help            show this help message and exit
   --and source [dest ...]
                         add an additional source/dest pair to compile
@@ -167,12 +166,13 @@ optional arguments:
                         runnable code to stdout)
   -s, --strict          enforce code cleanliness standards
   --no-tco, --notco     disable tail call optimization
-  --no-wrap, --nowrap   disable wrapping type annotations in strings and turn off 'from
+  --no-wrap-types, --nowraptypes
+                        disable wrapping type annotations in strings and turn off 'from
                         __future__ import annotations' behavior
   -c code, --code code  run Coconut passed in as a string (can also be piped into stdin)
   -j processes, --jobs processes
-                        number of additional processes to use (defaults to 0) (pass 'sys' to
-                        use machine default)
+                        number of additional processes to use (defaults to 'sys') (0 is no
+                        additional processes; 'sys' uses machine default)
   -f, --force           force re-compilation even when source code and compilation parameters
                         haven't changed
   --minify              reduce size of compiled Python
@@ -195,7 +195,12 @@ optional arguments:
   --vi-mode, --vimode   enable vi mode in the interpreter (currently set to False) (can be
                         modified by setting COCONUT_VI_MODE environment variable)
   --recursion-limit limit, --recursionlimit limit
-                        set maximum recursion depth in compiler (defaults to 2090)
+                        set maximum recursion depth in compiler (defaults to 1920) (when
+                        increasing --recursion-limit, you may also need to increase --stack-
+                        size)
+  --stack-size kbs, --stacksize kbs
+                        run the compiler in a separate thread with the given stack size in
+                        kilobytes
   --site-install, --siteinstall
                         set up coconut.convenience to be imported on Python start
   --site-uninstall, --siteuninstall
@@ -213,7 +218,7 @@ coconut-run <source> <args>
 ```
 as an alias for
 ```
-coconut --run --quiet --target sys <source> --argv <args>
+coconut --run --quiet --target sys --line-numbers <source> --argv <args>
 ```
 which will quietly compile and run `<source>`, passing any additional arguments to the script, mimicking how the `python` command works.
 
@@ -222,15 +227,21 @@ which will quietly compile and run `<source>`, passing any additional arguments 
 #!/usr/bin/env coconut-run
 ```
 
+To pass additional compilation arguments to `coconut-run` (e.g. `--no-tco`), put them before the `<source>` file.
+
 #### Naming Source Files
 
-Coconut source files should, so the compiler can recognize them, use the extension `.coco` (preferred), `.coc`, or `.coconut`. When Coconut compiles a `.coco` (or `.coc`/`.coconut`) file, it will compile to another file with the same name, except with `.py` instead of `.coco`, which will hold the compiled code. If an extension other than `.py` is desired for the compiled files, such as `.pyde` for [Python Processing](http://py.processing.org/), then that extension can be put before `.coco` in the source file name, and it will be used instead of `.py` for the compiled files. For example, `name.coco` will compile to `name.py`, whereas `name.pyde.coco` will compile to `name.pyde`.
+Coconut source files should, so the compiler can recognize them, use the extension `.coco` (preferred), `.coc`, or `.coconut`.
+
+When Coconut compiles a `.coco` file, it will compile to another file with the same name, except with `.py` instead of `.coco`, which will hold the compiled code.
+
+If an extension other than `.py` is desired for the compiled files, then that extension can be put before `.coco` in the source file name, and it will be used instead of `.py` for the compiled files. For example, `name.coco` will compile to `name.py`, whereas `name.abc.coco` will compile to `name.abc`.
 
 #### Compilation Modes
 
 Files compiled by the `coconut` command-line utility will vary based on compilation parameters. If an entire directory of files is compiled (which the compiler will search recursively for any folders containing `.coco`, `.coc`, or `.coconut` files), a `__coconut__.py` file will be created to house necessary functions (package mode), whereas if only a single file is compiled, that information will be stored within a header inside the file (standalone mode). Standalone mode is better for single files because it gets rid of the overhead involved in importing `__coconut__.py`, but package mode is better for large packages because it gets rid of the need to run the same Coconut header code again in every file, since it can just be imported from `__coconut__.py`.
 
-By default, if the `source` argument to the command-line utility is a file, it will perform standalone compilation on it, whereas if it is a directory, it will recursively search for all `.coco` (or `.coc` / `.coconut`) files and perform package compilation on them. Thus, in most cases, the mode chosen by Coconut automatically will be the right one. But if it is very important that no additional files like `__coconut__.py` be created, for example, then the command-line utility can also be forced to use a specific mode with the `--package` (`-p`) and `--standalone` (`-a`) flags.
+By default, if the `source` argument to the command-line utility is a file, it will perform standalone compilation on it, whereas if it is a directory, it will recursively search for all `.coco` files and perform package compilation on them. Thus, in most cases, the mode chosen by Coconut automatically will be the right one. But if it is very important that no additional files like `__coconut__.py` be created, for example, then the command-line utility can also be forced to use a specific mode with the `--package` (`-p`) and `--standalone` (`-a`) flags.
 
 #### Compatible Python Versions
 
@@ -239,6 +250,7 @@ While Coconut syntax is based off of the latest Python 3, Coconut code compiled 
 To make Coconut built-ins universal across Python versions, Coconut makes available on any Python version built-ins that only exist in later versions, including **automatically overwriting Python 2 built-ins with their Python 3 counterparts.** Additionally, Coconut also [overwrites some Python 3 built-ins for optimization and enhancement purposes](#enhanced-built-ins). If access to the original Python versions of any overwritten built-ins is desired, the old built-ins can be retrieved by prefixing them with `py_`. Specifically, the overwritten built-ins are:
 
 - `py_chr`
+- `py_dict`
 - `py_hex`
 - `py_input`
 - `py_int`
@@ -263,8 +275,6 @@ _Note: Coconut's `repr` can be somewhat tricky, as it will attempt to remove the
 
 For standard library compatibility, **Coconut automatically maps imports under Python 3 names to imports under Python 2 names**. Thus, Coconut will automatically take care of any standard library modules that were renamed from Python 2 to Python 3 if just the Python 3 name is used. For modules or packages that only exist in Python 3, however, Coconut has no way of maintaining compatibility.
 
-Additionally, Coconut allows the [`__set_name__`](https://docs.python.org/3/reference/datamodel.html#object.__set_name__) magic method for descriptors to work on any Python version.
-
 Finally, while Coconut will try to compile Python-3-specific syntax to its universal equivalent, the following constructs have no equivalent in Python 2, and require the specification of a target of at least `3` to be used:
 
 - the `nonlocal` keyword,
@@ -274,6 +284,8 @@ Finally, while Coconut will try to compile Python-3-specific syntax to its unive
 - positional-only function parameters (use [pattern-matching function definition](#pattern-matching-functions) for universal code) (requires `--target 3.8`),
 - `a[x, *y]` variadic generic syntax (use [type parameter syntax](#type-parameter-syntax) for universal code) (requires `--target 3.11`), and
 - `except*` multi-except statements (requires `--target 3.11`).
+
+_Note: Coconut also universalizes many magic methods, including making `__bool__` and [`__set_name__`](https://docs.python.org/3/reference/datamodel.html#object.__set_name__) work on any Python version._
 
 #### Allowable Targets
 
@@ -295,7 +307,7 @@ If the version of Python that the compiled code will be running on is known ahea
 - `3.12` (will work on any Python `>= 3.12`), and
 - `sys` (chooses the target corresponding to the current Python version).
 
-_Note: Periods are ignored in target specifications, such that the target `27` is equivalent to the target `2.7`._
+_Note: Periods are optional in target specifications, such that the target `27` is equivalent to the target `2.7`._
 
 #### `strict` Mode
 
@@ -338,7 +350,7 @@ Text editors with support for Coconut syntax highlighting are:
 - **SublimeText**: See SublimeText section below.
 - **Spyder** (or any other editor that supports **Pygments**): See Pygments section below.
 - **Vim**: See [`coconut.vim`](https://github.com/manicmaniac/coconut.vim).
-- **Emacs**: See [`coconut-mode`](https://github.com/NickSeagull/coconut-mode).
+- **Emacs**: See [`emacs-coconut`](https://codeberg.org/kobarity/emacs-coconut)/[`emacs-ob-coconut`](https://codeberg.org/kobarity/emacs-ob-coconut).
 - **Atom**: See [`language-coconut`](https://github.com/enilsen16/language-coconut).
 
 Alternatively, if none of the above work for you, you can just treat Coconut as Python. Simply set up your editor so it interprets all `.coco` files as Python and that should highlight most of your code well enough (e.g. for IntelliJ IDEA see [registering file types](https://www.jetbrains.com/help/idea/creating-and-registering-file-types.html)).
@@ -375,7 +387,7 @@ If Coconut is used as a kernel, all code in the console or notebook will be sent
 
 Simply installing Coconut should add a `Coconut` kernel to your Jupyter/IPython notebooks. If you are having issues accessing the Coconut kernel, however, the command `coconut --jupyter` will re-install the `Coconut` kernel to ensure it is using the current Python as well as add the additional kernels `Coconut (Default Python)`, `Coconut (Default Python 2)`, and `Coconut (Default Python 3)` which will use, respectively, the Python accessible as `python`, `python2`, and `python3` (these kernels are accessible in the console as `coconut_py`, `coconut_py2`, and `coconut_py3`). Furthermore, the Coconut kernel fully supports [`nb_conda_kernels`](https://github.com/Anaconda-Platform/nb_conda_kernels) to enable accessing the Coconut kernel in one Conda environment from another Conda environment.
 
-The Coconut kernel will always compile using the parameters: `--target sys --line-numbers --keep-lines --no-wrap`.
+The Coconut kernel will always compile using the parameters: `--target sys --line-numbers --keep-lines --no-wrap-types`.
 
 Coconut also provides the following convenience commands:
 
@@ -393,7 +405,9 @@ The line magic `%load_ext coconut` will load Coconut as an extension, providing 
 
 _Note: Unlike the normal Coconut command-line, `%%coconut` defaults to the `sys` target rather than the `universal` target._
 
-#### MyPy Integration
+#### Type Checking
+
+##### MyPy Integration
 
 Coconut has the ability to integrate with [MyPy](http://mypy-lang.org/) to provide optional static type_checking, including for all Coconut built-ins. Simply pass `--mypy` to `coconut` to enable MyPy integration, though be careful to pass it only as the last argument, since all arguments after `--mypy` are passed to `mypy`, not Coconut.
 
@@ -402,7 +416,22 @@ You can also run `mypy`—or any other static type checker—directly on the com
 1. run `coconut --mypy install` and
 2. tell your static type checker of choice to look in `~/.coconut_stubs` for stub files (for `mypy`, this is done by adding it to your [`MYPYPATH`](https://mypy.readthedocs.io/en/latest/running_mypy.html#how-imports-are-found)).
 
-To explicitly annotate your code with types to be checked, Coconut supports [Python 3 function type annotations](https://www.python.org/dev/peps/pep-0484/), [Python 3.6 variable type annotations](https://www.python.org/dev/peps/pep-0526/), and even Coconut's own [enhanced type annotation syntax](#enhanced-type-annotation). By default, all type annotations are compiled to Python-2-compatible type comments, which means it all works on any Python version. Coconut also supports [PEP 695 type parameter syntax](#type-parameter-syntax) for easily adding type parameters to classes, functions, [`data` types](#data), and type aliases.
+To distribute your code with checkable type annotations, you'll need to include `coconut` as a dependency (though a `--no-deps` install should be fine), as installing it is necessary to make the requisite stub files available. You'll also probably want to include a [`py.typed`](https://peps.python.org/pep-0561/) file.
+
+##### Syntax
+
+To explicitly annotate your code with types to be checked, Coconut supports:
+* [Python 3 function type annotations](https://www.python.org/dev/peps/pep-0484/),
+* [Python 3.6 variable type annotations](https://www.python.org/dev/peps/pep-0526/),
+* [PEP 695 type parameter syntax](#type-parameter-syntax) for easily adding type parameters to classes, functions, [`data` types](#data), and type aliases,
+* Coconut's own [enhanced type annotation syntax](#enhanced-type-annotation), and
+* Coconut's [protocol intersection operator](#protocol-intersection).
+
+By default, all type annotations are compiled to Python-2-compatible type comments, which means it all works on any Python version.
+
+Sometimes, MyPy will not know how to handle certain Coconut constructs, such as `addpattern`. For the `addpattern` case, it is recommended to pass `--allow-redefinition` to MyPy (i.e. run `coconut <args> --mypy --allow-redefinition`), though in some cases `--allow-redefinition` may not be sufficient. In that case, either hide the offending code using [`TYPE_CHECKING`](#type_checking) or put a `# type: ignore` comment on the Coconut line which is generating the line MyPy is complaining about and the comment will be added to every generated line.
+
+##### Interpreter
 
 Coconut even supports `--mypy` in the interpreter, which will intelligently scan each new line of code, in the context of previous lines, for newly-introduced MyPy errors. For example:
 ```coconut_pycon
@@ -413,10 +442,6 @@ Coconut even supports `--mypy` in the interpreter, which will intelligently scan
 <string>:19: note: Revealed type is 'builtins.unicode'
 ```
 _For more information on `reveal_type`, see [`reveal_type` and `reveal_locals`](#reveal-type-and-reveal-locals)._
-
-Sometimes, MyPy will not know how to handle certain Coconut constructs, such as `addpattern`. For the `addpattern` case, it is recommended to pass `--allow-redefinition` to MyPy (i.e. run `coconut <args> --mypy --allow-redefinition`), though in some cases `--allow-redefinition` may not be sufficient. In that case, either hide the offending code using [`TYPE_CHECKING`](#type_checking) or put a `# type: ignore` comment on the Coconut line which is generating the line MyPy is complaining about and the comment will be added to every generated line.
-
-To distribute your code with checkable type annotations, you'll need to include `coconut` as a dependency (though a `--no-deps` install should be fine), as installing it is necessary to make the requisite stub files available. You'll also probably want to include a [`py.typed`](https://peps.python.org/pep-0561/) file.
 
 #### `numpy` Integration
 
@@ -429,9 +454,10 @@ To allow for better use of [`numpy`](https://numpy.org/) objects in Coconut, all
   * [`cartesian_product`](#cartesian_product) can compute the Cartesian product of given `numpy` arrays as a `numpy` array.
   * [`all_equal`](#all_equal) allows for easily checking if all the elements in a `numpy` array are the same.
 - [`numpy.ndarray`](https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html) is registered as a [`collections.abc.Sequence`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence), enabling it to be used in [sequence patterns](#semantics-specification).
+- `numpy` objects are allowed seamlessly in Coconut's [implicit coefficient syntax](#implicit-function-application-and-coefficients), allowing the use of e.g. `A B**2` shorthand for `A * B**2` when `A` and `B` are `numpy` arrays (note: **not** `A @ B**2`).
 - Coconut supports `@` for matrix multiplication of `numpy` arrays on all Python versions, as well as supplying the `(@)` [operator function](#operator-functions).
 
-Additionally, Coconut provides the exact same support for [`pandas`](https://pandas.pydata.org/) and [`jax.numpy`](https://jax.readthedocs.io/en/latest/jax.numpy.html), including using `jax.numpy` methods over `numpy` methods when given `jax` arrays.
+Additionally, Coconut provides the exact same support for [`pandas`](https://pandas.pydata.org/), [`pytorch`](https://pytorch.org/), and [`jax.numpy`](https://jax.readthedocs.io/en/latest/jax.numpy.html), including using `pandas`/`jax`-specific methods over `numpy` methods when given `pandas`/`jax` objects.
 
 #### `xonsh` Support
 
@@ -445,7 +471,7 @@ user@computer ~ $ $(ls -la) |> .splitlines() |> len
 30
 ```
 
-Note that the way that Coconut integrates with `xonsh`, `@(<code>)` syntax will only work with Python code, not Coconut code.
+Note that the way that Coconut integrates with `xonsh`, `@(<code>)` syntax and the `execx` command will only work with Python code, not Coconut code.
 
 Additionally, Coconut will only compile individual commands—Coconut will not touch the `.xonshrc` or any other `.xsh` files.
 
@@ -465,18 +491,19 @@ In order of precedence, highest first, the operators supported in Coconut are:
 ====================== ==========================
 Symbol(s)              Associativity
 ====================== ==========================
-f x                    n/a
 await x                n/a
-..                     n/a
-**                     right
+**                     right (allows unary)
+f x                    n/a
 +, -, ~                unary
 *, /, //, %, @         left
 +, -                   left
 <<, >>                 left
 &                      left
+&:                     left
 ^                      left
 |                      left
 ::                     n/a (lazy)
+..                     n/a
 a `b` c,               left (captures lambda)
   all custom operators
 ??                     left (short-circuits)
@@ -620,9 +647,11 @@ Coconut uses pipe operators for pipeline-style function application. All the ope
 (<**?|) => None-aware keyword arg pipe backward
 ```
 
-Additionally, all pipe operators support a lambda as the last argument, despite lambdas having a lower precedence. Thus, `a |> x -> b |> c` is equivalent to `a |> (x -> b |> c)`, not `a |> (x -> b) |> c`.
+The None-aware pipe operators here are equivalent to a [monadic bind](https://en.wikipedia.org/wiki/Monad_(functional_programming)) treating the object as a `Maybe` monad composed of either `None` or the given object. Thus, `x |?> f` is equivalent to `None if x is None else f(x)`. Note that only the object being piped, not the function being piped into, may be `None` for `None`-aware pipes.
 
-The None-aware pipe operators here are equivalent to a [monadic bind](https://en.wikipedia.org/wiki/Monad_(functional_programming)) treating the object as a `Maybe` monad composed of either `None` or the given object. Note that only the object being piped, not the function being piped into, may be `None` for `None`-aware pipes.
+For working with `async` functions in pipes, all non-starred pipes support piping into `await` to await the awaitable piped into them, such that `x |> await` is equivalent to `await x`.
+
+Additionally, all pipe operators support a lambda as the last argument, despite lambdas having a lower precedence. Thus, `a |> x -> b |> c` is equivalent to `a |> (x -> b |> c)`, not `a |> (x -> b) |> c`.
 
 _Note: To visually spread operations across several lines, just use [parenthetical continuation](#enhanced-parenthetical-continuation)._
 
@@ -642,7 +671,7 @@ If Coconut compiled each of the partials in the pipe syntax as an actual partial
 
 This applies even to in-place pipes such as `|>=`.
 
-##### Example
+##### Examples
 
 **Coconut:**
 ```coconut
@@ -650,11 +679,25 @@ def sq(x) = x**2
 (1, 2) |*> (+) |> sq |> print
 ```
 
+```coconut
+async def do_stuff(some_data) = (
+    some_data
+    |> async_func
+    |> await
+    |> post_proc
+)
+```
+
 **Python:**
 ```coconut_python
 import operator
 def sq(x): return x**2
 print(sq(operator.add(1, 2)))
+```
+
+```coconut_python
+async def do_stuff(some_data):
+    return post_proc(await async_func(some_data))
 ```
 
 ### Function Composition
@@ -679,7 +722,7 @@ The `..>` and `<..` function composition pipe operators also have multi-arg, key
 
 Note that `None`-aware function composition pipes don't allow either function to be `None`—rather, they allow the return of the first evaluated function to be `None`, in which case `None` is returned immediately rather than calling the next function.
 
-The `..` operator has lower precedence than `await` but higher precedence than `**` while the `..>` pipe operators have a precedence directly higher than normal pipes.
+The `..` operator has lower precedence than `::` but higher precedence than infix functions while the `..>` pipe operators have a precedence directly higher than normal pipes.
 
 All function composition operators also have in-place versions (e.g. `..=`).
 
@@ -704,7 +747,7 @@ Coconut uses a `$` sign right after an iterator before a slice to perform iterat
 
 Iterator slicing works just like sequence slicing, including support for negative indices and slices, and support for `slice` objects in the same way as can be done with normal slicing. Iterator slicing makes no guarantee, however, that the original iterator passed to it be preserved (to preserve the iterator, use Coconut's [`reiterable`](#reiterable) built-in).
 
-Coconut's iterator slicing is very similar to Python's `itertools.islice`, but unlike `itertools.islice`, Coconut's iterator slicing supports negative indices, and will preferentially call an object's `__iter_getitem__` (Coconut-specific magic method, preferred) or `__getitem__` (general Python magic method), if they exist. Coconut's iterator slicing is also optimized to work well with all of Coconut's built-in objects, only computing the elements of each that are actually necessary to extract the desired slice.
+Coconut's iterator slicing is very similar to Python's `itertools.islice`, but unlike `itertools.islice`, Coconut's iterator slicing supports negative indices, and will preferentially call an object's `__iter_getitem__` (always used if available) or `__getitem__` (only used if the object is a collections.abc.Sequence). Coconut's iterator slicing is also optimized to work well with all of Coconut's built-in objects, only computing the elements of each that are actually necessary to extract the desired slice.
 
 ##### Example
 
@@ -829,7 +872,7 @@ from <module> import operator <op>
 
 Custom operators will often need to be surrounded by whitespace (or parentheses when used as an operator function) to be parsed correctly.
 
-If a custom operator that is also a valid name is desired, you can use a backslash before the name to get back the name instead with Coconut's [keyword/variable disambiguation syntax](#handling-keywordvariable-name-overlap).
+If a custom operator that is also a valid name is desired, you can use a backslash before the name to get back the name instead using Coconut's [keyword/variable disambiguation syntax](#handling-keywordvariable-name-overlap).
 
 ##### Examples
 
@@ -928,6 +971,61 @@ import functools
 (lambda result: None if result is None else result.attr[index].method())(could_be_none())
 ```
 
+### Protocol Intersection
+
+Coconut uses the `&:` operator to indicate protocol intersection. That is, for two [`typing.Protocol`s](https://docs.python.org/3/library/typing.html#typing.Protocol) `Protocol1` and `Protocol1`, `Protocol1 &: Protocol2` is equivalent to a `Protocol` that combines the requirements of both `Protocol1` and `Protocol2`.
+
+The recommended way to use Coconut's protocol intersection operator is in combination with Coconut's [operator `Protocol`s](#supported-protocols). Note, however, that while `&:` will work anywhere, operator `Protocol`s will only work inside type annotations (which means, for example, you'll need to do `type HasAdd = (+)` instead of just `HasAdd = (+)`).
+
+See Coconut's [enhanced type annotation](#enhanced-type-annotation) for more information on how Coconut handles type annotations more generally.
+
+##### Example
+
+**Coconut:**
+```coconut
+from typing import Protocol
+
+class X(Protocol):
+    x: str
+
+class Y(Protocol):
+    y: str
+
+def foo(xy: X &: Y) -> None:
+    print(xy.x, xy.y)
+
+type CanAddAndSub = (+) &: (-)
+```
+
+**Python:**
+```coconut_python
+from typing import Protocol, TypeVar, Generic
+
+class X(Protocol):
+    x: str
+
+class Y(Protocol):
+    y: str
+
+class XY(X, Y, Protocol):
+    pass
+
+def foo(xy: XY) -> None:
+    print(xy.x, xy.y)
+
+T = TypeVar("T", infer_variance=True)
+U = TypeVar("U", infer_variance=True)
+V = TypeVar("V", infer_variance=True)
+
+class CanAddAndSub(Protocol, Generic[T, U, V]):
+    def __add__(self: T, other: U) -> V:
+        raise NotImplementedError
+    def __sub__(self: T, other: U) -> V:
+        raise NotImplementedError
+    def __neg__(self: T) -> V:
+        raise NotImplementedError
+```
+
 ### Unicode Alternatives
 
 Coconut supports Unicode alternatives to many different operator symbols. The Unicode alternatives are relatively straightforward, and chosen to reflect the look and/or meaning of the original symbol.
@@ -936,9 +1034,9 @@ Coconut supports Unicode alternatives to many different operator symbols. The Un
 
 ```
 → (\u2192)                  => "->"
-× (\xd7)                    => "*"
-↑ (\u2191)                  => "**"
-÷ (\xf7)                    => "/"
+× (\xd7)                    => "*" (only multiplication)
+↑ (\u2191)                  => "**" (only exponentiation)
+÷ (\xf7)                    => "/" (only division)
 ÷/ (\xf7/)                  => "//"
 ⁻ (\u207b)                  => "-" (only negation)
 ≠ (\u2260) or ¬= (\xac=)    => "!="
@@ -1033,7 +1131,10 @@ base_pattern ::= (
     | "class" NAME "(" patterns ")"  # classes
     | "{" pattern_pairs              # dictionaries
         ["," "**" (NAME | "{}")] "}" #  (keys must be constants or equality checks)
-    | ["s"] "{" pattern_consts "}"   # sets
+    | ["s" | "f" | "m"] "{"
+        pattern_consts
+        ["," ("*_" | "*()")]
+      "}"                            # sets
     | (EXPR) -> pattern              # view patterns
     | "(" patterns ")"               # sequences can be in tuple form
     | "[" patterns "]"               #  or in list form
@@ -1086,7 +1187,6 @@ base_pattern ::= (
   - Constants, Numbers, and Strings: will only match to the same constant, number, or string in the same position in the arguments.
   - Equality Checks (`==<expr>`): will check that whatever is in that position is `==` to the expression `<expr>`.
   - Identity Checks (`is <expr>`): will check that whatever is in that position `is` the expression `<expr>`.
-  - Sets (`{<constants>}`): will only match a set (`collections.abc.Set`) of the same length and contents.
 - Arbitrary Function Patterns:
   - Infix Checks (`` <pattern> `<op>` <expr> ``): will check that the operator `<op>$(?, <expr>)` returns a truthy value when called on whatever is in that position, then matches `<pattern>`. For example, `` x `isinstance` int `` will check that whatever is in that position `isinstance$(?, int)` and bind it to `x`. If `<expr>` is not given, will simply check `<op>` directly rather than `<op>$(<expr>)`. Additionally, `` `<op>` `` can instead be a [custom operator](#custom-operators) (in that case, no backticks should be used).
   - View Patterns (`(<expression>) -> <pattern>`): calls `<expression>` on the item being matched and matches the result to `<pattern>`. The match fails if a [`MatchError`](#matcherror) is raised. `<expression>` may be unparenthesized only when it is a single atom.
@@ -1097,6 +1197,11 @@ base_pattern ::= (
 - Mapping Destructuring:
   - Dicts (`{<key>: <value>, ...}`): will match any mapping (`collections.abc.Mapping`) with the given keys and values that match the value patterns. Keys must be constants or equality checks.
   - Dicts With Rest (`{<pairs>, **<rest>}`): will match a mapping (`collections.abc.Mapping`) containing all the `<pairs>`, and will put a `dict` of everything else into `<rest>`. If `<rest>` is `{}`, will enforce that the mapping is exactly the same length as `<pairs>`.
+- Set Destructuring:
+  - Sets (`s{<constants>, *_}`): will match a set (`collections.abc.Set`) that contains the given `<constants>`, though it may also contain other items. The `s` prefix and the `*_` are optional.
+  - Fixed-length Sets (`s{<constants>, *()}`): will match a `set` (`collections.abc.Set`) that contains the given `<constants>`, and nothing else.
+  - Frozensets (`f{<constants>}`): will match a `frozenset` (`frozenset`) that contains the given `<constants>`. May use either normal or fixed-length syntax.
+  - Multisets (`m{<constants>}`): will match a [`multiset`](#multiset) (`collections.Counter`) that contains at least the given `<constants>`. May use either normal or fixed-length syntax.
 - Sequence Destructuring:
   - Lists (`[<patterns>]`), Tuples (`(<patterns>)`): will only match a sequence (`collections.abc.Sequence`) of the same length, and will check the contents against `<patterns>` (Coconut automatically registers `numpy` arrays and `collections.deque` objects as sequences).
   - Lazy lists (`(|<patterns>|)`): same as list or tuple matching, but checks for an Iterable (`collections.abc.Iterable`) instead of a Sequence.
@@ -1149,11 +1254,9 @@ data Node(l, r) from Tree
 
 def depth(Tree()) = 0
 
-@addpattern(depth)
-def depth(Tree(n)) = 1
+addpattern def depth(Tree(n)) = 1
 
-@addpattern(depth)
-def depth(Tree(l, r)) = 1 + max([depth(l), depth(r)])
+addpattern def depth(Tree(l, r)) = 1 + max([depth(l), depth(r)])
 
 Empty() |> depth |> print
 Leaf(5) |> depth |> print
@@ -1173,8 +1276,7 @@ _Showcases head-tail splitting, one of the most common uses of pattern-matching,
 def sieve([head] :: tail) =
     [head] :: sieve(n for n in tail if n % head)
 
-@addpattern(sieve)
-def sieve((||)) = []
+addpattern def sieve((||)) = []
 ```
 _Showcases how to match against iterators, namely that the empty iterator case (`(||)`) must come last, otherwise that case will exhaust the whole iterator before any other pattern has a chance to match against it._
 
@@ -1351,11 +1453,9 @@ data Node(l, r)
 
 def size(Empty()) = 0
 
-@addpattern(size)
-def size(Leaf(n)) = 1
+addpattern def size(Leaf(n)) = 1
 
-@addpattern(size)
-def size(Node(l, r)) = size(l) + size(r)
+addpattern def size(Node(l, r)) = size(l) + size(r)
 
 size(Node(Empty(), Leaf(10))) == 1
 ```
@@ -1442,8 +1542,6 @@ c = a + b
 ### Handling Keyword/Variable Name Overlap
 
 In Coconut, the following keywords are also valid variable names:
-- `async` (keyword in Python 3.5)
-- `await` (keyword in Python 3.5)
 - `data`
 - `match`
 - `case`
@@ -1500,9 +1598,9 @@ The statement lambda syntax is an extension of the [normal lambda syntax](#lambd
 
 The syntax for a statement lambda is
 ```
-[async] [match] def (arguments) -> statement; statement; ...
+[async|match|copyclosure] def (arguments) -> statement; statement; ...
 ```
-where `arguments` can be standard function arguments or [pattern-matching function definition](#pattern-matching-functions) arguments and `statement` can be an assignment statement or a keyword statement. Note that the `async` and `match` keywords can be in any order.
+where `arguments` can be standard function arguments or [pattern-matching function definition](#pattern-matching-functions) arguments and `statement` can be an assignment statement or a keyword statement. Note that the `async`, `match`, and [`copyclosure`](#copyclosure-functions) keywords can be combined and can be in any order.
 
 If the last `statement` (not followed by a semicolon) in a statement lambda is an `expression`, it will automatically be returned.
 
@@ -1596,7 +1694,9 @@ A very common thing to do in functional programming is to make use of function v
 (and)       => # boolean and
 (or)        => # boolean or
 (is)        => (operator.is_)
+(is not)    => (operator.is_not)
 (in)        => (operator.contains)
+(not in)    => # negative containment
 (assert)    => def (cond, msg=None) -> assert cond, msg  # (but a better msg if msg is None)
 (raise)     => def (exc=None, from_exc=None) -> raise exc from from_exc  # or just raise if exc is None
 # there are two operator functions that don't require parentheses:
@@ -1604,7 +1704,9 @@ A very common thing to do in functional programming is to make use of function v
 .$[]        => # iterator slicing operator
 ```
 
-_For an operator function for function application, see [`call`](#call)._
+For an operator function for function application, see [`call`](#call).
+
+Though no operator function is available for `await`, an equivalent syntax is available for [pipes](#pipes) in the form of `awaitable |> await`.
 
 ##### Example
 
@@ -1625,7 +1727,6 @@ Coconut supports a number of different syntactical aliases for common partial ap
 ```coconut
 .attr           =>      operator.attrgetter("attr")
 .method(args)   =>      operator.methodcaller("method", args)
-obj.            =>      getattr$(obj)
 func$           =>      ($)$(func)
 seq[]           =>      operator.getitem$(seq)
 iter$[]         =>      # the equivalent of seq[] for iterators
@@ -1649,6 +1750,8 @@ Additionally, Coconut also supports implicit operator function partials for arbi
 ```
 based on Coconut's [infix notation](#infix-functions) where `<name>` is the name of the function. Additionally, `` `<name>` `` can instead be a [custom operator](#custom-operators) (in that case, no backticks should be used).
 
+_DEPRECATED: Coconut also supports `obj.` as an implicit partial for `getattr$(obj)`, but its usage is deprecated and will show a warning to switch to `getattr$(obj)` instead._
+
 ##### Example
 
 **Coconut:**
@@ -1671,7 +1774,7 @@ Since Coconut syntax is a superset of Python 3 syntax, it supports [Python 3 fun
 
 Since not all supported Python versions support the [`typing`](https://docs.python.org/3/library/typing.html) module, Coconut provides the [`TYPE_CHECKING`](#type_checking) built-in for hiding your `typing` imports and `TypeVar` definitions from being executed at runtime. Coconut will also automatically use [`typing_extensions`](https://pypi.org/project/typing-extensions/) over `typing` when importing objects not available in `typing` on the current Python version.
 
-Furthermore, when compiling type annotations to Python 3 versions without [PEP 563](https://www.python.org/dev/peps/pep-0563/) support, Coconut wraps annotation in strings to prevent them from being evaluated at runtime (note that `--no-wrap` disables all wrapping, including via PEP 563 support).
+Furthermore, when compiling type annotations to Python 3 versions without [PEP 563](https://www.python.org/dev/peps/pep-0563/) support, Coconut wraps annotation in strings to prevent them from being evaluated at runtime (note that `--no-wrap-types` disables all wrapping, including via PEP 563 support).
 
 Additionally, Coconut adds special syntax for making type annotations easier and simpler to write. When inside of a type annotation, Coconut treats certain syntax constructs differently, compiling them to type annotations instead of what they would normally represent. Specifically, Coconut applies the following transformations:
 ```coconut
@@ -1700,6 +1803,8 @@ async (<args>) -> <ret>
 ```
 where `typing` is the Python 3.5 built-in [`typing` module](https://docs.python.org/3/library/typing.html). For more information on the Callable syntax, see [PEP 677](https://peps.python.org/pep-0677), which Coconut fully supports.
 
+Additionally, many of Coconut's [operator functions](#operator-functions) will compile into equivalent [`Protocol`s](https://docs.python.org/3/library/typing.html#typing.Protocol) instead when inside a type annotation. See below for the full list and specification.
+
 _Note: The transformation to `Union` is not done on Python 3.10 as Python 3.10 has native [PEP 604](https://www.python.org/dev/peps/pep-0604) support._
 
 To use these transformations in a [type alias](https://peps.python.org/pep-0484/#type-aliases), use the syntax
@@ -1710,7 +1815,52 @@ which will allow `<type>` to include Coconut's special type annotation syntax an
 
 Such type alias statements—as well as all `class`, `data`, and function definitions in Coconut—also support Coconut's [type parameter syntax](#type-parameter-syntax), allowing you to do things like `type OrStr[T] = T | str`.
 
-Importantly, note that `int[]` does not map onto `typing.List[int]` but onto `typing.Sequence[int]`. This is because, when writing in an idiomatic functional style, assignment should be rare and tuples should be common. Using `Sequence` covers both cases, accommodating tuples and lists and preventing indexed assignment. When an indexed assignment is attempted into a variable typed with `Sequence`, MyPy will generate an error:
+##### Supported Protocols
+
+Using Coconut's [operator function](#operator-functions) syntax inside of a type annotation will instead produce a [`Protocol`](https://docs.python.org/3/library/typing.html#typing.Protocol) corresponding to that operator (or raise a syntax error if no such `Protocol` is available). All available `Protocol`s are listed below.
+
+For the operator functions
+```
+(+)
+(*)
+(**)
+(/)
+(//)
+(%)
+(&)
+(^)
+(|)
+(<<)
+(>>)
+(@)
+```
+the resulting `Protocol` is
+```coconut
+class SupportsOp[T, U, V](Protocol):
+    def __op__(self: T, other: U) -> V:
+        raise NotImplementedError(...)
+```
+where `__op__` is the magic method corresponding to that operator.
+
+For the operator function `(-)`, the resulting `Protocol` is:
+```coconut
+class SupportsMinus[T, U, V](Protocol):
+    def __sub__(self: T, other: U) -> V:
+        raise NotImplementedError
+    def __neg__(self: T) -> V:
+        raise NotImplementedError
+```
+
+For the operator function `(~)`, the resulting `Protocol` is:
+```coconut
+class SupportsInv[T, V](Protocol):
+    def __invert__(self: T) -> V:
+        raise NotImplementedError(...)
+```
+
+##### `List` vs. `Sequence`
+
+Importantly, note that `T[]` does not map onto `typing.List[T]` but onto `typing.Sequence[T]`. This allows the resulting type to be covariant, such that if `U` is a subtype of `T`, then `U[]` is a subtype of `T[]`. Additionally, `Sequence[T]` allows for tuples, and when writing in an idiomatic functional style, assignment should be rare and tuples should be common. Using `Sequence` covers both cases, accommodating tuples and lists and preventing indexed assignment. When an indexed assignment is attempted into a variable typed with `Sequence`, MyPy will generate an error:
 
 ```coconut
 foo: int[] = [0, 1, 2, 3, 4, 5]
@@ -1730,24 +1880,38 @@ def int_map(
     xs: int[],
 ) -> int[] =
     xs |> map$(f) |> list
+
+type CanAddAndSub = (+) &: (-)
 ```
 
 **Python:**
 ```coconut_python
 import typing  # unlike this typing import, Coconut produces universal code
+
 def int_map(
     f,  # type: typing.Callable[[int], int]
     xs,  # type: typing.Sequence[int]
 ):
     # type: (...) -> typing.Sequence[int]
     return list(map(f, xs))
+
+T = typing.TypeVar("T", infer_variance=True)
+U = typing.TypeVar("U", infer_variance=True)
+V = typing.TypeVar("V", infer_variance=True)
+class CanAddAndSub(typing.Protocol, typing.Generic[T, U, V]):
+    def __add__(self: T, other: U) -> V:
+        raise NotImplementedError
+    def __sub__(self: T, other: U) -> V:
+        raise NotImplementedError
+    def __neg__(self: T) -> V:
+        raise NotImplementedError
 ```
 
 ### Multidimensional Array Literal/Concatenation Syntax
 
 Coconut supports multidimensional array literal and array [concatenation](https://numpy.org/doc/stable/reference/generated/numpy.concatenate.html)/[stack](https://numpy.org/doc/stable/reference/generated/numpy.stack.html) syntax.
 
-By default, all multidimensional array syntax will simply operate on Python lists of lists. However, if [`numpy`](#numpy-integration) objects are used, the appropriate `numpy` calls will be made instead. To give custom objects multidimensional array concatenation support, define `type(obj).__matconcat__` (should behave as `np.concat`), `obj.ndim` (should behave as `np.ndarray.ndim`), and `obj.reshape` (should behave as `np.ndarray.reshape`).
+By default, all multidimensional array syntax will simply operate on Python lists of lists (or any non-`str` `Sequence`). However, if [`numpy`](#numpy-integration) objects are used, the appropriate `numpy` calls will be made instead. To give custom objects multidimensional array concatenation support, define `type(obj).__matconcat__` (should behave as `np.concat`), `obj.ndim` (should behave as `np.ndarray.ndim`), and `obj.reshape` (should behave as `np.ndarray.reshape`).
 
 As a simple example, 2D matrices can be constructed by separating the rows with `;;` inside of a list literal:
 ```coconut_pycon
@@ -1838,16 +2002,28 @@ Lazy lists, where sequences are only evaluated when their contents are requested
 **Python:**
 _Can't be done without a complicated iterator comprehension in place of the lazy list. See the compiled code for the Python syntax._
 
-### Implicit Function Application
+### Implicit Function Application and Coefficients
 
-Coconut supports implicit function application of the form `f x y`, which is compiled to `f(x, y)` (note: **not** `f(x)(y)` as is common in many languages with automatic currying). Implicit function application has a lower precedence than attribute access, slices, normal function calls, etc. but a higher precedence than `await`.
+Coconut supports implicit function application of the form `f x y`, which is compiled to `f(x, y)` (note: **not** `f(x)(y)` as is common in many languages with automatic currying).
 
-Supported arguments to implicit function application are highly restricted, and must be:
+Additionally, if the first argument is not callable, and is instead an `int`, `float`, `complex`, or [`numpy`](#numpy-integration) object, then the result is multiplication rather than function application, such that `2 x` is equivalent to `2*x`.
+
+Though the first item may be any atom, following arguments are highly restricted, and must be:
 - variables/attributes (e.g. `a.b`),
-- literal constants (e.g. `True`), or
-- number literals (e.g. `1.5`).
+- literal constants (e.g. `True`),
+- number literals (e.g. `1.5`), or
+- one of the above followed by an exponent (e.g. `a**-5`).
 
-For example, `f x 1` will work but `f x [1]`, `f x (1+2)`, and `f "abc"` will not. Strings are disallowed due to conflicting with [Python's implicit string concatenation](https://stackoverflow.com/questions/18842779/string-concatenation-without-operator). Implicit function application is only intended for simple use cases—for more complex cases, use either standard function application or [pipes](#pipes).
+For example, `(f .. g) x 1` will work, but `f x [1]`, `f x (1+2)`, and `f "abc"` will not.
+
+Implicit function application and coefficient syntax is only intended for simple use cases. For more complex cases, use the standard multiplication operator `*`, standard function application, or [pipes](#pipes).
+
+Implicit function application and coefficient syntax has a lower precedence than `**` but a higher precedence than unary operators. As a result, `2 x**2 + 3 x` is equivalent to `2 * x**2 + 3 * x`.
+
+Due to potential confusion, some syntactic constructs are explicitly disallowed in implicit function application and coefficient syntax. Specifically:
+- Strings are always disallowed everywhere in implicit function application / coefficient syntax due to conflicting with [Python's implicit string concatenation](https://stackoverflow.com/questions/18842779/string-concatenation-without-operator).
+- Multiplying two or more numeric literals with implicit coefficient syntax is prohibited, so `10 20` is not allowed.
+- `await` is not allowed in front of implicit function application and coefficient syntax. To use `await`, simply parenthesize the expression, as in `await (f x)`.
 
 ##### Examples
 
@@ -1862,6 +2038,10 @@ def p1(x) = x + 1
 print <| p1 5
 ```
 
+```coconut
+quad = 5 x**2 + 3 x + 1
+```
+
 **Python:**
 ```coconut_python
 def f(x, y): return (x, y)
@@ -1871,6 +2051,10 @@ print(f(100, 5+6))
 ```coconut_python
 def p1(x): return x + 1
 print(p1(5))
+```
+
+```coconut_python
+quad = 5 * x**2 + 3 * x + 1
 ```
 
 ### Anonymous Namedtuples
@@ -2027,12 +2211,10 @@ _Showcases tail recursion elimination._
 ```coconut
 # unlike in Python, neither of these functions will ever hit a maximum recursion depth error
 def is_even(0) = True
-@addpattern(is_even)
-def is_even(n `isinstance` int if n > 0) = is_odd(n-1)
+addpattern def is_even(n `isinstance` int if n > 0) = is_odd(n-1)
 
 def is_odd(0) = False
-@addpattern(is_odd)
-def is_odd(n `isinstance` int if n > 0) = is_even(n-1)
+addpattern def is_odd(n `isinstance` int if n > 0) = is_even(n-1)
 ```
 _Showcases tail call optimization._
 
@@ -2104,7 +2286,7 @@ print(binexp(5))
 
 Coconut pattern-matching functions are just normal functions, except where the arguments are patterns to be matched against instead of variables to be assigned to. The syntax for pattern-matching function definition is
 ```coconut
-[async] [match] def <name>(<arg>, <arg>, ... [if <cond>]) [-> <return_type>]:
+[match] def <name>(<arg>, <arg>, ... [if <cond>]) [-> <return_type>]:
     <body>
 ```
 where `<arg>` is defined as
@@ -2119,7 +2301,7 @@ In addition to supporting pattern-matching in their arguments, pattern-matching 
 - If pattern-matching function definition fails, it will raise a [`MatchError`](#matcherror) (just like [destructuring assignment](#destructuring-assignment)) instead of a `TypeError`.
 - All defaults in pattern-matching function definition are late-bound rather than early-bound. Thus, `match def f(xs=[]) = xs` will instantiate a new list for each call where `xs` is not given, unlike `def f(xs=[]) = xs`, which will use the same list for all calls where `xs` is unspecified.
 
-_Note: Pattern-matching function definition can be combined with assignment and/or infix function definition._
+Pattern-matching function definition can also be combined with `async` functions, [`copyclosure` functions](#copyclosure-functions), [`yield` functions](#explicit-generators), [infix function definition](#infix-functions), and [assignment function syntax](#assignment-functions). The various keywords in front of the `def` can be put in any order.
 
 ##### Example
 
@@ -2147,29 +2329,82 @@ match def func(...):
 ```
 syntax using the [`addpattern`](#addpattern) decorator.
 
+Additionally, `addpattern def` will act just like a normal [`match def`](#pattern-matching-functions) if the function has not previously been defined, allowing for `addpattern def` to be used for each case rather than requiring `match def` for the first case and `addpattern def` for future cases.
+
 If you want to put a decorator on an `addpattern def` function, make sure to put it on the _last_ pattern function.
 
 ##### Example
 
 **Coconut:**
 ```coconut
-def factorial(0) = 1
+addpattern def factorial(0) = 1
 addpattern def factorial(n) = n * factorial(n - 1)
 ```
 
 **Python:**
 _Can't be done without a complicated decorator definition and a long series of checks for each pattern-matching. See the compiled code for the Python syntax._
 
+### `copyclosure` Functions
+
+Coconut supports the syntax
+```
+copyclosure def <name>(<args>):
+    <body>
+```
+to define a function that uses as its closure a shallow copy of its enclosing scopes at the time that the function is defined, rather than a reference to those scopes (as with normal Python functions).
+
+For example,`in
+```coconut
+def outer_func():
+    funcs = []
+    for x in range(10):
+        copyclosure def inner_func():
+            return x
+        funcs.append(inner_func)
+    return funcs
+```
+the resulting `inner_func`s will each return a _different_ `x` value rather than all the same `x` value, since they look at what `x` was bound to at function definition time rather than during function execution.
+
+`copyclosure` functions can also be combined with `async` functions, [`yield` functions](#explicit-generators), [pattern-matching functions](#pattern-matching-functions), [infix function definition](#infix-functions), and [assignment function syntax](#assignment-functions). The various keywords in front of the `def` can be put in any order.
+
+If `global` or `nonlocal` are used in a `copyclosure` function, they will not be able to modify variables in enclosing scopes. However, they will allow state to be preserved accross multiple calls to the `copyclosure` function.
+
+##### Example
+
+**Coconut:**
+```coconut
+def outer_func():
+    funcs = []
+    for x in range(10):
+        copyclosure def inner_func():
+            return x
+        funcs.append(inner_func)
+    return funcs
+```
+
+**Python:**
+```coconut_python
+from functools import partial
+
+def outer_func():
+    funcs = []
+    for x in range(10):
+        def inner_func(_x):
+            return _x
+        funcs.append(partial(inner_func, x))
+    return funcs
+```
+
 ### Explicit Generators
 
 Coconut supports the syntax
 ```
-[async] yield def <name>(<args>):
+yield def <name>(<args>):
     <body>
 ```
-to denote that you are explicitly defining a generator function. This is useful to ensure that, even if all the `yield`s in your function are removed, it'll always be a generator function. Note that the `async` and `yield` keywords can be in any order.
+to denote that you are explicitly defining a generator function. This is useful to ensure that, even if all the `yield`s in your function are removed, it'll always be a generator function.
 
-Explicit generator functions also support [pattern-matching syntax](#pattern-matching-functions), [infix function definition](#infix-functions), and [assignment function syntax](#assignment-functions) (though note that assignment function syntax here creates a generator return).
+Explicit generator functions can also be combined with `async` functions, [`copyclosure` functions](#copyclosure-functions), [pattern-matching functions](#pattern-matching-functions), [infix function definition](#infix-functions), and [assignment function syntax](#assignment-functions) (though note that assignment function syntax here creates a generator return). The various keywords in front of the `def` can be put in any order.
 
 ##### Example
 
@@ -2187,7 +2422,7 @@ def empty_it():
 
 ### Dotted Function Definition
 
-Coconut allows for function definition using a dotted name to assign a function as a method of an object as specified in [PEP 542](https://www.python.org/dev/peps/pep-0542/).
+Coconut allows for function definition using a dotted name to assign a function as a method of an object as specified in [PEP 542](https://www.python.org/dev/peps/pep-0542/). Dotted function definition can be combined with all other types of function definition above.
 
 ##### Example
 
@@ -2248,9 +2483,11 @@ Coconut fully supports [PEP 695](https://peps.python.org/pep-0695/) type paramet
 
 That includes type parameters for classes, [`data` types](#data), and [all types of function definition](#function-definition). For different types of function definition, the type parameters always come in brackets right after the function name. Coconut's [enhanced type annotation syntax](#enhanced-type-annotation) is supported for all type parameter bounds.
 
+_Warning: until `mypy` adds support for `infer_variance=True` in `TypeVar`, `TypeVar`s created this way will always be invariant._
+
 Additionally, Coconut supports the alternative bounds syntax of `type NewType[T <: bound] = ...` rather than `type NewType[T: bound] = ...`, to make it more clear that it is an upper bound rather than a type. In `--strict` mode, `<:` is required over `:` for all type parameter bounds. _DEPRECATED: `<=` can also be used as an alternative to `<:`._
 
-_Note that, by default, all type declarations are wrapped in strings to enable forward references and improve runtime performance. If you don't want that—e.g. because you want to use type annotations at runtime—simply pass the `--no-wrap` flag._
+_Note that, by default, all type declarations are wrapped in strings to enable forward references and improve runtime performance. If you don't want that—e.g. because you want to use type annotations at runtime—simply pass the `--no-wrap-types` flag._
 
 ##### PEP 695 Docs
 
@@ -2824,6 +3061,9 @@ data Expected[T](result: T? = None, error: BaseException? = None):
         if not self.result `isinstance` Expected:
             raise TypeError("Expected.join() requires an Expected[Expected[_]]")
         return self.result
+    def map_error(self, func: BaseException -> BaseException) -> Expected[T]:
+        """Maps func over the error if it exists."""
+        return self if self else self.__class__(error=func(self.error))
     def or_else[U](self, func: BaseException -> Expected[U]) -> Expected[T | U]:
         """Return self if no error, otherwise return the result of evaluating func on the error."""
         return self if self else func(self.error)
@@ -2928,6 +3168,8 @@ For `dict`, or any other `collections.abc.Mapping`, `fmap` will map over the map
 
 For [`numpy`](#numpy-integration) objects, `fmap` will use [`np.vectorize`](https://docs.scipy.org/doc/numpy/reference/generated/numpy.vectorize.html) to produce the result.
 
+For [`pandas`](https://pandas.pydata.org/) objects, `fmap` will use [`.apply`](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.apply.html) along the last axis (so row-wise for `DataFrame`'s, element-wise for `Series`'s).
+
 For asynchronous iterables, `fmap` will map asynchronously, making `fmap` equivalent in that case to
 ```coconut_python
 async def fmap_over_async_iters(func, async_iter):
@@ -2958,7 +3200,7 @@ _Can't be done without a series of method definitions for each data type. See th
 
 **call**(_func_, /, *_args_, \*\*_kwargs_)
 
-Coconut's `call` simply implements function application. Thus, `call` is equivalent to
+Coconut's `call` simply implements function application. Thus, `call` is effectively equivalent to
 ```coconut
 def call(f, /, *args, **kwargs) = f(*args, **kwargs)
 ```
@@ -3568,15 +3810,7 @@ assert list(product(v, v)) == [(1, 1), (1, 2), (2, 1), (2, 2)]
 
 Coconut's `multi_enumerate` enumerates through an iterable of iterables. `multi_enumerate` works like enumerate, but indexes through inner iterables and produces a tuple index representing the index in each inner iterable. Supports indexing.
 
-For [`numpy`](#numpy-integration) objects, effectively equivalent to:
-```coconut_python
-def multi_enumerate(iterable):
-    it = np.nditer(iterable, flags=["multi_index"])
-    for x in it:
-        yield it.multi_index, x
-```
-
-Also supports `len` for [`numpy`](#numpy-integration).
+For [`numpy`](#numpy-integration) objects, uses [`np.nditer`](https://numpy.org/doc/stable/reference/generated/numpy.nditer.html) under the hood. Also supports `len` for [`numpy`](#numpy-integration) arrays.
 
 ##### Example
 

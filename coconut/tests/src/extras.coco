@@ -1,14 +1,15 @@
 from collections.abc import Sequence
 
-from coconut.__coconut__ import consume as coc_consume  # type: ignore
+from coconut.__coconut__ import consume as coc_consume
 from coconut.constants import (
     IPY,
     PY2,
     PY34,
     PY35,
-    WINDOWS,
+    PY36,
     PYPY,
 )  # type: ignore
+from coconut._pyparsing import USE_COMPUTATION_GRAPH  # type: ignore
 from coconut.exceptions import (
     CoconutSyntaxError,
     CoconutStyleError,
@@ -24,9 +25,9 @@ from coconut.convenience import (
     coconut_eval,
 )
 
-if IPY and not WINDOWS:
+if IPY:
     if PY35:
-        import asyncio  # type: ignore
+        import asyncio
     from coconut.icoconut import CoconutKernel  # type: ignore
 else:
     CoconutKernel = None  # type: ignore
@@ -36,6 +37,10 @@ def assert_raises(c, exc, not_exc=None, err_has=None):
     """Test whether callable c raises an exception of type exc."""
     if not_exc is None and exc is CoconutSyntaxError:
         not_exc = CoconutParseError
+    # we don't check err_has without the computation graph since errors can be quite different
+    if not USE_COMPUTATION_GRAPH:
+        err_has = None
+
     try:
         c()
     except exc as err:
@@ -46,6 +51,8 @@ def assert_raises(c, exc, not_exc=None, err_has=None):
                 assert any(has in str(err) for has in err_has), f"{str(err)!r} does not contain any of {err_has!r}"
             else:
                 assert err_has in str(err), f"{err_has!r} not in {str(err)!r}"
+        if exc `isinstance` CoconutSyntaxError:
+            assert "SyntaxError" in str(exc.syntax_err())
     except BaseException as err:
         raise AssertionError(f"got wrong exception {err} (expected {exc})")
     else:
@@ -102,7 +109,7 @@ def test_setup_none() -> bool:
     assert "Ellipsis" not in parse("x: ... = 1")
 
     # things that don't parse correctly without the computation graph
-    if not PYPY:
+    if USE_COMPUTATION_GRAPH:
         exec(parse("assert (1,2,3,4) == ([1, 2], [3, 4]) |*> def (x, y) -> *x, *y"), {})
 
     assert_raises(-> parse("(a := b)"), CoconutTargetError)
@@ -121,6 +128,7 @@ def test_setup_none() -> bool:
     assert_raises(-> parse("f(**x, y)"), CoconutSyntaxError)
     assert_raises(-> parse("def f(x) = return x"), CoconutSyntaxError)
     assert_raises(-> parse("def f(x) =\n return x"), CoconutSyntaxError)
+    assert_raises(-> parse("10 20"), CoconutSyntaxError)
 
     assert_raises(-> parse("()[(())"), CoconutSyntaxError, err_has="""
 unclosed open '[' (line 1)
@@ -164,6 +172,8 @@ mismatched open '[' and close ')' (line 1)
     assert_raises(-> parse("(.+1) .. x -> x * 2"), CoconutSyntaxError, err_has="<..")
     assert_raises(-> parse('f"Black holes {*all_black_holes} and revelations"'), CoconutSyntaxError, err_has="format string")
     assert_raises(-> parse("operator ++\noperator ++"), CoconutSyntaxError, err_has="custom operator already declared")
+    assert_raises(-> parse("type HasIn = (in)"), CoconutSyntaxError, err_has="not supported")
+
     assert_raises(
         -> parse("type abc[T,T] = T | T"),
         CoconutSyntaxError,
@@ -184,19 +194,21 @@ def f() =
     assert 2
     """.strip()), CoconutParseError, err_has=(
         """
-  assert 2
-          ^
-        """.strip(),
-        """
       assert 2
 
   ~~~~~~~~~~~~^
         """.strip(),
+        """
+  assert 2
+          ^
+        """.strip()
     ))
     assert_raises(-> parse('b"abc" "def"'), CoconutParseError, err_has=" ~~~~~~~^")
     assert_raises(-> parse('"abc" b"def"'), CoconutParseError, err_has=" ~~~~~~^")
+    assert_raises(-> parse('"a" 10'), CoconutParseError, err_has=" ~~~~^")
+    assert_raises(-> parse("A. ."), CoconutParseError, err_has=" ~~~^")
 
-    assert_raises(-> parse("return = 1"), CoconutParseError, err_has="invalid use of the keyword")
+    assert_raises(-> parse("return = 1"), CoconutParseError, err_has='invalid use of the keyword "return"')
     assert_raises(-> parse("if a = b: pass"), CoconutParseError, err_has="misplaced assignment")
     assert_raises(-> parse("while a == b"), CoconutParseError, err_has="misplaced newline")
 
@@ -219,12 +231,13 @@ def gam_eps_rate(bitarr) = (
     except CoconutParseError as err:
         err_str = str(err)
         assert "misplaced '?'" in err_str
-        assert """
+        if not PYPY:
+            assert """
   |> map$(int(?, 2))
          ~~~~~^""" in err_str or """
       |> map$(int(?, 2))
 
-  ~~~~~~~~~~~~~~~~~^""" in err_str
+  ~~~~~~~~~~~~~~~~~^""" in err_str, err_str
     else:
         assert False
 
@@ -286,6 +299,10 @@ else:
     assert_raises(-> parse("""case x:
     match x:
         pass"""), CoconutStyleError, err_has="case x:")
+    assert_raises(-> parse("obj."), CoconutStyleError, err_has="getattr")
+
+    setup(strict=True, target="sys")
+    assert_raises(-> parse("await f x"), CoconutParseError, err_has='invalid use of the keyword "await"')
 
     setup(target="2.7")
     assert parse("from io import BytesIO", mode="lenient") == "from io import BytesIO"
@@ -371,6 +388,10 @@ def test_kernel() -> bool:
 
 def test_numpy() -> bool:
     import numpy as np
+    A = np.array([1, 2;; 3, 4])
+    B = np.array([5, 6;; 7, 8])
+    C = np.array([19, 22;; 43, 50])
+
     assert isinstance(np.array([1, 2]) |> fmap$(.+1), np.ndarray)
     assert np.all(fmap(-> _ + 1, np.arange(3)) == np.array([1, 2, 3]))  # type: ignore
     assert np.array([1, 2;; 3, 4]).shape == (2, 2)
@@ -391,13 +412,12 @@ def test_numpy() -> bool:
     assert [1;2 ;;;; 3;4] |> np.array |> .shape == (2, 1, 1, 2)
     assert [1,2 ;;;; 3,4] |> np.array |> .shape == (2, 1, 1, 2)
     assert np.array([1,2 ;; 3,4]) `np.array_equal` np.array([[1,2],[3,4]])
-    a = np.array([1,2 ;; 3,4])
-    assert [a ; a] `np.array_equal` np.array([1,2,1,2 ;; 3,4,3,4])
-    assert [a ;; a] `np.array_equal` np.array([1,2;; 3,4;; 1,2;; 3,4])
-    assert [a ;;; a].shape == (2, 2, 2)  # type: ignore
-    assert np.array([1, 2;; 3, 4]) @ np.array([5, 6;; 7, 8]) `np.array_equal` np.array([19, 22;; 43, 50])
-    assert np.array([1, 2;; 3, 4]) @ np.identity(2) @ np.identity(2) `np.array_equal` np.array([1, 2;; 3, 4])
-    assert (@)(np.array([1, 2;; 3, 4]), np.array([5, 6;; 7, 8])) `np.array_equal` np.array([19, 22;; 43, 50])
+    assert [A ; A] `np.array_equal` np.array([1,2,1,2 ;; 3,4,3,4])
+    assert [A ;; A] `np.array_equal` np.array([1,2;; 3,4;; 1,2;; 3,4])
+    assert [A ;;; A].shape == (2, 2, 2)  # type: ignore
+    assert A @ B `np.array_equal` C
+    assert A @ np.identity(2) @ np.identity(2) `np.array_equal` A
+    assert (@)(A, B) `np.array_equal` C
     non_zero_diags = (
         np.array
         ..> lift(,)(ident, reversed ..> np.array)
@@ -410,6 +430,9 @@ def test_numpy() -> bool:
     assert len(enumeration) == 4  # type: ignore
     assert enumeration[2] == ((1, 0), 3)  # type: ignore
     assert list(enumeration) == [((0, 0), 1), ((0, 1), 2), ((1, 0), 3), ((1, 1), 4)]
+    for ind, x in multi_enumerate(np.array([1, 2])):
+        assert ind `isinstance` tuple, (type(ind), ind)
+        assert x `isinstance` (np.int32, np.int64), (type(x), x)
     assert all_equal(np.array([]))
     assert all_equal(np.array([1]))
     assert all_equal(np.array([1, 1]))
@@ -429,12 +452,53 @@ def test_numpy() -> bool:
     assert (flatten(np.array([1,2;;3,4])) |> list) == [1,2,3,4]
     assert cycle(np.array([1,2;;3,4]), 2) `isinstance` cycle
     assert (cycle(np.array([1,2;;3,4]), 2) |> np.asarray) `np.array_equal` np.array([1,2;;3,4;;1,2;;3,4])
+    assert 10 A `np.array_equal` A * 10
+    assert A 10 `np.array_equal` A * 10  # type: ignore
+    assert A B `np.array_equal` A * B
+    obj_arr = np.array([[1, "a"], [2.3, "abc"]], dtype=object)
+    assert obj_arr |> multi_enumerate |> map$(.[0]) |> list == [(0, 0), (0, 1), (1, 0), (1, 1)]
+
+    # must come at end; checks no modification
+    assert A `np.array_equal` np.array([1, 2;; 3, 4])
+    assert B `np.array_equal` np.array([5, 6;; 7, 8])
+    return True
+
+
+def test_pandas() -> bool:
+    import pandas as pd
+    import numpy as np
+    d1 = pd.DataFrame({"nums": [1, 2, 3], "chars": ["a", "b", "c"]})
+    assert d1$[0] == "nums"
+    assert [d1; d1].keys() |> list == ["nums", "chars"] * 2  # type: ignore
+    assert [d1;; d1].itertuples() |> list == [(0, 1, 'a'), (1, 2, 'b'), (2, 3, 'c'), (0, 1, 'a'), (1, 2, 'b'), (2, 3, 'c')]  # type: ignore
+    d2 = pd.DataFrame({"a": range(3) |> list, "b": range(1, 4) |> list})
+    d3 = d2 |> fmap$(fmap$(.+1))
+    assert d3["a"] |> list == range(1, 4) |> list
+    assert d3["b"] |> list == range(2, 5) |> list
+    assert multi_enumerate(d1) |> list == [((0, 0), 1), ((1, 0), 2), ((2, 0), 3), ((0, 1), 'a'), ((1, 1), 'b'), ((2, 1), 'c')]
+    assert not all_equal(d1)
+    assert not all_equal(d2)
+    assert cartesian_product(d1["nums"], d1["chars"]) `np.array_equal` np.array([
+        1; 'a';;
+        1; 'b';;
+        1; 'c';;
+        2; 'a';;
+        2; 'b';;
+        2; 'c';;
+        3; 'a';;
+        3; 'b';;
+        3; 'c';;
+    ], dtype=object)  # type: ignore
+    d4 = d1 |> fmap$(def r -> r["nums2"] = r["nums"]*2; r)
+    assert (d4["nums"] * 2 == d4["nums2"]).all()
     return True
 
 
 def test_extras() -> bool:
     if not PYPY and (PY2 or PY34):
         assert test_numpy() is True
+    if not PYPY and PY36:
+        assert test_pandas() is True
     if CoconutKernel is not None:
         assert test_kernel() is True
     assert test_setup_none() is True
