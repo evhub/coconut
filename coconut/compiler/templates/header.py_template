@@ -35,6 +35,7 @@ class _coconut{object}:{COMMENT.EVERYTHING_HERE_MUST_BE_COPIED_TO_STUB_FILE}
     jax_numpy_modules = {jax_numpy_modules}
     tee_type = type(itertools.tee((), 1)[0])
     reiterables = abc.Sequence, abc.Mapping, abc.Set
+    fmappables = list, tuple, dict, set, frozenset
     abc.Sequence.register(collections.deque)
     Ellipsis, NotImplemented, NotImplementedError, Exception, AttributeError, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, RuntimeError, all, any, bool, bytes, callable, classmethod, complex, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, locals, globals, map, min, max, next, object, property, range, reversed, set, setattr, slice, str, sum, super, tuple, type, vars, zip, repr, print{comma_bytearray} = Ellipsis, NotImplemented, NotImplementedError, Exception, AttributeError, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, RuntimeError, all, any, bool, bytes, callable, classmethod, complex, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, locals, globals, map, min, max, next, object, property, range, reversed, set, setattr, slice, str, sum, {lstatic}super{rstatic}, tuple, type, vars, zip, {lstatic}repr{rstatic}, {lstatic}print{rstatic}{comma_bytearray}
 def _coconut_handle_cls_kwargs(**kwargs):
@@ -1453,18 +1454,27 @@ class multiset(_coconut.collections.Counter{comma_object}):
         if result < 0:
             raise _coconut.ValueError("multiset has negative count for " + _coconut.repr(item))
         return result
+    def __fmap__(self, func):
+        return self.__class__(_coconut.dict((func(obj), num) for obj, num in self.items()))
 {def_total_and_comparisons}{assign_multiset_views}_coconut.abc.MutableSet.register(multiset)
-def _coconut_base_makedata(data_type, args):
+def _coconut_base_makedata(data_type, args, from_fmap=False, fallback_to_init=False):
     if _coconut.hasattr(data_type, "_make") and _coconut.issubclass(data_type, _coconut.tuple):
         return data_type._make(args)
     if _coconut.issubclass(data_type, (_coconut.range, _coconut.abc.Iterator)):
         return args
     if _coconut.issubclass(data_type, _coconut.str):
         return "".join(args)
-    return data_type(args)
-def makedata(data_type, *args):
+    if fallback_to_init or _coconut.issubclass(data_type, _coconut.fmappables):
+        return data_type(args)
+    if from_fmap:
+        raise _coconut.TypeError("no known __fmap__ implementation for " + _coconut.repr(data_type) + " (pass fallback_to_init=True to fall back on __init__ and __iter__)")
+    raise _coconut.TypeError("no known makedata implementation for " + _coconut.repr(data_type) + " (pass fallback_to_init=True to fall back on __init__)")
+def makedata(data_type, *args, **kwargs):
     """Construct an object of the given data_type containing the given arguments."""
-    return _coconut_base_makedata(data_type, args)
+    fallback_to_init = kwargs.pop("fallback_to_init", False)
+    if kwargs:
+        raise _coconut.TypeError("makedata() got unexpected keyword arguments " + _coconut.repr(kwargs))
+    return _coconut_base_makedata(data_type, args, fallback_to_init=fallback_to_init)
 {def_datamaker}
 {class_amap}
 def fmap(func, obj, **kwargs):
@@ -1474,6 +1484,7 @@ def fmap(func, obj, **kwargs):
     Override by defining obj.__fmap__(func).
     """
     starmap_over_mappings = kwargs.pop("starmap_over_mappings", False)
+    fallback_to_init = kwargs.pop("fallback_to_init", False)
     if kwargs:
         raise _coconut.TypeError("fmap() got unexpected keyword arguments " + _coconut.repr(kwargs))
     obj_fmap = _coconut.getattr(obj, "__fmap__", None)
@@ -1505,9 +1516,9 @@ def fmap(func, obj, **kwargs):
             if aiter is not _coconut.NotImplemented:
                 return _coconut_amap(func, aiter)
     if starmap_over_mappings:
-        return _coconut_base_makedata(obj.__class__, {_coconut_}starmap(func, obj.items()) if _coconut.isinstance(obj, _coconut.abc.Mapping) else {_coconut_}map(func, obj))
+        return _coconut_base_makedata(obj.__class__, {_coconut_}starmap(func, obj.items()) if _coconut.isinstance(obj, _coconut.abc.Mapping) else {_coconut_}map(func, obj), from_fmap=True, fallback_to_init=fallback_to_init)
     else:
-        return _coconut_base_makedata(obj.__class__, {_coconut_}map(func, obj.items() if _coconut.isinstance(obj, _coconut.abc.Mapping) else obj))
+        return _coconut_base_makedata(obj.__class__, {_coconut_}map(func, obj.items() if _coconut.isinstance(obj, _coconut.abc.Mapping) else obj), from_fmap=True, fallback_to_init=fallback_to_init)
 def _coconut_memoize_helper(maxsize=None, typed=False):
     return maxsize, typed
 def memoize(*args, **kwargs):

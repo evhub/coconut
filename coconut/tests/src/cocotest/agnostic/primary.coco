@@ -1589,4 +1589,5 @@ def primary_test() -> bool:
     assert ["abc" ;; "def"] == [['abc'], ['def']]
     assert {"a":0, "b":1}$[0] == "a"
     assert (|0, NotImplemented, 2|)$[1] is NotImplemented
+    assert m{1, 1, 2} |> fmap$(.+1) == m{2, 2, 3}
     return True

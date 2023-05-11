@@ -747,7 +747,7 @@ Coconut uses a `$` sign right after an iterator before a slice to perform iterat
 
 Iterator slicing works just like sequence slicing, including support for negative indices and slices, and support for `slice` objects in the same way as can be done with normal slicing. Iterator slicing makes no guarantee, however, that the original iterator passed to it be preserved (to preserve the iterator, use Coconut's [`reiterable`](#reiterable) built-in).
 
-Coconut's iterator slicing is very similar to Python's `itertools.islice`, but unlike `itertools.islice`, Coconut's iterator slicing supports negative indices, and will preferentially call an object's `__iter_getitem__` (always used if available) or `__getitem__` (only used if the object is a collections.abc.Sequence). Coconut's iterator slicing is also optimized to work well with all of Coconut's built-in objects, only computing the elements of each that are actually necessary to extract the desired slice.
+Coconut's iterator slicing is very similar to Python's `itertools.islice`, but unlike `itertools.islice`, Coconut's iterator slicing supports negative indices, and will preferentially call an object's `__iter_getitem__` (always used if available) or `__getitem__` (only used if the object is a `collections.abc.Sequence`). Coconut's iterator slicing is also optimized to work well with all of Coconut's built-in objects, only computing the elements of each that are actually necessary to extract the desired slice.
 
 ##### Example
 
@@ -3013,6 +3013,7 @@ The new methods provided by `multiset` on top of `collections.Counter` are:
 - multiset.**isdisjoint**(_other_): Return True if two multisets have a null intersection.
 - multiset.**\_\_xor\_\_**(_other_): Return the symmetric difference of two multisets as a new multiset. Specifically: `a ^ b = (a - b) | (b - a)`
 - multiset.**count**(_item_): Return the number of times an element occurs in a multiset. Equivalent to `multiset[item]`, but additionally verifies the count is non-negative.
+- multiset.**\_\_fmap\_\_**(_func_): Apply a function to the contents of the multiset; magic method for [`fmap`](#fmap).
 
 Coconut also ensures that `multiset` supports [rich comparisons and `Counter.total()`](https://docs.python.org/3/library/collections.html#collections.Counter) on all Python versions.
 
