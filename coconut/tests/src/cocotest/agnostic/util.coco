@@ -530,6 +530,13 @@ def summer():
     summer.acc += summer.args.pop()
     return summer()
 
+class InitAndIter:
+    def __init__(self, it):
+        self.it = tuple(it)
+    def __iter__(self) = self.it
+    def __eq__(self, other) =
+        self.__class__ == other.__class__ and self.it == other.it
+
 
 # Data Blocks:
 try:
