@@ -1045,7 +1045,7 @@ forward 2""") == 900
     assert get_glob() == 0
     assert wrong_get_set_glob(20) == 10
     assert take_xy(xy("a", "b")) == ("a", "b")
-    assert InitAndIter(range(3)) |> fmap$(.+1, fallback_to_init=True) == InitAndIter(range(1, 4))
+    assert InitAndIter(range(3)) |> fmap$((.+1), fallback_to_init=True) == InitAndIter(range(1, 4))
     assert_raises(-> InitAndIter(range(3)) |> fmap$(.+1), TypeError)
 
     # must come at end

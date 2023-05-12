@@ -3013,7 +3013,7 @@ The new methods provided by `multiset` on top of `collections.Counter` are:
 - multiset.**isdisjoint**(_other_): Return True if two multisets have a null intersection.
 - multiset.**\_\_xor\_\_**(_other_): Return the symmetric difference of two multisets as a new multiset. Specifically: `a ^ b = (a - b) | (b - a)`
 - multiset.**count**(_item_): Return the number of times an element occurs in a multiset. Equivalent to `multiset[item]`, but additionally verifies the count is non-negative.
-- multiset.**\_\_fmap\_\_**(_func_): Apply a function to the contents of the multiset; magic method for [`fmap`](#fmap).
+- multiset.**\_\_fmap\_\_**(_func_): Apply a function to the contents of the multiset, preserving counts; magic method for [`fmap`](#fmap).
 
 Coconut also ensures that `multiset` supports [rich comparisons and `Counter.total()`](https://docs.python.org/3/library/collections.html#collections.Counter) on all Python versions.
 
