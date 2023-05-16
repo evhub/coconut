@@ -142,7 +142,7 @@ dest                destination directory for compiled files (defaults to
 ```
   -h, --help            show this help message and exit
   --and source [dest ...]
-                        add an additional source/dest pair to compile
+                        add an additional source/dest pair to compile (dest is optional)
   -v, -V, --version     print Coconut and Python version information
   -t version, --target version
                         specify target Python version (defaults to universal)
