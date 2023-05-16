@@ -23,6 +23,7 @@ import sys
 import os
 import time
 import shutil
+import random
 from contextlib import contextmanager
 from subprocess import CalledProcessError
 
@@ -68,6 +69,7 @@ from coconut.constants import (
     error_color_code,
     jupyter_console_commands,
     default_jobs,
+    create_package_retries,
 )
 from coconut.util import (
     univ_open,
@@ -295,13 +297,14 @@ class Command(object):
                     raise CoconutException("cannot compile with --no-write when using --mypy")
 
                 # process all source, dest pairs
-                src_dest_package_triples = [
-                    self.process_source_dest(src, dst, args)
-                    for src, dst in (
-                        [(args.source, args.dest)]
-                        + (getattr(args, "and") or [])
-                    )
-                ]
+                src_dest_package_triples = []
+                for and_args in [(args.source, args.dest)] + (getattr(args, "and") or []):
+                    if len(and_args) == 1:
+                        src, = and_args
+                        dest = None
+                    else:
+                        src, dest = and_args
+                    src_dest_package_triples.append(self.process_source_dest(src, dest, args))
 
                 # disable jobs if we know we're only compiling one file
                 if len(src_dest_package_triples) <= 1 and not any(memoized_isdir(source) for source, dest, package in src_dest_package_triples):
@@ -583,11 +586,21 @@ class Command(object):
         return package_level
         return 0
 
-    def create_package(self, dirpath):
+    def create_package(self, dirpath, retries_left=create_package_retries):
         """Set up a package directory."""
         filepath = os.path.join(dirpath, "__coconut__.py")
-        with univ_open(filepath, "w") as opened:
-            writefile(opened, self.comp.getheader("__coconut__"))
+        try:
+            with univ_open(filepath, "w") as opened:
+                writefile(opened, self.comp.getheader("__coconut__"))
+        except OSError:
+            logger.log_exc()
+            if retries_left <= 0:
+                logger.warn("Failed to write header file at", filepath)
+            else:
+                # sleep a random amount of time from 0 to 0.1 seconds to
+                #  stagger calls across processes
+                time.sleep(random.random() / 10)
+                self.create_package(dirpath, retries_left - 1)
 
     def submit_comp_job(self, path, callback, method, *args, **kwargs):
         """Submits a job on self.comp to be run in parallel."""
