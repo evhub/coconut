@@ -984,7 +984,7 @@ class Command(object):
 
             # pass the kernel to the console or otherwise just launch Jupyter now that we know our kernel is available
             if args[0] in jupyter_console_commands:
-                if "--kernel" in args:
+                if any(a.startswith("--kernel") for a in args):
                     logger.warn("unable to specify Coconut kernel in 'jupyter " + args[0] + "' command as --kernel was already specified in the given arguments")
                 else:
                     args += ["--kernel", kernel]
