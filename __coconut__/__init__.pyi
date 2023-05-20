@@ -169,23 +169,29 @@ enumerate = enumerate
 
 _coconut_py_str = py_str
 _coconut_super = super
+_coconut_enumerate = enumerate
+_coconut_filter = filter
+_coconut_range = range
+_coconut_reversed = reversed
+_coconut_zip = zip
 
 
 zip_longest = _coconut.zip_longest
 memoize = _lru_cache
-
-
 reduce = _coconut.functools.reduce
 takewhile = _coconut.itertools.takewhile
 dropwhile = _coconut.itertools.dropwhile
-tee = _coconut_tee = _coconut.itertools.tee
-starmap = _coconut_starmap = _coconut.itertools.starmap
+tee = _coconut.itertools.tee
+starmap = _coconut.itertools.starmap
 cartesian_product = _coconut.itertools.product
-multiset = _coconut_multiset = _coconut.collections.Counter
-
+multiset = _coconut.collections.Counter
 
 _coconut_tee = tee
 _coconut_starmap = starmap
+_coconut_cartesian_product = cartesian_product
+_coconut_multiset = multiset
+
+
 parallel_map = concurrent_map = _coconut_map = map
 
 
@@ -200,6 +206,7 @@ def scan(
     iterable: _t.Iterable[_U],
     initial: _T = ...,
 ) -> _t.Iterable[_T]: ...
+_coconut_scan = scan
 
 
 class MatchError(Exception):
@@ -968,6 +975,7 @@ class cycle(_t.Iterable[_T]):
     def __fmap__(self, func: _t.Callable[[_T], _U]) -> _t.Iterable[_U]: ...
     def __copy__(self) -> cycle[_T]: ...
     def __len__(self) -> int: ...
+_coconut_cycle = cycle
 
 
 class groupsof(_t.Generic[_T]):
@@ -981,6 +989,7 @@ class groupsof(_t.Generic[_T]):
     def __copy__(self) -> groupsof[_T]: ...
     def __len__(self) -> int: ...
     def __fmap__(self, func: _t.Callable[[_t.Tuple[_T, ...]], _U]) -> _t.Iterable[_U]: ...
+_coconut_groupsof = groupsof
 
 
 class windowsof(_t.Generic[_T]):
@@ -996,6 +1005,7 @@ class windowsof(_t.Generic[_T]):
     def __copy__(self) -> windowsof[_T]: ...
     def __len__(self) -> int: ...
     def __fmap__(self, func: _t.Callable[[_t.Tuple[_T, ...]], _U]) -> _t.Iterable[_U]: ...
+_coconut_windowsof = windowsof
 
 
 class flatten(_t.Iterable[_T]):
@@ -1228,6 +1238,7 @@ def lift(func: _t.Callable[[_T, _U], _W]) -> _coconut_lifted_2[_T, _U, _W]: ...
 def lift(func: _t.Callable[[_T, _U, _V], _W]) -> _coconut_lifted_3[_T, _U, _V, _W]: ...
 @_t.overload
 def lift(func: _t.Callable[..., _W]) -> _t.Callable[..., _t.Callable[..., _W]]: ...
+_coconut_lift = lift
 
 
 def all_equal(iterable: _Iterable) -> bool: ...

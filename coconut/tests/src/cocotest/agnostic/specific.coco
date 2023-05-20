@@ -44,6 +44,19 @@ def py3_spec_test() -> bool:
     return True
 
 
+def py33_spec_test() -> bool:
+    """Tests for any py33+ version."""
+    from inspect import signature
+    def f(x, y=1) = x, y
+    def g(a, b=2) = a, b
+    assert signature(f ..*> g) == signature(f) == signature(f ..> g)
+    assert signature(f <*.. g) == signature(g) == signature(f <.. g)
+    assert signature(f$(0) ..> g) == signature(f$(0))
+    assert signature(f ..*> (+)) == signature(f)
+    assert signature((f ..*> g) ..*> g) == signature(f)
+    return True
+
+
 def py36_spec_test(tco: bool) -> bool:
     """Tests for any py36+ version."""
     from dataclasses import dataclass
