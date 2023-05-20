@@ -2059,6 +2059,41 @@ print(p1(5))
 quad = 5 * x**2 + 3 * x + 1
 ```
 
+### Keyword Argument Name Elision
+
+When passing in long variable names as keyword arguments of the same name, Coconut supports the syntax
+```
+f(...=long_variable_name)
+```
+as a shorthand for
+```
+f(long_variable_name=long_variable_name)
+```
+
+Such syntax is also supported in [partial application](#partial-application) and [anonymous `namedtuple`s](#anonymous-namedtuples).
+
+##### Example
+
+**Coconut:**
+```coconut
+really_long_variable_name_1 = get_1()
+really_long_variable_name_2 = get_2()
+main_func(
+    ...=really_long_variable_name_1,
+    ...=really_long_variable_name_2,
+)
+```
+
+**Python:**
+```coconut_python
+really_long_variable_name_1 = get_1()
+really_long_variable_name_2 = get_2()
+main_func(
+    really_long_variable_name_1=really_long_variable_name_1,
+    really_long_variable_name_2=really_long_variable_name_2,
+)
+```
+
 ### Anonymous Namedtuples
 
 Coconut supports anonymous [`namedtuple`](https://docs.python.org/3/library/collections.html#collections.namedtuple) literals, such that `(a=1, b=2)` can be used just as `(1, 2)`, but with added names. Anonymous `namedtuple`s are always pickleable.
@@ -2068,6 +2103,8 @@ The syntax for anonymous namedtuple literals is:
 (<name> [: <type>] = <value>, ...)
 ```
 where, if `<type>` is given for any field, [`typing.NamedTuple`](https://docs.python.org/3/library/typing.html#typing.NamedTuple) is used instead of `collections.namedtuple`.
+
+Anonymous `namedtuple`s also support [keyword argument name elision](#keyword-argument-name-elision).
 
 ##### `_namedtuple_of`
 
