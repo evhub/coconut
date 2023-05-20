@@ -848,14 +848,6 @@ class TestCompilation(unittest.TestCase):
 @add_test_func_names
 class TestExternal(unittest.TestCase):
 
-    # more appveyor timeout prevention
-    if not (WINDOWS and PY2):
-        def test_pyprover(self):
-            with using_path(pyprover):
-                comp_pyprover()
-                if PY38:
-                    run_pyprover()
-
     if not PYPY or PY2:
         def test_prelude(self):
             with using_path(prelude):
@@ -869,11 +861,19 @@ class TestExternal(unittest.TestCase):
             if not PYPY and PY38 and not PY310:
                 install_bbopt()
 
-    def test_pyston(self):
-        with using_path(pyston):
-            comp_pyston(["--no-tco"])
-            if PYPY and PY2:
-                run_pyston()
+    # more appveyor timeout prevention
+    if not WINDOWS:
+        def test_pyprover(self):
+            with using_path(pyprover):
+                comp_pyprover()
+                if PY38:
+                    run_pyprover()
+
+        def test_pyston(self):
+            with using_path(pyston):
+                comp_pyston(["--no-tco"])
+                if PYPY and PY2:
+                    run_pyston()
 
 
 # -----------------------------------------------------------------------------------------------------------------------
