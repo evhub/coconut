@@ -1047,6 +1047,9 @@ forward 2""") == 900
     assert take_xy(xy("a", "b")) == ("a", "b")
     assert InitAndIter(range(3)) |> fmap$((.+1), fallback_to_init=True) == InitAndIter(range(1, 4))
     assert_raises(-> InitAndIter(range(3)) |> fmap$(.+1), TypeError)
+    really_long_var = 10
+    assert ret_args_kwargs(...=really_long_var) == ((), {"really_long_var": 10}) == ret_args_kwargs$(...=really_long_var)()
+    assert ret_args_kwargs(123, ...=really_long_var, abc="abc") == ((123,), {"really_long_var": 10, "abc": "abc"}) == ret_args_kwargs$(123, ...=really_long_var, abc="abc")()
 
     # must come at end
     assert fibs_calls[0] == 1

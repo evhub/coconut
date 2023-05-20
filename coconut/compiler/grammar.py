@@ -1133,6 +1133,7 @@ class Grammar(object):
         dubstar + test
         | star + test
         | unsafe_name + default
+        | ellipsis_tokens + equals.suppress() + refname
         | namedexpr_test
     )
     function_call_tokens = lparen.suppress() + (
@@ -1178,11 +1179,11 @@ class Grammar(object):
     subscriptgrouplist = itemlist(subscriptgroup, comma)
 
     anon_namedtuple = Forward()
+    maybe_typedef = Optional(colon.suppress() + typedef_test)
     anon_namedtuple_ref = tokenlist(
         Group(
-            unsafe_name
-            + Optional(colon.suppress() + typedef_test)
-            + equals.suppress() + test,
+            unsafe_name + maybe_typedef + equals.suppress() + test
+            | ellipsis_tokens + maybe_typedef + equals.suppress() + refname,
         ),
         comma,
     )
@@ -1288,8 +1289,8 @@ class Grammar(object):
         Group(condense(dollar + lbrack) + subscriptgroup + rbrack.suppress())  # $[
         | Group(condense(dollar + lbrack + rbrack))  # $[]
         | Group(condense(lbrack + rbrack))  # []
-        | Group(dot + ~unsafe_name + ~lbrack + ~dot)  # .
         | Group(questionmark)  # ?
+        | Group(dot + ~unsafe_name + ~lbrack + ~dot)  # .
     ) + ~questionmark
     partial_trailer = (
         Group(fixto(dollar, "$(") + function_call)  # $(
