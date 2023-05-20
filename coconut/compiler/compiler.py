@@ -2333,6 +2333,8 @@ else:
                     star_args.append(argstr)
                 elif arg[0] == "**":
                     dubstar_args.append(argstr)
+                elif arg[0] == "...":
+                    kwd_args.append(arg[1] + "=" + arg[1])
                 else:
                     kwd_args.append(argstr)
             else:
@@ -3043,6 +3045,8 @@ def __hash__(self):
                 types[i] = typedef
             else:
                 raise CoconutInternalException("invalid anonymous named item", tok)
+            if name == "...":
+                name = item
             names.append(name)
             items.append(item)
 
