@@ -726,6 +726,8 @@ The `..` operator has lower precedence than `::` but higher precedence than infi
 
 All function composition operators also have in-place versions (e.g. `..=`).
 
+Since all forms of function composition always call the first function in the composition (`f` in `f ..> g` and `g` in `f <.. g`) with exactly the arguments passed into the composition, all forms of function composition will preserve all metadata attached to the first function in the composition, including the function's [signature](https://docs.python.org/3/library/inspect.html#inspect.signature) and any of that function's attributes.
+
 ##### Example
 
 **Coconut:**

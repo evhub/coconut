@@ -56,6 +56,7 @@ def run_main(outer_MatchError, test_easter_eggs=False) -> bool:
         non_py26_test,
         non_py32_test,
         py3_spec_test,
+        py33_spec_test,
         py36_spec_test,
         py37_spec_test,
         py38_spec_test,
@@ -66,6 +67,8 @@ def run_main(outer_MatchError, test_easter_eggs=False) -> bool:
         assert non_py32_test() is True
     if sys.version_info >= (3,):
         assert py3_spec_test() is True
+    if sys.version_info >= (3, 3):
+        assert py33_spec_test() is True
     if sys.version_info >= (3, 6):
         assert py36_spec_test(tco=using_tco) is True
     if sys.version_info >= (3, 7):

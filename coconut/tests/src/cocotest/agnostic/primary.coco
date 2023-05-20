@@ -1590,4 +1590,8 @@ def primary_test() -> bool:
     assert {"a":0, "b":1}$[0] == "a"
     assert (|0, NotImplemented, 2|)$[1] is NotImplemented
     assert m{1, 1, 2} |> fmap$(.+1) == m{2, 2, 3}
+    assert (+) ..> ((*) ..> (/)) == (+) ..> (*) ..> (/) == ((+) ..> (*)) ..> (/)
+    def f(x, y=1) = x, y  # type: ignore
+    f.is_f = True  # type: ignore
+    assert (f ..*> (+)).is_f  # type: ignore
     return True
