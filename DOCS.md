@@ -3198,9 +3198,9 @@ _Can't be done without a series of method definitions for each data type. See th
 
 #### `fmap`
 
-**fmap**(_func_, _obj_, *, _starmap\_over\_mappings_=`False`)
+**fmap**(_func_, _obj_)
 
-In Haskell, `fmap(func, obj)` takes a data type `obj` and returns a new data type with `func` mapped over the contents. Coconut's `fmap` function does the exact same thing in Coconut.
+In Haskell, `fmap(func, obj)` takes a data type `obj` and returns a new data type with `func` mapped over the contents. Coconut's `fmap` function does the exact same thing for Coconut's [data types](#data).
 
 `fmap` can also be used on built-ins such as `str`, `list`, `set`, and `dict` as a variant of `map` that returns back an object of the same type. The behavior of `fmap` for a given object can be overridden by defining an `__fmap__(self, func)` magic method that will be called whenever `fmap` is invoked on that object. Note that `__fmap__` implementations should always satisfy the [Functor Laws](https://wiki.haskell.org/Functor).
 
@@ -3217,6 +3217,8 @@ async def fmap_over_async_iters(func, async_iter):
         yield func(item)
 ```
 such that `fmap` can effectively be used as an async map.
+
+_DEPRECATED: `fmap(func, obj, fallback_to_init=True)` will fall back to `obj.__class__(map(func, obj))` if no `fmap` implementation is available rather than raise `TypeError`._
 
 ##### Example
 
