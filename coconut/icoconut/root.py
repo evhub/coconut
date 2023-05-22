@@ -21,6 +21,7 @@ from coconut.root import *  # NOQA
 
 import os
 import sys
+import logging
 
 try:
     import asyncio
@@ -265,7 +266,7 @@ def user_expressions(self, expressions):
         def __init__(self, *args, **kwargs):
             super(CoconutKernel, self).__init__(*args, **kwargs)
             if self.log is None:
-                self.log = logger
+                self.log = logging.getLogger(__name__)
 
         @override
         def do_complete(self, code, cursor_pos):
