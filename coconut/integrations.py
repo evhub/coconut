@@ -95,7 +95,7 @@ class CoconutXontribLoader(object):
     runner = None
     timing_info = []
 
-    @memoize_with_exceptions()
+    @memoize_with_exceptions(128)
     def _base_memoized_parse_xonsh(self, code, **kwargs):
         return self.compiler.parse_xonsh(code, **kwargs)
 
@@ -159,12 +159,12 @@ class CoconutXontribLoader(object):
                     logger.log_exc()
                     line = original_lines[-1]
                 if line in used_lines:
-                    line = "\n"
+                    line = ""
                 else:
                     used_lines.add(line)
                 new_inp_lines.append(line)
                 last_ln = ln
-            inp = "\n".join(new_inp_lines)
+            inp = "\n".join(new_inp_lines) + "\n"
         return ctxtransformer.__class__.ctxvisit(ctxtransformer, node, inp, *args, **kwargs)
 
     def __call__(self, xsh, **kwargs):
