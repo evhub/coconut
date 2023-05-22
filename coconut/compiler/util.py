@@ -1040,6 +1040,21 @@ def split_comment(line, move_indents=False):
     return line[:i] + indent, line[i:]
 
 
+def extract_line_num_from_comment(line, default=None):
+    """Extract the line number from a line with a line number comment, else return default."""
+    _, all_comments = split_comment(line)
+    for comment in all_comments.split("#"):
+        words = comment.strip().split(None, 1)
+        if words:
+            first_word = words[0].strip(":")
+            try:
+                return int(first_word)
+            except ValueError:
+                pass
+    logger.log("failed to extract line num comment from", line)
+    return default
+
+
 def rem_comment(line):
     """Remove a comment from a line."""
     base, comment = split_comment(line)

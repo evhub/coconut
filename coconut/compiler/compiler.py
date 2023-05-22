@@ -1536,6 +1536,7 @@ class Compiler(Grammar, pickleable_obj):
             else:
                 lni = ln - 1
 
+        # line number must be at start of comment for extract_line_num_from_comment
         if self.line_numbers and self.keep_lines:
             if self.minify:
                 comment = str(ln) + " " + self.kept_lines[lni]

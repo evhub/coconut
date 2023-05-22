@@ -133,8 +133,8 @@ except KeyError:
 # -----------------------------------------------------------------------------------------------------------------------
 
 
-memoized_isdir = memoize(128)(os.path.isdir)
-memoized_isfile = memoize(128)(os.path.isfile)
+memoized_isdir = memoize(64)(os.path.isdir)
+memoized_isfile = memoize(64)(os.path.isfile)
 
 
 def writefile(openedfile, newcontents):

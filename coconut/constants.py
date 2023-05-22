@@ -1141,7 +1141,7 @@ requests_sleep_times = (0, 0.1, 0.2, 0.3, 0.4, 1)
 # INTEGRATION CONSTANTS:
 # -----------------------------------------------------------------------------------------------------------------------
 
-# must be replicated in DOCS
+# must be replicated in DOCS; must include --line-numbers for xonsh line number extraction
 coconut_kernel_kwargs = dict(target="sys", line_numbers=True, keep_lines=True, no_wrap=True)
 
 icoconut_dir = os.path.join(base_dir, "icoconut")

@@ -44,11 +44,8 @@ from coconut.constants import (
     conda_build_env_var,
     coconut_kernel_kwargs,
 )
-from coconut.terminal import (
-    logger,
-    internal_assert,
-)
-from coconut.util import override
+from coconut.terminal import logger
+from coconut.util import override, memoize_with_exceptions
 from coconut.compiler import Compiler
 from coconut.compiler.util import should_indent
 from coconut.command.util import Runner
@@ -94,25 +91,7 @@ COMPILER = Compiler(**coconut_kernel_kwargs)
 
 RUNNER = Runner(COMPILER)
 
-parse_block_memo = {}
-
-
-def memoized_parse_block(code):
-    """Memoized version of parse_block."""
-    internal_assert(lambda: code not in parse_block_memo.values(), "attempted recompilation of", code)
-    success, result = parse_block_memo.get(code, (None, None))
-    if success is None:
-        try:
-            parsed = COMPILER.parse_block(code, keep_state=True)
-        except Exception as err:
-            success, result = False, err
-        else:
-            success, result = True, parsed
-        parse_block_memo[code] = (success, result)
-    if success:
-        return result
-    else:
-        raise result
+memoized_parse_block = memoize_with_exceptions()(COMPILER.parse_block)
 
 
 def syntaxerr_memoized_parse_block(code):
