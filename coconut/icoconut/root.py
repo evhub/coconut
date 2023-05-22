@@ -262,6 +262,11 @@ def user_expressions(self, expressions):
             },
         ]
 
+        def __init__(self, *args, **kwargs):
+            super(CoconutKernel, self).__init__(*args, **kwargs)
+            if self.log is None:
+                self.log = logger
+
         @override
         def do_complete(self, code, cursor_pos):
             # first try with Jedi completions
