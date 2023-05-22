@@ -25,6 +25,7 @@ from coconut.constants import (
     coconut_kernel_kwargs,
     disabled_xonsh_modes,
 )
+from coconut.util import memoize_with_exceptions
 
 # -----------------------------------------------------------------------------------------------------------------------
 # IPYTHON:
@@ -94,6 +95,14 @@ class CoconutXontribLoader(object):
     runner = None
     timing_info = []
 
+    @memoize_with_exceptions()
+    def _base_memoized_parse_xonsh(self, code, **kwargs):
+        return self.compiler.parse_xonsh(code, **kwargs)
+
+    def memoized_parse_xonsh(self, code):
+        """Memoized self.compiler.parse_xonsh."""
+        return self._base_memoized_parse_xonsh(code.strip(), keep_state=True)
+
     def new_parse(self, parser, code, mode="exec", *args, **kwargs):
         """Coconut-aware version of xonsh's _parse."""
         if self.loaded and mode not in disabled_xonsh_modes:
@@ -106,7 +115,7 @@ class CoconutXontribLoader(object):
             parse_start_time = get_clock_time()
             quiet, logger.quiet = logger.quiet, True
             try:
-                code = self.compiler.parse_xonsh(code, keep_state=True)
+                code = self.memoized_parse_xonsh(code)
             except CoconutException as err:
                 err_str = format_error(err).splitlines()[0]
                 code += "  #" + err_str
@@ -115,16 +124,48 @@ class CoconutXontribLoader(object):
                 self.timing_info.append(("parse", get_clock_time() - parse_start_time))
         return parser.__class__.parse(parser, code, mode=mode, *args, **kwargs)
 
-    def new_try_subproc_toks(self, ctxtransformer, *args, **kwargs):
+    def new_try_subproc_toks(self, ctxtransformer, node, *args, **kwargs):
         """Version of try_subproc_toks that handles the fact that Coconut
         code may have different columns than Python code."""
         mode = ctxtransformer.mode
         if self.loaded:
             ctxtransformer.mode = "eval"
         try:
-            return ctxtransformer.__class__.try_subproc_toks(ctxtransformer, *args, **kwargs)
+            return ctxtransformer.__class__.try_subproc_toks(ctxtransformer, node, *args, **kwargs)
         finally:
             ctxtransformer.mode = mode
+
+    def new_ctxvisit(self, ctxtransformer, node, inp, *args, **kwargs):
+        """Version of ctxvisit that ensures looking up original lines in inp
+        using Coconut line numbers will work properly."""
+        if self.loaded:
+            from xonsh.tools import get_logical_line
+
+            # hide imports to avoid circular dependencies
+            from coconut.terminal import logger
+            from coconut.compiler.util import extract_line_num_from_comment
+
+            compiled = self.memoized_parse_xonsh(inp)
+
+            original_lines = tuple(inp.splitlines())
+            used_lines = set()
+            new_inp_lines = []
+            last_ln = 1
+            for compiled_line in compiled.splitlines():
+                ln = extract_line_num_from_comment(compiled_line, default=last_ln + 1)
+                try:
+                    line, _, _ = get_logical_line(original_lines, ln - 1)
+                except IndexError:
+                    logger.log_exc()
+                    line = original_lines[-1]
+                if line in used_lines:
+                    line = "\n"
+                else:
+                    used_lines.add(line)
+                new_inp_lines.append(line)
+                last_ln = ln
+            inp = "\n".join(new_inp_lines)
+        return ctxtransformer.__class__.ctxvisit(ctxtransformer, node, inp, *args, **kwargs)
 
     def __call__(self, xsh, **kwargs):
         # hide imports to avoid circular dependencies
@@ -147,10 +188,11 @@ class CoconutXontribLoader(object):
         main_parser.parse = MethodType(self.new_parse, main_parser)
 
         ctxtransformer = xsh.execer.ctxtransformer
+        ctxtransformer.try_subproc_toks = MethodType(self.new_try_subproc_toks, ctxtransformer)
+        ctxtransformer.ctxvisit = MethodType(self.new_ctxvisit, ctxtransformer)
+
         ctx_parser = ctxtransformer.parser
         ctx_parser.parse = MethodType(self.new_parse, ctx_parser)
-
-        ctxtransformer.try_subproc_toks = MethodType(self.new_try_subproc_toks, ctxtransformer)
 
         self.timing_info.append(("load", get_clock_time() - start_time))
         self.loaded = True

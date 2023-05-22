@@ -205,10 +205,33 @@ def noop_ctx():
 def memoize(maxsize=None, *args, **kwargs):
     """Decorator that memoizes a function, preventing it from being recomputed
     if it is called multiple times with the same arguments."""
+    assert maxsize is None or isinstance(maxsize, int), maxsize
     if lru_cache is None:
         return lambda func: func
     else:
         return lru_cache(maxsize, *args, **kwargs)
+
+
+def memoize_with_exceptions(*memo_args, **memo_kwargs):
+    """Decorator that works like memoize but also memoizes exceptions."""
+    def memoizer(func):
+        @memoize(*memo_args, **memo_kwargs)
+        def memoized_safe_func(*args, **kwargs):
+            res = exc = None
+            try:
+                res = func(*args, **kwargs)
+            except Exception as exc:
+                return res, exc
+            else:
+                return res, exc
+
+        def memoized_func(*args, **kwargs):
+            res, exc = memoized_safe_func(*args, **kwargs)
+            if exc is not None:
+                raise exc
+            return res
+        return memoized_func
+    return memoizer
 
 
 class keydefaultdict(defaultdict, object):
