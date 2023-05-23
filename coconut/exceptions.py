@@ -187,14 +187,16 @@ class CoconutSyntaxError(CoconutException):
         if self.point_to_endpoint and "endpoint" in kwargs:
             point = kwargs.pop("endpoint")
         else:
-            point = kwargs.pop("point")
+            point = kwargs.pop("point", None)
         kwargs["point"] = kwargs["endpoint"] = None
-        ln = kwargs.pop("ln")
+        ln = kwargs.pop("ln", None)
         filename = kwargs.pop("filename", None)
 
         err = SyntaxError(self.message(**kwargs))
-        err.offset = point
-        err.lineno = ln
+        if point is not None:
+            err.offset = point
+        if ln is not None:
+            err.lineno = ln
         if filename is not None:
             err.filename = filename
         return err
