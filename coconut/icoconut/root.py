@@ -92,7 +92,10 @@ COMPILER = Compiler(**coconut_kernel_kwargs)
 
 RUNNER = Runner(COMPILER)
 
-memoized_parse_block = memoize_with_exceptions(128)(COMPILER.parse_block)
+
+@memoize_with_exceptions(128)
+def memoized_parse_block(code):
+    return COMPILER.parse_block(code, keep_state=True)
 
 
 def syntaxerr_memoized_parse_block(code):

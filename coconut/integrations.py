@@ -96,12 +96,13 @@ class CoconutXontribLoader(object):
     timing_info = []
 
     @memoize_with_exceptions(128)
-    def _base_memoized_parse_xonsh(self, code, **kwargs):
-        return self.compiler.parse_xonsh(code, **kwargs)
+    def _base_memoized_parse_xonsh(self, code):
+        return self.compiler.parse_xonsh(code, keep_state=True)
 
     def memoized_parse_xonsh(self, code):
         """Memoized self.compiler.parse_xonsh."""
-        return self._base_memoized_parse_xonsh(code.strip(), keep_state=True)
+        # .strip() outside the memoization
+        return self._base_memoized_parse_xonsh(code.strip())
 
     def new_parse(self, parser, code, mode="exec", *args, **kwargs):
         """Coconut-aware version of xonsh's _parse."""
