@@ -32,7 +32,6 @@ from contextlib import contextmanager
 from functools import partial
 
 from coconut._pyparsing import (
-    CaselessLiteral,
     Forward,
     Group,
     Literal,
@@ -115,6 +114,7 @@ from coconut.compiler.util import (
     boundary,
     compile_regex,
     always_match,
+    caseless_literal,
 )
 
 
@@ -798,17 +798,17 @@ class Grammar(object):
     octint = combine(Word("01234567") + ZeroOrMore(underscore.suppress() + Word("01234567")))
     hexint = combine(Word(hexnums) + ZeroOrMore(underscore.suppress() + Word(hexnums)))
 
-    imag_j = CaselessLiteral("j") | fixto(CaselessLiteral("i"), "j")
+    imag_j = caseless_literal("j") | fixto(caseless_literal("i", suppress=True), "j")
     basenum = combine(
         integer + dot + Optional(integer)
         | Optional(integer) + dot + integer,
     ) | integer
-    sci_e = combine(CaselessLiteral("e") + Optional(plus | neg_minus))
+    sci_e = combine(caseless_literal("e") + Optional(plus | neg_minus))
     numitem = ~(Literal("0") + Word(nums + "_", exact=1)) + combine(basenum + Optional(sci_e + integer))
     imag_num = combine(numitem + imag_j)
-    bin_num = combine(CaselessLiteral("0b") + Optional(underscore.suppress()) + binint)
-    oct_num = combine(CaselessLiteral("0o") + Optional(underscore.suppress()) + octint)
-    hex_num = combine(CaselessLiteral("0x") + Optional(underscore.suppress()) + hexint)
+    bin_num = combine(caseless_literal("0b") + Optional(underscore.suppress()) + binint)
+    oct_num = combine(caseless_literal("0o") + Optional(underscore.suppress()) + octint)
+    hex_num = combine(caseless_literal("0x") + Optional(underscore.suppress()) + hexint)
     number = (
         bin_num
         | oct_num
@@ -848,10 +848,10 @@ class Grammar(object):
     u_string = Forward()
     f_string = Forward()
 
-    bit_b = CaselessLiteral("b")
-    raw_r = CaselessLiteral("r")
-    unicode_u = CaselessLiteral("u").suppress()
-    format_f = CaselessLiteral("f").suppress()
+    bit_b = caseless_literal("b")
+    raw_r = caseless_literal("r")
+    unicode_u = caseless_literal("u", suppress=True)
+    format_f = caseless_literal("f", suppress=True)
 
     string = combine(Optional(raw_r) + string_item)
     # Python 2 only supports br"..." not rb"..."
@@ -1236,9 +1236,9 @@ class Grammar(object):
 
     set_literal = Forward()
     set_letter_literal = Forward()
-    set_s = fixto(CaselessLiteral("s"), "s")
-    set_f = fixto(CaselessLiteral("f"), "f")
-    set_m = fixto(CaselessLiteral("m"), "m")
+    set_s = caseless_literal("s")
+    set_f = caseless_literal("f")
+    set_m = caseless_literal("m")
     set_letter = set_s | set_f | set_m
     setmaker = Group(
         (new_namedexpr_test + FollowedBy(rbrace))("test")

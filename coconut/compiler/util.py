@@ -53,6 +53,7 @@ from coconut._pyparsing import (
     Regex,
     Empty,
     Literal,
+    CaselessLiteral,
     Group,
     ParserElement,
     _trim_arity,
@@ -884,6 +885,14 @@ def any_len_perm_at_least_one(*elems, **kwargs):
     groups_and_elems.extend((-1, e) for e in elems)
     groups_and_elems.extend(enumerate(required))
     return any_len_perm_with_one_of_each_group(*groups_and_elems)
+
+
+def caseless_literal(literalstr, suppress=False):
+    """Version of CaselessLiteral that always parses to the given literalstr."""
+    if suppress:
+        return CaselessLiteral(literalstr).suppress()
+    else:
+        return fixto(CaselessLiteral(literalstr), literalstr)
 
 
 # -----------------------------------------------------------------------------------------------------------------------
