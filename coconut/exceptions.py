@@ -97,7 +97,7 @@ class CoconutSyntaxError(CoconutException):
     @property
     def kwargs(self):
         """Get the arguments as keyword arguments."""
-        return dict(zip(self.args, self.argnames))
+        return dict(zip(self.argnames, self.args))
 
     def message(self, message, source, point, ln, extra=None, endpoint=None, filename=None):
         """Creates a SyntaxError-like message."""
@@ -185,12 +185,12 @@ class CoconutSyntaxError(CoconutException):
         """Creates a SyntaxError."""
         kwargs = self.kwargs
         if self.point_to_endpoint and "endpoint" in kwargs:
-            point = kwargs.pop("endpoint")
+            point = kwargs["endpoint"]
         else:
-            point = kwargs.pop("point", None)
-        kwargs["point"] = kwargs["endpoint"] = None
-        ln = kwargs.pop("ln", None)
-        filename = kwargs.pop("filename", None)
+            point = kwargs.get("point")
+        ln = kwargs.get("ln")
+        filename = kwargs.get("filename")
+        kwargs["point"] = kwargs["endpoint"] = kwargs["ln"] = kwargs["filename"] = None
 
         err = SyntaxError(self.message(**kwargs))
         if point is not None:

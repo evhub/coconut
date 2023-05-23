@@ -51,8 +51,13 @@ def assert_raises(c, exc, not_exc=None, err_has=None):
                 assert any(has in str(err) for has in err_has), f"{str(err)!r} does not contain any of {err_has!r}"
             else:
                 assert err_has in str(err), f"{err_has!r} not in {str(err)!r}"
-        if exc `isinstance` CoconutSyntaxError:
-            assert "SyntaxError" in str(exc.syntax_err())
+        if err `isinstance` CoconutSyntaxError:
+            syntax_err = err.syntax_err()
+            assert syntax_err `isinstance` SyntaxError
+            syntax_err_str = str(syntax_err)
+            assert syntax_err_str.splitlines()$[0] in str(err), (syntax_err_str, str(err))
+            assert "unprintable" not in syntax_err_str, syntax_err_str
+            assert "<exception" not in syntax_err_str, syntax_err_str
     except BaseException as err:
         raise AssertionError(f"got wrong exception {err} (expected {exc})")
     else:
