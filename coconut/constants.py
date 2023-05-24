@@ -832,7 +832,8 @@ all_reqs = {
     ),
     "kernel": (
         ("ipython", "py2"),
-        ("ipython", "py3;py<38"),
+        ("ipython", "py3;py<37"),
+        ("ipython", "py==37"),
         ("ipython", "py38"),
         ("ipykernel", "py2"),
         ("ipykernel", "py3;py<38"),
@@ -928,13 +929,15 @@ min_versions = {
 
     # don't upgrade until myst-parser supports the new version
     "sphinx": (6,),
-    # don't upgrade this; it breaks on Python 3.6
+    # don't upgrade this; it breaks on Python 3.7
+    ("ipython", "py==37"): (7, 34),
+    # don't upgrade these; it breaks on Python 3.6
     ("pandas", "py36"): (1,),
     ("jupyter-client", "py36"): (7, 1, 2),
     ("typing_extensions", "py==36"): (4, 1),
     # don't upgrade these; they break on Python 3.5
     ("ipykernel", "py3;py<38"): (5, 5),
-    ("ipython", "py3;py<38"): (7, 9),
+    ("ipython", "py3;py<37"): (7, 9),
     ("jupyter-console", "py>=35;py<37"): (6, 1),
     ("jupyter-client", "py==35"): (6, 1, 12),
     ("jupytext", "py3"): (1, 8),
@@ -967,12 +970,13 @@ min_versions = {
 # should match the reqs with comments above
 pinned_reqs = (
     "sphinx",
+    ("ipython", "py==37"),
     ("pandas", "py36"),
     ("jupyter-client", "py36"),
     ("typing_extensions", "py==36"),
     ("jupyter-client", "py<35"),
     ("ipykernel", "py3;py<38"),
-    ("ipython", "py3;py<38"),
+    ("ipython", "py3;py<37"),
     ("jupyter-console", "py>=35;py<37"),
     ("jupyter-client", "py==35"),
     ("jupytext", "py3"),
@@ -1005,7 +1009,7 @@ max_versions = {
     ("prompt_toolkit", "mark2"): _,
     ("jedi", "py<39"): _,
     ("pywinpty", "py2;windows"): _,
-    ("ipython", "py3;py<38"): _,
+    ("ipython", "py3;py<37"): _,
 }
 
 classifiers = (
