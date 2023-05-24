@@ -29,23 +29,25 @@ if IPY:
     if PY35:
         import asyncio
     from coconut.icoconut import CoconutKernel  # type: ignore
+    from jupyter_client.session import Session
 else:
     CoconutKernel = None  # type: ignore
+    Session = object  # type: ignore
 
 
-def assert_raises(c, exc, not_exc=None, err_has=None):
-    """Test whether callable c raises an exception of type exc."""
-    if not_exc is None and exc is CoconutSyntaxError:
-        not_exc = CoconutParseError
+def assert_raises(c, Exc, not_Exc=None, err_has=None):
+    """Test whether callable c raises an exception of type Exc."""
+    if not_Exc is None and Exc is CoconutSyntaxError:
+        not_Exc = CoconutParseError
     # we don't check err_has without the computation graph since errors can be quite different
     if not USE_COMPUTATION_GRAPH:
         err_has = None
 
     try:
         c()
-    except exc as err:
-        if not_exc is not None:
-            assert not isinstance(err, not_exc), f"{err} instance of {not_exc}"
+    except Exc as err:
+        if not_Exc is not None:
+            assert not isinstance(err, not_Exc), f"{err} instance of {not_Exc}"
         if err_has is not None:
             if isinstance(err_has, tuple):
                 assert any(has in str(err) for has in err_has), f"{str(err)!r} does not contain any of {err_has!r}"
@@ -59,9 +61,9 @@ def assert_raises(c, exc, not_exc=None, err_has=None):
             assert "unprintable" not in syntax_err_str, syntax_err_str
             assert "<exception" not in syntax_err_str, syntax_err_str
     except BaseException as err:
-        raise AssertionError(f"got wrong exception {err} (expected {exc})")
+        raise AssertionError(f"got wrong exception {err} (expected {Exc})")
     else:
-        raise AssertionError(f"{c} failed to raise exception {exc}")
+        raise AssertionError(f"{c} failed to raise exception {Exc}")
 
 
 def unwrap_future(event_loop, maybe_future):
@@ -77,6 +79,12 @@ def unwrap_future(event_loop, maybe_future):
         return event_loop.run_until_complete(maybe_future)
     else:
         return maybe_future
+
+
+class FakeSession(Session):
+    captured_messages: list[tuple] = []
+    def send(self, stream, msg_or_type, content, *args, **kwargs):
+        self.captured_messages.append((msg_or_type, content))
 
 
 def test_setup_none() -> bool:
@@ -364,30 +372,50 @@ def test_kernel() -> bool:
         asyncio.set_event_loop(loop)
     else:
         loop = None  # type: ignore
+
     k = CoconutKernel()
+    fake_session = FakeSession()
+    k.shell.displayhook.session = fake_session
+
     exec_result = k.do_execute("derp = pow$(?, 2)", False, True, {"two": "(+)(1, 1)"}, True) |> unwrap_future$(loop)
     assert exec_result["status"] == "ok"
     assert exec_result["user_expressions"]["two"]["data"]["text/plain"] == "2"
+
     assert k.do_execute("operator ++", False, True, {}, True) |> unwrap_future$(loop) |> .["status"] == "ok"
     assert k.do_execute("(++) = 1", False, True, {}, True) |> unwrap_future$(loop) |> .["status"] == "ok"
+
+    fail_result = k.do_execute("f([] {})", False, True, {}, True) |> unwrap_future$(loop)
+    captured_msg_type, captured_msg_content = fake_session.captured_messages[-1]
+    assert fail_result["status"] == "error" == captured_msg_type, fail_result
+    assert fail_result["ename"] == "SyntaxError" == captured_msg_content["ename"], fail_result
+    assert fail_result["traceback"] == captured_msg_content["traceback"], fail_result
+    assert len(fail_result["traceback"]) == 1, fail_result
+    assert "parsing failed" in fail_result["traceback"][0], fail_result
+    assert fail_result["evalue"] == captured_msg_content["evalue"], fail_result
+    assert "parsing failed" in fail_result["evalue"], fail_result
+
     assert k.do_is_complete("if abc:")["status"] == "incomplete"
     assert k.do_is_complete("f(")["status"] == "incomplete"
     assert k.do_is_complete("abc")["status"] == "complete"
+
     inspect_result = k.do_inspect("derp", 4, 0)
     assert inspect_result["status"] == "ok"
     assert inspect_result["found"]
     assert inspect_result["data"]["text/plain"]
+
     complete_result = k.do_complete("der", 1)
     assert complete_result["status"] == "ok"
     assert "derp" in complete_result["matches"]
     assert complete_result["cursor_start"] == 0
     assert complete_result["cursor_end"] == 1
+
     keyword_complete_result = k.do_complete("ma", 1)
     assert keyword_complete_result["status"] == "ok"
     assert "match" in keyword_complete_result["matches"]
     assert "map" in keyword_complete_result["matches"]
     assert keyword_complete_result["cursor_start"] == 0
     assert keyword_complete_result["cursor_end"] == 1
+
     return True
 
 
