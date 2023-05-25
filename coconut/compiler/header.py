@@ -579,6 +579,8 @@ try:
 except ImportError:
     class YouNeedToInstallTypingExtensions{object}:
         __slots__ = ()
+        def __init__(self):
+            raise _coconut.TypeError('Protocols cannot be instantiated')
     Protocol = YouNeedToInstallTypingExtensions
 typing.Protocol = Protocol
             '''.format(**format_dict),
