@@ -878,6 +878,8 @@ Custom operators will often need to be surrounded by whitespace (or parentheses 
 
 If a custom operator that is also a valid name is desired, you can use a backslash before the name to get back the name instead using Coconut's [keyword/variable disambiguation syntax](#handling-keywordvariable-name-overlap).
 
+_Note: redefining existing Coconut operators using custom operator definition syntax is forbidden, including Coconut's built-in [Unicode operator alternatives](#unicode-alternatives)._
+
 ##### Examples
 
 **Coconut:**
@@ -1033,6 +1035,8 @@ class CanAddAndSub(Protocol, Generic[T, U, V]):
 ### Unicode Alternatives
 
 Coconut supports Unicode alternatives to many different operator symbols. The Unicode alternatives are relatively straightforward, and chosen to reflect the look and/or meaning of the original symbol.
+
+_Note: these are only the default, built-in unicode operators. Coconut supports [custom operator definition](#custom-operators) to define your own._
 
 ##### Full List
 
