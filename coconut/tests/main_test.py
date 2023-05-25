@@ -57,7 +57,7 @@ from coconut.constants import (
     get_bool_env_var,
 )
 
-from coconut.convenience import (
+from coconut.api import (
     auto_compilation,
     setup,
 )
@@ -402,10 +402,10 @@ def using_dest(dest=dest):
 
 
 @contextmanager
-def using_coconut(fresh_logger=True, fresh_convenience=False):
-    """Decorator for ensuring that coconut.terminal.logger and coconut.convenience.* are reset."""
+def using_coconut(fresh_logger=True, fresh_api=False):
+    """Decorator for ensuring that coconut.terminal.logger and coconut.api.* are reset."""
     saved_logger = logger.copy()
-    if fresh_convenience:
+    if fresh_api:
         setup()
         auto_compilation(False)
     if fresh_logger:
@@ -678,8 +678,8 @@ class TestShell(unittest.TestCase):
     def test_pipe(self):
         call('echo ' + escape(coconut_snip) + "| coconut -s", shell=True, assert_output=True)
 
-    def test_convenience(self):
-        call_python(["-c", 'from coconut.convenience import parse; exec(parse("' + coconut_snip + '"))'], assert_output=True)
+    def test_api(self):
+        call_python(["-c", 'from coconut.api import parse; exec(parse("' + coconut_snip + '"))'], assert_output=True)
 
     def test_import_hook(self):
         with using_sys_path(src):

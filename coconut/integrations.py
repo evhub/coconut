@@ -57,12 +57,12 @@ def load_ipython_extension(ipython):
     ipython.push(newvars)
 
     # import here to avoid circular dependencies
-    from coconut import convenience
+    from coconut import api
     from coconut.exceptions import CoconutException
     from coconut.terminal import logger
 
-    magic_state = convenience.get_state()
-    convenience.setup(state=magic_state, **coconut_kernel_kwargs)
+    magic_state = api.get_state()
+    api.setup(state=magic_state, **coconut_kernel_kwargs)
 
     # add magic function
     def magic(line, cell=None):
@@ -74,9 +74,9 @@ def load_ipython_extension(ipython):
                 # first line in block is cmd, rest is code
                 line = line.strip()
                 if line:
-                    convenience.cmd(line, default_target="sys", state=magic_state)
+                    api.cmd(line, default_target="sys", state=magic_state)
                 code = cell
-            compiled = convenience.parse(code, state=magic_state)
+            compiled = api.parse(code, state=magic_state)
         except CoconutException:
             logger.print_exc()
         else:

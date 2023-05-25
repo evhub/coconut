@@ -204,7 +204,7 @@ dest                destination directory for compiled files (defaults to
                         run the compiler in a separate thread with the given stack size in
                         kilobytes
   --site-install, --siteinstall
-                        set up coconut.convenience to be imported on Python start
+                        set up coconut.api to be imported on Python start
   --site-uninstall, --siteuninstall
                         revert the effects of --site-install
   --verbose             print verbose debug output
@@ -220,7 +220,7 @@ coconut-run <source> <args>
 ```
 as an alias for
 ```
-coconut --run --quiet --target sys --line-numbers <source> --argv <args>
+coconut --quiet --target sys --line-numbers --keep-lines --run <source> --argv <args>
 ```
 which will quietly compile and run `<source>`, passing any additional arguments to the script, mimicking how the `python` command works.
 
@@ -391,7 +391,7 @@ Simply installing Coconut should add a `Coconut` kernel to your Jupyter/IPython 
 
 The Coconut kernel will always compile using the parameters: `--target sys --line-numbers --keep-lines --no-wrap-types`.
 
-Coconut also provides the following convenience commands:
+Coconut also provides the following api commands:
 
 - `coconut --jupyter notebook` will ensure that the Coconut kernel is available and launch a Jupyter/IPython notebook.
 - `coconut --jupyter console` will launch a Jupyter/IPython console using the Coconut kernel.
@@ -4265,7 +4265,7 @@ Recommended usage is as a debugging tool, where the code `from coconut import em
 
 ### Automatic Compilation
 
-If you don't care about the exact compilation parameters you want to use, automatic compilation lets Coconut take care of everything for you. Automatic compilation can be enabled either by importing [`coconut.convenience`](#coconut-convenience) before you import anything else, or by running `coconut --site-install`. Once automatic compilation is enabled, Coconut will check each of your imports to see if you are attempting to import a `.coco` file and, if so, automatically compile it for you. Note that, for Coconut to know what file you are trying to import, it will need to be accessible via `sys.path`, just like a normal import.
+If you don't care about the exact compilation parameters you want to use, automatic compilation lets Coconut take care of everything for you. Automatic compilation can be enabled either by importing [`coconut.api`](#coconut-api) before you import anything else, or by running `coconut --site-install`. Once automatic compilation is enabled, Coconut will check each of your imports to see if you are attempting to import a `.coco` file and, if so, automatically compile it for you. Note that, for Coconut to know what file you are trying to import, it will need to be accessible via `sys.path`, just like a normal import.
 
 Automatic compilation always compiles modules and packages in-place, and always uses `--target sys`. Automatic compilation is always available in the Coconut interpreter, and, if using the Coconut interpreter, a `reload` built-in is provided to easily reload imported modules. Additionally, the interpreter always allows importing from the current working directory, letting you easily compile and play around with a `.coco` file simply by running the Coconut interpreter and importing it.
 
@@ -4275,15 +4275,17 @@ While automatic compilation is the preferred method for dynamically compiling Co
 ```coconut
 # coding: coconut
 ```
-declaration which can be added to `.py` files to have them treated as Coconut files instead. To use such a coding declaration, you'll need to either run `coconut --site-install` or `import coconut.convenience` at some point before you first attempt to import a file with a `# coding: coconut` declaration. Like automatic compilation, compilation is always done with `--target sys` and is always available from the Coconut interpreter.
+declaration which can be added to `.py` files to have them treated as Coconut files instead. To use such a coding declaration, you'll need to either run `coconut --site-install` or `import coconut.api` at some point before you first attempt to import a file with a `# coding: coconut` declaration. Like automatic compilation, compilation is always done with `--target sys` and is always available from the Coconut interpreter.
 
-### `coconut.convenience`
+### `coconut.api`
 
-In addition to enabling automatic compilation, `coconut.convenience` can also be used to call the Coconut compiler from code instead of from the command line. See below for specifications of the different convenience functions.
+In addition to enabling automatic compilation, `coconut.api` can also be used to call the Coconut compiler from code instead of from the command line. See below for specifications of the different api functions.
+
+_DEPRECATED: `coconut.convenience` is a deprecated alias for `coconut.api`._
 
 #### `get_state`
 
-**coconut.convenience.get\_state**(_state_=`None`)
+**coconut.api.get\_state**(_state_=`None`)
 
 Gets a state object which stores the current compilation parameters. State objects can be configured with [**setup**](#setup) or [**cmd**](#cmd) and then used in [**parse**](#parse) or [**coconut\_eval**](#coconut_eval).
 
@@ -4291,9 +4293,9 @@ If _state_ is `None`, gets a new state object, whereas if _state_ is `False`, th
 
 #### `parse`
 
-**coconut.convenience.parse**(_code_=`""`, _mode_=`"sys"`, _state_=`False`, _keep\_internal\_state_=`None`)
+**coconut.api.parse**(_code_=`""`, _mode_=`"sys"`, _state_=`False`, _keep\_internal\_state_=`None`)
 
-Likely the most useful of the convenience functions, `parse` takes Coconut code as input and outputs the equivalent compiled Python code. _mode_ is used to indicate the context for the parsing and _state_ is the state object storing the compilation parameters to use as obtained from [**get_state**](#get_state) (if `False`, uses the global state object). _keep\_internal\_state_ determines whether the state object will keep internal state (such as what [custom operators](#custom-operators) have been declared)—if `None`, internal state will be kept iff you are not using the global _state_.
+Likely the most useful of the api functions, `parse` takes Coconut code as input and outputs the equivalent compiled Python code. _mode_ is used to indicate the context for the parsing and _state_ is the state object storing the compilation parameters to use as obtained from [**get_state**](#get_state) (if `False`, uses the global state object). _keep\_internal\_state_ determines whether the state object will keep internal state (such as what [custom operators](#custom-operators) have been declared)—if `None`, internal state will be kept iff you are not using the global _state_.
 
 If _code_ is not passed, `parse` will output just the given _mode_'s header, which can be executed to set up an execution environment in which future code can be parsed and executed without a header.
 
@@ -4340,7 +4342,7 @@ Each _mode_ has two components: what parser it uses, and what header it prepends
 ##### Example
 
 ```coconut_python
-from coconut.convenience import parse
+from coconut.api import parse
 exec(parse())
 while True:
     exec(parse(input(), mode="block"))
@@ -4348,7 +4350,7 @@ while True:
 
 #### `setup`
 
-**coconut.convenience.setup**(_target_=`None`, _strict_=`False`, _minify_=`False`, _line\_numbers_=`False`, _keep\_lines_=`False`, _no\_tco_=`False`, _no\_wrap_=`False`, *, _state_=`False`)
+**coconut.api.setup**(_target_=`None`, _strict_=`False`, _minify_=`False`, _line\_numbers_=`False`, _keep\_lines_=`False`, _no\_tco_=`False`, _no\_wrap_=`False`, *, _state_=`False`)
 
 `setup` can be used to set up the given state object with the given command-line flags. If _state_ is `False`, the global state object is used.
 
@@ -4364,7 +4366,7 @@ The possible values for each flag argument are:
 
 #### `cmd`
 
-**coconut.convenience.cmd**(_args_=`None`, *, _argv_=`None`, _interact_=`False`, _default\_target_=`None`, _state_=`False`)
+**coconut.api.cmd**(_args_=`None`, *, _argv_=`None`, _interact_=`False`, _default\_target_=`None`, _state_=`False`)
 
 Executes the given _args_ as if they were fed to `coconut` on the command-line, with the exception that unless _interact_ is true or `-i` is passed, the interpreter will not be started. Additionally, _argv_ can be used to pass in arguments as in `--argv` and _default\_target_ can be used to set the default `--target`.
 
@@ -4372,13 +4374,13 @@ Has the same effect of setting the command-line flags on the given _state_ objec
 
 #### `coconut_eval`
 
-**coconut.convenience.coconut_eval**(_expression_, _globals_=`None`, _locals_=`None`, _state_=`False`, _keep\_internal\_state_=`None`)
+**coconut.api.coconut_eval**(_expression_, _globals_=`None`, _locals_=`None`, _state_=`False`, _keep\_internal\_state_=`None`)
 
 Version of [`eval`](https://docs.python.org/3/library/functions.html#eval) which can evaluate Coconut code.
 
 #### `version`
 
-**coconut.convenience.version**(**[**_which_**]**)
+**coconut.api.version**(**[**_which_**]**)
 
 Retrieves a string containing information about the Coconut version. The optional argument _which_ is the type of version information desired. Possible values of _which_ are:
 
@@ -4390,19 +4392,19 @@ Retrieves a string containing information about the Coconut version. The optiona
 
 #### `auto_compilation`
 
-**coconut.convenience.auto_compilation**(_on_=`True`)
+**coconut.api.auto_compilation**(_on_=`True`)
 
-Turns [automatic compilation](#automatic-compilation) on or off. This function is called automatically when `coconut.convenience` is imported.
+Turns [automatic compilation](#automatic-compilation) on or off. This function is called automatically when `coconut.api` is imported.
 
 #### `use_coconut_breakpoint`
 
-**coconut.convenience.use_coconut_breakpoint**(_on_=`True`)
+**coconut.api.use_coconut_breakpoint**(_on_=`True`)
 
-Switches the [`breakpoint` built-in](https://www.python.org/dev/peps/pep-0553/) which Coconut makes universally available to use [`coconut.embed`](#coconut-embed) instead of [`pdb.set_trace`](https://docs.python.org/3/library/pdb.html#pdb.set_trace) (or undoes that switch if `on=False`). This function is called automatically when `coconut.convenience` is imported.
+Switches the [`breakpoint` built-in](https://www.python.org/dev/peps/pep-0553/) which Coconut makes universally available to use [`coconut.embed`](#coconut-embed) instead of [`pdb.set_trace`](https://docs.python.org/3/library/pdb.html#pdb.set_trace) (or undoes that switch if `on=False`). This function is called automatically when `coconut.api` is imported.
 
 #### `CoconutException`
 
-If an error is encountered in a convenience function, a `CoconutException` instance may be raised. `coconut.convenience.CoconutException` is provided to allow catching such errors.
+If an error is encountered in a api function, a `CoconutException` instance may be raised. `coconut.api.CoconutException` is provided to allow catching such errors.
 
 ### `coconut.__coconut__`
 

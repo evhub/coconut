@@ -552,7 +552,7 @@ class Runner(object):
 
     def __init__(self, comp=None, exit=sys.exit, store=False, path=None):
         """Create the executor."""
-        from coconut.convenience import auto_compilation, use_coconut_breakpoint
+        from coconut.api import auto_compilation, use_coconut_breakpoint
         auto_compilation(on=interpreter_uses_auto_compilation)
         use_coconut_breakpoint(on=interpreter_uses_coconut_breakpoint)
         self.exit = exit
