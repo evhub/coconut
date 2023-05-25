@@ -96,34 +96,30 @@ class CoconutXontribLoader(object):
     timing_info = []
 
     @memoize_with_exceptions(128)
-    def _base_memoized_parse_xonsh(self, code):
+    def memoized_parse_xonsh(self, code):
         return self.compiler.parse_xonsh(code, keep_state=True)
 
-    def memoized_parse_xonsh(self, code):
+    def compile_code(self, code):
         """Memoized self.compiler.parse_xonsh."""
-        # .strip() outside the memoization
-        return self._base_memoized_parse_xonsh(code.strip())
+        # hide imports to avoid circular dependencies
+        from coconut.exceptions import CoconutException
+        from coconut.terminal import format_error
+        from coconut.util import get_clock_time
+        from coconut.terminal import logger
 
-    def new_parse(self, parser, code, mode="exec", *args, **kwargs):
-        """Coconut-aware version of xonsh's _parse."""
-        if self.loaded and mode not in disabled_xonsh_modes:
-            # hide imports to avoid circular dependencies
-            from coconut.exceptions import CoconutException
-            from coconut.terminal import format_error
-            from coconut.util import get_clock_time
-            from coconut.terminal import logger
+        parse_start_time = get_clock_time()
+        quiet, logger.quiet = logger.quiet, True
+        try:
+            # .strip() outside the memoization
+            code = self.memoized_parse_xonsh(code.strip())
+        except CoconutException as err:
+            err_str = format_error(err).splitlines()[0]
+            code += "  #" + err_str
+        finally:
+            logger.quiet = quiet
+            self.timing_info.append(("parse", get_clock_time() - parse_start_time))
 
-            parse_start_time = get_clock_time()
-            quiet, logger.quiet = logger.quiet, True
-            try:
-                code = self.memoized_parse_xonsh(code)
-            except CoconutException as err:
-                err_str = format_error(err).splitlines()[0]
-                code += "  #" + err_str
-            finally:
-                logger.quiet = quiet
-                self.timing_info.append(("parse", get_clock_time() - parse_start_time))
-        return parser.__class__.parse(parser, code, mode=mode, *args, **kwargs)
+        return code
 
     def new_try_subproc_toks(self, ctxtransformer, node, *args, **kwargs):
         """Version of try_subproc_toks that handles the fact that Coconut
@@ -136,17 +132,23 @@ class CoconutXontribLoader(object):
         finally:
             ctxtransformer.mode = mode
 
-    def new_ctxvisit(self, ctxtransformer, node, inp, *args, **kwargs):
+    def new_parse(self, parser, code, mode="exec", *args, **kwargs):
+        """Coconut-aware version of xonsh's _parse."""
+        if self.loaded and mode not in disabled_xonsh_modes:
+            code = self.compile_code(code)
+        return parser.__class__.parse(parser, code, mode=mode, *args, **kwargs)
+
+    def new_ctxvisit(self, ctxtransformer, node, inp, ctx, mode="exec", *args, **kwargs):
         """Version of ctxvisit that ensures looking up original lines in inp
         using Coconut line numbers will work properly."""
-        if self.loaded:
+        if self.loaded and mode not in disabled_xonsh_modes:
             from xonsh.tools import get_logical_line
 
             # hide imports to avoid circular dependencies
             from coconut.terminal import logger
             from coconut.compiler.util import extract_line_num_from_comment
 
-            compiled = self.memoized_parse_xonsh(inp)
+            compiled = self.compile_code(inp)
 
             original_lines = tuple(inp.splitlines())
             used_lines = set()
@@ -166,7 +168,8 @@ class CoconutXontribLoader(object):
                 new_inp_lines.append(line)
                 last_ln = ln
             inp = "\n".join(new_inp_lines) + "\n"
-        return ctxtransformer.__class__.ctxvisit(ctxtransformer, node, inp, *args, **kwargs)
+
+        return ctxtransformer.__class__.ctxvisit(ctxtransformer, node, inp, ctx, mode, *args, **kwargs)
 
     def __call__(self, xsh, **kwargs):
         # hide imports to avoid circular dependencies
