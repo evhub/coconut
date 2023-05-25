@@ -109,17 +109,20 @@ class CoconutXontribLoader(object):
 
         parse_start_time = get_clock_time()
         quiet, logger.quiet = logger.quiet, True
+        success = False
         try:
             # .strip() outside the memoization
             code = self.memoized_parse_xonsh(code.strip())
         except CoconutException as err:
             err_str = format_error(err).splitlines()[0]
             code += "  #" + err_str
+        else:
+            success = True
         finally:
             logger.quiet = quiet
             self.timing_info.append(("parse", get_clock_time() - parse_start_time))
 
-        return code
+        return code, success
 
     def new_try_subproc_toks(self, ctxtransformer, node, *args, **kwargs):
         """Version of try_subproc_toks that handles the fact that Coconut
@@ -135,7 +138,7 @@ class CoconutXontribLoader(object):
     def new_parse(self, parser, code, mode="exec", *args, **kwargs):
         """Coconut-aware version of xonsh's _parse."""
         if self.loaded and mode not in disabled_xonsh_modes:
-            code = self.compile_code(code)
+            code, _ = self.compile_code(code)
         return parser.__class__.parse(parser, code, mode=mode, *args, **kwargs)
 
     def new_ctxvisit(self, ctxtransformer, node, inp, ctx, mode="exec", *args, **kwargs):
@@ -148,26 +151,27 @@ class CoconutXontribLoader(object):
             from coconut.terminal import logger
             from coconut.compiler.util import extract_line_num_from_comment
 
-            compiled = self.compile_code(inp)
+            compiled, success = self.compile_code(inp)
 
-            original_lines = tuple(inp.splitlines())
-            used_lines = set()
-            new_inp_lines = []
-            last_ln = 1
-            for compiled_line in compiled.splitlines():
-                ln = extract_line_num_from_comment(compiled_line, default=last_ln + 1)
-                try:
-                    line, _, _ = get_logical_line(original_lines, ln - 1)
-                except IndexError:
-                    logger.log_exc()
-                    line = original_lines[-1]
-                if line in used_lines:
-                    line = ""
-                else:
-                    used_lines.add(line)
-                new_inp_lines.append(line)
-                last_ln = ln
-            inp = "\n".join(new_inp_lines) + "\n"
+            if success:
+                original_lines = tuple(inp.splitlines())
+                used_lines = set()
+                new_inp_lines = []
+                last_ln = 1
+                for compiled_line in compiled.splitlines():
+                    ln = extract_line_num_from_comment(compiled_line, default=last_ln + 1)
+                    try:
+                        line, _, _ = get_logical_line(original_lines, ln - 1)
+                    except IndexError:
+                        logger.log_exc()
+                        line = original_lines[-1]
+                    if line in used_lines:
+                        line = ""
+                    else:
+                        used_lines.add(line)
+                    new_inp_lines.append(line)
+                    last_ln = ln
+                inp = "\n".join(new_inp_lines) + "\n"
 
         return ctxtransformer.__class__.ctxvisit(ctxtransformer, node, inp, ctx, mode, *args, **kwargs)
 
