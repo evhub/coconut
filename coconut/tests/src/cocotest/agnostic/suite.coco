@@ -148,7 +148,7 @@ def suite_test() -> bool:
     assert one_to_five([1,2,3,4,5]) == [2,3,4]
     assert not one_to_five([0,1,2,3,4,5])
     assert one_to_five([1,5]) == []
-    assert -4 == neg_square_u(2) ≠ 4 ∧ 0 ≤ neg_square_u(0) ≤ 0
+    assert -4 == neg_square_u(2) ≠ 4 ∩ 0 ≤ neg_square_u(0) ≤ 0
     assert is_null(null1())
     assert is_null(null2())
     assert empty() |> depth_1 == 0 == empty() |> depth_2
