@@ -45,7 +45,7 @@ def non_strict_test() -> bool:
         assert False
     match A.CONST in 11:  # type: ignore
         assert False
-    assert A.CONST == 10
+    assert A.CONST == 10 == A.("CONST")
     match {"a": 1, "b": 2}:  # type: ignore
         case {"a": a}:
             pass
