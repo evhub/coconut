@@ -82,7 +82,10 @@ def unwrap_future(event_loop, maybe_future):
 
 
 class FakeSession(Session):
-    captured_messages: list[tuple] = []
+    if TYPE_CHECKING:
+        captured_messages: list[tuple] = []
+    else:
+        captured_messages: list = []
     def send(self, stream, msg_or_type, content, *args, **kwargs):
         self.captured_messages.append((msg_or_type, content))
 
