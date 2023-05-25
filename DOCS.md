@@ -108,6 +108,8 @@ pip install coconut-develop
 ```
 which will install the most recent working version from Coconut's [`develop` branch](https://github.com/evhub/coconut/tree/develop). Optional dependency installation is supported in the same manner as above. For more information on the current development build, check out the [development version of this documentation](http://coconut.readthedocs.io/en/develop/DOCS.html). Be warned: `coconut-develop` is likely to be unstable—if you find a bug, please report it by [creating a new issue](https://github.com/evhub/coconut/issues/new).
 
+_Note: if you have an existing release version of `coconut` installed, you'll need to `pip uninstall coconut` before installing `coconut-develop`._
+
 ## Compilation
 
 ```{contents}
