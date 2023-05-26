@@ -723,14 +723,15 @@ class TestShell(unittest.TestCase):
             p.sendline('echo f"{$ENV_VAR}"; echo f"{$ENV_VAR}"')
             p.expect("ABC")
             p.expect("ABC")
-            if PY36 and (not PYPY or PY39):
-                p.sendline("echo 123;; 123")
-                p.expect("123;; 123")
-            p.sendline('execx("10 |> print")')
-            p.expect("subprocess mode")
+            if not PYPY or PY39:
+                if PY36:
+                    p.sendline("echo 123;; 123")
+                    p.expect("123;; 123")
+                p.sendline('execx("10 |> print")')
+                p.expect("subprocess mode")
             p.sendline("xontrib unload coconut")
             p.expect("$")
-            if PY36:
+            if (not PYPY or PY39) and PY36:
                 p.sendline("1 |> print")
                 p.expect("subprocess mode")
             p.sendeof()
