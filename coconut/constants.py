@@ -90,6 +90,7 @@ MYPY = (
 XONSH = (
     PY35
     and not (PYPY and PY39)
+    and sys.version_info[:2] != (3, 7)
 )
 
 py_version_str = sys.version.split()[0]
@@ -864,7 +865,7 @@ all_reqs = {
     ),
     "xonsh": (
         ("xonsh", "py<36"),
-        ("xonsh", "py==37"),
+        ("xonsh", "py>=36;py<38"),
         ("xonsh", "py38"),
     ),
     "backports": (
@@ -934,8 +935,8 @@ min_versions = {
     "sphinx": (6,),
     # don't upgrade these; they breaks on Python 3.7
     ("ipython", "py==37"): (7, 34),
-    ("xonsh", "py==37"): (0, 12),
     # don't upgrade these; they breaks on Python 3.6
+    ("xonsh", "py>=36;py<38"): (0, 11),
     ("pandas", "py36"): (1,),
     ("jupyter-client", "py36"): (7, 1, 2),
     ("typing_extensions", "py==36"): (4, 1),
@@ -975,7 +976,7 @@ min_versions = {
 pinned_reqs = (
     "sphinx",
     ("ipython", "py==37"),
-    ("xonsh", "py==37"),
+    ("xonsh", "py>=36;py<38"),
     ("pandas", "py36"),
     ("jupyter-client", "py36"),
     ("typing_extensions", "py==36"),

@@ -1485,7 +1485,14 @@ def makedata(data_type, *args, **kwargs):
 {class_amap}
 def fmap(func, obj, **kwargs):
     """fmap(func, obj) creates a copy of obj with func applied to its contents.
-    Supports asynchronous iterables, mappings (maps over .items()), and numpy arrays (uses np.vectorize).
+
+    Supports:
+    * Coconut data types
+    * `str`, `dict`, `list`, `tuple`, `set`, `frozenset`
+    * `dict` (maps over .items())
+    * asynchronous iterables
+    * numpy arrays (uses np.vectorize)
+    * pandas objects (uses .apply)
 
     Override by defining obj.__fmap__(func).
     """

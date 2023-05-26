@@ -1601,4 +1601,5 @@ def primary_test() -> bool:
     assert (...=really_long_var).really_long_var == 10
     n = [0]
     assert n[0] == 0
+    assert_raises(-> m{{1:2,2:3}}, TypeError)
     return True

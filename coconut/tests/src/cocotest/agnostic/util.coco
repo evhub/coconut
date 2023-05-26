@@ -864,6 +864,10 @@ class clsC:
 class clsD:
     d = 4
 
+class inh_inh_A(inh_A):
+    @override
+    def true(self) = False
+
 class MyExc(Exception):
     def __init__(self, m):
         super().__init__(m)

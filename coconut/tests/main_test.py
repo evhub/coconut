@@ -49,6 +49,7 @@ from coconut.constants import (
     XONSH,
     MYPY,
     PY35,
+    PY36,
     PY38,
     PY310,
     icoconut_default_kernel_names,
@@ -721,8 +722,9 @@ class TestShell(unittest.TestCase):
             p.sendline('echo f"{$ENV_VAR}"; echo f"{$ENV_VAR}"')
             p.expect("ABC")
             p.expect("ABC")
-            p.sendline("echo 123;; 123")
-            p.expect("123;; 123")
+            if PY36:
+                p.sendline("echo 123;; 123")
+                p.expect("123;; 123")
             p.sendline('execx("10 |> print")')
             p.expect("subprocess mode")
             p.sendline("xontrib unload coconut")
