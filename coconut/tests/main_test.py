@@ -51,6 +51,7 @@ from coconut.constants import (
     PY35,
     PY36,
     PY38,
+    PY39,
     PY310,
     icoconut_default_kernel_names,
     icoconut_custom_kernel_name,
@@ -722,7 +723,7 @@ class TestShell(unittest.TestCase):
             p.sendline('echo f"{$ENV_VAR}"; echo f"{$ENV_VAR}"')
             p.expect("ABC")
             p.expect("ABC")
-            if PY36:
+            if PY36 and (not PYPY or PY39):
                 p.sendline("echo 123;; 123")
                 p.expect("123;; 123")
             p.sendline('execx("10 |> print")')
