@@ -729,8 +729,9 @@ class TestShell(unittest.TestCase):
             p.expect("subprocess mode")
             p.sendline("xontrib unload coconut")
             p.expect("$")
-            p.sendline("1 |> print")
-            p.expect("subprocess mode")
+            if PY36:
+                p.sendline("1 |> print")
+                p.expect("subprocess mode")
             p.sendeof()
             if p.isalive():
                 p.terminate()

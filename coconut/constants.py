@@ -90,7 +90,7 @@ MYPY = (
 XONSH = (
     PY35
     and not (PYPY and PY39)
-    and sys.version_info[:2] != (3, 7)
+    and (PY38 or not PY36)
 )
 
 py_version_str = sys.version.split()[0]
