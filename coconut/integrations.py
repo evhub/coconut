@@ -112,17 +112,17 @@ class CoconutXontribLoader(object):
         success = False
         try:
             # .strip() outside the memoization
-            code = self.memoized_parse_xonsh(code.strip())
+            compiled = self.memoized_parse_xonsh(code.strip())
         except CoconutException as err:
             err_str = format_error(err).splitlines()[0]
-            code += "  #" + err_str
+            compiled = code + "  #" + err_str
         else:
             success = True
         finally:
             logger.quiet = quiet
             self.timing_info.append(("parse", get_clock_time() - parse_start_time))
 
-        return code, success
+        return compiled, success
 
     def new_try_subproc_toks(self, ctxtransformer, node, *args, **kwargs):
         """Version of try_subproc_toks that handles the fact that Coconut
@@ -171,7 +171,9 @@ class CoconutXontribLoader(object):
                         used_lines.add(line)
                     new_inp_lines.append(line)
                     last_ln = ln
-                inp = "\n".join(new_inp_lines) + "\n"
+                inp = "\n".join(new_inp_lines)
+
+            inp += "\n"
 
         return ctxtransformer.__class__.ctxvisit(ctxtransformer, node, inp, ctx, mode, *args, **kwargs)
 

@@ -863,7 +863,9 @@ all_reqs = {
         "watchdog",
     ),
     "xonsh": (
-        "xonsh",
+        ("xonsh", "py<36"),
+        ("xonsh", "py==37"),
+        ("xonsh", "py38"),
     ),
     "backports": (
         ("trollius", "py2;cpy"),
@@ -922,14 +924,16 @@ min_versions = {
     ("ipykernel", "py38"): (6,),
     ("jedi", "py39"): (0, 18),
     ("pygments", "mark39"): (2, 15),
+    ("xonsh", "py38"): (0, 14),
 
     # pinned reqs: (must be added to pinned_reqs below)
 
     # don't upgrade until myst-parser supports the new version
     "sphinx": (6,),
-    # don't upgrade this; it breaks on Python 3.7
+    # don't upgrade these; they breaks on Python 3.7
     ("ipython", "py==37"): (7, 34),
-    # don't upgrade these; it breaks on Python 3.6
+    ("xonsh", "py==37"): (0, 12),
+    # don't upgrade these; they breaks on Python 3.6
     ("pandas", "py36"): (1,),
     ("jupyter-client", "py36"): (7, 1, 2),
     ("typing_extensions", "py==36"): (4, 1),
@@ -940,7 +944,7 @@ min_versions = {
     ("jupyter-client", "py==35"): (6, 1, 12),
     ("jupytext", "py3"): (1, 8),
     ("jupyterlab", "py35"): (2, 2),
-    "xonsh": (0, 9),
+    ("xonsh", "py<36"): (0, 9),
     ("typing_extensions", "py==35"): (3, 10),
     # don't upgrade this to allow all versions
     ("prompt_toolkit", "mark3"): (1,),
@@ -969,6 +973,7 @@ min_versions = {
 pinned_reqs = (
     "sphinx",
     ("ipython", "py==37"),
+    ("xonsh", "py==37"),
     ("pandas", "py36"),
     ("jupyter-client", "py36"),
     ("typing_extensions", "py==36"),
@@ -979,7 +984,7 @@ pinned_reqs = (
     ("jupyter-client", "py==35"),
     ("jupytext", "py3"),
     ("jupyterlab", "py35"),
-    "xonsh",
+    ("xonsh", "py<36"),
     ("typing_extensions", "py==35"),
     ("prompt_toolkit", "mark3"),
     "pytest",

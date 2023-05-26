@@ -46,9 +46,9 @@ from coconut.constants import (
     WINDOWS,
     PYPY,
     IPY,
+    XONSH,
     MYPY,
     PY35,
-    PY36,
     PY38,
     PY310,
     icoconut_default_kernel_names,
@@ -708,9 +708,7 @@ class TestShell(unittest.TestCase):
             for _ in range(2):  # make sure we can import it twice
                 call_python([runnable_py, "--arg"], assert_output=True, convert_to_import=True)
 
-    # not py36 is only because newer Python versions require newer xonsh
-    #  versions that aren't always installed by pip install coconut[tests]
-    if not WINDOWS and PY35 and not PY36:
+    if not WINDOWS and XONSH:
         def test_xontrib(self):
             p = spawn_cmd("xonsh")
             p.expect("$")
@@ -718,6 +716,12 @@ class TestShell(unittest.TestCase):
             p.expect("$")
             p.sendline("!(ls -la) |> bool")
             p.expect("True")
+            p.sendline('$ENV_VAR = "ABC"')
+            p.expect("$")
+            p.sendline('echo f"{$ENV_VAR}"; echo f"{$ENV_VAR}"')
+            p.expect("ABC\nABC")
+            p.sendline("echo 123;; 123")
+            p.expect("123;; 123")
             p.sendline("xontrib unload coconut")
             p.expect("$")
             p.sendeof()

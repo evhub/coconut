@@ -2348,6 +2348,7 @@ class Grammar(object):
     unsafe_anything_stmt = originalTextFor(regex_item("[^\n]+\n+"))
     unsafe_xonsh_command = originalTextFor(
         (Optional(at) + dollar | bang)
+        + ~(lparen + rparen | lbrack + rbrack | lbrace + rbrace)
         + (parens | brackets | braces | unsafe_name),
     )
     xonsh_parser, _anything_stmt, _xonsh_command = disable_outside(
