@@ -212,8 +212,8 @@ class CoconutXontribLoader(object):
     def unload(self, xsh):
         if not self.loaded:
             # hide imports to avoid circular dependencies
-            from coconut.exceptions import CoconutException
-            raise CoconutException("attempting to unload Coconut xontrib but it was never loaded")
+            from coconut.terminal import logger
+            logger.warn("attempting to unload Coconut xontrib but it was never loaded")
         self.loaded = False
 
 

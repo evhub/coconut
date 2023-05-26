@@ -889,7 +889,8 @@ all_reqs = {
         "pydata-sphinx-theme",
     ),
     "tests": (
-        "pytest",
+        ("pytest", "py<36"),
+        ("pytest", "py36"),
         "pexpect",
         ("numpy", "py34"),
         ("numpy", "py2;cpy"),
@@ -925,6 +926,7 @@ min_versions = {
     ("jedi", "py39"): (0, 18),
     ("pygments", "mark39"): (2, 15),
     ("xonsh", "py38"): (0, 14),
+    ("pytest", "py36"): (7,),
 
     # pinned reqs: (must be added to pinned_reqs below)
 
@@ -949,7 +951,7 @@ min_versions = {
     # don't upgrade this to allow all versions
     ("prompt_toolkit", "mark3"): (1,),
     # don't upgrade this; it breaks on Python 2.6
-    "pytest": (3,),
+    ("pytest", "py<36"): (3,),
     # don't upgrade this; it breaks on unix
     "vprof": (0, 36),
     # don't upgrade this; it breaks on Python 3.4
@@ -987,7 +989,7 @@ pinned_reqs = (
     ("xonsh", "py<36"),
     ("typing_extensions", "py==35"),
     ("prompt_toolkit", "mark3"),
-    "pytest",
+    ("pytest", "py<36"),
     "vprof",
     ("pygments", "mark<39"),
     ("pywinpty", "py2;windows"),
