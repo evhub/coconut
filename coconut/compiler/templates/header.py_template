@@ -20,7 +20,7 @@ class _coconut{object}:{COMMENT.EVERYTHING_HERE_MUST_BE_COPIED_TO_STUB_FILE}
 {import_pickle}
 {import_OrderedDict}
 {import_collections_abc}
-    typing = types.ModuleType("typing")
+    typing = types.ModuleType(_coconut_py_str("typing"))
     try:
         import typing_extensions
     except ImportError:
