@@ -1,4 +1,18 @@
-import asyncio, typing
+import asyncio, typing, sys
+
+if sys.version_info >= (3, 10):
+    from contextlib import aclosing
+elif sys.version_info >= (3, 7):
+    from contextlib import asynccontextmanager
+    @asynccontextmanager
+    async def aclosing(thing):
+        try:
+            yield thing
+        finally:
+            await thing.aclose()
+else:
+    aclosing = None
+
 
 def py36_test() -> bool:
     """Performs Python-3.6-specific tests."""
@@ -12,23 +26,48 @@ def py36_test() -> bool:
         for i in range(n):
             yield :await ayield(i)
     async def afor_test():
-        # syntax 1
+        # match syntax 1
         got = []
         async for int(i) in arange(5):
             got.append(i)
         assert got == range(5) |> list
 
-        # syntax 2
+        # match syntax 2
         got = []
         async match for int(i) in arange(5):
             got.append(i)
         assert got == range(5) |> list
 
-        # syntax 3
+        # match syntax 3
         got = []
         match async for int(i) in arange(5):
             got.append(i)
         assert got == range(5) |> list
+
+        if aclosing is not None:
+            # non-match
+            got = []
+            async with for i in aclosing(arange(5)):
+                got.append(i)
+            assert got == range(5) |> list
+
+            # match syntax 1
+            got = []
+            async with for int(i) in aclosing(arange(5)):
+                got.append(i)
+            assert got == range(5) |> list
+
+            # match syntax 2
+            got = []
+            async match with for int(i) in aclosing(arange(5)):
+                got.append(i)
+            assert got == range(5) |> list
+
+            # match syntax 3
+            got = []
+            match async with for int(i) in aclosing(arange(5)):
+                got.append(i)
+            assert got == range(5) |> list
 
         return True
     loop.run_until_complete(afor_test())

@@ -746,6 +746,7 @@ class Compiler(Grammar, pickleable_obj):
         cls.new_testlist_star_expr <<= trace_attach(cls.new_testlist_star_expr_ref, cls.method("new_testlist_star_expr_handle"))
         cls.anon_namedtuple <<= trace_attach(cls.anon_namedtuple_ref, cls.method("anon_namedtuple_handle"))
         cls.base_match_for_stmt <<= trace_attach(cls.base_match_for_stmt_ref, cls.method("base_match_for_stmt_handle"))
+        cls.async_with_for_stmt <<= trace_attach(cls.async_with_for_stmt_ref, cls.method("async_with_for_stmt_handle"))
         cls.unsafe_typedef_tuple <<= trace_attach(cls.unsafe_typedef_tuple_ref, cls.method("unsafe_typedef_tuple_handle"))
         cls.funcname_typeparams <<= trace_attach(cls.funcname_typeparams_ref, cls.method("funcname_typeparams_handle"))
         cls.impl_call <<= trace_attach(cls.impl_call_ref, cls.method("impl_call_handle"))
@@ -4000,6 +4001,51 @@ for {match_to_var} in {item}:
             match_code=match_code,
             match_error=match_error,
             body=body,
+        )
+
+    def async_with_for_stmt_handle(self, original, loc, tokens):
+        """Handle async with for loops."""
+        if self.target_info < (3, 5):
+            raise self.make_err(CoconutTargetError, "async with for statements require Python 3.5+", original, loc, target="35")
+
+        inner_toks, = tokens
+
+        if "match" in inner_toks:
+            is_match = True
+        else:
+            internal_assert("normal" in inner_toks, "invalid async_with_for_stmt inner_toks", inner_toks)
+            is_match = False
+
+        loop_vars, iter_item, body = inner_toks
+        temp_var = self.get_temp_var("async_with_for")
+
+        if is_match:
+            loop = "async " + self.base_match_for_stmt_handle(
+                original,
+                loc,
+                [loop_vars, temp_var, body],
+            )
+        else:
+            loop = handle_indentation(
+                """
+async for {loop_vars} in {temp_var}:
+{body}
+                """,
+            ).format(
+                loop_vars=loop_vars,
+                temp_var=temp_var,
+                body=body,
+            )
+
+        return handle_indentation(
+            """
+async with {iter_item} as {temp_var}:
+    {loop}
+            """,
+        ).format(
+            iter_item=iter_item,
+            temp_var=temp_var,
+            loop=loop
         )
 
     def string_atom_handle(self, tokens):

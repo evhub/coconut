@@ -1547,6 +1547,60 @@ b = 2
 c = a + b
 ```
 
+### `async with for`
+
+In modern Python `async` code, such as when using [`contextlib.aclosing`](https://docs.python.org/3/library/contextlib.html#contextlib.aclosing), it is often recommended to use a pattern like
+```coconut_python
+async with aclosing(my_generator()) as values:
+    async for value in values:
+        ...
+```
+since it is substantially safer than the more syntactically straightforward
+```coconut_python
+async for value in my_generator():
+    ...
+```
+
+This is especially true when using [`trio`](https://github.com/python-trio/trio), which [completely disallows iterating over `async` generators with `async for`](https://discuss.python.org/t/preventing-yield-inside-certain-context-managers/1091), instead requiring the above `async with ... async for` pattern using utilities such as [`trio_util.trio_async_generator`](https://trio-util.readthedocs.io/en/latest/#trio_util.trio_async_generator).
+
+Since this pattern can often be quite syntactically cumbersome, Coconut provides the shortcut syntax
+```
+async with for aclosing(my_generator()) as values:
+    ...
+```
+which compiles to exactly the pattern above.
+
+`async with for` also [supports pattern-matching, just like normal Coconut `for` loops](#match-for).
+
+##### Example
+
+**Coconut:**
+```coconut
+from trio_util import trio_async_generator
+
+@trio_async_generator
+async def my_generator():
+    # yield values, possibly from a nursery or cancel scope
+    # ...
+
+async with for value in my_generator():
+    print(value)
+```
+
+**Python:**
+```coconut_python
+from trio_util import trio_async_generator
+
+@trio_async_generator
+async def my_generator():
+    # yield values, possibly from a nursery or cancel scope
+    # ...
+
+async with my_generator() as agen:
+    async for value in agen:
+        print(value)
+```
+
 ### Handling Keyword/Variable Name Overlap
 
 In Coconut, the following keywords are also valid variable names:
