@@ -20,8 +20,23 @@ class _coconut{object}:{COMMENT.EVERYTHING_HERE_MUST_BE_COPIED_TO_STUB_FILE}
 {import_pickle}
 {import_OrderedDict}
 {import_collections_abc}
+    typing = types.ModuleType("typing")
+    try:
+        import typing_extensions
+    except ImportError:
+        typing_extensions = None
+    else:
+        for _name in dir(typing_extensions):
+            if not _name.startswith("__"):
+                setattr(typing, _name, getattr(typing_extensions, _name))
+    typing.__doc__ = "Coconut version of typing that makes use of typing.typing_extensions when possible.\n\n" + (getattr(typing, "__doc__") or "The typing module is not available at runtime in Python 3.4 or earlier; try hiding your typedefs behind an 'if TYPE_CHECKING:' block.")
 {import_typing}
-{import_typing_36}{import_typing_38}{import_typing_310}{import_typing_311}{set_zip_longest}
+{import_typing_36}{import_typing_38}{import_typing_310}{import_typing_311}
+    def _typing_getattr(name):
+        raise _coconut.AttributeError("typing.%s is not available on the current Python version and couldn't be looked up in typing_extensions; try hiding your typedefs behind an 'if TYPE_CHECKING:' block" % (name,))
+    typing.__getattr__ = _typing_getattr
+    _typing_getattr = staticmethod(_typing_getattr)
+{set_zip_longest}
     try:
         import numpy
     except ImportError:

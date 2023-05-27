@@ -1051,6 +1051,7 @@ forward 2""") == 900
     really_long_var = 10
     assert ret_args_kwargs(...=really_long_var) == ((), {"really_long_var": 10}) == ret_args_kwargs$(...=really_long_var)()
     assert ret_args_kwargs(123, ...=really_long_var, abc="abc") == ((123,), {"really_long_var": 10, "abc": "abc"}) == ret_args_kwargs$(123, ...=really_long_var, abc="abc")()
+    assert "Coconut version of typing" in typing.__doc__
 
     # must come at end
     assert fibs_calls[0] == 1

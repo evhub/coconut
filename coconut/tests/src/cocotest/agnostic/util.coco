@@ -22,7 +22,7 @@ class AccessCounter():
             self.counts[attr] += 1
         return super(AccessCounter, self).__getattribute__(attr)
 
-def assert_raises(c, exc=Exception):
+def assert_raises(c, exc):
     """Test whether callable c raises an exception of type exc."""
     try:
         c()
@@ -231,9 +231,8 @@ addpattern def x! if x = False  # type: ignore
 addpattern def x! = True  # type: ignore
 
 # Type aliases:
+import typing
 if sys.version_info >= (3, 5) or TYPE_CHECKING:
-    import typing
-
     type list_or_tuple = list | tuple
 
     type func_to_int = -> int

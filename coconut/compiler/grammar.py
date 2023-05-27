@@ -1592,7 +1592,13 @@ class Grammar(object):
         + arrow.suppress()
         + stmt_lambdef_body
     )
-    stmt_lambdef_ref = general_stmt_lambdef | match_stmt_lambdef
+    stmt_lambdef_ref = (
+        general_stmt_lambdef
+        | match_stmt_lambdef
+    ) + (
+        fixto(FollowedBy(comma), ",")
+        | fixto(always_match, "")
+    )
 
     lambdef <<= addspace(lambdef_base + test) | stmt_lambdef
     lambdef_no_cond = trace(addspace(lambdef_base + test_no_cond))

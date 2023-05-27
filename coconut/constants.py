@@ -430,6 +430,8 @@ py3_to_py2_stdlib = {
     # third-party backports
     "asyncio": ("trollius", (3, 4)),
     "enum": ("aenum", (3, 4)),
+
+    # typing_extensions
     "typing.AsyncContextManager": ("typing_extensions./AsyncContextManager", (3, 6)),
     "typing.AsyncGenerator": ("typing_extensions./AsyncGenerator", (3, 6)),
     "typing.AsyncIterable": ("typing_extensions./AsyncIterable", (3, 6)),
@@ -480,6 +482,10 @@ py3_to_py2_stdlib = {
     "typing.Self": ("typing_extensions./Self", (3, 11)),
     "typing.TypeVarTuple": ("typing_extensions./TypeVarTuple", (3, 11)),
     "typing.Unpack": ("typing_extensions./Unpack", (3, 11)),
+}
+
+import_existing = {
+    "typing": "_coconut.typing",
 }
 
 self_match_types = (

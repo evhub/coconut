@@ -180,6 +180,7 @@ def py37_spec_test() -> bool:
     assert l == list(range(10))
     class HasVarGen[*Ts]  # type: ignore
     assert HasVarGen `issubclass` object
+    assert typing.Protocol.__module__ == "typing_extensions"
     return True
 
 

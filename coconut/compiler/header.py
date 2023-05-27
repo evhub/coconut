@@ -534,28 +534,36 @@ for _coconut_varname in dir(MatchError):
         underscore_imports="{tco_comma}{call_set_names_comma}{handle_cls_args_comma}_namedtuple_of, _coconut, _coconut_Expected, _coconut_MatchError, _coconut_SupportsAdd, _coconut_SupportsMinus, _coconut_SupportsMul, _coconut_SupportsPow, _coconut_SupportsTruediv, _coconut_SupportsFloordiv, _coconut_SupportsMod, _coconut_SupportsAnd, _coconut_SupportsXor, _coconut_SupportsOr, _coconut_SupportsLshift, _coconut_SupportsRshift, _coconut_SupportsMatmul, _coconut_SupportsInv, _coconut_iter_getitem, _coconut_base_compose, _coconut_forward_compose, _coconut_back_compose, _coconut_forward_star_compose, _coconut_back_star_compose, _coconut_forward_dubstar_compose, _coconut_back_dubstar_compose, _coconut_pipe, _coconut_star_pipe, _coconut_dubstar_pipe, _coconut_back_pipe, _coconut_back_star_pipe, _coconut_back_dubstar_pipe, _coconut_none_pipe, _coconut_none_star_pipe, _coconut_none_dubstar_pipe, _coconut_bool_and, _coconut_bool_or, _coconut_none_coalesce, _coconut_minus, _coconut_map, _coconut_partial, _coconut_get_function_match_error, _coconut_base_pattern_func, _coconut_addpattern, _coconut_sentinel, _coconut_assert, _coconut_raise, _coconut_mark_as_match, _coconut_reiterable, _coconut_self_match_types, _coconut_dict_merge, _coconut_exec, _coconut_comma_op, _coconut_multi_dim_arr, _coconut_mk_anon_namedtuple, _coconut_matmul, _coconut_py_str, _coconut_flatten, _coconut_multiset, _coconut_back_none_pipe, _coconut_back_none_star_pipe, _coconut_back_none_dubstar_pipe, _coconut_forward_none_compose, _coconut_back_none_compose, _coconut_forward_none_star_compose, _coconut_back_none_star_compose, _coconut_forward_none_dubstar_compose, _coconut_back_none_dubstar_compose, _coconut_call_or_coefficient, _coconut_in, _coconut_not_in".format(**format_dict),
         import_typing=pycondition(
             (3, 5),
-            if_ge="import typing",
+            if_ge='''
+import typing as _typing
+for _name in dir(_typing):
+    if not hasattr(typing, _name):
+        setattr(typing, _name, getattr(_typing, _name))
+            ''',
             if_lt='''
-class typing_mock{object}:
-    """The typing module is not available at runtime in Python 3.4 or earlier;
-    try hiding your typedefs behind an 'if TYPE_CHECKING:' block."""
-    TYPE_CHECKING = False
+if not hasattr(typing, "TYPE_CHECKING"):
+    typing.TYPE_CHECKING = False
+if not hasattr(typing, "Any"):
     Any = Ellipsis
-    def cast(self, t, x):
+if not hasattr(typing, "cast"):
+    def cast(t, x):
         """typing.cast[T](t: Type[T], x: Any) -> T = x"""
         return x
-    def __getattr__(self, name):
-        raise _coconut.ImportError("the typing module is not available at runtime in Python 3.4 or earlier; try hiding your typedefs behind an 'if TYPE_CHECKING:' block")
+    typing.cast = cast
+    cast = staticmethod(cast)
+if not hasattr(typing, "TypeVar"):
     def TypeVar(name, *args, **kwargs):
         """Runtime mock of typing.TypeVar for Python 3.4 and earlier."""
         return name
+    typing.TypeVar = TypeVar
+    TypeVar = staticmethod(TypeVar)
+if not hasattr(typing, "Generic"):
     class Generic_mock{object}:
         """Runtime mock of typing.Generic for Python 3.4 and earlier."""
         __slots__ = ()
         def __getitem__(self, vars):
             return _coconut.object
-    Generic = Generic_mock()
-typing = typing_mock()
+    typing.Generic = Generic_mock()
             '''.format(**format_dict),
             indent=1,
         ),
@@ -563,10 +571,11 @@ typing = typing_mock()
         import_typing_36=pycondition(
             (3, 6),
             if_lt='''
-def NamedTuple(name, fields):
-    return _coconut.collections.namedtuple(name, [x for x, t in fields])
-typing.NamedTuple = NamedTuple
-NamedTuple = staticmethod(NamedTuple)
+if not hasattr(typing, "NamedTuple"):
+    def NamedTuple(name, fields):
+        return _coconut.collections.namedtuple(name, [x for x, t in fields])
+    typing.NamedTuple = NamedTuple
+    NamedTuple = staticmethod(NamedTuple)
             ''',
             indent=1,
             newline=True,
@@ -574,15 +583,12 @@ NamedTuple = staticmethod(NamedTuple)
         import_typing_38=pycondition(
             (3, 8),
             if_lt='''
-try:
-    from typing_extensions import Protocol
-except ImportError:
+if not hasattr(typing, "Protocol"):
     class YouNeedToInstallTypingExtensions{object}:
         __slots__ = ()
         def __init__(self):
             raise _coconut.TypeError('Protocols cannot be instantiated')
-    Protocol = YouNeedToInstallTypingExtensions
-typing.Protocol = Protocol
+    typing.Protocol = YouNeedToInstallTypingExtensions
             '''.format(**format_dict),
             indent=1,
             newline=True,
@@ -590,18 +596,15 @@ typing.Protocol = Protocol
         import_typing_310=pycondition(
             (3, 10),
             if_lt='''
-try:
-    from typing_extensions import ParamSpec, TypeAlias, Concatenate
-except ImportError:
+if not hasattr(typing, "ParamSpec"):
     def ParamSpec(name, *args, **kwargs):
         """Runtime mock of typing.ParamSpec for Python 3.9 and earlier."""
         return _coconut.typing.TypeVar(name)
+    typing.ParamSpec = ParamSpec
+if not hasattr(typing, "TypeAlias") or not hasattr(typing, "Concatenate"):
     class you_need_to_install_typing_extensions{object}:
         __slots__ = ()
-    TypeAlias = Concatenate = you_need_to_install_typing_extensions()
-typing.ParamSpec = ParamSpec
-typing.TypeAlias = TypeAlias
-typing.Concatenate = Concatenate
+    typing.TypeAlias = typing.Concatenate = you_need_to_install_typing_extensions()
             '''.format(**format_dict),
             indent=1,
             newline=True,
@@ -609,17 +612,15 @@ typing.Concatenate = Concatenate
         import_typing_311=pycondition(
             (3, 11),
             if_lt='''
-try:
-    from typing_extensions import TypeVarTuple, Unpack
-except ImportError:
+if not hasattr(typing, "TypeVarTuple"):
     def TypeVarTuple(name, *args, **kwargs):
         """Runtime mock of typing.TypeVarTuple for Python 3.10 and earlier."""
         return _coconut.typing.TypeVar(name)
+    typing.TypeVarTuple = TypeVarTuple
+if not hasattr(typing, "Unpack"):
     class you_need_to_install_typing_extensions{object}:
         __slots__ = ()
-    Unpack = you_need_to_install_typing_extensions()
-typing.TypeVarTuple = TypeVarTuple
-typing.Unpack = Unpack
+    typing.Unpack = you_need_to_install_typing_extensions()
             '''.format(**format_dict),
             indent=1,
             newline=True,

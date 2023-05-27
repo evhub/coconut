@@ -1602,4 +1602,5 @@ def primary_test() -> bool:
     n = [0]
     assert n[0] == 0
     assert_raises(-> m{{1:2,2:3}}, TypeError)
+    assert_raises((def -> from typing import blah), ImportError)  # NOQA
     return True

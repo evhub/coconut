@@ -323,16 +323,17 @@ If the `--strict` (`-s` for short) flag is enabled, Coconut will perform additio
 
 The style issues which will cause `--strict` to throw an error are:
 
-- mixing of tabs and spaces (without `--strict` will show a warning),
-- use of `from __future__` imports (Coconut does these automatically) (without `--strict` will show a warning),
-- inheriting from `object` in classes (Coconut does this automatically) (without `--strict` will show a warning),
-- semicolons at end of lines (without `--strict` will show a warning),
-- use of `u` to denote Unicode strings (all Coconut strings are Unicode strings) (without `--strict` will show a warning),
-- missing new line at end of file,
-- trailing whitespace at end of lines,
-- use of the Python-style `lambda` statement (use [Coconut's lambda syntax](#lambdas) instead),
-- use of backslash continuation (use [parenthetical continuation](#enhanced-parenthetical-continuation) instead),
-- Python-3.10/PEP-634-style dotted names in pattern-matching (Coconut style is to preface these with `==`), and
+- mixing of tabs and spaces (without `--strict` will show a warning).
+- use of `from __future__` imports (Coconut does these automatically) (without `--strict` will show a warning).
+- inheriting from `object` in classes (Coconut does this automatically) (without `--strict` will show a warning).
+- semicolons at end of lines (without `--strict` will show a warning).
+- use of `u` to denote Unicode strings (all Coconut strings are Unicode strings) (without `--strict` will show a warning).
+- commas after [statement lambdas](#statement-lambdas) (not recommended as it can be unclear whether the comma is inside or outside the lambda) (without `--strict` will show a warning).
+- missing new line at end of file.
+- trailing whitespace at end of lines.
+- use of the Python-style `lambda` statement (use [Coconut's lambda syntax](#lambdas) instead).
+- use of backslash continuation (use [parenthetical continuation](#enhanced-parenthetical-continuation) instead).
+- Python-3.10/PEP-634-style dotted names in pattern-matching (Coconut style is to preface these with `==`).
 - use of `:` instead of `<:` to specify upper bounds in [Coconut's type parameter syntax](#type-parameter-syntax).
 
 ## Integrations
@@ -1613,7 +1614,7 @@ If the last `statement` (not followed by a semicolon) in a statement lambda is a
 
 Statement lambdas also support implicit lambda syntax such that `def -> _` is equivalent to `def (_=None) -> _` as well as explicitly marking them as pattern-matching such that `match def (x) -> x` will be a pattern-matching function.
 
-Note that statement lambdas have a lower precedence than normal lambdas and thus capture things like trailing commas.
+Note that statement lambdas have a lower precedence than normal lambdas and thus capture things like trailing commas. To avoid confusion, statement lambdas should always be wrapped in their own set of parentheses.
 
 ##### Example
 
@@ -1779,7 +1780,7 @@ mod(5, 3)
 
 Since Coconut syntax is a superset of Python 3 syntax, it supports [Python 3 function type annotation syntax](https://www.python.org/dev/peps/pep-0484/) and [Python 3.6 variable type annotation syntax](https://www.python.org/dev/peps/pep-0526/). By default, Coconut compiles all type annotations into Python-2-compatible type comments. If you want to keep the type annotations instead, simply pass a `--target` that supports them.
 
-Since not all supported Python versions support the [`typing`](https://docs.python.org/3/library/typing.html) module, Coconut provides the [`TYPE_CHECKING`](#type_checking) built-in for hiding your `typing` imports and `TypeVar` definitions from being executed at runtime. Coconut will also automatically use [`typing_extensions`](https://pypi.org/project/typing-extensions/) over `typing` when importing objects not available in `typing` on the current Python version.
+Since not all supported Python versions support the [`typing`](https://docs.python.org/3/library/typing.html) module, Coconut provides the [`TYPE_CHECKING`](#type_checking) built-in for hiding your `typing` imports and `TypeVar` definitions from being executed at runtime. Coconut will also automatically use [`typing_extensions`](https://pypi.org/project/typing-extensions/) over `typing` objects at runtime when importing them from `typing`, even when they aren't natively supported on the current Python version (this works even if you just do `import typing` and then `typing.<Object>`).
 
 Furthermore, when compiling type annotations to Python 3 versions without [PEP 563](https://www.python.org/dev/peps/pep-0563/) support, Coconut wraps annotation in strings to prevent them from being evaluated at runtime (note that `--no-wrap-types` disables all wrapping, including via PEP 563 support).
 

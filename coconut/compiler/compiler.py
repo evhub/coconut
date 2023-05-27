@@ -87,6 +87,7 @@ from coconut.constants import (
     all_builtins,
     in_place_op_funcs,
     match_first_arg_var,
+    import_existing,
 )
 from coconut.util import (
     pickleable_obj,
@@ -195,8 +196,27 @@ def set_to_tuple(tokens):
         raise CoconutInternalException("invalid set maker item", tokens[0])
 
 
-def import_stmt(imp_from, imp, imp_as):
+def import_stmt(imp_from, imp, imp_as, raw=False):
     """Generate an import statement."""
+    if not raw:
+        module_path = (imp if imp_from is None else imp_from).split(".", 1)
+        existing_imp = import_existing.get(module_path[0])
+        if existing_imp is not None:
+            return handle_indentation(
+                """
+if _coconut.typing.TYPE_CHECKING:
+    {raw_import}
+else:
+    try:
+        {imp_name} = {imp_lookup}
+    except _coconut.AttributeError as _coconut_imp_err:
+        raise _coconut.ImportError(_coconut.str(_coconut_imp_err))
+                """,
+            ).format(
+                raw_import=import_stmt(imp_from, imp, imp_as, raw=True),
+                imp_name=imp_as if imp_as is not None else imp,
+                imp_lookup=".".join([existing_imp] + module_path[1:] + ([imp] if imp_from is not None else [])),
+            )
     return (
         ("from " + imp_from + " " if imp_from is not None else "")
         + "import " + imp
@@ -3072,9 +3092,7 @@ def __hash__(self):
             imp_from += imp.rsplit("." + imp_as, 1)[0]
             imp, imp_as = imp_as, None
 
-        if imp_from is None and imp == "sys":
-            out.append((imp_as if imp_as is not None else imp) + " = _coconut_sys")
-        elif imp_as is not None and "." in imp_as:
+        if imp_as is not None and "." in imp_as:
             import_as_var = self.get_temp_var("import")
             out.append(import_stmt(imp_from, imp, import_as_var))
             fake_mods = imp_as.split(".")
@@ -3375,7 +3393,12 @@ if not {check_var}:
 
     def stmt_lambdef_handle(self, original, loc, tokens):
         """Process multi-line lambdef statements."""
-        got_kwds, params, stmts_toks = tokens
+        got_kwds, params, stmts_toks, followed_by = tokens
+
+        if followed_by == ",":
+            self.strict_err_or_warn("found statement lambda followed by comma; this isn't recommended as it can be unclear whether the comma is inside or outside the lambda (just wrap the lambda in parentheses)", original, loc)
+        else:
+            internal_assert(followed_by == "", "invalid stmt_lambdef followed_by", followed_by)
 
         is_async = False
         add_kwds = []
