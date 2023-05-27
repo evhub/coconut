@@ -544,7 +544,7 @@ for _name in dir(_typing):
 if not hasattr(typing, "TYPE_CHECKING"):
     typing.TYPE_CHECKING = False
 if not hasattr(typing, "Any"):
-    Any = Ellipsis
+    typing.Any = Ellipsis
 if not hasattr(typing, "cast"):
     def cast(t, x):
         """typing.cast[T](t: Type[T], x: Any) -> T = x"""
