@@ -795,10 +795,12 @@ class TestShell(unittest.TestCase):
                 assert kernel in stdout
 
         if not WINDOWS and not PYPY:
-            def test_exit_jupyter(self):
+            def test_jupyter_console(self):
                 p = spawn_cmd("coconut --jupyter console")
                 p.expect("In", timeout=120)
-                p.sendline("exit()")
+                p.sendline("%load_ext coconut")
+                p.expect("In", timeout=120)
+                p.sendline("`exit`")
                 p.expect("Shutting down kernel|shutting down")
                 if p.isalive():
                     p.terminate()

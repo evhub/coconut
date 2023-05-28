@@ -44,25 +44,25 @@ def py35_test() -> bool:
             got.append(i)
         assert got == range(5) |> list
 
-        # non-match
+        # with for non-match
         got = []
         async with for i in aclosing(arange(5)):
             got.append(i)
         assert got == range(5) |> list
 
-        # match syntax 1
+        # with for match syntax 1
         got = []
         async with for int(i) in aclosing(arange(5)):
             got.append(i)
         assert got == range(5) |> list
 
-        # match syntax 2
+        # with for match syntax 2
         got = []
         async match with for int(i) in aclosing(arange(5)):
             got.append(i)
         assert got == range(5) |> list
 
-        # match syntax 3
+        # with for match syntax 3
         got = []
         match async with for int(i) in aclosing(arange(5)):
             got.append(i)
