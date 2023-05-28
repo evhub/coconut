@@ -25,7 +25,6 @@ from coconut.integrations import embed
 from coconut.constants import (
     CPYTHON,
     PY34,
-    PY39,
     IPY,
     MYPY,
     XONSH,
@@ -71,87 +70,120 @@ def get_base_req(req, include_extras=True):
     return req
 
 
+def process_mark(mark):
+    """Get the check string and whether it currently applies for the given mark."""
+    assert not mark.startswith("py2"), "confusing mark; should be changed: " + mark
+    if mark.startswith("py=="):
+        ver = mark[len("py=="):]
+        if len(ver) == 1:
+            ver_tuple = (int(ver),)
+        else:
+            ver_tuple = (int(ver[0]), int(ver[1:]))
+        next_ver_tuple = get_next_version(ver_tuple)
+        check_str = (
+            "python_version>='" + ver_tuple_to_str(ver_tuple) + "'"
+            + " and python_version<'" + ver_tuple_to_str(next_ver_tuple) + "'"
+        )
+        holds_now = (
+            sys.version_info >= ver_tuple
+            and sys.version_info < next_ver_tuple
+        )
+    elif mark in ("py3", "py>=3"):
+        check_str = "python_version>='3'"
+        holds_now = not PY2
+    elif mark == "py<3":
+        check_str = "python_version<'3'"
+        holds_now = PY2
+    elif mark.startswith("py<"):
+        full_ver = mark[len("py<"):]
+        main_ver, sub_ver = full_ver[0], full_ver[1:]
+        check_str = "python_version<'{main}.{sub}'".format(main=main_ver, sub=sub_ver)
+        holds_now = sys.version_info < (int(main_ver), int(sub_ver))
+    elif mark.startswith("py") or mark.startswith("py>="):
+        full_ver = mark[len("py"):]
+        if full_ver.startswith(">="):
+            full_ver = full_ver[len(">="):]
+        main_ver, sub_ver = full_ver[0], full_ver[1:]
+        check_str = "python_version>='{main}.{sub}'".format(main=main_ver, sub=sub_ver)
+        holds_now = sys.version_info >= (int(main_ver), int(sub_ver))
+    elif mark == "cpy":
+        check_str = "platform_python_implementation=='CPython'"
+        holds_now = CPYTHON
+    elif mark == "windows":
+        check_str = "os_name=='nt'"
+        holds_now = WINDOWS
+    elif mark.startswith("mark"):
+        check_str = None
+        holds_now = True
+    else:
+        raise ValueError("unknown env marker " + repr(mark))
+    return check_str, holds_now
+
+
+def get_req_str(req):
+    """Get the str that properly versions the given req."""
+    req_str = get_base_req(req) + ">=" + ver_tuple_to_str(min_versions[req])
+    if req in max_versions:
+        max_ver = max_versions[req]
+        if max_ver is None:
+            max_ver = get_next_version(min_versions[req])
+        if None in max_ver:
+            assert all(v is None for v in max_ver), "invalid max version " + repr(max_ver)
+            max_ver = get_next_version(min_versions[req], len(max_ver) - 1)
+        req_str += ",<" + ver_tuple_to_str(max_ver)
+    return req_str
+
+
+def get_env_markers(req):
+    """Get the environment markers for the given req."""
+    if isinstance(req, tuple):
+        return req[1].split(";")
+    else:
+        return ()
+
+
 def get_reqs(which):
     """Gets requirements from all_reqs with versions."""
     reqs = []
     for req in all_reqs[which]:
+        req_str = get_req_str(req)
         use_req = True
-        req_str = get_base_req(req) + ">=" + ver_tuple_to_str(min_versions[req])
-        if req in max_versions:
-            max_ver = max_versions[req]
-            if max_ver is None:
-                max_ver = get_next_version(min_versions[req])
-            if None in max_ver:
-                assert all(v is None for v in max_ver), "invalid max version " + repr(max_ver)
-                max_ver = get_next_version(min_versions[req], len(max_ver) - 1)
-            req_str += ",<" + ver_tuple_to_str(max_ver)
-        env_marker = req[1] if isinstance(req, tuple) else None
-        if env_marker:
-            markers = []
-            for mark in env_marker.split(";"):
-                if mark.startswith("py=="):
-                    ver = mark[len("py=="):]
-                    if len(ver) == 1:
-                        ver_tuple = (int(ver),)
-                    else:
-                        ver_tuple = (int(ver[0]), int(ver[1:]))
-                    next_ver_tuple = get_next_version(ver_tuple)
-                    if supports_env_markers:
-                        markers.append("python_version>='" + ver_tuple_to_str(ver_tuple) + "'")
-                        markers.append("python_version<'" + ver_tuple_to_str(next_ver_tuple) + "'")
-                    elif sys.version_info < ver_tuple or sys.version_info >= next_ver_tuple:
-                        use_req = False
-                        break
-                elif mark == "py2":
-                    if supports_env_markers:
-                        markers.append("python_version<'3'")
-                    elif not PY2:
-                        use_req = False
-                        break
-                elif mark == "py3":
-                    if supports_env_markers:
-                        markers.append("python_version>='3'")
-                    elif PY2:
-                        use_req = False
-                        break
-                elif mark.startswith("py3") or mark.startswith("py>=3"):
-                    mark = mark[len("py"):]
-                    if mark.startswith(">="):
-                        mark = mark[len(">="):]
-                    ver = mark[len("3"):]
-                    if supports_env_markers:
-                        markers.append("python_version>='3.{ver}'".format(ver=ver))
-                    elif sys.version_info < (3, ver):
-                        use_req = False
-                        break
-                elif mark.startswith("py<3"):
-                    ver = mark[len("py<3"):]
-                    if supports_env_markers:
-                        markers.append("python_version<'3.{ver}'".format(ver=ver))
-                    elif sys.version_info >= (3, ver):
-                        use_req = False
-                        break
-                elif mark == "cpy":
-                    if supports_env_markers:
-                        markers.append("platform_python_implementation=='CPython'")
-                    elif not CPYTHON:
-                        use_req = False
-                        break
-                elif mark == "windows":
-                    if supports_env_markers:
-                        markers.append("os_name=='nt'")
-                    elif not WINDOWS:
-                        use_req = False
-                        break
-                elif mark.startswith("mark"):
-                    pass  # ignore
-                else:
-                    raise ValueError("unknown env marker " + repr(mark))
-            if markers:
-                req_str += ";" + " and ".join(markers)
+        markers = []
+        for mark in get_env_markers(req):
+            check_str, holds_now = process_mark(mark)
+            if supports_env_markers:
+                if check_str is not None:
+                    markers.append(check_str)
+            else:
+                if not holds_now:
+                    use_req = False
+                    break
+        if markers:
+            req_str += ";" + " and ".join(markers)
         if use_req:
             reqs.append(req_str)
     return reqs
+
+
+def get_main_reqs(main_reqs_name):
+    """Get the main requirements and extras."""
+    requirements = []
+    extras = {}
+    if using_modern_setuptools:
+        for req in all_reqs[main_reqs_name]:
+            req_str = get_req_str(req)
+            markers = []
+            for mark in get_env_markers(req):
+                check_str, _ = process_mark(mark)
+                if check_str is not None:
+                    markers.append(check_str)
+            if markers:
+                extras.setdefault(":" + " and ".join(markers), []).append(req_str)
+            else:
+                requirements.append(req_str)
+    else:
+        requirements += get_reqs(main_reqs_name)
+    return requirements, extras
 
 
 def uniqueify(reqs):
@@ -181,7 +213,7 @@ def everything_in(req_dict):
 # SETUP:
 # -----------------------------------------------------------------------------------------------------------------------
 
-requirements = get_reqs("main")
+requirements, reqs_extras = get_main_reqs("main")
 
 extras = {
     "kernel": get_reqs("kernel"),
@@ -218,6 +250,9 @@ extras["dev"] = uniqueify_all(
 if not PY34:
     extras["dev"] = unique_wrt(extras["dev"], extras["mypy"])
 
+# has to come after dev so they don't get included in it
+extras.update(reqs_extras)
+
 if PURE_PYTHON:
     # override necessary for readthedocs
     requirements += get_reqs("purepython")
@@ -231,29 +266,6 @@ else:
         requirements += get_reqs("cpython")
     else:
         requirements += get_reqs("purepython")
-
-if using_modern_setuptools:
-    # modern method
-    extras[":python_version<'2.7'"] = get_reqs("py26")
-    extras[":python_version>='2.7'"] = get_reqs("non-py26")
-    extras[":python_version<'3'"] = get_reqs("py2")
-    extras[":python_version>='3'"] = get_reqs("py3")
-    extras[":python_version<'3.9'"] = get_reqs("py<39")
-    extras[":python_version>='3.9'"] = get_reqs("py39")
-else:
-    # old method
-    if PY26:
-        requirements += get_reqs("py26")
-    else:
-        requirements += get_reqs("non-py26")
-    if PY2:
-        requirements += get_reqs("py2")
-    else:
-        requirements += get_reqs("py3")
-    if PY39:
-        requirements += get_reqs("py39")
-    else:
-        requirements += get_reqs("py<39")
 
 # -----------------------------------------------------------------------------------------------------------------------
 # MAIN:

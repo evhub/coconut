@@ -2372,11 +2372,11 @@ class Grammar(object):
 
     whitespace_regex = compile_regex(r"\s")
 
-    def_regex = compile_regex(r"((async|addpattern|copyclosure)\s+)*def\b")
+    def_regex = compile_regex(r"\b((async|addpattern|copyclosure)\s+)*def\b")
     yield_regex = compile_regex(r"\byield(?!\s+_coconut\.asyncio\.From)\b")
 
-    tco_disable_regex = compile_regex(r"try\b|(async\s+)?(with\b|for\b)|while\b")
-    return_regex = compile_regex(r"return\b")
+    tco_disable_regex = compile_regex(r"\b(try\b|(async\s+)?(with\b|for\b)|while\b)")
+    return_regex = compile_regex(r"\breturn\b")
 
     noqa_regex = compile_regex(r"\b[Nn][Oo][Qq][Aa]\b")
 

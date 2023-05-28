@@ -17,6 +17,12 @@ class _coconut{object}:{COMMENT.EVERYTHING_HERE_MUST_BE_COPIED_TO_STUB_FILE}
     from multiprocessing import dummy as multiprocessing_dummy
 {maybe_bind_lru_cache}{import_copyreg}
 {import_asyncio}
+    try:
+        import async_generator
+    except ImportError:
+        class you_need_to_install_async_generator{object}:
+            __slots__ = ()
+        async_generator = you_need_to_install_async_generator()
 {import_pickle}
 {import_OrderedDict}
 {import_collections_abc}

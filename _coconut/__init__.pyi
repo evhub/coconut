@@ -36,20 +36,23 @@ if sys.version_info >= (3,):
 else:
     import copy_reg as _copyreg
 
-if sys.version_info >= (3, 4):
-    import asyncio as _asyncio
+if sys.version_info >= (3,):
+    from itertools import zip_longest as _zip_longest
 else:
-    import trollius as _asyncio  # type: ignore
+    from itertools import izip_longest as _zip_longest
 
 if sys.version_info < (3, 3):
     _abc = _collections
 else:
     from collections import abc as _abc
 
-if sys.version_info >= (3,):
-    from itertools import zip_longest as _zip_longest
+if sys.version_info >= (3, 4):
+    import asyncio as _asyncio
 else:
-    from itertools import izip_longest as _zip_longest
+    import trollius as _asyncio  # type: ignore
+
+if sys.version_info >= (3, 5):
+    import async_generator as _async_generator
 
 try:
     import numpy as _numpy  # type: ignore
@@ -117,6 +120,7 @@ multiprocessing_dummy = _multiprocessing_dummy
 
 copyreg = _copyreg
 asyncio = _asyncio
+async_generator = _async_generator
 pickle = _pickle
 if sys.version_info >= (2, 7):
     OrderedDict = collections.OrderedDict

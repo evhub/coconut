@@ -1815,6 +1815,8 @@ else:
             and (not is_gen or self.target_info >= (3, 3))
             # don't transform async returns if they're supported
             and (not is_async or self.target_info >= (3, 5))
+            # don't transform async generators if they're supported
+            and (not (is_gen and is_async) or self.target_info >= (3, 6))
         ):
             func_code = "".join(raw_lines)
             return func_code, tco, tre
@@ -1873,6 +1875,20 @@ else:
                                 ),
                             )
                     line = indent + "raise " + ret_err + "(" + to_return + ")" + comment + dedent
+
+                # handle async generator yields
+                if is_async and is_gen and self.target_info < (3, 6):
+                    if self.yield_regex.match(base):
+                        to_yield = base[len("yield"):].strip()
+                        line = indent + "await _coconut.async_generator.yield_(" + to_yield + ")" + comment + dedent
+                    elif self.yield_regex.search(base):
+                        raise self.make_err(
+                            CoconutTargetError,
+                            "found Python 3.6 async generator yield in non-statement position (Coconut only backports async generator yields to 3.5 if they are at the start of the line)",
+                            original,
+                            loc,
+                            target="36",
+                        )
 
                 # TRE
                 tre_base = None
@@ -2025,15 +2041,17 @@ except _coconut.NameError:
                     original, loc,
                     target="sys",
                 )
-            elif is_gen and self.target_info < (3, 6):
+            elif self.target_info >= (3, 5):
+                if is_gen and self.target_info < (3, 6):
+                    decorators += "@_coconut.async_generator.async_generator\n"
+                def_stmt = "async " + def_stmt
+            elif is_gen:
                 raise self.make_err(
                     CoconutTargetError,
-                    "found Python 3.6 async generator",
+                    "found Python 3.6 async generator (Coconut can only backport async generators as far back as 3.5)",
                     original, loc,
-                    target="36",
+                    target="35",
                 )
-            elif self.target_info >= (3, 5):
-                def_stmt = "async " + def_stmt
             else:
                 decorators += "@_coconut.asyncio.coroutine\n"
 

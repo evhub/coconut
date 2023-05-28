@@ -53,6 +53,8 @@ from coconut.constants import (
     PY38,
     PY39,
     PY310,
+    supported_py2_vers,
+    supported_py3_vers,
     icoconut_default_kernel_names,
     icoconut_custom_kernel_name,
     mypy_err_infixes,
@@ -141,6 +143,12 @@ ignore_last_lines_with = (
 kernel_installation_msg = (
     "Coconut: Successfully installed Jupyter kernels: '"
     + "', '".join((icoconut_custom_kernel_name,) + icoconut_default_kernel_names) + "'"
+)
+
+always_sys_versions = (
+    supported_py2_vers[-1],
+    supported_py3_vers[-2],
+    supported_py3_vers[-1],
 )
 
 
@@ -485,7 +493,7 @@ def comp_agnostic(args=[], **kwargs):
     comp(path="cocotest", folder="agnostic", args=args, **kwargs)
 
 
-def comp_2(args=[], **kwargs):
+def comp_2(args=[], always_sys=False, **kwargs):
     """Compiles target_2."""
     # remove --mypy checking for target_2 to avoid numpy errors
     try:
@@ -494,27 +502,27 @@ def comp_2(args=[], **kwargs):
         pass
     else:
         args = args[:mypy_ind]
-    comp(path="cocotest", folder="target_2", args=["--target", "2"] + args, **kwargs)
+    comp(path="cocotest", folder="target_2", args=["--target", "2" if not always_sys else "sys"] + args, **kwargs)
 
 
-def comp_3(args=[], **kwargs):
+def comp_3(args=[], always_sys=False, **kwargs):
     """Compiles target_3."""
-    comp(path="cocotest", folder="target_3", args=["--target", "3"] + args, **kwargs)
+    comp(path="cocotest", folder="target_3", args=["--target", "3" if not always_sys else "sys"] + args, **kwargs)
 
 
-def comp_35(args=[], **kwargs):
+def comp_35(args=[], always_sys=False, **kwargs):
     """Compiles target_35."""
-    comp(path="cocotest", folder="target_35", args=["--target", "35"] + args, **kwargs)
+    comp(path="cocotest", folder="target_35", args=["--target", "35" if not always_sys else "sys"] + args, **kwargs)
 
 
-def comp_36(args=[], **kwargs):
+def comp_36(args=[], always_sys=False, **kwargs):
     """Compiles target_36."""
-    comp(path="cocotest", folder="target_36", args=["--target", "36"] + args, **kwargs)
+    comp(path="cocotest", folder="target_36", args=["--target", "36" if not always_sys else "sys"] + args, **kwargs)
 
 
-def comp_38(args=[], **kwargs):
+def comp_38(args=[], always_sys=False, **kwargs):
     """Compiles target_38."""
-    comp(path="cocotest", folder="target_38", args=["--target", "38"] + args, **kwargs)
+    comp(path="cocotest", folder="target_38", args=["--target", "38" if not always_sys else "sys"] + args, **kwargs)
 
 
 def comp_sys(args=[], **kwargs):
@@ -538,7 +546,7 @@ def run_extras(**kwargs):
     call_python([os.path.join(dest, "extras.py")], assert_output=True, check_errors=False, stderr_first=True, **kwargs)
 
 
-def run(args=[], agnostic_target=None, use_run_arg=False, convert_to_import=False, **kwargs):
+def run(args=[], agnostic_target=None, use_run_arg=False, convert_to_import=False, always_sys=False, **kwargs):
     """Compiles and runs tests."""
     if agnostic_target is None:
         agnostic_args = args
@@ -548,16 +556,19 @@ def run(args=[], agnostic_target=None, use_run_arg=False, convert_to_import=Fals
     with using_dest():
         with (using_dest(additional_dest) if "--and" in args else noop_ctx()):
 
+            spec_kwargs = kwargs.copy()
+            spec_kwargs["always_sys"] = always_sys
             if PY2:
-                comp_2(args, **kwargs)
+                comp_2(args, **spec_kwargs)
             else:
-                comp_3(args, **kwargs)
+                comp_3(args, **spec_kwargs)
                 if sys.version_info >= (3, 5):
-                    comp_35(args, **kwargs)
+                    comp_35(args, **spec_kwargs)
                 if sys.version_info >= (3, 6):
-                    comp_36(args, **kwargs)
+                    comp_36(args, **spec_kwargs)
                 if sys.version_info >= (3, 8):
-                    comp_38(args, **kwargs)
+                    comp_38(args, **spec_kwargs)
+
             comp_agnostic(agnostic_args, **kwargs)
             comp_sys(args, **kwargs)
             comp_non_strict(args, **kwargs)
@@ -677,6 +688,31 @@ class TestShell(unittest.TestCase):
         def test_target_3_snip(self):
             call(["coconut", "-t3", "-c", target_3_snip], assert_output=True)
 
+    if MYPY:
+        def test_universal_mypy_snip(self):
+            call(
+                ["coconut", "-c", mypy_snip, "--mypy"],
+                assert_output=mypy_snip_err_3,
+                check_errors=False,
+                check_mypy=False,
+            )
+
+        def test_sys_mypy_snip(self):
+            call(
+                ["coconut", "--target", "sys", "-c", mypy_snip, "--mypy"],
+                assert_output=mypy_snip_err_3,
+                check_errors=False,
+                check_mypy=False,
+            )
+
+        def test_no_wrap_mypy_snip(self):
+            call(
+                ["coconut", "--target", "sys", "--no-wrap", "-c", mypy_snip, "--mypy"],
+                assert_output=mypy_snip_err_3,
+                check_errors=False,
+                check_mypy=False,
+            )
+
     def test_pipe(self):
         call('echo ' + escape(coconut_snip) + "| coconut -s", shell=True, assert_output=True)
 
@@ -775,32 +811,12 @@ class TestCompilation(unittest.TestCase):
         run()
 
     if MYPY:
-        def test_universal_mypy_snip(self):
-            call(
-                ["coconut", "-c", mypy_snip, "--mypy"],
-                assert_output=mypy_snip_err_3,
-                check_errors=False,
-                check_mypy=False,
-            )
-
-        def test_sys_mypy_snip(self):
-            call(
-                ["coconut", "--target", "sys", "-c", mypy_snip, "--mypy"],
-                assert_output=mypy_snip_err_3,
-                check_errors=False,
-                check_mypy=False,
-            )
-
-        def test_no_wrap_mypy_snip(self):
-            call(
-                ["coconut", "--target", "sys", "--no-wrap", "-c", mypy_snip, "--mypy"],
-                assert_output=mypy_snip_err_3,
-                check_errors=False,
-                check_mypy=False,
-            )
-
         def test_mypy_sys(self):
             run(["--mypy"] + mypy_args, agnostic_target="sys", expect_retcode=None, check_errors=False)  # fails due to tutorial mypy errors
+
+    if sys.version_info[:2] in always_sys_versions:
+        def test_always_sys(self):
+            run(["--line-numbers"], agnostic_target="sys", always_sys=True)
 
     # run fewer tests on Windows so appveyor doesn't time out
     if not WINDOWS:

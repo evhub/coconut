@@ -90,10 +90,11 @@ The full list of optional dependencies is:
 - `watch`: enables use of the `--watch` flag.
 - `mypy`: enables use of the `--mypy` flag.
 - `backports`: installs libraries that backport newer Python features to older versions, which Coconut will automatically use instead of the standard library if the standard library is not available. Specifically:
-  - Installs [`typing`](https://pypi.org/project/typing/) and [`typing_extensions`](https://pypi.org/project/typing-extensions/) to backport [`typing`](https://docs.python.org/3/library/typing.html).
-  - Installs [`aenum`](https://pypi.org/project/aenum) to backport [`enum`](https://docs.python.org/3/library/enum.html).
-  - Installs [`trollius`](https://pypi.python.org/pypi/trollius) to backport [`asyncio`](https://docs.python.org/3/library/asyncio.html).
   - Installs [`dataclasses`](https://pypi.org/project/dataclasses/) to backport [`dataclasses`](https://docs.python.org/3/library/dataclasses.html).
+  - Installs [`typing`](https://pypi.org/project/typing/) to backport [`typing`](https://docs.python.org/3/library/typing.html) ([`typing_extensions`](https://pypi.org/project/typing-extensions/) is always installed for backporting individual `typing` objects).
+  - Installs [`aenum`](https://pypi.org/project/aenum) to backport [`enum`](https://docs.python.org/3/library/enum.html).
+  - Installs [`async_generator`](https://github.com/python-trio/async_generator) to backport [`async` generators](https://peps.python.org/pep-0525/) and [`asynccontextmanager`](https://docs.python.org/3/library/contextlib.html#contextlib.asynccontextmanager).
+  - Installs [`trollius`](https://pypi.python.org/pypi/trollius) to backport [`async`/`await`](https://docs.python.org/3/library/asyncio-task.html) and [`asyncio`](https://docs.python.org/3/library/asyncio.html).
 - `xonsh`: enables use of Coconut's [`xonsh` support](#xonsh-support).
 - `kernel`: lightweight subset of `jupyter` that only includes the dependencies that are strictly necessary for Coconut's [Jupyter kernel](#kernel).
 - `tests`: everything necessary to test the Coconut language itself.
@@ -281,7 +282,7 @@ Finally, while Coconut will try to compile Python-3-specific syntax to its unive
 
 - the `nonlocal` keyword,
 - keyword-only function parameters (use [pattern-matching function definition](#pattern-matching-functions) for universal code),
-- `async` and `await` statements (requires `--target 3.5`),
+- `async` and `await` statements (requires a specific target; Coconut will attempt different backports based on the targeted version),
 - `:=` assignment expressions (requires `--target 3.8`),
 - positional-only function parameters (use [pattern-matching function definition](#pattern-matching-functions) for universal code) (requires `--target 3.8`),
 - `a[x, *y]` variadic generic syntax (use [type parameter syntax](#type-parameter-syntax) for universal code) (requires `--target 3.11`), and

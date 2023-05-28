@@ -348,12 +348,14 @@ async def async_map_test() =
     setup(target="3.2")
     assert parse(gen_func_def, mode="lenient") not in gen_func_def_outs
 
-    setup(target="3.5")
+    setup(target="3.4")
     assert_raises(-> parse("async def f(): yield 1"), CoconutTargetError)
+
+    setup(target="3.5")
+    assert parse("async def f(): yield 1")
 
     setup(target="3.6")
     assert parse("def f(*, x=None) = x")
-    assert parse("async def f(): yield 1")
 
     setup(target="3.8")
     assert parse("(a := b)")
