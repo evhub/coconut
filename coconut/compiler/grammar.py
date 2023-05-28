@@ -2132,8 +2132,8 @@ class Grammar(object):
         | labeled_group(
             (any_len_perm(
                 keyword("match"),
-                required=(keyword("async"),)
-            ) + keyword("with") + keyword("for")).suppress()
+                required=(keyword("async"), keyword("with")),
+            ) + keyword("for")).suppress()
             + many_match + keyword("in").suppress()
             - test
             - suite_with_else_tokens,

@@ -68,6 +68,12 @@ def py35_test() -> bool:
             got.append(i)
         assert got == range(5) |> list
 
+        # with for match syntax 4
+        got = []
+        async with match for int(i) in aclosing(arange(5)):
+            got.append(i)
+        assert got == range(5) |> list
+
         return True
     loop.run_until_complete(afor_test())
 
