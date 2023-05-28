@@ -356,6 +356,7 @@ async def async_map_test() =
 
     setup(target="3.6")
     assert parse("def f(*, x=None) = x")
+    assert "@" not in parse("async def f(x): yield x")
 
     setup(target="3.8")
     assert parse("(a := b)")

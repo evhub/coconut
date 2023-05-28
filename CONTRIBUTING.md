@@ -161,8 +161,11 @@ After you've tested your changes locally, you'll want to add more permanent test
     6. Check [Codebeat](https://codebeat.co/a/evhub/projects) and [LGTM](https://lgtm.com/dashboard) for `coconut` and `compiled-cocotest`
     7. Make sure [`coconut-develop`](https://pypi.python.org/pypi/coconut-develop) package looks good
     8. Run `make docs` and ensure local documentation looks good
-    9.  Make sure [develop documentation](http://coconut.readthedocs.io/en/develop/) looks good
-    10. Make sure [Github Actions](https://github.com/evhub/coconut/actions) and [AppVeyor](https://ci.appveyor.com/project/evhub/coconut) are passing
+    9. Make sure all of the following are passing:
+        1.  [Github Actions](https://github.com/evhub/coconut/actions)
+        2.  [AppVeyor](https://ci.appveyor.com/project/evhub/coconut)
+        3.  [readthedocs](https://readthedocs.org/projects/coconut/builds/)
+    10. Make sure [develop documentation](http://coconut.readthedocs.io/en/develop/) looks good
     11. Turn off `develop` in `root.py`
     12. Set `root.py` to new version number
     13. If major release, set `root.py` to new version name

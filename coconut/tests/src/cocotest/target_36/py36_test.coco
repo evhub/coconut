@@ -1,5 +1,28 @@
+import asyncio
+
+
 def py36_test() -> bool:
     """Performs Python-3.6-specific tests."""
     assert f"{[] |> len}" == "0"
     assert (a=1, b=2) == _namedtuple_of(a=1, b=2) == (1, 2)  # type: ignore
+
+    loop = asyncio.new_event_loop()
+
+    async def outer_func():
+        funcs = []
+        for x in range(5):
+            funcs.append(async copyclosure def -> x)
+        return funcs
+    async def await_all(xs) = [await x for x in xs]
+    async def atest():
+        assert (
+            outer_func()
+            |> await
+            |> map$(call)
+            |> await_all
+            |> await
+        ) == range(5) |> list
+    loop.run_until_complete(atest())
+
+    loop.close()
     return True
