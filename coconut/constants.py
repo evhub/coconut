@@ -431,6 +431,11 @@ py3_to_py2_stdlib = {
     "asyncio": ("trollius", (3, 4)),
     "enum": ("aenum", (3, 4)),
     "contextlib.asynccontextmanager": ("async_generator./asynccontextmanager", (3, 7)),
+    "contextlib.aclosing": ("async_generator./aclosing", (3, 10)),
+    "inspect.isasyncgen": ("async_generator./isasyncgen", (3, 6)),
+    "inspect.isasyncgenfunction": ("async_generator./isasyncgenfunction", (3, 6)),
+    "sys.get_asyncgen_hooks": ("async_generator./get_asyncgen_hooks", (3, 6)),
+    "sys.set_asyncgen_hooks": ("async_generator./set_asyncgen_hooks", (3, 6)),
 
     # # typing_extensions (not needed since _coconut.typing has them
     # #  and mypy is happy to accept that they always live in typing)
@@ -536,7 +541,7 @@ python_builtins = (
     '__file__',
     '__annotations__',
     '__debug__',
-    # don't include builtins that aren't always made available by Coconut:
+    # # don't include builtins that aren't always made available by Coconut:
     # 'BlockingIOError', 'ChildProcessError', 'ConnectionError',
     # 'BrokenPipeError', 'ConnectionAbortedError', 'ConnectionRefusedError',
     # 'ConnectionResetError', 'FileExistsError', 'FileNotFoundError',

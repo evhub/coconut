@@ -55,6 +55,7 @@ from coconut.util import (
     memoize,
     get_clock_time,
     keydefaultdict,
+    assert_remove_prefix,
 )
 from coconut.exceptions import (
     CoconutInternalException,
@@ -597,10 +598,10 @@ def typedef_op_item_handle(loc, tokens):
     op_name, = tokens
     op_name = op_name.strip("_")
     if op_name.startswith("coconut"):
-        op_name = op_name[len("coconut"):]
+        op_name = assert_remove_prefix(op_name, "coconut")
     op_name = op_name.lstrip("._")
     if op_name.startswith("operator."):
-        op_name = op_name[len("operator."):]
+        op_name = assert_remove_prefix(op_name, "operator.")
 
     proto = op_func_protocols.get(op_name)
     if proto is None:
@@ -2374,6 +2375,7 @@ class Grammar(object):
 
     def_regex = compile_regex(r"\b((async|addpattern|copyclosure)\s+)*def\b")
     yield_regex = compile_regex(r"\byield(?!\s+_coconut\.asyncio\.From)\b")
+    yield_from_regex = compile_regex(r"\byield\s+from\b")
 
     tco_disable_regex = compile_regex(r"\b(try\b|(async\s+)?(with\b|for\b)|while\b)")
     return_regex = compile_regex(r"\breturn\b")

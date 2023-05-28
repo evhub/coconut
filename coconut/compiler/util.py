@@ -95,6 +95,7 @@ from coconut.constants import (
     comment_chars,
     non_syntactic_newline,
     allow_explicit_keyword_vars,
+    reserved_prefix,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -1363,3 +1364,37 @@ def add_int_and_strs(int_part=0, str_parts=(), parens=False):
     if parens:
         out = "(" + out + ")"
     return out
+
+
+# -----------------------------------------------------------------------------------------------------------------------
+# PYTEST:
+# -----------------------------------------------------------------------------------------------------------------------
+
+
+class FixPytestNames(ast.NodeTransformer):
+    """Renames invalid names added by pytest assert rewriting."""
+
+    def fix_name(self, name):
+        """Make the given pytest name a valid but non-colliding identifier."""
+        return name.replace("@", reserved_prefix + "_pytest_")
+
+    def visit_Name(self, node):
+        """Special method to visit ast.Names."""
+        node.id = self.fix_name(node.id)
+        return node
+
+    def visit_alias(self, node):
+        """Special method to visit ast.aliases."""
+        node.asname = self.fix_name(node.asname)
+        return node
+
+
+def pytest_rewrite_asserts(code, module_name=reserved_prefix + "_pytest_module"):
+    """Uses pytest to rewrite the assert statements in the given code."""
+    from _pytest.assertion.rewrite import rewrite_asserts  # hidden since it's not always available
+
+    module_name = module_name.encode("utf-8")
+    tree = ast.parse(code)
+    rewrite_asserts(tree, module_name)
+    fixed_tree = ast.fix_missing_locations(FixPytestNames().visit(tree))
+    return ast.unparse(fixed_tree)

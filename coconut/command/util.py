@@ -47,6 +47,7 @@ from coconut.util import (
     get_encoding,
     get_clock_time,
     memoize,
+    assert_remove_prefix,
 )
 from coconut.constants import (
     WINDOWS,
@@ -173,7 +174,7 @@ def showpath(path):
     else:
         path = os.path.relpath(path)
         if path.startswith(os.curdir + os.sep):
-            path = path[len(os.curdir + os.sep):]
+            path = assert_remove_prefix(path, os.curdir + os.sep)
         return path
 
 
@@ -423,13 +424,13 @@ def subpath(path, base_path):
 def invert_mypy_arg(arg):
     """Convert --arg into --no-arg or equivalent."""
     if arg.startswith("--no-"):
-        return "--" + arg[len("--no-"):]
+        return "--" + assert_remove_prefix(arg, "--no-")
     elif arg.startswith("--allow-"):
-        return "--disallow-" + arg[len("--allow-"):]
+        return "--disallow-" + assert_remove_prefix(arg, "--allow-")
     elif arg.startswith("--disallow-"):
-        return "--allow-" + arg[len("--disallow-"):]
+        return "--allow-" + assert_remove_prefix(arg, "--disallow-")
     elif arg.startswith("--"):
-        return "--no-" + arg[len("--"):]
+        return "--no-" + assert_remove_prefix(arg, "--")
     else:
         return None
 

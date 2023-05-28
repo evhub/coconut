@@ -98,6 +98,7 @@ from coconut.util import (
     get_target_info,
     get_clock_time,
     get_name,
+    assert_remove_prefix,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -1855,9 +1856,18 @@ else:
             # attempt tco/tre/async universalization
             if disabled_until_level is None:
 
+                # disallow yield from in async generators
+                if is_async and is_gen and self.yield_from_regex.search(base):
+                    raise self.make_err(
+                        CoconutSyntaxError,
+                        "yield from not allowed in async generators",
+                        original,
+                        loc,
+                    )
+
                 # handle generator/async returns
                 if not normal_func and self.return_regex.match(base):
-                    to_return = base[len("return"):].strip()
+                    to_return = assert_remove_prefix(base, "return").strip()
                     if to_return:
                         to_return = "(" + to_return + ")"
                     # only use trollius Return when trollius is imported
@@ -1879,7 +1889,7 @@ else:
                 # handle async generator yields
                 if is_async and is_gen and self.target_info < (3, 6):
                     if self.yield_regex.match(base):
-                        to_yield = base[len("yield"):].strip()
+                        to_yield = assert_remove_prefix(base, "yield").strip()
                         line = indent + "await _coconut.async_generator.yield_(" + to_yield + ")" + comment + dedent
                     elif self.yield_regex.search(base):
                         raise self.make_err(
@@ -1931,10 +1941,10 @@ else:
         done = False
         while not done:
             if def_stmt.startswith("addpattern "):
-                def_stmt = def_stmt[len("addpattern "):]
+                def_stmt = assert_remove_prefix(def_stmt, "addpattern ")
                 addpattern = True
             elif def_stmt.startswith("copyclosure "):
-                def_stmt = def_stmt[len("copyclosure "):]
+                def_stmt = assert_remove_prefix(def_stmt, "copyclosure ")
                 copyclosure = True
             elif def_stmt.startswith("def"):
                 done = True
@@ -2274,7 +2284,7 @@ else:
 
             # look for functions
             if line.startswith(funcwrapper):
-                func_id = int(line[len(funcwrapper):])
+                func_id = int(assert_remove_prefix(line, funcwrapper))
                 original, loc, decorators, funcdef, is_async, in_method, is_stmt_lambda = self.get_ref("func", func_id)
 
                 # process inner code

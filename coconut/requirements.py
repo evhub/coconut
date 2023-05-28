@@ -41,6 +41,7 @@ from coconut.util import (
     ver_str_to_tuple,
     ver_tuple_to_str,
     get_next_version,
+    assert_remove_prefix,
 )
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -74,7 +75,7 @@ def process_mark(mark):
     """Get the check string and whether it currently applies for the given mark."""
     assert not mark.startswith("py2"), "confusing mark; should be changed: " + mark
     if mark.startswith("py=="):
-        ver = mark[len("py=="):]
+        ver = assert_remove_prefix(mark, "py==")
         if len(ver) == 1:
             ver_tuple = (int(ver),)
         else:
@@ -95,14 +96,14 @@ def process_mark(mark):
         check_str = "python_version<'3'"
         holds_now = PY2
     elif mark.startswith("py<"):
-        full_ver = mark[len("py<"):]
+        full_ver = assert_remove_prefix(mark, "py<")
         main_ver, sub_ver = full_ver[0], full_ver[1:]
         check_str = "python_version<'{main}.{sub}'".format(main=main_ver, sub=sub_ver)
         holds_now = sys.version_info < (int(main_ver), int(sub_ver))
     elif mark.startswith("py") or mark.startswith("py>="):
-        full_ver = mark[len("py"):]
+        full_ver = assert_remove_prefix(mark, "py")
         if full_ver.startswith(">="):
-            full_ver = full_ver[len(">="):]
+            full_ver = assert_remove_prefix(full_ver, ">=")
         main_ver, sub_ver = full_ver[0], full_ver[1:]
         check_str = "python_version>='{main}.{sub}'".format(main=main_ver, sub=sub_ver)
         holds_now = sys.version_info >= (int(main_ver), int(sub_ver))

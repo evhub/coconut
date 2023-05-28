@@ -353,6 +353,8 @@ async def async_map_test() =
 
     setup(target="3.5")
     assert parse("async def f(): yield 1")
+    assert_raises(-> parse("""async def agen():
+    yield from range(5)"""), CoconutSyntaxError, err_has="async generator")
 
     setup(target="3.6")
     assert parse("def f(*, x=None) = x")

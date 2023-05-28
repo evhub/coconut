@@ -42,6 +42,7 @@ from coconut.constants import (
 from coconut.util import (
     univ_open,
     get_target_info,
+    assert_remove_prefix,
 )
 from coconut.compiler.util import (
     split_comment,
@@ -60,7 +61,7 @@ def gethash(compiled):
     if len(lines) < 3 or not lines[2].startswith(hash_prefix):
         return None
     else:
-        return lines[2][len(hash_prefix):]
+        return assert_remove_prefix(lines[2], hash_prefix)
 
 
 def minify_header(compiled):
@@ -748,7 +749,7 @@ def getheader(which, use_hash, target, no_tco, strict, no_wrap):
         header += "_coconut_header_info = " + header_info + "\n"
 
     if which.startswith("package"):
-        levels_up = int(which[len("package:"):])
+        levels_up = int(assert_remove_prefix(which, "package:"))
         coconut_file_dir = "_coconut_os.path.dirname(_coconut_os.path.abspath(__file__))"
         for _ in range(levels_up):
             coconut_file_dir = "_coconut_os.path.dirname(" + coconut_file_dir + ")"
