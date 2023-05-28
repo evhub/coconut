@@ -52,7 +52,7 @@ else:
     import trollius as _asyncio  # type: ignore
 
 if sys.version_info >= (3, 5):
-    import async_generator as _async_generator
+    import async_generator as _async_generator  # type: ignore
 
 try:
     import numpy as _numpy  # type: ignore
