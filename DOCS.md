@@ -427,7 +427,7 @@ To distribute your code with checkable type annotations, you'll need to include 
 To explicitly annotate your code with types to be checked, Coconut supports:
 * [Python 3 function type annotations](https://www.python.org/dev/peps/pep-0484/),
 * [Python 3.6 variable type annotations](https://www.python.org/dev/peps/pep-0526/),
-* [PEP 695 type parameter syntax](#type-parameter-syntax) for easily adding type parameters to classes, functions, [`data` types](#data), and type aliases,
+* [Python 3.12 type parameter syntax](#type-parameter-syntax) for easily adding type parameters to classes, functions, [`data` types](#data), and type aliases,
 * Coconut's own [enhanced type annotation syntax](#enhanced-type-annotation), and
 * Coconut's [protocol intersection operator](#protocol-intersection).
 
@@ -2579,13 +2579,15 @@ _Can't be done without a long series of checks in place of the destructuring ass
 
 ### Type Parameter Syntax
 
-Coconut fully supports [PEP 695](https://peps.python.org/pep-0695/) type parameter syntax (with the caveat that all type variables are invariant rather than inferred).
+Coconut fully supports [Python 3.12 PEP 695](https://peps.python.org/pep-0695/) type parameter syntax on all Python versions.
 
 That includes type parameters for classes, [`data` types](#data), and [all types of function definition](#function-definition). For different types of function definition, the type parameters always come in brackets right after the function name. Coconut's [enhanced type annotation syntax](#enhanced-type-annotation) is supported for all type parameter bounds.
 
 _Warning: until `mypy` adds support for `infer_variance=True` in `TypeVar`, `TypeVar`s created this way will always be invariant._
 
 Additionally, Coconut supports the alternative bounds syntax of `type NewType[T <: bound] = ...` rather than `type NewType[T: bound] = ...`, to make it more clear that it is an upper bound rather than a type. In `--strict` mode, `<:` is required over `:` for all type parameter bounds. _DEPRECATED: `<=` can also be used as an alternative to `<:`._
+
+Note that the `<:` syntax should only be used for [type bounds](https://peps.python.org/pep-0695/#upper-bound-specification), not [type constraints](https://peps.python.org/pep-0695/#constrained-type-specification)—for type constraints, Coconut style prefers the vanilla Python `:` syntax, which helps to disambiguate between the two cases, as they are functionally different but otherwise hard to tell apart at a glance. This is enforced in `--strict` mode.
 
 _Note that, by default, all type declarations are wrapped in strings to enable forward references and improve runtime performance. If you don't want that—e.g. because you want to use type annotations at runtime—simply pass the `--no-wrap-types` flag._
 

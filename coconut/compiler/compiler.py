@@ -3609,32 +3609,22 @@ __annotations__["{name}"] = {annotation}
 
     def type_param_handle(self, original, loc, tokens):
         """Compile a type param into an assignment."""
-        bounds = ""
-        kwargs = ""
+        args = ""
+        bound_op = None
+        bound_op_type = ""
         if "TypeVar" in tokens:
             TypeVarFunc = "TypeVar"
+            bound_op_type = "bound"
             if len(tokens) == 2:
                 name_loc, name = tokens
             else:
                 name_loc, name, bound_op, bound = tokens
-                if bound_op == "<=":
-                    self.strict_err_or_warn(
-                        "use of " + repr(bound_op) + " as a type parameter bound declaration operator is deprecated (Coconut style is to use '<:' operator)",
-                        original,
-                        loc,
-                    )
-                elif bound_op == ":":
-                    self.strict_err(
-                        "found use of " + repr(bound_op) + " as a type parameter bound declaration operator (Coconut style is to use '<:' operator)",
-                        original,
-                        loc,
-                    )
-                else:
-                    self.internal_assert(bound_op == "<:", original, loc, "invalid type_param bound_op", bound_op)
-                bounds = ", bound=" + self.wrap_typedef(bound, for_py_typedef=False)
-            # uncomment this line whenever mypy adds support for infer_variance in TypeVar
-            #  (and remove the warning about it in the DOCS)
-            # kwargs = ", infer_variance=True"
+                args = ", bound=" + self.wrap_typedef(bound, for_py_typedef=False)
+        elif "TypeVar constraint" in tokens:
+            TypeVarFunc = "TypeVar"
+            bound_op_type = "constraint"
+            name_loc, name, bound_op, constraints = tokens
+            args = ", " + ", ".join(self.wrap_typedef(c, for_py_typedef=False) for c in constraints)
         elif "TypeVarTuple" in tokens:
             TypeVarFunc = "TypeVarTuple"
             name_loc, name = tokens
@@ -3643,6 +3633,27 @@ __annotations__["{name}"] = {annotation}
             name_loc, name = tokens
         else:
             raise CoconutInternalException("invalid type_param tokens", tokens)
+
+        kwargs = ""
+        if bound_op is not None:
+            self.internal_assert(bound_op_type in ("bound", "constraint"), original, loc, "invalid type_param bound_op", bound_op)
+            # # uncomment this line whenever mypy adds support for infer_variance in TypeVar
+            # #  (and remove the warning about it in the DOCS)
+            # kwargs = ", infer_variance=True"
+            if bound_op == "<=":
+                self.strict_err_or_warn(
+                    "use of " + repr(bound_op) + " as a type parameter " + bound_op_type + " declaration operator is deprecated (Coconut style is to use '<:' for bounds and ':' for constaints)",
+                    original,
+                    loc,
+                )
+            else:
+                self.internal_assert(bound_op in (":", "<:"), original, loc, "invalid type_param bound_op", bound_op)
+                if bound_op_type == "bound" and bound_op != "<:" or bound_op_type == "constraint" and bound_op != ":":
+                    self.strict_err(
+                        "found use of " + repr(bound_op) + " as a type parameter " + bound_op_type + " declaration operator (Coconut style is to use '<:' for bounds and ':' for constaints)",
+                        original,
+                        loc,
+                    )
 
         name_loc = int(name_loc)
         internal_assert(name_loc == loc if TypeVarFunc == "TypeVar" else name_loc >= loc, "invalid name location for " + TypeVarFunc, (name_loc, loc, tokens))
@@ -3661,10 +3672,10 @@ __annotations__["{name}"] = {annotation}
                 typevar_info["typevar_locs"][name] = name_loc
                 name = temp_name
 
-        return '{name} = _coconut.typing.{TypeVarFunc}("{name}"{bounds}{kwargs})\n'.format(
+        return '{name} = _coconut.typing.{TypeVarFunc}("{name}"{args}{kwargs})\n'.format(
             name=name,
             TypeVarFunc=TypeVarFunc,
-            bounds=bounds,
+            args=args,
             kwargs=kwargs,
         )
 
@@ -3707,11 +3718,14 @@ __annotations__["{name}"] = {annotation}
             paramdefs = ()
         else:
             name, paramdefs, typedef = tokens
-        return "".join(paramdefs) + self.typed_assign_stmt_handle([
-            name,
-            "_coconut.typing.TypeAlias",
-            self.wrap_typedef(typedef, for_py_typedef=False),
-        ])
+        if self.target_info >= (3, 12):
+            return "type " + name + " = " + self.wrap_typedef(typedef, for_py_typedef=True)
+        else:
+            return "".join(paramdefs) + self.typed_assign_stmt_handle([
+                name,
+                "_coconut.typing.TypeAlias",
+                self.wrap_typedef(typedef, for_py_typedef=False),
+            ])
 
     def with_stmt_handle(self, tokens):
         """Process with statements."""

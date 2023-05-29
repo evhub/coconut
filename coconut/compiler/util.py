@@ -703,24 +703,6 @@ def maybeparens(lparen, item, rparen, prefer_parens=False):
         return item | lparen.suppress() + item + rparen.suppress()
 
 
-@memoize()
-def tokenlist(item, sep, suppress=True, allow_trailing=True, at_least_two=False, require_sep=False):
-    """Create a list of tokens matching the item."""
-    if suppress:
-        sep = sep.suppress()
-    if not require_sep:
-        out = item + (OneOrMore if at_least_two else ZeroOrMore)(sep + item)
-        if allow_trailing:
-            out += Optional(sep)
-    elif not allow_trailing:
-        out = item + OneOrMore(sep + item)
-    elif at_least_two:
-        out = item + OneOrMore(sep + item) + Optional(sep)
-    else:
-        out = OneOrMore(item + sep) + Optional(item)
-    return out
-
-
 def interleaved_tokenlist(required_item, other_item, sep, allow_trailing=False, at_least_two=False):
     """Create a grammar to match interleaved required_items and other_items,
     where required_item must show up at least once."""
@@ -751,6 +733,30 @@ def interleaved_tokenlist(required_item, other_item, sep, allow_trailing=False, 
     return out
 
 
+@memoize()
+def tokenlist(item, sep, suppress=True, allow_trailing=True, at_least_two=False, require_sep=False, suppress_trailing=False):
+    """Create a list of tokens matching the item."""
+    if suppress:
+        sep = sep.suppress()
+    if suppress_trailing:
+        trailing_sep = sep.suppress()
+    else:
+        trailing_sep = sep
+    if not require_sep:
+        out = item + (OneOrMore if at_least_two else ZeroOrMore)(sep + item)
+        if allow_trailing:
+            out += Optional(trailing_sep)
+    elif not allow_trailing:
+        out = item + OneOrMore(sep + item)
+    elif at_least_two:
+        out = item + OneOrMore(sep + item) + Optional(trailing_sep)
+    elif suppress_trailing:
+        out = item + OneOrMore(sep + item) + Optional(trailing_sep) | item + trailing_sep
+    else:
+        out = OneOrMore(item + sep) + Optional(item)
+    return out
+
+
 def add_list_spacing(tokens):
     """Parse action to add spacing after seps but not elsewhere."""
     out = []
@@ -765,21 +771,19 @@ add_list_spacing.ignore_zero_tokens = True
 add_list_spacing.ignore_one_token = True
 
 
-def itemlist(item, sep, suppress_trailing=True):
+def itemlist(item, sep, suppress_trailing=True, **kwargs):
     """Create a list of items separated by seps with comma-like spacing added.
     A trailing sep is allowed."""
     return attach(
-        item
-        + ZeroOrMore(sep + item)
-        + Optional(sep.suppress() if suppress_trailing else sep),
+        tokenlist(item, sep, suppress=False, suppress_trailing=suppress_trailing, **kwargs),
         add_list_spacing,
     )
 
 
-def exprlist(expr, op):
+def exprlist(expr, op, **kwargs):
     """Create a list of exprs separated by ops with plus-like spacing added.
     No trailing op is allowed."""
-    return addspace(expr + ZeroOrMore(op + expr))
+    return addspace(tokenlist(expr, op, suppress=False, allow_trailing=False, **kwargs))
 
 
 def stores_loc_action(loc, tokens):

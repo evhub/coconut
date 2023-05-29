@@ -793,7 +793,7 @@ if _coconut_pop_path:
     if which == "sys":
         return header + '''from coconut.__coconut__ import *
 from coconut.__coconut__ import {underscore_imports}
-'''.format(**format_dict)
+'''.format(**format_dict) + section("Compiled Coconut")
 
     # __coconut__, code, file
 

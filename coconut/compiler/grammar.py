@@ -1356,8 +1356,10 @@ class Grammar(object):
     type_param = Forward()
     type_param_bound_op = lt_colon | colon | le
     type_var_name = stores_loc_item + setname
+    type_param_constraint = lparen.suppress() + Group(tokenlist(typedef_test, comma, require_sep=True)) + rparen.suppress()
     type_param_ref = (
-        (type_var_name + Optional(type_param_bound_op + typedef_test))("TypeVar")
+        (type_var_name + type_param_bound_op + type_param_constraint)("TypeVar constraint")
+        | (type_var_name + Optional(type_param_bound_op + typedef_test))("TypeVar")
         | (star.suppress() + type_var_name)("TypeVarTuple")
         | (dubstar.suppress() + type_var_name)("ParamSpec")
     )
