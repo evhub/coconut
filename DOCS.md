@@ -424,14 +424,14 @@ To distribute your code with checkable type annotations, you'll need to include 
 
 ##### Syntax
 
-To explicitly annotate your code with types to be checked, Coconut supports:
+To explicitly annotate your code with types to be checked, Coconut supports (on all Python versions):
 * [Python 3 function type annotations](https://www.python.org/dev/peps/pep-0484/),
 * [Python 3.6 variable type annotations](https://www.python.org/dev/peps/pep-0526/),
 * [Python 3.12 type parameter syntax](#type-parameter-syntax) for easily adding type parameters to classes, functions, [`data` types](#data), and type aliases,
 * Coconut's own [enhanced type annotation syntax](#enhanced-type-annotation), and
 * Coconut's [protocol intersection operator](#protocol-intersection).
 
-By default, all type annotations are compiled to Python-2-compatible type comments, which means it all works on any Python version.
+By default, all type annotations are compiled to Python-2-compatible type comments, which means they should all work on any Python version.
 
 Sometimes, MyPy will not know how to handle certain Coconut constructs, such as `addpattern`. For the `addpattern` case, it is recommended to pass `--allow-redefinition` to MyPy (i.e. run `coconut <args> --mypy --allow-redefinition`), though in some cases `--allow-redefinition` may not be sufficient. In that case, either hide the offending code using [`TYPE_CHECKING`](#type_checking) or put a `# type: ignore` comment on the Coconut line which is generating the line MyPy is complaining about and the comment will be added to every generated line.
 
