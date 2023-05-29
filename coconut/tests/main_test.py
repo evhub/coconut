@@ -877,24 +877,24 @@ class TestCompilation(unittest.TestCase):
         run_runnable(["-n", "--minify"])
 
 
-@add_test_func_names
-class TestExternal(unittest.TestCase):
+# more appveyor timeout prevention
+if not WINDOWS:
+    @add_test_func_names
+    class TestExternal(unittest.TestCase):
 
-    if not PYPY or PY2:
-        def test_prelude(self):
-            with using_path(prelude):
-                comp_prelude()
-                if MYPY and PY38:
-                    run_prelude()
+        if not PYPY or PY2:
+            def test_prelude(self):
+                with using_path(prelude):
+                    comp_prelude()
+                    if MYPY and PY38:
+                        run_prelude()
 
-    def test_bbopt(self):
-        with using_path(bbopt):
-            comp_bbopt()
-            if not PYPY and PY38 and not PY310:
-                install_bbopt()
+        def test_bbopt(self):
+            with using_path(bbopt):
+                comp_bbopt()
+                if not PYPY and PY38 and not PY310:
+                    install_bbopt()
 
-    # more appveyor timeout prevention
-    if not WINDOWS:
         def test_pyprover(self):
             with using_path(pyprover):
                 comp_pyprover()

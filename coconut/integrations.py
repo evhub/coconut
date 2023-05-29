@@ -23,7 +23,7 @@ from types import MethodType
 
 from coconut.constants import (
     coconut_kernel_kwargs,
-    disabled_xonsh_modes,
+    enabled_xonsh_modes,
 )
 from coconut.util import memoize_with_exceptions
 
@@ -137,14 +137,14 @@ class CoconutXontribLoader(object):
 
     def new_parse(self, parser, code, mode="exec", *args, **kwargs):
         """Coconut-aware version of xonsh's _parse."""
-        if self.loaded and mode not in disabled_xonsh_modes:
+        if self.loaded and mode in enabled_xonsh_modes:
             code, _ = self.compile_code(code)
         return parser.__class__.parse(parser, code, mode=mode, *args, **kwargs)
 
     def new_ctxvisit(self, ctxtransformer, node, inp, ctx, mode="exec", *args, **kwargs):
         """Version of ctxvisit that ensures looking up original lines in inp
         using Coconut line numbers will work properly."""
-        if self.loaded and mode not in disabled_xonsh_modes:
+        if self.loaded and mode in enabled_xonsh_modes:
             from xonsh.tools import get_logical_line
 
             # hide imports to avoid circular dependencies

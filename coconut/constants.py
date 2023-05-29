@@ -1183,7 +1183,7 @@ all_keywords = keyword_vars + const_vars + reserved_vars
 
 conda_build_env_var = "CONDA_BUILD"
 
-disabled_xonsh_modes = ("exec", "eval")
+enabled_xonsh_modes = ("single",)
 
 # -----------------------------------------------------------------------------------------------------------------------
 # DOCUMENTATION CONSTANTS:
