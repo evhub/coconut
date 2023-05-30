@@ -1488,27 +1488,8 @@ class multiset(_coconut.collections.Counter{comma_object}):
         return result
     def __fmap__(self, func):
         return self.__class__(_coconut.dict((func(obj), num) for obj, num in self.items()))
-    def __add__(self, other):
-        out = self.copy()
-        out += other
-        return out
-    def __and__(self, other):
-        out = self.copy()
-        out &= other
-        return out
-    def __or__(self, other):
-        out = self.copy()
-        out |= other
-        return out
-    def __sub__(self, other):
-        out = self.copy()
-        out -= other
-        return out
-    def __neg__(self):
-        return self.__class__(_coconut.super({_coconut_}multiset, self).__neg__())
-    def __pos__(self):
-        return self.__class__(_coconut.super({_coconut_}multiset, self).__pos__())
-{def_total_and_comparisons}{assign_multiset_views}_coconut.abc.MutableSet.register(multiset)
+{def_multiset_ops}
+{def_total_and_comparisons}{def_py2_multiset_methods}_coconut.abc.MutableSet.register(multiset)
 def _coconut_base_makedata(data_type, args, from_fmap=False, fallback_to_init=False):
     if _coconut.hasattr(data_type, "_make") and _coconut.issubclass(data_type, _coconut.tuple):
         return data_type._make(args)

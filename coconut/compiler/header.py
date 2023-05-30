@@ -476,9 +476,11 @@ def __lt__(self, other):
             indent=1,
             newline=True,
         ),
-        assign_multiset_views=pycondition(
+        def_py2_multiset_methods=pycondition(
             (3,),
             if_lt='''
+def __bool__(self):
+    return _coconut.bool(_coconut.len(self))
 keys = _coconut.collections.Counter.viewkeys
 values = _coconut.collections.Counter.viewvalues
 items = _coconut.collections.Counter.viewitems
@@ -675,6 +677,46 @@ except ImportError:
             if_ge=None,
             indent=1,
             newline=True,
+        ),
+        def_multiset_ops=pycondition(
+            (3,),
+            if_ge='''
+def __add__(self, other):
+    out = self.copy()
+    out += other
+    return out
+def __and__(self, other):
+    out = self.copy()
+    out &= other
+    return out
+def __or__(self, other):
+    out = self.copy()
+    out |= other
+    return out
+def __sub__(self, other):
+    out = self.copy()
+    out -= other
+    return out
+def __pos__(self):
+    return self.__class__(_coconut.super({_coconut_}multiset, self).__pos__())
+def __neg__(self):
+    return self.__class__(_coconut.super({_coconut_}multiset, self).__neg__())
+            '''.format(**format_dict),
+            if_lt='''
+def __add__(self, other):
+    return self.__class__(_coconut.super({_coconut_}multiset, self).__add__(other))
+def __and__(self, other):
+    return self.__class__(_coconut.super({_coconut_}multiset, self).__and__(other))
+def __or__(self, other):
+    return self.__class__(_coconut.super({_coconut_}multiset, self).__or__(other))
+def __sub__(self, other):
+    return self.__class__(_coconut.super({_coconut_}multiset, self).__sub__(other))
+def __pos__(self):
+    return self + {_coconut_}multiset()
+def __neg__(self):
+    return {_coconut_}multiset() - self
+            '''.format(**format_dict),
+            indent=1,
         ),
     )
     format_dict.update(extra_format_dict)
