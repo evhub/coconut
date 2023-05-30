@@ -801,7 +801,7 @@ class TestShell(unittest.TestCase):
                 p.sendline("%load_ext coconut")
                 p.expect("In", timeout=120)
                 p.sendline("`exit`")
-                p.expect("Shutting down kernel|shutting down")
+                p.expect("Shutting down kernel|shutting down", timeout=120)
                 if p.isalive():
                     p.terminate()
 
