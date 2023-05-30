@@ -100,7 +100,7 @@ def test_setup_none() -> bool:
     assert version("tag")
     assert version("-v")
     assert_raises(-> version("other"), CoconutException)
-    assert_raises(def -> raise CoconutException("derp").syntax_err(), SyntaxError)
+    assert_raises((def -> raise CoconutException("derp").syntax_err()), SyntaxError)
     assert coconut_eval("x -> x + 1")(2) == 3
     assert coconut_eval("addpattern")
 
@@ -281,14 +281,14 @@ def test_convenience() -> bool:
     assert parse("abc", "lenient") == "abc  #1: abc"
 
     setup()
-    assert "Deprecated built-in 'prepattern' disabled by --strict compilation" not in parse("\n", mode="file")
-    assert "Deprecated built-in 'datamaker' disabled by --strict compilation" not in parse("\n", mode="file")
-    assert "Deprecated built-in 'of' disabled by --strict compilation" not in parse("\n", mode="file")
+    assert "Deprecated Coconut built-in 'prepattern' disabled by --strict compilation" not in parse("\n", mode="file")
+    assert "Deprecated Coconut built-in 'datamaker' disabled by --strict compilation" not in parse("\n", mode="file")
+    assert "Deprecated Coconut built-in 'of' disabled by --strict compilation" not in parse("\n", mode="file")
 
     setup(strict=True)
-    assert "Deprecated built-in 'prepattern' disabled by --strict compilation" in parse("\n", mode="file")
-    assert "Deprecated built-in 'datamaker' disabled by --strict compilation" in parse("\n", mode="file")
-    assert "Deprecated built-in 'of' disabled by --strict compilation" in parse("\n", mode="file")
+    assert "Deprecated Coconut built-in 'prepattern' disabled by --strict compilation" in parse("\n", mode="file")
+    assert "Deprecated Coconut built-in 'datamaker' disabled by --strict compilation" in parse("\n", mode="file")
+    assert "Deprecated Coconut built-in 'of' disabled by --strict compilation" in parse("\n", mode="file")
 
     assert_raises(-> parse("def f(x):\n \t pass"), CoconutStyleError)
     assert_raises(-> parse("lambda x: x"), CoconutStyleError)
@@ -316,6 +316,7 @@ else:
     match x:
         pass"""), CoconutStyleError, err_has="case x:")
     assert_raises(-> parse("obj."), CoconutStyleError, err_has="getattr")
+    assert_raises(-> parse("def x -> pass, 1"), CoconutStyleError, err_has="statement lambda")
 
     setup(strict=True, target="sys")
     assert_raises(-> parse("await f x"), CoconutParseError, err_has='invalid use of the keyword "await"')
@@ -347,12 +348,17 @@ async def async_map_test() =
     setup(target="3.2")
     assert parse(gen_func_def, mode="lenient") not in gen_func_def_outs
 
-    setup(target="3.5")
+    setup(target="3.4")
     assert_raises(-> parse("async def f(): yield 1"), CoconutTargetError)
+
+    setup(target="3.5")
+    assert parse("async def f(): yield 1")
+    assert_raises(-> parse("""async def agen():
+    yield from range(5)"""), CoconutSyntaxError, err_has="async generator")
 
     setup(target="3.6")
     assert parse("def f(*, x=None) = x")
-    assert parse("async def f(): yield 1")
+    assert "@" not in parse("async def f(x): yield x")
 
     setup(target="3.8")
     assert parse("(a := b)")
@@ -362,6 +368,12 @@ async def async_map_test() =
 
     setup(target="3.11")
     assert parse("a[x, *y]")
+
+    setup(target="3.12")
+    assert parse("type Num = int | float").strip().endswith("""
+# Compiled Coconut: -----------------------------------------------------------
+
+type Num = int | float""".strip())
 
     setup(minify=True)
     assert parse("123  # derp", "lenient") == "123# derp"

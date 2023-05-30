@@ -23,7 +23,7 @@ from types import MethodType
 
 from coconut.constants import (
     coconut_kernel_kwargs,
-    disabled_xonsh_modes,
+    enabled_xonsh_modes,
 )
 from coconut.util import memoize_with_exceptions
 
@@ -57,12 +57,12 @@ def load_ipython_extension(ipython):
     ipython.push(newvars)
 
     # import here to avoid circular dependencies
-    from coconut import convenience
+    from coconut import api
     from coconut.exceptions import CoconutException
     from coconut.terminal import logger
 
-    magic_state = convenience.get_state()
-    convenience.setup(state=magic_state, **coconut_kernel_kwargs)
+    magic_state = api.get_state()
+    api.setup(state=magic_state, **coconut_kernel_kwargs)
 
     # add magic function
     def magic(line, cell=None):
@@ -74,9 +74,9 @@ def load_ipython_extension(ipython):
                 # first line in block is cmd, rest is code
                 line = line.strip()
                 if line:
-                    convenience.cmd(line, default_target="sys", state=magic_state)
+                    api.cmd(line, default_target="sys", state=magic_state)
                 code = cell
-            compiled = convenience.parse(code, state=magic_state)
+            compiled = api.parse(code, state=magic_state)
         except CoconutException:
             logger.print_exc()
         else:
@@ -96,34 +96,33 @@ class CoconutXontribLoader(object):
     timing_info = []
 
     @memoize_with_exceptions(128)
-    def _base_memoized_parse_xonsh(self, code):
+    def memoized_parse_xonsh(self, code):
         return self.compiler.parse_xonsh(code, keep_state=True)
 
-    def memoized_parse_xonsh(self, code):
+    def compile_code(self, code):
         """Memoized self.compiler.parse_xonsh."""
-        # .strip() outside the memoization
-        return self._base_memoized_parse_xonsh(code.strip())
+        # hide imports to avoid circular dependencies
+        from coconut.exceptions import CoconutException
+        from coconut.terminal import format_error
+        from coconut.util import get_clock_time
+        from coconut.terminal import logger
 
-    def new_parse(self, parser, code, mode="exec", *args, **kwargs):
-        """Coconut-aware version of xonsh's _parse."""
-        if self.loaded and mode not in disabled_xonsh_modes:
-            # hide imports to avoid circular dependencies
-            from coconut.exceptions import CoconutException
-            from coconut.terminal import format_error
-            from coconut.util import get_clock_time
-            from coconut.terminal import logger
+        parse_start_time = get_clock_time()
+        quiet, logger.quiet = logger.quiet, True
+        success = False
+        try:
+            # .strip() outside the memoization
+            compiled = self.memoized_parse_xonsh(code.strip())
+        except CoconutException as err:
+            err_str = format_error(err).splitlines()[0]
+            compiled = code + "  #" + err_str
+        else:
+            success = True
+        finally:
+            logger.quiet = quiet
+            self.timing_info.append(("parse", get_clock_time() - parse_start_time))
 
-            parse_start_time = get_clock_time()
-            quiet, logger.quiet = logger.quiet, True
-            try:
-                code = self.memoized_parse_xonsh(code)
-            except CoconutException as err:
-                err_str = format_error(err).splitlines()[0]
-                code += "  #" + err_str
-            finally:
-                logger.quiet = quiet
-                self.timing_info.append(("parse", get_clock_time() - parse_start_time))
-        return parser.__class__.parse(parser, code, mode=mode, *args, **kwargs)
+        return compiled, success
 
     def new_try_subproc_toks(self, ctxtransformer, node, *args, **kwargs):
         """Version of try_subproc_toks that handles the fact that Coconut
@@ -136,37 +135,47 @@ class CoconutXontribLoader(object):
         finally:
             ctxtransformer.mode = mode
 
-    def new_ctxvisit(self, ctxtransformer, node, inp, *args, **kwargs):
+    def new_parse(self, parser, code, mode="exec", *args, **kwargs):
+        """Coconut-aware version of xonsh's _parse."""
+        if self.loaded and mode in enabled_xonsh_modes:
+            code, _ = self.compile_code(code)
+        return parser.__class__.parse(parser, code, mode=mode, *args, **kwargs)
+
+    def new_ctxvisit(self, ctxtransformer, node, inp, ctx, mode="exec", *args, **kwargs):
         """Version of ctxvisit that ensures looking up original lines in inp
         using Coconut line numbers will work properly."""
-        if self.loaded:
+        if self.loaded and mode in enabled_xonsh_modes:
             from xonsh.tools import get_logical_line
 
             # hide imports to avoid circular dependencies
             from coconut.terminal import logger
             from coconut.compiler.util import extract_line_num_from_comment
 
-            compiled = self.memoized_parse_xonsh(inp)
+            compiled, success = self.compile_code(inp)
 
-            original_lines = tuple(inp.splitlines())
-            used_lines = set()
-            new_inp_lines = []
-            last_ln = 1
-            for compiled_line in compiled.splitlines():
-                ln = extract_line_num_from_comment(compiled_line, default=last_ln + 1)
-                try:
-                    line, _, _ = get_logical_line(original_lines, ln - 1)
-                except IndexError:
-                    logger.log_exc()
-                    line = original_lines[-1]
-                if line in used_lines:
-                    line = ""
-                else:
-                    used_lines.add(line)
-                new_inp_lines.append(line)
-                last_ln = ln
-            inp = "\n".join(new_inp_lines) + "\n"
-        return ctxtransformer.__class__.ctxvisit(ctxtransformer, node, inp, *args, **kwargs)
+            if success:
+                original_lines = tuple(inp.splitlines())
+                used_lines = set()
+                new_inp_lines = []
+                last_ln = 1
+                for compiled_line in compiled.splitlines():
+                    ln = extract_line_num_from_comment(compiled_line, default=last_ln + 1)
+                    try:
+                        line, _, _ = get_logical_line(original_lines, ln - 1)
+                    except IndexError:
+                        logger.log_exc()
+                        line = original_lines[-1]
+                    if line in used_lines:
+                        line = ""
+                    else:
+                        used_lines.add(line)
+                    new_inp_lines.append(line)
+                    last_ln = ln
+                inp = "\n".join(new_inp_lines)
+
+            inp += "\n"
+
+        return ctxtransformer.__class__.ctxvisit(ctxtransformer, node, inp, ctx, mode, *args, **kwargs)
 
     def __call__(self, xsh, **kwargs):
         # hide imports to avoid circular dependencies
@@ -203,8 +212,8 @@ class CoconutXontribLoader(object):
     def unload(self, xsh):
         if not self.loaded:
             # hide imports to avoid circular dependencies
-            from coconut.exceptions import CoconutException
-            raise CoconutException("attempting to unload Coconut xontrib but it was never loaded")
+            from coconut.terminal import logger
+            logger.warn("attempting to unload Coconut xontrib but it was never loaded")
         self.loaded = False
 
 

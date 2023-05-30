@@ -94,4 +94,4 @@ If you don't get the reference, the image above is from [Monty Python and the Ho
 
 ### Who developed Coconut?
 
-[Evan Hubinger](https://github.com/evhub) is a [full-time AGI safety researcher](https://www.alignmentforum.org/users/evhub) at the [Machine Intelligence Research Institute](https://intelligence.org/). He can be reached by asking a question on [Coconut's Gitter chat room](https://gitter.im/evhub/coconut), through email at <evanjhub@gmail.com>, or on [LinkedIn](https://www.linkedin.com/in/ehubinger).
+[Evan Hubinger](https://github.com/evhub) is an [AI safety research scientist](https://www.alignmentforum.org/users/evhub) at [Anthropic](https://www.anthropic.com/). He can be reached by asking a question on [Coconut's Gitter chat room](https://gitter.im/evhub/coconut), through email at <evanjhub@gmail.com>, or on [LinkedIn](https://www.linkedin.com/in/ehubinger).

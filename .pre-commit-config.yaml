@@ -39,7 +39,3 @@ repos:
         - --aggressive
         - --experimental
         - --ignore=W503,E501,E722,E402
--   repo: https://github.com/asottile/add-trailing-comma
-    rev: v2.4.0
-    hooks:
-    -   id: add-trailing-comma

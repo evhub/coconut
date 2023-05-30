@@ -22,7 +22,7 @@ class AccessCounter():
             self.counts[attr] += 1
         return super(AccessCounter, self).__getattribute__(attr)
 
-def assert_raises(c, exc=Exception):
+def assert_raises(c, exc):
     """Test whether callable c raises an exception of type exc."""
     try:
         c()
@@ -231,9 +231,8 @@ addpattern def x! if x = False  # type: ignore
 addpattern def x! = True  # type: ignore
 
 # Type aliases:
+import typing
 if sys.version_info >= (3, 5) or TYPE_CHECKING:
-    import typing
-
     type list_or_tuple = list | tuple
 
     type func_to_int = -> int
@@ -243,6 +242,8 @@ if sys.version_info >= (3, 5) or TYPE_CHECKING:
     type TupleOf[T] = typing.Tuple[T, ...]
 
     type TextMap[T <: typing.Text, U] = typing.Mapping[T, U]
+
+    type NumList[T : (int, float)] = typing.List[T]
 
 class HasT:
     T = 1
@@ -298,7 +299,7 @@ def qsort4(l: int[]) -> int[]:
     return None  # type: ignore
 def qsort5(l: int$[]) -> int$[]:
     """Iterator Match Quick Sort."""
-    match (head,) :: tail in l:  # type: ignore
+    match (head,) :: tail in l:
         tail, tail_ = tee(tail)
         return (qsort5((x for x in tail if x <= head))
             :: (head,) # The pivot is a tuple
@@ -307,8 +308,8 @@ def qsort5(l: int$[]) -> int$[]:
     else:
         return iter(())
 def qsort6(l: int$[]) -> int$[]:
-    match [head] :: tail in l:  # type: ignore
-        tail = reiterable(tail)  # type: ignore
+    match [head] :: tail in l:
+        tail = reiterable(tail)
         yield from (
             qsort6(x for x in tail if x <= head)
             :: (head,)
@@ -620,11 +621,11 @@ def factorial5(value):
         return None
     raise TypeError()
 
-match def fact(n) = fact(n, 1)  # type: ignore
+match def fact(n) = fact(n, 1)
 match addpattern def fact(0, acc) = acc  # type: ignore
 addpattern match def fact(n, acc) = fact(n-1, acc*n)  # type: ignore
 
-addpattern def factorial(0, acc=1) = acc  # type: ignore
+addpattern def factorial(0, acc=1) = acc
 addpattern def factorial(int() as n, acc=1 if n > 0) =  # type: ignore
     """this is a docstring"""
     factorial(n-1, acc*n)
@@ -863,6 +864,10 @@ class clsC:
     c = 3
 class clsD:
     d = 4
+
+class inh_inh_A(inh_A):
+    @override
+    def true(self) = False
 
 class MyExc(Exception):
     def __init__(self, m):

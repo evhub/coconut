@@ -95,6 +95,7 @@ from coconut.constants import (
     comment_chars,
     non_syntactic_newline,
     allow_explicit_keyword_vars,
+    reserved_prefix,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -702,24 +703,6 @@ def maybeparens(lparen, item, rparen, prefer_parens=False):
         return item | lparen.suppress() + item + rparen.suppress()
 
 
-@memoize()
-def tokenlist(item, sep, suppress=True, allow_trailing=True, at_least_two=False, require_sep=False):
-    """Create a list of tokens matching the item."""
-    if suppress:
-        sep = sep.suppress()
-    if not require_sep:
-        out = item + (OneOrMore if at_least_two else ZeroOrMore)(sep + item)
-        if allow_trailing:
-            out += Optional(sep)
-    elif not allow_trailing:
-        out = item + OneOrMore(sep + item)
-    elif at_least_two:
-        out = item + OneOrMore(sep + item) + Optional(sep)
-    else:
-        out = OneOrMore(item + sep) + Optional(item)
-    return out
-
-
 def interleaved_tokenlist(required_item, other_item, sep, allow_trailing=False, at_least_two=False):
     """Create a grammar to match interleaved required_items and other_items,
     where required_item must show up at least once."""
@@ -750,6 +733,30 @@ def interleaved_tokenlist(required_item, other_item, sep, allow_trailing=False, 
     return out
 
 
+@memoize()
+def tokenlist(item, sep, suppress=True, allow_trailing=True, at_least_two=False, require_sep=False, suppress_trailing=False):
+    """Create a list of tokens matching the item."""
+    if suppress:
+        sep = sep.suppress()
+    if suppress_trailing:
+        trailing_sep = sep.suppress()
+    else:
+        trailing_sep = sep
+    if not require_sep:
+        out = item + (OneOrMore if at_least_two else ZeroOrMore)(sep + item)
+        if allow_trailing:
+            out += Optional(trailing_sep)
+    elif not allow_trailing:
+        out = item + OneOrMore(sep + item)
+    elif at_least_two:
+        out = item + OneOrMore(sep + item) + Optional(trailing_sep)
+    elif suppress_trailing:
+        out = item + OneOrMore(sep + item) + Optional(trailing_sep) | item + trailing_sep
+    else:
+        out = OneOrMore(item + sep) + Optional(item)
+    return out
+
+
 def add_list_spacing(tokens):
     """Parse action to add spacing after seps but not elsewhere."""
     out = []
@@ -764,21 +771,19 @@ add_list_spacing.ignore_zero_tokens = True
 add_list_spacing.ignore_one_token = True
 
 
-def itemlist(item, sep, suppress_trailing=True):
+def itemlist(item, sep, suppress_trailing=True, **kwargs):
     """Create a list of items separated by seps with comma-like spacing added.
     A trailing sep is allowed."""
     return attach(
-        item
-        + ZeroOrMore(sep + item)
-        + Optional(sep.suppress() if suppress_trailing else sep),
+        tokenlist(item, sep, suppress=False, suppress_trailing=suppress_trailing, **kwargs),
         add_list_spacing,
     )
 
 
-def exprlist(expr, op):
+def exprlist(expr, op, **kwargs):
     """Create a list of exprs separated by ops with plus-like spacing added.
     No trailing op is allowed."""
-    return addspace(expr + ZeroOrMore(op + expr))
+    return addspace(tokenlist(expr, op, suppress=False, allow_trailing=False, **kwargs))
 
 
 def stores_loc_action(loc, tokens):
@@ -1363,3 +1368,37 @@ def add_int_and_strs(int_part=0, str_parts=(), parens=False):
     if parens:
         out = "(" + out + ")"
     return out
+
+
+# -----------------------------------------------------------------------------------------------------------------------
+# PYTEST:
+# -----------------------------------------------------------------------------------------------------------------------
+
+
+class FixPytestNames(ast.NodeTransformer):
+    """Renames invalid names added by pytest assert rewriting."""
+
+    def fix_name(self, name):
+        """Make the given pytest name a valid but non-colliding identifier."""
+        return name.replace("@", reserved_prefix + "_pytest_")
+
+    def visit_Name(self, node):
+        """Special method to visit ast.Names."""
+        node.id = self.fix_name(node.id)
+        return node
+
+    def visit_alias(self, node):
+        """Special method to visit ast.aliases."""
+        node.asname = self.fix_name(node.asname)
+        return node
+
+
+def pytest_rewrite_asserts(code, module_name=reserved_prefix + "_pytest_module"):
+    """Uses pytest to rewrite the assert statements in the given code."""
+    from _pytest.assertion.rewrite import rewrite_asserts  # hidden since it's not always available
+
+    module_name = module_name.encode("utf-8")
+    tree = ast.parse(code)
+    rewrite_asserts(tree, module_name)
+    fixed_tree = ast.fix_missing_locations(FixPytestNames().visit(tree))
+    return ast.unparse(fixed_tree)

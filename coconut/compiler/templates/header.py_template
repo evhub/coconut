@@ -17,11 +17,32 @@ class _coconut{object}:{COMMENT.EVERYTHING_HERE_MUST_BE_COPIED_TO_STUB_FILE}
     from multiprocessing import dummy as multiprocessing_dummy
 {maybe_bind_lru_cache}{import_copyreg}
 {import_asyncio}
+    try:
+        import async_generator
+    except ImportError:
+        class you_need_to_install_async_generator{object}:
+            __slots__ = ()
+        async_generator = you_need_to_install_async_generator()
 {import_pickle}
 {import_OrderedDict}
 {import_collections_abc}
+    typing = types.ModuleType(_coconut_py_str("typing"))
+    try:
+        import typing_extensions
+    except ImportError:
+        typing_extensions = None
+    else:
+        for _name in dir(typing_extensions):
+            if not _name.startswith("__"):
+                setattr(typing, _name, getattr(typing_extensions, _name))
+    typing.__doc__ = "Coconut version of typing that makes use of typing.typing_extensions when possible.\n\n" + (getattr(typing, "__doc__") or "The typing module is not available at runtime in Python 3.4 or earlier; try hiding your typedefs behind an 'if TYPE_CHECKING:' block.")
 {import_typing}
-{import_typing_36}{import_typing_38}{import_typing_310}{import_typing_311}{set_zip_longest}
+{import_typing_36}{import_typing_38}{import_typing_310}{import_typing_311}
+    def _typing_getattr(name):
+        raise _coconut.AttributeError("typing.%s is not available on the current Python version and couldn't be looked up in typing_extensions; try hiding your typedefs behind an 'if TYPE_CHECKING:' block" % (name,))
+    typing.__getattr__ = _typing_getattr
+    _typing_getattr = staticmethod(_typing_getattr)
+{set_zip_longest}
     try:
         import numpy
     except ImportError:
@@ -1217,7 +1238,7 @@ class groupsof(_coconut_has_iter):
     def __copy__(self):
         return self.__class__(self.group_size, self.get_new_iter())
 class recursive_iterator(_coconut_baseclass):
-    """Decorator that optimizes a recursive function that returns an iterator (e.g. a recursive generator)."""
+    """Decorator that memoizes a recursive function that returns an iterator (e.g. a recursive generator)."""
     __slots__ = ("func", "reit_store", "backup_reit_store")
     def __init__(self, func):
         self.func = func
@@ -1485,7 +1506,14 @@ def makedata(data_type, *args, **kwargs):
 {class_amap}
 def fmap(func, obj, **kwargs):
     """fmap(func, obj) creates a copy of obj with func applied to its contents.
-    Supports asynchronous iterables, mappings (maps over .items()), and numpy arrays (uses np.vectorize).
+
+    Supports:
+    * Coconut data types
+    * `str`, `dict`, `list`, `tuple`, `set`, `frozenset`
+    * `dict` (maps over .items())
+    * asynchronous iterables
+    * numpy arrays (uses np.vectorize)
+    * pandas objects (uses .apply)
 
     Override by defining obj.__fmap__(func).
     """

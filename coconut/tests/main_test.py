@@ -46,18 +46,22 @@ from coconut.constants import (
     WINDOWS,
     PYPY,
     IPY,
+    XONSH,
     MYPY,
     PY35,
     PY36,
     PY38,
+    PY39,
     PY310,
+    supported_py2_vers,
+    supported_py3_vers,
     icoconut_default_kernel_names,
     icoconut_custom_kernel_name,
     mypy_err_infixes,
     get_bool_env_var,
 )
 
-from coconut.convenience import (
+from coconut.api import (
     auto_compilation,
     setup,
 )
@@ -139,6 +143,12 @@ ignore_last_lines_with = (
 kernel_installation_msg = (
     "Coconut: Successfully installed Jupyter kernels: '"
     + "', '".join((icoconut_custom_kernel_name,) + icoconut_default_kernel_names) + "'"
+)
+
+always_sys_versions = (
+    supported_py2_vers[-1],
+    supported_py3_vers[-2],
+    supported_py3_vers[-1],
 )
 
 
@@ -402,10 +412,10 @@ def using_dest(dest=dest):
 
 
 @contextmanager
-def using_coconut(fresh_logger=True, fresh_convenience=False):
-    """Decorator for ensuring that coconut.terminal.logger and coconut.convenience.* are reset."""
+def using_coconut(fresh_logger=True, fresh_api=False):
+    """Decorator for ensuring that coconut.terminal.logger and coconut.api.* are reset."""
     saved_logger = logger.copy()
-    if fresh_convenience:
+    if fresh_api:
         setup()
         auto_compilation(False)
     if fresh_logger:
@@ -483,7 +493,7 @@ def comp_agnostic(args=[], **kwargs):
     comp(path="cocotest", folder="agnostic", args=args, **kwargs)
 
 
-def comp_2(args=[], **kwargs):
+def comp_2(args=[], always_sys=False, **kwargs):
     """Compiles target_2."""
     # remove --mypy checking for target_2 to avoid numpy errors
     try:
@@ -492,27 +502,27 @@ def comp_2(args=[], **kwargs):
         pass
     else:
         args = args[:mypy_ind]
-    comp(path="cocotest", folder="target_2", args=["--target", "2"] + args, **kwargs)
+    comp(path="cocotest", folder="target_2", args=["--target", "2" if not always_sys else "sys"] + args, **kwargs)
 
 
-def comp_3(args=[], **kwargs):
+def comp_3(args=[], always_sys=False, **kwargs):
     """Compiles target_3."""
-    comp(path="cocotest", folder="target_3", args=["--target", "3"] + args, **kwargs)
+    comp(path="cocotest", folder="target_3", args=["--target", "3" if not always_sys else "sys"] + args, **kwargs)
 
 
-def comp_35(args=[], **kwargs):
+def comp_35(args=[], always_sys=False, **kwargs):
     """Compiles target_35."""
-    comp(path="cocotest", folder="target_35", args=["--target", "35"] + args, **kwargs)
+    comp(path="cocotest", folder="target_35", args=["--target", "35" if not always_sys else "sys"] + args, **kwargs)
 
 
-def comp_36(args=[], **kwargs):
+def comp_36(args=[], always_sys=False, **kwargs):
     """Compiles target_36."""
-    comp(path="cocotest", folder="target_36", args=["--target", "36"] + args, **kwargs)
+    comp(path="cocotest", folder="target_36", args=["--target", "36" if not always_sys else "sys"] + args, **kwargs)
 
 
-def comp_38(args=[], **kwargs):
+def comp_38(args=[], always_sys=False, **kwargs):
     """Compiles target_38."""
-    comp(path="cocotest", folder="target_38", args=["--target", "38"] + args, **kwargs)
+    comp(path="cocotest", folder="target_38", args=["--target", "38" if not always_sys else "sys"] + args, **kwargs)
 
 
 def comp_sys(args=[], **kwargs):
@@ -536,7 +546,7 @@ def run_extras(**kwargs):
     call_python([os.path.join(dest, "extras.py")], assert_output=True, check_errors=False, stderr_first=True, **kwargs)
 
 
-def run(args=[], agnostic_target=None, use_run_arg=False, convert_to_import=False, **kwargs):
+def run(args=[], agnostic_target=None, use_run_arg=False, convert_to_import=False, always_sys=False, **kwargs):
     """Compiles and runs tests."""
     if agnostic_target is None:
         agnostic_args = args
@@ -546,16 +556,19 @@ def run(args=[], agnostic_target=None, use_run_arg=False, convert_to_import=Fals
     with using_dest():
         with (using_dest(additional_dest) if "--and" in args else noop_ctx()):
 
+            spec_kwargs = kwargs.copy()
+            spec_kwargs["always_sys"] = always_sys
             if PY2:
-                comp_2(args, **kwargs)
+                comp_2(args, **spec_kwargs)
             else:
-                comp_3(args, **kwargs)
+                comp_3(args, **spec_kwargs)
                 if sys.version_info >= (3, 5):
-                    comp_35(args, **kwargs)
+                    comp_35(args, **spec_kwargs)
                 if sys.version_info >= (3, 6):
-                    comp_36(args, **kwargs)
+                    comp_36(args, **spec_kwargs)
                 if sys.version_info >= (3, 8):
-                    comp_38(args, **kwargs)
+                    comp_38(args, **spec_kwargs)
+
             comp_agnostic(agnostic_args, **kwargs)
             comp_sys(args, **kwargs)
             comp_non_strict(args, **kwargs)
@@ -675,11 +688,36 @@ class TestShell(unittest.TestCase):
         def test_target_3_snip(self):
             call(["coconut", "-t3", "-c", target_3_snip], assert_output=True)
 
+    if MYPY:
+        def test_universal_mypy_snip(self):
+            call(
+                ["coconut", "-c", mypy_snip, "--mypy"],
+                assert_output=mypy_snip_err_3,
+                check_errors=False,
+                check_mypy=False,
+            )
+
+        def test_sys_mypy_snip(self):
+            call(
+                ["coconut", "--target", "sys", "-c", mypy_snip, "--mypy"],
+                assert_output=mypy_snip_err_3,
+                check_errors=False,
+                check_mypy=False,
+            )
+
+        def test_no_wrap_mypy_snip(self):
+            call(
+                ["coconut", "--target", "sys", "--no-wrap", "-c", mypy_snip, "--mypy"],
+                assert_output=mypy_snip_err_3,
+                check_errors=False,
+                check_mypy=False,
+            )
+
     def test_pipe(self):
         call('echo ' + escape(coconut_snip) + "| coconut -s", shell=True, assert_output=True)
 
-    def test_convenience(self):
-        call_python(["-c", 'from coconut.convenience import parse; exec(parse("' + coconut_snip + '"))'], assert_output=True)
+    def test_api(self):
+        call_python(["-c", 'from coconut.api import parse; exec(parse("' + coconut_snip + '"))'], assert_output=True)
 
     def test_import_hook(self):
         with using_sys_path(src):
@@ -708,9 +746,7 @@ class TestShell(unittest.TestCase):
             for _ in range(2):  # make sure we can import it twice
                 call_python([runnable_py, "--arg"], assert_output=True, convert_to_import=True)
 
-    # not py36 is only because newer Python versions require newer xonsh
-    #  versions that aren't always installed by pip install coconut[tests]
-    if not WINDOWS and PY35 and not PY36:
+    if not WINDOWS and XONSH:
         def test_xontrib(self):
             p = spawn_cmd("xonsh")
             p.expect("$")
@@ -718,8 +754,22 @@ class TestShell(unittest.TestCase):
             p.expect("$")
             p.sendline("!(ls -la) |> bool")
             p.expect("True")
+            p.sendline('$ENV_VAR = "ABC"')
+            p.expect("$")
+            p.sendline('echo f"{$ENV_VAR}"; echo f"{$ENV_VAR}"')
+            p.expect("ABC")
+            p.expect("ABC")
+            if not PYPY or PY39:
+                if PY36:
+                    p.sendline("echo 123;; 123")
+                    p.expect("123;; 123")
+                p.sendline('execx("10 |> print")')
+                p.expect("subprocess mode")
             p.sendline("xontrib unload coconut")
             p.expect("$")
+            if (not PYPY or PY39) and PY36:
+                p.sendline("1 |> print")
+                p.expect("subprocess mode")
             p.sendeof()
             if p.isalive():
                 p.terminate()
@@ -745,10 +795,12 @@ class TestShell(unittest.TestCase):
                 assert kernel in stdout
 
         if not WINDOWS and not PYPY:
-            def test_exit_jupyter(self):
+            def test_jupyter_console(self):
                 p = spawn_cmd("coconut --jupyter console")
                 p.expect("In", timeout=120)
-                p.sendline("exit()")
+                p.sendline("%load_ext coconut")
+                p.expect("In", timeout=120)
+                p.sendline("`exit`")
                 p.expect("Shutting down kernel|shutting down")
                 if p.isalive():
                     p.terminate()
@@ -761,32 +813,12 @@ class TestCompilation(unittest.TestCase):
         run()
 
     if MYPY:
-        def test_universal_mypy_snip(self):
-            call(
-                ["coconut", "-c", mypy_snip, "--mypy"],
-                assert_output=mypy_snip_err_3,
-                check_errors=False,
-                check_mypy=False,
-            )
-
-        def test_sys_mypy_snip(self):
-            call(
-                ["coconut", "--target", "sys", "-c", mypy_snip, "--mypy"],
-                assert_output=mypy_snip_err_3,
-                check_errors=False,
-                check_mypy=False,
-            )
-
-        def test_no_wrap_mypy_snip(self):
-            call(
-                ["coconut", "--target", "sys", "--no-wrap", "-c", mypy_snip, "--mypy"],
-                assert_output=mypy_snip_err_3,
-                check_errors=False,
-                check_mypy=False,
-            )
-
         def test_mypy_sys(self):
             run(["--mypy"] + mypy_args, agnostic_target="sys", expect_retcode=None, check_errors=False)  # fails due to tutorial mypy errors
+
+    if sys.version_info[:2] in always_sys_versions:
+        def test_always_sys(self):
+            run(["--line-numbers"], agnostic_target="sys", always_sys=True)
 
     # run fewer tests on Windows so appveyor doesn't time out
     if not WINDOWS:
@@ -845,24 +877,24 @@ class TestCompilation(unittest.TestCase):
         run_runnable(["-n", "--minify"])
 
 
-@add_test_func_names
-class TestExternal(unittest.TestCase):
+# more appveyor timeout prevention
+if not WINDOWS:
+    @add_test_func_names
+    class TestExternal(unittest.TestCase):
 
-    if not PYPY or PY2:
-        def test_prelude(self):
-            with using_path(prelude):
-                comp_prelude()
-                if MYPY and PY38:
-                    run_prelude()
+        if not PYPY or PY2:
+            def test_prelude(self):
+                with using_path(prelude):
+                    comp_prelude()
+                    if MYPY and PY38:
+                        run_prelude()
 
-    def test_bbopt(self):
-        with using_path(bbopt):
-            comp_bbopt()
-            if not PYPY and PY38 and not PY310:
-                install_bbopt()
+        def test_bbopt(self):
+            with using_path(bbopt):
+                comp_bbopt()
+                if not PYPY and PY38 and not PY310:
+                    install_bbopt()
 
-    # more appveyor timeout prevention
-    if not WINDOWS:
         def test_pyprover(self):
             with using_path(pyprover):
                 comp_pyprover()

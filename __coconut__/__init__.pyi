@@ -8,12 +8,12 @@ License: Apache 2.0
 Description: MyPy stub file for __coconut__.py.
 """
 
-import sys
-import typing as _t
-
 # -----------------------------------------------------------------------------------------------------------------------
 # TYPE VARS:
 # -----------------------------------------------------------------------------------------------------------------------
+
+import sys
+import typing as _t
 
 _Callable = _t.Callable[..., _t.Any]
 _Iterable = _t.Iterable[_t.Any]
@@ -55,21 +55,14 @@ _P = _t.ParamSpec("_P")
 class _SupportsIndex(_t.Protocol):
     def __index__(self) -> int: ...
 
-
 # -----------------------------------------------------------------------------------------------------------------------
 # IMPORTS:
 # -----------------------------------------------------------------------------------------------------------------------
 
-if sys.version_info >= (3, 11):
-    from typing import dataclass_transform as _dataclass_transform
+if sys.version_info >= (3,):
+    import builtins as _builtins
 else:
-    try:
-        from typing_extensions import dataclass_transform as _dataclass_transform
-    except ImportError:
-        dataclass_transform = ...
-
-import _coconut as __coconut  # we mock _coconut as a package since mypy doesn't handle namespace classes very well
-_coconut = __coconut
+    import __builtin__ as _builtins
 
 if sys.version_info >= (3, 2):
     from functools import lru_cache as _lru_cache
@@ -81,12 +74,23 @@ if sys.version_info >= (3, 7):
     from dataclasses import dataclass as _dataclass
 else:
     @_dataclass_transform()
-    def _dataclass(cls: t_coype[_T], **kwargs: _t.Any) -> type[_T]: ...
+    def _dataclass(cls: type[_T], **kwargs: _t.Any) -> type[_T]: ...
+
+if sys.version_info >= (3, 11):
+    from typing import dataclass_transform as _dataclass_transform
+else:
+    try:
+        from typing_extensions import dataclass_transform as _dataclass_transform
+    except ImportError:
+        dataclass_transform = ...
 
 try:
     from typing_extensions import deprecated as _deprecated  # type: ignore
 except ImportError:
     def _deprecated(message: _t.Text) -> _t.Callable[[_T], _T]: ...  # type: ignore
+
+import _coconut as __coconut  # we mock _coconut as a package since mypy doesn't handle namespace classes very well
+_coconut = __coconut
 
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -153,18 +157,18 @@ py_repr = repr
 py_breakpoint = breakpoint
 
 # all py_ functions, but not py_ types, go here
-chr = chr
-hex = hex
-input = input
-map = map
-oct = oct
-open = open
-print = print
-range = range
-zip = zip
-filter = filter
-reversed = reversed
-enumerate = enumerate
+chr = _builtins.chr
+hex = _builtins.hex
+input = _builtins.input
+map = _builtins.map
+oct = _builtins.oct
+open = _builtins.open
+print = _builtins.print
+range = _builtins.range
+zip = _builtins.zip
+filter = _builtins.filter
+reversed = _builtins.reversed
+enumerate = _builtins.enumerate
 
 
 _coconut_py_str = py_str
@@ -435,12 +439,16 @@ def recursive_iterator(func: _T_iter_func) -> _T_iter_func:
     return func
 
 
+# if sys.version_info >= (3, 12):
+#     from typing import override
+# else:
 try:
     from typing_extensions import override as _override  # type: ignore
     override = _override
 except ImportError:
     def override(func: _Tfunc) -> _Tfunc:
         return func
+
 
 def _coconut_call_set_names(cls: object) -> None: ...
 

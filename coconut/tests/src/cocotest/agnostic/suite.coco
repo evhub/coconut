@@ -148,7 +148,7 @@ def suite_test() -> bool:
     assert one_to_five([1,2,3,4,5]) == [2,3,4]
     assert not one_to_five([0,1,2,3,4,5])
     assert one_to_five([1,5]) == []
-    assert -4 == neg_square_u(2) ≠ 4 ∧ 0 ≤ neg_square_u(0) ≤ 0
+    assert -4 == neg_square_u(2) ≠ 4 ∩ 0 ≤ neg_square_u(0) ≤ 0
     assert is_null(null1())
     assert is_null(null2())
     assert empty() |> depth_1 == 0 == empty() |> depth_2
@@ -219,6 +219,7 @@ def suite_test() -> bool:
     assert inh_a.inh_true4() is True
     assert inh_a.inh_true5() is True
     assert inh_A.inh_cls_true() is True
+    assert inh_inh_A().true() is False
     assert pt.__doc__
     out0 = grid() |> grid_trim$(xmax=5, ymax=5)
     assert out0 == [
@@ -1050,6 +1051,8 @@ forward 2""") == 900
     really_long_var = 10
     assert ret_args_kwargs(...=really_long_var) == ((), {"really_long_var": 10}) == ret_args_kwargs$(...=really_long_var)()
     assert ret_args_kwargs(123, ...=really_long_var, abc="abc") == ((123,), {"really_long_var": 10, "abc": "abc"}) == ret_args_kwargs$(123, ...=really_long_var, abc="abc")()
+    assert "Coconut version of typing" in typing.__doc__
+    numlist: NumList = [1, 2.3, 5]
 
     # must come at end
     assert fibs_calls[0] == 1

@@ -87,6 +87,7 @@ from coconut.constants import (
     all_builtins,
     in_place_op_funcs,
     match_first_arg_var,
+    import_existing,
 )
 from coconut.util import (
     pickleable_obj,
@@ -97,6 +98,7 @@ from coconut.util import (
     get_target_info,
     get_clock_time,
     get_name,
+    assert_remove_prefix,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -195,8 +197,27 @@ def set_to_tuple(tokens):
         raise CoconutInternalException("invalid set maker item", tokens[0])
 
 
-def import_stmt(imp_from, imp, imp_as):
+def import_stmt(imp_from, imp, imp_as, raw=False):
     """Generate an import statement."""
+    if not raw:
+        module_path = (imp if imp_from is None else imp_from).split(".", 1)
+        existing_imp = import_existing.get(module_path[0])
+        if existing_imp is not None:
+            return handle_indentation(
+                """
+if _coconut.typing.TYPE_CHECKING:
+    {raw_import}
+else:
+    try:
+        {imp_name} = {imp_lookup}
+    except _coconut.AttributeError as _coconut_imp_err:
+        raise _coconut.ImportError(_coconut.str(_coconut_imp_err))
+                """,
+            ).format(
+                raw_import=import_stmt(imp_from, imp, imp_as, raw=True),
+                imp_name=imp_as if imp_as is not None else imp,
+                imp_lookup=".".join([existing_imp] + module_path[1:] + ([imp] if imp_from is not None else [])),
+            )
     return (
         ("from " + imp_from + " " if imp_from is not None else "")
         + "import " + imp
@@ -452,7 +473,7 @@ class Compiler(Grammar, pickleable_obj):
         """Creates a new compiler with the given parsing parameters."""
         self.setup(*args, **kwargs)
 
-    # changes here should be reflected in __reduce__ and in the stub for coconut.convenience.setup
+    # changes here should be reflected in __reduce__ and in the stub for coconut.api.setup
     def setup(self, target=None, strict=False, minify=False, line_numbers=False, keep_lines=False, no_tco=False, no_wrap=False):
         """Initializes parsing parameters."""
         if target is None:
@@ -726,6 +747,7 @@ class Compiler(Grammar, pickleable_obj):
         cls.new_testlist_star_expr <<= trace_attach(cls.new_testlist_star_expr_ref, cls.method("new_testlist_star_expr_handle"))
         cls.anon_namedtuple <<= trace_attach(cls.anon_namedtuple_ref, cls.method("anon_namedtuple_handle"))
         cls.base_match_for_stmt <<= trace_attach(cls.base_match_for_stmt_ref, cls.method("base_match_for_stmt_handle"))
+        cls.async_with_for_stmt <<= trace_attach(cls.async_with_for_stmt_ref, cls.method("async_with_for_stmt_handle"))
         cls.unsafe_typedef_tuple <<= trace_attach(cls.unsafe_typedef_tuple_ref, cls.method("unsafe_typedef_tuple_handle"))
         cls.funcname_typeparams <<= trace_attach(cls.funcname_typeparams_ref, cls.method("funcname_typeparams_handle"))
         cls.impl_call <<= trace_attach(cls.impl_call_ref, cls.method("impl_call_handle"))
@@ -1794,6 +1816,8 @@ else:
             and (not is_gen or self.target_info >= (3, 3))
             # don't transform async returns if they're supported
             and (not is_async or self.target_info >= (3, 5))
+            # don't transform async generators if they're supported
+            and (not (is_gen and is_async) or self.target_info >= (3, 6))
         ):
             func_code = "".join(raw_lines)
             return func_code, tco, tre
@@ -1832,9 +1856,18 @@ else:
             # attempt tco/tre/async universalization
             if disabled_until_level is None:
 
+                # disallow yield from in async generators
+                if is_async and is_gen and self.yield_from_regex.search(base):
+                    raise self.make_err(
+                        CoconutSyntaxError,
+                        "yield from not allowed in async generators",
+                        original,
+                        loc,
+                    )
+
                 # handle generator/async returns
                 if not normal_func and self.return_regex.match(base):
-                    to_return = base[len("return"):].strip()
+                    to_return = assert_remove_prefix(base, "return").strip()
                     if to_return:
                         to_return = "(" + to_return + ")"
                     # only use trollius Return when trollius is imported
@@ -1852,6 +1885,20 @@ else:
                                 ),
                             )
                     line = indent + "raise " + ret_err + "(" + to_return + ")" + comment + dedent
+
+                # handle async generator yields
+                if is_async and is_gen and self.target_info < (3, 6):
+                    if self.yield_regex.match(base):
+                        to_yield = assert_remove_prefix(base, "yield").strip()
+                        line = indent + "await _coconut.async_generator.yield_(" + to_yield + ")" + comment + dedent
+                    elif self.yield_regex.search(base):
+                        raise self.make_err(
+                            CoconutTargetError,
+                            "found Python 3.6 async generator yield in non-statement position (Coconut only backports async generator yields to 3.5 if they are at the start of the line)",
+                            original,
+                            loc,
+                            target="36",
+                        )
 
                 # TRE
                 tre_base = None
@@ -1894,10 +1941,10 @@ else:
         done = False
         while not done:
             if def_stmt.startswith("addpattern "):
-                def_stmt = def_stmt[len("addpattern "):]
+                def_stmt = assert_remove_prefix(def_stmt, "addpattern ")
                 addpattern = True
             elif def_stmt.startswith("copyclosure "):
-                def_stmt = def_stmt[len("copyclosure "):]
+                def_stmt = assert_remove_prefix(def_stmt, "copyclosure ")
                 copyclosure = True
             elif def_stmt.startswith("def"):
                 done = True
@@ -2004,15 +2051,17 @@ except _coconut.NameError:
                     original, loc,
                     target="sys",
                 )
-            elif is_gen and self.target_info < (3, 6):
+            elif self.target_info >= (3, 5):
+                if is_gen and self.target_info < (3, 6):
+                    decorators += "@_coconut.async_generator.async_generator\n"
+                def_stmt = "async " + def_stmt
+            elif is_gen:
                 raise self.make_err(
                     CoconutTargetError,
-                    "found Python 3.6 async generator",
+                    "found Python 3.6 async generator (Coconut can only backport async generators as far back as 3.5)",
                     original, loc,
-                    target="36",
+                    target="35",
                 )
-            elif self.target_info >= (3, 5):
-                def_stmt = "async " + def_stmt
             else:
                 decorators += "@_coconut.asyncio.coroutine\n"
 
@@ -2235,7 +2284,7 @@ else:
 
             # look for functions
             if line.startswith(funcwrapper):
-                func_id = int(line[len(funcwrapper):])
+                func_id = int(assert_remove_prefix(line, funcwrapper))
                 original, loc, decorators, funcdef, is_async, in_method, is_stmt_lambda = self.get_ref("func", func_id)
 
                 # process inner code
@@ -3072,9 +3121,7 @@ def __hash__(self):
             imp_from += imp.rsplit("." + imp_as, 1)[0]
             imp, imp_as = imp_as, None
 
-        if imp_from is None and imp == "sys":
-            out.append((imp_as if imp_as is not None else imp) + " = _coconut_sys")
-        elif imp_as is not None and "." in imp_as:
+        if imp_as is not None and "." in imp_as:
             import_as_var = self.get_temp_var("import")
             out.append(import_stmt(imp_from, imp, import_as_var))
             fake_mods = imp_as.split(".")
@@ -3084,10 +3131,10 @@ def __hash__(self):
                     "try:",
                     openindent + mod_name,
                     closeindent + "except:",
-                    openindent + mod_name + ' = _coconut.types.ModuleType("' + mod_name + '")',
+                    openindent + mod_name + ' = _coconut.types.ModuleType(_coconut_py_str("' + mod_name + '"))',
                     closeindent + "else:",
                     openindent + "if not _coconut.isinstance(" + mod_name + ", _coconut.types.ModuleType):",
-                    openindent + mod_name + ' = _coconut.types.ModuleType("' + mod_name + '")' + closeindent * 2,
+                    openindent + mod_name + ' = _coconut.types.ModuleType(_coconut_py_str("' + mod_name + '"))' + closeindent * 2,
                 ))
             out.append(".".join(fake_mods) + " = " + import_as_var)
         else:
@@ -3375,7 +3422,12 @@ if not {check_var}:
 
     def stmt_lambdef_handle(self, original, loc, tokens):
         """Process multi-line lambdef statements."""
-        got_kwds, params, stmts_toks = tokens
+        got_kwds, params, stmts_toks, followed_by = tokens
+
+        if followed_by == ",":
+            self.strict_err_or_warn("found statement lambda followed by comma; this isn't recommended as it can be unclear whether the comma is inside or outside the lambda (just wrap the lambda in parentheses)", original, loc)
+        else:
+            internal_assert(followed_by == "", "invalid stmt_lambdef followed_by", followed_by)
 
         is_async = False
         add_kwds = []
@@ -3557,32 +3609,22 @@ __annotations__["{name}"] = {annotation}
 
     def type_param_handle(self, original, loc, tokens):
         """Compile a type param into an assignment."""
-        bounds = ""
-        kwargs = ""
+        args = ""
+        bound_op = None
+        bound_op_type = ""
         if "TypeVar" in tokens:
             TypeVarFunc = "TypeVar"
+            bound_op_type = "bound"
             if len(tokens) == 2:
                 name_loc, name = tokens
             else:
                 name_loc, name, bound_op, bound = tokens
-                if bound_op == "<=":
-                    self.strict_err_or_warn(
-                        "use of " + repr(bound_op) + " as a type parameter bound declaration operator is deprecated (Coconut style is to use '<:' operator)",
-                        original,
-                        loc,
-                    )
-                elif bound_op == ":":
-                    self.strict_err(
-                        "found use of " + repr(bound_op) + " as a type parameter bound declaration operator (Coconut style is to use '<:' operator)",
-                        original,
-                        loc,
-                    )
-                else:
-                    self.internal_assert(bound_op == "<:", original, loc, "invalid type_param bound_op", bound_op)
-                bounds = ", bound=" + self.wrap_typedef(bound, for_py_typedef=False)
-            # uncomment this line whenever mypy adds support for infer_variance in TypeVar
-            #  (and remove the warning about it in the DOCS)
-            # kwargs = ", infer_variance=True"
+                args = ", bound=" + self.wrap_typedef(bound, for_py_typedef=False)
+        elif "TypeVar constraint" in tokens:
+            TypeVarFunc = "TypeVar"
+            bound_op_type = "constraint"
+            name_loc, name, bound_op, constraints = tokens
+            args = ", " + ", ".join(self.wrap_typedef(c, for_py_typedef=False) for c in constraints)
         elif "TypeVarTuple" in tokens:
             TypeVarFunc = "TypeVarTuple"
             name_loc, name = tokens
@@ -3591,6 +3633,27 @@ __annotations__["{name}"] = {annotation}
             name_loc, name = tokens
         else:
             raise CoconutInternalException("invalid type_param tokens", tokens)
+
+        kwargs = ""
+        if bound_op is not None:
+            self.internal_assert(bound_op_type in ("bound", "constraint"), original, loc, "invalid type_param bound_op", bound_op)
+            # # uncomment this line whenever mypy adds support for infer_variance in TypeVar
+            # #  (and remove the warning about it in the DOCS)
+            # kwargs = ", infer_variance=True"
+            if bound_op == "<=":
+                self.strict_err_or_warn(
+                    "use of " + repr(bound_op) + " as a type parameter " + bound_op_type + " declaration operator is deprecated (Coconut style is to use '<:' for bounds and ':' for constaints)",
+                    original,
+                    loc,
+                )
+            else:
+                self.internal_assert(bound_op in (":", "<:"), original, loc, "invalid type_param bound_op", bound_op)
+                if bound_op_type == "bound" and bound_op != "<:" or bound_op_type == "constraint" and bound_op != ":":
+                    self.strict_err(
+                        "found use of " + repr(bound_op) + " as a type parameter " + bound_op_type + " declaration operator (Coconut style is to use '<:' for bounds and ':' for constaints)",
+                        original,
+                        loc,
+                    )
 
         name_loc = int(name_loc)
         internal_assert(name_loc == loc if TypeVarFunc == "TypeVar" else name_loc >= loc, "invalid name location for " + TypeVarFunc, (name_loc, loc, tokens))
@@ -3609,10 +3672,10 @@ __annotations__["{name}"] = {annotation}
                 typevar_info["typevar_locs"][name] = name_loc
                 name = temp_name
 
-        return '{name} = _coconut.typing.{TypeVarFunc}("{name}"{bounds}{kwargs})\n'.format(
+        return '{name} = _coconut.typing.{TypeVarFunc}("{name}"{args}{kwargs})\n'.format(
             name=name,
             TypeVarFunc=TypeVarFunc,
-            bounds=bounds,
+            args=args,
             kwargs=kwargs,
         )
 
@@ -3655,11 +3718,14 @@ __annotations__["{name}"] = {annotation}
             paramdefs = ()
         else:
             name, paramdefs, typedef = tokens
-        return "".join(paramdefs) + self.typed_assign_stmt_handle([
-            name,
-            "_coconut.typing.TypeAlias",
-            self.wrap_typedef(typedef, for_py_typedef=False),
-        ])
+        if self.target_info >= (3, 12):
+            return "type " + name + " = " + self.wrap_typedef(typedef, for_py_typedef=True)
+        else:
+            return "".join(paramdefs) + self.typed_assign_stmt_handle([
+                name,
+                "_coconut.typing.TypeAlias",
+                self.wrap_typedef(typedef, for_py_typedef=False),
+            ])
 
     def with_stmt_handle(self, tokens):
         """Process with statements."""
@@ -3977,6 +4043,51 @@ for {match_to_var} in {item}:
             match_code=match_code,
             match_error=match_error,
             body=body,
+        )
+
+    def async_with_for_stmt_handle(self, original, loc, tokens):
+        """Handle async with for loops."""
+        if self.target_info < (3, 5):
+            raise self.make_err(CoconutTargetError, "async with for statements require Python 3.5+", original, loc, target="35")
+
+        inner_toks, = tokens
+
+        if "match" in inner_toks:
+            is_match = True
+        else:
+            internal_assert("normal" in inner_toks, "invalid async_with_for_stmt inner_toks", inner_toks)
+            is_match = False
+
+        loop_vars, iter_item, body = inner_toks
+        temp_var = self.get_temp_var("async_with_for")
+
+        if is_match:
+            loop = "async " + self.base_match_for_stmt_handle(
+                original,
+                loc,
+                [loop_vars, temp_var, body],
+            )
+        else:
+            loop = handle_indentation(
+                """
+async for {loop_vars} in {temp_var}:
+{body}
+                """,
+            ).format(
+                loop_vars=loop_vars,
+                temp_var=temp_var,
+                body=body,
+            )
+
+        return handle_indentation(
+            """
+async with {iter_item} as {temp_var}:
+    {loop}
+            """,
+        ).format(
+            iter_item=iter_item,
+            temp_var=temp_var,
+            loop=loop
         )
 
     def string_atom_handle(self, tokens):

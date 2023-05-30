@@ -1,4 +1,5 @@
-import asyncio, typing
+import asyncio
+
 
 def py36_test() -> bool:
     """Performs Python-3.6-specific tests."""
@@ -7,49 +8,6 @@ def py36_test() -> bool:
 
     loop = asyncio.new_event_loop()
 
-    async def ayield(x) = x
-    :async def arange(n):
-        for i in range(n):
-            yield :await ayield(i)
-    async def afor_test():
-        # syntax 1
-        got = []
-        async for int(i) in arange(5):
-            got.append(i)
-        assert got == range(5) |> list
-
-        # syntax 2
-        got = []
-        async match for int(i) in arange(5):
-            got.append(i)
-        assert got == range(5) |> list
-
-        # syntax 3
-        got = []
-        match async for int(i) in arange(5):
-            got.append(i)
-        assert got == range(5) |> list
-
-        return True
-    loop.run_until_complete(afor_test())
-
-    async yield def toa(it):
-        for x in it:
-            yield x
-    match yield async def arange_(int(n)):
-        for x in range(n):
-            yield x
-    async def aconsume(ait):
-        async for _ in ait:
-            pass
-    l: typing.List[int] = []
-    async def aiter_test():
-        range(10) |> toa |> fmap$(l.append) |> aconsume |> await
-        arange_(10) |> fmap$(l.append) |> aconsume |> await
-    loop.run_until_complete(aiter_test())
-    assert l == list(range(10)) + list(range(10))
-
-    async def arec(x) = await arec(x-1) if x else x
     async def outer_func():
         funcs = []
         for x in range(5):
@@ -57,14 +15,6 @@ def py36_test() -> bool:
         return funcs
     async def await_all(xs) = [await x for x in xs]
     async def atest():
-        assert (
-            10
-            |> arec
-            |> await
-            |> (.+10)
-            |> arec
-            |> await
-        ) == 0
         assert (
             outer_func()
             |> await
@@ -75,5 +25,4 @@ def py36_test() -> bool:
     loop.run_until_complete(atest())
 
     loop.close()
-
     return True

@@ -1,7 +1,99 @@
+import asyncio, typing
+from contextlib import aclosing
+
+
 def py35_test() -> bool:
     """Performs Python-3.5-specific tests."""
     assert .attr |> repr == "operator.attrgetter('attr')"
     assert .method(1) |> repr == "operator.methodcaller('method', 1)"
     assert pow$(1) |> repr == "functools.partial(<built-in function pow>, 1)"
     assert .[1] |> repr == "operator.itemgetter(1)"
+
+    loop = asyncio.new_event_loop()
+
+    async def ayield(x) = x
+    :async def arange(n):
+        for i in range(n):
+            yield :await ayield(i)
+    async def afor_test():
+        # match syntax 1
+        got = []
+        async for int(i) in arange(5):
+            got.append(i)
+        assert got == range(5) |> list
+
+        # match syntax 2
+        got = []
+        async match for int(i) in arange(5):
+            got.append(i)
+        assert got == range(5) |> list
+
+        # match syntax 3
+        got = []
+        match async for int(i) in arange(5):
+            got.append(i)
+        assert got == range(5) |> list
+
+        # with for non-match
+        got = []
+        async with for i in aclosing(arange(5)):
+            got.append(i)
+        assert got == range(5) |> list
+
+        # with for match syntax 1
+        got = []
+        async with for int(i) in aclosing(arange(5)):
+            got.append(i)
+        assert got == range(5) |> list
+
+        # with for match syntax 2
+        got = []
+        async match with for int(i) in aclosing(arange(5)):
+            got.append(i)
+        assert got == range(5) |> list
+
+        # with for match syntax 3
+        got = []
+        match async with for int(i) in aclosing(arange(5)):
+            got.append(i)
+        assert got == range(5) |> list
+
+        # with for match syntax 4
+        got = []
+        async with match for int(i) in aclosing(arange(5)):
+            got.append(i)
+        assert got == range(5) |> list
+
+        return True
+    loop.run_until_complete(afor_test())
+
+    async yield def toa(it):
+        for x in it:
+            yield x
+    match yield async def arange_(int(n)):
+        for x in range(n):
+            yield x
+    async def aconsume(ait):
+        async for _ in ait:
+            pass
+    l: typing.List[int] = []
+    async def aiter_test():
+        range(10) |> toa |> fmap$(l.append) |> aconsume |> await
+        arange_(10) |> fmap$(l.append) |> aconsume |> await
+    loop.run_until_complete(aiter_test())
+    assert l == list(range(10)) + list(range(10))
+
+    async def arec(x) = await arec(x-1) if x else x
+    async def atest():
+        assert (
+            10
+            |> arec
+            |> await
+            |> (.+10)
+            |> arec
+            |> await
+        ) == 0
+    loop.run_until_complete(atest())
+
+    loop.close()
     return True

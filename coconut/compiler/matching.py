@@ -1064,7 +1064,7 @@ raise _coconut.TypeError("too many positional args in class match (pattern requi
         match_args_var = other_cls_matcher.get_temp_var()
         other_cls_matcher.add_def(
             handle_indentation("""
-{match_args_var} = _coconut.getattr({cls_name}, '__match_args__', ())
+{match_args_var} = _coconut.getattr({cls_name}, '__match_args__', ()) {type_any} {type_ignore}
 if not _coconut.isinstance({match_args_var}, _coconut.tuple):
     raise _coconut.TypeError("{cls_name}.__match_args__ must be a tuple")
 if _coconut.len({match_args_var}) < {num_pos_matches}:
@@ -1073,6 +1073,8 @@ if _coconut.len({match_args_var}) < {num_pos_matches}:
                 cls_name=cls_name,
                 match_args_var=match_args_var,
                 num_pos_matches=len(pos_matches),
+                type_any=self.comp.wrap_comment(" type: _coconut.typing.Any"),
+                type_ignore=self.comp.type_ignore_comment(),
             ),
         )
         with other_cls_matcher.down_a_level():
@@ -1161,7 +1163,7 @@ if _coconut.len({match_args_var}) < {num_pos_matches}:
         self.add_def(
             handle_indentation(
                 """
-{is_data_result_var} = _coconut.getattr({cls_name}, "{is_data_var}", False) or _coconut.isinstance({cls_name}, _coconut.tuple) and _coconut.all(_coconut.getattr(_coconut_x, "{is_data_var}", False) for _coconut_x in {cls_name}){type_ignore}
+{is_data_result_var} = _coconut.getattr({cls_name}, "{is_data_var}", False) or _coconut.isinstance({cls_name}, _coconut.tuple) and _coconut.all(_coconut.getattr(_coconut_x, "{is_data_var}", False) for _coconut_x in {cls_name}) {type_ignore}
             """,
             ).format(
                 is_data_result_var=is_data_result_var,
