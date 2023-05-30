@@ -709,8 +709,9 @@ class Command(object):
     def start_prompt(self):
         """Start the interpreter."""
         logger.show(
-            "Coconut Interpreter v{co_ver}:".format(
+            "Coconut Interpreter v{co_ver} (Python {py_ver}):".format(
                 co_ver=VERSION,
+                py_ver=".".join(str(v) for v in sys.version_info[:2]),
             ),
         )
         logger.show("(enter 'exit()' or press Ctrl-D to end)")

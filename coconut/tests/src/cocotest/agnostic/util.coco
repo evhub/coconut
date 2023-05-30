@@ -43,6 +43,9 @@ except NameError, TypeError:
             return addpattern(func, base_func, **kwargs)
         return pattern_prepender
 
+def x `typed_eq` y = (type(x), x) == (type(y), y)
+
+
 # Old functions:
 old_fmap = fmap$(starmap_over_mappings=True)
 
