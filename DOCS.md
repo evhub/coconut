@@ -143,74 +143,77 @@ dest                destination directory for compiled files (defaults to
 ##### Optional Arguments
 
 ```
-  -h, --help            show this help message and exit
-  --and source [dest ...]
-                        add an additional source/dest pair to compile (dest is optional)
-  -v, -V, --version     print Coconut and Python version information
-  -t version, --target version
-                        specify target Python version (defaults to universal)
-  -i, --interact        force the interpreter to start (otherwise starts if no other command
-                        is given) (implies --run)
-  -p, --package         compile source as part of a package (defaults to only if source is a
-                        directory)
-  -a, --standalone, --stand-alone
-                        compile source as standalone files (defaults to only if source is a
-                        single file)
-  -l, --line-numbers, --linenumbers
-                        add line number comments for ease of debugging
-  -k, --keep-lines, --keeplines
-                        include source code in comments for ease of debugging
-  -w, --watch           watch a directory and recompile on changes
-  -r, --run             execute compiled Python
-  -n, --no-write, --nowrite
-                        disable writing compiled Python
-  -d, --display         print compiled Python
-  -q, --quiet           suppress all informational output (combine with --display to write
-                        runnable code to stdout)
-  -s, --strict          enforce code cleanliness standards
-  --no-tco, --notco     disable tail call optimization
-  --no-wrap-types, --nowraptypes
-                        disable wrapping type annotations in strings and turn off 'from
-                        __future__ import annotations' behavior
-  -c code, --code code  run Coconut passed in as a string (can also be piped into stdin)
-  -j processes, --jobs processes
-                        number of additional processes to use (defaults to 'sys') (0 is no
-                        additional processes; 'sys' uses machine default)
-  -f, --force           force re-compilation even when source code and compilation parameters
-                        haven't changed
-  --minify              reduce size of compiled Python
-  --jupyter ..., --ipython ...
-                        run Jupyter/IPython with Coconut as the kernel (remaining args passed
-                        to Jupyter)
-  --mypy ...            run MyPy on compiled Python (remaining args passed to MyPy) (implies
-                        --package)
-  --argv ..., --args ...
-                        set sys.argv to source plus remaining args for use in the Coconut
-                        script being run
-  --tutorial            open Coconut's tutorial in the default web browser
-  --docs, --documentation
-                        open Coconut's documentation in the default web browser
-  --style name          set Pygments syntax highlighting style (or 'list' to list styles)
-                        (defaults to COCONUT_STYLE environment variable if it exists,
-                        otherwise 'default')
-  --history-file path   set history file (or '' for no file) (can be modified by setting
-                        COCONUT_HOME environment variable)
-  --vi-mode, --vimode   enable vi mode in the interpreter (currently set to False) (can be
-                        modified by setting COCONUT_VI_MODE environment variable)
-  --recursion-limit limit, --recursionlimit limit
-                        set maximum recursion depth in compiler (defaults to 1920) (when
-                        increasing --recursion-limit, you may also need to increase --stack-
-                        size)
-  --stack-size kbs, --stacksize kbs
-                        run the compiler in a separate thread with the given stack size in
-                        kilobytes
-  --site-install, --siteinstall
-                        set up coconut.api to be imported on Python start
-  --site-uninstall, --siteuninstall
-                        revert the effects of --site-install
-  --verbose             print verbose debug output
-  --trace               print verbose parsing data (only available in coconut-develop)
-  --profile             collect and print timing info (only available in coconut-develop)
+-h, --help            show this help message and exit
+--and source [dest ...]
+                      add an additional source/dest pair to compile (dest is optional)
+-v, -V, --version     print Coconut and Python version information
+-t version, --target version
+                      specify target Python version (defaults to universal)
+-i, --interact        force the interpreter to start (otherwise starts if no other command
+                      is given) (implies --run)
+-p, --package         compile source as part of a package (defaults to only if source is a
+                      directory)
+-a, --standalone, --stand-alone
+                      compile source as standalone files (defaults to only if source is a
+                      single file)
+-l, --line-numbers, --linenumbers
+                      force enable line number comments (--line-numbers are enabled by
+                      default unless --minify is passed)
+--no-line-numbers, --nolinenumbers
+                      disable line number comments (opposite of --line-numbers)
+-k, --keep-lines, --keeplines
+                      include source code in comments for ease of debugging
+-w, --watch           watch a directory and recompile on changes
+-r, --run             execute compiled Python
+-n, --no-write, --nowrite
+                      disable writing compiled Python
+-d, --display         print compiled Python
+-q, --quiet           suppress all informational output (combine with --display to write
+                      runnable code to stdout)
+-s, --strict          enforce code cleanliness standards
+--no-tco, --notco     disable tail call optimization
+--no-wrap-types, --nowraptypes
+                      disable wrapping type annotations in strings and turn off 'from
+                      __future__ import annotations' behavior
+-c code, --code code  run Coconut passed in as a string (can also be piped into stdin)
+-j processes, --jobs processes
+                      number of additional processes to use (defaults to 'sys') (0 is no
+                      additional processes; 'sys' uses machine default)
+-f, --force           force re-compilation even when source code and compilation parameters
+                      haven't changed
+--minify              reduce size of compiled Python
+--jupyter ..., --ipython ...
+                      run Jupyter/IPython with Coconut as the kernel (remaining args passed
+                      to Jupyter)
+--mypy ...            run MyPy on compiled Python (remaining args passed to MyPy) (implies
+                      --package --line-numbers)
+--argv ..., --args ...
+                      set sys.argv to source plus remaining args for use in the Coconut
+                      script being run
+--tutorial            open Coconut's tutorial in the default web browser
+--docs, --documentation
+                      open Coconut's documentation in the default web browser
+--style name          set Pygments syntax highlighting style (or 'list' to list styles)
+                      (defaults to COCONUT_STYLE environment variable if it exists,
+                      otherwise 'default')
+--history-file path   set history file (or '' for no file) (can be modified by setting
+                      COCONUT_HOME environment variable)
+--vi-mode, --vimode   enable vi mode in the interpreter (currently set to False) (can be
+                      modified by setting COCONUT_VI_MODE environment variable)
+--recursion-limit limit, --recursionlimit limit
+                      set maximum recursion depth in compiler (defaults to 1920) (when
+                      increasing --recursion-limit, you may also need to increase --stack-
+                      size)
+--stack-size kbs, --stacksize kbs
+                      run the compiler in a separate thread with the given stack size in
+                      kilobytes
+--site-install, --siteinstall
+                      set up coconut.api to be imported on Python start
+--site-uninstall, --siteuninstall
+                      revert the effects of --site-install
+--verbose             print verbose debug output
+--trace               print verbose parsing data (only available in coconut-develop)
+--profile             collect and print timing info (only available in coconut-develop)
 ```
 
 #### Coconut Scripts

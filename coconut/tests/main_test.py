@@ -818,12 +818,12 @@ class TestCompilation(unittest.TestCase):
 
     if sys.version_info[:2] in always_sys_versions:
         def test_always_sys(self):
-            run(["--line-numbers"], agnostic_target="sys", always_sys=True)
+            run(agnostic_target="sys", always_sys=True)
 
     # run fewer tests on Windows so appveyor doesn't time out
     if not WINDOWS:
-        def test_line_numbers_keep_lines(self):
-            run(["--line-numbers", "--keep-lines"])
+        def test_keep_lines(self):
+            run(["--keep-lines"])
 
         def test_strict(self):
             run(["--strict"])
@@ -864,14 +864,14 @@ class TestCompilation(unittest.TestCase):
         def test_jobs_zero(self):
             run(["--jobs", "0"])
 
-    def test_simple_line_numbers(self):
-        run_runnable(["-n", "--line-numbers"])
+    def test_simple_no_line_numbers(self):
+        run_runnable(["-n", "--no-line-numbers"])
 
     def test_simple_keep_lines(self):
         run_runnable(["-n", "--keep-lines"])
 
-    def test_simple_line_numbers_keep_lines(self):
-        run_runnable(["-n", "--line-numbers", "--keep-lines"])
+    def test_simple_no_line_numbers_keep_lines(self):
+        run_runnable(["-n", "--no-line-numbers", "--keep-lines"])
 
     def test_simple_minify(self):
         run_runnable(["-n", "--minify"])

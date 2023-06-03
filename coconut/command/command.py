@@ -229,8 +229,10 @@ class Command(object):
             # validate general command args
             if args.stack_size and args.stack_size % 4 != 0:
                 logger.warn("--stack-size should generally be a multiple of 4, not {stack_size} (to support 4 KB pages)".format(stack_size=args.stack_size))
-            if args.mypy is not None and args.line_numbers:
-                logger.warn("extraneous --line-numbers argument passed; --mypy implies --line-numbers")
+            if args.mypy is not None and args.no_line_numbers:
+                logger.warn("using --mypy running with --no-line-numbers is not recommended; mypy error messages won't include Coconut line numbers")
+            if args.line_numbers and args.no_line_numbers:
+                raise CoconutException("cannot compile with both --line-numbers and --no-line-numbers")
             if args.site_install and args.site_uninstall:
                 raise CoconutException("cannot --site-install and --site-uninstall simultaneously")
             for and_args in getattr(args, "and") or []:
@@ -266,11 +268,20 @@ class Command(object):
                 self.argv_args = list(args.argv)
 
             # process general compiler args
+            if args.line_numbers:
+                line_numbers = True
+            elif args.no_line_numbers:
+                line_numbers = False
+            else:
+                line_numbers = (
+                    not args.minify
+                    or args.mypy is not None
+                )
             self.setup(
                 target=args.target,
                 strict=args.strict,
                 minify=args.minify,
-                line_numbers=args.line_numbers or args.mypy is not None,
+                line_numbers=line_numbers,
                 keep_lines=args.keep_lines,
                 no_tco=args.no_tco,
                 no_wrap=args.no_wrap_types,

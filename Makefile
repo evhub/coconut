@@ -78,7 +78,7 @@ test-all: clean
 .PHONY: test-univ
 test-univ: export COCONUT_USE_COLOR=TRUE
 test-univ: clean
-	python ./coconut/tests --strict --line-numbers --keep-lines --force
+	python ./coconut/tests --strict --keep-lines --force
 	python ./coconut/tests/dest/runner.py
 	python ./coconut/tests/dest/extras.py
 
@@ -87,7 +87,7 @@ test-univ: clean
 .PHONY: test-tests
 test-tests: export COCONUT_USE_COLOR=TRUE
 test-tests: clean
-	python ./coconut/tests --strict --line-numbers --keep-lines
+	python ./coconut/tests --strict --keep-lines
 	python ./coconut/tests/dest/runner.py
 	python ./coconut/tests/dest/extras.py
 
@@ -95,7 +95,7 @@ test-tests: clean
 .PHONY: test-py2
 test-py2: export COCONUT_USE_COLOR=TRUE
 test-py2: clean
-	python2 ./coconut/tests --strict --line-numbers --keep-lines --force
+	python2 ./coconut/tests --strict --keep-lines --force
 	python2 ./coconut/tests/dest/runner.py
 	python2 ./coconut/tests/dest/extras.py
 
@@ -103,7 +103,7 @@ test-py2: clean
 .PHONY: test-py3
 test-py3: export COCONUT_USE_COLOR=TRUE
 test-py3: clean
-	python3 ./coconut/tests --strict --line-numbers --keep-lines --force --target 3
+	python3 ./coconut/tests --strict --keep-lines --force --target 3
 	python3 ./coconut/tests/dest/runner.py
 	python3 ./coconut/tests/dest/extras.py
 
@@ -111,7 +111,7 @@ test-py3: clean
 .PHONY: test-pypy
 test-pypy: export COCONUT_USE_COLOR=TRUE
 test-pypy: clean
-	pypy ./coconut/tests --strict --line-numbers --keep-lines --force
+	pypy ./coconut/tests --strict --keep-lines --force
 	pypy ./coconut/tests/dest/runner.py
 	pypy ./coconut/tests/dest/extras.py
 
@@ -119,7 +119,7 @@ test-pypy: clean
 .PHONY: test-pypy3
 test-pypy3: export COCONUT_USE_COLOR=TRUE
 test-pypy3: clean
-	pypy3 ./coconut/tests --strict --line-numbers --keep-lines --force
+	pypy3 ./coconut/tests --strict --keep-lines --force
 	pypy3 ./coconut/tests/dest/runner.py
 	pypy3 ./coconut/tests/dest/extras.py
 
@@ -127,7 +127,7 @@ test-pypy3: clean
 .PHONY: test-pypy3-verbose
 test-pypy3-verbose: export COCONUT_USE_COLOR=TRUE
 test-pypy3-verbose: clean
-	pypy3 ./coconut/tests --strict --line-numbers --keep-lines --force --verbose --jobs 0
+	pypy3 ./coconut/tests --strict --keep-lines --force --verbose --jobs 0
 	pypy3 ./coconut/tests/dest/runner.py
 	pypy3 ./coconut/tests/dest/extras.py
 
@@ -151,7 +151,7 @@ test-mypy-univ: clean
 .PHONY: test-verbose
 test-verbose: export COCONUT_USE_COLOR=TRUE
 test-verbose: clean
-	python ./coconut/tests --strict --line-numbers --keep-lines --force --verbose --jobs 0
+	python ./coconut/tests --strict --keep-lines --force --verbose --jobs 0
 	python ./coconut/tests/dest/runner.py
 	python ./coconut/tests/dest/extras.py
 
@@ -175,7 +175,7 @@ test-mypy-all: clean
 .PHONY: test-easter-eggs
 test-easter-eggs: export COCONUT_USE_COLOR=TRUE
 test-easter-eggs: clean
-	python ./coconut/tests --strict --line-numbers --keep-lines --force
+	python ./coconut/tests --strict --keep-lines --force
 	python ./coconut/tests/dest/runner.py --test-easter-eggs
 	python ./coconut/tests/dest/extras.py
 
@@ -188,7 +188,7 @@ test-pyparsing: test-univ
 .PHONY: test-minify
 test-minify: export COCONUT_USE_COLOR=TRUE
 test-minify: clean
-	python ./coconut/tests --strict --line-numbers --keep-lines --force --minify
+	python ./coconut/tests --strict --keep-lines --force --minify
 	python ./coconut/tests/dest/runner.py
 	python ./coconut/tests/dest/extras.py
 
@@ -196,8 +196,8 @@ test-minify: clean
 .PHONY: test-watch
 test-watch: export COCONUT_USE_COLOR=TRUE
 test-watch: clean
-	python ./coconut/tests --strict --line-numbers --keep-lines --force
-	coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --watch --strict --line-numbers --keep-lines
+	python ./coconut/tests --strict --keep-lines --force
+	coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --watch --strict --keep-lines
 	python ./coconut/tests/dest/runner.py
 	python ./coconut/tests/dest/extras.py
 
@@ -210,7 +210,7 @@ test-mini:
 debug-comp-crash: export COCONUT_USE_COLOR=TRUE
 debug-comp-crash: export COCONUT_PURE_PYTHON=TRUE
 debug-comp-crash:
-	python -X dev -m coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --strict --line-numbers --keep-lines --force --jobs 0
+	python -X dev -m coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --strict --keep-lines --force --jobs 0
 
 .PHONY: debug-test-crash
 debug-test-crash:

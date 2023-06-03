@@ -115,7 +115,13 @@ arguments.add_argument(
 arguments.add_argument(
     "-l", "--line-numbers", "--linenumbers",
     action="store_true",
-    help="add line number comments for ease of debugging",
+    help="force enable line number comments (--line-numbers are enabled by default unless --minify is passed)",
+)
+
+arguments.add_argument(
+    "--no-line-numbers", "--nolinenumbers",
+    action="store_true",
+    help="disable line number comments (opposite of --line-numbers)",
 )
 
 arguments.add_argument(
@@ -209,7 +215,7 @@ arguments.add_argument(
     "--mypy",
     type=str,
     nargs=argparse.REMAINDER,
-    help="run MyPy on compiled Python (remaining args passed to MyPy) (implies --package)",
+    help="run MyPy on compiled Python (remaining args passed to MyPy) (implies --package --line-numbers)",
 )
 
 arguments.add_argument(
