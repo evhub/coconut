@@ -224,7 +224,7 @@ coconut-run <source> <args>
 ```
 as an alias for
 ```
-coconut --quiet --target sys --line-numbers --keep-lines --run <source> --argv <args>
+coconut --quiet --target sys --keep-lines --run <source> --argv <args>
 ```
 which will quietly compile and run `<source>`, passing any additional arguments to the script, mimicking how the `python` command works.
 

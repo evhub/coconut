@@ -612,9 +612,9 @@ reserved_command_symbols = exit_chars + (
 )
 
 # always use atomic --xxx=yyy rather than --xxx yyy
-coconut_run_verbose_args = ("--run", "--target=sys", "--line-numbers", "--keep-lines")
+coconut_run_verbose_args = ("--run", "--target=sys", "--keep-lines")
 coconut_run_args = coconut_run_verbose_args + ("--quiet",)
-coconut_import_hook_args = ("--target=sys", "--line-numbers", "--keep-lines", "--quiet")
+coconut_import_hook_args = ("--target=sys", "--keep-lines", "--quiet")
 
 default_mypy_args = (
     "--pretty",
