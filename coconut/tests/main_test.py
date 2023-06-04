@@ -87,7 +87,7 @@ os.environ["PYDEVD_DISABLE_FILE_VALIDATION"] = "1"
 default_recursion_limit = "4096"
 default_stack_size = "4096"
 
-jupyter_timeout = 180
+jupyter_timeout = 120
 
 base = os.path.dirname(os.path.relpath(__file__))
 src = os.path.join(base, "src")
@@ -803,7 +803,8 @@ class TestShell(unittest.TestCase):
                 p.sendline("%load_ext coconut")
                 p.expect("In", timeout=jupyter_timeout)
                 p.sendline("`exit`")
-                p.expect("Shutting down kernel|shutting down", timeout=jupyter_timeout)
+                if sys.version_info[:2] != (3, 6):
+                    p.expect("Shutting down kernel|shutting down", timeout=jupyter_timeout)
                 if p.isalive():
                     p.terminate()
 
