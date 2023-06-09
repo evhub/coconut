@@ -352,25 +352,34 @@ def _coconut_iter_getitem(iterable, index):
                     return ()
                 iterable = _coconut.itertools.islice(iterable, 0, n)
             return _coconut.tuple(iterable)[i::step]
-class _coconut_base_compose(_coconut_baseclass):{COMMENT.no_slots_to_allow_update_wrapper}{COMMENT.must_use_coconut_attrs_to_avoid_interacting_with_update_wrapper}
+class _coconut_compostion_baseclass(_coconut_baseclass):{COMMENT.no_slots_to_allow_update_wrapper}{COMMENT.must_use_coconut_attrs_to_avoid_interacting_with_update_wrapper}
     def __init__(self, func, *func_infos):
         try:
             _coconut.functools.update_wrapper(self, func)
         except _coconut.AttributeError:
             pass
-        if _coconut.isinstance(func, _coconut_base_compose):
+        if _coconut.isinstance(func, self.__class__):
             self._coconut_func = func._coconut_func
             func_infos = func._coconut_func_infos + func_infos
         else:
             self._coconut_func = func
         self._coconut_func_infos = []
-        for f, stars, none_aware in func_infos:
-            if _coconut.isinstance(f, _coconut_base_compose):
-                self._coconut_func_infos.append((f._coconut_func, stars, none_aware))
+        for f_info in func_infos:
+            f = f_info[0]
+            if _coconut.isinstance(f, self.__class__):
+                self._coconut_func_infos.append((f._coconut_func,) + f_info[1:])
                 self._coconut_func_infos += f._coconut_func_infos
             else:
-                self._coconut_func_infos.append((f, stars, none_aware))
+                self._coconut_func_infos.append(f_info)
         self._coconut_func_infos = _coconut.tuple(self._coconut_func_infos)
+    def __reduce__(self):
+        return (self.__class__, (self._coconut_func,) + self._coconut_func_infos)
+    def __get__(self, obj, objtype=None):
+        if obj is None:
+            return self
+{return_method_of_self}
+class _coconut_base_compose(_coconut_compostion_baseclass):
+    __slots__ = ()
     def __call__(self, *args, **kwargs):
         arg = self._coconut_func(*args, **kwargs)
         for f, stars, none_aware in self._coconut_func_infos:
@@ -387,12 +396,42 @@ class _coconut_base_compose(_coconut_baseclass):{COMMENT.no_slots_to_allow_updat
         return arg
     def __repr__(self):
         return _coconut.repr(self._coconut_func) + " " + " ".join(".." + "?"*none_aware + "*"*stars + "> " + _coconut.repr(f) for f, stars, none_aware in self._coconut_func_infos)
-    def __reduce__(self):
-        return (self.__class__, (self._coconut_func,) + self._coconut_func_infos)
-    def __get__(self, obj, objtype=None):
-        if obj is None:
-            return self
-{return_method_of_self}
+class _coconut_async_compose(_coconut_compostion_baseclass):
+    __slots__ = ()
+{def_async_compose_call}
+    def __repr__(self):
+        return _coconut.repr(self._coconut_func) + " " + " ".join("`and_then" + "_await"*await_f + "` " + _coconut.repr(f) for f, await_f in self._coconut_func_infos)
+def and_then(first_async_func, second_func):
+    """Compose an async function with a normal function.
+
+    Effectively equivalent to:
+        def and_then[**T, U, V](
+            first_async_func: async (**T) -> U,
+            second_func: U -> V,
+        ) -> async (**T) -> V =
+            async def (*args, **kwargs) -> (
+                first_async_func(*args, **kwargs)
+                |> await
+                |> second_func
+            )
+    """
+    return _coconut_async_compose(first_async_func, (second_func, False))
+def and_then_await(first_async_func, second_async_func):
+    """Compose two async functions.
+
+    Effectively equivalent to:
+        def and_then_await[**T, U, V](
+            first_async_func: async (**T) -> U,
+            second_async_func: async U -> V,
+        ) -> async (**T) -> V =
+            async def (*args, **kwargs) -> (
+                first_async_func(*args, **kwargs)
+                |> await
+                |> second_async_func
+                |> await
+            )
+    """
+    return _coconut_async_compose(first_async_func, (second_async_func, True))
 def _coconut_forward_compose(func, *funcs):
     """Forward composition operator (..>).
 

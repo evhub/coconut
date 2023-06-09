@@ -530,6 +530,17 @@ def _coconut_base_compose(
     ) -> _t.Callable[[_T], _t.Any]: ...
 
 
+def and_then(
+    first_async_func: _t.Callable[_P, _t.Awaitable[_U]],
+    second_func: _t.Callable[[_U], _V],
+) -> _t.Callable[_P, _t.Awaitable[_V]]: ...
+
+def and_then_await(
+    first_async_func: _t.Callable[_P, _t.Awaitable[_U]],
+    second_async_func: _t.Callable[[_U], _t.Awaitable[_V]],
+) -> _t.Callable[_P, _t.Awaitable[_V]]: ...
+
+
 # all forward/backward/none composition functions MUST be kept in sync:
 
 # @_t.overload

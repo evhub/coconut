@@ -488,6 +488,55 @@ items = _coconut.collections.Counter.viewitems
             indent=1,
             newline=True,
         ),
+        def_async_compose_call=prepare(
+            r'''
+async def __call__(self, *args, **kwargs):
+    arg = await self._coconut_func(*args, **kwargs)
+    for f, await_f in self._coconut_func_infos:
+        arg = f(arg)
+        if await_f:
+            arg = await arg
+    return arg
+            ''' if target_info >= (3, 5) else
+            pycondition(
+                (3, 5),
+                if_ge=r'''
+_coconut_call_ns = {}
+_coconut_exec("""async def __call__(self, *args, **kwargs):
+    arg = await self._coconut_func(*args, **kwargs)
+    for f, await_f in self._coconut_func_infos:
+        arg = f(arg)
+        if await_f:
+            arg = await arg
+    return arg""", _coconut_call_ns)
+__call__ = _coconut_call_ns["__call__"]
+                ''',
+                # we got the below code by compiling the above code with yield from instead of await and --target 2
+                if_lt=r'''
+@_coconut.asyncio.coroutine
+def __call__(self, *args, **kwargs):
+    to_await = _coconut.iter(self._coconut_func(*args, **kwargs))
+    while True:
+        try:
+            yield _coconut.next(to_await)
+        except _coconut.StopIteration as stop_it:
+            arg = stop_it.args[0] if _coconut.len(stop_it.args) > 0 else None
+            break
+    for f, await_f in self._coconut_func_infos:
+        arg = f(arg)
+        if await_f:
+            to_await = _coconut.iter(arg)
+            while True:
+                try:
+                    yield _coconut.next(to_await)
+                except _coconut.StopIteration as stop_it:
+                    arg = stop_it.args[0] if _coconut.len(stop_it.args) > 0 else None
+                    break
+    raise _coconut.StopIteration(arg)
+                ''',
+            ),
+            indent=1
+        ),
 
         # used in the second round
         tco_comma="_coconut_tail_call, _coconut_tco, " if not no_tco else "",

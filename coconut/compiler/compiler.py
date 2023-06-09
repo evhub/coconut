@@ -3499,7 +3499,7 @@ if not {check_var}:
             return "await " + await_expr
         elif self.target_info >= (3, 3):
             # we have to wrap the yield here so it doesn't cause the function to be detected as an async generator
-            return self.wrap_passthrough("(yield from " + await_expr + ")", early=True)
+            return self.wrap_passthrough("(yield from " + await_expr + ")")
         else:
             # this yield is fine because we can detect the _coconut.asyncio.From
             return "(yield _coconut.asyncio.From(" + await_expr + "))"

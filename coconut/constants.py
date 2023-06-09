@@ -714,6 +714,8 @@ coconut_specific_builtins = (
     "multiset",
     "cycle",
     "windowsof",
+    "and_then",
+    "and_then_await",
     "py_chr",
     "py_dict",
     "py_hex",

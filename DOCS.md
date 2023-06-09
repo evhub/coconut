@@ -735,6 +735,8 @@ All function composition operators also have in-place versions (e.g. `..=`).
 
 Since all forms of function composition always call the first function in the composition (`f` in `f ..> g` and `g` in `f <.. g`) with exactly the arguments passed into the composition, all forms of function composition will preserve all metadata attached to the first function in the composition, including the function's [signature](https://docs.python.org/3/library/inspect.html#inspect.signature) and any of that function's attributes.
 
+_Note: for composing `async` functions, see [`and_then` and `and_then_await`](#and_then-and-and_then_await)._
+
 ##### Example
 
 **Coconut:**
@@ -3344,6 +3346,54 @@ res, err = safe_call(-> 1 / 0) |> fmap$(.+1)
 **Python:**
 _Can't be done without a complex `Expected` definition. See the compiled code for the Python syntax._
 
+#### `ident`
+
+**ident**(_x_, *, _side\_effect_=`None`)
+
+Coconut's `ident` is the identity function, generally equivalent to `x -> x`.
+
+`ident` also accepts one keyword-only argument, `side_effect`, which specifies a function to call on the argument before it is returned. Thus, `ident` is effectively equivalent to:
+```coconut
+def ident(x, *, side_effect=None):
+    if side_effect is not None:
+        side_effect(x)
+    return x
+```
+
+`ident` is primarily useful when writing in a point-free style (e.g. in combination with [`lift`](#lift)) or for debugging [pipes](#pipes) where `ident$(side_effect=print)` can let you see what is being piped.
+
+#### `const`
+
+**const**(_value_)
+
+Coconut's `const` simply constructs a function that, whatever its arguments, just returns the given value. Thus, `const` is equivalent to a pickleable version of
+```coconut
+def const(value) = (*args, **kwargs) -> value
+```
+
+`const` is primarily useful when writing in a point-free style (e.g. in combination with [`lift`](#lift)).
+
+#### `flip`
+
+**flip**(_func_, _nargs_=`None`)
+
+Coconut's `flip(f, nargs=None)` is a higher-order function that, given a function `f`, returns a new function with reversed argument order. If `nargs` is passed, only the first `nargs` arguments are reversed.
+
+For the binary case, `flip` works as
+```coconut
+flip(f, 2)(x, y) == f(y, x)
+```
+such that `flip$(?, 2)` implements the `C` combinator (`flip` in Haskell).
+
+In the general case, `flip` is equivalent to a pickleable version of
+```coconut
+def flip(f, nargs=None) =
+    (*args, **kwargs) -> (
+        f(*args[::-1], **kwargs) if nargs is None
+        else f(*(args[nargs-1::-1] + args[nargs:]), **kwargs)
+    )
+```
+
 #### `lift`
 
 **lift**(_func_)
@@ -3391,53 +3441,57 @@ def plus_and_times(x, y):
     return x + y, x * y
 ```
 
-#### `flip`
+#### `and_then` and `and_then_await`
 
-**flip**(_func_, _nargs_=`None`)
+Coconut provides the `and_then` and `and_then_await` built-ins for composing `async` functions. Specifically:
+* To forwards compose an async function `async_f` with a normal function `g` (such that `g` is called on the result of `await`ing `async_f`), write ``async_f `and_then` g``.
+* To forwards compose an async function `async_f` with another async function `async_g` (such that `async_g` is called on the result of `await`ing `async_f`, and then `async_g` is itself awaited), write ``async_f `and_then_await` async_g``.
+* To forwards compose a normal function `f` with an async function `async_g` (such that `async_g` is called on the result of `f`), just write `f ..> async_g`.
 
-Coconut's `flip(f, nargs=None)` is a higher-order function that, given a function `f`, returns a new function with reversed argument order. If `nargs` is passed, only the first `nargs` arguments are reversed.
+Note that all of the above will always result in the resulting composition being an `async` function.
 
-For the binary case, `flip` works as
+The built-ins are effectively equivalent to:
 ```coconut
-flip(f, 2)(x, y) == f(y, x)
-```
-such that `flip$(?, 2)` implements the `C` combinator (`flip` in Haskell).
+def and_then[**T, U, V](
+    first_async_func: async (**T) -> U,
+    second_func: U -> V,
+) -> async (**T) -> V =
+    async def (*args, **kwargs) -> (
+        first_async_func(*args, **kwargs)
+        |> await
+        |> second_func
+    )
 
-In the general case, `flip` is equivalent to a pickleable version of
-```coconut
-def flip(f, nargs=None) =
-    (*args, **kwargs) -> (
-        f(*args[::-1], **kwargs) if nargs is None
-        else f(*(args[nargs-1::-1] + args[nargs:]), **kwargs)
+def and_then_await[**T, U, V](
+    first_async_func: async (**T) -> U,
+    second_async_func: async U -> V,
+) -> async (**T) -> V =
+    async def (*args, **kwargs) -> (
+        first_async_func(*args, **kwargs)
+        |> await
+        |> second_async_func
+        |> await
     )
 ```
 
-#### `const`
+Like normal [function composition](#function-composition), `and_then` and `and_then_await` will preserve all metadata attached to the first function in the composition.
 
-**const**(_value_)
+##### Example
 
-Coconut's `const` simply constructs a function that, whatever its arguments, just returns the given value. Thus, `const` is equivalent to a pickleable version of
+**Coconut:**
 ```coconut
-def const(value) = (*args, **kwargs) -> value
+load_and_send_data = (
+    load_data_async()
+    `and_then` proc_data
+    `and_then_await` send_data
+)
 ```
 
-`const` is primarily useful when writing in a point-free style (e.g. in combination with [`lift`](#lift)).
-
-#### `ident`
-
-**ident**(_x_, *, _side\_effect_=`None`)
-
-Coconut's `ident` is the identity function, generally equivalent to `x -> x`.
-
-`ident` also accepts one keyword-only argument, `side_effect`, which specifies a function to call on the argument before it is returned. Thus, `ident` is effectively equivalent to:
-```coconut
-def ident(x, *, side_effect=None):
-    if side_effect is not None:
-        side_effect(x)
-    return x
+**Python:**
+```coconut_python
+async def load_and_send_data():
+    return await send_data(proc_data(await load_data_async()))
 ```
-
-`ident` is primarily useful when writing in a point-free style (e.g. in combination with [`lift`](#lift)) or for debugging [pipes](#pipes) where `ident$(side_effect=print)` can let you see what is being piped.
 
 ### Built-Ins for Working with Iterators
 
