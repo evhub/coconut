@@ -1090,6 +1090,7 @@ _Note: these are only the default, built-in unicode operators. Coconut supports 
 <*?∘ (<*?\u2218)            => "<*?.."
 ∘?**> (\u2218?**>)          => "..?**>"
 <**?∘ (<**?\u2218)          => "<**?.."
+⏨ (\u23e8)                  => "e" (in scientific notation)
 ```
 
 ## Keywords

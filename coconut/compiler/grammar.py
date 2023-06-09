@@ -804,7 +804,7 @@ class Grammar(object):
         integer + dot + Optional(integer)
         | Optional(integer) + dot + integer
     ) | integer
-    sci_e = combine(caseless_literal("e") + Optional(plus | neg_minus))
+    sci_e = combine((caseless_literal("e") | fixto(Literal("\u23e8"), "e")) + Optional(plus | neg_minus))
     numitem = ~(Literal("0") + Word(nums + "_", exact=1)) + combine(basenum + Optional(sci_e + integer))
     imag_num = combine(numitem + imag_j)
     bin_num = combine(caseless_literal("0b") + Optional(underscore.suppress()) + binint)
