@@ -545,11 +545,15 @@ def test_pandas() -> bool:
 def test_extras() -> bool:
     if not PYPY and (PY2 or PY34):
         assert test_numpy() is True
+    print(".", end="")
     if not PYPY and PY36:
-        assert test_pandas() is True
+        assert test_pandas() is True  # .
+    print(".", end="")
     if CoconutKernel is not None:
-        assert test_kernel() is True
+        assert test_kernel() is True  # ..
+    print(".")  # newline bc we print stuff after this
     assert test_setup_none() is True
+    print(".")  # ditto
     assert test_convenience() is True
     return True
 

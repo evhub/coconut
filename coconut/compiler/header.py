@@ -511,29 +511,30 @@ _coconut_exec("""async def __call__(self, *args, **kwargs):
     return arg""", _coconut_call_ns)
 __call__ = _coconut_call_ns["__call__"]
                 ''',
-                # we got the below code by compiling the above code with yield from instead of await and --target 2
-                if_lt=r'''
-@_coconut.asyncio.coroutine
-def __call__(self, *args, **kwargs):
-    to_await = _coconut.iter(self._coconut_func(*args, **kwargs))
-    while True:
-        try:
-            yield _coconut.next(to_await)
-        except _coconut.StopIteration as stop_it:
-            arg = stop_it.args[0] if _coconut.len(stop_it.args) > 0 else None
-            break
+                if_lt=pycondition(
+                    (3, 4),
+                    if_ge=r'''
+_coconut_call_ns = {}
+_coconut_exec("""def __call__(self, *args, **kwargs):
+    arg = yield from self._coconut_func(*args, **kwargs)
     for f, await_f in self._coconut_func_infos:
         arg = f(arg)
         if await_f:
-            to_await = _coconut.iter(arg)
-            while True:
-                try:
-                    yield _coconut.next(to_await)
-                except _coconut.StopIteration as stop_it:
-                    arg = stop_it.args[0] if _coconut.len(stop_it.args) > 0 else None
-                    break
-    raise _coconut.StopIteration(arg)
-                ''',
+            arg = yield from arg
+    raise _coconut.StopIteration(arg)""", _coconut_call_ns)
+__call__ = _coconut.asyncio.coroutine(_coconut_call_ns["__call__"])
+                    ''',
+                    if_lt='''
+@_coconut.asyncio.coroutine
+def __call__(self, *args, **kwargs):
+    arg = yield _coconut.asyncio.From(self._coconut_func(*args, **kwargs))
+    for f, await_f in self._coconut_func_infos:
+        arg = f(arg)
+        if await_f:
+            arg = yield _coconut.asyncio.From(arg)
+    raise _coconut.asyncio.Return(arg)
+                    ''',
+                ),
             ),
             indent=1
         ),

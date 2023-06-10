@@ -78,8 +78,9 @@ PY310 = sys.version_info >= (3, 10)
 PY311 = sys.version_info >= (3, 11)
 IPY = (
     ((PY2 and not PY26) or PY35)
-    and not (PYPY and WINDOWS)
     and (PY37 or not PYPY)
+    and not (PYPY and WINDOWS)
+    and not (PY2 and WINDOWS)
     and sys.version_info[:2] != (3, 7)
 )
 MYPY = (
