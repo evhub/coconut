@@ -683,9 +683,14 @@ if not hasattr(typing, "Unpack"):
             if_lt='''
 try:
     import trollius as asyncio
-except ImportError:
+except ImportError as trollius_import_error:
     class you_need_to_install_trollius{object}:
         __slots__ = ()
+        @staticmethod
+        def coroutine(func):
+            def raise_import_error(*args, **kwargs):
+                raise trollius_import_error
+            return raise_import_error
     asyncio = you_need_to_install_trollius()
             '''.format(**format_dict),
             if_ge='''
