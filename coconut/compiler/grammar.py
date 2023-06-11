@@ -1390,7 +1390,9 @@ class Grammar(object):
         + Optional(power_in_impl_call)
     )
     impl_call = Forward()
-    impl_call_ref = (
+    # we need to disable this inside the xonsh parser
+    impl_call_ref = Forward()
+    unsafe_impl_call_ref = (
         impl_call_item + OneOrMore(impl_call_arg)
     )
 
@@ -2357,8 +2359,13 @@ class Grammar(object):
         + ~(lparen + rparen | lbrack + rbrack | lbrace + rbrace)
         + (parens | brackets | braces | unsafe_name)
     )
-    xonsh_parser, _anything_stmt, _xonsh_command = disable_outside(
+    unsafe_xonsh_parser, _impl_call_ref = disable_inside(
         single_parser,
+        unsafe_impl_call_ref,
+    )
+    impl_call_ref <<= _impl_call_ref
+    xonsh_parser, _anything_stmt, _xonsh_command = disable_outside(
+        unsafe_xonsh_parser,
         unsafe_anything_stmt,
         unsafe_xonsh_command,
     )

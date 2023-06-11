@@ -158,15 +158,14 @@ if LOAD_MODULE:
         def __init__(self, *args, **kwargs):
             """Version of __init__ that sets up Coconut code compilation."""
             super(CoconutSplitter, self).__init__(*args, **kwargs)
+            self._original_compile = self._compile
             self._compile = self._coconut_compile
 
         def _coconut_compile(self, source, *args, **kwargs):
             """Version of _compile that checks Coconut code.
             None means that the code should not be run as is.
             Any other value means that it can."""
-            if source.endswith("\n\n"):
-                return True
-            elif should_indent(source):
+            if not source.endswith("\n\n") and should_indent(source):
                 return None
             else:
                 return True

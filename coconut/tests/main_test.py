@@ -765,6 +765,9 @@ class TestShell(unittest.TestCase):
                 if PY36:
                     p.sendline("echo 123;; 123")
                     p.expect("123;; 123")
+                    p.sendline("echo abc; echo abc")
+                    p.expect("abc")
+                    p.expect("abc")
                 p.sendline('execx("10 |> print")')
                 p.expect("subprocess mode")
             p.sendline("xontrib unload coconut")

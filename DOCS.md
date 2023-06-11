@@ -2094,6 +2094,8 @@ Due to potential confusion, some syntactic constructs are explicitly disallowed 
 - Multiplying two or more numeric literals with implicit coefficient syntax is prohibited, so `10 20` is not allowed.
 - `await` is not allowed in front of implicit function application and coefficient syntax. To use `await`, simply parenthesize the expression, as in `await (f x)`.
 
+_Note: implicit function application and coefficient syntax is disabled when [using Coconut in `xonsh`](#xonsh-support) due to conflicting with console commands._
+
 ##### Examples
 
 **Coconut:**
