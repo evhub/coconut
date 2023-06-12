@@ -1,3 +1,9 @@
+class _coconut_missing_module{object}:
+    __slots__ = ("_import_err",)
+    def __init__(self, error):
+        self._import_err = error
+    def __getattr__(self, name):
+        raise self._import_err
 @_coconut_wraps(_coconut_py_super)
 def _coconut_super(type=None, object_or_type=None):
     if type is None:
@@ -19,10 +25,8 @@ class _coconut{object}:{COMMENT.EVERYTHING_HERE_MUST_BE_COPIED_TO_STUB_FILE}
 {import_asyncio}
     try:
         import async_generator
-    except ImportError:
-        class you_need_to_install_async_generator{object}:
-            __slots__ = ()
-        async_generator = you_need_to_install_async_generator()
+    except ImportError as async_generator_import_err:
+        async_generator = _coconut_missing_module(async_generator_import_err)
 {import_pickle}
 {import_OrderedDict}
 {import_collections_abc}
@@ -45,10 +49,8 @@ class _coconut{object}:{COMMENT.EVERYTHING_HERE_MUST_BE_COPIED_TO_STUB_FILE}
 {set_zip_longest}
     try:
         import numpy
-    except ImportError:
-        class you_need_to_install_numpy{object}:
-            __slots__ = ()
-        numpy = you_need_to_install_numpy()
+    except ImportError as numpy_import_err:
+        numpy = _coconut_missing_module(numpy_import_err)
     else:
         abc.Sequence.register(numpy.ndarray)
     numpy_modules = {numpy_modules}

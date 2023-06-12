@@ -683,15 +683,15 @@ if not hasattr(typing, "Unpack"):
             if_lt='''
 try:
     import trollius as asyncio
-except ImportError as trollius_import_error:
-    class you_need_to_install_trollius{object}:
+except ImportError as trollius_import_err:
+    class you_need_to_install_trollius(_coconut_missing_module):
         __slots__ = ()
         @staticmethod
         def coroutine(func):
             def raise_import_error(*args, **kwargs):
-                raise trollius_import_error
+                raise trollius_import_err
             return raise_import_error
-    asyncio = you_need_to_install_trollius()
+    asyncio = you_need_to_install_trollius(trollius_import_err)
             '''.format(**format_dict),
             if_ge='''
 import asyncio
@@ -724,10 +724,8 @@ class _coconut_amap(_coconut_baseclass):
 try:
     from backports.functools_lru_cache import lru_cache
     functools.lru_cache = lru_cache
-except ImportError:
-    class you_need_to_install_backports_functools_lru_cache{object}:
-        __slots__ = ()
-    functools.lru_cache = you_need_to_install_backports_functools_lru_cache()
+except ImportError as lru_cache_import_err:
+    functools.lru_cache = _coconut_missing_module(lru_cache_import_err)
             '''.format(**format_dict),
             if_ge=None,
             indent=1,
