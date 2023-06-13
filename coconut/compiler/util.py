@@ -454,7 +454,7 @@ def match_in(grammar, text, inner=True):
 def transform(grammar, text, inner=True):
     """Transform text by replacing matches to grammar."""
     with parsing_context(inner):
-        result = add_action(grammar, unpack).parseWithTabs().transformString(text)
+        result = prep_grammar(add_action(grammar, unpack)).transformString(text)
         if result == text:
             result = None
         return result
