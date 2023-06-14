@@ -866,7 +866,8 @@ class TestCompilation(unittest.TestCase):
         def test_run(self):
             run(use_run_arg=True)
 
-    if not PYPY and not PY26:
+    # not WINDOWS is for appveyor timeout prevention
+    if not WINDOWS and not PYPY and not PY26:
         def test_jobs_zero(self):
             run(["--jobs", "0"])
 
