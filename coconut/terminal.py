@@ -471,7 +471,7 @@ class Logger(object):
                 self.print_trace(*out)
 
     def _trace_success_action(self, original, start_loc, end_loc, expr, tokens):
-        if self.tracing and self.verbose:  # avoid the overhead of an extra function call
+        if self.tracing:  # avoid the overhead of an extra function call
             self.log_trace(expr, original, start_loc, tokens)
 
     def _trace_exc_action(self, original, loc, expr, exc):
@@ -481,6 +481,7 @@ class Logger(object):
     def trace(self, item):
         """Traces a parse element (only enabled in develop)."""
         if DEVELOP and not MODERN_PYPARSING:
+            # setDebugActions doesn't work as it won't let us set any actions to None
             item.debugActions = (
                 None,  # no start action
                 self._trace_success_action,

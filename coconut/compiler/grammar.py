@@ -62,7 +62,7 @@ from coconut.exceptions import (
     CoconutDeferredSyntaxError,
 )
 from coconut.terminal import (
-    trace,
+    trace,  # NOQA
     internal_assert,
 )
 from coconut.constants import (
@@ -624,6 +624,7 @@ class Grammar(object):
     star = ~dubstar + Literal("*")
     at = Literal("@")
     arrow = Literal("->") | fixto(Literal("\u2192"), "->")
+    unsafe_fat_arrow = Literal("=>") | fixto(Literal("\u21d2"), "=>")
     colon_eq = Literal(":=")
     unsafe_dubcolon = Literal("::")
     unsafe_colon = Literal(":")
@@ -632,7 +633,7 @@ class Grammar(object):
     semicolon = Literal(";") | invalid_syntax("\u037e", "invalid Greek question mark instead of semicolon", greedy=True)
     multisemicolon = combine(OneOrMore(semicolon))
     eq = Literal("==")
-    equals = ~eq + Literal("=")
+    equals = ~eq + ~Literal("=>") + Literal("=")
     lbrack = Literal("[")
     rbrack = Literal("]")
     lbrace = Literal("{")
@@ -942,9 +943,9 @@ class Grammar(object):
 
     negable_atom_item = condense(Optional(neg_minus) + atom_item)
 
-    testlist = trace(itemlist(test, comma, suppress_trailing=False))
-    testlist_has_comma = trace(addspace(OneOrMore(condense(test + comma)) + Optional(test)))
-    new_namedexpr_testlist_has_comma = trace(addspace(OneOrMore(condense(new_namedexpr_test + comma)) + Optional(test)))
+    testlist = itemlist(test, comma, suppress_trailing=False)
+    testlist_has_comma = addspace(OneOrMore(condense(test + comma)) + Optional(test))
+    new_namedexpr_testlist_has_comma = addspace(OneOrMore(condense(new_namedexpr_test + comma)) + Optional(test))
 
     testlist_star_expr = Forward()
     testlist_star_expr_ref = tokenlist(Group(test) | star_expr, comma, suppress=False)
@@ -1050,7 +1051,7 @@ class Grammar(object):
         | labeled_group(test_no_infix + partialable_op + dot.suppress(), "left partial")
     )
     partial_op_item = attach(partial_op_item_tokens, partial_op_item_handle)
-    op_item = trace(
+    op_item = (
         typedef_op_item
         | partial_op_item
         | base_op_item
@@ -1083,7 +1084,7 @@ class Grammar(object):
     just_op = just_star | just_slash
 
     match = Forward()
-    args_list = trace(
+    args_list = (
         ~just_op
         + addspace(
             ZeroOrMore(
@@ -1098,7 +1099,7 @@ class Grammar(object):
         )
     )
     parameters = condense(lparen + args_list + rparen)
-    set_args_list = trace(
+    set_args_list = (
         ~just_op
         + addspace(
             ZeroOrMore(
@@ -1112,21 +1113,17 @@ class Grammar(object):
             )
         )
     )
-    match_args_list = trace(
-        Group(
-            Optional(
-                tokenlist(
-                    Group(
-                        (star | dubstar) + match
-                        | star  # not star_sep because pattern-matching can handle star separators on any Python version
-                        | slash  # not slash_sep as above
-                        | match + Optional(equals.suppress() + test)
-                    ),
-                    comma,
-                )
-            )
+    match_args_list = Group(Optional(
+        tokenlist(
+            Group(
+                (star | dubstar) + match
+                | star  # not star_sep because pattern-matching can handle star separators on any Python version
+                | slash  # not slash_sep as above
+                | match + Optional(equals.suppress() + test)
+            ),
+            comma,
         )
-    )
+    ))
 
     call_item = (
         dubstar + test
@@ -1231,7 +1228,7 @@ class Grammar(object):
     f_string_atom_ref = ZeroOrMore(nonbf_string) + f_string + ZeroOrMore(nonb_string)
 
     keyword_atom = any_keyword_in(const_vars)
-    passthrough_atom = trace(addspace(OneOrMore(passthrough_item)))
+    passthrough_atom = addspace(OneOrMore(passthrough_item))
 
     set_literal = Forward()
     set_letter_literal = Forward()
@@ -1251,7 +1248,7 @@ class Grammar(object):
     lazy_items = Optional(tokenlist(test, comma))
     lazy_list = attach(lbanana.suppress() + lazy_items + rbanana.suppress(), lazy_list_handle)
 
-    known_atom = trace(
+    known_atom = (
         keyword_atom
         | string_atom
         | num_atom
@@ -1351,7 +1348,7 @@ class Grammar(object):
 
     typed_assign_stmt = Forward()
     typed_assign_stmt_ref = simple_assign + colon.suppress() + typedef_test + Optional(equals.suppress() + test_expr)
-    basic_stmt = trace(addspace(ZeroOrMore(assignlist + equals) + test_expr))
+    basic_stmt = addspace(ZeroOrMore(assignlist + equals) + test_expr)
 
     type_param = Forward()
     type_param_bound_op = lt_colon | colon | le
@@ -1501,13 +1498,13 @@ class Grammar(object):
         # expr must come at end
         | labeled_group(comp_pipe_expr, "expr") + pipe_op
     )
-    pipe_augassign_item = trace(
+    pipe_augassign_item = (
         # should match pipe_item but with pipe_op -> end_simple_stmt_item and no expr
         labeled_group(keyword("await"), "await") + end_simple_stmt_item
         | labeled_group(attrgetter_atom_tokens, "attrgetter") + end_simple_stmt_item
         | labeled_group(itemgetter_atom_tokens, "itemgetter") + end_simple_stmt_item
         | labeled_group(partial_atom_tokens, "partial") + end_simple_stmt_item
-        | labeled_group(partial_op_atom_tokens, "op partial") + end_simple_stmt_item,
+        | labeled_group(partial_op_atom_tokens, "op partial") + end_simple_stmt_item
     )
     last_pipe_item = Group(
         lambdef("expr")
@@ -1539,8 +1536,8 @@ class Grammar(object):
     not_test = addspace(ZeroOrMore(keyword("not")) + comparison)
     # we condense "and" and "or" into one, since Python handles the precedence, not Coconut
     # and_test = exprlist(not_test, keyword("and"))
-    # test_item = trace(exprlist(and_test, keyword("or")))
-    test_item = trace(exprlist(not_test, keyword("and") | keyword("or")))
+    # test_item = exprlist(and_test, keyword("or"))
+    test_item = exprlist(not_test, keyword("and") | keyword("or"))
 
     simple_stmt_item = Forward()
     unsafe_simple_stmt_item = Forward()
@@ -1550,13 +1547,18 @@ class Grammar(object):
     nocolon_suite = Forward()
     base_suite = Forward()
 
-    classic_lambdef = Forward()
-    classic_lambdef_params = maybeparens(lparen, set_args_list, rparen)
-    new_lambdef_params = lparen.suppress() + set_args_list + rparen.suppress() | setname
-    classic_lambdef_ref = addspace(keyword("lambda") + condense(classic_lambdef_params + colon))
-    new_lambdef = attach(new_lambdef_params + arrow.suppress(), lambdef_handle)
-    implicit_lambdef = fixto(arrow, "lambda _=None:")
-    lambdef_base = classic_lambdef | new_lambdef | implicit_lambdef
+    fat_arrow = Forward()
+    lambda_arrow = Forward()
+    unsafe_lambda_arrow = fat_arrow | arrow
+
+    keyword_lambdef_params = maybeparens(lparen, set_args_list, rparen)
+    arrow_lambdef_params = lparen.suppress() + set_args_list + rparen.suppress() | setname
+
+    keyword_lambdef = Forward()
+    keyword_lambdef_ref = addspace(keyword("lambda") + condense(keyword_lambdef_params + colon))
+    arrow_lambdef = attach(arrow_lambdef_params + lambda_arrow.suppress(), lambdef_handle)
+    implicit_lambdef = fixto(lambda_arrow, "lambda _=None:")
+    lambdef_base = keyword_lambdef | arrow_lambdef | implicit_lambdef
 
     stmt_lambdef = Forward()
     match_guard = Optional(keyword("if").suppress() + namedexpr_test)
@@ -1572,14 +1574,21 @@ class Grammar(object):
         Group(OneOrMore(simple_stmt_item + semicolon.suppress())) + Optional(closing_stmt)
         | Group(ZeroOrMore(simple_stmt_item + semicolon.suppress())) + closing_stmt,
     )
+
+    no_fat_arrow_stmt_lambdef_body, _fat_arrow = disable_inside(stmt_lambdef_body, unsafe_fat_arrow)
+    fat_arrow <<= _fat_arrow
+    stmt_lambdef_suite = (
+        arrow.suppress() + no_fat_arrow_stmt_lambdef_body + ~fat_arrow
+        | Optional(arrow.suppress() + typedef_test) + fat_arrow.suppress() + stmt_lambdef_body
+    )
+
     general_stmt_lambdef = (
         Group(any_len_perm(
             keyword("async"),
             keyword("copyclosure"),
         )) + keyword("def").suppress()
         + stmt_lambdef_params
-        + arrow.suppress()
-        + stmt_lambdef_body
+        + stmt_lambdef_suite
     )
     match_stmt_lambdef = (
         Group(any_len_perm(
@@ -1588,10 +1597,9 @@ class Grammar(object):
             keyword("copyclosure"),
         )) + keyword("def").suppress()
         + stmt_lambdef_match_params
-        + arrow.suppress()
-        + stmt_lambdef_body
+        + stmt_lambdef_suite
     )
-    stmt_lambdef_ref = (
+    stmt_lambdef_ref = trace(
         general_stmt_lambdef
         | match_stmt_lambdef
     ) + (
@@ -1600,7 +1608,7 @@ class Grammar(object):
     )
 
     lambdef <<= addspace(lambdef_base + test) | stmt_lambdef
-    lambdef_no_cond = trace(addspace(lambdef_base + test_no_cond))
+    lambdef_no_cond = addspace(lambdef_base + test_no_cond)
 
     typedef_callable_arg = Group(
         test("arg")
@@ -1636,7 +1644,7 @@ class Grammar(object):
 
     unsafe_typedef_op_item = attach(base_op_item, typedef_op_item_handle)
 
-    _typedef_test, typedef_callable, _typedef_trailer, _typedef_or_expr, _typedef_tuple, _typedef_ellipsis, _typedef_op_item = disable_outside(
+    unsafe_typedef_test, typedef_callable, _typedef_trailer, _typedef_or_expr, _typedef_tuple, _typedef_ellipsis, _typedef_op_item = disable_outside(
         test,
         unsafe_typedef_callable,
         unsafe_typedef_trailer,
@@ -1645,12 +1653,18 @@ class Grammar(object):
         unsafe_typedef_ellipsis,
         unsafe_typedef_op_item,
     )
-    typedef_test <<= _typedef_test
     typedef_trailer <<= _typedef_trailer
     typedef_or_expr <<= _typedef_or_expr
     typedef_tuple <<= _typedef_tuple
     typedef_ellipsis <<= _typedef_ellipsis
     typedef_op_item <<= _typedef_op_item
+
+    _typedef_test, _lambda_arrow = disable_inside(
+        unsafe_typedef_test,
+        unsafe_lambda_arrow,
+    )
+    typedef_test <<= _typedef_test
+    lambda_arrow <<= _lambda_arrow
 
     alt_ternary_expr = attach(keyword("if").suppress() + test_item + keyword("then").suppress() + test_item + keyword("else").suppress() + test, alt_ternary_handle)
     test <<= (
@@ -1865,7 +1879,7 @@ class Grammar(object):
         | lparen.suppress() + matchlist_star + rparen.suppress()
     )("star")
 
-    base_match = trace(Group(
+    base_match = Group(
         (negable_atom_item + arrow.suppress() + match)("view")
         | match_string
         | match_const("const")
@@ -1890,7 +1904,7 @@ class Grammar(object):
         | (keyword("class").suppress() + dotted_refname + lparen.suppress() + matchlist_data + rparen.suppress())("class")
         | (dotted_refname + lparen.suppress() + matchlist_data + rparen.suppress())("data_or_class")
         | Optional(keyword("as").suppress()) + setname("var")
-    ))
+    )
 
     matchlist_isinstance = base_match + OneOrMore(keyword("is").suppress() + negable_atom_item)
     isinstance_match = labeled_group(matchlist_isinstance, "isinstance_is") | base_match
@@ -1910,7 +1924,7 @@ class Grammar(object):
     matchlist_kwd_or = and_match + OneOrMore(keyword("or").suppress() + and_match)
     kwd_or_match = labeled_group(matchlist_kwd_or, "or") | and_match
 
-    match <<= trace(kwd_or_match)
+    match <<= kwd_or_match
 
     many_match = (
         labeled_group(matchlist_star, "star")
@@ -1931,32 +1945,32 @@ class Grammar(object):
         + ~FollowedBy(colon + newline + indent + keyword("case"))
         - full_suite
     )
-    match_stmt = trace(condense(full_match - Optional(else_stmt)))
+    match_stmt = condense(full_match - Optional(else_stmt))
 
     destructuring_stmt = Forward()
     base_destructuring_stmt = Optional(keyword("match").suppress()) + many_match + equals.suppress() + test_expr
     destructuring_stmt_ref, match_dotted_name_const_ref = disable_inside(base_destructuring_stmt, must_be_dotted_name + ~lparen)
 
     # both syntaxes here must be kept the same except for the keywords
-    case_match_co_syntax = trace(Group(
+    case_match_co_syntax = Group(
         (keyword("match") | keyword("case")).suppress()
         + stores_loc_item
         + many_match
         + Optional(keyword("if").suppress() + namedexpr_test)
         - full_suite
-    ))
+    )
     cases_stmt_co_syntax = (
         (keyword("cases") | keyword("case")) + testlist_star_namedexpr + colon.suppress() + newline.suppress()
         + indent.suppress() + Group(OneOrMore(case_match_co_syntax))
         + dedent.suppress() + Optional(keyword("else").suppress() + suite)
     )
-    case_match_py_syntax = trace(Group(
+    case_match_py_syntax = Group(
         keyword("case").suppress()
         + stores_loc_item
         + many_match
         + Optional(keyword("if").suppress() + namedexpr_test)
         - full_suite
-    ))
+    )
     cases_stmt_py_syntax = (
         keyword("match") + testlist_star_namedexpr + colon.suppress() + newline.suppress()
         + indent.suppress() + Group(OneOrMore(case_match_py_syntax))
@@ -2020,22 +2034,22 @@ class Grammar(object):
 
     funcname_typeparams = Forward()
     funcname_typeparams_ref = dotted_setname + Optional(type_params)
-    name_funcdef = trace(condense(funcname_typeparams + parameters))
+    name_funcdef = condense(funcname_typeparams + parameters)
     op_tfpdef = unsafe_typedef_default | condense(setname + Optional(default))
     op_funcdef_arg = setname | condense(lparen.suppress() + op_tfpdef + rparen.suppress())
     op_funcdef_name = unsafe_backtick.suppress() + funcname_typeparams + unsafe_backtick.suppress()
-    op_funcdef = trace(attach(
+    op_funcdef = attach(
         Group(Optional(op_funcdef_arg))
         + op_funcdef_name
         + Group(Optional(op_funcdef_arg)),
         op_funcdef_handle,
-    ))
+    )
 
     return_typedef = Forward()
     return_typedef_ref = arrow.suppress() + typedef_test
     end_func_colon = return_typedef + colon.suppress() | colon
     base_funcdef = op_funcdef | name_funcdef
-    funcdef = trace(addspace(keyword("def") + condense(base_funcdef + end_func_colon + nocolon_suite)))
+    funcdef = addspace(keyword("def") + condense(base_funcdef + end_func_colon + nocolon_suite))
 
     name_match_funcdef = Forward()
     op_match_funcdef = Forward()
@@ -2051,7 +2065,7 @@ class Grammar(object):
     ))
     name_match_funcdef_ref = keyword("def").suppress() + funcname_typeparams + lparen.suppress() + match_args_list + match_guard + rparen.suppress()
     op_match_funcdef_ref = keyword("def").suppress() + op_match_funcdef_arg + op_funcdef_name + op_match_funcdef_arg + match_guard
-    base_match_funcdef = trace(op_match_funcdef | name_match_funcdef)
+    base_match_funcdef = op_match_funcdef | name_match_funcdef
     func_suite = (
         attach(simple_stmt, make_suite_handle)
         | (
@@ -2062,17 +2076,17 @@ class Grammar(object):
             - dedent.suppress()
         )
     )
-    def_match_funcdef = trace(attach(
+    def_match_funcdef = attach(
         base_match_funcdef
         + end_func_colon
         - func_suite,
         join_match_funcdef,
-    ))
-    match_def_modifiers = trace(any_len_perm(
+    )
+    match_def_modifiers = any_len_perm(
         keyword("match").suppress(),
         # addpattern is detected later
         keyword("addpattern"),
-    ))
+    )
     match_funcdef = addspace(match_def_modifiers + def_match_funcdef)
 
     where_stmt = attach(
@@ -2102,11 +2116,11 @@ class Grammar(object):
         | condense(newline - indent - math_funcdef_body - dedent)
     )
     end_func_equals = return_typedef + equals.suppress() | fixto(equals, ":")
-    math_funcdef = trace(attach(
+    math_funcdef = attach(
         condense(addspace(keyword("def") + base_funcdef) + end_func_equals) - math_funcdef_suite,
         math_funcdef_handle,
-    ))
-    math_match_funcdef = trace(addspace(
+    )
+    math_match_funcdef = addspace(
         match_def_modifiers
         + attach(
             base_match_funcdef
@@ -2122,7 +2136,7 @@ class Grammar(object):
             ),
             join_match_funcdef,
         )
-    ))
+    )
 
     async_stmt = Forward()
     async_with_for_stmt = Forward()
@@ -2152,14 +2166,14 @@ class Grammar(object):
     )
 
     async_funcdef = keyword("async").suppress() + (funcdef | math_funcdef)
-    async_match_funcdef = trace(addspace(
+    async_match_funcdef = addspace(
         any_len_perm(
             keyword("match").suppress(),
             # addpattern is detected later
             keyword("addpattern"),
             required=(keyword("async").suppress(),),
         ) + (def_match_funcdef | math_match_funcdef),
-    ))
+    )
 
     async_keyword_normal_funcdef = Group(
         any_len_perm_at_least_one(
@@ -2280,13 +2294,13 @@ class Grammar(object):
 
     passthrough_stmt = condense(passthrough_block - (base_suite | newline))
 
-    simple_compound_stmt = trace(
+    simple_compound_stmt = (
         if_stmt
         | try_stmt
         | match_stmt
         | passthrough_stmt
     )
-    compound_stmt = trace(
+    compound_stmt = (
         decoratable_class_stmt
         | decoratable_func_stmt
         | for_stmt
@@ -2299,7 +2313,7 @@ class Grammar(object):
     )
     endline_semicolon = Forward()
     endline_semicolon_ref = semicolon.suppress() + newline
-    keyword_stmt = trace(
+    keyword_stmt = (
         flow_stmt
         | import_stmt
         | assert_stmt
@@ -2338,11 +2352,11 @@ class Grammar(object):
     simple_suite = attach(stmt, make_suite_handle)
     nocolon_suite <<= base_suite | simple_suite
     suite <<= condense(colon + nocolon_suite)
-    line = trace(newline | stmt)
+    line = newline | stmt
 
-    single_input = trace(condense(Optional(line) - ZeroOrMore(newline)))
-    file_input = trace(condense(moduledoc_marker - ZeroOrMore(line)))
-    eval_input = trace(condense(testlist - ZeroOrMore(newline)))
+    single_input = condense(Optional(line) - ZeroOrMore(newline))
+    file_input = condense(moduledoc_marker - ZeroOrMore(line))
+    eval_input = condense(testlist - ZeroOrMore(newline))
 
     single_parser = start_marker - single_input - end_marker
     file_parser = start_marker - file_input - end_marker
@@ -2553,8 +2567,6 @@ def set_grammar_names():
     for varname, val in vars(Grammar).items():
         if isinstance(val, ParserElement):
             val.setName(varname)
-            if isinstance(val, Forward):
-                trace(val)
 
 
 # end: TRACING

@@ -1616,4 +1616,10 @@ def primary_test() -> bool:
     assert m{1, 1, 2} - m{1, 3} `typed_eq` m{1, 2}
     assert (.+1) `and_then` (.*2) `and_then_await` (./3) |> repr == "<built-in function add>$(?, 1) `and_then` <built-in function mul>$(?, 2) `and_then_await` <built-in function truediv>$(?, 3)"
     assert 5.5⏨3 == 5.5 * 10**3
+    assert (x => x)(5) == 5 == (def x => x)(5)
+    assert (=> _)(5) == 5 == (def => _)(5)
+    assert ((x, y) => (x, y))(1, 2) == (1, 2) == (def (x, y) => (x, y))(1, 2)
+    assert (def (int(x)) => x)(5) == 5 == (def (int -> x) => x)("5")
+    assert (def (x: int) -> int => x)(5) == 5 == (def (int(x)) -> int => x)(5)
+    assert (x ⇒ x)(5) == 5 == (def x ⇒ x)(5)
     return True

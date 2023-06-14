@@ -341,11 +341,6 @@ def attach(item, action, ignore_no_tokens=None, ignore_one_token=None, ignore_to
     return add_action(item, action, make_copy)
 
 
-def trace_attach(*args, **kwargs):
-    """trace_attach = trace .. attach"""
-    return trace(attach(*args, **kwargs))
-
-
 def final_evaluate_tokens(tokens):
     """Same as evaluate_tokens but should only be used once a parse is assured."""
     if use_packrat_parser:
@@ -357,7 +352,7 @@ def final_evaluate_tokens(tokens):
 def final(item):
     """Collapse the computation graph upon parsing the given item."""
     # evaluate_tokens expects a computation graph, so we just call add_action directly
-    return add_action(item, final_evaluate_tokens)
+    return add_action(trace(item), final_evaluate_tokens)
 
 
 def defer(item):
@@ -398,6 +393,7 @@ def parsing_context(inner_parse=True):
 
 def prep_grammar(grammar, streamline=False):
     """Prepare a grammar item to be used as the root of a parse."""
+    grammar = trace(grammar)
     if streamline:
         grammar.streamlined = False
         grammar.streamline()

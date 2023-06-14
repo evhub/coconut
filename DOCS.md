@@ -541,6 +541,8 @@ Additionally, Coconut also supports an implicit usage of the `->` operator of th
 
 _Note: If normal lambda syntax is insufficient, Coconut also supports an extended lambda syntax in the form of [statement lambdas](#statement-lambdas). Statement lambdas support full statements rather than just expressions and allow for the use of [pattern-matching function definition](#pattern-matching-functions)._
 
+_Note: `->`-based lambdas are disabled inside type annotations to avoid conflicting with Coconut's [enhanced type annotation syntax](#enhanced-type-annotation)._
+
 ##### Rationale
 
 In Python, lambdas are ugly and bulky, requiring the entire word `lambda` to be written out every time one is constructed. This is fine if in-line functions are very rarely needed, but in functional programming in-line functions are an essential tool.
