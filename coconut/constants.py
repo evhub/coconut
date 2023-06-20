@@ -828,9 +828,9 @@ all_reqs = {
         ("prompt_toolkit", "py>=3"),
         ("pygments", "py<39"),
         ("pygments", "py>=39"),
-        ("typing_extensions", "py==35"),
+        ("typing_extensions", "py<36"),
         ("typing_extensions", "py==36"),
-        ("typing_extensions", "py37"),
+        ("typing_extensions", "py>=37"),
     ),
     "cpython": (
         "cPyparsing",
@@ -926,7 +926,7 @@ min_versions = {
     "mypy[python2]": (1, 3),
     ("jupyter-console", "py37"): (6, 6),
     ("typing", "py<35"): (3, 10),
-    ("typing_extensions", "py37"): (4, 6),
+    ("typing_extensions", "py>=37"): (4, 6),
     ("ipython", "py38"): (8,),
     ("ipykernel", "py38"): (6,),
     ("jedi", "py39"): (0, 18),
@@ -954,7 +954,7 @@ min_versions = {
     ("jupytext", "py3"): (1, 8),
     ("jupyterlab", "py35"): (2, 2),
     ("xonsh", "py<36"): (0, 9),
-    ("typing_extensions", "py==35"): (3, 10),
+    ("typing_extensions", "py<36"): (3, 10),
     # don't upgrade this to allow all versions
     ("prompt_toolkit", "py>=3"): (1,),
     # don't upgrade this; it breaks on Python 2.6
@@ -994,7 +994,7 @@ pinned_reqs = (
     ("jupytext", "py3"),
     ("jupyterlab", "py35"),
     ("xonsh", "py<36"),
-    ("typing_extensions", "py==35"),
+    ("typing_extensions", "py<36"),
     ("prompt_toolkit", "py>=3"),
     ("pytest", "py<36"),
     "vprof",
