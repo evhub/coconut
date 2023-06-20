@@ -47,7 +47,7 @@ from coconut._pyparsing import (
     originalTextFor,
     nestedExpr,
     FollowedBy,
-    quotedString,
+    python_quoted_string,
     restOfLine,
 )
 
@@ -2524,9 +2524,11 @@ class Grammar(object):
         )
     )
 
-    end_f_str_expr = start_marker + (bang | colon | rbrace)
+    end_f_str_expr = combine(start_marker + (bang | colon | rbrace))
 
-    string_start = start_marker + quotedString
+    string_start = start_marker + python_quoted_string
+
+    no_unquoted_newlines = start_marker + ZeroOrMore(python_quoted_string | ~Literal("\n") + any_char) + end_marker
 
     operator_stmt = (
         start_marker

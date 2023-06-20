@@ -188,6 +188,21 @@ elif not MODERN_PYPARSING:
 
 
 # -----------------------------------------------------------------------------------------------------------------------
+# MISSING OBJECTS:
+# -----------------------------------------------------------------------------------------------------------------------
+
+if not hasattr(_pyparsing, "python_quoted_string"):
+    import re as _re
+    python_quoted_string = _pyparsing.Combine(
+        (_pyparsing.Regex(r'"""(?:[^"\\]|""(?!")|"(?!"")|\\.)*', flags=_re.MULTILINE) + '"""').setName("multiline double quoted string")
+        ^ (_pyparsing.Regex(r"'''(?:[^'\\]|''(?!')|'(?!'')|\\.)*", flags=_re.MULTILINE) + "'''").setName("multiline single quoted string")
+        ^ (_pyparsing.Regex(r'"(?:[^"\n\r\\]|(?:\\")|(?:\\(?:[^x]|x[0-9a-fA-F]+)))*') + '"').setName("double quoted string")
+        ^ (_pyparsing.Regex(r"'(?:[^'\n\r\\]|(?:\\')|(?:\\(?:[^x]|x[0-9a-fA-F]+)))*") + "'").setName("single quoted string")
+    ).setName("Python quoted string")
+    _pyparsing.python_quoted_string = python_quoted_string
+
+
+# -----------------------------------------------------------------------------------------------------------------------
 # FAST REPRS:
 # -----------------------------------------------------------------------------------------------------------------------
 

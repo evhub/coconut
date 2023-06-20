@@ -1622,4 +1622,22 @@ def primary_test() -> bool:
     assert (def (int(x)) => x)(5) == 5 == (def (int -> x) => x)("5")
     assert (def (x: int) -> int => x)(5) == 5 == (def (int(x)) -> int => x)(5)
     assert (x ⇒ x)(5) == 5 == (def x ⇒ x)(5)
+    assert f"a: { "abc" }" == "a: abc" == f'a: { 'abc' }'
+    assert f"1 + {"a" + "b"} + 2 + {"c" + "d"}" == "1 + ab + 2 + cd" == f'1 + {'a' + 'b'} + 2 + {'c' + 'd'}'
+    assert f"{"a" + "b"} + c + {"d" + "e"}" == "ab + c + de" == f'{'a' + 'b'} + c + {'d' + 'e'}'
+    assert f"""{"""
+"""}""" == """
+""" == f"""{'''
+'''}"""
+    assert f"""{(
+    )}""" == "()" == f'''{(
+    )}'''
+    assert f"{f"{f"infinite"}"}" + " " + f"{f"nesting!!!"}" == "infinite nesting!!!"
+    assert f"{'\n'.join(["", ""])}" == "\n"
+    assert f"""{f'''{f'{f"{1+1}"}'}'''}""" == "2" == f"{f"{f"{f"{f"{f"{1+1}"}"}"}"}"}"
+    assert f"___{
+    1
+}___" == '___1___' == f"___{(
+    1
+)}___"
     return True

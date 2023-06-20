@@ -82,6 +82,7 @@ def non_strict_test() -> bool:
     assert a_dict["a"] == 1
     assert "". <| "join" <| ["1","2","3"] == "123"
     assert "a b c" == (" ". ?? "not gonna happen")("join")("abc")
+    assert f'{ (lambda x: x*2)(2) }' == "4"
     return True
 
 if __name__ == "__main__":

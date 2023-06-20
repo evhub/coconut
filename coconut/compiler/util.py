@@ -663,6 +663,9 @@ def compile_regex(regex, options=None):
     return re.compile(regex, options)
 
 
+memoized_compile_regex = memoize(64)(compile_regex)
+
+
 def regex_item(regex, options=None):
     """pyparsing.Regex except it always uses unicode."""
     if options is None:
@@ -899,6 +902,7 @@ def caseless_literal(literalstr, suppress=False):
 # -----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
 # -----------------------------------------------------------------------------------------------------------------------
+
 
 def ordered(items):
     """Return the items in a deterministic order."""

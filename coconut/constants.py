@@ -242,10 +242,10 @@ comment_chars = ("#", lnwrapper)
 open_chars = "([{"  # opens parenthetical
 close_chars = ")]}"  # closes parenthetical
 
-hold_chars = "'\""  # string open/close chars
+str_chars = "'\""  # string open/close chars
 
 # together should include all the constants defined above
-delimiter_symbols = tuple(open_chars + close_chars + hold_chars) + (
+delimiter_symbols = tuple(open_chars + close_chars + str_chars) + (
     strwrapper,
     errwrapper,
     early_passthrough_wrapper,

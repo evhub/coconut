@@ -60,7 +60,7 @@ from coconut.constants import (
     unwrapper,
     open_chars,
     close_chars,
-    hold_chars,
+    str_chars,
     tabideal,
     match_to_args_var,
     match_to_kwargs_var,
@@ -895,18 +895,40 @@ class Compiler(Grammar, pickleable_obj):
                 index,
                 extra="max index: {max_index}; wanted reftype: {reftype}".format(max_index=len(self.refs) - 1, reftype=reftype),
             )
-        internal_assert(
-            got_reftype == reftype,
-            "wanted {reftype} reference; got {got_reftype} reference".format(reftype=reftype, got_reftype=got_reftype),
-            extra="index: {index}; data: {data!r}".format(index=index, data=data),
-        )
-        return data
+        if reftype is None:
+            return got_reftype, data
+        else:
+            internal_assert(
+                got_reftype == reftype,
+                "wanted {reftype} reference; got {got_reftype} reference".format(reftype=reftype, got_reftype=got_reftype),
+                extra="index: {index}; data: {data!r}".format(index=index, data=data),
+            )
+            return data
+
+    def get_str_ref(self, index, reformatting):
+        """Get a reference to a string."""
+        if reformatting:
+            reftype, data = self.get_ref(None, index)
+            if reftype == "str":
+                return data
+            elif reftype == "f_str":
+                strchar, string_parts, exprs = data
+                text = interleaved_join(string_parts, exprs)
+                return text, strchar
+            else:
+                raise CoconutInternalException("unknown str ref type", reftype)
+        else:
+            return self.get_ref("str", index)
 
     def wrap_str(self, text, strchar, multiline=False):
         """Wrap a string."""
         if multiline:
             strchar *= 3
         return strwrapper + self.add_ref("str", (text, strchar)) + unwrapper
+
+    def wrap_f_str(self, strchar, string_parts, exprs):
+        """Wrap a format string."""
+        return strwrapper + self.add_ref("f_str", (strchar, string_parts, exprs)) + unwrapper
 
     def wrap_str_of(self, text, expect_bytes=False):
         """Wrap a string of a string."""
@@ -1179,94 +1201,219 @@ class Compiler(Grammar, pickleable_obj):
             inputstring = inputstring.strip()
         return inputstring
 
+    def wrap_str_hold(self, hold):
+        """Wrap a string hold from str_proc."""
+        if hold["type"] == "string":
+            return self.wrap_str(hold["contents"], hold["start"])
+        elif hold["type"] == "f string":
+            return self.wrap_f_str(hold["start"], hold["str_parts"], hold["exprs"])
+        else:
+            raise CoconutInternalException("invalid str_proc hold type", hold["type"])
+
+    def str_hold_contents(self, hold, append=None):
+        """Get the contents of a string hold from str_proc."""
+        if hold["type"] == "string":
+            if append is not None:
+                hold["contents"] += append
+            return hold["contents"]
+        elif hold["type"] == "f string":
+            if append is not None:
+                hold["str_parts"][-1] += append
+            return hold["str_parts"][-1]
+        else:
+            raise CoconutInternalException("invalid str_proc hold type", hold["type"])
+
     def str_proc(self, inputstring, **kwargs):
         """Process strings and comments."""
         out = []
         found = None  # store of characters that might be the start of a string
-        hold = None
-        # hold = [_comment]:
-        _comment = 0  # the contents of the comment so far
-        # hold = [_contents, _start, _stop]:
-        _contents = 0  # the contents of the string so far
-        _start = 1  # the string of characters that started the string
-        _stop = 2  # store of characters that might be the end of the string
+        hold = None  # dictionary of information on the string/comment we're currently in
         skips = self.copy_skips()
 
-        x = 0
-        while x <= len(inputstring):
+        i = 0
+        while i <= len(inputstring):
             try:
-                c = inputstring[x]
+                c = inputstring[i]
             except IndexError:
-                internal_assert(x == len(inputstring), "invalid index in str_proc", (inputstring, x))
+                internal_assert(i == len(inputstring), "invalid index in str_proc", (inputstring, i))
                 c = "\n"
 
             if hold is not None:
-                if len(hold) == 1:  # hold == [_comment]
+                internal_assert(found is None, "str_proc error, got both hold and found", (hold, found))
+                if hold["type"] == "comment":
                     if c == "\n":
-                        out += [self.wrap_comment(hold[_comment]), c]
+                        out += [self.wrap_comment(hold["comment"]), c]
                         hold = None
                     else:
-                        hold[_comment] += c
-                elif hold[_stop] is not None:
-                    if c == "\\":
-                        hold[_contents] += hold[_stop] + c
-                        hold[_stop] = None
-                    elif c == hold[_start][0]:
-                        hold[_stop] += c
-                    elif len(hold[_stop]) > len(hold[_start]):
-                        raise self.make_err(CoconutSyntaxError, "invalid number of closing " + repr(hold[_start][0]) + "s", inputstring, x, reformat=False)
-                    elif hold[_stop] == hold[_start]:
-                        out.append(self.wrap_str(hold[_contents], hold[_start][0], True))
-                        hold = None
-                        x -= 1
-                    else:
-                        if c == "\n":
-                            if len(hold[_start]) == 1:
-                                raise self.make_err(CoconutSyntaxError, "linebreak in non-multiline string", inputstring, x, reformat=False)
-                            skips = addskip(skips, self.adjust(lineno(x, inputstring)))
-                        hold[_contents] += hold[_stop] + c
-                        hold[_stop] = None
-                elif count_end(hold[_contents], "\\") % 2 == 1:
-                    if c == "\n":
-                        skips = addskip(skips, self.adjust(lineno(x, inputstring)))
-                    hold[_contents] += c
-                elif c == hold[_start]:
-                    out.append(self.wrap_str(hold[_contents], hold[_start], False))
-                    hold = None
-                elif c == hold[_start][0]:
-                    hold[_stop] = c
+                        hold["comment"] += c
+
                 else:
-                    if c == "\n":
-                        if len(hold[_start]) == 1:
-                            raise self.make_err(CoconutSyntaxError, "linebreak in non-multiline string", inputstring, x, reformat=False)
-                        skips = addskip(skips, self.adjust(lineno(x, inputstring)))
-                    hold[_contents] += c
+                    if hold["type"] == "string":
+                        is_f = False
+                    elif hold["type"] == "f string":
+                        is_f = True
+                    else:
+                        raise CoconutInternalException("invalid str_proc string hold type", hold["type"])
+                    done = False  # whether the string is finished
+                    rerun = False  # whether we want to rerun the loop with the same i next iteration
+
+                    # if we're inside an f string expr
+                    if hold.get("in_expr", False):
+                        internal_assert(is_f, "in_expr should only be for f string holds, not", hold)
+                        remaining_text = inputstring[i:]
+                        str_start, str_stop = parse_where(self.string_start, remaining_text)
+                        if str_start is not None:  # str_start >= 0; if > 0 means there is whitespace before the string
+                            hold["exprs"][-1] += remaining_text[:str_stop]
+                            # add any skips from where we're fast-forwarding (except don't include c since we handle that below)
+                            for j in range(1, str_stop):
+                                if inputstring[i + j] == "\n":
+                                    skips = addskip(skips, self.adjust(lineno(i + j, inputstring)))
+                            i += str_stop - 1
+                        elif hold["paren_level"] < 0:
+                            hold["paren_level"] += paren_change(c)
+                            hold["exprs"][-1] += c
+                        elif hold["paren_level"] > 0:
+                            raise self.make_err(CoconutSyntaxError, "imbalanced parentheses in format string expression", inputstring, i, reformat=False)
+                        elif match_in(self.end_f_str_expr, remaining_text):
+                            hold["in_expr"] = False
+                            hold["str_parts"].append(c)
+                        else:
+                            hold["paren_level"] += paren_change(c)
+                            hold["exprs"][-1] += c
+
+                    # if we might be at the end of the string
+                    elif hold["stop"] is not None:
+                        if c == "\\":
+                            self.str_hold_contents(hold, append=hold["stop"] + c)
+                            hold["stop"] = None
+                        elif c == hold["start"][0]:
+                            hold["stop"] += c
+                        elif len(hold["stop"]) > len(hold["start"]):
+                            raise self.make_err(CoconutSyntaxError, "invalid number of closing " + repr(hold["start"][0]) + "s", inputstring, i, reformat=False)
+                        elif hold["stop"] == hold["start"]:
+                            done = True
+                            rerun = True
+                        else:
+                            self.str_hold_contents(hold, append=hold["stop"] + c)
+                            hold["stop"] = None
+
+                    # if we might be at the start of an f string expr
+                    elif hold.get("saw_brace", False):
+                        internal_assert(is_f, "saw_brace should only be for f string holds, not", hold)
+                        hold["saw_brace"] = False
+                        if c == "{":
+                            self.str_hold_contents(hold, append=c)
+                        elif c == "}":
+                            raise self.make_err(CoconutSyntaxError, "empty expression in format string", inputstring, i, reformat=False)
+                        else:
+                            hold["in_expr"] = True
+                            hold["exprs"].append("")
+                            rerun = True
+
+                    elif count_end(self.str_hold_contents(hold), "\\") % 2 == 1:
+                        self.str_hold_contents(hold, append=c)
+                    elif c == hold["start"]:
+                        done = True
+                    elif c == hold["start"][0]:
+                        hold["stop"] = c
+                    elif is_f and c == "{":
+                        hold["saw_brace"] = True
+                        self.str_hold_contents(hold, append=c)
+                    else:
+                        self.str_hold_contents(hold, append=c)
+
+                    if rerun:
+                        i -= 1
+
+                    # wrap the string if it's complete
+                    if done:
+                        if is_f:
+                            # handle dangling detections
+                            if hold["saw_brace"]:
+                                raise self.make_err(CoconutSyntaxError, "format string ends with unescaped brace (escape by doubling to '{{')", inputstring, i, reformat=False)
+                            if hold["in_expr"]:
+                                raise self.make_err(CoconutSyntaxError, "imbalanced braces in format string (escape braces by doubling to '{{' and '}}')", inputstring, i, reformat=False)
+                        out.append(self.wrap_str_hold(hold))
+                        hold = None
+                    # add a line skip if c is inside the string (not done) and we wont be seeing this c again (not rerun)
+                    elif not rerun and c == "\n":
+                        if not hold.get("in_expr", False) and len(hold["start"]) == 1:
+                            raise self.make_err(CoconutSyntaxError, "linebreak in non-multi-line string", inputstring, i, reformat=False)
+                        skips = addskip(skips, self.adjust(lineno(i, inputstring)))
+
             elif found is not None:
+
+                # determine if we're at the start of a string
                 if c == found[0] and len(found) < 3:
                     found += c
                 elif len(found) == 1:  # found == "_"
-                    hold = ["", found, None]  # [_contents, _start, _stop]
+                    hold = {
+                        "start": found,
+                        "stop": None,
+                        "contents": ""
+                    }
                     found = None
-                    x -= 1
+                    i -= 1
                 elif len(found) == 2:  # found == "__"
-                    out.append(self.wrap_str("", found[0], False))
+                    # empty string; will be wrapped immediately below
+                    hold = {
+                        "start": found[0],
+                        "stop": found[-1],
+                    }
                     found = None
-                    x -= 1
+                    i -= 1
                 else:  # found == "___"
                     internal_assert(len(found) == 3, "invalid number of string starts", found)
-                    hold = ["", found, None]  # [_contents, _start, _stop]
+                    hold = {
+                        "start": found,
+                        "stop": None,
+                    }
                     found = None
-                    x -= 1
+                    i -= 1
+
+                # start the string hold if we're at the start of a string
+                if hold is not None:
+                    is_f = False
+                    j = i - len(hold["start"])
+                    while j >= 0:
+                        prev_c = inputstring[j]
+                        if prev_c == "f":
+                            is_f = True
+                            break
+                        elif prev_c != "r":
+                            break
+                        j -= 1
+                    if is_f:
+                        hold.update({
+                            "type": "f string",
+                            "str_parts": [""],
+                            "exprs": [],
+                            "saw_brace": False,
+                            "in_expr": False,
+                            "paren_level": 0,
+                        })
+                    else:
+                        hold.update({
+                            "type": "string",
+                            "contents": "",
+                        })
+                    if hold["stop"]:  # empty string; wrap immediately
+                        out.append(self.wrap_str_hold(hold))
+                        hold = None
+
             elif c == "#":
-                hold = [""]  # [_comment]
-            elif c in hold_chars:
+                hold = {
+                    "type": "comment",
+                    "comment": "",
+                }
+            elif c in str_chars:
                 found = c
             else:
                 out.append(c)
-            x += 1
+            i += 1
 
         if hold is not None or found is not None:
-            raise self.make_err(CoconutSyntaxError, "unclosed string", inputstring, x, reformat=False)
+            raise self.make_err(CoconutSyntaxError, "unclosed string", inputstring, i, reformat=False)
 
         self.set_skips(skips)
         return "".join(out)
@@ -1655,7 +1802,7 @@ class Compiler(Grammar, pickleable_obj):
 
         return "".join(out)
 
-    def str_repl(self, inputstring, ignore_errors=False, **kwargs):
+    def str_repl(self, inputstring, reformatting=False, ignore_errors=False, **kwargs):
         """Add back strings and comments."""
         out = []
         comment = None
@@ -1681,7 +1828,7 @@ class Compiler(Grammar, pickleable_obj):
                     if c is not None and c in nums:
                         string += c
                     elif c == unwrapper and string:
-                        text, strchar = self.get_ref("str", string)
+                        text, strchar = self.get_str_ref(string, reformatting)
                         out += [strchar, text, strchar]
                         string = None
                     else:
@@ -3814,57 +3961,8 @@ __annotations__["{name}"] = {annotation}
         internal_assert(string.startswith(strwrapper) and string.endswith(unwrapper), "invalid f string item", string)
         string = string[1:-1]
 
-        # get text
-        old_text, strchar = self.get_ref("str", string)
-
-        # separate expressions
-        string_parts = [""]
-        exprs = []
-        saw_brace = False
-        in_expr = False
-        paren_level = 0
-        i = 0
-        while i < len(old_text):
-            c = old_text[i]
-            if saw_brace:
-                saw_brace = False
-                if c == "{":
-                    string_parts[-1] += c
-                elif c == "}":
-                    raise CoconutDeferredSyntaxError("empty expression in format string", loc)
-                else:
-                    in_expr = True
-                    exprs.append("")
-                    i -= 1
-            elif in_expr:
-                remaining_text = old_text[i:]
-                str_start, str_stop = parse_where(self.string_start, remaining_text)
-                if str_start is not None:  # str_start >= 0; if > 0 means there is whitespace before the string
-                    exprs[-1] += remaining_text[:str_stop]
-                    i += str_stop - 1
-                elif paren_level < 0:
-                    paren_level += paren_change(c)
-                    exprs[-1] += c
-                elif paren_level > 0:
-                    raise CoconutDeferredSyntaxError("imbalanced parentheses in format string expression", loc)
-                elif match_in(self.end_f_str_expr, remaining_text):
-                    in_expr = False
-                    string_parts.append(c)
-                else:
-                    paren_level += paren_change(c)
-                    exprs[-1] += c
-            elif c == "{":
-                saw_brace = True
-                string_parts[-1] += c
-            else:
-                string_parts[-1] += c
-            i += 1
-
-        # handle dangling detections
-        if saw_brace:
-            raise CoconutDeferredSyntaxError("format string ends with unescaped brace (escape by doubling to '{{')", loc)
-        if in_expr:
-            raise CoconutDeferredSyntaxError("imbalanced braces in format string (escape braces by doubling to '{{' and '}}')", loc)
+        # get f string parts
+        strchar, string_parts, exprs = self.get_ref("f_str", string)
 
         # handle Python 3.8 f string = specifier
         for i, expr in enumerate(exprs):
@@ -3881,22 +3979,24 @@ __annotations__["{name}"] = {annotation}
                 py_expr = self.inner_parse_eval(co_expr)
             except ParseBaseException:
                 raise CoconutDeferredSyntaxError("parsing failed for format string expression: " + co_expr, loc)
-            if "\n" in py_expr:
-                raise CoconutDeferredSyntaxError("invalid expression in format string: " + co_expr, loc)
+            if not does_parse(self.no_unquoted_newlines, py_expr):
+                raise CoconutDeferredSyntaxError("illegal complex expression in format string: " + co_expr, loc)
             compiled_exprs.append(py_expr)
 
         # reconstitute string
-        if self.target_info >= (3, 6):
+        #  (though f strings are supported on 3.6+, nested strings with the same strchars are only
+        #   supported on 3.12+, so we should only use the literal syntax there)
+        if self.target_info >= (3, 12):
             new_text = interleaved_join(string_parts, compiled_exprs)
-
             return "f" + ("r" if raw else "") + self.wrap_str(new_text, strchar)
+
         else:
             names = [format_var + "_" + str(i) for i in range(len(compiled_exprs))]
             new_text = interleaved_join(string_parts, names)
 
             # generate format call
             return ("r" if raw else "") + self.wrap_str(new_text, strchar) + ".format(" + ", ".join(
-                name + "=(" + expr + ")"
+                name + "=(" + self.wrap_passthrough(expr) + ")"
                 for name, expr in zip(names, compiled_exprs)
             ) + ")"
 

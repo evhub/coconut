@@ -61,7 +61,7 @@ def assert_raises(c, Exc, not_Exc=None, err_has=None):
             assert "unprintable" not in syntax_err_str, syntax_err_str
             assert "<exception" not in syntax_err_str, syntax_err_str
     except BaseException as err:
-        raise AssertionError(f"got wrong exception {err} (expected {Exc})")
+        raise AssertionError(f"got wrong exception {type(err)}: {err} (expected {Exc})")
     else:
         raise AssertionError(f"{c} failed to raise exception {Exc}")
 
@@ -223,6 +223,8 @@ def f() =
     assert_raises(-> parse('"abc" b"def"'), CoconutParseError, err_has=" ~~~~~~^")
     assert_raises(-> parse('"a" 10'), CoconutParseError, err_has=" ~~~~^")
     assert_raises(-> parse("A. ."), CoconutParseError, err_has=" ~~~^")
+    assert_raises(-> parse('''f"""{
+}"""'''), CoconutSyntaxError, err_has=" ~~~~^")
 
     assert_raises(-> parse("return = 1"), CoconutParseError, err_has='invalid use of the keyword "return"')
     assert_raises(-> parse("if a = b: pass"), CoconutParseError, err_has="misplaced assignment")
@@ -279,6 +281,12 @@ def test_convenience() -> bool:
     assert parse("abc", "lenient") == "abc  # abc"
     setup(line_numbers=True, keep_lines=True)
     assert parse("abc", "lenient") == "abc  #1: abc"
+    assert "#6:" in parse('''line 1
+f"""{"""
+"""}""" + """
+""" + f"""{\'\'\'
+\'\'\'}"""
+line 6''')
 
     setup()
     assert "Deprecated Coconut built-in 'prepattern' disabled by --strict compilation" not in parse("\n", mode="file")
