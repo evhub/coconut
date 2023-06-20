@@ -880,7 +880,7 @@ all_reqs = {
         ("aenum", "py<34"),
         ("dataclasses", "py==36"),
         ("typing", "py<35"),
-        ("async_generator", "py3"),
+        ("async_generator", "py35"),
     ),
     "dev": (
         ("pre-commit", "py3"),
@@ -933,7 +933,7 @@ min_versions = {
     ("pygments", "py>=39"): (2, 15),
     ("xonsh", "py38"): (0, 14),
     ("pytest", "py36"): (7,),
-    ("async_generator", "py3"): (1, 10),
+    ("async_generator", "py35"): (1, 10),
 
     # pinned reqs: (must be added to pinned_reqs below)
 

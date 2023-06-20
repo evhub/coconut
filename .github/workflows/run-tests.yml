@@ -6,7 +6,6 @@ jobs:
     strategy:
       matrix:
         python-version:
-          - '2.6'
           - '2.7'
           - '3.2'
           - '3.3'
@@ -28,7 +27,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Setup python
-        uses: MatteoH2O1999/setup-python@v1.3.0
+        uses: MatteoH2O1999/setup-python@v1
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
