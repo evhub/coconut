@@ -690,6 +690,8 @@ except ImportError as trollius_import_err:
             def raise_import_error(*args, **kwargs):
                 raise self._import_err
             return raise_import_error
+        def Return(self, obj):
+            raise self._import_err
     asyncio = you_need_to_install_trollius(trollius_import_err)
 asyncio_Return = asyncio.Return
             '''.format(**format_dict),
