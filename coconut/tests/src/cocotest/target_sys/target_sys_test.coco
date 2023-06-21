@@ -200,3 +200,7 @@ def target_sys_test() -> bool:
     assert l == [10]
 
     return True
+
+
+if __name__ == "__main__":
+    target_sys_test() |> print

@@ -686,15 +686,16 @@ try:
 except ImportError as trollius_import_err:
     class you_need_to_install_trollius(_coconut_missing_module):
         __slots__ = ()
-        @staticmethod
-        def coroutine(func):
+        def coroutine(self, func):
             def raise_import_error(*args, **kwargs):
-                raise trollius_import_err
+                raise self._import_err
             return raise_import_error
     asyncio = you_need_to_install_trollius(trollius_import_err)
+asyncio_Return = asyncio.Return
             '''.format(**format_dict),
             if_ge='''
 import asyncio
+asyncio_Return = StopIteration
             ''',
             indent=1,
         ),

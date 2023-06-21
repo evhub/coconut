@@ -2018,8 +2018,9 @@ else:
                         to_return = "(" + to_return + ")"
                     # only use trollius Return when trollius is imported
                     if is_async and self.target_info < (3, 4):
-                        ret_err = "_coconut.asyncio.Return"
-                    else:
+                        ret_err = "_coconut.asyncio_Return"
+                    # for both coroutines and generators, use StopIteration if return isn't supported
+                    elif self.target_info < (3, 3):
                         ret_err = "_coconut.StopIteration"
                         # warn about Python 3.7 incompatibility on any target with Python 3 support
                         if not self.target.startswith("2"):
@@ -2030,7 +2031,10 @@ else:
                                     original, loc,
                                 ),
                             )
-                    line = indent + "raise " + ret_err + "(" + to_return + ")" + comment + dedent
+                    else:
+                        ret_err = None
+                    if ret_err is not None:
+                        line = indent + "raise " + ret_err + "(" + to_return + ")" + comment + dedent
 
                 # handle async generator yields
                 if is_async and is_gen and self.target_info < (3, 6):
@@ -2168,7 +2172,7 @@ try:
     {addpattern_decorator} = _coconut_addpattern({func_name}) {type_ignore}
 except _coconut.NameError:
     {addpattern_decorator} = lambda f: f
-                """,
+                    """,
                     add_newline=True,
                 ).format(
                     func_name=func_name,
@@ -2190,6 +2194,7 @@ except _coconut.NameError:
 
         # handle async functions
         if is_async:
+            force_gen = False
             if not self.target:
                 raise self.make_err(
                     CoconutTargetError,
@@ -2210,8 +2215,18 @@ except _coconut.NameError:
                 )
             else:
                 decorators += "@_coconut.asyncio.coroutine\n"
+                # raise StopIteration/Return will only work if we ensure it's a generator
+                force_gen = True
 
             func_code, _, _ = self.transform_returns(original, loc, raw_lines, is_async=True, is_gen=is_gen)
+            if force_gen:
+                func_code += "\n" + handle_indentation(
+                    """
+if False:
+    yield
+                    """,
+                    extra_indent=1,
+                )
 
         # handle normal functions
         else:
