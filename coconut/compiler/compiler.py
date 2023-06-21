@@ -939,10 +939,8 @@ class Compiler(Grammar, pickleable_obj):
         internal_assert(text_repr[0] == text_repr[-1] and text_repr[0] in ("'", '"'), "cannot wrap str of", text)
         return ("b" if expect_bytes else "") + self.wrap_str(text_repr[1:-1], text_repr[-1])
 
-    def wrap_passthrough(self, text, multiline=True, early=False, reformat=False):
+    def wrap_passthrough(self, text, multiline=True, early=False):
         """Wrap a passthrough."""
-        if reformat:
-            text = self.reformat(text, ignore_errors=False)
         if not multiline:
             text = text.lstrip()
         if early:
@@ -3656,7 +3654,7 @@ if not {check_var}:
             return "await " + await_expr
         elif self.target_info >= (3, 3):
             # we have to wrap the yield here so it doesn't cause the function to be detected as an async generator
-            return self.wrap_passthrough("(yield from " + await_expr + ")", reformat=True)
+            return "(" + self.wrap_passthrough("yield from") + " " + await_expr + ")"
         else:
             # this yield is fine because we can detect the _coconut.asyncio.From
             return "(yield _coconut.asyncio.From(" + await_expr + "))"
