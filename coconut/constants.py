@@ -920,7 +920,7 @@ min_versions = {
     ("numpy", "py34"): (1,),
     ("numpy", "py<3;cpy"): (1,),
     ("dataclasses", "py==36"): (0, 8),
-    ("aenum", "py<34"): (3,),
+    ("aenum", "py<34"): (3, 1, 13),
     "pydata-sphinx-theme": (0, 13),
     "myst-parser": (1,),
     "mypy[python2]": (1, 3),
