@@ -501,7 +501,7 @@ async def __call__(self, *args, **kwargs):
             pycondition(
                 (3, 5),
                 if_ge=r'''
-_coconut_call_ns = {}
+_coconut_call_ns = {"_coconut": _coconut}
 _coconut_exec("""async def __call__(self, *args, **kwargs):
     arg = await self._coconut_func(*args, **kwargs)
     for f, await_f in self._coconut_func_infos:
@@ -514,7 +514,7 @@ __call__ = _coconut_call_ns["__call__"]
                 if_lt=pycondition(
                     (3, 4),
                     if_ge=r'''
-_coconut_call_ns = {}
+_coconut_call_ns = {"_coconut": _coconut}
 _coconut_exec("""def __call__(self, *args, **kwargs):
     arg = yield from self._coconut_func(*args, **kwargs)
     for f, await_f in self._coconut_func_infos:
@@ -551,13 +551,13 @@ async def __anext__(self):
             pycondition(
                 (3, 5),
                 if_ge=r'''
-_coconut_anext_ns = {}
+_coconut_anext_ns = {"_coconut": _coconut}
 _coconut_exec("""async def __anext__(self):
     return self.func(await self.aiter.__anext__())""", _coconut_anext_ns)
 __anext__ = _coconut_anext_ns["__anext__"]
                 ''',
                 if_lt=r'''
-_coconut_anext_ns = {}
+_coconut_anext_ns = {"_coconut": _coconut}
 _coconut_exec("""def __anext__(self):
     result = yield from self.aiter.__anext__()
     return self.func(result)""", _coconut_anext_ns)
