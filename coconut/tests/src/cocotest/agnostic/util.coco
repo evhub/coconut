@@ -1364,11 +1364,12 @@ class store:
 
 # Locals and globals
 def ret_locals() =
-    abc = 1
+    my_loc = 1
     locals()
+
+my_glob = 1
 def ret_globals() =
-    abc = 1
-    locals()
+    globals()
 
 global glob = 0
 copyclosure def wrong_get_set_glob(x):

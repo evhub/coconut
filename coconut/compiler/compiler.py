@@ -543,7 +543,7 @@ class Compiler(Grammar, pickleable_obj):
         """
         self.filename = filename
         self.indchar = None
-        self.comments = {}
+        self.comments = defaultdict(set)
         self.wrapped_type_ignore = None
         self.refs = []
         self.skips = []
@@ -569,7 +569,7 @@ class Compiler(Grammar, pickleable_obj):
         """Set up compiler to evaluate inner expressions."""
         line_numbers, self.line_numbers = self.line_numbers, False
         keep_lines, self.keep_lines = self.keep_lines, False
-        comments, self.comments = self.comments, {}
+        comments, self.comments = self.comments, defaultdict(set)
         wrapped_type_ignore, self.wrapped_type_ignore = self.wrapped_type_ignore, None
         skips, self.skips = self.skips, []
         docstring, self.docstring = self.docstring, ""
@@ -1038,7 +1038,7 @@ class Compiler(Grammar, pickleable_obj):
         if endpoint is False:
             endpoint = loc
         elif endpoint is True:
-            endpoint = clip(get_highest_parse_loc() + 1, min=loc)
+            endpoint = clip(get_highest_parse_loc(original) + 1, min=loc)
         else:
             endpoint = clip(endpoint, min=loc)
         if ln is None:
@@ -1149,7 +1149,7 @@ class Compiler(Grammar, pickleable_obj):
             for name, locs in self.unused_imports.items():
                 for loc in locs:
                     ln = self.adjust(lineno(loc, original))
-                    comment = self.reformat(self.comments.get(ln, ""), ignore_errors=True)
+                    comment = self.reformat(" ".join(self.comments[ln]), ignore_errors=True)
                     if not self.noqa_regex.search(comment):
                         self.strict_err_or_warn(
                             "found unused import " + repr(self.reformat(name, ignore_errors=True)) + " (add '# NOQA' to suppress)",
@@ -1749,7 +1749,7 @@ class Compiler(Grammar, pickleable_obj):
                 # add comments based on source line number
                 src_ln = self.adjust(ln)
                 if not reformatting or has_wrapped_ln:
-                    line += self.comments.get(src_ln, "")
+                    line += " ".join(self.comments[src_ln])
                 if not reformatting and line.rstrip() and not line.lstrip().startswith("#"):
                     line += self.ln_comment(src_ln)
 
@@ -2848,10 +2848,7 @@ while True:
         """Store comment in comments."""
         comment_marker, = tokens
         ln = self.adjust(lineno(loc, original))
-        if ln in self.comments:
-            self.comments[ln] += " " + comment_marker
-        else:
-            self.comments[ln] = comment_marker
+        self.comments[ln].add(comment_marker)
         return ""
 
     def kwd_augassign_handle(self, original, loc, tokens):

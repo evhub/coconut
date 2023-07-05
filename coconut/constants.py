@@ -106,17 +106,25 @@ assert use_fast_pyparsing_reprs or DEVELOP, "use_fast_pyparsing_reprs should nev
 
 enable_pyparsing_warnings = DEVELOP
 
-# experimentally determined to maximize performance
-use_packrat_parser = True  # True also gives us better error messages
-use_left_recursion_if_available = False
-packrat_cache_size = None  # only works because final() clears the cache
-streamline_grammar_for_len = 4000
-
 default_whitespace_chars = " \t\f"  # the only non-newline whitespace Python allows
 
 varchars = string.ascii_letters + string.digits + "_"
 
 use_computation_graph_env_var = "COCONUT_USE_COMPUTATION_GRAPH"
+
+# below constants are experimentally determined to maximize performance
+
+use_packrat_parser = True  # True also gives us better error messages
+packrat_cache_size = None  # only works because final() clears the cache
+
+use_left_recursion_if_available = False
+
+use_incremental_if_available = True
+# these only work because _parseIncremental produces much smaller caches
+repeatedly_clear_incremental_cache = False
+incremental_cache_size = None
+
+streamline_grammar_for_len = 4000
 
 # -----------------------------------------------------------------------------------------------------------------------
 # COMPILER CONSTANTS:
@@ -906,7 +914,7 @@ all_reqs = {
 
 # min versions are inclusive
 min_versions = {
-    "cPyparsing": (2, 4, 7, 1, 2, 1),
+    "cPyparsing": (2, 4, 7, 2, 0, 0),
     ("pre-commit", "py3"): (3,),
     ("psutil", "py>=27"): (5,),
     "jupyter": (1, 0),

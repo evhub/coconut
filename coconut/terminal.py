@@ -503,6 +503,9 @@ class Logger(object):
                 if use_packrat_parser:
                     hits, misses = ParserElement.packrat_cache_stats
                     self.printlog("\tPackrat parsing stats:", hits, "hits;", misses, "misses")
+                    # reset stats after printing if in incremental mode
+                    if ParserElement._incrementalEnabled:
+                        ParserElement.packrat_cache_stats[:] = [0] * len(ParserElement.packrat_cache_stats)
         else:
             yield
 

@@ -257,7 +257,7 @@ build:
 .PHONY: just-upload
 just-upload: build
 	pip install --upgrade --ignore-installed twine
-	twine upload dist/*
+	twine upload dist/* -u __token__
 
 .PHONY: upload
 upload: wipe dev just-upload

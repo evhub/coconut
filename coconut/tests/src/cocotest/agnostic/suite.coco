@@ -633,8 +633,8 @@ def suite_test() -> bool:
     assert map(Ad().ef, range(5)) |> list == range(1, 6) |> list
     assert Ad().ef 1 == 2
     assert store.plus1 store.one == store.two
-    assert ret_locals()["abc"] == 1
-    assert ret_globals()["abc"] == 1
+    assert ret_locals()["my_loc"] == 1
+    assert ret_globals()["my_glob"] == 1
     assert pos_only(1, 2) == (1, 2)
     try:
         pos_only(a=1, b=2)

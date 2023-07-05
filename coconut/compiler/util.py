@@ -96,6 +96,8 @@ from coconut.constants import (
     non_syntactic_newline,
     allow_explicit_keyword_vars,
     reserved_prefix,
+    incremental_cache_size,
+    repeatedly_clear_incremental_cache,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -341,9 +343,24 @@ def attach(item, action, ignore_no_tokens=None, ignore_one_token=None, ignore_to
     return add_action(item, action, make_copy)
 
 
+def should_clear_cache():
+    """Determine if we should be clearing the packrat cache."""
+    return (
+        use_packrat_parser
+        and (
+            not ParserElement._incrementalEnabled
+            or (
+                ParserElement._incrementalWithResets
+                and repeatedly_clear_incremental_cache
+            )
+        )
+    )
+
+
 def final_evaluate_tokens(tokens):
     """Same as evaluate_tokens but should only be used once a parse is assured."""
-    if use_packrat_parser:
+    # don't clear the cache in incremental mode
+    if should_clear_cache():
         # clear cache without resetting stats
         ParserElement.packrat_cache.clear()
     return evaluate_tokens(tokens)
@@ -370,25 +387,49 @@ def unpack(tokens):
     return tokens
 
 
+def force_reset_packrat_cache():
+    """Forcibly reset the packrat cache and all packrat stats."""
+    if ParserElement._incrementalEnabled:
+        ParserElement._incrementalEnabled = False
+        enable_incremental_parsing()
+    else:
+        ParserElement._packratEnabled = False
+        ParserElement.enablePackrat(packrat_cache_size)
+
+
+def enable_incremental_parsing():
+    """Enable incremental parsing mode where prefix parses are reused."""
+    try:
+        ParserElement.enableIncremental(incremental_cache_size)
+    except ImportError as err:
+        raise CoconutException(str(err))
+
+
 @contextmanager
 def parsing_context(inner_parse=True):
     """Context to manage the packrat cache across parse calls."""
-    if inner_parse and use_packrat_parser:
+    if inner_parse and should_clear_cache():
         # store old packrat cache
         old_cache = ParserElement.packrat_cache
         old_cache_stats = ParserElement.packrat_cache_stats[:]
 
         # give inner parser a new packrat cache
-        ParserElement._packratEnabled = False
-        ParserElement.enablePackrat(packrat_cache_size)
-    try:
-        yield
-    finally:
-        if inner_parse and use_packrat_parser:
+        force_reset_packrat_cache()
+        try:
+            yield
+        finally:
             ParserElement.packrat_cache = old_cache
             if logger.verbose:
                 ParserElement.packrat_cache_stats[0] += old_cache_stats[0]
                 ParserElement.packrat_cache_stats[1] += old_cache_stats[1]
+    elif inner_parse and ParserElement._incrementalWithResets:
+        incrementalWithResets, ParserElement._incrementalWithResets = ParserElement._incrementalWithResets, False
+        try:
+            yield
+        finally:
+            ParserElement._incrementalWithResets = incrementalWithResets
+    else:
+        yield
 
 
 def prep_grammar(grammar, streamline=False):
@@ -1260,9 +1301,13 @@ def get_func_closure(func):
     return {v: c.cell_contents for v, c in zip(varnames, cells)}
 
 
-def get_highest_parse_loc():
+def get_highest_parse_loc(original):
     """Get the highest observed parse location."""
     try:
+        # if the parser is already keeping track of this, just use that
+        if ParserElement._incrementalEnabled:
+            return ParserElement._furthest_locs.get(original, 0)
+
         # extract the actual cache object (pyparsing does not make this easy)
         packrat_cache = ParserElement.packrat_cache
         if isinstance(packrat_cache, dict):  # if enablePackrat is never called
@@ -1275,9 +1320,12 @@ def get_highest_parse_loc():
         # find the highest observed parse location
         highest_loc = 0
         for item in cache:
-            loc = item[2]
-            if loc > highest_loc:
-                highest_loc = loc
+            item_orig = item[1]
+            # if we're not using incremental mode, originals will always match
+            if not ParserElement._incrementalEnabled or item_orig == original:
+                loc = item[2]
+                if loc > highest_loc:
+                    highest_loc = loc
         return highest_loc
 
     # everything here is sketchy, so errors should only be complained
