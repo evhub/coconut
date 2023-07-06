@@ -100,12 +100,12 @@ def memoized_parse_block(code):
 
 def syntaxerr_memoized_parse_block(code):
     """Version of memoized_parse_block that raises SyntaxError without any __cause__."""
-    to_raise = None
+    syntax_err = None
     try:
         return memoized_parse_block(code)
     except CoconutException as err:
-        to_raise = err.syntax_err()
-    raise to_raise
+        syntax_err = err.syntax_err()
+    raise syntax_err
 
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -114,7 +114,7 @@ def syntaxerr_memoized_parse_block(code):
 
 if LOAD_MODULE:
 
-    COMPILER.warm_up()
+    COMPILER.warm_up(enable_incremental_mode=True)
 
     class CoconutCompiler(CachingCompiler, object):
         """IPython compiler for Coconut."""

@@ -167,6 +167,7 @@ from coconut.compiler.util import (
     dict_to_str,
     close_char_for,
     base_keyword,
+    enable_incremental_parsing,
 )
 from coconut.compiler.header import (
     minify_header,
@@ -1128,9 +1129,9 @@ class Compiler(Grammar, pickleable_obj):
             self.current_compiler[0] = self
             yield
 
-    def streamline(self, grammar, inputstring=""):
+    def streamline(self, grammar, inputstring="", force=False):
         """Streamline the given grammar for the given inputstring."""
-        if streamline_grammar_for_len is not None and len(inputstring) >= streamline_grammar_for_len:
+        if force or (streamline_grammar_for_len is not None and len(inputstring) >= streamline_grammar_for_len):
             start_time = get_clock_time()
             prep_grammar(grammar, streamline=True)
             logger.log_lambda(
@@ -4581,10 +4582,12 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
         """Parse xonsh code."""
         return self.parse(inputstring, self.xonsh_parser, {"strip": True}, {"header": "none", "initial": "none"}, streamline=False, **kwargs)
 
-    def warm_up(self):
+    def warm_up(self, force=False, enable_incremental_mode=False):
         """Warm up the compiler by streamlining the file_parser."""
-        self.streamline(self.file_parser)
-        self.streamline(self.eval_parser)
+        self.streamline(self.file_parser, force=force)
+        self.streamline(self.eval_parser, force=force)
+        if enable_incremental_mode:
+            enable_incremental_parsing()
 
 
 # end: ENDPOINTS

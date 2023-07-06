@@ -4486,6 +4486,12 @@ The possible values for each flag argument are:
 - _no\_tco_: `False` (default) or `True`
 - _no\_wrap_: `False` (default) or `True`
 
+#### `warm_up`
+
+**coconut.api.warm_up**(_force_=`True`, _enable\_incremental\_mode_=`False`, *, _state_=`False`)
+
+Can optionally be called to warm up the compiler and get it ready for parsing. Passing _force_ will cause the warm up to take longer but will substantially reduce parsing times (by default, this level of warm up is only done when the compiler encounters a large file). Passing _enable\_incremental\_mode_ will enable the compiler's incremental mdoe, where parsing some string, then later parsing a continuation of that string, will yield substantial performance improvements.
+
 #### `cmd`
 
 **coconut.api.cmd**(_args_=`None`, *, _argv_=`None`, _interact_=`False`, _default\_target_=`None`, _state_=`False`)

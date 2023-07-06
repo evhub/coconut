@@ -63,6 +63,7 @@ def load_ipython_extension(ipython):
 
     magic_state = api.get_state()
     api.setup(state=magic_state, **coconut_kernel_kwargs)
+    api.warm_up(enable_incremental_mode=True)
 
     # add magic function
     def magic(line, cell=None):
@@ -186,7 +187,7 @@ class CoconutXontribLoader(object):
         if self.compiler is None:
             from coconut.compiler import Compiler
             self.compiler = Compiler(**coconut_kernel_kwargs)
-            self.compiler.warm_up()
+            self.compiler.warm_up(enable_incremental_mode=True)
 
         if self.runner is None:
             from coconut.command.util import Runner

@@ -59,6 +59,16 @@ def setup(
     keep_lines: bool=False,
     no_tco: bool=False,
     no_wrap: bool=False,
+    *,
+    state: Optional[Command]=...,
+) -> None: ...
+
+
+def warm_up(
+    force: bool=False,
+    enable_incremental_mode: bool=False,
+    *,
+    state: Optional[Command]=...,
 ) -> None: ...
 
 
