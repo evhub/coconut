@@ -121,6 +121,7 @@ use_left_recursion_if_available = False
 
 use_incremental_if_available = True
 # these only work because _parseIncremental produces much smaller caches
+never_clear_incremental_cache = False
 repeatedly_clear_incremental_cache = False
 incremental_cache_size = None
 
@@ -915,7 +916,7 @@ all_reqs = {
 
 # min versions are inclusive
 min_versions = {
-    "cPyparsing": (2, 4, 7, 2, 0, 0),
+    "cPyparsing": (2, 4, 7, 2, 1, 1),
     ("pre-commit", "py3"): (3,),
     ("psutil", "py>=27"): (5,),
     "jupyter": (1, 0),

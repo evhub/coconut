@@ -713,7 +713,7 @@ class Command(object):
 
     def start_running(self):
         """Start running the Runner."""
-        self.comp.warm_up()
+        self.comp.warm_up(enable_incremental_mode=True)
         self.check_runner()
         self.running = True
         logger.log("Time till prompt: " + str(get_clock_time() - first_import_time) + " secs")
