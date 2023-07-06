@@ -262,7 +262,7 @@ arguments.add_argument(
     "--recursion-limit", "--recursionlimit",
     metavar="limit",
     type=int,
-    help="set maximum recursion depth in compiler (defaults to " + ascii(default_recursion_limit) + ") (when increasing --recursion-limit, you may also need to increase --stack-size)",
+    help="set maximum recursion depth in compiler (defaults to " + ascii(default_recursion_limit) + ") (when increasing --recursion-limit, you may also need to increase --stack-size; setting them to approximately equal values is recommended)",
 )
 
 arguments.add_argument(

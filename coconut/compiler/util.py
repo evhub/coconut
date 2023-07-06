@@ -39,6 +39,7 @@ from pprint import pformat, pprint
 
 from coconut._pyparsing import (
     USE_COMPUTATION_GRAPH,
+    SUPPORTS_INCREMENTAL,
     replaceWith,
     ZeroOrMore,
     OneOrMore,
@@ -391,18 +392,19 @@ def force_reset_packrat_cache():
     """Forcibly reset the packrat cache and all packrat stats."""
     if ParserElement._incrementalEnabled:
         ParserElement._incrementalEnabled = False
-        enable_incremental_parsing()
+        ParserElement.enableIncremental(incremental_cache_size, still_reset_cache=ParserElement._incrementalWithResets)
     else:
         ParserElement._packratEnabled = False
         ParserElement.enablePackrat(packrat_cache_size)
 
 
-def enable_incremental_parsing():
+def enable_incremental_parsing(force=False):
     """Enable incremental parsing mode where prefix parses are reused."""
-    try:
-        ParserElement.enableIncremental(incremental_cache_size)
-    except ImportError as err:
-        raise CoconutException(str(err))
+    if SUPPORTS_INCREMENTAL or force:
+        try:
+            ParserElement.enableIncremental(incremental_cache_size, still_reset_cache=False)
+        except ImportError as err:
+            raise CoconutException(str(err))
 
 
 @contextmanager
@@ -839,20 +841,13 @@ always_match = Empty()
 stores_loc_item = attach(always_match, stores_loc_action)
 
 
-def disallow_keywords(kwds, with_suffix=None):
+def disallow_keywords(kwds, with_suffix=""):
     """Prevent the given kwds from matching."""
-    item = ~(
-        base_keyword(kwds[0])
-        if with_suffix is None else
-        base_keyword(kwds[0]) + with_suffix
+    to_disallow = (
+        k + r"\b" + re.escape(with_suffix)
+        for k in kwds
     )
-    for k in kwds[1:]:
-        item += ~(
-            base_keyword(k)
-            if with_suffix is None else
-            base_keyword(k) + with_suffix
-        )
-    return item
+    return regex_item(r"(?!" + "|".join(to_disallow) + r")").suppress()
 
 
 def any_keyword_in(kwds):

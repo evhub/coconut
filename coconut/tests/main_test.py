@@ -334,6 +334,8 @@ def call(raw_cmd, assert_output=False, check_mypy=False, check_errors=True, stde
 
 def call_python(args, **kwargs):
     """Calls the current Python."""
+    if get_bool_env_var("COCONUT_TEST_DEBUG_PYTHON"):
+        args = ["-X", "dev"] + args
     call([sys.executable] + args, **kwargs)
 
 
@@ -815,6 +817,18 @@ class TestShell(unittest.TestCase):
 @add_test_func_names
 class TestCompilation(unittest.TestCase):
 
+    def test_simple_no_line_numbers(self):
+        run_runnable(["-n", "--no-line-numbers"])
+
+    def test_simple_keep_lines(self):
+        run_runnable(["-n", "--keep-lines"])
+
+    def test_simple_no_line_numbers_keep_lines(self):
+        run_runnable(["-n", "--no-line-numbers", "--keep-lines"])
+
+    def test_simple_minify(self):
+        run_runnable(["-n", "--minify"])
+
     def test_normal(self):
         run()
 
@@ -825,17 +839,6 @@ class TestCompilation(unittest.TestCase):
     if sys.version_info[:2] in always_sys_versions:
         def test_always_sys(self):
             run(agnostic_target="sys", always_sys=True)
-
-    # run fewer tests on Windows so appveyor doesn't time out
-    if not WINDOWS:
-        def test_keep_lines(self):
-            run(["--keep-lines"])
-
-        def test_strict(self):
-            run(["--strict"])
-
-        def test_and(self):
-            run(["--and"])  # src and dest built by comp
 
     def test_target(self):
         run(agnostic_target=(2 if PY2 else 3))
@@ -848,6 +851,17 @@ class TestCompilation(unittest.TestCase):
 
     def test_no_tco(self):
         run(["--no-tco"])
+
+    # run fewer tests on Windows so appveyor doesn't time out
+    if not WINDOWS:
+        def test_keep_lines(self):
+            run(["--keep-lines"])
+
+        def test_strict(self):
+            run(["--strict"])
+
+        def test_and(self):
+            run(["--and"])  # src and dest built by comp
 
     if PY35:
         def test_no_wrap(self):
@@ -870,18 +884,6 @@ class TestCompilation(unittest.TestCase):
     if not WINDOWS and not PYPY and not PY26:
         def test_jobs_zero(self):
             run(["--jobs", "0"])
-
-    def test_simple_no_line_numbers(self):
-        run_runnable(["-n", "--no-line-numbers"])
-
-    def test_simple_keep_lines(self):
-        run_runnable(["-n", "--keep-lines"])
-
-    def test_simple_no_line_numbers_keep_lines(self):
-        run_runnable(["-n", "--no-line-numbers", "--keep-lines"])
-
-    def test_simple_minify(self):
-        run_runnable(["-n", "--minify"])
 
 
 # more appveyor timeout prevention

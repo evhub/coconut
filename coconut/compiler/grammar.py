@@ -2414,25 +2414,23 @@ class Grammar(object):
         | attach(parens, strip_parens_handle)
     )
 
-    def get_tre_return_grammar(self, func_name):
-        """The TRE return grammar is parameterized by the name of the function being optimized."""
-        return (
-            self.start_marker
-            + self.keyword("return").suppress()
-            + maybeparens(
-                self.lparen,
-                base_keyword(func_name).suppress()
-                + self.original_function_call_tokens,
-                self.rparen,
-            ) + self.end_marker
-        )
+    tre_func_name = Forward()
+    tre_return = (
+        start_marker
+        + keyword("return").suppress()
+        + maybeparens(
+            lparen,
+            tre_func_name + original_function_call_tokens,
+            rparen,
+        ) + end_marker
+    )
 
     tco_return = attach(
         start_marker
         + keyword("return").suppress()
         + maybeparens(
             lparen,
-            disallow_keywords(untcoable_funcs, with_suffix=lparen)
+            disallow_keywords(untcoable_funcs, with_suffix="(")
             + condense(
                 (unsafe_name | parens | brackets | braces | string_atom)
                 + ZeroOrMore(

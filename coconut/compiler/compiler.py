@@ -166,6 +166,7 @@ from coconut.compiler.util import (
     tuple_str_of_str,
     dict_to_str,
     close_char_for,
+    base_keyword,
 )
 from coconut.compiler.header import (
     minify_header,
@@ -1868,7 +1869,7 @@ class Compiler(Grammar, pickleable_obj):
                 return first_line, rest_of_lines
         return None, block
 
-    def tre_return(self, func_name, func_args, func_store, mock_var=None):
+    def tre_return_grammar(self, func_name, func_args, func_store, mock_var=None):
         """Generate grammar element that matches a string which is just a TRE return statement."""
         def tre_return_handle(loc, tokens):
             args = ", ".join(tokens)
@@ -1908,8 +1909,9 @@ else:
                 tco_recurse=tco_recurse,
                 type_ignore=self.type_ignore_comment(),
             )
+        self.tre_func_name <<= base_keyword(func_name).suppress()
         return attach(
-            self.get_tre_return_grammar(func_name),
+            self.tre_return,
             tre_return_handle,
             greedy=True,
         )
@@ -2243,7 +2245,7 @@ if False:
                 else:
                     mock_var = None
                 func_store = self.get_temp_var("recursive_func")
-                tre_return_grammar = self.tre_return(func_name, func_args, func_store, mock_var)
+                tre_return_grammar = self.tre_return_grammar(func_name, func_args, func_store, mock_var)
             else:
                 mock_var = func_store = tre_return_grammar = None
 

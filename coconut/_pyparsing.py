@@ -155,7 +155,7 @@ elif not hasattr(ParserElement, "packrat_context"):
     )
 
 if hasattr(ParserElement, "enableIncremental"):
-    SUPPORTS_INCREMENTAL = True
+    SUPPORTS_INCREMENTAL = sys.version_info >= (3, 8)  # avoids stack overflows on py<=37
 else:
     SUPPORTS_INCREMENTAL = False
     ParserElement._incrementalEnabled = False

@@ -197,20 +197,30 @@ test-minify: clean
 test-watch: export COCONUT_USE_COLOR=TRUE
 test-watch: clean
 	python ./coconut/tests --strict --keep-lines --force
-	coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --watch --strict --keep-lines
+	coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --watch --strict --keep-lines --stack-size 4096 --recursion-limit 4096
 	python ./coconut/tests/dest/runner.py
 	python ./coconut/tests/dest/extras.py
 
 # mini test that just compiles agnostic tests with fully synchronous output
 .PHONY: test-mini
 test-mini:
-	coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --force --jobs 0
+	coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --force --jobs 0 --stack-size 4096 --recursion-limit 4096
 
-.PHONY: debug-comp-crash
-debug-comp-crash: export COCONUT_USE_COLOR=TRUE
-debug-comp-crash: export COCONUT_PURE_PYTHON=TRUE
-debug-comp-crash:
-	python -X dev -m coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --strict --keep-lines --force --jobs 0
+# same as test-univ but debugs crashes
+.PHONY: test-univ-debug
+test-univ-debug: export COCONUT_TEST_DEBUG_PYTHON=TRUE
+test-univ-debug: test-univ
+
+# same as test-mini but debugs crashes
+.PHONY: test-mini-debug
+test-mini-debug: export COCONUT_USE_COLOR=TRUE
+test-mini-debug:
+	python -X dev -m coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --strict --keep-lines --force --jobs 0 --stack-size 4096 --recursion-limit 4096
+
+# same as test-mini-debug but uses vanilla pyparsing
+.PHONY: test-mini-debug-purepy
+test-mini-debug-purepy: export COCONUT_PURE_PYTHON=TRUE
+test-mini-debug-purepy: test-mini-debug
 
 .PHONY: debug-test-crash
 debug-test-crash:
@@ -270,15 +280,15 @@ check-reqs:
 profile-parser: export COCONUT_USE_COLOR=TRUE
 profile-parser: export COCONUT_PURE_PYTHON=TRUE
 profile-parser:
-	coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --force --profile --verbose --recursion-limit 4096 2>&1 | tee ./profile.log
+	coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --force --profile --verbose --stack-size 4096 --recursion-limit 4096 2>&1 | tee ./profile.log
 
 .PHONY: profile-time
 profile-time:
-	vprof -c h "./coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --force" --output-file ./vprof.json
+	vprof -c h "./coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --force --stack-size 4096 --recursion-limit 4096" --output-file ./vprof.json
 
 .PHONY: profile-memory
 profile-memory:
-	vprof -c m "./coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --force" --output-file ./vprof.json
+	vprof -c m "./coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --force --stack-size 4096 --recursion-limit 4096" --output-file ./vprof.json
 
 .PHONY: view-profile
 view-profile:

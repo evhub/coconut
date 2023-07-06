@@ -64,6 +64,7 @@ from coconut.constants import (
     mypy_silent_err_prefixes,
     mypy_err_infixes,
     mypy_install_arg,
+    jupyter_install_arg,
     mypy_builtin_regex,
     coconut_pth_file,
     error_color_code,
@@ -455,7 +456,7 @@ class Command(object):
             self.register_exit_code(err=err)
 
     def compile_path(self, path, write=True, package=True, **kwargs):
-        """Compile a path and returns paths to compiled files."""
+        """Compile a path and return paths to compiled files."""
         if not isinstance(write, bool):
             write = fixpath(write)
         if memoized_isfile(path):
@@ -467,7 +468,7 @@ class Command(object):
             raise CoconutException("could not find source path", path)
 
     def compile_folder(self, directory, write=True, package=True, **kwargs):
-        """Compile a directory and returns paths to compiled files."""
+        """Compile a directory and return paths to compiled files."""
         if not isinstance(write, bool) and memoized_isfile(write):
             raise CoconutException("destination path cannot point to a file when compiling a directory")
         filepaths = []
@@ -490,7 +491,7 @@ class Command(object):
         return filepaths
 
     def compile_file(self, filepath, write=True, package=False, force=False, **kwargs):
-        """Compile a file and returns the compiled file's path."""
+        """Compile a file and return the compiled file's path."""
         set_ext = False
         if write is False:
             destpath = None
@@ -884,9 +885,9 @@ class Command(object):
         """Same as run_cmd$(show_output=logger.verbose)."""
         return run_cmd(*args, show_output=logger.verbose)
 
-    def install_jupyter_kernel(self, jupyter, kernel_dir):
+    def install_jupyter_kernel(self, jupyter, kernel_dir, install_args=[]):
         """Install the given kernel via the command line and return whether successful."""
-        install_args = jupyter + ["kernelspec", "install", kernel_dir, "--replace"]
+        install_args = jupyter + ["kernelspec", "install", kernel_dir, "--replace"] + install_args
         try:
             self.run_silent_cmd(install_args)
         except CalledProcessError:
@@ -910,7 +911,7 @@ class Command(object):
             return False
         return True
 
-    def install_default_jupyter_kernels(self, jupyter, kernel_list):
+    def install_default_jupyter_kernels(self, jupyter, kernel_list, install_args=[]):
         """Install icoconut default kernels."""
         logger.show_sig("Installing Jupyter kernels '" + "', '".join(icoconut_default_kernel_names) + "'...")
         overall_success = True
@@ -921,7 +922,7 @@ class Command(object):
                 overall_success = overall_success and success
 
         for kernel_dir in icoconut_default_kernel_dirs:
-            success = self.install_jupyter_kernel(jupyter, kernel_dir)
+            success = self.install_jupyter_kernel(jupyter, kernel_dir, install_args)
             overall_success = overall_success and success
 
         if overall_success:
@@ -964,15 +965,27 @@ class Command(object):
         kernel_list = self.get_jupyter_kernels(jupyter)
         newly_installed_kernels = []
 
-        # always update the custom kernel, but only reinstall it if it isn't already there or given no args
+        # determine if we're just installing
+        if not args:
+            just_install = True
+        elif args[0].startswith("-"):
+            just_install = True
+        elif args[0] == jupyter_install_arg:
+            just_install = True
+            args = args[1:]
+        else:
+            just_install = False
+        install_args = args if just_install else []
+
+        # always update the custom kernel, but only reinstall it if it isn't already there or just installing
         custom_kernel_dir = install_custom_kernel(logger=logger)
-        if custom_kernel_dir is not None and (icoconut_custom_kernel_name not in kernel_list or not args):
+        if custom_kernel_dir is not None and (icoconut_custom_kernel_name not in kernel_list or just_install):
             logger.show_sig("Installing Jupyter kernel {name!r}...".format(name=icoconut_custom_kernel_name))
-            if self.install_jupyter_kernel(jupyter, custom_kernel_dir):
+            if self.install_jupyter_kernel(jupyter, custom_kernel_dir, install_args):
                 newly_installed_kernels.append(icoconut_custom_kernel_name)
 
-        if not args:
-            # install default kernels if given no args
+        if just_install:
+            # install default kernels if just installing
             newly_installed_kernels += self.install_default_jupyter_kernels(jupyter, kernel_list)
             run_args = None
 
@@ -991,7 +1004,7 @@ class Command(object):
                 else:
                     kernel = "coconut_py" + ver
                 if kernel not in kernel_list:
-                    newly_installed_kernels += self.install_default_jupyter_kernels(jupyter, kernel_list)
+                    newly_installed_kernels += self.install_default_jupyter_kernels(jupyter, kernel_list, install_args)
                 logger.warn("could not find {name!r} kernel; using {kernel!r} kernel instead".format(name=icoconut_custom_kernel_name, kernel=kernel))
 
             # pass the kernel to the console or otherwise just launch Jupyter now that we know our kernel is available

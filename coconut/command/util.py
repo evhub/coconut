@@ -479,7 +479,7 @@ class Prompt(object):
         if style == "none":
             self.style = None
         elif prompt_toolkit is None:
-            raise CoconutException("syntax highlighting is not supported on this Python version")
+            raise CoconutException("syntax highlighting requires prompt_toolkit (run 'pip install -U prompt_toolkit' to fix)")
         elif style == "list":
             logger.print("Coconut Styles: none, " + ", ".join(pygments.styles.get_all_styles()))
             sys.exit(0)

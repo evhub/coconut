@@ -40,9 +40,9 @@ def fixpath(path):
 def get_bool_env_var(env_var, default=False):
     """Get a boolean from an environment variable."""
     boolstr = os.getenv(env_var, "").lower()
-    if boolstr in ("true", "yes", "on", "1"):
+    if boolstr in ("true", "yes", "on", "1", "t"):
         return True
-    elif boolstr in ("false", "no", "off", "0"):
+    elif boolstr in ("false", "no", "off", "0", "f"):
         return False
     else:
         if boolstr not in ("", "none", "default"):
@@ -658,6 +658,7 @@ min_stack_size_kbs = 160
 default_jobs = "sys" if not PY26 else 0
 
 mypy_install_arg = "install"
+jupyter_install_arg = "install"
 
 mypy_builtin_regex = re.compile(r"\b(reveal_type|reveal_locals)\b")
 
