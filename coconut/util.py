@@ -240,6 +240,13 @@ class keydefaultdict(defaultdict, object):
         return self[key]
 
 
+class dictset(dict, object):
+    """A set implemented using a dictionary to get ordering benefits."""
+
+    def add(self, item):
+        self[item] = True
+
+
 def assert_remove_prefix(inputstr, prefix):
     """Remove prefix asserting that inputstr starts with it."""
     assert inputstr.startswith(prefix), inputstr

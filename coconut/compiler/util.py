@@ -1299,10 +1299,6 @@ def get_func_closure(func):
 def get_highest_parse_loc(original):
     """Get the highest observed parse location."""
     try:
-        # if the parser is already keeping track of this, just use that
-        if ParserElement._incrementalEnabled:
-            return ParserElement._furthest_locs.get(original, 0)
-
         # extract the actual cache object (pyparsing does not make this easy)
         packrat_cache = ParserElement.packrat_cache
         if isinstance(packrat_cache, dict):  # if enablePackrat is never called

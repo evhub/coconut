@@ -499,7 +499,7 @@ class Logger(object):
                 yield
             finally:
                 elapsed_time = get_clock_time() - start_time
-                self.printlog("Time while parsing:", elapsed_time, "secs")
+                self.printlog("Time while parsing" + (" " + self.path if self.path else "") + ":", elapsed_time, "secs")
                 if use_packrat_parser:
                     hits, misses = ParserElement.packrat_cache_stats
                     self.printlog("\tPackrat parsing stats:", hits, "hits;", misses, "misses")

@@ -123,14 +123,6 @@ test-pypy3: clean
 	pypy3 ./coconut/tests/dest/runner.py
 	pypy3 ./coconut/tests/dest/extras.py
 
-# same as test-pypy3 but includes verbose output for better debugging
-.PHONY: test-pypy3-verbose
-test-pypy3-verbose: export COCONUT_USE_COLOR=TRUE
-test-pypy3-verbose: clean
-	pypy3 ./coconut/tests --strict --keep-lines --force --verbose --jobs 0
-	pypy3 ./coconut/tests/dest/runner.py
-	pypy3 ./coconut/tests/dest/extras.py
-
 # same as test-univ but also runs mypy
 .PHONY: test-mypy
 test-mypy: export COCONUT_USE_COLOR=TRUE
@@ -151,6 +143,14 @@ test-mypy-univ: clean
 .PHONY: test-verbose
 test-verbose: export COCONUT_USE_COLOR=TRUE
 test-verbose: clean
+	python ./coconut/tests --strict --keep-lines --force --verbose
+	python ./coconut/tests/dest/runner.py
+	python ./coconut/tests/dest/extras.py
+
+# same as test-univ but includes verbose output for better debugging and is fully synchronous
+.PHONY: test-verbose-sync
+test-verbose-sync: export COCONUT_USE_COLOR=TRUE
+test-verbose-sync: clean
 	python ./coconut/tests --strict --keep-lines --force --verbose --jobs 0
 	python ./coconut/tests/dest/runner.py
 	python ./coconut/tests/dest/extras.py
@@ -159,7 +159,7 @@ test-verbose: clean
 .PHONY: test-mypy-verbose
 test-mypy-verbose: export COCONUT_USE_COLOR=TRUE
 test-mypy-verbose: clean
-	python ./coconut/tests --strict --force --target sys --verbose --jobs 0 --keep-lines --mypy --follow-imports silent --ignore-missing-imports --allow-redefinition
+	python ./coconut/tests --strict --force --target sys --verbose --keep-lines --mypy --follow-imports silent --ignore-missing-imports --allow-redefinition
 	python ./coconut/tests/dest/runner.py
 	python ./coconut/tests/dest/extras.py
 

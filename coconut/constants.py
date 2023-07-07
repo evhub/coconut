@@ -119,11 +119,12 @@ packrat_cache_size = None  # only works because final() clears the cache
 
 use_left_recursion_if_available = False
 
+# note that _parseIncremental produces much smaller caches
 use_incremental_if_available = True
-# these only work because _parseIncremental produces much smaller caches
-never_clear_incremental_cache = False
-repeatedly_clear_incremental_cache = False
 incremental_cache_size = None
+# these only apply to use_incremental_if_available, not compiler.util.enable_incremental_parsing()
+repeatedly_clear_incremental_cache = True
+never_clear_incremental_cache = False
 
 streamline_grammar_for_len = 4000
 

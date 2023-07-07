@@ -99,6 +99,7 @@ from coconut.util import (
     get_clock_time,
     get_name,
     assert_remove_prefix,
+    dictset,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -571,7 +572,7 @@ class Compiler(Grammar, pickleable_obj):
         """Set up compiler to evaluate inner expressions."""
         line_numbers, self.line_numbers = self.line_numbers, False
         keep_lines, self.keep_lines = self.keep_lines, False
-        comments, self.comments = self.comments, defaultdict(set)
+        comments, self.comments = self.comments, defaultdict(dictset)
         wrapped_type_ignore, self.wrapped_type_ignore = self.wrapped_type_ignore, None
         skips, self.skips = self.skips, []
         docstring, self.docstring = self.docstring, ""
@@ -1061,7 +1062,7 @@ class Compiler(Grammar, pickleable_obj):
         # determine possible causes
         if include_causes:
             self.internal_assert(extra is None, original, loc, "make_err cannot include causes with extra")
-            causes = set()
+            causes = dictset()
             for cause, _, _ in all_matches(self.parse_err_msg, snippet[loc_in_snip:]):
                 causes.add(cause)
             for cause, _, _ in all_matches(self.parse_err_msg, snippet[endpt_in_snip:]):
