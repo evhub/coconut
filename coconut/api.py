@@ -99,7 +99,7 @@ def setup(*args, **kwargs):
 def warm_up(*args, **kwargs):
     """Warm up the given state object."""
     state = kwargs.pop("state", False)
-    return get_state(state).warm_up(*args, **kwargs)
+    return get_state(state).comp.warm_up(*args, **kwargs)
 
 
 PARSERS = {

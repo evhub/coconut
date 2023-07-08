@@ -287,6 +287,8 @@ class Command(object):
                 no_tco=args.no_tco,
                 no_wrap=args.no_wrap_types,
             )
+            if args.watch:
+                self.comp.warm_up(enable_incremental_mode=True)
 
             # process mypy args and print timing info (must come after compiler setup)
             if args.mypy is not None:

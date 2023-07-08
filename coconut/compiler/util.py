@@ -405,6 +405,8 @@ def enable_incremental_parsing(force=False):
             ParserElement.enableIncremental(incremental_cache_size, still_reset_cache=False)
         except ImportError as err:
             raise CoconutException(str(err))
+        else:
+            logger.log("Incremental parsing mode enabled.")
 
 
 @contextmanager
