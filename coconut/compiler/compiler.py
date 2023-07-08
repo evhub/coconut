@@ -169,6 +169,7 @@ from coconut.compiler.util import (
     close_char_for,
     base_keyword,
     enable_incremental_parsing,
+    get_psf_target,
 )
 from coconut.compiler.header import (
     minify_header,
@@ -488,6 +489,8 @@ class Compiler(Grammar, pickleable_obj):
             raise CoconutException("target Python version must be major.minor, not major.minor.micro")
         if target == "sys":
             target = sys_target
+        elif target == "psf":
+            target = get_psf_target()
         if target in pseudo_targets:
             target = pseudo_targets[target]
         if target not in targets:

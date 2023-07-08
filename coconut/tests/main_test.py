@@ -33,7 +33,7 @@ else:
 import pytest
 import pexpect
 
-from coconut.util import noop_ctx
+from coconut.util import noop_ctx, get_target_info
 from coconut.terminal import (
     logger,
     LoggingStringIO,
@@ -41,6 +41,9 @@ from coconut.terminal import (
 from coconut.command.util import (
     call_output,
     reload,
+)
+from coconut.compiler.util import (
+    get_psf_target,
 )
 from coconut.constants import (
     WINDOWS,
@@ -828,6 +831,10 @@ class TestCompilation(unittest.TestCase):
 
     def test_simple_minify(self):
         run_runnable(["-n", "--minify"])
+
+    if sys.version_info >= get_target_info(get_psf_target()):
+        def test_simple_psf(self):
+            run_runnable(["-n", "--target", "psf"])
 
     def test_normal(self):
         run()

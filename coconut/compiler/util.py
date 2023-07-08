@@ -32,6 +32,7 @@ import ast
 import inspect
 import __future__
 import itertools
+import datetime as dt
 from functools import partial, reduce
 from collections import defaultdict
 from contextlib import contextmanager
@@ -99,6 +100,7 @@ from coconut.constants import (
     reserved_prefix,
     incremental_cache_size,
     repeatedly_clear_incremental_cache,
+    py_vers_with_eols,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -521,6 +523,15 @@ elif sys.version_info < (3,):
     sys_target = "".join(str(i) for i in supported_py2_vers[-1])
 else:
     sys_target = "".join(str(i) for i in supported_py3_vers[0])
+
+
+def get_psf_target():
+    """Get the oldest PSF-supported Python version target."""
+    now = dt.datetime.now()
+    for ver, eol in py_vers_with_eols:
+        if now < eol:
+            break
+    return pseudo_targets.get(ver, ver)
 
 
 def get_vers_for_target(target):

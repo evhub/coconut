@@ -297,21 +297,22 @@ _Note: Coconut also universalizes many magic methods, including making `__bool__
 
 If the version of Python that the compiled code will be running on is known ahead of time, a target should be specified with `--target`. The given target will only affect the compiled code and whether or not the Python-3-specific syntax detailed above is allowed. Where Python syntax differs across versions, Coconut syntax will always follow the latest Python 3 across all targets. The supported targets are:
 
-- `universal` (default) (will work on _any_ of the below),
-- `2`, `2.6` (will work on any Python `>= 2.6` but `< 3`),
-- `2.7` (will work on any Python `>= 2.7` but `< 3`),
-- `3`, `3.2` (will work on any Python `>= 3.2`),
-- `3.3` (will work on any Python `>= 3.3`),
-- `3.4` (will work on any Python `>= 3.4`),
-- `3.5` (will work on any Python `>= 3.5`),
-- `3.6` (will work on any Python `>= 3.6`),
-- `3.7` (will work on any Python `>= 3.7`),
-- `3.8` (will work on any Python `>= 3.8`),
-- `3.9` (will work on any Python `>= 3.9`),
-- `3.10` (will work on any Python `>= 3.10`),
-- `3.11` (will work on any Python `>= 3.11`),
-- `3.12` (will work on any Python `>= 3.12`), and
-- `sys` (chooses the target corresponding to the current Python version).
+- `universal`, `univ` (the default): will work on _any_ of the below
+- `2`, `2.6`: will work on any Python `>= 2.6` but `< 3`
+- `2.7`: will work on any Python `>= 2.7` but `< 3`
+- `3`, `3.2`: will work on any Python `>= 3.2`
+- `3.3`: will work on any Python `>= 3.3`
+- `3.4`: will work on any Python `>= 3.4`
+- `3.5`: will work on any Python `>= 3.5`
+- `3.6`: will work on any Python `>= 3.6`
+- `3.7`: will work on any Python `>= 3.7`
+- `3.8`: will work on any Python `>= 3.8`
+- `3.9`: will work on any Python `>= 3.9`
+- `3.10`: will work on any Python `>= 3.10`
+- `3.11`: will work on any Python `>= 3.11`
+- `3.12`: will work on any Python `>= 3.12`
+- `sys`: chooses the target corresponding to the current Python version
+- `psf`: chooses the target corresponding to the oldest Python version not considered [end-of-life](https://devguide.python.org/versions/)
 
 _Note: Periods are optional in target specifications, such that the target `27` is equivalent to the target `2.7`._
 
