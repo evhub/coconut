@@ -63,7 +63,7 @@ def load_ipython_extension(ipython):
 
     magic_state = api.get_state()
     api.setup(state=magic_state, **coconut_kernel_kwargs)
-    api.warm_up(enable_incremental_mode=True)
+    api.warm_up(enable_incremental_mode=True, state=magic_state)
 
     # add magic function
     def magic(line, cell=None):

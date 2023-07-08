@@ -192,6 +192,14 @@ test-minify: clean
 	python ./coconut/tests/dest/runner.py
 	python ./coconut/tests/dest/extras.py
 
+# same as test-univ but uses --no-wrap
+.PHONY: test-no-wrap
+test-no-wrap: export COCONUT_USE_COLOR=TRUE
+test-no-wrap: clean
+	python ./coconut/tests --strict --keep-lines --force --no-wrap
+	python ./coconut/tests/dest/runner.py
+	python ./coconut/tests/dest/extras.py
+
 # same as test-univ but watches tests before running them
 .PHONY: test-watch
 test-watch: export COCONUT_USE_COLOR=TRUE
@@ -218,9 +226,9 @@ test-mini-debug:
 	python -X dev -m coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --strict --keep-lines --force --jobs 0 --stack-size 4096 --recursion-limit 4096
 
 # same as test-mini-debug but uses vanilla pyparsing
-.PHONY: test-mini-debug-purepy
-test-mini-debug-purepy: export COCONUT_PURE_PYTHON=TRUE
-test-mini-debug-purepy: test-mini-debug
+.PHONY: test-mini-debug-pyparsing
+test-mini-debug-pyparsing: export COCONUT_PURE_PYTHON=TRUE
+test-mini-debug-pyparsing: test-mini-debug
 
 .PHONY: debug-test-crash
 debug-test-crash:
