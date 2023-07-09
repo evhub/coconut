@@ -96,8 +96,8 @@ class TestConstants(unittest.TestCase):
                 or PY26 and old_imp == "ttk"
                 # don't test tkinter on PyPy
                 or PYPY and new_imp.startswith("tkinter")
-                # don't test trollius on PyPy
-                or PYPY and old_imp == "trollius"
+                # don't test trollius, aenum on PyPy
+                or PYPY and old_imp in ("trollius", "aenum")
                 # don't test typing_extensions, async_generator
                 or old_imp.startswith(("typing_extensions", "async_generator"))
             ):
