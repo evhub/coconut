@@ -496,7 +496,7 @@ class Compiler(Grammar, pickleable_obj):
         if target not in targets:
             raise CoconutException(
                 "unsupported target Python version " + repr(target),
-                extra="supported targets are: " + ", ".join(repr(t) for t in specific_targets + tuple(pseudo_targets)) + ", and 'sys'",
+                extra="supported targets are: " + ", ".join(repr(t) for t in specific_targets + tuple(pseudo_targets)) + ", 'sys', 'psf'",
             )
         logger.log_vars("Compiler args:", locals())
         self.target = target

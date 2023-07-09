@@ -3,6 +3,7 @@ import itertools
 import collections
 import collections.abc
 import weakref
+import platform
 from copy import copy
 
 operator log10
@@ -10,7 +11,8 @@ from math import \log10 as (log10)
 
 # need to be at top level to avoid binding sys as a local in primary_test
 from importlib import reload  # NOQA
-from enum import Enum  # noqa
+if platform.python_implementation() == "CPython":  # fixes weird aenum issue on pypy
+    from enum import Enum  # noqa
 
 from .util import assert_raises, typed_eq
 

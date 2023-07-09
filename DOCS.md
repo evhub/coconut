@@ -312,7 +312,7 @@ If the version of Python that the compiled code will be running on is known ahea
 - `3.11`: will work on any Python `>= 3.11`
 - `3.12`: will work on any Python `>= 3.12`
 - `sys`: chooses the target corresponding to the current Python version
-- `psf`: chooses the target corresponding to the oldest Python version not considered [end-of-life](https://devguide.python.org/versions/)
+- `psf`: chooses the target corresponding to the oldest Python version not considered [end-of-life](https://devguide.python.org/versions/) by the PSF (Python Software Foundation)
 
 _Note: Periods are optional in target specifications, such that the target `27` is equivalent to the target `2.7`._
 
