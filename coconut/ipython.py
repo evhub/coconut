@@ -8,7 +8,7 @@
 """
 Author: kxmh42@github
 License: Apache 2.0
-Description: Endpoints for Coconut's external integrations.
+Description: Endpoint for Coconut's integration with IPython.
 """
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -22,6 +22,8 @@ import coconut.integrations
 # -----------------------------------------------------------------------------------------------------------------------
 # IPYTHON:
 # -----------------------------------------------------------------------------------------------------------------------
+
+__all__ = ["load_ipython_extension"]
 
 
 def run_as_coconut(lines):

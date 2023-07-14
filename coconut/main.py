@@ -52,7 +52,7 @@ def main_run():
 
 def main_icoconut():
     """Starts icoconut."""
-    os.execlp("ipython", "ipython", "--ext=coconut.icoconut", *sys.argv[1:])
+    os.execlp("ipython", "ipython", "--ext=coconut.ipython", *sys.argv[1:])
 
 
 if __name__ == "__main__":

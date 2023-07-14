@@ -417,7 +417,7 @@ If you want an IPython session in which the `%coconut` magic is the default for 
 ```
 icoconut
 ```
-Alternatively, you can run `%load_ext coconut.icoconut` to change an IPython session into an ICoconut session.
+Alternatively, you can run `%load_ext coconut.ipython` to change an IPython session into an ICoconut session.
 
 #### Type Checking
 

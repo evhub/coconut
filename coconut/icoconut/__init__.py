@@ -18,4 +18,3 @@ Description: The Coconut IPython kernel module.
 from __future__ import print_function, absolute_import, unicode_literals, division
 
 from coconut.icoconut.root import *  # NOQA
-from coconut.icoconut.integrations import load_ipython_extension  # NOQA
