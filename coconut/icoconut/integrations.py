@@ -6,9 +6,9 @@
 # -----------------------------------------------------------------------------------------------------------------------
 
 """
-Author: Evan Hubinger
+Author: kxmh42@github
 License: Apache 2.0
-Description: Starts the Coconut command line utility.
+Description: Endpoints for Coconut's external integrations.
 """
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -17,43 +17,27 @@ Description: Starts the Coconut command line utility.
 
 from __future__ import print_function, absolute_import, unicode_literals, division
 
-import sys
-import os
-import os.path
-
-
-def add_coconut_to_path():
-    """Adds coconut to sys.path if it isn't there already."""
-    try:
-        import coconut  # NOQA
-    except ImportError:
-        sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-
-add_coconut_to_path()
-from coconut.root import *  # NOQA
-
-from coconut.command import Command
+import coconut.integrations
 
 # -----------------------------------------------------------------------------------------------------------------------
-# MAIN:
+# IPYTHON:
 # -----------------------------------------------------------------------------------------------------------------------
 
 
-def main():
-    """Starts coconut."""
-    Command().start()
+def run_as_coconut(lines):
+    if len(lines) == 1:
+        line_str = lines[0]
+        line_repr = repr(line_str)
+        return [f"get_ipython().run_line_magic('coconut', {line_repr})"]
+    else:
+        lines_str = "\n".join(lines)
+        if lines_str.startswith("# Coconut Header:"):
+            return lines
+        lines_repr = repr(lines_str)
+        return [f"get_ipython().run_cell_magic('coconut', '', {lines_repr})"]
 
 
-def main_run():
-    """Starts coconut-run."""
-    Command().start(run=True)
-
-
-def main_icoconut():
-    """Starts icoconut."""
-    os.execlp("ipython", "ipython", "--ext=coconut.icoconut", *sys.argv[1:])
-
-
-if __name__ == "__main__":
-    main()
+def load_ipython_extension(ipython):
+    """Loads an extension that changes IPython into ICoconut."""
+    coconut.integrations.load_ipython_extension(ipython)
+    ipython.input_transformers_post.append(run_as_coconut)

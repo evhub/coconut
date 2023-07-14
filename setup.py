@@ -80,6 +80,9 @@ setuptools.setup(
         ] + [
             script + "-run = coconut.main:main_run"
             for script in script_names
+        ] + [
+            f"i{script} = coconut.main:main_icoconut"
+            for script in script_names
         ],
         "pygments.lexers": list(pygments_lexers),
         "xonsh.xontribs": [

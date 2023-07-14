@@ -146,6 +146,11 @@ coconut --jupyter notebook
 
 _Alternatively, to launch the Jupyter interpreter with Coconut as the kernel, run `coconut --jupyter console` instead. Additionally, you can launch an interactive Coconut Jupyter console initialized from the current namespace by inserting `from coconut import embed; embed()` into your code, which can be a very useful debugging tool._
 
+You can also run the IPython REPL with a Coconut interpreter:
+```
+icoconut
+```
+
 ### Case Studies
 
 Because Coconut is built to be useful, the best way to demo it is to show it in action. To that end, the majority of this tutorial will be showing how to apply Coconut to solve particular problems, which we'll call case studies.

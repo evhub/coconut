@@ -413,6 +413,12 @@ The line magic `%load_ext coconut` will load Coconut as an extension, providing 
 
 _Note: Unlike the normal Coconut command-line, `%%coconut` defaults to the `sys` target rather than the `universal` target._
 
+If you want an IPython session in which the `%coconut` magic is the default for every line, and doesn't need to be written, simply run:
+```
+icoconut
+```
+Alternatively, you can run `%load_ext coconut.icoconut` to change an IPython session into an ICoconut session.
+
 #### Type Checking
 
 ##### MyPy Integration
