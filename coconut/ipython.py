@@ -38,7 +38,7 @@ def add_before(condition, new_elem, elem_list):
 def run_as_coconut(lines):
     lines_str = "".join(lines)
     if lines_str.startswith("# Coconut Header:"):
-        # Tracebacks in ICoconut contain a long list of irrelevant coconut
+        # Tracebacks in ICoconut contain a long list of irrelevant Coconut
         # import statements, e.g.:
         #     ZeroDivisionError                         Traceback (most recent call last)
         #     File <ipython-input-1-c4cb9aef220a>:10
@@ -52,8 +52,7 @@ def run_as_coconut(lines):
             new_elem="pass\n",
             elem_list=lines,
         )
-    lines_repr = repr(lines_str)
-    return [f"get_ipython().run_cell_magic('coconut', '', {lines_repr})"]
+    return ["get_ipython().run_cell_magic('coconut', '', " + repr(lines_str) + ")"]
 
 
 def load_ipython_extension(ipython):
