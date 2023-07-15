@@ -27,7 +27,7 @@ __all__ = ["load_ipython_extension"]
 
 
 def run_as_coconut(lines):
-    lines_str = "\n".join(lines)
+    lines_str = "".join(lines)
     if lines_str.startswith("# Coconut Header:"):
         return lines
     lines_repr = repr(lines_str)
