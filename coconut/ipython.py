@@ -27,16 +27,11 @@ __all__ = ["load_ipython_extension"]
 
 
 def run_as_coconut(lines):
-    if len(lines) == 1:
-        line_str = lines[0]
-        line_repr = repr(line_str)
-        return [f"get_ipython().run_line_magic('coconut', {line_repr})"]
-    else:
-        lines_str = "\n".join(lines)
-        if lines_str.startswith("# Coconut Header:"):
-            return lines
-        lines_repr = repr(lines_str)
-        return [f"get_ipython().run_cell_magic('coconut', '', {lines_repr})"]
+    lines_str = "\n".join(lines)
+    if lines_str.startswith("# Coconut Header:"):
+        return lines
+    lines_repr = repr(lines_str)
+    return [f"get_ipython().run_cell_magic('coconut', '', {lines_repr})"]
 
 
 def load_ipython_extension(ipython):
