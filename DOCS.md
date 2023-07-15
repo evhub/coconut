@@ -235,6 +235,8 @@ which will quietly compile and run `<source>`, passing any additional arguments 
 
 To pass additional compilation arguments to `coconut-run` (e.g. `--no-tco`), put them before the `<source>` file.
 
+Additionally, `coconut-run` will always use [automatic compilation](#automatic-compilation), such that Coconut source files can be directly imported from any Coconut files run via `coconut-run`.
+
 #### Naming Source Files
 
 Coconut source files should, so the compiler can recognize them, use the extension `.coco` (preferred), `.coc`, or `.coconut`.
