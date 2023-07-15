@@ -720,14 +720,16 @@ class Command(object):
         self.running = True
         logger.log("Time till prompt: " + str(get_clock_time() - first_import_time) + " secs")
 
+    @staticmethod
+    def interpreter_info():
+        return "Coconut Interpreter v{co_ver} (Python {py_ver})".format(
+            co_ver=VERSION,
+            py_ver=".".join(str(v) for v in sys.version_info[:2]),
+        )
+
     def start_prompt(self):
         """Start the interpreter."""
-        logger.show(
-            "Coconut Interpreter v{co_ver} (Python {py_ver}):".format(
-                co_ver=VERSION,
-                py_ver=".".join(str(v) for v in sys.version_info[:2]),
-            ),
-        )
+        logger.show(self.interpreter_info() + ":")
         logger.show("(enter 'exit()' or press Ctrl-D to end)")
         self.start_running()
         while self.running:
