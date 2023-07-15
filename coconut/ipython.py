@@ -26,10 +26,32 @@ import coconut.integrations
 __all__ = ["load_ipython_extension"]
 
 
+def add_before(condition, new_elem, elem_list):
+    result = []
+    for elem in elem_list:
+        if condition(elem):
+            result.append(new_elem)
+        result.append(elem)
+    return result
+
+
 def run_as_coconut(lines):
     lines_str = "".join(lines)
     if lines_str.startswith("# Coconut Header:"):
-        return lines
+        # Tracebacks in ICoconut contain a long list of irrelevant coconut
+        # import statements, e.g.:
+        #     ZeroDivisionError                         Traceback (most recent call last)
+        #     File <ipython-input-1-c4cb9aef220a>:10
+        #           6 from coconut.__coconut__ import [... long list of import statements ...]
+        #           8 # Compiled Coconut: -----------------------------------------------------------
+        #     ---> 10 (print)(1 / 0)  #1: 1/0 |> print
+        # Workaround: add "pass" before the "# Compiled Coconut:" line so that
+        # the import line goes out of context
+        return add_before(
+            condition=lambda line: line.startswith("# Compiled Coconut:"),
+            new_elem="pass\n",
+            elem_list=lines,
+        )
     lines_repr = repr(lines_str)
     return [f"get_ipython().run_cell_magic('coconut', '', {lines_repr})"]
 
