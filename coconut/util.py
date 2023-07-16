@@ -84,6 +84,7 @@ first_import_time = get_clock_time()
 
 class pickleable_obj(object):
     """Version of object that binds __reduce_ex__ to __reduce__."""
+    __slots__ = ()
 
     def __reduce_ex__(self, _):
         return self.__reduce__()

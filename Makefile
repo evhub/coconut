@@ -124,6 +124,14 @@ test-pypy3: clean
 	pypy3 ./coconut/tests/dest/extras.py
 
 # same as test-univ but also runs mypy
+.PHONY: test-mypy-univ
+test-mypy-univ: export COCONUT_USE_COLOR=TRUE
+test-mypy-univ: clean
+	python ./coconut/tests --strict --force --keep-lines --mypy --follow-imports silent --ignore-missing-imports --allow-redefinition
+	python ./coconut/tests/dest/runner.py
+	python ./coconut/tests/dest/extras.py
+
+# same as test-mypy-univ but uses --target sys
 .PHONY: test-mypy
 test-mypy: export COCONUT_USE_COLOR=TRUE
 test-mypy: clean
@@ -131,11 +139,11 @@ test-mypy: clean
 	python ./coconut/tests/dest/runner.py
 	python ./coconut/tests/dest/extras.py
 
-# same as test-mypy but uses the universal target
-.PHONY: test-mypy-univ
-test-mypy-univ: export COCONUT_USE_COLOR=TRUE
-test-mypy-univ: clean
-	python ./coconut/tests --strict --force --keep-lines --mypy --follow-imports silent --ignore-missing-imports --allow-redefinition
+# same as test-mypy but doesn't use --force
+.PHONY: test-mypy-tests
+test-mypy-tests: export COCONUT_USE_COLOR=TRUE
+test-mypy-tests: clean
+	python ./coconut/tests --strict --target sys --keep-lines --mypy --follow-imports silent --ignore-missing-imports --allow-redefinition
 	python ./coconut/tests/dest/runner.py
 	python ./coconut/tests/dest/extras.py
 

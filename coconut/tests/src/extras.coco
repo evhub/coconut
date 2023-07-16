@@ -92,6 +92,8 @@ class FakeSession(Session):
 
 
 def test_setup_none() -> bool:
+    setup(line_numbers=False)
+
     assert_raises((def -> import \(_coconut)), ImportError, err_has="should never be done at runtime")  # NOQA
     assert_raises((def -> import \_coconut), ImportError, err_has="should never be done at runtime")  # NOQA
 
@@ -104,7 +106,7 @@ def test_setup_none() -> bool:
     assert_raises((def -> raise CoconutException("derp").syntax_err()), SyntaxError)
     assert coconut_eval("x -> x + 1")(2) == 3
     assert coconut_eval("addpattern")
-    exec_vars = {}
+    exec_vars: dict = {}
     coconut_exec("def f(x) = x", exec_vars)
     assert exec_vars["f"](10) == 10
 
@@ -279,11 +281,11 @@ def test_convenience() -> bool:
     assert_raises(-> cmd("-pa ."), SystemExit)
     assert_raises(-> cmd("-n . ."), SystemExit)
 
-    setup(line_numbers=True)
+    setup()
     assert parse("abc", "lenient") == "abc  #1 (line in Coconut source)"
-    setup(keep_lines=True)
+    setup(line_numbers=False, keep_lines=True)
     assert parse("abc", "lenient") == "abc  # abc"
-    setup(line_numbers=True, keep_lines=True)
+    setup(keep_lines=True)
     assert parse("abc", "lenient") == "abc  #1: abc"
     assert "#6:" in parse('''line 1
 f"""{"""
@@ -292,12 +294,12 @@ f"""{"""
 \'\'\'}"""
 line 6''')
 
-    setup()
+    setup(line_numbers=False)
     assert "Deprecated Coconut built-in 'prepattern' disabled by --strict compilation" not in parse("\n", mode="file")
     assert "Deprecated Coconut built-in 'datamaker' disabled by --strict compilation" not in parse("\n", mode="file")
     assert "Deprecated Coconut built-in 'of' disabled by --strict compilation" not in parse("\n", mode="file")
 
-    setup(strict=True)
+    setup(line_numbers=False, strict=True)
     assert "Deprecated Coconut built-in 'prepattern' disabled by --strict compilation" in parse("\n", mode="file")
     assert "Deprecated Coconut built-in 'datamaker' disabled by --strict compilation" in parse("\n", mode="file")
     assert "Deprecated Coconut built-in 'of' disabled by --strict compilation" in parse("\n", mode="file")
@@ -330,14 +332,14 @@ else:
     assert_raises(-> parse("obj."), CoconutStyleError, err_has="getattr")
     assert_raises(-> parse("def x -> pass, 1"), CoconutStyleError, err_has="statement lambda")
 
-    setup(strict=True, target="sys")
+    setup(line_numbers=False, strict=True, target="sys")
     assert_raises(-> parse("await f x"), CoconutParseError, err_has='invalid use of the keyword "await"')
 
-    setup(target="2.7")
+    setup(line_numbers=False, target="2.7")
     assert parse("from io import BytesIO", mode="lenient") == "from io import BytesIO"
     assert_raises(-> parse("def f(*, x=None) = x"), CoconutTargetError, err_has="\n        ^")
 
-    setup(target="3")
+    setup(line_numbers=False, target="3")
     assert parse("""
 async def async_map_test() =
     for async_map in (async_map_0, async_map_1, async_map_2, async_map_3, async_map_4):
@@ -345,7 +347,7 @@ async def async_map_test() =
     True
     """.strip())
 
-    setup(target="3.3")
+    setup(line_numbers=False, target="3.3")
     gen_func_def = """def f(x):
     yield x
     return x"""
@@ -357,37 +359,37 @@ async def async_map_test() =
     )
     assert parse(gen_func_def, mode="lenient") in gen_func_def_outs
 
-    setup(target="3.2")
+    setup(line_numbers=False, target="3.2")
     assert parse(gen_func_def, mode="lenient") not in gen_func_def_outs
 
-    setup(target="3.4")
+    setup(line_numbers=False, target="3.4")
     assert_raises(-> parse("async def f(): yield 1"), CoconutTargetError)
 
-    setup(target="3.5")
+    setup(line_numbers=False, target="3.5")
     assert parse("async def f(): yield 1")
     assert_raises(-> parse("""async def agen():
     yield from range(5)"""), CoconutSyntaxError, err_has="async generator")
 
-    setup(target="3.6")
+    setup(line_numbers=False, target="3.6")
     assert parse("def f(*, x=None) = x")
     assert "@" not in parse("async def f(x): yield x")
 
-    setup(target="3.8")
+    setup(line_numbers=False, target="3.8")
     assert parse("(a := b)")
     assert parse("print(a := 1, b := 2)")
     assert parse("def f(a, /, b) = a, b")
     assert "(b)(a)" in b"a |> b".decode("coconut")
 
-    setup(target="3.11")
+    setup(line_numbers=False, target="3.11")
     assert parse("a[x, *y]")
 
-    setup(target="3.12")
+    setup(line_numbers=False, target="3.12")
     assert parse("type Num = int | float").strip().endswith("""
 # Compiled Coconut: -----------------------------------------------------------
 
 type Num = int | float""".strip())
 
-    setup(minify=True)
+    setup(line_numbers=False, minify=True)
     assert parse("123  # derp", "lenient") == "123# derp"
 
     return True

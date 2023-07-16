@@ -89,6 +89,15 @@ def parse(
 ) -> Text: ...
 
 
+def coconut_exec(
+    expression: Text,
+    globals: Optional[Dict[Text, Any]] = None,
+    locals: Optional[Dict[Text, Any]] = None,
+    state: Optional[Command] = ...,
+    keep_internal_state: Optional[bool] = None,
+) -> None: ...
+
+
 def coconut_eval(
     expression: Text,
     globals: Optional[Dict[Text, Any]] = None,

@@ -484,9 +484,9 @@ user@computer ~ $ $(ls -la) |> .splitlines() |> len
 30
 ```
 
-Note that the way that Coconut integrates with `xonsh`, `@(<code>)` syntax and the `execx` command will only work with Python code, not Coconut code.
+Compilation always uses the same parameters as in the [Coconut Jupyter kernel](#kernel).
 
-Additionally, Coconut will only compile individual commands—Coconut will not touch the `.xonshrc` or any other `.xsh` files.
+Note that the way that Coconut integrates with `xonsh`, `@(<code>)` syntax and the `execx` command will only work with Python code, not Coconut code. Additionally, Coconut will only compile individual commands—Coconut will not touch the `.xonshrc` or any other `.xsh` files.
 
 ## Operators
 

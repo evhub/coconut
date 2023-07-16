@@ -677,7 +677,7 @@ class Runner(object):
 
 class multiprocess_wrapper(pickleable_obj):
     """Wrapper for a method that needs to be multiprocessed."""
-    __slots__ = ("base", "method", "rec_limit", "logger", "argv")
+    __slots__ = ("base", "method", "stack_size", "rec_limit", "logger", "argv")
 
     def __init__(self, base, method, stack_size=None, _rec_limit=None, _logger=None, _argv=None):
         """Create new multiprocessable method."""

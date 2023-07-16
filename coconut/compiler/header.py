@@ -921,10 +921,11 @@ else:
         newline=True,
     ).format(**format_dict)
 
-    if which in ("package", "sys"):
+    if which == "sys" or which.startswith("package"):
         return header + section("Compiled Coconut")
 
     # __coconut__, code, file
+    internal_assert(which in ("__coconut__", "code", "file"), "wrong header type", which)
 
     header += prepare(
         '''

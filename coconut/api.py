@@ -140,7 +140,7 @@ def parse(code="", mode="sys", state=False, keep_internal_state=None):
     return PARSERS[mode](command.comp)(code, keep_state=keep_internal_state)
 
 
-def coconut_exec(expression, globals=None, locals=None, state=False, _exec_func=_coconut_exec, **kwargs):
+def coconut_base_exec(exec_func, mode, expression, globals=None, locals=None, state=False, **kwargs):
     """Compile and evaluate Coconut code."""
     command = get_state(state)
     if command.comp is None:
@@ -149,11 +149,12 @@ def coconut_exec(expression, globals=None, locals=None, state=False, _exec_func=
     if globals is None:
         globals = {}
     command.runner.update_vars(globals)
-    compiled_python = parse(expression, "eval", state, **kwargs)
-    return _exec_func(compiled_python, globals, locals)
+    compiled_python = parse(expression, mode, state, **kwargs)
+    return exec_func(compiled_python, globals, locals)
 
 
-coconut_eval = partial(coconut_exec, _exec_func=eval)
+coconut_exec = partial(coconut_base_exec, _coconut_exec, "sys")
+coconut_eval = partial(coconut_base_exec, eval, "eval")
 
 
 # -----------------------------------------------------------------------------------------------------------------------

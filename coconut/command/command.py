@@ -719,8 +719,11 @@ class Command(object):
             with univ_open(destpath, "r") as opened:
                 compiled = readfile(opened)
             hashash = gethash(compiled)
-            if hashash is not None and hashash == self.comp.genhash(code, package_level):
-                return True
+            if hashash is not None:
+                newhash = self.comp.genhash(code, package_level)
+                if hashash == newhash:
+                    return True
+                logger.log("old __coconut_hash__", hashash, "!= new __coconut_hash__", newhash)
         return False
 
     def get_input(self, more=False):
