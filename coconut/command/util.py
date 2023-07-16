@@ -32,6 +32,7 @@ if PY2:
 else:
     import builtins
 
+from coconut.root import _coconut_exec
 from coconut.terminal import (
     logger,
     complain,
@@ -196,13 +197,6 @@ def rem_encoding(code):
     return "\n".join(new_lines)
 
 
-def exec_func(code, glob_vars, loc_vars=None):
-    """Wrapper around exec."""
-    if loc_vars is None:
-        loc_vars = glob_vars
-    exec(code, glob_vars, loc_vars)
-
-
 def interpret(code, in_vars):
     """Try to evaluate the given code, otherwise execute it."""
     try:
@@ -213,7 +207,7 @@ def interpret(code, in_vars):
         if result is not None:
             logger.print(ascii(result))
         return result  # don't also exec code
-    exec_func(code, in_vars)
+    _coconut_exec(code, in_vars)
 
 
 @contextmanager
@@ -644,7 +638,7 @@ class Runner(object):
         elif use_eval:
             run_func = eval
         else:
-            run_func = exec_func
+            run_func = _coconut_exec
         logger.log("Running {func}()...".format(func=getattr(run_func, "__name__", run_func)))
         start_time = get_clock_time()
         result = None

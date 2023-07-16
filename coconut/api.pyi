@@ -19,7 +19,6 @@ from typing import (
     Iterable,
     Optional,
     Text,
-    Union,
 )
 
 from coconut.command.command import Command
@@ -37,7 +36,14 @@ GLOBAL_STATE: Optional[Command] = None
 def get_state(state: Optional[Command] = None) -> Command: ...
 
 
-def cmd(args: Union[Text, bytes, Iterable], interact: bool = False) -> None: ...
+def cmd(
+    args: Text | bytes | Iterable,
+    *,
+    state: Command | None = ...,
+    argv: Iterable[Text] | None = None,
+    interact: bool = False,
+    default_target: Text | None = None,
+) -> None: ...
 
 
 VERSIONS: Dict[Text, Text] = ...
@@ -55,7 +61,7 @@ def setup(
     target: Optional[str] = None,
     strict: bool = False,
     minify: bool = False,
-    line_numbers: bool = False,
+    line_numbers: bool = True,
     keep_lines: bool = False,
     no_tco: bool = False,
     no_wrap: bool = False,

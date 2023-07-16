@@ -71,6 +71,7 @@ from coconut.constants import (
     create_package_retries,
     default_use_cache_dir,
     coconut_cache_dir,
+    coconut_run_kwargs,
 )
 from coconut.util import (
     univ_open,
@@ -168,10 +169,11 @@ class Command(object):
                         dest = os.path.join(os.path.dirname(source), coconut_cache_dir)
                     else:
                         dest = os.path.join(source, coconut_cache_dir)
-            self.cmd(args, argv=argv, use_dest=dest)
+            self.cmd(args, argv=argv, use_dest=dest, **coconut_run_kwargs)
         else:
             self.cmd()
 
+    # new external parameters should be updated in api.pyi and DOCS
     def cmd(self, args=None, argv=None, interact=True, default_target=None, use_dest=None):
         """Process command-line arguments."""
         result = None

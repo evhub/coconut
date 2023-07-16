@@ -477,7 +477,7 @@ class Compiler(Grammar, pickleable_obj):
         self.setup(*args, **kwargs)
 
     # changes here should be reflected in __reduce__, get_cli_args, and in the stub for coconut.api.setup
-    def setup(self, target=None, strict=False, minify=False, line_numbers=False, keep_lines=False, no_tco=False, no_wrap=False):
+    def setup(self, target=None, strict=False, minify=False, line_numbers=True, keep_lines=False, no_tco=False, no_wrap=False):
         """Initializes parsing parameters."""
         if target is None:
             target = ""

@@ -699,6 +699,8 @@ def run_runnable(args=[]):
 
 def comp_runnable(args=[]):
     """Just compile runnable."""
+    if "--target" not in args:
+        args += ["--target", "sys"]
     call_coconut([runnable_coco, "--and", importable_coco] + args)
     call_coconut([runnable_coco, "--and", importable_coco] + args)
 

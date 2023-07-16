@@ -22,11 +22,13 @@ from coconut.root import *  # NOQA
 import sys
 import os.path
 import codecs
+from functools import partial
 try:
     from encodings import utf_8
 except ImportError:
     utf_8 = None
 
+from coconut.root import _coconut_exec
 from coconut.integrations import embed
 from coconut.exceptions import CoconutException
 from coconut.command import Command
@@ -40,6 +42,7 @@ from coconut.constants import (
     coconut_kernel_kwargs,
     default_use_cache_dir,
     coconut_cache_dir,
+    coconut_run_kwargs,
 )
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -62,11 +65,12 @@ def get_state(state=None):
         return state
 
 
-def cmd(cmd_args, interact=False, state=False, **kwargs):
+def cmd(cmd_args, **kwargs):
     """Process command-line arguments."""
+    state = kwargs.pop("state", False)
     if isinstance(cmd_args, (str, bytes)):
         cmd_args = cmd_args.split()
-    return get_state(state).cmd(cmd_args, interact=interact, **kwargs)
+    return get_state(state).cmd(cmd_args, **kwargs)
 
 
 VERSIONS = {
@@ -136,7 +140,7 @@ def parse(code="", mode="sys", state=False, keep_internal_state=None):
     return PARSERS[mode](command.comp)(code, keep_state=keep_internal_state)
 
 
-def coconut_eval(expression, globals=None, locals=None, state=False, **kwargs):
+def coconut_exec(expression, globals=None, locals=None, state=False, _exec_func=_coconut_exec, **kwargs):
     """Compile and evaluate Coconut code."""
     command = get_state(state)
     if command.comp is None:
@@ -146,7 +150,10 @@ def coconut_eval(expression, globals=None, locals=None, state=False, **kwargs):
         globals = {}
     command.runner.update_vars(globals)
     compiled_python = parse(expression, "eval", state, **kwargs)
-    return eval(compiled_python, globals, locals)
+    return _exec_func(compiled_python, globals, locals)
+
+
+coconut_eval = partial(coconut_exec, _exec_func=eval)
 
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -206,7 +213,7 @@ class CoconutImporter(object):
         """Run the Coconut compiler with the given args."""
         if self.command is None:
             self.command = Command()
-        return self.command.cmd(list(args) + self.args, interact=False)
+        return self.command.cmd(list(args) + self.args, interact=False, **coconut_run_kwargs)
 
     def compile(self, path, package):
         """Compile a path to a file or package."""

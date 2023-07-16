@@ -116,6 +116,7 @@ class TestConstants(unittest.TestCase):
     def test_run_args(self):
         assert "--run" not in constants.coconut_base_run_args
         assert "--quiet" not in constants.coconut_base_run_args
+        assert not any(arg.startswith("--target") for arg in constants.coconut_base_run_args)
 
 
 # -----------------------------------------------------------------------------------------------------------------------

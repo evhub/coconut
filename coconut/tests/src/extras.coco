@@ -23,6 +23,7 @@ from coconut.convenience import (
     setup,
     parse,
     coconut_eval,
+    coconut_exec,
 )
 
 if IPY:
@@ -103,6 +104,9 @@ def test_setup_none() -> bool:
     assert_raises((def -> raise CoconutException("derp").syntax_err()), SyntaxError)
     assert coconut_eval("x -> x + 1")(2) == 3
     assert coconut_eval("addpattern")
+    exec_vars = {}
+    coconut_exec("def f(x) = x", exec_vars)
+    assert exec_vars["f"](10) == 10
 
     assert parse("abc") == parse("abc", "sys")
     assert parse("abc", "file")

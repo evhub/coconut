@@ -315,9 +315,9 @@ If the version of Python that the compiled code will be running on is known ahea
 - `3.10`: will work on any Python `>= 3.10`
 - `3.11`: will work on any Python `>= 3.11`
 - `3.12`: will work on any Python `>= 3.12`
-- `3.13`: will work on any Python `>= 3.12`
+- `3.13`: will work on any Python `>= 3.13`
 - `sys`: chooses the target corresponding to the current Python version
-- `psf`: chooses the target corresponding to the oldest Python version not considered [end-of-life](https://devguide.python.org/versions/) by the PSF (Python Software Foundation)
+- `psf`: will work on any Python not considered [end-of-life](https://devguide.python.org/versions/) by the PSF (Python Software Foundation)
 
 _Note: Periods are optional in target specifications, such that the target `27` is equivalent to the target `2.7`._
 
@@ -1851,7 +1851,7 @@ Since Coconut syntax is a superset of Python 3 syntax, it supports [Python 3 fun
 
 Since not all supported Python versions support the [`typing`](https://docs.python.org/3/library/typing.html) module, Coconut provides the [`TYPE_CHECKING`](#type_checking) built-in for hiding your `typing` imports and `TypeVar` definitions from being executed at runtime. Coconut will also automatically use [`typing_extensions`](https://pypi.org/project/typing-extensions/) over `typing` objects at runtime when importing them from `typing`, even when they aren't natively supported on the current Python version (this works even if you just do `import typing` and then `typing.<Object>`).
 
-Furthermore, when compiling type annotations to Python 3 versions without [PEP 563](https://www.python.org/dev/peps/pep-0563/) support, Coconut wraps annotation in strings to prevent them from being evaluated at runtime (to avoid this, e.g. if you want to use annotations at runtime, `--no-wrap-types` will disable all wrapping, including via PEP 563 support). Only on Python 3.13+ does `--no-wrap-types` do nothing, since there [PEP 649](https://peps.python.org/pep-0649/) support is used instead.
+Furthermore, when compiling type annotations to Python 3 versions without [PEP 563](https://www.python.org/dev/peps/pep-0563/) support, Coconut wraps annotation in strings to prevent them from being evaluated at runtime (to avoid this, e.g. if you want to use annotations at runtime, `--no-wrap-types` will disable all wrapping, including via PEP 563 support). Only on `--target 3.13` does `--no-wrap-types` do nothing, since there [PEP 649](https://peps.python.org/pep-0649/) support is used instead.
 
 Additionally, Coconut adds special syntax for making type annotations easier and simpler to write. When inside of a type annotation, Coconut treats certain syntax constructs differently, compiling them to type annotations instead of what they would normally represent. Specifically, Coconut applies the following transformations:
 ```coconut
@@ -4409,7 +4409,7 @@ While automatic compilation is the preferred method for dynamically compiling Co
 ```coconut
 # coding: coconut
 ```
-declaration which can be added to `.py` files to have them treated as Coconut files instead. To use such a coding declaration, you'll need to either run `coconut --site-install` or `import coconut.api` at some point before you first attempt to import a file with a `# coding: coconut` declaration. Like automatic compilation, compilation is always done with `--target sys` and is always available from the Coconut interpreter.
+declaration which can be added to `.py` files to have them treated as Coconut files instead. To use such a coding declaration, you'll need to either run `coconut --site-install` or `import coconut.api` at some point before you first attempt to import a file with a `# coding: coconut` declaration. Like automatic compilation, the Coconut encoding is always available from the Coconut interpreter. Compilation always uses the same parameters as in the [Coconut Jupyter kernel](#kernel).
 
 ### `coconut.api`
 
@@ -4421,7 +4421,7 @@ _DEPRECATED: `coconut.convenience` is a deprecated alias for `coconut.api`._
 
 **coconut.api.get\_state**(_state_=`None`)
 
-Gets a state object which stores the current compilation parameters. State objects can be configured with [**setup**](#setup) or [**cmd**](#cmd) and then used in [**parse**](#parse) or [**coconut\_eval**](#coconut_eval).
+Gets a state object which stores the current compilation parameters. State objects can be configured with [**setup**](#setup) or [**cmd**](#cmd) and then used in [**parse**](#parse) or other endpoints.
 
 If _state_ is `None`, gets a new state object, whereas if _state_ is `False`, the global state object is returned.
 
@@ -4484,19 +4484,11 @@ while True:
 
 #### `setup`
 
-**coconut.api.setup**(_target_=`None`, _strict_=`False`, _minify_=`False`, _line\_numbers_=`False`, _keep\_lines_=`False`, _no\_tco_=`False`, _no\_wrap_=`False`, *, _state_=`False`)
+**coconut.api.setup**(_target_=`None`, _strict_=`False`, _minify_=`False`, _line\_numbers_=`True`, _keep\_lines_=`False`, _no\_tco_=`False`, _no\_wrap_=`False`, *, _state_=`False`)
 
-`setup` can be used to set up the given state object with the given command-line flags. If _state_ is `False`, the global state object is used.
+`setup` can be used to set up the given state object with the given compilation parameters, each corresponding to the command-line flag of the same name. _target_ should be either `None` for the default target or a string of any [allowable target](#allowable-targets).
 
-The possible values for each flag argument are:
-
-- _target_: `None` (default), or any [allowable target](#allowable-targets)
-- _strict_: `False` (default) or `True`
-- _minify_: `False` (default) or `True`
-- _line\_numbers_: `False` (default) or `True`
-- _keep\_lines_: `False` (default) or `True`
-- _no\_tco_: `False` (default) or `True`
-- _no\_wrap_: `False` (default) or `True`
+If _state_ is `False`, the global state object is used.
 
 #### `warm_up`
 
@@ -4511,6 +4503,12 @@ Can optionally be called to warm up the compiler and get it ready for parsing. P
 Executes the given _args_ as if they were fed to `coconut` on the command-line, with the exception that unless _interact_ is true or `-i` is passed, the interpreter will not be started. Additionally, _argv_ can be used to pass in arguments as in `--argv` and _default\_target_ can be used to set the default `--target`.
 
 Has the same effect of setting the command-line flags on the given _state_ object as `setup` (with the global `state` object used when _state_ is `False`).
+
+#### `coconut_exec`
+
+**coconut.api.coconut_exec**(_expression_, _globals_=`None`, _locals_=`None`, _state_=`False`, _keep\_internal\_state_=`None`)
+
+Version of [`exec`](https://docs.python.org/3/library/functions.html#exec) which can execute Coconut code.
 
 #### `coconut_eval`
 

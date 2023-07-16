@@ -185,15 +185,15 @@ supported_py3_vers = (
     (3, 13),
 )
 
+# must be in ascending order and kept up-to-date with https://devguide.python.org/versions
 py_vers_with_eols = (
-    # must be in ascending order and kept up-to-date with https://devguide.python.org/versions
     # (target, eol date)
     ("38", dt.datetime(2024, 11, 1)),
     ("39", dt.datetime(2025, 11, 1)),
     ("310", dt.datetime(2026, 11, 1)),
     ("311", dt.datetime(2027, 11, 1)),
     ("312", dt.datetime(2028, 11, 1)),
-    ("313", dt.datetime(2028, 11, 1)),
+    ("313", dt.datetime(2029, 11, 1)),
 )
 
 # must match supported vers above and must be replicated in DOCS
@@ -640,8 +640,9 @@ reserved_command_symbols = exit_chars + (
 )
 
 # always use atomic --xxx=yyy rather than --xxx yyy
-#  and don't include --run or --quiet as they're added separately
-coconut_base_run_args = ("--target=sys", "--keep-lines")
+#  and don't include --run, --quiet, or --target as they're added separately
+coconut_base_run_args = ("--keep-lines",)
+coconut_run_kwargs = dict(default_target="sys")  # passed to Command.cmd
 
 default_mypy_args = (
     "--pretty",
@@ -1185,7 +1186,7 @@ requests_sleep_times = (0, 0.1, 0.2, 0.3, 0.4, 1)
 # -----------------------------------------------------------------------------------------------------------------------
 
 # must be replicated in DOCS; must include --line-numbers for xonsh line number extraction
-coconut_kernel_kwargs = dict(target="sys", line_numbers=True, keep_lines=True, no_wrap=True)
+coconut_kernel_kwargs = dict(target="sys", line_numbers=True, keep_lines=True, no_wrap=True)  # passed to Compiler.setup
 
 icoconut_dir = os.path.join(base_dir, "icoconut")
 
