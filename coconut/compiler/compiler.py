@@ -476,7 +476,7 @@ class Compiler(Grammar, pickleable_obj):
         """Creates a new compiler with the given parsing parameters."""
         self.setup(*args, **kwargs)
 
-    # changes here should be reflected in __reduce__ and in the stub for coconut.api.setup
+    # changes here should be reflected in __reduce__, get_cli_args, and in the stub for coconut.api.setup
     def setup(self, target=None, strict=False, minify=False, line_numbers=False, keep_lines=False, no_tco=False, no_wrap=False):
         """Initializes parsing parameters."""
         if target is None:
@@ -510,6 +510,23 @@ class Compiler(Grammar, pickleable_obj):
     def __reduce__(self):
         """Return pickling information."""
         return (self.__class__, (self.target, self.strict, self.minify, self.line_numbers, self.keep_lines, self.no_tco, self.no_wrap))
+
+    def get_cli_args(self):
+        """Get the Coconut CLI args that can be used to set up an equivalent compiler."""
+        args = ["--target=" + self.target]
+        if self.strict:
+            args.append("--strict")
+        if self.minify:
+            args.append("--minify")
+        if not self.line_numbers:
+            args.append("--no-line-numbers")
+        if self.keep_lines:
+            args.append("--keep-lines")
+        if self.no_tco:
+            args.append("--no-tco")
+        if self.no_wrap:
+            args.append("--no-wrap-types")
+        return args
 
     def __copy__(self):
         """Create a new, blank copy of the compiler."""

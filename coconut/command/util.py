@@ -564,10 +564,10 @@ class Prompt(object):
 class Runner(object):
     """Compiled Python executor."""
 
-    def __init__(self, comp=None, exit=sys.exit, store=False, path=None, auto_comp_args=None):
+    def __init__(self, comp=None, exit=sys.exit, store=False, path=None):
         """Create the executor."""
         from coconut.api import auto_compilation, use_coconut_breakpoint
-        auto_compilation(on=interpreter_uses_auto_compilation, args=auto_comp_args)
+        auto_compilation(on=interpreter_uses_auto_compilation, args=comp.get_cli_args() if comp else None)
         use_coconut_breakpoint(on=interpreter_uses_coconut_breakpoint)
         self.exit = exit
         self.vars = self.build_vars(path, init=True)

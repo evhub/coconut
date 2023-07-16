@@ -235,7 +235,7 @@ which will quietly compile and run `<source>`, passing any additional arguments 
 
 To pass additional compilation arguments to `coconut-run` (e.g. `--no-tco`), put them before the `<source>` file.
 
-Additionally, `coconut-run` will always use [automatic compilation](#automatic-compilation), such that Coconut source files can be directly imported from any Coconut files run via `coconut-run`.
+`coconut-run` will always use [automatic compilation](#automatic-compilation), such that Coconut source files can be directly imported from any Coconut files run via `coconut-run`. Additionally, compilation parameters (e.g. `--no-tco`) used in `coconut-run` will be passed along and used for any auto compilation.
 
 #### Naming Source Files
 
@@ -4390,9 +4390,15 @@ Recommended usage is as a debugging tool, where the code `from coconut import em
 
 ### Automatic Compilation
 
-If you don't care about the exact compilation parameters you want to use, automatic compilation lets Coconut take care of everything for you. Automatic compilation can be enabled either by importing [`coconut.api`](#coconut-api) before you import anything else, or by running `coconut --site-install`. Once automatic compilation is enabled, Coconut will check each of your imports to see if you are attempting to import a `.coco` file and, if so, automatically compile it for you. Note that, for Coconut to know what file you are trying to import, it will need to be accessible via `sys.path`, just like a normal import.
+Automatic compilation lets you simply import Coconut files directly without having to go through a compilation step first. Automatic compilation can be enabled either by importing [`coconut.api`](#coconut-api) before you import anything else, or by running `coconut --site-install`.
 
-Automatic compilation always compiles modules and packages in-place, and always uses `--target sys --line-numbers --keep-lines --no-wrap-types`. Automatic compilation is always available in the Coconut interpreter, and, if using the Coconut interpreter, a `reload` built-in is provided to easily reload imported modules. Additionally, the interpreter always allows importing from the current working directory, letting you easily compile and play around with a `.coco` file simply by running the Coconut interpreter and importing it.
+Once automatic compilation is enabled, Coconut will check each of your imports to see if you are attempting to import a `.coco` file and, if so, automatically compile it for you. Note that, for Coconut to know what file you are trying to import, it will need to be accessible via `sys.path`, just like a normal import.
+
+Automatic compilation always compiles modules and packages in-place, and compiles with `--target sys --line-numbers --keep-lines` by default.
+
+Automatic compilation is always available in the Coconut interpreter or when using [`coconut-run`](#coconut-scripts). When using auto compilation through the Coconut interpreter, any compilation options passed in will also be used for auto compilation. Additionally, the interpreter always allows importing from the current working directory, letting you easily compile and play around with a `.coco` file simply by running the Coconut interpreter and importing it.
+
+If using the Coconut interpreter, a `reload` built-in is always provided to easily reload (and thus recompile) imported modules.
 
 ### Coconut Encoding
 
@@ -4527,7 +4533,7 @@ Retrieves a string containing information about the Coconut version. The optiona
 
 Turns [automatic compilation](#automatic-compilation) on or off. This function is called automatically when `coconut.api` is imported.
 
-If _args_ is passed, it will set the Coconut command-line arguments to use for automatic compilation.
+If _args_ is passed, it will set the Coconut command-line arguments to use for automatic compilation. Arguments will be processed the same way as with [`coconut-run`](#coconut-scripts) such that `--quiet --target sys --keep-lines` will all be set by default.
 
 #### `use_coconut_breakpoint`
 
