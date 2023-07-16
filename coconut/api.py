@@ -193,7 +193,7 @@ class CoconutImporter(object):
         """Run the Coconut compiler on the given path."""
         if self.command is None:
             self.command = Command()
-        self.command.cmd([path] + self.args)
+        return self.command.cmd([path] + self.args, interact=False)
 
     def find_coconut(self, fullname, path=None):
         """Searches for a Coconut file of the given name and compiles it."""
@@ -201,7 +201,7 @@ class CoconutImporter(object):
         if fullname.startswith("."):
             if path is None:
                 # we can't do a relative import if there's no package path
-                return
+                return None
             fullname = fullname[1:]
             basepaths.insert(0, path)
         path_tail = os.path.join(*fullname.split("."))
@@ -210,13 +210,14 @@ class CoconutImporter(object):
             filepath = path + self.ext
             dirpath = os.path.join(path, "__init__" + self.ext)
             if os.path.exists(filepath):
-                self.run_compiler(filepath)
-                # Coconut file was found and compiled, now let Python import it
-                return
+                # Coconut file was found and compiled
+                destpath, = self.run_compiler(filepath)
+                return destpath
             if os.path.exists(dirpath):
+                # Coconut package was found and compiled
                 self.run_compiler(path)
-                # Coconut package was found and compiled, now let Python import it
-                return
+                return path
+        return None
 
     def find_module(self, fullname, path=None):
         """Get a loader for a Coconut module if it exists."""

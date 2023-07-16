@@ -173,8 +173,9 @@ class Command(object):
                 parsed_args.target = default_target
             self.exit_code = 0
             self.stack_size = parsed_args.stack_size
-            self.run_with_stack_size(self.execute_args, parsed_args, interact, original_args=args)
+            result = self.run_with_stack_size(self.execute_args, parsed_args, interact, original_args=args)
         self.exit_on_error()
+        return result
 
     def run_with_stack_size(self, func, *args, **kwargs):
         """Execute func with the correct stack size."""
@@ -296,6 +297,8 @@ class Command(object):
                 self.set_mypy_args(args.mypy)
             logger.log("Grammar init time: " + str(self.comp.grammar_init_time) + " secs / Total init time: " + str(get_clock_time() - first_import_time) + " secs")
 
+            # do compilation, keeping track of compiled filepaths
+            filepaths = []
             if args.source is not None:
                 # warnings if source is given
                 if args.interact and args.run:
@@ -327,7 +330,6 @@ class Command(object):
 
                 # do compilation
                 with self.running_jobs(exit_on_error=not args.watch):
-                    filepaths = []
                     for source, dest, package in src_dest_package_triples:
                         filepaths += self.compile_path(source, dest, package, run=args.run or args.interact, force=args.force)
                 self.run_mypy(filepaths)
@@ -376,6 +378,8 @@ class Command(object):
                 self.watch(src_dest_package_triples, args.run, args.force)
             if args.profile:
                 print_timing_info()
+
+        return filepaths
 
     def process_source_dest(self, source, dest, args):
         """Determine the correct source, dest, package mode to use for the given source, dest, and args."""
