@@ -99,6 +99,10 @@ additional_dest = os.path.join(base, "dest", "additional_dest")
 
 runnable_coco = os.path.join(src, "runnable.coco")
 runnable_py = os.path.join(src, "runnable.py")
+
+importable_coco = os.path.join(src, "importable.coco")
+importable_py = os.path.join(src, "importable.py")
+
 pyston = os.path.join(os.curdir, "pyston")
 pyprover = os.path.join(os.curdir, "pyprover")
 prelude = os.path.join(os.curdir, "coconut-prelude")
@@ -388,17 +392,19 @@ def rm_path(path, allow_keep=False):
 
 
 @contextmanager
-def using_path(path):
-    """Removes a path at the beginning and end."""
-    if os.path.exists(path):
-        rm_path(path)
+def using_paths(*paths):
+    """Removes paths at the beginning and end."""
+    for path in paths:
+        if os.path.exists(path):
+            rm_path(path)
     try:
         yield
     finally:
-        try:
-            rm_path(path, allow_keep=True)
-        except OSError:
-            logger.print_exc()
+        for path in paths:
+            try:
+                rm_path(path, allow_keep=True)
+            except OSError:
+                logger.print_exc()
 
 
 @contextmanager
@@ -678,7 +684,17 @@ def install_bbopt():
 
 def run_runnable(args=[]):
     """Call coconut-run on runnable_coco."""
-    call(["coconut-run"] + args + [runnable_coco, "--arg"], assert_output=True)
+    paths_being_used = [importable_py]
+    if "--no-write" not in args and "-n" not in args:
+        paths_being_used.append(runnable_py)
+    with using_paths(*paths_being_used):
+        call(["coconut-run"] + args + [runnable_coco, "--arg"], assert_output=True)
+
+
+def comp_runnable(args=[]):
+    """Just compile runnable."""
+    call_coconut([runnable_coco, "--and", importable_coco] + args)
+    call_coconut([runnable_coco, "--and", importable_coco] + args)
 
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -728,7 +744,7 @@ class TestShell(unittest.TestCase):
 
     def test_import_hook(self):
         with using_sys_path(src):
-            with using_path(runnable_py):
+            with using_paths(runnable_py, importable_py):
                 with using_coconut():
                     auto_compilation(True)
                     import runnable
@@ -736,20 +752,19 @@ class TestShell(unittest.TestCase):
         assert runnable.success == "<success>"
 
     def test_runnable(self):
-        with using_path(runnable_py):
-            run_runnable()
+        run_runnable()
 
     def test_runnable_nowrite(self):
         run_runnable(["-n"])
 
     def test_compile_runnable(self):
-        with using_path(runnable_py):
-            call_coconut([runnable_coco, runnable_py])
+        with using_paths(runnable_py, importable_py):
+            comp_runnable()
             call_python([runnable_py, "--arg"], assert_output=True)
 
     def test_import_runnable(self):
-        with using_path(runnable_py):
-            call_coconut([runnable_coco, runnable_py])
+        with using_paths(runnable_py, importable_py):
+            comp_runnable()
             for _ in range(2):  # make sure we can import it twice
                 call_python([runnable_py, "--arg"], assert_output=True, convert_to_import=True)
 
@@ -900,25 +915,25 @@ if not WINDOWS:
 
         if not PYPY or PY2:
             def test_prelude(self):
-                with using_path(prelude):
+                with using_paths(prelude):
                     comp_prelude()
                     if MYPY and PY38:
                         run_prelude()
 
         def test_bbopt(self):
-            with using_path(bbopt):
+            with using_paths(bbopt):
                 comp_bbopt()
                 if not PYPY and PY38 and not PY310:
                     install_bbopt()
 
         def test_pyprover(self):
-            with using_path(pyprover):
+            with using_paths(pyprover):
                 comp_pyprover()
                 if PY38:
                     run_pyprover()
 
         def test_pyston(self):
-            with using_path(pyston):
+            with using_paths(pyston):
                 comp_pyston(["--no-tco"])
                 if PYPY and PY2:
                     run_pyston()

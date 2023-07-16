@@ -1,0 +1,3 @@
+def imported_main() -> bool:
+    assert 1 |> (.*2) == 2
+    return True
