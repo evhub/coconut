@@ -349,11 +349,11 @@ return acc
 
 Now let's take a look at what we do to `reduce` to make it multiply all the numbers we feed into it together. The Coconut code that we saw for that was `reduce$(*)`. There are two different Coconut constructs being used here: the operator function for multiplication in the form of `(*)`, and partial application in the form of `$`.
 
-First, the operator function. In Coconut, a function form of any operator can be retrieved by surrounding that operator in parentheses. In this case, `(*)` is roughly equivalent to `lambda x, y: x*y`, but much cleaner and neater. In Coconut's lambda syntax, `(*)` is also equivalent to `(x, y) -> x*y`, which we will use from now on for all lambdas, even though both are legal Coconut, because Python's `lambda` statement is too ugly and bulky to use regularly.
+First, the operator function. In Coconut, a function form of any operator can be retrieved by surrounding that operator in parentheses. In this case, `(*)` is roughly equivalent to `lambda x, y: x*y`, but much cleaner and neater. In Coconut's lambda syntax, `(*)` is also equivalent to `(x, y) => x*y`, which we will use from now on for all lambdas, even though both are legal Coconut, because Python's `lambda` statement is too ugly and bulky to use regularly.
 
 _Note: If Coconut's `--strict` mode is enabled, which will force your code to obey certain cleanliness standards, it will raise an error whenever Python `lambda` statements are used._
 
-Second, the partial application. Think of partial application as _lazy function calling_, and `$` as the _lazy-ify_ operator, where lazy just means "don't evaluate this until you need to." In Coconut, if a function call is prefixed by a `$`, like in this example, instead of actually performing the function call, a new function is returned with the given arguments already provided to it, so that when it is then called, it will be called with both the partially-applied arguments and the new arguments, in that order. In this case, `reduce$(*)` is roughly equivalent to `(*args, **kwargs) -> reduce((*), *args, **kwargs)`.
+Second, the partial application. Think of partial application as _lazy function calling_, and `$` as the _lazy-ify_ operator, where lazy just means "don't evaluate this until you need to." In Coconut, if a function call is prefixed by a `$`, like in this example, instead of actually performing the function call, a new function is returned with the given arguments already provided to it, so that when it is then called, it will be called with both the partially-applied arguments and the new arguments, in that order. In this case, `reduce$(*)` is roughly equivalent to `(*args, **kwargs) => reduce((*), *args, **kwargs)`.
 
 _You can partially apply arguments in any order using `?` in place of missing arguments, as in `to_binary = int$(?, 2)`._
 
@@ -531,7 +531,7 @@ data vector2(x, y):
 # Test cases:
 vector2(1, 2) |> print  # vector2(x=1, y=2)
 vector2(3, 4) |> abs |> print  # 5
-vector2(1, 2) |> fmap$(x -> x*2) |> print  # vector2(x=2, y=4)
+vector2(1, 2) |> fmap$(x => x*2) |> print  # vector2(x=2, y=4)
 v = vector2(2, 3)
 v.x = 7  # AttributeError
 ```
@@ -579,7 +579,7 @@ Now that we have a constructor for our n-vector, it's time to write its methods.
         """Return the magnitude of the vector."""
         self.pts |> map$(.**2) |> sum |> (.**0.5)
 ```
-The basic algorithm here is map square over each element, sum them all, then square root the result. The one new construct here is the `(.**2)` and `(.**0.5)` syntax, which are effectively equivalent to `(x -> x**2)` and `(x -> x**0.5)`, respectively (though the `(.**2)` syntax produces a pickleable object). This syntax works for all [operator functions](./DOCS.md#operator-functions), so you can do things like `(1-.)` or `(cond() or .)`.
+The basic algorithm here is map square over each element, sum them all, then square root the result. The one new construct here is the `(.**2)` and `(.**0.5)` syntax, which are effectively equivalent to `(x => x**2)` and `(x => x**0.5)`, respectively (though the `(.**2)` syntax produces a pickleable object). This syntax works for all [operator functions](./DOCS.md#operator-functions), so you can do things like `(1-.)` or `(cond() or .)`.
 
 Next up is vector addition. The goal here is to add two vectors of equal length by adding their components. To do this, we're going to make use of Coconut's ability to perform pattern-matching, or in this case destructuring assignment, to data types, like so:
 ```coconut
@@ -733,7 +733,7 @@ _Hint: the `n`th diagonal should contain `n+1` elements, so try starting with `r
 
 That wasn't so bad, now was it? Now, let's take a look at my solution:
 ```coconut
-def diagonal_line(n) = range(n+1) |> map$(i -> (i, n-i))
+def diagonal_line(n) = range(n+1) |> map$(i => (i, n-i))
 ```
 Pretty simple, huh? We take `range(n+1)`, and use `map` to transform it into the right sequence of tuples.
 
@@ -856,7 +856,7 @@ data vector(*pts):
         """Necessary to make scalar multiplication commutative."""
         self * other
 
-def diagonal_line(n) = range(n+1) |> map$(i -> (i, n-i))
+def diagonal_line(n) = range(n+1) |> map$(i => (i, n-i))
 def linearized_plane(n=0) = diagonal_line(n) :: linearized_plane(n+1)
 def vector_field() = linearized_plane() |> starmap$(vector)
 
@@ -919,7 +919,7 @@ _Hint: Look back at how we implemented scalar multiplication._
 
 Here's my solution for you to check against:
 ```coconut
-    def __truediv__(self, other) = self.pts |> map$(x -> x/other) |*> vector
+    def __truediv__(self, other) = self.pts |> map$(x => x/other) |*> vector
 ```
 
 ### `.unit`
@@ -1036,7 +1036,7 @@ data vector(*pts):
         """Necessary to make scalar multiplication commutative."""
         self * other
     # New one-line functions necessary for finding the angle between vectors:
-    def __truediv__(self, other) = self.pts |> map$(x -> x/other) |*> vector
+    def __truediv__(self, other) = self.pts |> map$(x => x/other) |*> vector
     def unit(self) = self / abs(self)
     def angle(self, other `isinstance` vector) = math.acos(self.unit() * other.unit())
 
@@ -1082,7 +1082,7 @@ abcd$[2]
 
 ### Function Composition
 
-Next is function composition. In Coconut, this is primarily accomplished through the `f1 ..> f2` operator, which takes two functions and composes them, creating a new function equivalent to `(*args, **kwargs) -> f2(f1(*args, **kwargs))`. This can be useful in combination with partial application for piecing together multiple higher-order functions, like so:
+Next is function composition. In Coconut, this is primarily accomplished through the `f1 ..> f2` operator, which takes two functions and composes them, creating a new function equivalent to `(*args, **kwargs) => f2(f1(*args, **kwargs))`. This can be useful in combination with partial application for piecing together multiple higher-order functions, like so:
 ```coconut
 zipsum = zip ..> map$(sum)
 ```
@@ -1111,9 +1111,9 @@ Another useful trick with function composition involves composing a function wit
 def inc_or_dec(t):
     # Our higher-order function, which returns another function
     if t:
-        return x -> x+1
+        return x => x+1
     else:
-        return x -> x-1
+        return x => x-1
 
 def square(n) = n * n
 

@@ -533,7 +533,7 @@ and                    left (short-circuits)
 or                     left (short-circuits)
 x if c else y,         ternary left (short-circuits)
   if c then x else y
-->                     right
+=>                     right
 ====================== ==========================
 ```
 
@@ -541,13 +541,13 @@ For example, since addition has a higher precedence than piping, expressions of 
 
 ### Lambdas
 
-Coconut provides the simple, clean `->` operator as an alternative to Python's `lambda` statements. The syntax for the `->` operator is `(parameters) -> expression` (or `parameter -> expression` for one-argument lambdas). The operator has the same precedence as the old statement, which means it will often be necessary to surround the lambda in parentheses, and is right-associative.
+Coconut provides the simple, clean `=>` operator as an alternative to Python's `lambda` statements. The syntax for the `=>` operator is `(parameters) => expression` (or `parameter => expression` for one-argument lambdas). The operator has the same precedence as the old statement, which means it will often be necessary to surround the lambda in parentheses, and is right-associative.
 
-Additionally, Coconut also supports an implicit usage of the `->` operator of the form `(-> expression)`, which is equivalent to `((_=None) -> expression)`, which allows an implicit lambda to be used both when no arguments are required, and when one argument (assigned to `_`) is required.
+Additionally, Coconut also supports an implicit usage of the `=>` operator of the form `(=> expression)`, which is equivalent to `((_=None) => expression)`, which allows an implicit lambda to be used both when no arguments are required, and when one argument (assigned to `_`) is required.
 
 _Note: If normal lambda syntax is insufficient, Coconut also supports an extended lambda syntax in the form of [statement lambdas](#statement-lambdas). Statement lambdas support full statements rather than just expressions and allow for the use of [pattern-matching function definition](#pattern-matching-functions)._
 
-_Note: `->`-based lambdas are disabled inside type annotations to avoid conflicting with Coconut's [enhanced type annotation syntax](#enhanced-type-annotation)._
+_Deprecated: `->` can be used as an alternative to `=>`, though `->`-based lambdas are disabled inside type annotations to avoid conflicting with Coconut's [enhanced type annotation syntax](#enhanced-type-annotation)._
 
 ##### Rationale
 
@@ -555,7 +555,7 @@ In Python, lambdas are ugly and bulky, requiring the entire word `lambda` to be 
 
 ##### Python Docs
 
-Lambda forms (lambda expressions) have the same syntactic position as expressions. They are a shorthand to create anonymous functions; the expression `(arguments) -> expression` yields a function object. The unnamed object behaves like a function object defined with:
+Lambda forms (lambda expressions) have the same syntactic position as expressions. They are a shorthand to create anonymous functions; the expression `(arguments) => expression` yields a function object. The unnamed object behaves like a function object defined with:
 ```coconut
 def <lambda>(arguments):
     return expression
@@ -566,7 +566,7 @@ Note that functions created with lambda forms cannot contain statements or annot
 
 **Coconut:**
 ```coconut
-dubsums = map((x, y) -> 2*(x+y), range(0, 10), range(10, 20))
+dubsums = map((x, y) => 2*(x+y), range(0, 10), range(10, 20))
 dubsums |> list |> print
 ```
 
@@ -578,20 +578,20 @@ print(list(dubsums))
 
 #### Implicit Lambdas
 
-Coconut also supports implicit lambdas, which allow a lambda to take either no arguments or a single argument. Implicit lambdas are formed with the usual Coconut lambda operator `->`, in the form `(-> expression)`. This is equivalent to `((_=None) -> expression)`. When an argument is passed to an implicit lambda, it will be assigned to `_`, replacing the default value `None`.
+Coconut also supports implicit lambdas, which allow a lambda to take either no arguments or a single argument. Implicit lambdas are formed with the usual Coconut lambda operator `=>`, in the form `(=> expression)`. This is equivalent to `((_=None) => expression)`. When an argument is passed to an implicit lambda, it will be assigned to `_`, replacing the default value `None`.
 
 Below are two examples of implicit lambdas. The first uses the implicit argument `_`, while the second does not.
 
 **Single Argument Example:**
 ```coconut
-square = (-> _**2)
+square = (=> _**2)
 ```
 
 **No-Argument Example:**
 ```coconut
 import random
 
-get_random_number = (-> random.random())
+get_random_number = (=> random.random())
 ```
 
 _Note: Nesting implicit lambdas can lead to problems with the scope of the `_` parameter to each lambda. It is recommended that nesting implicit lambdas be avoided._
@@ -666,7 +666,7 @@ The None-aware pipe operators here are equivalent to a [monadic bind](https://en
 
 For working with `async` functions in pipes, all non-starred pipes support piping into `await` to await the awaitable piped into them, such that `x |> await` is equivalent to `await x`.
 
-Additionally, all pipe operators support a lambda as the last argument, despite lambdas having a lower precedence. Thus, `a |> x -> b |> c` is equivalent to `a |> (x -> b |> c)`, not `a |> (x -> b) |> c`.
+Additionally, all pipe operators support a lambda as the last argument, despite lambdas having a lower precedence. Thus, `a |> x => b |> c` is equivalent to `a |> (x => b |> c)`, not `a |> (x => b) |> c`.
 
 _Note: To visually spread operations across several lines, just use [parenthetical continuation](#enhanced-parenthetical-continuation)._
 
@@ -772,7 +772,7 @@ Coconut's iterator slicing is very similar to Python's `itertools.islice`, but u
 
 **Coconut:**
 ```coconut
-map(x -> x*2, range(10**100))$[-1] |> print
+map(x => x*2, range(10**100))$[-1] |> print
 ```
 
 **Python:**
@@ -822,7 +822,7 @@ x `f` y  =>  f(x, y)
 x `f`    =>  f(x)
 `f`      =>  f()
 ```
-Additionally, infix notation supports a lambda as the last argument, despite lambdas having a lower precedence. Thus, ``a `func` b -> c`` is equivalent to `func(a, b -> c)`.
+Additionally, infix notation supports a lambda as the last argument, despite lambdas having a lower precedence. Thus, ``a `func` b => c`` is equivalent to `func(a, b => c)`.
 
 Coconut also supports infix function definition to make defining functions that are intended for infix usage simpler. The syntax for infix function definition is
 ```coconut
@@ -1056,6 +1056,7 @@ _Note: these are only the default, built-in unicode operators. Coconut supports 
 ##### Full List
 
 ```
+⇒ (\u21d2)                  => "=>"
 → (\u2192)                  => "->"
 × (\xd7)                    => "*" (only multiplication)
 ↑ (\u2191)                  => "**" (only exponentiation)
@@ -1305,7 +1306,7 @@ _Showcases how to match against iterators, namely that the empty iterator case (
 
 ```
 def odd_primes(p=3) =
-    (p,) :: filter(-> _ % p != 0, odd_primes(p + 2))
+    (p,) :: filter(=> _ % p != 0, odd_primes(p + 2))
 
 def primes() =
     (2,) :: odd_primes()
@@ -1342,7 +1343,7 @@ match <value>:
 ```
 where `<pattern>` is any `match` pattern, `<value>` is the item to match against, `<cond>` is an optional additional check, and `<body>` is simply code that is executed if the header above it succeeds. Note the absence of an `in` in the `match` statements: that's because the `<value>` in `case <value>` is taking its place. If no `else` is present and no match succeeds, then the `case` statement is simply skipped over as with [`match` statements](#match) (though unlike [destructuring assignments](#destructuring-assignment)).
 
-Additionally, `cases` can be used as the top-level keyword instead of `match`, and in such a `case` block `match` is allowed for each case rather than `case`. _DEPRECATED: Coconut also supports `case` instead of `cases` as the top-level keyword for backwards-compatibility purposes._
+Additionally, `cases` can be used as the top-level keyword instead of `match`, and in such a `case` block `match` is allowed for each case rather than `case`. _Deprecated: Coconut also supports `case` instead of `cases` as the top-level keyword for backwards-compatibility purposes._
 
 ##### Examples
 
@@ -1675,21 +1676,23 @@ The statement lambda syntax is an extension of the [normal lambda syntax](#lambd
 
 The syntax for a statement lambda is
 ```
-[async|match|copyclosure] def (arguments) -> statement; statement; ...
+[async|match|copyclosure] def (arguments) => statement; statement; ...
 ```
 where `arguments` can be standard function arguments or [pattern-matching function definition](#pattern-matching-functions) arguments and `statement` can be an assignment statement or a keyword statement. Note that the `async`, `match`, and [`copyclosure`](#copyclosure-functions) keywords can be combined and can be in any order.
 
 If the last `statement` (not followed by a semicolon) in a statement lambda is an `expression`, it will automatically be returned.
 
-Statement lambdas also support implicit lambda syntax such that `def -> _` is equivalent to `def (_=None) -> _` as well as explicitly marking them as pattern-matching such that `match def (x) -> x` will be a pattern-matching function.
+Statement lambdas also support implicit lambda syntax such that `def => _` is equivalent to `def (_=None) => _` as well as explicitly marking them as pattern-matching such that `match def (x) => x` will be a pattern-matching function.
 
 Note that statement lambdas have a lower precedence than normal lambdas and thus capture things like trailing commas. To avoid confusion, statement lambdas should always be wrapped in their own set of parentheses.
+
+_Deprecated: Statement lambdas also support `->` instead of `=>`. Note that when using `->`, any lambdas in the body of the statement lambda must also use `->` rather than `=>`._
 
 ##### Example
 
 **Coconut:**
 ```coconut
-L |> map$(def (x) ->
+L |> map$(def (x) =>
     y = 1/x;
     y*(1 - y))
 ```
@@ -1707,12 +1710,12 @@ map(_lambda, L)
 Another case where statement lambdas would be used over standard lambdas is when the parameters to the lambda are typed with type annotations. Statement lambdas use the standard Python syntax for adding type annotations to their parameters:
 
 ```coconut
-f = def (c: str) -> print(c)
+f = def (c: str) -> None => print(c)
 
-g = def (a: int, b: int) -> a ** b
+g = def (a: int, b: int) -> int => a ** b
 ```
 
-However, statement lambdas do not support return type annotations.
+_Deprecated: if the deprecated `->` is used in place of `=>`, then return type annotations will not be available._
 
 ### Operator Functions
 
@@ -1728,7 +1731,7 @@ A very common thing to do in functional programming is to make use of function v
 (::)        => (itertools.chain)  # will not evaluate its arguments lazily
 ($)         => (functools.partial)
 (.)         => (getattr)
-(,)         => (*args) -> args  # (but pickleable)
+(,)         => (*args) => args  # (but pickleable)
 (+)         => (operator.add)
 (-)         => # 1 arg: operator.neg, 2 args: operator.sub
 (*)         => (operator.mul)
@@ -1774,8 +1777,8 @@ A very common thing to do in functional programming is to make use of function v
 (is not)    => (operator.is_not)
 (in)        => (operator.contains)
 (not in)    => # negative containment
-(assert)    => def (cond, msg=None) -> assert cond, msg  # (but a better msg if msg is None)
-(raise)     => def (exc=None, from_exc=None) -> raise exc from from_exc  # or just raise if exc is None
+(assert)    => def (cond, msg=None) => assert cond, msg  # (but a better msg if msg is None)
+(raise)     => def (exc=None, from_exc=None) => raise exc from from_exc  # or just raise if exc is None
 # there are two operator functions that don't require parentheses:
 .[]         => (operator.getitem)
 .$[]        => # iterator slicing operator
@@ -1827,7 +1830,7 @@ Additionally, Coconut also supports implicit operator function partials for arbi
 ```
 based on Coconut's [infix notation](#infix-functions) where `<name>` is the name of the function. Additionally, `` `<name>` `` can instead be a [custom operator](#custom-operators) (in that case, no backticks should be used).
 
-_DEPRECATED: Coconut also supports `obj.` as an implicit partial for `getattr$(obj)`, but its usage is deprecated and will show a warning to switch to `getattr$(obj)` instead._
+_Deprecated: Coconut also supports `obj.` as an implicit partial for `getattr$(obj)`, but its usage is deprecated and will show a warning to switch to `getattr$(obj)` instead._
 
 ##### Example
 
@@ -2601,7 +2604,7 @@ That includes type parameters for classes, [`data` types](#data), and [all types
 
 _Warning: until `mypy` adds support for `infer_variance=True` in `TypeVar`, `TypeVar`s created this way will always be invariant._
 
-Additionally, Coconut supports the alternative bounds syntax of `type NewType[T <: bound] = ...` rather than `type NewType[T: bound] = ...`, to make it more clear that it is an upper bound rather than a type. In `--strict` mode, `<:` is required over `:` for all type parameter bounds. _DEPRECATED: `<=` can also be used as an alternative to `<:`._
+Additionally, Coconut supports the alternative bounds syntax of `type NewType[T <: bound] = ...` rather than `type NewType[T: bound] = ...`, to make it more clear that it is an upper bound rather than a type. In `--strict` mode, `<:` is required over `:` for all type parameter bounds. _Deprecated: `<=` can also be used as an alternative to `<:`._
 
 Note that the `<:` syntax should only be used for [type bounds](https://peps.python.org/pep-0695/#upper-bound-specification), not [type constraints](https://peps.python.org/pep-0695/#constrained-type-specification)—for type constraints, Coconut style prefers the vanilla Python `:` syntax, which helps to disambiguate between the two cases, as they are functionally different but otherwise hard to tell apart at a glance. This is enforced in `--strict` mode.
 
@@ -2937,9 +2940,9 @@ _Simple example of adding a new pattern to a pattern-matching function._
 
 ```coconut
 "[A], [B]" |> windowsof$(3) |> map$(addpattern(
-    (def (("[","A","]")) -> "A"),
-    (def (("[","B","]")) -> "B"),
-    (def ((_,_,_)) -> None),
+    (def (("[","A","]")) => "A"),
+    (def (("[","B","]")) => "B"),
+    (def ((_,_,_)) => None),
 )) |> filter$((.is None) ..> (not)) |> list |> print
 ```
 _An example of a case where using the `addpattern` function is necessary over the [`addpattern` keyword](#addpattern-functions) due to the use of in-line pattern-matching [statement lambdas](#statement-lambdas)._
@@ -3285,7 +3288,7 @@ In Haskell, `fmap(func, obj)` takes a data type `obj` and returns a new data typ
 
 The behavior of `fmap` for a given object can be overridden by defining an `__fmap__(self, func)` magic method that will be called whenever `fmap` is invoked on that object. Note that `__fmap__` implementations should always satisfy the [Functor Laws](https://wiki.haskell.org/Functor).
 
-For `dict`, or any other `collections.abc.Mapping`, `fmap` will map over the mapping's `.items()` instead of the default iteration through its `.keys()`, with the new mapping reconstructed from the mapped over items. _DEPRECATED: `fmap$(starmap_over_mappings=True)` will `starmap` over the `.items()` instead of `map` over them._
+For `dict`, or any other `collections.abc.Mapping`, `fmap` will map over the mapping's `.items()` instead of the default iteration through its `.keys()`, with the new mapping reconstructed from the mapped over items. _Deprecated: `fmap$(starmap_over_mappings=True)` will `starmap` over the `.items()` instead of `map` over them._
 
 For [`numpy`](#numpy-integration) objects, `fmap` will use [`np.vectorize`](https://docs.scipy.org/doc/numpy/reference/generated/numpy.vectorize.html) to produce the result.
 
@@ -3299,20 +3302,20 @@ async def fmap_over_async_iters(func, async_iter):
 ```
 such that `fmap` can effectively be used as an async map.
 
-_DEPRECATED: `fmap(func, obj, fallback_to_init=True)` will fall back to `obj.__class__(map(func, obj))` if no `fmap` implementation is available rather than raise `TypeError`._
+_Deprecated: `fmap(func, obj, fallback_to_init=True)` will fall back to `obj.__class__(map(func, obj))` if no `fmap` implementation is available rather than raise `TypeError`._
 
 ##### Example
 
 **Coconut:**
 ```coconut
-[1, 2, 3] |> fmap$(x -> x+1) == [2, 3, 4]
+[1, 2, 3] |> fmap$(x => x+1) == [2, 3, 4]
 
 class Maybe
 data Nothing() from Maybe
 data Just(n) from Maybe
 
-Just(3) |> fmap$(x -> x*2) == Just(6)
-Nothing() |> fmap$(x -> x*2) == Nothing()
+Just(3) |> fmap$(x => x*2) == Just(6)
+Nothing() |> fmap$(x => x*2) == Nothing()
 ```
 
 **Python:**
@@ -3330,7 +3333,7 @@ def call(f, /, *args, **kwargs) = f(*args, **kwargs)
 
 `call` is primarily useful as an [operator function](#operator-functions) for function application when writing in a point-free style.
 
-_DEPRECATED: `of` is available as a deprecated alias for `call`. Note that deprecated features are disabled in `--strict` mode._
+_Deprecated: `of` is available as a deprecated alias for `call`. Note that deprecated features are disabled in `--strict` mode._
 
 #### `safe_call`
 
@@ -3351,7 +3354,7 @@ def safe_call(f, /, *args, **kwargs):
 
 **Coconut:**
 ```coconut
-res, err = safe_call(-> 1 / 0) |> fmap$(.+1)
+res, err = safe_call(=> 1 / 0) |> fmap$(.+1)
 ```
 
 **Python:**
@@ -3361,7 +3364,7 @@ _Can't be done without a complex `Expected` definition. See the compiled code fo
 
 **ident**(_x_, *, _side\_effect_=`None`)
 
-Coconut's `ident` is the identity function, generally equivalent to `x -> x`.
+Coconut's `ident` is the identity function, generally equivalent to `x => x`.
 
 `ident` also accepts one keyword-only argument, `side_effect`, which specifies a function to call on the argument before it is returned. Thus, `ident` is effectively equivalent to:
 ```coconut
@@ -3379,7 +3382,7 @@ def ident(x, *, side_effect=None):
 
 Coconut's `const` simply constructs a function that, whatever its arguments, just returns the given value. Thus, `const` is equivalent to a pickleable version of
 ```coconut
-def const(value) = (*args, **kwargs) -> value
+def const(value) = (*args, **kwargs) => value
 ```
 
 `const` is primarily useful when writing in a point-free style (e.g. in combination with [`lift`](#lift)).
@@ -3399,7 +3402,7 @@ such that `flip$(?, 2)` implements the `C` combinator (`flip` in Haskell).
 In the general case, `flip` is equivalent to a pickleable version of
 ```coconut
 def flip(f, nargs=None) =
-    (*args, **kwargs) -> (
+    (*args, **kwargs) => (
         f(*args[::-1], **kwargs) if nargs is None
         else f(*(args[nargs-1::-1] + args[nargs:]), **kwargs)
     )
@@ -3422,8 +3425,8 @@ such that in this case `lift` implements the `S'` combinator (`liftA2` or `liftM
 In the general case, `lift` is equivalent to a pickleable version of
 ```coconut
 def lift(f) = (
-    (*func_args, **func_kwargs) ->
-        (*args, **kwargs) ->
+    (*func_args, **func_kwargs) =>
+        (*args, **kwargs) =>
             f(
                 *(g(*args, **kwargs) for g in func_args),
                 **{k: h(*args, **kwargs) for k, h in func_kwargs.items()}
@@ -3437,7 +3440,7 @@ def lift(f) = (
 
 **Coconut:**
 ```coconut
-xs_and_xsp1 = ident `lift(zip)` map$(->_+1)
+xs_and_xsp1 = ident `lift(zip)` map$(=>_+1)
 min_and_max = lift(,)(min, max)
 plus_and_times = (+) `lift(,)` (*)
 ```
@@ -3467,7 +3470,7 @@ def and_then[**T, U, V](
     first_async_func: async (**T) -> U,
     second_func: U -> V,
 ) -> async (**T) -> V =
-    async def (*args, **kwargs) -> (
+    async def (*args, **kwargs) => (
         first_async_func(*args, **kwargs)
         |> await
         |> second_func
@@ -3477,7 +3480,7 @@ def and_then_await[**T, U, V](
     first_async_func: async (**T) -> U,
     second_async_func: async U -> V,
 ) -> async (**T) -> V =
-    async def (*args, **kwargs) -> (
+    async def (*args, **kwargs) => (
         first_async_func(*args, **kwargs)
         |> await
         |> second_async_func
@@ -3536,13 +3539,13 @@ Coconut's `map`, `zip`, `filter`, `reversed`, and `enumerate` objects are enhanc
 Though Coconut provides random access indexing/slicing to `range`, `map`, `zip`, `reversed`, and `enumerate`, Coconut cannot index into built-ins like `filter`, `takewhile`, or `dropwhile` directly, as there is no efficient way to do so.
 
 ```coconut
-range(10) |> filter$(i->i>3) |> .[0]  # doesn't work
+range(10) |> filter$(i => i>3) |> .[0]  # doesn't work
 ```
 
 In order to make this work, you can explicitly use iterator slicing, which is less efficient in the general case:
 
 ```coconut
-range(10) |> filter$(i->i>3) |> .$[0]  # works
+range(10) |> filter$(i => i>3) |> .$[0]  # works
 ```
 
 For more information on Coconut's iterator slicing, see [here](#iterator-slicing).
@@ -3552,7 +3555,7 @@ For more information on Coconut's iterator slicing, see [here](#iterator-slicing
 **Coconut:**
 ```coconut
 map((+), range(5), range(6)) |> len |> print
-range(10) |> filter$((x) -> x < 5) |> reversed |> tuple |> print
+range(10) |> filter$((x) => x < 5) |> reversed |> tuple |> print
 ```
 
 **Python:**
@@ -3562,7 +3565,7 @@ _Can't be done without defining a custom `map` type. The full definition of `map
 ```coconut
 range(0, 12, 2)[4]  # 8
 
-map((i->i*2), range(10))[2]  # 4
+map((i => i*2), range(10))[2]  # 4
 ```
 
 **Python:**
@@ -3578,7 +3581,7 @@ Coconut re-introduces Python 2's `reduce` built-in, using the `functools.reduce`
 
 **reduce**(_function, iterable_**[**_, initial_**]**)
 
-Apply _function_ of two arguments cumulatively to the items of _sequence_, from left to right, so as to reduce the sequence to a single value. For example, `reduce((x, y) -> x+y, [1, 2, 3, 4, 5])` calculates `((((1+2)+3)+4)+5)`. The left argument, _x_, is the accumulated value and the right argument, _y_, is the update value from the _sequence_. If the optional _initial_ is present, it is placed before the items of the sequence in the calculation, and serves as a default when the sequence is empty. If _initial_ is not given and _sequence_ contains only one item, the first item is returned.
+Apply _function_ of two arguments cumulatively to the items of _sequence_, from left to right, so as to reduce the sequence to a single value. For example, `reduce((x, y) => x+y, [1, 2, 3, 4, 5])` calculates `((((1+2)+3)+4)+5)`. The left argument, _x_, is the accumulated value and the right argument, _y_, is the update value from the _sequence_. If the optional _initial_ is present, it is placed before the items of the sequence in the calculation, and serves as a default when the sequence is empty. If _initial_ is not given and _sequence_ contains only one item, the first item is returned.
 
 ##### Example
 
@@ -3725,7 +3728,7 @@ def takewhile(predicate, iterable):
 
 **Coconut:**
 ```coconut
-negatives = numiter |> takewhile$(x -> x < 0)
+negatives = numiter |> takewhile$(x => x < 0)
 ```
 
 **Python:**
@@ -3761,7 +3764,7 @@ def dropwhile(predicate, iterable):
 
 **Coconut:**
 ```coconut
-positives = numiter |> dropwhile$(x -> x < 0)
+positives = numiter |> dropwhile$(x => x < 0)
 ```
 
 **Python:**
@@ -4265,7 +4268,7 @@ In the process of lazily applying operations to iterators, eventually a point is
 
 **Coconut:**
 ```coconut
-range(10) |> map$((x) -> x**2) |> map$(print) |> consume
+range(10) |> map$((x) => x**2) |> map$(print) |> consume
 ```
 
 **Python:**
@@ -4415,7 +4418,7 @@ declaration which can be added to `.py` files to have them treated as Coconut fi
 
 In addition to enabling automatic compilation, `coconut.api` can also be used to call the Coconut compiler from code instead of from the command line. See below for specifications of the different api functions.
 
-_DEPRECATED: `coconut.convenience` is a deprecated alias for `coconut.api`._
+_Deprecated: `coconut.convenience` is a deprecated alias for `coconut.api`._
 
 #### `get_state`
 
