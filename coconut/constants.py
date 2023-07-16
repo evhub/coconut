@@ -182,15 +182,18 @@ supported_py3_vers = (
     (3, 10),
     (3, 11),
     (3, 12),
+    (3, 13),
 )
 
 py_vers_with_eols = (
     # must be in ascending order and kept up-to-date with https://devguide.python.org/versions
+    # (target, eol date)
     ("38", dt.datetime(2024, 11, 1)),
     ("39", dt.datetime(2025, 11, 1)),
     ("310", dt.datetime(2026, 11, 1)),
     ("311", dt.datetime(2027, 11, 1)),
     ("312", dt.datetime(2028, 11, 1)),
+    ("313", dt.datetime(2028, 11, 1)),
 )
 
 # must match supported vers above and must be replicated in DOCS
@@ -208,6 +211,7 @@ specific_targets = (
     "310",
     "311",
     "312",
+    "313",
 )
 pseudo_targets = {
     "universal": "",

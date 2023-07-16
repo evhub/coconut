@@ -315,6 +315,7 @@ If the version of Python that the compiled code will be running on is known ahea
 - `3.10`: will work on any Python `>= 3.10`
 - `3.11`: will work on any Python `>= 3.11`
 - `3.12`: will work on any Python `>= 3.12`
+- `3.13`: will work on any Python `>= 3.12`
 - `sys`: chooses the target corresponding to the current Python version
 - `psf`: chooses the target corresponding to the oldest Python version not considered [end-of-life](https://devguide.python.org/versions/) by the PSF (Python Software Foundation)
 
@@ -1850,7 +1851,7 @@ Since Coconut syntax is a superset of Python 3 syntax, it supports [Python 3 fun
 
 Since not all supported Python versions support the [`typing`](https://docs.python.org/3/library/typing.html) module, Coconut provides the [`TYPE_CHECKING`](#type_checking) built-in for hiding your `typing` imports and `TypeVar` definitions from being executed at runtime. Coconut will also automatically use [`typing_extensions`](https://pypi.org/project/typing-extensions/) over `typing` objects at runtime when importing them from `typing`, even when they aren't natively supported on the current Python version (this works even if you just do `import typing` and then `typing.<Object>`).
 
-Furthermore, when compiling type annotations to Python 3 versions without [PEP 563](https://www.python.org/dev/peps/pep-0563/) support, Coconut wraps annotation in strings to prevent them from being evaluated at runtime (note that `--no-wrap-types` disables all wrapping, including via PEP 563 support).
+Furthermore, when compiling type annotations to Python 3 versions without [PEP 563](https://www.python.org/dev/peps/pep-0563/) support, Coconut wraps annotation in strings to prevent them from being evaluated at runtime (to avoid this, e.g. if you want to use annotations at runtime, `--no-wrap-types` will disable all wrapping, including via PEP 563 support). Only on Python 3.13+ does `--no-wrap-types` do nothing, since there [PEP 649](https://peps.python.org/pep-0649/) support is used instead.
 
 Additionally, Coconut adds special syntax for making type annotations easier and simpler to write. When inside of a type annotation, Coconut treats certain syntax constructs differently, compiling them to type annotations instead of what they would normally represent. Specifically, Coconut applies the following transformations:
 ```coconut
