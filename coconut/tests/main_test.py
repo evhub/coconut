@@ -710,6 +710,9 @@ def comp_runnable(args=[]):
 @add_test_func_names
 class TestShell(unittest.TestCase):
 
+    def test_version(self):
+        call(["coconut", "--version"])
+
     def test_code(self):
         call(["coconut", "-s", "-c", coconut_snip], assert_output=True)
 

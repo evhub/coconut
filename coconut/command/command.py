@@ -174,6 +174,7 @@ class Command(object):
 
     def cmd(self, args=None, argv=None, interact=True, default_target=None, use_dest=None):
         """Process command-line arguments."""
+        result = None
         with self.handling_exceptions():
             if args is None:
                 parsed_args = arguments.parse_args()
@@ -396,7 +397,8 @@ class Command(object):
             if args.profile:
                 print_timing_info()
 
-        return filepaths
+            # make sure to return inside handling_exceptions to ensure filepaths is available
+            return filepaths
 
     def process_source_dest(self, source, dest, args):
         """Determine the correct source, dest, package mode to use for the given source, dest, and args."""
