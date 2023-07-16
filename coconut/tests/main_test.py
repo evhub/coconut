@@ -62,6 +62,8 @@ from coconut.constants import (
     icoconut_custom_kernel_name,
     mypy_err_infixes,
     get_bool_env_var,
+    coconut_cache_dir,
+    default_use_cache_dir,
 )
 
 from coconut.api import (
@@ -97,11 +99,15 @@ src = os.path.join(base, "src")
 dest = os.path.join(base, "dest")
 additional_dest = os.path.join(base, "dest", "additional_dest")
 
+src_cache_dir = os.path.join(src, coconut_cache_dir)
+
 runnable_coco = os.path.join(src, "runnable.coco")
 runnable_py = os.path.join(src, "runnable.py")
+runnable_compiled_loc = src_cache_dir if default_use_cache_dir else runnable_py
 
 importable_coco = os.path.join(src, "importable.coco")
 importable_py = os.path.join(src, "importable.py")
+importable_compiled_loc = src_cache_dir if default_use_cache_dir else importable_py
 
 pyston = os.path.join(os.curdir, "pyston")
 pyprover = os.path.join(os.curdir, "pyprover")
@@ -684,9 +690,9 @@ def install_bbopt():
 
 def run_runnable(args=[]):
     """Call coconut-run on runnable_coco."""
-    paths_being_used = [importable_py]
+    paths_being_used = [importable_compiled_loc]
     if "--no-write" not in args and "-n" not in args:
-        paths_being_used.append(runnable_py)
+        paths_being_used.append(runnable_compiled_loc)
     with using_paths(*paths_being_used):
         call(["coconut-run"] + args + [runnable_coco, "--arg"], assert_output=True)
 
@@ -744,7 +750,7 @@ class TestShell(unittest.TestCase):
 
     def test_import_hook(self):
         with using_sys_path(src):
-            with using_paths(runnable_py, importable_py):
+            with using_paths(runnable_compiled_loc, importable_compiled_loc):
                 with using_coconut():
                     auto_compilation(True)
                     import runnable

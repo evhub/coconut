@@ -1,3 +1,6 @@
+import os
+
 def imported_main() -> bool:
     assert 1 |> (.*2) == 2
+    assert os.path.basename(os.path.dirname(__file__)) == "src", __file__
     return True

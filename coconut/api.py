@@ -34,9 +34,12 @@ from coconut.command.cli import cli_version
 from coconut.command.util import proc_run_args
 from coconut.compiler import Compiler
 from coconut.constants import (
+    PY34,
     version_tag,
     code_exts,
     coconut_kernel_kwargs,
+    default_use_cache_dir,
+    coconut_cache_dir,
 )
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -182,18 +185,47 @@ class CoconutImporter(object):
     ext = code_exts[0]
     command = None
 
-    def __init__(self, *args):
+    def __init__(self, *args) -> None:
+        self.use_cache_dir(default_use_cache_dir)
         self.set_args(args)
+
+    def use_cache_dir(self, use_cache_dir):
+        """Set the cache directory if any to use for compiled Coconut files."""
+        if use_cache_dir:
+            if not PY34:
+                raise CoconutException("coconut.api.auto_compilation only supports the usage of a cache directory on Python 3.4+")
+            self.cache_dir = coconut_cache_dir
+        else:
+            self.cache_dir = None
 
     def set_args(self, args):
         """Set the Coconut command line args to use for auto compilation."""
         self.args = proc_run_args(args)
 
-    def run_compiler(self, path):
-        """Run the Coconut compiler on the given path."""
+    def cmd(self, *args):
+        """Run the Coconut compiler with the given args."""
         if self.command is None:
             self.command = Command()
-        return self.command.cmd([path] + self.args, interact=False)
+        return self.command.cmd(list(args) + self.args, interact=False)
+
+    def compile(self, path, package):
+        """Compile a path to a file or package."""
+        extra_args = []
+        if self.cache_dir:
+            if package:
+                cache_dir = os.path.join(path, self.cache_dir)
+            else:
+                cache_dir = os.path.join(os.path.dirname(path), self.cache_dir)
+            extra_args.append(cache_dir)
+        else:
+            cache_dir = None
+
+        if package:
+            self.cmd(path, *extra_args)
+            return cache_dir or path
+        else:
+            destpath, = self.cmd(path, *extra_args)
+            return destpath
 
     def find_coconut(self, fullname, path=None):
         """Searches for a Coconut file of the given name and compiles it."""
@@ -204,41 +236,47 @@ class CoconutImporter(object):
                 return None
             fullname = fullname[1:]
             basepaths.insert(0, path)
+
         path_tail = os.path.join(*fullname.split("."))
         for path_head in basepaths:
             path = os.path.join(path_head, path_tail)
             filepath = path + self.ext
-            dirpath = os.path.join(path, "__init__" + self.ext)
+            initpath = os.path.join(path, "__init__" + self.ext)
             if os.path.exists(filepath):
-                # Coconut file was found and compiled
-                destpath, = self.run_compiler(filepath)
-                return destpath
-            if os.path.exists(dirpath):
-                # Coconut package was found and compiled
-                self.run_compiler(path)
-                return path
+                return self.compile(filepath, package=False)
+            if os.path.exists(initpath):
+                return self.compile(path, package=True)
         return None
 
     def find_module(self, fullname, path=None):
         """Get a loader for a Coconut module if it exists."""
-        self.find_coconut(fullname, path)
-        # always return None to let Python import the compiled Coconut
-        return None
+        destpath = self.find_coconut(fullname, path)
+        # return None to let Python do the import when nothing was found or compiling in-place
+        if destpath is None or not self.cache_dir:
+            return None
+        else:
+            from importlib.machinery import SourceFileLoader
+            return SourceFileLoader(fullname, destpath)
 
-    def find_spec(self, fullname, path, oldmodule=None):
+    def find_spec(self, fullname, path=None, target=None):
         """Get a modulespec for a Coconut module if it exists."""
-        self.find_coconut(fullname, path)
-        # always return None to let Python import the compiled Coconut
-        return None
+        loader = self.find_module(fullname, path)
+        if loader is None:
+            return None
+        else:
+            from importlib.util import spec_from_loader
+            return spec_from_loader(fullname, loader)
 
 
 coconut_importer = CoconutImporter()
 
 
-def auto_compilation(on=True, args=None):
+def auto_compilation(on=True, args=None, use_cache_dir=None):
     """Turn automatic compilation of Coconut files on or off."""
     if args is not None:
         coconut_importer.set_args(args)
+    if use_cache_dir is not None:
+        coconut_importer.use_cache_dir(use_cache_dir)
     if on:
         if coconut_importer not in sys.meta_path:
             sys.meta_path.insert(0, coconut_importer)

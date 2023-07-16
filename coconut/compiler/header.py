@@ -38,6 +38,7 @@ from coconut.constants import (
     self_match_types,
     is_data_var,
     data_defaults_var,
+    coconut_cache_dir,
 )
 from coconut.util import (
     univ_open,
@@ -224,6 +225,7 @@ def process_header_args(which, use_hash, target, no_tco, strict, no_wrap):
         module_docstring='"""Built-in Coconut utilities."""\n\n' if which == "__coconut__" else "",
         __coconut__=make_py_str("__coconut__", target),
         _coconut_cached__coconut__=make_py_str("_coconut_cached__coconut__", target),
+        coconut_cache_dir=make_py_str(coconut_cache_dir, target),
         object="" if target.startswith("3") else "(object)",
         comma_object="" if target.startswith("3") else ", object",
         comma_slash=", /" if target_info >= (3, 8) else "",
@@ -841,19 +843,21 @@ def getheader(which, use_hash, target, no_tco, strict, no_wrap):
     elif target_info >= (3, 5):
         header += "from __future__ import generator_stop\n"
 
-    header += "import sys as _coconut_sys\n"
+    header += '''import sys as _coconut_sys
+import os as _coconut_os
+'''
 
     if which.startswith("package") or which == "__coconut__":
         header += "_coconut_header_info = " + header_info + "\n"
 
+    levels_up = None
     if which.startswith("package"):
         levels_up = int(assert_remove_prefix(which, "package:"))
         coconut_file_dir = "_coconut_os.path.dirname(_coconut_os.path.abspath(__file__))"
         for _ in range(levels_up):
             coconut_file_dir = "_coconut_os.path.dirname(" + coconut_file_dir + ")"
-        return header + prepare(
+        header += prepare(
             '''
-import os as _coconut_os
 _coconut_cached__coconut__ = _coconut_sys.modules.get({__coconut__})
 _coconut_file_dir = {coconut_file_dir}
 _coconut_pop_path = False
@@ -886,12 +890,37 @@ if _coconut_pop_path:
         ).format(
             coconut_file_dir=coconut_file_dir,
             **format_dict
-        ) + section("Compiled Coconut")
+        )
 
     if which == "sys":
-        return header + '''from coconut.__coconut__ import *
+        header += '''from coconut.__coconut__ import *
 from coconut.__coconut__ import {underscore_imports}
-'''.format(**format_dict) + section("Compiled Coconut")
+'''.format(**format_dict)
+
+    # remove coconut_cache_dir from __file__ if it was put there by auto compilation
+    header += prepare(
+        '''
+try:
+    __file__ = _coconut_os.path.abspath(__file__) if __file__ else __file__
+except NameError:
+    pass
+else:
+    if __file__ and {coconut_cache_dir} in __file__:
+        _coconut_file_comps = []
+        while __file__:
+            __file__, _coconut_file_comp = _coconut_os.path.split(__file__)
+            if not _coconut_file_comp:
+                _coconut_file_comps.append(__file__)
+                break
+            if _coconut_file_comp != {coconut_cache_dir}:
+                _coconut_file_comps.append(_coconut_file_comp)
+        __file__ = _coconut_os.path.join(*reversed(_coconut_file_comps))
+        ''',
+        newline=True,
+    ).format(**format_dict)
+
+    if which in ("package", "sys"):
+        return header + section("Compiled Coconut")
 
     # __coconut__, code, file
 

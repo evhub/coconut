@@ -584,6 +584,9 @@ main_sig = "Coconut: "
 main_prompt = ">>> "
 more_prompt = "    "
 
+default_use_cache_dir = PY34
+coconut_cache_dir = "__coconut_cache__"
+
 mypy_path_env_var = "MYPYPATH"
 
 style_env_var = "COCONUT_STYLE"

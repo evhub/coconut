@@ -69,6 +69,8 @@ from coconut.constants import (
     jupyter_console_commands,
     default_jobs,
     create_package_retries,
+    default_use_cache_dir,
+    coconut_cache_dir,
 )
 from coconut.util import (
     univ_open,
@@ -142,23 +144,35 @@ class Command(object):
         if run:
             args, argv = [], []
             # for coconut-run, all args beyond the source file should be wrapped in an --argv
+            source = None
             for i in range(1, len(sys.argv)):
                 arg = sys.argv[i]
-                args.append(arg)
                 # if arg is source file, put everything else in argv
-                if not arg.startswith("-") and can_parse(arguments, args[:-1]):
+                if not arg.startswith("-") and can_parse(arguments, args):
+                    source = arg
                     argv = sys.argv[i + 1:]
                     break
+                else:
+                    args.append(arg)
             args = proc_run_args(args)
             if "--run" in args:
                 logger.warn("extraneous --run argument passed; coconut-run implies --run")
             else:
                 args.append("--run")
-            self.cmd(args, argv=argv)
+            dest = None
+            if source is not None:
+                source = fixpath(source)
+                args.append(source)
+                if default_use_cache_dir:
+                    if memoized_isfile(source):
+                        dest = os.path.join(os.path.dirname(source), coconut_cache_dir)
+                    else:
+                        dest = os.path.join(source, coconut_cache_dir)
+            self.cmd(args, argv=argv, use_dest=dest)
         else:
             self.cmd()
 
-    def cmd(self, args=None, argv=None, interact=True, default_target=None):
+    def cmd(self, args=None, argv=None, interact=True, default_target=None, use_dest=None):
         """Process command-line arguments."""
         with self.handling_exceptions():
             if args is None:
@@ -171,6 +185,9 @@ class Command(object):
                 parsed_args.argv = argv
             if parsed_args.target is None:
                 parsed_args.target = default_target
+            if use_dest is not None and not parsed_args.no_write:
+                internal_assert(parsed_args.dest is None, "coconut-run got passed a dest", parsed_args)
+                parsed_args.dest = use_dest
             self.exit_code = 0
             self.stack_size = parsed_args.stack_size
             result = self.run_with_stack_size(self.execute_args, parsed_args, interact, original_args=args)

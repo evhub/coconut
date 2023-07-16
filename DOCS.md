@@ -235,7 +235,9 @@ which will quietly compile and run `<source>`, passing any additional arguments 
 
 To pass additional compilation arguments to `coconut-run` (e.g. `--no-tco`), put them before the `<source>` file.
 
-`coconut-run` will always use [automatic compilation](#automatic-compilation), such that Coconut source files can be directly imported from any Coconut files run via `coconut-run`. Additionally, compilation parameters (e.g. `--no-tco`) used in `coconut-run` will be passed along and used for any auto compilation.
+`coconut-run` will always enable [automatic compilation](#automatic-compilation), such that Coconut source files can be directly imported from any Coconut files run via `coconut-run`. Additionally, compilation parameters (e.g. `--no-tco`) used in `coconut-run` will be passed along and used for any auto compilation.
+
+On modern Python versions, `coconut-run` will use a `__coconut_cache__` directory to cache the compiled Python. Note that `__coconut_cache__` will always be removed from `__file__`.
 
 #### Naming Source Files
 
@@ -4394,7 +4396,7 @@ Automatic compilation lets you simply import Coconut files directly without havi
 
 Once automatic compilation is enabled, Coconut will check each of your imports to see if you are attempting to import a `.coco` file and, if so, automatically compile it for you. Note that, for Coconut to know what file you are trying to import, it will need to be accessible via `sys.path`, just like a normal import.
 
-Automatic compilation always compiles modules and packages in-place, and compiles with `--target sys --line-numbers --keep-lines` by default.
+Automatic compilation always compiles with `--target sys --line-numbers --keep-lines` by default. On modern Python versions, automatic compilation will use a `__coconut_cache__` directory to cache the compiled Python. Note that `__coconut_cache__` will always be removed from `__file__`.
 
 Automatic compilation is always available in the Coconut interpreter or when using [`coconut-run`](#coconut-scripts). When using auto compilation through the Coconut interpreter, any compilation options passed in will also be used for auto compilation. Additionally, the interpreter always allows importing from the current working directory, letting you easily compile and play around with a `.coco` file simply by running the Coconut interpreter and importing it.
 
@@ -4529,11 +4531,13 @@ Retrieves a string containing information about the Coconut version. The optiona
 
 #### `auto_compilation`
 
-**coconut.api.auto_compilation**(_on_=`True`, _args_=`None`)
+**coconut.api.auto_compilation**(_on_=`True`, _args_=`None`, _use\_cache\_dir_=`None`)
 
 Turns [automatic compilation](#automatic-compilation) on or off. This function is called automatically when `coconut.api` is imported.
 
 If _args_ is passed, it will set the Coconut command-line arguments to use for automatic compilation. Arguments will be processed the same way as with [`coconut-run`](#coconut-scripts) such that `--quiet --target sys --keep-lines` will all be set by default.
+
+If _use\_cache\_dir_ is passed, it will turn on or off the usage of a `__coconut_cache__` directory to put compile files in rather than compiling them in-place. Note that `__coconut_cache__` will always be removed from `__file__`.
 
 #### `use_coconut_breakpoint`
 

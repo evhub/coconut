@@ -585,9 +585,8 @@ class Runner(object):
             "__name__": "__main__",
             "__package__": None,
             "reload": reload,
+            "__file__": None if path is None else fixpath(path)
         }
-        if path is not None:
-            init_vars["__file__"] = fixpath(path)
         if init:
             # put reserved_vars in for auto-completion purposes only at the very beginning
             for var in reserved_vars:
