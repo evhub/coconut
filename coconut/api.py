@@ -222,10 +222,14 @@ class CoconutImporter(object):
     def find_module(self, fullname, path=None):
         """Get a loader for a Coconut module if it exists."""
         self.find_coconut(fullname, path)
+        # always return None to let Python import the compiled Coconut
+        return None
 
     def find_spec(self, fullname, path, oldmodule=None):
         """Get a modulespec for a Coconut module if it exists."""
         self.find_coconut(fullname, path)
+        # always return None to let Python import the compiled Coconut
+        return None
 
 
 coconut_importer = CoconutImporter()
