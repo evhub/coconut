@@ -213,7 +213,17 @@ def call_with_import(module_name, extra_argv=[], assert_result=True):
     return stdout, stderr, retcode
 
 
-def call(raw_cmd, assert_output=False, check_mypy=False, check_errors=True, stderr_first=False, expect_retcode=0, convert_to_import=False, **kwargs):
+def call(
+    raw_cmd,
+    assert_output=False,
+    check_mypy=False,
+    check_errors=True,
+    stderr_first=False,
+    expect_retcode=0,
+    convert_to_import=False,
+    assert_output_only_at_end=None,
+    **kwargs
+):
     """Execute a shell command and assert that no errors were encountered."""
     if isinstance(raw_cmd, str):
         cmd = raw_cmd.split()
@@ -228,10 +238,13 @@ def call(raw_cmd, assert_output=False, check_mypy=False, check_errors=True, stde
     elif assert_output is True:
         assert_output = ("<success>",)
     elif isinstance(assert_output, str):
-        if "\n" not in assert_output:
-            assert_output = (assert_output,)
+        if assert_output_only_at_end is None and "\n" in assert_output:
+            assert_output_only_at_end = False
+        assert_output = (assert_output,)
     else:
         assert_output = tuple(x if x is not True else "<success>" for x in assert_output)
+    if assert_output_only_at_end is None:
+        assert_output_only_at_end = True
 
     if convert_to_import is None:
         convert_to_import = (
@@ -326,10 +339,7 @@ def call(raw_cmd, assert_output=False, check_mypy=False, check_errors=True, stde
         if check_mypy and all(test not in line for test in ignore_mypy_errs_with):
             assert "error:" not in line, "MyPy error in " + repr(line)
 
-    if isinstance(assert_output, str):
-        got_output = "\n".join(raw_lines) + "\n"
-        assert assert_output in got_output, "Expected " + repr(assert_output) + "; got " + repr(got_output)
-    else:
+    if assert_output_only_at_end:
         last_line = ""
         for line in reversed(lines):
             if not any(ignore in line for ignore in ignore_last_lines_with):
@@ -343,6 +353,9 @@ def call(raw_cmd, assert_output=False, check_mypy=False, check_errors=True, stde
                 + " in " + repr(last_line)
                 + "; got:\n" + "\n".join(repr(li) for li in raw_lines)
             )
+    else:
+        got_output = "\n".join(raw_lines) + "\n"
+        assert any(x in got_output for x in assert_output), "Expected " + repr(assert_output) + "; got " + repr(got_output)
 
 
 def call_python(args, **kwargs):
@@ -414,13 +427,14 @@ def using_paths(*paths):
 
 
 @contextmanager
-def using_dest(dest=dest):
+def using_dest(dest=dest, allow_existing=False):
     """Makes and removes the dest folder."""
     try:
         os.mkdir(dest)
     except Exception:
-        rm_path(dest)
-        os.mkdir(dest)
+        if not allow_existing:
+            rm_path(dest)
+            os.mkdir(dest)
     try:
         yield
     finally:
@@ -702,7 +716,7 @@ def comp_runnable(args=[]):
     if "--target" not in args:
         args += ["--target", "sys"]
     call_coconut([runnable_coco, "--and", importable_coco] + args)
-    call_coconut([runnable_coco, "--and", importable_coco] + args)
+    call_coconut([runnable_coco, "--and", importable_coco] + args, assert_output="Left unchanged", assert_output_only_at_end=False)
 
 
 # -----------------------------------------------------------------------------------------------------------------------

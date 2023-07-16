@@ -86,7 +86,7 @@ test-univ: clean
 # should only be used when testing the tests not the compiler
 .PHONY: test-tests
 test-tests: export COCONUT_USE_COLOR=TRUE
-test-tests: clean
+test-tests: clean-no-tests
 	python ./coconut/tests --strict --keep-lines
 	python ./coconut/tests/dest/runner.py
 	python ./coconut/tests/dest/extras.py
@@ -142,7 +142,7 @@ test-mypy: clean
 # same as test-mypy but doesn't use --force
 .PHONY: test-mypy-tests
 test-mypy-tests: export COCONUT_USE_COLOR=TRUE
-test-mypy-tests: clean
+test-mypy-tests: clean-no-tests
 	python ./coconut/tests --strict --target sys --keep-lines --mypy --follow-imports silent --ignore-missing-imports --allow-redefinition
 	python ./coconut/tests/dest/runner.py
 	python ./coconut/tests/dest/extras.py
@@ -255,15 +255,21 @@ docs: clean
 	sphinx-build -b html . ./docs
 	rm -f index.rst
 
+.PHONY: clean-no-tests
+clean-no-tests:
+	rm -rf ./docs ./dist ./build ./bbopt ./pyprover ./pyston ./coconut-prelude index.rst ./.mypy_cache
+
 .PHONY: clean
-clean:
-	rm -rf ./docs ./dist ./build ./coconut/tests/dest ./bbopt ./pyprover ./pyston ./coconut-prelude index.rst ./.mypy_cache
+clean: clean-no-tests
+	rm -rf ./coconut/tests/dest
 
 .PHONY: wipe
 wipe: clean
-	rm -rf vprof.json profile.log *.egg-info
+	rm -rf ./coconut/tests/dest vprof.json profile.log *.egg-info
 	-find . -name "__pycache__" -delete
 	-C:/GnuWin32/bin/find.exe . -name "__pycache__" -delete
+	-find . -name "__coconut_cache__" -delete
+	-C:/GnuWin32/bin/find.exe . -name "__coconut_cache__" -delete
 	-find . -name "*.pyc" -delete
 	-C:/GnuWin32/bin/find.exe . -name "*.pyc" -delete
 	-python -m coconut --site-uninstall

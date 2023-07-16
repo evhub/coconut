@@ -101,8 +101,6 @@ from coconut.command.util import (
     invert_mypy_arg,
     run_with_stack_size,
     proc_run_args,
-    memoized_isdir,
-    memoized_isfile,
 )
 from coconut.compiler.util import (
     should_indent,
@@ -165,7 +163,7 @@ class Command(object):
                 source = fixpath(source)
                 args.append(source)
                 if default_use_cache_dir:
-                    if memoized_isfile(source):
+                    if os.path.isfile(source):
                         dest = os.path.join(os.path.dirname(source), coconut_cache_dir)
                     else:
                         dest = os.path.join(source, coconut_cache_dir)
@@ -345,7 +343,7 @@ class Command(object):
                     src_dest_package_triples.append(self.process_source_dest(src, dest, args))
 
                 # disable jobs if we know we're only compiling one file
-                if len(src_dest_package_triples) <= 1 and not any(memoized_isdir(source) for source, dest, package in src_dest_package_triples):
+                if len(src_dest_package_triples) <= 1 and not any(os.path.isdir(source) for source, dest, package in src_dest_package_triples):
                     self.disable_jobs()
 
                 # do compilation
@@ -408,12 +406,12 @@ class Command(object):
         processed_source = fixpath(source)
 
         # validate args
-        if (args.run or args.interact) and memoized_isdir(processed_source):
+        if (args.run or args.interact) and os.path.isdir(processed_source):
             if args.run:
                 raise CoconutException("source path %r must point to file not directory when --run is enabled" % (source,))
             if args.interact:
                 raise CoconutException("source path %r must point to file not directory when --run (implied by --interact) is enabled" % (source,))
-        if args.watch and memoized_isfile(processed_source):
+        if args.watch and os.path.isfile(processed_source):
             raise CoconutException("source path %r must point to directory not file when --watch is enabled" % (source,))
 
         # determine dest
@@ -434,9 +432,9 @@ class Command(object):
             package = False
         else:
             # auto-decide package
-            if memoized_isfile(processed_source):
+            if os.path.isfile(processed_source):
                 package = False
-            elif memoized_isdir(processed_source):
+            elif os.path.isdir(processed_source):
                 package = True
             else:
                 raise CoconutException("could not find source path", source)
@@ -487,17 +485,17 @@ class Command(object):
         """Compile a path and return paths to compiled files."""
         if not isinstance(write, bool):
             write = fixpath(write)
-        if memoized_isfile(path):
+        if os.path.isfile(path):
             destpath = self.compile_file(path, write, package, **kwargs)
             return [destpath] if destpath is not None else []
-        elif memoized_isdir(path):
+        elif os.path.isdir(path):
             return self.compile_folder(path, write, package, **kwargs)
         else:
             raise CoconutException("could not find source path", path)
 
     def compile_folder(self, directory, write=True, package=True, **kwargs):
         """Compile a directory and return paths to compiled files."""
-        if not isinstance(write, bool) and memoized_isfile(write):
+        if not isinstance(write, bool) and os.path.isfile(write):
             raise CoconutException("destination path cannot point to a file when compiling a directory")
         filepaths = []
         for dirpath, dirnames, filenames in os.walk(directory):
@@ -715,7 +713,7 @@ class Command(object):
 
     def has_hash_of(self, destpath, code, package_level):
         """Determine if a file has the hash of the code."""
-        if destpath is not None and memoized_isfile(destpath):
+        if destpath is not None and os.path.isfile(destpath):
             with univ_open(destpath, "r") as opened:
                 compiled = readfile(opened)
             hashash = gethash(compiled)
@@ -1063,7 +1061,7 @@ class Command(object):
 
         def recompile(path, src, dest, package):
             path = fixpath(path)
-            if memoized_isfile(path) and os.path.splitext(path)[1] in code_exts:
+            if os.path.isfile(path) and os.path.splitext(path)[1] in code_exts:
                 with self.handling_exceptions():
                     if dest is True or dest is None:
                         writedir = dest
@@ -1117,7 +1115,7 @@ class Command(object):
         python_lib = self.get_python_lib()
         pth_file = os.path.join(python_lib, os.path.basename(coconut_pth_file))
 
-        if memoized_isfile(pth_file):
+        if os.path.isfile(pth_file):
             os.remove(pth_file)
             logger.show_sig("Removed %s from %s" % (os.path.basename(coconut_pth_file), python_lib))
         else:

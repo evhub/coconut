@@ -193,7 +193,7 @@ class CoconutImporter(object):
     ext = code_exts[0]
     command = None
 
-    def __init__(self, *args) -> None:
+    def __init__(self, *args):
         self.use_cache_dir(default_use_cache_dir)
         self.set_args(args)
 

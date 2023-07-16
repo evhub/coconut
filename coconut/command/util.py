@@ -47,7 +47,6 @@ from coconut.util import (
     pickleable_obj,
     get_encoding,
     get_clock_time,
-    memoize,
     assert_remove_prefix,
 )
 from coconut.constants import (
@@ -134,10 +133,6 @@ except KeyError:
 # -----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
 # -----------------------------------------------------------------------------------------------------------------------
-
-
-memoized_isdir = memoize(64)(os.path.isdir)
-memoized_isfile = memoize(64)(os.path.isfile)
 
 
 def writefile(openedfile, newcontents):
