@@ -34,16 +34,16 @@ class CoconutException(Exception):
 GLOBAL_STATE: Optional[Command] = None
 
 
-def get_state(state: Optional[Command]=None) -> Command: ...
+def get_state(state: Optional[Command] = None) -> Command: ...
 
 
-def cmd(args: Union[Text, bytes, Iterable], interact: bool=False) -> None: ...
+def cmd(args: Union[Text, bytes, Iterable], interact: bool = False) -> None: ...
 
 
 VERSIONS: Dict[Text, Text] = ...
 
 
-def version(which: Optional[Text]=None) -> Text: ...
+def version(which: Optional[Text] = None) -> Text: ...
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -52,23 +52,23 @@ def version(which: Optional[Text]=None) -> Text: ...
 
 
 def setup(
-    target: Optional[str]=None,
-    strict: bool=False,
-    minify: bool=False,
-    line_numbers: bool=False,
-    keep_lines: bool=False,
-    no_tco: bool=False,
-    no_wrap: bool=False,
+    target: Optional[str] = None,
+    strict: bool = False,
+    minify: bool = False,
+    line_numbers: bool = False,
+    keep_lines: bool = False,
+    no_tco: bool = False,
+    no_wrap: bool = False,
     *,
-    state: Optional[Command]=...,
+    state: Optional[Command] = ...,
 ) -> None: ...
 
 
 def warm_up(
-    force: bool=False,
-    enable_incremental_mode: bool=False,
+    force: bool = False,
+    enable_incremental_mode: bool = False,
     *,
-    state: Optional[Command]=...,
+    state: Optional[Command] = ...,
 ) -> None: ...
 
 
@@ -77,18 +77,18 @@ PARSERS: Dict[Text, Callable] = ...
 
 def parse(
     code: Text,
-    mode: Text=...,
-    state: Optional[Command]=...,
-    keep_internal_state: Optional[bool]=None,
+    mode: Text = ...,
+    state: Optional[Command] = ...,
+    keep_internal_state: Optional[bool] = None,
 ) -> Text: ...
 
 
 def coconut_eval(
     expression: Text,
-    globals: Optional[Dict[Text, Any]]=None,
-    locals: Optional[Dict[Text, Any]]=None,
-    state: Optional[Command]=...,
-    keep_internal_state: Optional[bool]=None,
+    globals: Optional[Dict[Text, Any]] = None,
+    locals: Optional[Dict[Text, Any]] = None,
+    state: Optional[Command] = ...,
+    keep_internal_state: Optional[bool] = None,
 ) -> Any: ...
 
 
@@ -97,22 +97,13 @@ def coconut_eval(
 # -----------------------------------------------------------------------------------------------------------------------
 
 
-def use_coconut_breakpoint(on: bool=True) -> None: ...
+def use_coconut_breakpoint(on: bool = True) -> None: ...
 
 
-class CoconutImporter:
-    ext: str
-
-    @staticmethod
-    def run_compiler(path: str) -> None: ...
-
-    def find_module(self, fullname: str, path: Optional[str]=None) -> None: ...
+coconut_importer: Any = ...
 
 
-coconut_importer = CoconutImporter()
+def auto_compilation(on: bool = True, args: Iterable[Text] | None = None) -> None: ...
 
 
-def auto_compilation(on: bool=True) -> None: ...
-
-
-def get_coconut_encoding(encoding: str=...) -> Any: ...
+def get_coconut_encoding(encoding: Text = ...) -> Any: ...

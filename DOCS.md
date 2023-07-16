@@ -4523,9 +4523,11 @@ Retrieves a string containing information about the Coconut version. The optiona
 
 #### `auto_compilation`
 
-**coconut.api.auto_compilation**(_on_=`True`)
+**coconut.api.auto_compilation**(_on_=`True`, _args_=`None`)
 
 Turns [automatic compilation](#automatic-compilation) on or off. This function is called automatically when `coconut.api` is imported.
+
+If _args_ is passed, it will set the Coconut command-line arguments to use for automatic compilation.
 
 #### `use_coconut_breakpoint`
 

@@ -113,6 +113,10 @@ class TestConstants(unittest.TestCase):
         for maxed_ver in constants.max_versions:
             assert isinstance(maxed_ver, tuple) or maxed_ver in ("pyparsing", "cPyparsing"), "maxed versions must be tagged to a specific Python version"
 
+    def test_run_args(self):
+        assert "--run" not in constants.coconut_base_run_args
+        assert "--quiet" not in constants.coconut_base_run_args
+
 
 # -----------------------------------------------------------------------------------------------------------------------
 # MAIN:

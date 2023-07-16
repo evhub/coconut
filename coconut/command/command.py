@@ -55,8 +55,6 @@ from coconut.constants import (
     icoconut_custom_kernel_name,
     icoconut_old_kernel_names,
     exit_chars,
-    coconut_run_args,
-    coconut_run_verbose_args,
     verbose_mypy_args,
     default_mypy_args,
     report_this_text,
@@ -99,6 +97,7 @@ from coconut.command.util import (
     can_parse,
     invert_mypy_arg,
     run_with_stack_size,
+    proc_run_args,
     memoized_isdir,
     memoized_isfile,
 )
@@ -150,9 +149,11 @@ class Command(object):
                 if not arg.startswith("-") and can_parse(arguments, args[:-1]):
                     argv = sys.argv[i + 1:]
                     break
-            for run_arg in (coconut_run_verbose_args if "--verbose" in args else coconut_run_args):
-                if run_arg not in args:
-                    args.append(run_arg)
+            args = proc_run_args(args)
+            if "--run" in args:
+                logger.warn("extraneous --run argument passed; coconut-run implies --run")
+            else:
+                args.append("--run")
             self.cmd(args, argv=argv)
         else:
             self.cmd()

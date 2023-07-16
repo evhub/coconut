@@ -79,6 +79,7 @@ from coconut.constants import (
     must_use_specific_target_builtins,
     kilobyte,
     min_stack_size_kbs,
+    coconut_base_run_args,
 )
 
 if PY26:
@@ -449,6 +450,18 @@ def run_with_stack_size(stack_kbs, func, *args, **kwargs):
     return out[0]
 
 
+def proc_run_args(args=()):
+    """Process args to use for coconut-run or the import hook."""
+    args = list(args)
+    if "--verbose" not in args and "--quiet" not in args:
+        args.append("--quiet")
+    for run_arg in coconut_base_run_args:
+        run_arg_name = run_arg.split("=", 1)[0]
+        if not any(arg.startswith(run_arg_name) for arg in args):
+            args.append(run_arg)
+    return args
+
+
 # -----------------------------------------------------------------------------------------------------------------------
 # CLASSES:
 # -----------------------------------------------------------------------------------------------------------------------
@@ -551,10 +564,10 @@ class Prompt(object):
 class Runner(object):
     """Compiled Python executor."""
 
-    def __init__(self, comp=None, exit=sys.exit, store=False, path=None):
+    def __init__(self, comp=None, exit=sys.exit, store=False, path=None, auto_comp_args=None):
         """Create the executor."""
         from coconut.api import auto_compilation, use_coconut_breakpoint
-        auto_compilation(on=interpreter_uses_auto_compilation)
+        auto_compilation(on=interpreter_uses_auto_compilation, args=auto_comp_args)
         use_coconut_breakpoint(on=interpreter_uses_coconut_breakpoint)
         self.exit = exit
         self.vars = self.build_vars(path, init=True)

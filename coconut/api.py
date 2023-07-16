@@ -31,11 +31,11 @@ from coconut.integrations import embed
 from coconut.exceptions import CoconutException
 from coconut.command import Command
 from coconut.command.cli import cli_version
+from coconut.command.util import proc_run_args
 from coconut.compiler import Compiler
 from coconut.constants import (
     version_tag,
     code_exts,
-    coconut_import_hook_args,
     coconut_kernel_kwargs,
 )
 
@@ -182,24 +182,31 @@ class CoconutImporter(object):
     ext = code_exts[0]
     command = None
 
+    def __init__(self, *args):
+        self.set_args(args)
+
+    def set_args(self, args):
+        """Set the Coconut command line args to use for auto compilation."""
+        self.args = proc_run_args(args)
+
     def run_compiler(self, path):
         """Run the Coconut compiler on the given path."""
         if self.command is None:
             self.command = Command()
-        self.command.cmd([path] + list(coconut_import_hook_args))
+        self.command.cmd([path] + self.args)
 
-    def find_module(self, fullname, path=None):
+    def find_coconut(self, fullname, path=None):
         """Searches for a Coconut file of the given name and compiles it."""
-        basepaths = [""] + list(sys.path)
+        basepaths = list(sys.path) + [""]
         if fullname.startswith("."):
             if path is None:
                 # we can't do a relative import if there's no package path
                 return
             fullname = fullname[1:]
             basepaths.insert(0, path)
-        fullpath = os.path.join(*fullname.split("."))
-        for head in basepaths:
-            path = os.path.join(head, fullpath)
+        path_tail = os.path.join(*fullname.split("."))
+        for path_head in basepaths:
+            path = os.path.join(path_head, path_tail)
             filepath = path + self.ext
             dirpath = os.path.join(path, "__init__" + self.ext)
             if os.path.exists(filepath):
@@ -211,12 +218,22 @@ class CoconutImporter(object):
                 # Coconut package was found and compiled, now let Python import it
                 return
 
+    def find_module(self, fullname, path=None):
+        """Get a loader for a Coconut module if it exists."""
+        self.find_coconut(fullname, path)
+
+    def find_spec(self, fullname, path, oldmodule=None):
+        """Get a modulespec for a Coconut module if it exists."""
+        self.find_coconut(fullname, path)
+
 
 coconut_importer = CoconutImporter()
 
 
-def auto_compilation(on=True):
+def auto_compilation(on=True, args=None):
     """Turn automatic compilation of Coconut files on or off."""
+    if args is not None:
+        coconut_importer.set_args(args)
     if on:
         if coconut_importer not in sys.meta_path:
             sys.meta_path.insert(0, coconut_importer)
