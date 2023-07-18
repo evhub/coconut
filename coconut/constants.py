@@ -933,7 +933,7 @@ all_reqs = {
 
 # min versions are inclusive
 min_versions = {
-    "cPyparsing": (2, 4, 7, 2, 1, 1),
+    "cPyparsing": (2, 4, 7, 2, 1, 2),
     ("pre-commit", "py3"): (3,),
     ("psutil", "py>=27"): (5,),
     "jupyter": (1, 0),
@@ -947,13 +947,14 @@ min_versions = {
     ("numpy", "py34"): (1,),
     ("numpy", "py<3;cpy"): (1,),
     ("dataclasses", "py==36"): (0, 8),
-    ("aenum", "py<34"): (3, 1, 13),
+    ("aenum", "py<34"): (3, 1, 15),
     "pydata-sphinx-theme": (0, 13),
-    "myst-parser": (1,),
-    "mypy[python2]": (1, 3),
+    "myst-parser": (2,),
+    "sphinx": (7,),
+    "mypy[python2]": (1, 4),
     ("jupyter-console", "py37"): (6, 6),
     ("typing", "py<35"): (3, 10),
-    ("typing_extensions", "py>=37"): (4, 6),
+    ("typing_extensions", "py>=37"): (4, 7),
     ("ipython", "py38"): (8,),
     ("ipykernel", "py38"): (6,),
     ("jedi", "py39"): (0, 18),
@@ -964,8 +965,6 @@ min_versions = {
 
     # pinned reqs: (must be added to pinned_reqs below)
 
-    # don't upgrade until myst-parser supports the new version
-    "sphinx": (6,),
     # don't upgrade these; they breaks on Python 3.7
     ("ipython", "py==37"): (7, 34),
     # don't upgrade these; they breaks on Python 3.6
@@ -1007,7 +1006,6 @@ min_versions = {
 
 # should match the reqs with comments above
 pinned_reqs = (
-    "sphinx",
     ("ipython", "py==37"),
     ("xonsh", "py>=36;py<38"),
     ("pandas", "py36"),
