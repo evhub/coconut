@@ -279,7 +279,8 @@ def call(
     **kwargs: _t.Any,
 ) -> _T: ...
 
-_coconut_tail_call = of = call
+_coconut_tail_call = call
+of = _deprecated("use call instead")(call)
 
 
 @_dataclass(frozen=True, slots=True)
@@ -489,7 +490,8 @@ def addpattern(
     allow_any_func: bool=False,
 ) -> _t.Callable[..., _t.Any]: ...
 
-_coconut_addpattern = prepattern = addpattern
+_coconut_addpattern = addpattern
+prepattern = _deprecated("use addpattern instead")(addpattern)
 
 
 def _coconut_mark_as_match(func: _Tfunc) -> _Tfunc:
