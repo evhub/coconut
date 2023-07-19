@@ -72,6 +72,7 @@ from coconut.constants import (
     default_use_cache_dir,
     coconut_cache_dir,
     coconut_run_kwargs,
+    interpreter_uses_incremental,
 )
 from coconut.util import (
     univ_open,
@@ -742,7 +743,7 @@ class Command(object):
 
     def start_running(self):
         """Start running the Runner."""
-        self.comp.warm_up(enable_incremental_mode=True)
+        self.comp.warm_up(enable_incremental_mode=interpreter_uses_incremental)
         self.check_runner()
         self.running = True
         logger.log("Time till prompt: " + str(get_clock_time() - first_import_time) + " secs")

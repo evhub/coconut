@@ -105,6 +105,7 @@ use_fast_pyparsing_reprs = True
 assert use_fast_pyparsing_reprs or DEVELOP, "use_fast_pyparsing_reprs should never be disabled on non-develop build"
 
 enable_pyparsing_warnings = DEVELOP
+warn_on_multiline_regex = False
 
 default_whitespace_chars = " \t\f"  # the only non-newline whitespace Python allows
 
@@ -114,10 +115,10 @@ use_computation_graph_env_var = "COCONUT_USE_COMPUTATION_GRAPH"
 
 # below constants are experimentally determined to maximize performance
 
+streamline_grammar_for_len = 4000
+
 use_packrat_parser = True  # True also gives us better error messages
 packrat_cache_size = None  # only works because final() clears the cache
-
-use_left_recursion_if_available = False
 
 # note that _parseIncremental produces much smaller caches
 use_incremental_if_available = True
@@ -126,7 +127,7 @@ incremental_cache_size = None
 repeatedly_clear_incremental_cache = True
 never_clear_incremental_cache = False
 
-streamline_grammar_for_len = 4000
+use_left_recursion_if_available = False
 
 # -----------------------------------------------------------------------------------------------------------------------
 # COMPILER CONSTANTS:
@@ -682,6 +683,7 @@ mypy_builtin_regex = re.compile(r"\b(reveal_type|reveal_locals)\b")
 
 interpreter_uses_auto_compilation = True
 interpreter_uses_coconut_breakpoint = True
+interpreter_uses_incremental = False
 
 command_resources_dir = os.path.join(base_dir, "command", "resources")
 coconut_pth_file = os.path.join(command_resources_dir, "zcoconut.pth")

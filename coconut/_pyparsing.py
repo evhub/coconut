@@ -44,6 +44,7 @@ from coconut.constants import (
     use_incremental_if_available,
     incremental_cache_size,
     never_clear_incremental_cache,
+    warn_on_multiline_regex,
 )
 from coconut.util import get_clock_time  # NOQA
 from coconut.util import (
@@ -196,6 +197,7 @@ if enable_pyparsing_warnings:
     else:
         _pyparsing._enable_all_warnings()
     _pyparsing.__diag__.warn_name_set_on_empty_Forward = False
+    _pyparsing.__diag__.warn_on_incremental_multiline_regex = warn_on_multiline_regex
 
 if MODERN_PYPARSING and use_left_recursion_if_available:
     ParserElement.enable_left_recursion()

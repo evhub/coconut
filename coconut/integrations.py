@@ -25,6 +25,7 @@ from coconut.constants import (
     coconut_kernel_kwargs,
     coconut_run_kwargs,
     enabled_xonsh_modes,
+    interpreter_uses_incremental,
 )
 from coconut.util import memoize_with_exceptions
 
@@ -188,7 +189,7 @@ class CoconutXontribLoader(object):
         if self.compiler is None:
             from coconut.compiler import Compiler
             self.compiler = Compiler(**coconut_kernel_kwargs)
-            self.compiler.warm_up(enable_incremental_mode=True)
+            self.compiler.warm_up(enable_incremental_mode=interpreter_uses_incremental)
 
         if self.runner is None:
             from coconut.command.util import Runner
