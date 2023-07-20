@@ -1056,7 +1056,7 @@ _Note: these are only the default, built-in unicode operators. Coconut supports 
 ##### Full List
 
 ```
-⇒ (\u21d2)                  => "=>"
+⇒ (\u21d2)                 => "=>"
 → (\u2192)                  => "->"
 × (\xd7)                    => "*" (only multiplication)
 ↑ (\u2191)                  => "**" (only exponentiation)
@@ -1074,18 +1074,18 @@ _Note: these are only the default, built-in unicode operators. Coconut supports 
 » (\xbb)                    => ">>"
 … (\u2026)                  => "..."
 λ (\u03bb)                  => "lambda"
-↦ (\u21a6)                  => "|>"
-↤ (\u21a4)                  => "<|"
-*↦ (*\u21a6)                => "|*>"
-↤* (\u21a4*)                => "<*|"
-**↦ (**\u21a6)              => "|**>"
-↤** (\u21a4**)              => "<**|"
-?↦ (?\u21a6)                => "|?>"
-↤? (?\u21a4)                => "<?|"
-?*↦ (?*\u21a6)              => "|?*>"
-↤*? (\u21a4*?)              => "<*?|"
-?**↦ (?**\u21a6)            => "|?**>"
-↤**? (\u21a4**?)            => "<**?|"
+↦ (\u21a6)                 => "|>"
+↤ (\u21a4)                 => "<|"
+*↦ (*\u21a6)               => "|*>"
+↤* (\u21a4*)               => "<*|"
+**↦ (**\u21a6)             => "|**>"
+↤** (\u21a4**)             => "<**|"
+?↦ (?\u21a6)               => "|?>"
+↤? (?\u21a4)               => "<?|"
+?*↦ (?*\u21a6)             => "|?*>"
+↤*? (\u21a4*?)             => "<*?|"
+?**↦ (?**\u21a6)           => "|?**>"
+↤**? (\u21a4**?)           => "<**?|"
 ∘ (\u2218)                  => ".."
 ∘> (\u2218>)                => "..>"
 <∘ (<\u2218)                => "<.."
@@ -2766,7 +2766,9 @@ global state_c; state_c += 1
 
 ### Code Passthrough
 
-Coconut supports the ability to pass arbitrary code through the compiler without being touched, for compatibility with other variants of Python, such as [Cython](http://cython.org/) or [Mython](http://mython.org/). Anything placed between `\(` and the corresponding close parenthesis will be passed through, as well as any line starting with `\\`, which will have the additional effect of allowing indentation under it.
+Coconut supports the ability to pass arbitrary code through the compiler without being touched, for compatibility with other variants of Python, such as [Cython](http://cython.org/) or [Mython](http://mython.org/). When using Coconut to compile to another variant of Python, make sure you [name your source file properly](#naming-source-files) to ensure the resulting compiled code has the right file extension for the intended usage.
+
+Anything placed between `\(` and the corresponding close parenthesis will be passed through, as well as any line starting with `\\`, which will have the additional effect of allowing indentation under it.
 
 ##### Example
 
