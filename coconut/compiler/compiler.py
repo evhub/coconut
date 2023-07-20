@@ -574,6 +574,8 @@ class Compiler(Grammar, pickleable_obj):
         # need to keep temp_var_counts in interpreter to avoid overwriting typevars
         if self.temp_var_counts is None or not keep_state:
             self.temp_var_counts = defaultdict(int)
+        # but always overwrite temp_vars_by_key since they store locs that will be invalidated
+        self.temp_vars_by_key = {}
         self.parsing_context = defaultdict(list)
         self.unused_imports = defaultdict(list)
         self.kept_lines = []
@@ -638,12 +640,22 @@ class Compiler(Grammar, pickleable_obj):
                 return transform(grammar, text)
         return None
 
-    def get_temp_var(self, base_name="temp"):
+    def get_temp_var(self, base_name="temp", loc=None):
         """Get a unique temporary variable name."""
+        if loc is None:
+            key = None
+        else:
+            key = (base_name, loc)
+        if key is not None:
+            got_name = self.temp_vars_by_key.get(key)
+            if got_name is not None:
+                return got_name
         if self.minify:
             base_name = ""
         var_name = reserved_prefix + "_" + base_name + "_" + str(self.temp_var_counts[base_name])
         self.temp_var_counts[base_name] += 1
+        if key is not None:
+            self.temp_vars_by_key[key] = var_name
         return var_name
 
     @classmethod
@@ -1910,7 +1922,7 @@ class Compiler(Grammar, pickleable_obj):
             else:
                 tre_recurse = tuple_str_of_str(func_args) + " = " + mock_var + "(" + args + ")" + "\ncontinue"
 
-            tre_check_var = self.get_temp_var("tre_check")
+            tre_check_var = self.get_temp_var("tre_check", loc)
             return handle_indentation(
                 """
 try:
@@ -2178,7 +2190,7 @@ else:
         undotted_name = None
         if func_name is not None and "." in func_name:
             undotted_name = func_name.rsplit(".", 1)[-1]
-            def_name = self.get_temp_var(undotted_name)
+            def_name = self.get_temp_var("dotted_" + undotted_name, loc)
 
         # detect pattern-matching functions
         is_match_func = func_paramdef == match_func_paramdef
@@ -2188,7 +2200,7 @@ else:
             if func_name is None:
                 raise CoconutInternalException("could not find name in addpattern function definition", def_stmt)
             # binds most tightly, except for TCO
-            addpattern_decorator = self.get_temp_var("addpattern")
+            addpattern_decorator = self.get_temp_var("addpattern", loc)
             out.append(
                 handle_indentation(
                     """
@@ -2263,10 +2275,10 @@ if False:
             )
             if attempt_tre:
                 if func_args and func_args != func_paramdef:
-                    mock_var = self.get_temp_var("mock")
+                    mock_var = self.get_temp_var("mock", loc)
                 else:
                     mock_var = None
-                func_store = self.get_temp_var("recursive_func")
+                func_store = self.get_temp_var("recursive_func", loc)
                 tre_return_grammar = self.tre_return_grammar(func_name, func_args, func_store, mock_var)
             else:
                 mock_var = func_store = tre_return_grammar = None
@@ -2379,7 +2391,7 @@ if {temp_var} is not None:
                     func_code=func_code,
                     func_name=func_name,
                     undotted_name=undotted_name,
-                    temp_var=self.get_temp_var("qualname"),
+                    temp_var=self.get_temp_var("qualname", loc),
                 ),
             )
             # decorating the function must come after __name__ has been set,
@@ -2393,7 +2405,7 @@ if {temp_var} is not None:
 
         # handle copyclosure functions
         if copyclosure:
-            vars_var = self.get_temp_var("func_vars")
+            vars_var = self.get_temp_var("func_vars", loc)
             func_from_vars = vars_var + '["' + def_name + '"]'
             # for dotted copyclosure function definition, decoration was deferred until now
             if decorators:
@@ -2830,11 +2842,11 @@ else:
         self.docstring = self.reformat(moduledoc, ignore_errors=False) + "\n\n"
         return endline
 
-    def yield_from_handle(self, tokens):
+    def yield_from_handle(self, loc, tokens):
         """Process Python 3.3 yield from."""
         expr, = tokens
         if self.target_info < (3, 3):
-            ret_val_name = self.get_temp_var("yield_from")
+            ret_val_name = self.get_temp_var("yield_from_return", loc)
             self.add_code_before[ret_val_name] = handle_indentation(
                 '''
 {yield_from_var} = _coconut.iter({expr})
@@ -2847,8 +2859,8 @@ while True:
                 ''',
             ).format(
                 expr=expr,
-                yield_from_var=self.get_temp_var("yield_from"),
-                yield_err_var=self.get_temp_var("yield_err"),
+                yield_from_var=self.get_temp_var("yield_from", loc),
+                yield_err_var=self.get_temp_var("yield_err", loc),
                 ret_val_name=ret_val_name,
             )
             return ret_val_name
@@ -2909,7 +2921,7 @@ while True:
         elif op == "??=":
             return name + " = " + item + " if " + name + " is None else " + name
         elif op == "::=":
-            ichain_var = self.get_temp_var("lazy_chain")
+            ichain_var = self.get_temp_var("lazy_chain", loc)
             # this is necessary to prevent a segfault caused by self-reference
             return (
                 ichain_var + " = " + name + "\n"
@@ -2984,7 +2996,7 @@ while True:
         else:
             raise CoconutInternalException("invalid pattern-matching tokens in data", match_tokens)
 
-        check_var = self.get_temp_var("match_check")
+        check_var = self.get_temp_var("match_check", loc)
         matcher = self.get_matcher(original, loc, check_var, name_list=[])
 
         pos_only_args, req_args, default_args, star_arg, kwd_only_args, dubstar_arg = split_args_list(matches, loc)
@@ -3285,7 +3297,7 @@ def __hash__(self):
         namedtuple_call = self.make_namedtuple_call(None, names, types)
         return namedtuple_call + "(" + ", ".join(items) + ")"
 
-    def single_import(self, path, imp_as, type_ignore=False):
+    def single_import(self, loc, path, imp_as, type_ignore=False):
         """Generate import statements from a fully qualified import and the name to bind it to."""
         out = []
 
@@ -3304,7 +3316,7 @@ def __hash__(self):
             imp, imp_as = imp_as, None
 
         if imp_as is not None and "." in imp_as:
-            import_as_var = self.get_temp_var("import")
+            import_as_var = self.get_temp_var("import", loc)
             out.append(import_stmt(imp_from, imp, import_as_var))
             fake_mods = imp_as.split(".")
             for i in range(1, len(fake_mods)):
@@ -3328,7 +3340,7 @@ def __hash__(self):
 
         return out
 
-    def universal_import(self, imports, imp_from=None):
+    def universal_import(self, loc, imports, imp_from=None):
         """Generate code for a universal import of imports from imp_from.
         imports = [[imp1], [imp2, as], ...]"""
         importmap = []  # [((imp | old_imp, imp, version_check), imp_as), ...]
@@ -3375,7 +3387,7 @@ def __hash__(self):
         stmts = []
         for paths, imp_as, type_ignore in importmap:
             if len(paths) == 1:
-                more_stmts = self.single_import(paths[0], imp_as)
+                more_stmts = self.single_import(loc, paths[0], imp_as)
                 stmts.extend(more_stmts)
             else:
                 old_imp, new_imp, version_check = paths
@@ -3394,11 +3406,11 @@ else:
 if {store_var} is not _coconut_sentinel:
     sys = {store_var}
                 """).format(
-                        store_var=self.get_temp_var("sys"),
+                        store_var=self.get_temp_var("sys", loc),
                         version_check=version_check,
-                        new_imp="\n".join(self.single_import(new_imp, imp_as)),
+                        new_imp="\n".join(self.single_import(loc, new_imp, imp_as)),
                         # should only type: ignore the old import
-                        old_imp="\n".join(self.single_import(old_imp, imp_as, type_ignore=type_ignore)),
+                        old_imp="\n".join(self.single_import(loc, old_imp, imp_as, type_ignore=type_ignore)),
                         type_ignore=self.type_ignore_comment(),
                     ),
                 )
@@ -3423,9 +3435,9 @@ if {store_var} is not _coconut_sentinel:
             return special_starred_import_handle(imp_all=bool(imp_from))
         for imp_name in imported_names(imports):
             self.unused_imports[imp_name].append(loc)
-        return self.universal_import(imports, imp_from=imp_from)
+        return self.universal_import(loc, imports, imp_from=imp_from)
 
-    def complex_raise_stmt_handle(self, tokens):
+    def complex_raise_stmt_handle(self, loc, tokens):
         """Process Python 3 raise from statement."""
         raise_expr, from_expr = tokens
         if self.target.startswith("3"):
@@ -3438,7 +3450,7 @@ if {store_var} is not _coconut_sentinel:
 raise {raise_from_var}
                 ''',
             ).format(
-                raise_from_var=self.get_temp_var("raise_from"),
+                raise_from_var=self.get_temp_var("raise_from", loc),
                 raise_expr=raise_expr,
                 from_expr=from_expr,
             )
@@ -3487,9 +3499,9 @@ if not {check_var}:
             raise CoconutInternalException("invalid match type", match_type)
 
         if match_to_var is None:
-            match_to_var = self.get_temp_var("match_to")
+            match_to_var = self.get_temp_var("match_to", loc)
         if match_check_var is None:
-            match_check_var = self.get_temp_var("match_check")
+            match_check_var = self.get_temp_var("match_check", loc)
 
         matching = self.get_matcher(original, loc, match_check_var)
         matching.match(matches, match_to_var)
@@ -3509,8 +3521,8 @@ if not {check_var}:
     def destructuring_stmt_handle(self, original, loc, tokens):
         """Process match assign blocks."""
         matches, item = tokens
-        match_to_var = self.get_temp_var("match_to")
-        match_check_var = self.get_temp_var("match_check")
+        match_to_var = self.get_temp_var("match_to", loc)
+        match_check_var = self.get_temp_var("match_check", loc)
         out = self.full_match_handle(original, loc, [matches, "in", item, None], match_to_var, match_check_var)
         out += self.pattern_error(original, loc, match_to_var, match_check_var)
         return out
@@ -3525,7 +3537,7 @@ if not {check_var}:
         else:
             raise CoconutInternalException("invalid match function definition tokens", tokens)
 
-        check_var = self.get_temp_var("match_check")
+        check_var = self.get_temp_var("match_check", loc)
         matcher = self.get_matcher(original, loc, check_var)
 
         pos_only_args, req_args, default_args, star_arg, kwd_only_args, dubstar_arg = split_args_list(matches, loc)
@@ -3637,7 +3649,7 @@ if not {check_var}:
         else:
             raise CoconutInternalException("invalid statement lambda body tokens", stmts_toks)
 
-        name = self.get_temp_var("lambda")
+        name = self.get_temp_var("lambda", loc)
         body = openindent + "\n".join(stmts) + closeindent
 
         if typedef is None:
@@ -3857,7 +3869,7 @@ __annotations__["{name}"] = {annotation}
             else:
                 if name in typevar_info["all_typevars"]:
                     raise CoconutDeferredSyntaxError("type variable {name!r} already defined".format(name=name), loc)
-                temp_name = self.get_temp_var("typevar_" + name)
+                temp_name = self.get_temp_var("typevar_" + name, name_loc)
                 typevar_info["all_typevars"][name] = temp_name
                 typevar_info["new_typevars"].append((TypeVarFunc, temp_name))
                 typevar_info["typevar_locs"][name] = name_loc
@@ -3968,8 +3980,8 @@ __annotations__["{name}"] = {annotation}
         if block_kwd == "case":
             self.strict_err_or_warn("deprecated case keyword at top level in case ...: match ...: block (use Python 3.10 match ...: case ...: syntax instead)", original, loc)
 
-        check_var = self.get_temp_var("case_match_check")
-        match_var = self.get_temp_var("case_match_to")
+        check_var = self.get_temp_var("case_match_check", loc)
+        match_var = self.get_temp_var("case_match_to", loc)
 
         out = (
             match_var + " = " + item + "\n"
@@ -4036,7 +4048,7 @@ __annotations__["{name}"] = {annotation}
                 for name, expr in zip(names, compiled_exprs)
             ) + ")"
 
-    def decorators_handle(self, tokens):
+    def decorators_handle(self, loc, tokens):
         """Process decorators."""
         defs = []
         decorators = []
@@ -4047,7 +4059,7 @@ __annotations__["{name}"] = {annotation}
                 if self.target_info >= (3, 9):
                     decorators.append("@" + tok[0])
                 else:
-                    varname = self.get_temp_var("decorator")
+                    varname = self.get_temp_var("decorator", loc)
                     defs.append(varname + " = " + tok[0])
                     decorators.append("@" + varname + "\n")
             else:
@@ -4164,8 +4176,8 @@ __annotations__["{name}"] = {annotation}
         """Handle match for loops."""
         matches, item, body = tokens
 
-        match_to_var = self.get_temp_var("match_to")
-        match_check_var = self.get_temp_var("match_check")
+        match_to_var = self.get_temp_var("match_to", loc)
+        match_check_var = self.get_temp_var("match_check", loc)
 
         matcher = self.get_matcher(original, loc, match_check_var)
         matcher.match(matches, match_to_var)
@@ -4203,7 +4215,7 @@ for {match_to_var} in {item}:
             is_match = False
 
         loop_vars, iter_item, body = inner_toks
-        temp_var = self.get_temp_var("async_with_for")
+        temp_var = self.get_temp_var("async_with_for", loc)
 
         if is_match:
             loop = "async " + self.base_match_for_stmt_handle(
@@ -4292,11 +4304,11 @@ if False:
                 funcdef = kwd + " " + funcdef
         return funcdef
 
-    def protocol_intersect_expr_handle(self, tokens):
+    def protocol_intersect_expr_handle(self, loc, tokens):
         if len(tokens) == 1:
             return tokens[0]
         internal_assert(len(tokens) >= 2, "invalid protocol intersection tokens", tokens)
-        protocol_var = self.get_temp_var("protocol_intersection")
+        protocol_var = self.get_temp_var("protocol_intersection", loc)
         self.add_code_before[protocol_var] = handle_indentation(
             '''
 class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
