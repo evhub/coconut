@@ -587,31 +587,33 @@ def get_target_info_smart(target, mode="lowest"):
 
 class Wrap(ParseElementEnhance):
     """PyParsing token that wraps the given item in the given context manager."""
+    inside = False
 
     def __init__(self, item, wrapper, greedy=False, include_in_packrat_context=False):
         super(Wrap, self).__init__(item)
         self.wrapper = wrapper
         self.greedy = greedy
-        self.include_in_packrat_context = include_in_packrat_context
+        self.include_in_packrat_context = include_in_packrat_context and hasattr(ParserElement, "packrat_context")
 
     @property
     def wrapped_name(self):
         return get_name(self.expr) + " (Wrapped)"
 
     @contextmanager
-    def wrapped_packrat_context(self):
+    def wrapped_context(self):
         """Context manager that edits the packrat_context.
 
         Required to allow the packrat cache to distinguish between wrapped
         and unwrapped parses. Only supported natively on cPyparsing."""
-        if self.include_in_packrat_context and hasattr(self, "packrat_context"):
-            self.packrat_context.append(self.wrapper)
-            try:
-                yield
-            finally:
-                self.packrat_context.pop()
-        else:
+        was_inside, self.inside = self.inside, True
+        if self.include_in_packrat_context:
+            ParserElement.packrat_context.append(self.wrapper)
+        try:
             yield
+        finally:
+            if self.include_in_packrat_context:
+                ParserElement.packrat_context.pop()
+            self.inside = was_inside
 
     @override
     def parseImpl(self, original, loc, *args, **kwargs):
@@ -620,7 +622,7 @@ class Wrap(ParseElementEnhance):
             logger.log_trace(self.wrapped_name, original, loc)
         with logger.indent_tracing():
             with self.wrapper(self, original, loc):
-                with self.wrapped_packrat_context():
+                with self.wrapped_context():
                     parse_loc, tokens = super(Wrap, self).parseImpl(original, loc, *args, **kwargs)
                     if self.greedy:
                         tokens = evaluate_tokens(tokens)
@@ -638,7 +640,7 @@ class Wrap(ParseElementEnhance):
 def disable_inside(item, *elems, **kwargs):
     """Prevent elems from matching inside of item.
 
-    Returns (item with elem disabled, *new versions of elems).
+    Returns (item with elems disabled, *new versions of elems).
     """
     _invert = kwargs.pop("_invert", False)
     internal_assert(not kwargs, "excess keyword arguments passed to disable_inside", kwargs)
@@ -669,9 +671,9 @@ def disable_inside(item, *elems, **kwargs):
 def disable_outside(item, *elems):
     """Prevent elems from matching outside of item.
 
-    Returns (item with elem enabled, *new versions of elems).
+    Returns (item with elems enabled, *new versions of elems).
     """
-    for wrapped in disable_inside(item, *elems, **{"_invert": True}):
+    for wrapped in disable_inside(item, *elems, _invert=True):
         yield wrapped
 
 
