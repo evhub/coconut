@@ -74,8 +74,6 @@ from coconut.constants import (
     data_defaults_var,
     funcwrapper,
     non_syntactic_newline,
-    indchars,
-    default_whitespace_chars,
     early_passthrough_wrapper,
     super_names,
     custom_op_var,
@@ -170,6 +168,7 @@ from coconut.compiler.util import (
     base_keyword,
     enable_incremental_parsing,
     get_psf_target,
+    move_loc_to_non_whitespace,
 )
 from coconut.compiler.header import (
     minify_header,
@@ -847,9 +846,13 @@ class Compiler(Grammar, pickleable_obj):
             return snip
         else:
             internal_assert(kwargs.get("ignore_errors", False), "cannot reformat with indices and ignore_errors=False")
+            new_snip = self.reformat(snip, **kwargs)
             return (
-                (self.reformat(snip, **kwargs),)
-                + tuple(len(self.reformat(snip[:index], **kwargs)) for index in indices)
+                (new_snip,)
+                + tuple(
+                    move_loc_to_non_whitespace(new_snip, len(self.reformat(snip[:index], **kwargs)))
+                    for index in indices
+                )
             )
 
     def reformat_without_adding_code_before(self, code, **kwargs):
@@ -908,7 +911,7 @@ class Compiler(Grammar, pickleable_obj):
             yield
         except ParseBaseException as err:
             # don't reformat, since we might have gotten here because reformat failed
-            complain(self.make_parse_err(err, reformat=False, include_ln=False))
+            complain(self.make_parse_err(err, include_ln=False, reformat=False, endpoint=True))
         except CoconutException as err:
             complain(err)
 
@@ -1071,19 +1074,28 @@ class Compiler(Grammar, pickleable_obj):
         """Return information on the current target as a version tuple."""
         return get_target_info(self.target)
 
-    def make_err(self, errtype, message, original, loc=0, ln=None, extra=None, reformat=True, endpoint=False, include_causes=False, **kwargs):
+    def make_err(self, errtype, message, original, loc=0, ln=None, extra=None, reformat=True, endpoint=None, include_causes=False, **kwargs):
         """Generate an error of the specified type."""
         # move loc back to end of most recent actual text
-        while loc >= 2 and original[loc - 1:loc + 1].rstrip("".join(indchars) + default_whitespace_chars) == "":
-            loc -= 1
+        loc = move_loc_to_non_whitespace(original, loc, backwards=True)
+        logger.log_loc("loc", original, loc)
 
-        # get endpoint and line number
+        # get endpoint
+        if endpoint is None:
+            endpoint = reformat
         if endpoint is False:
             endpoint = loc
-        elif endpoint is True:
-            endpoint = clip(get_highest_parse_loc(original) + 1, min=loc)
         else:
-            endpoint = clip(endpoint, min=loc)
+            if endpoint is True:
+                endpoint = get_highest_parse_loc(original)
+            logger.log_loc("pre_endpoint", original, endpoint)
+            endpoint = clip(
+                move_loc_to_non_whitespace(original, endpoint, backwards=True),
+                min=loc,
+            )
+        logger.log_loc("endpoint", original, endpoint)
+
+        # get line number
         if ln is None:
             ln = self.adjust(lineno(loc, original))
 
@@ -1118,6 +1130,8 @@ class Compiler(Grammar, pickleable_obj):
         # reformat the snippet and fix error locations to match
         if reformat:
             snippet, loc_in_snip, endpt_in_snip = self.reformat(snippet, loc_in_snip, endpt_in_snip, ignore_errors=True)
+        logger.log_loc("new_loc", snippet, loc_in_snip)
+        logger.log_loc("new_endpt", snippet, endpt_in_snip)
 
         if extra is not None:
             kwargs["extra"] = extra
@@ -1126,7 +1140,7 @@ class Compiler(Grammar, pickleable_obj):
     def make_syntax_err(self, err, original):
         """Make a CoconutSyntaxError from a CoconutDeferredSyntaxError."""
         msg, loc = err.args
-        return self.make_err(CoconutSyntaxError, msg, original, loc, endpoint=True)
+        return self.make_err(CoconutSyntaxError, msg, original, loc)
 
     def make_parse_err(self, err, msg=None, include_ln=True, **kwargs):
         """Make a CoconutParseError from a ParseBaseException."""
@@ -1134,12 +1148,12 @@ class Compiler(Grammar, pickleable_obj):
         loc = err.loc
         ln = self.adjust(err.lineno) if include_ln else None
 
-        return self.make_err(CoconutParseError, msg, original, loc, ln, endpoint=True, include_causes=True, **kwargs)
+        return self.make_err(CoconutParseError, msg, original, loc, ln, include_causes=True, **kwargs)
 
     def make_internal_syntax_err(self, original, loc, msg, item, extra):
         """Make a CoconutInternalSyntaxError."""
         message = msg + ": " + repr(item)
-        return self.make_err(CoconutInternalSyntaxError, message, original, loc, extra=extra, endpoint=True)
+        return self.make_err(CoconutInternalSyntaxError, message, original, loc, extra=extra)
 
     def internal_assert(self, cond, original, loc, msg=None, item=None):
         """Version of internal_assert that raises CoconutInternalSyntaxErrors."""
@@ -1662,7 +1676,7 @@ class Compiler(Grammar, pickleable_obj):
                     open_char, _, open_col_ind, _, open_line_id = opens.pop()
                     if c != close_char_for(open_char):
                         if open_line_id is line_id:
-                            err_kwargs = {"loc": open_col_ind, "endpoint": i + 1}
+                            err_kwargs = {"loc": open_col_ind, "endpoint": i}
                         else:
                             err_kwargs = {"loc": i}
                         raise self.make_err(

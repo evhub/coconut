@@ -1327,8 +1327,8 @@ def get_highest_parse_loc(original):
         highest_loc = 0
         for item in cache:
             item_orig = item[1]
-            # if we're not using incremental mode, originals will always match
-            if not ParserElement._incrementalEnabled or item_orig == original:
+            # this check is always necessary as sometimes we're currently looking at an old cache
+            if item_orig == original:
                 loc = item[2]
                 if loc > highest_loc:
                     highest_loc = loc
@@ -1422,6 +1422,21 @@ def add_int_and_strs(int_part=0, str_parts=(), parens=False):
     if parens:
         out = "(" + out + ")"
     return out
+
+
+def move_loc_to_non_whitespace(original, loc, backwards=False, whitespace=default_whitespace_chars):
+    """Move the given loc in original to the closest non-whitespace in the given direction.
+    Won't ever move far enough to set loc to 0 or len(original)."""
+    while 0 <= loc <= len(original) - 1 and original[loc] in whitespace:
+        if backwards:
+            if loc <= 1:
+                break
+            loc -= 1
+        else:
+            if loc >= len(original) - 1:
+                break
+            loc += 1
+    return loc
 
 
 # -----------------------------------------------------------------------------------------------------------------------

@@ -337,6 +337,11 @@ class Logger(object):
                 del new_vars[v]
             self.printlog(message, new_vars)
 
+    def log_loc(self, name, original, loc):
+        """Log a location in source code."""
+        if self.verbose:
+            self.printlog("in error construction:", str(name), "=", repr(original[:loc]), "|", repr(original[loc:]))
+
     def get_error(self, err=None, show_tb=None):
         """Properly formats the current error."""
         if err is None:
