@@ -2,6 +2,10 @@
 .PHONY: test
 test: test-mypy
 
+# same as test, but for testing only changes to the tests
+.PHONY: test-tests
+test-tests: test-mypy-tests
+
 .PHONY: dev
 dev: clean setup
 	python -m pip install --upgrade -e .[dev]
@@ -84,9 +88,9 @@ test-univ: clean
 
 # same as test-univ, but doesn't recompile unchanged test files;
 # should only be used when testing the tests not the compiler
-.PHONY: test-tests
-test-tests: export COCONUT_USE_COLOR=TRUE
-test-tests: clean-no-tests
+.PHONY: test-univ-tests
+test-univ-tests: export COCONUT_USE_COLOR=TRUE
+test-univ-tests: clean-no-tests
 	python ./coconut/tests --strict --keep-lines
 	python ./coconut/tests/dest/runner.py
 	python ./coconut/tests/dest/extras.py

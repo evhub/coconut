@@ -29,6 +29,7 @@ from coconut._pyparsing import (
 from coconut.constants import (
     taberrfmt,
     report_this_text,
+    min_squiggles_in_err_msg,
 )
 from coconut.util import (
     pickleable_obj,
@@ -167,7 +168,7 @@ class CoconutSyntaxError(CoconutException):
                     if point_ind > 0 or endpoint_ind > 0:
                         err_len = endpoint_ind - point_ind
                         message += "\n" + " " * (taberrfmt + point_ind)
-                        if err_len <= 1:
+                        if err_len <= min_squiggles_in_err_msg:
                             if not self.point_to_endpoint:
                                 message += "^"
                             message += "~" * err_len  # err_len ~'s when there's only an extra char in one spot

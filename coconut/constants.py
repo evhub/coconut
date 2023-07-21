@@ -280,10 +280,13 @@ reserved_compiler_symbols = delimiter_symbols + (
     funcwrapper,
 )
 
-taberrfmt = 2  # spaces to indent exceptions
 tabideal = 4  # spaces to indent code for displaying
 
+taberrfmt = 2  # spaces to indent exceptions
+
 justify_len = 79  # ideal line length
+
+min_squiggles_in_err_msg = 1
 
 # for pattern-matching
 default_matcher_style = "python warn"
