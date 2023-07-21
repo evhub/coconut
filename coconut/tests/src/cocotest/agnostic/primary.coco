@@ -524,8 +524,6 @@ def primary_test() -> bool:
     assert f"{x} == {y}" == "1 == 2"
     assert f"{x!r} == {y!r}" == "1 == " + py_repr("2")
     assert f"{({})}" == "{}" == f"{({})!r}"
-    assert f"{{" == "{"
-    assert f"}}" == "}"
     assert f"{1, 2}" == "(1, 2)"
     assert f"{[] |> len}" == "0"
     match {"a": {"b": x }} or {"a": {"b": {"c": x}}} = {"a": {"b": {"c": "x"}}}
@@ -809,7 +807,6 @@ def primary_test() -> bool:
     else:
         assert False
     x = 1
-    assert f"a" f"b" == "ab" == f"a" "b" == "a" f"b"
     assert f"{x}" f"{x}" == "11"
     assert f"{x}" "{x}" == "1{x}"
     assert "{x}" f"{x}" == "{x}1"
@@ -1062,8 +1059,6 @@ def primary_test() -> bool:
     assert xs == [2, 3]
     assert xs `isinstance` list
     (1, *(2, 3), 4) = (|1, 2, 3, 4|)
-    assert f"a" r"b" fr"c" rf"d" == "abcd"
-    assert "a" fr"b" == "ab" == "a" rf"b"
     int(1) = 1
     [1] + [2] + m + [3] + [4] = [1,2,"?",3,4]
     assert m == ["?"]
@@ -1634,7 +1629,6 @@ def primary_test() -> bool:
     assert f"""{(
     )}""" == "()" == f'''{(
     )}'''
-    assert f"{f"{f"infinite"}"}" + " " + f"{f"nesting!!!"}" == "infinite nesting!!!"
     assert f"{'\n'.join(["", ""])}" == "\n"
     assert f"""{f'''{f'{f"{1+1}"}'}'''}""" == "2" == f"{f"{f"{f"{f"{f"{1+1}"}"}"}"}"}"
     assert f"___{

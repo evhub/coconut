@@ -884,14 +884,22 @@ class Compiler(Grammar, pickleable_obj):
         if self.strict:
             raise self.make_err(CoconutStyleError, *args, **kwargs)
 
+    def syntax_warning(self, *args, **kwargs):
+        """Show a CoconutSyntaxWarning. Usage:
+            self.syntax_warning(message, original, loc)
+        """
+        logger.warn_err(self.make_err(CoconutSyntaxWarning, *args, **kwargs))
+
     def strict_err_or_warn(self, *args, **kwargs):
-        """Raises an error if in strict mode, otherwise raises a warning."""
+        """Raises an error if in strict mode, otherwise raises a warning. Usage:
+            self.strict_err_or_warn(message, original, loc)
+        """
         internal_assert("extra" not in kwargs, "cannot pass extra=... to strict_err_or_warn")
         if self.strict:
             kwargs["extra"] = "remove --strict to downgrade to a warning"
             raise self.make_err(CoconutStyleError, *args, **kwargs)
         else:
-            logger.warn_err(self.make_err(CoconutSyntaxWarning, *args, **kwargs))
+            self.syntax_warning(*args, **kwargs)
 
     @contextmanager
     def complain_on_err(self):
@@ -3431,7 +3439,7 @@ if {store_var} is not _coconut_sentinel:
         if imp_from == "*" or imp_from is None and "*" in imports:
             if not (len(imports) == 1 and imports[0] == "*"):
                 raise self.make_err(CoconutSyntaxError, "only [from *] import * allowed, not from * import name", original, loc)
-            logger.warn_err(self.make_err(CoconutSyntaxWarning, "[from *] import * is a Coconut Easter egg and should not be used in production code", original, loc))
+            self.syntax_warning("[from *] import * is a Coconut Easter egg and should not be used in production code", original, loc)
             return special_starred_import_handle(imp_all=bool(imp_from))
         for imp_name in imported_names(imports):
             self.unused_imports[imp_name].append(loc)
@@ -3996,7 +4004,7 @@ __annotations__["{name}"] = {annotation}
             out += "if not " + check_var + default
         return out
 
-    def f_string_handle(self, loc, tokens):
+    def f_string_handle(self, original, loc, tokens):
         """Process Python 3.6 format strings."""
         string, = tokens
 
@@ -4011,6 +4019,10 @@ __annotations__["{name}"] = {annotation}
 
         # get f string parts
         strchar, string_parts, exprs = self.get_ref("f_str", string)
+
+        # warn if there are no exprs
+        if not exprs:
+            self.strict_err_or_warn("f-string with no expressions", original, loc)
 
         # handle Python 3.8 f string = specifier
         for i, expr in enumerate(exprs):
@@ -4326,7 +4338,7 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
 # CHECKING HANDLERS:
 # -----------------------------------------------------------------------------------------------------------------------
 
-    def check_strict(self, name, original, loc, tokens, only_warn=False, always_warn=False):
+    def check_strict(self, name, original, loc, tokens=(None,), only_warn=False, always_warn=False):
         """Check that syntax meets --strict requirements."""
         self.internal_assert(len(tokens) == 1, original, loc, "invalid " + name + " tokens", tokens)
         message = "found " + name
@@ -4335,13 +4347,13 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
             if only_warn:
                 if not always_warn:
                     kwargs["extra"] = "remove --strict to dismiss"
-                logger.warn_err(self.make_err(CoconutSyntaxWarning, message, original, loc, **kwargs))
+                self.syntax_warning(message, original, loc, **kwargs)
             else:
                 if always_warn:
                     kwargs["extra"] = "remove --strict to downgrade to a warning"
                 raise self.make_err(CoconutStyleError, message, original, loc, **kwargs)
         elif always_warn:
-            logger.warn_err(self.make_err(CoconutSyntaxWarning, message, original, loc))
+            self.syntax_warning(message, original, loc)
         return tokens[0]
 
     def lambdef_check(self, original, loc, tokens):

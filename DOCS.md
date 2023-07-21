@@ -333,18 +333,21 @@ If the `--strict` (`-s` for short) flag is enabled, Coconut will perform additio
 
 The style issues which will cause `--strict` to throw an error are:
 
-- mixing of tabs and spaces (without `--strict` will show a warning).
-- use of `from __future__` imports (Coconut does these automatically) (without `--strict` will show a warning).
-- inheriting from `object` in classes (Coconut does this automatically) (without `--strict` will show a warning).
-- semicolons at end of lines (without `--strict` will show a warning).
-- use of `u` to denote Unicode strings (all Coconut strings are Unicode strings) (without `--strict` will show a warning).
-- commas after [statement lambdas](#statement-lambdas) (not recommended as it can be unclear whether the comma is inside or outside the lambda) (without `--strict` will show a warning).
-- missing new line at end of file.
-- trailing whitespace at end of lines.
-- use of the Python-style `lambda` statement (use [Coconut's lambda syntax](#lambdas) instead).
-- use of backslash continuation (use [parenthetical continuation](#enhanced-parenthetical-continuation) instead).
-- Python-3.10/PEP-634-style dotted names in pattern-matching (Coconut style is to preface these with `==`).
-- use of `:` instead of `<:` to specify upper bounds in [Coconut's type parameter syntax](#type-parameter-syntax).
+- mixing of tabs and spaces
+- use of `from __future__` imports (Coconut does these automatically)
+- inheriting from `object` in classes (Coconut does this automatically)
+- semicolons at end of lines
+- use of `u` to denote Unicode strings (all Coconut strings are Unicode strings)
+- `f`-strings with no format expressions in them
+- commas after [statement lambdas](#statement-lambdas) (not recommended as it can be unclear whether the comma is inside or outside the lambda)
+- missing new line at end of file
+- trailing whitespace at end of lines
+- use of the Python-style `lambda` statement (use [Coconut's lambda syntax](#lambdas) instead)
+- use of backslash continuation (use [parenthetical continuation](#enhanced-parenthetical-continuation) instead)
+- Python-3.10/PEP-634-style dotted names in pattern-matching (Coconut style is to preface these with `==`)
+- use of `:` instead of `<:` to specify upper bounds in [Coconut's type parameter syntax](#type-parameter-syntax)
+
+Note that many of the above style issues will still show a warning if `--strict` is not present.
 
 ## Integrations
 
