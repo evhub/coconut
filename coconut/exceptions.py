@@ -196,7 +196,10 @@ class CoconutSyntaxError(CoconutException):
                         message += "/" + "~" * (len(lines[0]) - point_ind - 1) + "\n"
                     for line in lines:
                         message += "\n" + " " * taberrfmt + line
-                    message += "\n\n" + " " * taberrfmt + "~" * endpoint_ind + "^"
+                    message += (
+                        "\n\n" + " " * taberrfmt + "~" * endpoint_ind
+                        + ("^" if self.point_to_endpoint else "/" if endpoint_ind < len(lines[-1]) else "|")
+                    )
 
         return message
 

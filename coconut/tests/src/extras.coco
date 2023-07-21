@@ -206,7 +206,8 @@ cannot reassign type variable 'T' (use explicit '\T' syntax if intended) (line 1
         """.strip(),
     )
 
-    assert_raises(-> parse("@"), CoconutParseError, err_has=" ~^")
+    assert_raises(-> parse("$"), CoconutParseError)
+    assert_raises(-> parse("@"), CoconutParseError, err_has=(" ~^", "\n  ~^"))
     assert_raises(-> parse("range(1,10) |> reduce$(*, initializer = 1000) |> print"), CoconutParseError, err_has=" \\~~~~~~~~~~~~~~~~~~~~~~~^")
     assert_raises(-> parse("a := b"), CoconutParseError, err_has=" \\~^")
     assert_raises(-> parse("1 + return"), CoconutParseError, err_has=" \\~~~~^")
@@ -230,7 +231,7 @@ def f() =
     assert_raises(-> parse('"a" 10'), CoconutParseError, err_has=" \\~~~^")
     assert_raises(-> parse("A. ."), CoconutParseError, err_has=" \\~~^")
     assert_raises(-> parse('''f"""{
-}"""'''), CoconutSyntaxError, err_has=" ~~~~^")
+}"""'''), CoconutSyntaxError, err_has=" ~~~~|")
     assert_raises(-> parse("f([] {})"), CoconutParseError, err_has=" \\~~~~^")
 
     assert_raises(-> parse("return = 1"), CoconutParseError, err_has='invalid use of the keyword "return"')
