@@ -340,7 +340,10 @@ class Logger(object):
     def log_loc(self, name, original, loc):
         """Log a location in source code."""
         if self.verbose:
-            self.printlog("in error construction:", str(name), "=", repr(original[:loc]), "|", repr(original[loc:]))
+            if isinstance(loc, int):
+                self.printlog("in error construction:", str(name), "=", repr(original[:loc]), "|", repr(original[loc:]))
+            else:
+                self.printlog("in error construction:", str(name), "=", repr(loc))
 
     def get_error(self, err=None, show_tb=None):
         """Properly formats the current error."""
@@ -435,9 +438,10 @@ class Logger(object):
         trace = " ".join(str(arg) for arg in args)
         self.printlog(_indent(trace, self.trace_ind))
 
-    def log_tag(self, tag, code, multiline=False):
+    def log_tag(self, tag, code, multiline=False, force=False):
         """Logs a tagged message if tracing."""
-        if self.tracing:
+        if self.tracing or force:
+            assert not (not DEVELOP and force), tag
             if callable(code):
                 code = code()
             tagstr = "[" + str(tag) + "]"
@@ -480,7 +484,7 @@ class Logger(object):
             self.log_trace(expr, original, start_loc, tokens)
 
     def _trace_exc_action(self, original, loc, expr, exc):
-        if self.tracing:  # avoid the overhead of an extra function call
+        if self.tracing and self.verbose:  # avoid the overhead of an extra function call
             self.log_trace(expr, original, loc, exc)
 
     def trace(self, item):

@@ -121,6 +121,10 @@ class TestConstants(unittest.TestCase):
     def test_targets(self):
         assert all(v in constants.specific_targets or v in constants.pseudo_targets for v in ROOT_HEADER_VERSIONS)
 
+    def test_tuples(self):
+        assert isinstance(constants.indchars, tuple)
+        assert isinstance(constants.comment_chars, tuple)
+
 
 # -----------------------------------------------------------------------------------------------------------------------
 # MAIN:

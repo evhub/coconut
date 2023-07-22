@@ -924,7 +924,7 @@ class TestCompilation(unittest.TestCase):
 
     # avoids a strange, unreproducable failure on appveyor
     if not (WINDOWS and sys.version_info[:2] == (3, 8)):
-        def test_run(self):
+        def test_run_arg(self):
             run(use_run_arg=True)
 
     # not WINDOWS is for appveyor timeout prevention

@@ -131,7 +131,7 @@ class CoconutSyntaxError(CoconutException):
 
                 source_lines = tuple(logical_lines(source, keep_newlines=True))
 
-                # walk the endpoint back until it points to real text
+                # walk the endpoint line back until it points to real text
                 while endpoint_ln > point_ln and not "".join(source_lines[endpoint_ln - 1:endpoint_ln]).strip():
                     endpoint_ln -= 1
                     endpoint_ind = len(source_lines[endpoint_ln - 1])
@@ -143,25 +143,15 @@ class CoconutSyntaxError(CoconutException):
 
                     part = part.lstrip()
 
-                    from coconut.terminal import logger
-                    logger.log_loc("exc_loc", part, point_ind)
-                    logger.log_loc("exc_endpoint", part, endpoint_ind)
-
                     # adjust all cols based on lstrip
                     point_ind -= part_len - len(part)
                     endpoint_ind -= part_len - len(part)
-
-                    logger.log_loc("new_exc_loc", part, point_ind)
-                    logger.log_loc("new_exc_endpoint", part, endpoint_ind)
 
                     part = clean(part)
 
                     # adjust only cols that are too large based on clean/rstrip
                     point_ind = clip(point_ind, 0, len(part))
                     endpoint_ind = clip(endpoint_ind, point_ind, len(part))
-
-                    logger.log_loc("new_new_exc_loc", part, point_ind)
-                    logger.log_loc("new_new_exc_endpoint", part, endpoint_ind)
 
                     message += "\n" + " " * taberrfmt + part
 
@@ -177,7 +167,7 @@ class CoconutSyntaxError(CoconutException):
                         else:
                             message += (
                                 ("^" if not self.point_to_endpoint else "\\")
-                                + "~" * (err_len - 1)  # err_len - 1 ~'s when there's an extra char at the start and end
+                                + "~" * (err_len - 1)  # err_len-1 ~'s when there's an extra char at the start and end
                                 + ("^" if self.point_to_endpoint else "/" if endpoint_ind < len(part) else "|")
                             )
 
@@ -199,7 +189,7 @@ class CoconutSyntaxError(CoconutException):
                         message += "\n" + " " * taberrfmt + line
                     message += (
                         "\n\n" + " " * taberrfmt + "~" * endpoint_ind
-                        + ("^" if self.point_to_endpoint else "/" if endpoint_ind < len(lines[-1]) else "|")
+                        + ("^" if self.point_to_endpoint else "/" if 0 < endpoint_ind < len(lines[-1]) else "|")
                     )
 
         return message

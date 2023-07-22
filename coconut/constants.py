@@ -262,6 +262,8 @@ funcwrapper = "def:"
 indchars = (openindent, closeindent, "\n")
 comment_chars = ("#", lnwrapper)
 
+all_whitespace = default_whitespace_chars + "".join(indchars)
+
 # open_chars and close_chars MUST BE IN THE SAME ORDER
 open_chars = "([{"  # opens parenthetical
 close_chars = ")]}"  # closes parenthetical

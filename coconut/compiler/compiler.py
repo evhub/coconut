@@ -169,6 +169,7 @@ from coconut.compiler.util import (
     enable_incremental_parsing,
     get_psf_target,
     move_loc_to_non_whitespace,
+    move_endpt_to_non_whitespace,
 )
 from coconut.compiler.header import (
     minify_header,
@@ -837,23 +838,31 @@ class Compiler(Grammar, pickleable_obj):
         """Do post-processing that comes after deferred_code_proc."""
         return self.apply_procs(self.reformatprocs[1:], snip, reformatting=True, log=False)
 
-    def reformat(self, snip, *indices, **kwargs):
+    def reformat(self, snip, **kwargs):
         """Post process a preprocessed snippet."""
         internal_assert("ignore_errors" in kwargs, "reformat() missing required keyword argument: 'ignore_errors'")
-        if not indices:
-            with self.complain_on_err():
-                return self.apply_procs(self.reformatprocs, snip, reformatting=True, log=False, **kwargs)
-            return snip
-        else:
-            internal_assert(kwargs.get("ignore_errors", False), "cannot reformat with indices and ignore_errors=False")
-            new_snip = self.reformat(snip, **kwargs)
-            return (
-                (new_snip,)
-                + tuple(
-                    move_loc_to_non_whitespace(new_snip, len(self.reformat(snip[:index], **kwargs)))
-                    for index in indices
-                )
-            )
+        with self.complain_on_err():
+            return self.apply_procs(self.reformatprocs, snip, reformatting=True, log=False, **kwargs)
+        return snip
+
+    def reformat_locs(self, snip, loc, endpt=None, **kwargs):
+        """Reformats a snippet and adjusts the locations in it."""
+        internal_assert("ignore_errors" not in kwargs, "cannot pass ignore_errors to reformat_locs")
+        kwargs["ignore_errors"] = True
+
+        new_snip = self.reformat(snip, **kwargs)
+        new_loc = move_loc_to_non_whitespace(
+            new_snip,
+            len(self.reformat(snip[:loc], **kwargs)),
+        )
+        if endpt is None:
+            return new_snip, new_loc
+
+        new_endpt = move_endpt_to_non_whitespace(
+            new_snip,
+            len(self.reformat(snip[:endpt], **kwargs)),
+        )
+        return new_snip, new_loc, new_endpt
 
     def reformat_without_adding_code_before(self, code, **kwargs):
         """Reformats without adding code before and instead returns what would have been added."""
@@ -1076,8 +1085,11 @@ class Compiler(Grammar, pickleable_obj):
 
     def make_err(self, errtype, message, original, loc=0, ln=None, extra=None, reformat=True, endpoint=None, include_causes=False, **kwargs):
         """Generate an error of the specified type."""
+        logger.log_loc("raw_loc", original, loc)
+        logger.log_loc("raw_endpoint", original, endpoint)
+
         # move loc back to end of most recent actual text
-        loc = move_loc_to_non_whitespace(original, loc, backwards=True)
+        loc = move_loc_to_non_whitespace(original, loc)
         logger.log_loc("loc", original, loc)
 
         # get endpoint
@@ -1088,9 +1100,9 @@ class Compiler(Grammar, pickleable_obj):
         else:
             if endpoint is True:
                 endpoint = get_highest_parse_loc(original)
-            logger.log_loc("pre_endpoint", original, endpoint)
+                logger.log_loc("highest_parse_loc", original, endpoint)
             endpoint = clip(
-                move_loc_to_non_whitespace(original, endpoint, backwards=True),
+                move_endpt_to_non_whitespace(original, endpoint, backwards=True),
                 min=loc,
             )
         logger.log_loc("endpoint", original, endpoint)
@@ -1110,6 +1122,8 @@ class Compiler(Grammar, pickleable_obj):
         # fix error locations to correspond to the snippet
         loc_in_snip = getcol(loc, original) - 1
         endpt_in_snip = endpoint - sum(len(line) for line in original_lines[:loc_line_ind])
+        logger.log_loc("loc_in_snip", snippet, loc_in_snip)
+        logger.log_loc("endpt_in_snip", snippet, endpt_in_snip)
 
         # determine possible causes
         if include_causes:
@@ -1129,9 +1143,9 @@ class Compiler(Grammar, pickleable_obj):
 
         # reformat the snippet and fix error locations to match
         if reformat:
-            snippet, loc_in_snip, endpt_in_snip = self.reformat(snippet, loc_in_snip, endpt_in_snip, ignore_errors=True)
-        logger.log_loc("new_loc", snippet, loc_in_snip)
-        logger.log_loc("new_endpt", snippet, endpt_in_snip)
+            snippet, loc_in_snip, endpt_in_snip = self.reformat_locs(snippet, loc_in_snip, endpt_in_snip)
+            logger.log_loc("reformatted_loc", snippet, loc_in_snip)
+            logger.log_loc("reformatted_endpt", snippet, endpt_in_snip)
 
         if extra is not None:
             kwargs["extra"] = extra

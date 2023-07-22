@@ -1424,19 +1424,56 @@ def add_int_and_strs(int_part=0, str_parts=(), parens=False):
     return out
 
 
-def move_loc_to_non_whitespace(original, loc, backwards=False, whitespace=default_whitespace_chars):
-    """Move the given loc in original to the closest non-whitespace in the given direction.
-    Won't ever move far enough to set loc to 0 or len(original)."""
-    while 0 <= loc <= len(original) - 1 and original[loc] in whitespace:
-        if backwards:
-            if loc <= 1:
+def base_move_loc(original, loc, chars_to_move_forwards):
+    """Move loc in original in accordance with chars_to_move_forwards."""
+    visited_locs = set()
+    while 0 <= loc <= len(original) - 1:
+        c = original[loc]
+        for charset, forwards in chars_to_move_forwards.items():
+            if c in charset:
                 break
-            loc -= 1
-        else:
+        else:  # no break
+            break
+        if forwards:
             if loc >= len(original) - 1:
                 break
-            loc += 1
+            next_loc = loc + 1
+        else:
+            if loc <= 1:
+                break
+            next_loc = loc - 1
+        if next_loc in visited_locs:
+            loc = next_loc
+            break
+        visited_locs.add(next_loc)
+        loc = next_loc
     return loc
+
+
+def move_loc_to_non_whitespace(original, loc, backwards=False):
+    """Move the given loc in original to the closest non-whitespace in the given direction.
+    Won't ever move far enough to set loc to 0 or len(original)."""
+    return base_move_loc(
+        original,
+        loc,
+        chars_to_move_forwards={
+            default_whitespace_chars: not backwards,
+            # for loc, move backwards on newlines/indents, which we can do safely without removing anything from the error
+            indchars: False,
+        },
+    )
+
+
+def move_endpt_to_non_whitespace(original, loc, backwards=False):
+    """Same as base_move_loc but for endpoints specifically."""
+    return base_move_loc(
+        original,
+        loc,
+        chars_to_move_forwards={
+            default_whitespace_chars: not backwards,
+            # for endpt, ignore newlines/indents to avoid introducing unnecessary lines into the error
+        },
+    )
 
 
 # -----------------------------------------------------------------------------------------------------------------------

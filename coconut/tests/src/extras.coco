@@ -223,7 +223,7 @@ def f() =
         """.strip(),
         """
   assert 2
-          ^
+         ~^
         """.strip()
     ))
     assert_raises(-> parse('b"abc" "def"'), CoconutParseError, err_has=" \\~~~~~~^")
@@ -260,7 +260,7 @@ def gam_eps_rate(bitarr) = (
         if not PYPY:
             assert """
   |> map$(int(?, 2))
-         ~~~~~^""" in err_str or """
+         \~~~~^""" in err_str or """
       |> map$(int(?, 2))
 
   ~~~~~~~~~~~~~~~~^""" in err_str, err_str
