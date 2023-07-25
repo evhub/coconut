@@ -601,18 +601,17 @@ mypy_path_env_var = "MYPYPATH"
 style_env_var = "COCONUT_STYLE"
 vi_mode_env_var = "COCONUT_VI_MODE"
 home_env_var = "COCONUT_HOME"
-use_color_env_var = "COCONUT_USE_COLOR"
 
 coconut_home = fixpath(os.getenv(home_env_var, "~"))
 
-use_color = get_bool_env_var(use_color_env_var, default=None)
+use_color = get_bool_env_var("COCONUT_USE_COLOR", None)
 error_color_code = "31"
 log_color_code = "93"
 
 default_style = "default"
 prompt_histfile = os.path.join(coconut_home, ".coconut_history")
 prompt_multiline = False
-prompt_vi_mode = get_bool_env_var(vi_mode_env_var)
+prompt_vi_mode = get_bool_env_var(vi_mode_env_var, False)
 prompt_wrap_lines = True
 prompt_history_search = True
 prompt_use_suggester = False
@@ -688,7 +687,7 @@ mypy_builtin_regex = re.compile(r"\b(reveal_type|reveal_locals)\b")
 
 interpreter_uses_auto_compilation = True
 interpreter_uses_coconut_breakpoint = True
-interpreter_uses_incremental = False
+interpreter_uses_incremental = get_bool_env_var("COCONUT_INTERPRETER_INCREMENTAL_PARSING", False)
 
 command_resources_dir = os.path.join(base_dir, "command", "resources")
 coconut_pth_file = os.path.join(command_resources_dir, "zcoconut.pth")
@@ -848,7 +847,7 @@ website_url = "http://coconut-lang.org"
 license_name = "Apache 2.0"
 
 pure_python_env_var = "COCONUT_PURE_PYTHON"
-PURE_PYTHON = get_bool_env_var(pure_python_env_var)
+PURE_PYTHON = get_bool_env_var(pure_python_env_var, False)
 
 # the different categories here are defined in requirements.py,
 #  tuples denote the use of environment markers
@@ -940,7 +939,7 @@ all_reqs = {
 
 # min versions are inclusive
 min_versions = {
-    "cPyparsing": (2, 4, 7, 2, 1, 2),
+    "cPyparsing": (2, 4, 7, 2, 2, 0),
     ("pre-commit", "py3"): (3,),
     ("psutil", "py>=27"): (5,),
     "jupyter": (1, 0),

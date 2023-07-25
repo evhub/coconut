@@ -234,7 +234,11 @@ class Command(object):
                 args.trace = args.profile = False
 
             # set up logger
-            logger.quiet, logger.verbose, logger.tracing = args.quiet, args.verbose, args.trace
+            logger.setup(
+                quiet=args.quiet,
+                verbose=args.verbose,
+                tracing=args.trace,
+            )
             if args.verbose or args.trace or args.profile:
                 set_grammar_names()
             if args.trace or args.profile:
@@ -571,7 +575,7 @@ class Command(object):
         foundhash = None if force else self.has_hash_of(destpath, code, package_level)
         if foundhash:
             if show_unchanged:
-                logger.show_tabulated("Left unchanged", showpath(destpath), "(pass --force to override).")
+                logger.show_tabulated("Left unchanged", showpath(destpath), "(pass --force to overwrite).")
             if self.show:
                 logger.print(foundhash)
             if run:

@@ -50,6 +50,7 @@ from coconut.constants import (
     error_color_code,
     log_color_code,
     ansii_escape,
+    get_bool_env_var,
 )
 from coconut.util import (
     get_clock_time,
@@ -178,7 +179,8 @@ class LoggingStringIO(StringIO):
 
 class Logger(object):
     """Container object for various logger functions and variables."""
-    verbose = False
+    force_verbose = get_bool_env_var("COCONUT_FORCE_VERBOSE", False)
+    verbose = force_verbose
     quiet = False
     path = None
     name = None
@@ -214,6 +216,15 @@ class Logger(object):
     def copy(self):
         """Make a copy of the logger."""
         return Logger(self)
+
+    def setup(self, quiet=None, verbose=None, tracing=None):
+        """Set up the logger with the given parameters."""
+        if quiet is not None:
+            self.quiet = quiet
+        if not self.force_verbose and verbose is not None:
+            self.verbose = verbose
+        if tracing is not None:
+            self.tracing = tracing
 
     def display(
         self,
