@@ -202,7 +202,7 @@ def set_to_tuple(tokens):
 
 def import_stmt(imp_from, imp, imp_as, raw=False):
     """Generate an import statement."""
-    if not raw:
+    if not raw and imp != "*":
         module_path = (imp if imp_from is None else imp_from).split(".", 1)
         existing_imp = import_existing.get(module_path[0])
         if existing_imp is not None:
@@ -565,6 +565,7 @@ class Compiler(Grammar, pickleable_obj):
         IMPORTANT: When adding anything here, consider whether it should also be added to inner_environment.
         """
         self.filename = filename
+        self.outer_ln = None
         self.indchar = None
         self.comments = defaultdict(set)
         self.wrapped_type_ignore = None
@@ -590,8 +591,9 @@ class Compiler(Grammar, pickleable_obj):
         self.add_code_before_ignore_names = {}
 
     @contextmanager
-    def inner_environment(self):
+    def inner_environment(self, ln=None):
         """Set up compiler to evaluate inner expressions."""
+        outer_ln, self.outer_ln = self.outer_ln, ln
         line_numbers, self.line_numbers = self.line_numbers, False
         keep_lines, self.keep_lines = self.keep_lines, False
         comments, self.comments = self.comments, defaultdict(dictset)
@@ -604,6 +606,7 @@ class Compiler(Grammar, pickleable_obj):
         try:
             yield
         finally:
+            self.outer_ln = outer_ln
             self.line_numbers = line_numbers
             self.keep_lines = keep_lines
             self.comments = comments
@@ -1109,7 +1112,7 @@ class Compiler(Grammar, pickleable_obj):
 
         # get line number
         if ln is None:
-            ln = self.adjust(lineno(loc, original))
+            ln = self.outer_ln or self.adjust(lineno(loc, original))
 
         # get line indices for the error locs
         original_lines = tuple(logical_lines(original, True))
@@ -1176,6 +1179,8 @@ class Compiler(Grammar, pickleable_obj):
 
     def inner_parse_eval(
         self,
+        original,
+        loc,
         inputstring,
         parser=None,
         preargs={"strip": True},
@@ -1184,7 +1189,7 @@ class Compiler(Grammar, pickleable_obj):
         """Parse eval code in an inner environment."""
         if parser is None:
             parser = self.eval_parser
-        with self.inner_environment():
+        with self.inner_environment(ln=self.adjust(lineno(loc, original))):
             self.streamline(parser, inputstring)
             pre_procd = self.pre(inputstring, **preargs)
             parsed = parse(parser, pre_procd)
@@ -4064,7 +4069,7 @@ __annotations__["{name}"] = {annotation}
         compiled_exprs = []
         for co_expr in exprs:
             try:
-                py_expr = self.inner_parse_eval(co_expr)
+                py_expr = self.inner_parse_eval(original, loc, co_expr)
             except ParseBaseException:
                 raise CoconutDeferredSyntaxError("parsing failed for format string expression: " + co_expr, loc)
             if not does_parse(self.no_unquoted_newlines, py_expr):

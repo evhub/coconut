@@ -183,6 +183,15 @@ mismatched open '[' and close ')' (line 1)
   ])
    ^
     """.strip())
+    assert_raises(-> parse("""
+a = 1
+b = f"{1+}"
+c = 3
+    """.strip()), CoconutSyntaxError, err_has="""
+parsing failed for format string expression: 1+ (line 2)
+  b = f"{1+}"
+      ^
+      """.strip())
 
     assert_raises(-> parse("(|*?>)"), CoconutSyntaxError, err_has="'|?*>'")
     assert_raises(-> parse("(|**?>)"), CoconutSyntaxError, err_has="'|?**>'")

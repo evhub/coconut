@@ -32,7 +32,16 @@ def primary_test() -> bool:
     bio = BytesIO(b"herp")
     assert bio.read() == b"herp"
     if TYPE_CHECKING or sys.version_info >= (3, 5):
-        from typing import Iterable, Any
+        from typing import (
+            Iterable,
+            Any,
+            List,
+            Dict,
+            cast,
+            Protocol,
+            TypeVar,
+            Generic,
+        )  # NOQA
 
     assert 1 | 2 == 3
     assert "\n" == (

@@ -1059,15 +1059,7 @@ class unrepresentable:
 
 # Typing
 if TYPE_CHECKING or sys.version_info >= (3, 5):
-    from typing import (
-        List,
-        Dict,
-        Any,
-        cast,
-        Protocol,
-        TypeVar,
-        Generic,
-    )
+    from typing import *
 
     T = TypeVar("T", covariant=True)
     U = TypeVar("U", contravariant=True)
