@@ -1059,7 +1059,10 @@ class unrepresentable:
 
 # Typing
 if TYPE_CHECKING or sys.version_info >= (3, 5):
+    # test from typing import *, but that doesn't actually get us
+    #  the typing_extensions stuff we need, so also then import those
     from typing import *
+    from typing import Protocol
 
     T = TypeVar("T", covariant=True)
     U = TypeVar("U", contravariant=True)
