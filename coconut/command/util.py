@@ -72,6 +72,7 @@ from coconut.constants import (
     minimum_recursion_limit,
     oserror_retcode,
     base_stub_dir,
+    stub_dir_names,
     installed_stub_dir,
     interpreter_uses_auto_compilation,
     interpreter_uses_coconut_breakpoint,
@@ -315,19 +316,30 @@ def run_cmd(cmd, show_output=True, raise_errs=True, **kwargs):
             return ""
 
 
-def symlink(link_to, link_from):
-    """Link link_from to the directory link_to universally."""
-    if os.path.islink(link_from):
-        os.unlink(link_from)
-    elif os.path.exists(link_from):
+def unlink(link_path):
+    """Remove a symbolic link if one exists. Return whether anything was done."""
+    if os.path.islink(link_path):
+        os.unlink(link_path)
+        return True
+    return False
+
+
+def rm_dir_or_link(dir_to_rm):
+    """Safely delete a directory without deleting the contents of symlinks."""
+    if not unlink(dir_to_rm) and os.path.exists(dir_to_rm):
         if WINDOWS:
             try:
-                os.rmdir(link_from)
+                os.rmdir(dir_to_rm)
             except OSError:
                 logger.log_exc()
-                shutil.rmtree(link_from)
+                shutil.rmtree(dir_to_rm)
         else:
-            shutil.rmtree(link_from)
+            shutil.rmtree(dir_to_rm)
+
+
+def symlink(link_to, link_from):
+    """Link link_from to the directory link_to universally."""
+    rm_dir_or_link(link_from)
     try:
         if PY32:
             os.symlink(link_to, link_from, target_is_directory=True)
@@ -341,7 +353,23 @@ def symlink(link_to, link_from):
 
 def install_mypy_stubs():
     """Properly symlink mypy stub files."""
-    symlink(base_stub_dir, installed_stub_dir)
+    # unlink stub_dirs so we know rm_dir_or_link won't clear them
+    for stub_name in stub_dir_names:
+        unlink(os.path.join(base_stub_dir, stub_name))
+
+    # clean out the installed_stub_dir (which shouldn't follow symlinks,
+    #  but we still do the previous unlinking just to be sure)
+    rm_dir_or_link(installed_stub_dir)
+
+    # recreate installed_stub_dir
+    os.makedirs(installed_stub_dir)
+
+    # link stub dirs into the installed_stub_dir
+    for stub_name in stub_dir_names:
+        current_stub = os.path.join(base_stub_dir, stub_name)
+        install_stub = os.path.join(installed_stub_dir, stub_name)
+        symlink(current_stub, install_stub)
+
     return installed_stub_dir
 
 
