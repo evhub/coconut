@@ -102,7 +102,7 @@ class CoconutXontribLoader(object):
     def memoized_parse_xonsh(self, code):
         return self.compiler.parse_xonsh(code, keep_state=True)
 
-    def compile_code(self, code):
+    def compile_code(self, code, log_name="parse"):
         """Memoized self.compiler.parse_xonsh."""
         # hide imports to avoid circular dependencies
         from coconut.exceptions import CoconutException
@@ -123,7 +123,7 @@ class CoconutXontribLoader(object):
             success = True
         finally:
             logger.quiet = quiet
-            self.timing_info.append(("parse", get_clock_time() - parse_start_time))
+            self.timing_info.append((log_name, get_clock_time() - parse_start_time))
 
         return compiled, success
 
@@ -154,11 +154,11 @@ class CoconutXontribLoader(object):
             from coconut.terminal import logger
             from coconut.compiler.util import extract_line_num_from_comment
 
-            compiled, success = self.compile_code(inp)
+            compiled, success = self.compile_code(inp, log_name="ctxvisit")
 
             if success:
                 original_lines = tuple(inp.splitlines())
-                used_lines = set()
+                remaining_ln_pieces = {}
                 new_inp_lines = []
                 last_ln = 1
                 for compiled_line in compiled.splitlines():
@@ -168,11 +168,24 @@ class CoconutXontribLoader(object):
                     except IndexError:
                         logger.log_exc()
                         line = original_lines[-1]
-                    if line in used_lines:
-                        line = ""
+                    remaining_pieces = remaining_ln_pieces.get(ln)
+                    if remaining_pieces is None:
+                        # we handle our own inner_environment rather than have remove_strs do it so that we can reformat
+                        with self.compiler.inner_environment():
+                            line_no_strs = self.compiler.remove_strs(line, inner_environment=False)
+                            if ";" in line_no_strs:
+                                remaining_pieces = [
+                                    self.compiler.reformat(piece, ignore_errors=True)
+                                    for piece in line_no_strs.split(";")
+                                ]
+                            else:
+                                remaining_pieces = [line]
+                    if remaining_pieces:
+                        new_line = remaining_pieces.pop(0)
                     else:
-                        used_lines.add(line)
-                    new_inp_lines.append(line)
+                        new_line = ""
+                    remaining_ln_pieces[ln] = remaining_pieces
+                    new_inp_lines.append(new_line)
                     last_ln = ln
                 inp = "\n".join(new_inp_lines)
 
@@ -216,7 +229,7 @@ class CoconutXontribLoader(object):
         if not self.loaded:
             # hide imports to avoid circular dependencies
             from coconut.terminal import logger
-            logger.warn("attempting to unload Coconut xontrib but it was never loaded")
+            logger.warn("attempting to unload Coconut xontrib but it was already unloaded")
         self.loaded = False
 
 

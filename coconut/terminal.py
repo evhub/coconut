@@ -50,7 +50,7 @@ from coconut.constants import (
     error_color_code,
     log_color_code,
     ansii_escape,
-    get_bool_env_var,
+    force_verbose_logger,
 )
 from coconut.util import (
     get_clock_time,
@@ -179,7 +179,7 @@ class LoggingStringIO(StringIO):
 
 class Logger(object):
     """Container object for various logger functions and variables."""
-    force_verbose = get_bool_env_var("COCONUT_FORCE_VERBOSE", False)
+    force_verbose = force_verbose_logger
     verbose = force_verbose
     quiet = False
     path = None
@@ -552,21 +552,24 @@ class Logger(object):
                 return func(*args, **kwargs)
         return timed_func
 
-    def debug_func(self, func):
+    def debug_func(self, func, func_name=None):
         """Decorates a function to print the input/output behavior."""
+        if func_name is None:
+            func_name = func
+
         @wraps(func)
         def printing_func(*args, **kwargs):
             """Function decorated by logger.debug_func."""
             if not DEVELOP or self.quiet:
                 return func(*args, **kwargs)
             if not kwargs:
-                self.printerr(func, "<*|", args)
+                self.printerr(func_name, "<*|", args)
             elif not args:
-                self.printerr(func, "<**|", kwargs)
+                self.printerr(func_name, "<**|", kwargs)
             else:
-                self.printerr(func, "<<|", args, kwargs)
+                self.printerr(func_name, "<<|", args, kwargs)
             out = func(*args, **kwargs)
-            self.printerr(func, "=>", repr(out))
+            self.printerr(func_name, "=>", repr(out))
             return out
         return printing_func
 

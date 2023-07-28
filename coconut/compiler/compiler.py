@@ -98,6 +98,7 @@ from coconut.util import (
     get_name,
     assert_remove_prefix,
     dictset,
+    noop_ctx,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -927,10 +928,11 @@ class Compiler(Grammar, pickleable_obj):
         except CoconutException as err:
             complain(err)
 
-    def remove_strs(self, inputstring):
+    def remove_strs(self, inputstring, inner_environment=True):
         """Remove strings/comments from the given input."""
         with self.complain_on_err():
-            return self.str_proc(inputstring)
+            with (self.inner_environment() if inner_environment else noop_ctx()):
+                return self.str_proc(inputstring)
         return inputstring
 
     def get_matcher(self, original, loc, check_var, name_list=None):

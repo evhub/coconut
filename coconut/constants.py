@@ -602,6 +602,8 @@ style_env_var = "COCONUT_STYLE"
 vi_mode_env_var = "COCONUT_VI_MODE"
 home_env_var = "COCONUT_HOME"
 
+force_verbose_logger = get_bool_env_var("COCONUT_FORCE_VERBOSE", False)
+
 coconut_home = fixpath(os.getenv(home_env_var, "~"))
 
 use_color = get_bool_env_var("COCONUT_USE_COLOR", None)
@@ -692,7 +694,7 @@ mypy_builtin_regex = re.compile(r"\b(reveal_type|reveal_locals)\b")
 
 interpreter_uses_auto_compilation = True
 interpreter_uses_coconut_breakpoint = True
-interpreter_uses_incremental = get_bool_env_var("COCONUT_INTERPRETER_INCREMENTAL_PARSING", False)
+interpreter_uses_incremental = get_bool_env_var("COCONUT_INTERPRETER_USE_INCREMENTAL_PARSING", True)
 
 command_resources_dir = os.path.join(base_dir, "command", "resources")
 coconut_pth_file = os.path.join(command_resources_dir, "zcoconut.pth")
