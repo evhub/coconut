@@ -14,6 +14,7 @@ Description: Utilities for use in the compiler.
 # Table of Contents:
 #   - Imports
 #   - Computation Graph
+#   - Parsing Introspection
 #   - Targets
 #   - Parse Elements
 #   - Utilities
@@ -400,17 +401,6 @@ def force_reset_packrat_cache():
         ParserElement.enablePackrat(packrat_cache_size)
 
 
-def enable_incremental_parsing(force=False):
-    """Enable incremental parsing mode where prefix parses are reused."""
-    if SUPPORTS_INCREMENTAL or force:
-        try:
-            ParserElement.enableIncremental(incremental_cache_size, still_reset_cache=False)
-        except ImportError as err:
-            raise CoconutException(str(err))
-        else:
-            logger.log("Incremental parsing mode enabled.")
-
-
 @contextmanager
 def parsing_context(inner_parse=True):
     """Context to manage the packrat cache across parse calls."""
@@ -504,9 +494,78 @@ def transform(grammar, text, inner=True):
 
 
 # -----------------------------------------------------------------------------------------------------------------------
-# TARGETS:
+# PARSING INTROSPECTION:
 # -----------------------------------------------------------------------------------------------------------------------
 
+
+def get_func_closure(func):
+    """Get variables in func's closure."""
+    if PY2:
+        varnames = func.func_code.co_freevars
+        cells = func.func_closure
+    else:
+        varnames = func.__code__.co_freevars
+        cells = func.__closure__
+    return {v: c.cell_contents for v, c in zip(varnames, cells)}
+
+
+def get_pyparsing_cache():
+    """Extract the underlying pyparsing packrat cache."""
+    packrat_cache = ParserElement.packrat_cache
+    if isinstance(packrat_cache, dict):  # if enablePackrat is never called
+        return packrat_cache
+    elif hasattr(packrat_cache, "cache"):  # cPyparsing adds this
+        return packrat_cache.cache
+    else:  # on pyparsing we have to do this
+        try:
+            # this is sketchy, so errors should only be complained
+            return get_func_closure(packrat_cache.get.__func__)["cache"]
+        except Exception as err:
+            complain(err)
+            return {}
+
+
+def add_to_cache(new_cache_items):
+    """Add the given items directly to the pyparsing packrat cache."""
+    packrat_cache = ParserElement.packrat_cache
+    for lookup, value in new_cache_items:
+        packrat_cache.set(lookup, value)
+
+
+def get_cache_items_for(original):
+    """Get items from the pyparsing cache filtered to only from parsing original."""
+    cache = get_pyparsing_cache()
+    for lookup, value in cache.items():
+        got_orig = lookup[1]
+        if got_orig == original:
+            yield lookup, value
+
+
+def get_highest_parse_loc(original):
+    """Get the highest observed parse location."""
+    # find the highest observed parse location
+    highest_loc = 0
+    for item, _ in get_cache_items_for(original):
+        loc = item[2]
+        if loc > highest_loc:
+            highest_loc = loc
+    return highest_loc
+
+
+def enable_incremental_parsing(force=False):
+    """Enable incremental parsing mode where prefix parses are reused."""
+    if SUPPORTS_INCREMENTAL or force:
+        try:
+            ParserElement.enableIncremental(incremental_cache_size, still_reset_cache=False)
+        except ImportError as err:
+            raise CoconutException(str(err))
+        else:
+            logger.log("Incremental parsing mode enabled.")
+
+
+# -----------------------------------------------------------------------------------------------------------------------
+# TARGETS:
+# -----------------------------------------------------------------------------------------------------------------------
 on_new_python = False
 
 raw_sys_target = str(sys.version_info[0]) + str(sys.version_info[1])
@@ -1298,46 +1357,6 @@ def handle_indentation(inputstr, add_newline=False, extra_indent=0):
         out = openindent * extra_indent + out + closeindent * extra_indent
     internal_assert(lambda: out.count(openindent) == out.count(closeindent), "failed to properly handle indentation in", out)
     return out
-
-
-def get_func_closure(func):
-    """Get variables in func's closure."""
-    if PY2:
-        varnames = func.func_code.co_freevars
-        cells = func.func_closure
-    else:
-        varnames = func.__code__.co_freevars
-        cells = func.__closure__
-    return {v: c.cell_contents for v, c in zip(varnames, cells)}
-
-
-def get_highest_parse_loc(original):
-    """Get the highest observed parse location."""
-    try:
-        # extract the actual cache object (pyparsing does not make this easy)
-        packrat_cache = ParserElement.packrat_cache
-        if isinstance(packrat_cache, dict):  # if enablePackrat is never called
-            cache = packrat_cache
-        elif hasattr(packrat_cache, "cache"):  # cPyparsing adds this
-            cache = packrat_cache.cache
-        else:  # on pyparsing we have to do this
-            cache = get_func_closure(packrat_cache.get.__func__)["cache"]
-
-        # find the highest observed parse location
-        highest_loc = 0
-        for item in cache:
-            item_orig = item[1]
-            # this check is always necessary as sometimes we're currently looking at an old cache
-            if item_orig == original:
-                loc = item[2]
-                if loc > highest_loc:
-                    highest_loc = loc
-        return highest_loc
-
-    # everything here is sketchy, so errors should only be complained
-    except Exception as err:
-        complain(err)
-        return 0
 
 
 def literal_eval(py_code):

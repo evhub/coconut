@@ -124,7 +124,7 @@ class Command(object):
     exit_code = 0  # exit status to return
     errmsg = None  # error message to display
 
-    show = False  # corresponds to --display flag
+    display = False  # corresponds to --display flag
     jobs = 0  # corresponds to --jobs flag
     mypy_args = None  # corresponds to --mypy flag
     argv_args = None  # corresponds to --argv flag
@@ -274,14 +274,16 @@ class Command(object):
             self.set_jobs(args.jobs, args.profile)
             if args.recursion_limit is not None:
                 set_recursion_limit(args.recursion_limit)
-            if args.display:
-                self.show = True
+            self.display = args.display
+            self.prompt.vi_mode = args.vi_mode
             if args.style is not None:
                 self.prompt.set_style(args.style)
             if args.history_file is not None:
                 self.prompt.set_history_file(args.history_file)
-            if args.vi_mode:
-                self.prompt.vi_mode = True
+            if args.argv is not None:
+                self.argv_args = list(args.argv)
+
+            # execute non-compilation tasks
             if args.docs:
                 launch_documentation()
             if args.tutorial:
@@ -290,8 +292,6 @@ class Command(object):
                 self.site_uninstall()
             if args.site_install:
                 self.site_install()
-            if args.argv is not None:
-                self.argv_args = list(args.argv)
 
             # process general compiler args
             if args.line_numbers:
@@ -576,7 +576,7 @@ class Command(object):
         if foundhash:
             if show_unchanged:
                 logger.show_tabulated("Left unchanged", showpath(destpath), "(pass --force to overwrite).")
-            if self.show:
+            if self.display:
                 logger.print(foundhash)
             if run:
                 self.execute_file(destpath, argv_source_path=codepath)
@@ -591,7 +591,7 @@ class Command(object):
                     with univ_open(destpath, "w") as opened:
                         writefile(opened, compiled)
                     logger.show_tabulated("Compiled to", showpath(destpath), ".")
-                if self.show:
+                if self.display:
                     logger.print(compiled)
                 if run:
                     if destpath is None:
@@ -804,7 +804,7 @@ class Command(object):
         self.check_runner()
         if compiled is not None:
 
-            if allow_show and self.show:
+            if allow_show and self.display:
                 logger.print(compiled)
 
             if path is None:  # header is not included

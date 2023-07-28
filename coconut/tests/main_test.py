@@ -801,6 +801,8 @@ class TestShell(unittest.TestCase):
             p.expect("$")
             p.sendline("!(ls -la) |> bool")
             p.expect("True")
+            p.sendline("'1; 2' |> print")
+            p.expect("1; 2")
             p.sendline('$ENV_VAR = "ABC"')
             p.expect("$")
             p.sendline('echo f"{$ENV_VAR}"; echo f"{$ENV_VAR}"')
