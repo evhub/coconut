@@ -24,6 +24,7 @@ from typing import (
 from coconut.command.command import Command
 
 class CoconutException(Exception):
+    """Coconut Exception."""
     ...
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -33,7 +34,9 @@ class CoconutException(Exception):
 GLOBAL_STATE: Optional[Command] = None
 
 
-def get_state(state: Optional[Command] = None) -> Command: ...
+def get_state(state: Optional[Command] = None) -> Command:
+    """Get a Coconut state object; None gets a new state, False gets the global state."""
+    ...
 
 
 def cmd(
@@ -43,13 +46,17 @@ def cmd(
     argv: Iterable[Text] | None = None,
     interact: bool = False,
     default_target: Text | None = None,
-) -> None: ...
+) -> None:
+    """Process command-line arguments."""
+    ...
 
 
 VERSIONS: Dict[Text, Text] = ...
 
 
-def version(which: Optional[Text] = None) -> Text: ...
+def version(which: Optional[Text] = None) -> Text:
+    """Get the Coconut version."""
+    ...
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -67,7 +74,9 @@ def setup(
     no_wrap: bool = False,
     *,
     state: Optional[Command] = ...,
-) -> None: ...
+) -> None:
+    """Set up the given state object."""
+    ...
 
 
 def warm_up(
@@ -75,7 +84,9 @@ def warm_up(
     enable_incremental_mode: bool = False,
     *,
     state: Optional[Command] = ...,
-) -> None: ...
+) -> None:
+    """Warm up the given state object."""
+    ...
 
 
 PARSERS: Dict[Text, Callable] = ...
@@ -86,7 +97,9 @@ def parse(
     mode: Text = ...,
     state: Optional[Command] = ...,
     keep_internal_state: Optional[bool] = None,
-) -> Text: ...
+) -> Text:
+    """Compile Coconut code."""
+    ...
 
 
 def coconut_exec(
@@ -95,7 +108,9 @@ def coconut_exec(
     locals: Optional[Dict[Text, Any]] = None,
     state: Optional[Command] = ...,
     keep_internal_state: Optional[bool] = None,
-) -> None: ...
+) -> None:
+    """Compile and evaluate Coconut code."""
+    ...
 
 
 def coconut_eval(
@@ -104,7 +119,9 @@ def coconut_eval(
     locals: Optional[Dict[Text, Any]] = None,
     state: Optional[Command] = ...,
     keep_internal_state: Optional[bool] = None,
-) -> Any: ...
+) -> Any:
+    """Compile and evaluate Coconut code."""
+    ...
 
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -112,7 +129,10 @@ def coconut_eval(
 # -----------------------------------------------------------------------------------------------------------------------
 
 
-def use_coconut_breakpoint(on: bool = True) -> None: ...
+def use_coconut_breakpoint(on: bool = True) -> None:
+    """Switches the breakpoint() built-in (universally accessible via
+    coconut.__coconut__.breakpoint) to use coconut.embed."""
+    ...
 
 
 coconut_importer: Any = ...
@@ -122,7 +142,11 @@ def auto_compilation(
     on: bool = True,
     args: Iterable[Text] | None = None,
     use_cache_dir: bool | None = None,
-) -> None: ...
+) -> None:
+    """Turn automatic compilation of Coconut files on or off."""
+    ...
 
 
-def get_coconut_encoding(encoding: Text = ...) -> Any: ...
+def get_coconut_encoding(encoding: Text = ...) -> Any:
+    """Get a CodecInfo for the given Coconut encoding."""
+    ...
