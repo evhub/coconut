@@ -50,6 +50,11 @@ def get_bool_env_var(env_var, default=False):
         return default
 
 
+def get_path_env_var(env_var, default):
+    """Get a path from an environment variable."""
+    return fixpath(os.getenv(env_var, default))
+
+
 # -----------------------------------------------------------------------------------------------------------------------
 # VERSION CONSTANTS:
 # -----------------------------------------------------------------------------------------------------------------------
@@ -604,14 +609,17 @@ home_env_var = "COCONUT_HOME"
 
 force_verbose_logger = get_bool_env_var("COCONUT_FORCE_VERBOSE", False)
 
-coconut_home = fixpath(os.getenv(home_env_var, "~"))
+coconut_home = get_path_env_var(home_env_var, "~")
 
 use_color = get_bool_env_var("COCONUT_USE_COLOR", None)
 error_color_code = "31"
 log_color_code = "93"
 
 default_style = "default"
-prompt_histfile = os.path.join(coconut_home, ".coconut_history")
+prompt_histfile = get_path_env_var(
+    "COCONUT_HISTORY_FILE",
+    os.path.join(coconut_home, ".coconut_history"),
+)
 prompt_multiline = False
 prompt_vi_mode = get_bool_env_var(vi_mode_env_var, False)
 prompt_wrap_lines = True

@@ -31,8 +31,6 @@ from coconut.constants import (
     default_style,
     vi_mode_env_var,
     prompt_vi_mode,
-    prompt_histfile,
-    home_env_var,
     py_version_str,
     default_jobs,
 )
@@ -243,13 +241,6 @@ arguments.add_argument(
     type=str,
     help="set Pygments syntax highlighting style (or 'list' to list styles) (defaults to "
     + style_env_var + " environment variable if it exists, otherwise '" + default_style + "')",
-)
-
-arguments.add_argument(
-    "--history-file",
-    metavar="path",
-    type=str,
-    help="set history file (or '' for no file) (currently set to " + ascii(prompt_histfile) + ") (can be modified by setting " + home_env_var + " environment variable)",
 )
 
 arguments.add_argument(

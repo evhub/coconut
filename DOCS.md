@@ -123,10 +123,10 @@ depth: 1
 #### Usage
 
 ```
-coconut [-h] [--and source [dest ...]] [-v] [-t version] [-i] [-p] [-a] [-l] [-k] [-w]
-        [-r] [-n] [-d] [-q] [-s] [--no-tco] [--no-wrap-types] [-c code] [-j processes]
-        [-f] [--minify] [--jupyter ...] [--mypy ...] [--argv ...] [--tutorial]
-        [--docs] [--style name] [--history-file path] [--vi-mode]
+coconut [-h] [--and source [dest ...]] [-v] [-t version] [-i] [-p] [-a] [-l]
+        [--no-line-numbers] [-k] [-w] [-r] [-n] [-d] [-q] [-s] [--no-tco]
+        [--no-wrap-types] [-c code] [-j processes] [-f] [--minify] [--jupyter ...]
+        [--mypy ...] [--argv ...] [--tutorial] [--docs] [--style name] [--vi-mode]
         [--recursion-limit limit] [--stack-size kbs] [--site-install]
         [--site-uninstall] [--verbose] [--trace] [--profile]
         [source] [dest]
@@ -196,8 +196,6 @@ dest                destination directory for compiled files (defaults to
 --style name          set Pygments syntax highlighting style (or 'list' to list styles)
                       (defaults to COCONUT_STYLE environment variable if it exists,
                       otherwise 'default')
---history-file path   set history file (or '' for no file) (can be modified by setting
-                      COCONUT_HOME environment variable)
 --vi-mode, --vimode   enable vi mode in the interpreter (currently set to False) (can be
                       modified by setting COCONUT_VI_MODE environment variable)
 --recursion-limit limit, --recursionlimit limit

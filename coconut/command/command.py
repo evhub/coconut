@@ -278,8 +278,6 @@ class Command(object):
             self.prompt.vi_mode = args.vi_mode
             if args.style is not None:
                 self.prompt.set_style(args.style)
-            if args.history_file is not None:
-                self.prompt.set_history_file(args.history_file)
             if args.argv is not None:
                 self.argv_args = list(args.argv)
 
