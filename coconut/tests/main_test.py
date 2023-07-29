@@ -33,7 +33,7 @@ else:
 import pytest
 import pexpect
 
-from coconut.util import noop_ctx
+from coconut.util import noop_ctx, get_target_info
 from coconut.terminal import (
     logger,
     LoggingStringIO,
@@ -41,6 +41,9 @@ from coconut.terminal import (
 from coconut.command.util import (
     call_output,
     reload,
+)
+from coconut.compiler.util import (
+    get_psf_target,
 )
 from coconut.constants import (
     WINDOWS,
@@ -59,6 +62,8 @@ from coconut.constants import (
     icoconut_custom_kernel_name,
     mypy_err_infixes,
     get_bool_env_var,
+    coconut_cache_dir,
+    default_use_cache_dir,
 )
 
 from coconut.api import (
@@ -84,16 +89,26 @@ os.environ["PYDEVD_DISABLE_FILE_VALIDATION"] = "1"
 # -----------------------------------------------------------------------------------------------------------------------
 
 
-default_recursion_limit = "4096"
-default_stack_size = "4096"
+default_recursion_limit = "6144"
+default_stack_size = "6144"
+
+jupyter_timeout = 120
 
 base = os.path.dirname(os.path.relpath(__file__))
 src = os.path.join(base, "src")
 dest = os.path.join(base, "dest")
 additional_dest = os.path.join(base, "dest", "additional_dest")
 
+src_cache_dir = os.path.join(src, coconut_cache_dir)
+
 runnable_coco = os.path.join(src, "runnable.coco")
 runnable_py = os.path.join(src, "runnable.py")
+runnable_compiled_loc = src_cache_dir if default_use_cache_dir else runnable_py
+
+importable_coco = os.path.join(src, "importable.coco")
+importable_py = os.path.join(src, "importable.py")
+importable_compiled_loc = src_cache_dir if default_use_cache_dir else importable_py
+
 pyston = os.path.join(os.curdir, "pyston")
 pyprover = os.path.join(os.curdir, "pyprover")
 prelude = os.path.join(os.curdir, "coconut-prelude")
@@ -198,7 +213,17 @@ def call_with_import(module_name, extra_argv=[], assert_result=True):
     return stdout, stderr, retcode
 
 
-def call(raw_cmd, assert_output=False, check_mypy=False, check_errors=True, stderr_first=False, expect_retcode=0, convert_to_import=False, **kwargs):
+def call(
+    raw_cmd,
+    assert_output=False,
+    check_mypy=False,
+    check_errors=True,
+    stderr_first=False,
+    expect_retcode=0,
+    convert_to_import=False,
+    assert_output_only_at_end=None,
+    **kwargs
+):
     """Execute a shell command and assert that no errors were encountered."""
     if isinstance(raw_cmd, str):
         cmd = raw_cmd.split()
@@ -213,10 +238,13 @@ def call(raw_cmd, assert_output=False, check_mypy=False, check_errors=True, stde
     elif assert_output is True:
         assert_output = ("<success>",)
     elif isinstance(assert_output, str):
-        if "\n" not in assert_output:
-            assert_output = (assert_output,)
+        if assert_output_only_at_end is None and "\n" in assert_output:
+            assert_output_only_at_end = False
+        assert_output = (assert_output,)
     else:
         assert_output = tuple(x if x is not True else "<success>" for x in assert_output)
+    if assert_output_only_at_end is None:
+        assert_output_only_at_end = True
 
     if convert_to_import is None:
         convert_to_import = (
@@ -311,10 +339,7 @@ def call(raw_cmd, assert_output=False, check_mypy=False, check_errors=True, stde
         if check_mypy and all(test not in line for test in ignore_mypy_errs_with):
             assert "error:" not in line, "MyPy error in " + repr(line)
 
-    if isinstance(assert_output, str):
-        got_output = "\n".join(raw_lines) + "\n"
-        assert assert_output in got_output, "Expected " + repr(assert_output) + "; got " + repr(got_output)
-    else:
+    if assert_output_only_at_end:
         last_line = ""
         for line in reversed(lines):
             if not any(ignore in line for ignore in ignore_last_lines_with):
@@ -328,10 +353,15 @@ def call(raw_cmd, assert_output=False, check_mypy=False, check_errors=True, stde
                 + " in " + repr(last_line)
                 + "; got:\n" + "\n".join(repr(li) for li in raw_lines)
             )
+    else:
+        got_output = "\n".join(raw_lines) + "\n"
+        assert any(x in got_output for x in assert_output), "Expected " + repr(assert_output) + "; got " + repr(got_output)
 
 
 def call_python(args, **kwargs):
     """Calls the current Python."""
+    if get_bool_env_var("COCONUT_TEST_DEBUG_PYTHON"):
+        args = ["-X", "dev"] + args
     call([sys.executable] + args, **kwargs)
 
 
@@ -381,27 +411,30 @@ def rm_path(path, allow_keep=False):
 
 
 @contextmanager
-def using_path(path):
-    """Removes a path at the beginning and end."""
-    if os.path.exists(path):
-        rm_path(path)
+def using_paths(*paths):
+    """Removes paths at the beginning and end."""
+    for path in paths:
+        if os.path.exists(path):
+            rm_path(path)
     try:
         yield
     finally:
-        try:
-            rm_path(path, allow_keep=True)
-        except OSError:
-            logger.print_exc()
+        for path in paths:
+            try:
+                rm_path(path, allow_keep=True)
+            except OSError:
+                logger.print_exc()
 
 
 @contextmanager
-def using_dest(dest=dest):
+def using_dest(dest=dest, allow_existing=False):
     """Makes and removes the dest folder."""
     try:
         os.mkdir(dest)
     except Exception:
-        rm_path(dest)
-        os.mkdir(dest)
+        if not allow_existing:
+            rm_path(dest)
+            os.mkdir(dest)
     try:
         yield
     finally:
@@ -671,7 +704,19 @@ def install_bbopt():
 
 def run_runnable(args=[]):
     """Call coconut-run on runnable_coco."""
-    call(["coconut-run"] + args + [runnable_coco, "--arg"], assert_output=True)
+    paths_being_used = [importable_compiled_loc]
+    if "--no-write" not in args and "-n" not in args:
+        paths_being_used.append(runnable_compiled_loc)
+    with using_paths(*paths_being_used):
+        call(["coconut-run"] + args + [runnable_coco, "--arg"], assert_output=True)
+
+
+def comp_runnable(args=[]):
+    """Just compile runnable."""
+    if "--target" not in args:
+        args += ["--target", "sys"]
+    call_coconut([runnable_coco, "--and", importable_coco] + args)
+    call_coconut([runnable_coco, "--and", importable_coco] + args, assert_output="Left unchanged", assert_output_only_at_end=False)
 
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -680,6 +725,9 @@ def run_runnable(args=[]):
 
 @add_test_func_names
 class TestShell(unittest.TestCase):
+
+    def test_version(self):
+        call(["coconut", "--version"])
 
     def test_code(self):
         call(["coconut", "-s", "-c", coconut_snip], assert_output=True)
@@ -721,7 +769,7 @@ class TestShell(unittest.TestCase):
 
     def test_import_hook(self):
         with using_sys_path(src):
-            with using_path(runnable_py):
+            with using_paths(runnable_compiled_loc, importable_compiled_loc):
                 with using_coconut():
                     auto_compilation(True)
                     import runnable
@@ -729,20 +777,19 @@ class TestShell(unittest.TestCase):
         assert runnable.success == "<success>"
 
     def test_runnable(self):
-        with using_path(runnable_py):
-            run_runnable()
+        run_runnable()
 
     def test_runnable_nowrite(self):
         run_runnable(["-n"])
 
     def test_compile_runnable(self):
-        with using_path(runnable_py):
-            call_coconut([runnable_coco, runnable_py])
+        with using_paths(runnable_py, importable_py):
+            comp_runnable()
             call_python([runnable_py, "--arg"], assert_output=True)
 
     def test_import_runnable(self):
-        with using_path(runnable_py):
-            call_coconut([runnable_coco, runnable_py])
+        with using_paths(runnable_py, importable_py):
+            comp_runnable()
             for _ in range(2):  # make sure we can import it twice
                 call_python([runnable_py, "--arg"], assert_output=True, convert_to_import=True)
 
@@ -754,6 +801,8 @@ class TestShell(unittest.TestCase):
             p.expect("$")
             p.sendline("!(ls -la) |> bool")
             p.expect("True")
+            p.sendline("'1; 2' |> print")
+            p.expect("1; 2")
             p.sendline('$ENV_VAR = "ABC"')
             p.expect("$")
             p.sendline('echo f"{$ENV_VAR}"; echo f"{$ENV_VAR}"')
@@ -763,6 +812,12 @@ class TestShell(unittest.TestCase):
                 if PY36:
                     p.sendline("echo 123;; 123")
                     p.expect("123;; 123")
+                    p.sendline("echo abc; echo abc")
+                    p.expect("abc")
+                    p.expect("abc")
+                    p.sendline("echo abc; print(1 |> (.+1))")
+                    p.expect("abc")
+                    p.expect("2")
                 p.sendline('execx("10 |> print")')
                 p.expect("subprocess mode")
             p.sendline("xontrib unload coconut")
@@ -797,17 +852,34 @@ class TestShell(unittest.TestCase):
         if not WINDOWS and not PYPY:
             def test_jupyter_console(self):
                 p = spawn_cmd("coconut --jupyter console")
-                p.expect("In", timeout=120)
+                p.expect("In", timeout=jupyter_timeout)
                 p.sendline("%load_ext coconut")
-                p.expect("In", timeout=120)
+                p.expect("In", timeout=jupyter_timeout)
                 p.sendline("`exit`")
-                p.expect("Shutting down kernel|shutting down")
+                if sys.version_info[:2] != (3, 6):
+                    p.expect("Shutting down kernel|shutting down", timeout=jupyter_timeout)
                 if p.isalive():
                     p.terminate()
 
 
 @add_test_func_names
 class TestCompilation(unittest.TestCase):
+
+    def test_simple_no_line_numbers(self):
+        run_runnable(["-n", "--no-line-numbers"])
+
+    def test_simple_keep_lines(self):
+        run_runnable(["-n", "--keep-lines"])
+
+    def test_simple_no_line_numbers_keep_lines(self):
+        run_runnable(["-n", "--no-line-numbers", "--keep-lines"])
+
+    def test_simple_minify(self):
+        run_runnable(["-n", "--minify"])
+
+    if sys.version_info >= get_target_info(get_psf_target()):
+        def test_simple_psf(self):
+            run_runnable(["-n", "--target", "psf"])
 
     def test_normal(self):
         run()
@@ -818,18 +890,7 @@ class TestCompilation(unittest.TestCase):
 
     if sys.version_info[:2] in always_sys_versions:
         def test_always_sys(self):
-            run(["--line-numbers"], agnostic_target="sys", always_sys=True)
-
-    # run fewer tests on Windows so appveyor doesn't time out
-    if not WINDOWS:
-        def test_line_numbers_keep_lines(self):
-            run(["--line-numbers", "--keep-lines"])
-
-        def test_strict(self):
-            run(["--strict"])
-
-        def test_and(self):
-            run(["--and"])  # src and dest built by comp
+            run(agnostic_target="sys", always_sys=True)
 
     def test_target(self):
         run(agnostic_target=(2 if PY2 else 3))
@@ -842,6 +903,17 @@ class TestCompilation(unittest.TestCase):
 
     def test_no_tco(self):
         run(["--no-tco"])
+
+    # run fewer tests on Windows so appveyor doesn't time out
+    if not WINDOWS:
+        def test_keep_lines(self):
+            run(["--keep-lines"])
+
+        def test_strict(self):
+            run(["--strict"])
+
+        def test_and(self):
+            run(["--and"])  # src and dest built by comp
 
     if PY35:
         def test_no_wrap(self):
@@ -857,24 +929,13 @@ class TestCompilation(unittest.TestCase):
 
     # avoids a strange, unreproducable failure on appveyor
     if not (WINDOWS and sys.version_info[:2] == (3, 8)):
-        def test_run(self):
+        def test_run_arg(self):
             run(use_run_arg=True)
 
-    if not PYPY and not PY26:
+    # not WINDOWS is for appveyor timeout prevention
+    if not WINDOWS and not PYPY and not PY26:
         def test_jobs_zero(self):
             run(["--jobs", "0"])
-
-    def test_simple_line_numbers(self):
-        run_runnable(["-n", "--line-numbers"])
-
-    def test_simple_keep_lines(self):
-        run_runnable(["-n", "--keep-lines"])
-
-    def test_simple_line_numbers_keep_lines(self):
-        run_runnable(["-n", "--line-numbers", "--keep-lines"])
-
-    def test_simple_minify(self):
-        run_runnable(["-n", "--minify"])
 
 
 # more appveyor timeout prevention
@@ -884,25 +945,25 @@ if not WINDOWS:
 
         if not PYPY or PY2:
             def test_prelude(self):
-                with using_path(prelude):
+                with using_paths(prelude):
                     comp_prelude()
                     if MYPY and PY38:
                         run_prelude()
 
         def test_bbopt(self):
-            with using_path(bbopt):
+            with using_paths(bbopt):
                 comp_bbopt()
                 if not PYPY and PY38 and not PY310:
                     install_bbopt()
 
         def test_pyprover(self):
-            with using_path(pyprover):
+            with using_paths(pyprover):
                 comp_pyprover()
                 if PY38:
                     run_pyprover()
 
         def test_pyston(self):
-            with using_path(pyston):
+            with using_paths(pyston):
                 comp_pyston(["--no-tco"])
                 if PYPY and PY2:
                     run_pyston()

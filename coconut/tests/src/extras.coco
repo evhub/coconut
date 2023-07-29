@@ -23,6 +23,8 @@ from coconut.convenience import (
     setup,
     parse,
     coconut_eval,
+    coconut_exec,
+    warm_up,
 )
 
 if IPY:
@@ -61,7 +63,7 @@ def assert_raises(c, Exc, not_Exc=None, err_has=None):
             assert "unprintable" not in syntax_err_str, syntax_err_str
             assert "<exception" not in syntax_err_str, syntax_err_str
     except BaseException as err:
-        raise AssertionError(f"got wrong exception {err} (expected {Exc})")
+        raise AssertionError(f"got wrong exception {type(err)}: {err} (expected {Exc})")
     else:
         raise AssertionError(f"{c} failed to raise exception {Exc}")
 
@@ -91,6 +93,8 @@ class FakeSession(Session):
 
 
 def test_setup_none() -> bool:
+    setup(line_numbers=False)
+
     assert_raises((def -> import \(_coconut)), ImportError, err_has="should never be done at runtime")  # NOQA
     assert_raises((def -> import \_coconut), ImportError, err_has="should never be done at runtime")  # NOQA
 
@@ -103,6 +107,9 @@ def test_setup_none() -> bool:
     assert_raises((def -> raise CoconutException("derp").syntax_err()), SyntaxError)
     assert coconut_eval("x -> x + 1")(2) == 3
     assert coconut_eval("addpattern")
+    exec_vars: dict = {}
+    coconut_exec("def f(x) = x", exec_vars)
+    assert exec_vars["f"](10) == 10
 
     assert parse("abc") == parse("abc", "sys")
     assert parse("abc", "file")
@@ -166,16 +173,25 @@ mismatched open '[' and close ')' (line 1)
   [([){[}
     ~^
     """.strip())
-    assert_raises(-> parse("[())]"), CoconutSyntaxError, err_has="""
+    assert_raises(-> parse("[())]"), CoconutSyntaxError, err_has=r"""
 mismatched open '[' and close ')' (line 1)
   [())]
-  ~~~^
+  \~~^
     """.strip())
     assert_raises(-> parse("[[\n])"), CoconutSyntaxError, err_has="""
 mismatched open '[' and close ')' (line 1)
   ])
    ^
     """.strip())
+    assert_raises(-> parse("""
+a = 1
+b = f"{1+}"
+c = 3
+    """.strip()), CoconutSyntaxError, err_has="""
+parsing failed for format string expression: 1+ (line 2)
+  b = f"{1+}"
+      ^
+      """.strip())
 
     assert_raises(-> parse("(|*?>)"), CoconutSyntaxError, err_has="'|?*>'")
     assert_raises(-> parse("(|**?>)"), CoconutSyntaxError, err_has="'|?**>'")
@@ -200,10 +216,11 @@ cannot reassign type variable 'T' (use explicit '\T' syntax if intended) (line 1
         """.strip(),
     )
 
-    assert_raises(-> parse("$"), CoconutParseError, err_has=" ^")
-    assert_raises(-> parse("range(1,10) |> reduce$(*, initializer = 1000) |> print"), CoconutParseError, err_has=" ~~~~~~~~~~~~~~~~~~~~~~~~^")
-    assert_raises(-> parse("a := b"), CoconutParseError, err_has=" ~~^")
-    assert_raises(-> parse("1 + return"), CoconutParseError, err_has=" ~~~~~^")
+    assert_raises(-> parse("$"), CoconutParseError)
+    assert_raises(-> parse("@"), CoconutParseError, err_has=("\n  ~^", "\n   ^"))
+    assert_raises(-> parse("range(1,10) |> reduce$(*, initializer = 1000) |> print"), CoconutParseError, err_has=" \\~~~~~~~~~~~~~~~~~~~~~~~^")
+    assert_raises(-> parse("a := b"), CoconutParseError, err_has=" \\~^")
+    assert_raises(-> parse("1 + return"), CoconutParseError, err_has=" \\~~~~^")
     assert_raises(-> parse("""
 def f() =
     assert 1
@@ -216,13 +233,16 @@ def f() =
         """.strip(),
         """
   assert 2
-          ^
+         ~^
         """.strip()
     ))
-    assert_raises(-> parse('b"abc" "def"'), CoconutParseError, err_has=" ~~~~~~~^")
-    assert_raises(-> parse('"abc" b"def"'), CoconutParseError, err_has=" ~~~~~~^")
-    assert_raises(-> parse('"a" 10'), CoconutParseError, err_has=" ~~~~^")
-    assert_raises(-> parse("A. ."), CoconutParseError, err_has=" ~~~^")
+    assert_raises(-> parse('b"abc" "def"'), CoconutParseError, err_has=" \\~~~~~~^")
+    assert_raises(-> parse('"abc" b"def"'), CoconutParseError, err_has=" \\~~~~~^")
+    assert_raises(-> parse('"a" 10'), CoconutParseError, err_has=" \\~~~^")
+    assert_raises(-> parse("A. ."), CoconutParseError, err_has=" \\~~^")
+    assert_raises(-> parse('''f"""{
+}"""'''), CoconutSyntaxError, err_has=(" ~~~~|", "\n  ^~~/"))
+    assert_raises(-> parse("f([] {})"), CoconutParseError, err_has=" \\~~~~^")
 
     assert_raises(-> parse("return = 1"), CoconutParseError, err_has='invalid use of the keyword "return"')
     assert_raises(-> parse("if a = b: pass"), CoconutParseError, err_has="misplaced assignment")
@@ -250,10 +270,10 @@ def gam_eps_rate(bitarr) = (
         if not PYPY:
             assert """
   |> map$(int(?, 2))
-         ~~~~~^""" in err_str or """
+         \~~~~^""" in err_str or """
       |> map$(int(?, 2))
 
-  ~~~~~~~~~~~~~~~~~^""" in err_str, err_str
+  ~~~~~~~~~~~~~~~~^""" in err_str, err_str
     else:
         assert False
 
@@ -273,19 +293,25 @@ def test_convenience() -> bool:
     assert_raises(-> cmd("-pa ."), SystemExit)
     assert_raises(-> cmd("-n . ."), SystemExit)
 
-    setup(line_numbers=True)
-    assert parse("abc", "lenient") == "abc  #1 (line in Coconut source)"
-    setup(keep_lines=True)
-    assert parse("abc", "lenient") == "abc  # abc"
-    setup(line_numbers=True, keep_lines=True)
-    assert parse("abc", "lenient") == "abc  #1: abc"
-
     setup()
+    assert parse("abc", "lenient") == "abc  #1 (line in Coconut source)"
+    setup(line_numbers=False, keep_lines=True)
+    assert parse("abc", "lenient") == "abc  # abc"
+    setup(keep_lines=True)
+    assert parse("abc", "lenient") == "abc  #1: abc"
+    assert "#6:" in parse('''line 1
+f"""{"""
+"""}""" + """
+""" + f"""{\'\'\'
+\'\'\'}"""
+line 6''')
+
+    setup(line_numbers=False)
     assert "Deprecated Coconut built-in 'prepattern' disabled by --strict compilation" not in parse("\n", mode="file")
     assert "Deprecated Coconut built-in 'datamaker' disabled by --strict compilation" not in parse("\n", mode="file")
     assert "Deprecated Coconut built-in 'of' disabled by --strict compilation" not in parse("\n", mode="file")
 
-    setup(strict=True)
+    setup(line_numbers=False, strict=True)
     assert "Deprecated Coconut built-in 'prepattern' disabled by --strict compilation" in parse("\n", mode="file")
     assert "Deprecated Coconut built-in 'datamaker' disabled by --strict compilation" in parse("\n", mode="file")
     assert "Deprecated Coconut built-in 'of' disabled by --strict compilation" in parse("\n", mode="file")
@@ -299,7 +325,7 @@ def test_convenience() -> bool:
     assert_raises(-> parse("a=1;"), CoconutStyleError, err_has="\n     ^")
     assert_raises(-> parse("class derp(object)"), CoconutStyleError)
     assert_raises(-> parse("def f(a.b) = True"), CoconutStyleError, err_has="\n        ^")
-    assert_raises(-> parse("match def kwd_only_x_is_int_def_0(*, x is int = 0) = x"), CoconutStyleError, err_has="\n       ^")
+    assert_raises(-> parse("match def kwd_only_x_is_int_def_0(*, x is int = 0) = x"), CoconutStyleError, err_has="\n        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|")
     try:
         parse("""
 try:
@@ -310,22 +336,23 @@ else:
     assert False
         """.strip())
     except CoconutStyleError as err:
-        assert str(err) == """found deprecated isinstance-checking 'x is int is str' pattern; rewrite to use class patterns (try 'int(x) and str(x)') or explicit isinstance-checking ('x `isinstance` int and x `isinstance` str' should always work) (remove --strict to downgrade to a warning) (line 2)
-  x is int is str = x""", err
+        assert str(err).startswith("""found deprecated isinstance-checking 'x is int is str' pattern; rewrite to use class patterns (try 'int(x) and str(x)') or explicit isinstance-checking ('x `isinstance` int and x `isinstance` str' should always work) (remove --strict to downgrade to a warning) (line 2)
+  x is int is str = x"""), err
     assert_raises(-> parse("""case x:
     match x:
         pass"""), CoconutStyleError, err_has="case x:")
     assert_raises(-> parse("obj."), CoconutStyleError, err_has="getattr")
     assert_raises(-> parse("def x -> pass, 1"), CoconutStyleError, err_has="statement lambda")
+    assert_raises(-> parse("abc = f'abc'"), CoconutStyleError, err_has="\n        ^")
 
-    setup(strict=True, target="sys")
+    setup(line_numbers=False, strict=True, target="sys")
     assert_raises(-> parse("await f x"), CoconutParseError, err_has='invalid use of the keyword "await"')
 
-    setup(target="2.7")
+    setup(line_numbers=False, target="2.7")
     assert parse("from io import BytesIO", mode="lenient") == "from io import BytesIO"
     assert_raises(-> parse("def f(*, x=None) = x"), CoconutTargetError, err_has="\n        ^")
 
-    setup(target="3")
+    setup(line_numbers=False, target="3")
     assert parse("""
 async def async_map_test() =
     for async_map in (async_map_0, async_map_1, async_map_2, async_map_3, async_map_4):
@@ -333,7 +360,7 @@ async def async_map_test() =
     True
     """.strip())
 
-    setup(target="3.3")
+    setup(line_numbers=False, target="3.3")
     gen_func_def = """def f(x):
     yield x
     return x"""
@@ -345,39 +372,63 @@ async def async_map_test() =
     )
     assert parse(gen_func_def, mode="lenient") in gen_func_def_outs
 
-    setup(target="3.2")
+    setup(line_numbers=False, target="3.2")
     assert parse(gen_func_def, mode="lenient") not in gen_func_def_outs
 
-    setup(target="3.4")
+    setup(line_numbers=False, target="3.4")
     assert_raises(-> parse("async def f(): yield 1"), CoconutTargetError)
 
-    setup(target="3.5")
+    setup(line_numbers=False, target="3.5")
     assert parse("async def f(): yield 1")
     assert_raises(-> parse("""async def agen():
     yield from range(5)"""), CoconutSyntaxError, err_has="async generator")
 
-    setup(target="3.6")
+    setup(line_numbers=False, target="3.6")
     assert parse("def f(*, x=None) = x")
     assert "@" not in parse("async def f(x): yield x")
 
-    setup(target="3.8")
+    setup(line_numbers=False, target="3.8")
     assert parse("(a := b)")
     assert parse("print(a := 1, b := 2)")
     assert parse("def f(a, /, b) = a, b")
     assert "(b)(a)" in b"a |> b".decode("coconut")
 
-    setup(target="3.11")
+    setup(line_numbers=False, target="3.11")
     assert parse("a[x, *y]")
 
-    setup(target="3.12")
+    setup(line_numbers=False, target="3.12")
     assert parse("type Num = int | float").strip().endswith("""
 # Compiled Coconut: -----------------------------------------------------------
 
 type Num = int | float""".strip())
 
-    setup(minify=True)
+    setup(line_numbers=False, minify=True)
     assert parse("123  # derp", "lenient") == "123# derp"
 
+    return True
+
+
+def test_incremental() -> bool:
+    setup()
+    warm_up(enable_incremental_mode=True)
+    assert parse("""
+def f(x):
+    x = 1
+    y = 2
+""")
+    assert parse("""
+class F:
+    x = 1
+    y = 2
+""")
+    assert parse("""
+def f(x):
+    x = 1
+    y = 2
+class F:
+    x = 1
+    y = 2
+""")
     return True
 
 
@@ -545,12 +596,18 @@ def test_pandas() -> bool:
 def test_extras() -> bool:
     if not PYPY and (PY2 or PY34):
         assert test_numpy() is True
+    print(".", end="")
     if not PYPY and PY36:
-        assert test_pandas() is True
+        assert test_pandas() is True  # .
+    print(".", end="")
     if CoconutKernel is not None:
-        assert test_kernel() is True
+        assert test_kernel() is True  # ..
+    print(".")  # newline bc we print stuff after this
     assert test_setup_none() is True
+    print(".")  # ditto
     assert test_convenience() is True
+    print(".", end="")
+    assert test_incremental() is True  # must come last
     return True
 
 
@@ -558,7 +615,7 @@ def main() -> bool:
     print("Expect Coconut errors below from running extras:")
     print("(but make sure you get a <success> after them)")
     assert test_extras() is True
-    print("<success>")
+    print("\n<success>")
     return True
 
 

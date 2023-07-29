@@ -1,0 +1,14 @@
+import os
+
+def imported_main() -> bool:
+    # do some stuff that requires --target sys
+    yield def f(x) = x
+    l = []
+    yield def g(x):
+        result = yield from f(x)
+        l.append(result)
+    assert g(10) |> list == []
+    assert l == [10]
+
+    assert os.path.basename(os.path.dirname(__file__)) == "src", __file__
+    return True

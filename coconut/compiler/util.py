@@ -14,6 +14,7 @@ Description: Utilities for use in the compiler.
 # Table of Contents:
 #   - Imports
 #   - Computation Graph
+#   - Parsing Introspection
 #   - Targets
 #   - Parse Elements
 #   - Utilities
@@ -32,6 +33,7 @@ import ast
 import inspect
 import __future__
 import itertools
+import datetime as dt
 from functools import partial, reduce
 from collections import defaultdict
 from contextlib import contextmanager
@@ -39,6 +41,7 @@ from pprint import pformat, pprint
 
 from coconut._pyparsing import (
     USE_COMPUTATION_GRAPH,
+    SUPPORTS_INCREMENTAL,
     replaceWith,
     ZeroOrMore,
     OneOrMore,
@@ -96,6 +99,9 @@ from coconut.constants import (
     non_syntactic_newline,
     allow_explicit_keyword_vars,
     reserved_prefix,
+    incremental_cache_size,
+    repeatedly_clear_incremental_cache,
+    py_vers_with_eols,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -341,14 +347,24 @@ def attach(item, action, ignore_no_tokens=None, ignore_one_token=None, ignore_to
     return add_action(item, action, make_copy)
 
 
-def trace_attach(*args, **kwargs):
-    """trace_attach = trace .. attach"""
-    return trace(attach(*args, **kwargs))
+def should_clear_cache():
+    """Determine if we should be clearing the packrat cache."""
+    return (
+        use_packrat_parser
+        and (
+            not ParserElement._incrementalEnabled
+            or (
+                ParserElement._incrementalWithResets
+                and repeatedly_clear_incremental_cache
+            )
+        )
+    )
 
 
 def final_evaluate_tokens(tokens):
     """Same as evaluate_tokens but should only be used once a parse is assured."""
-    if use_packrat_parser:
+    # don't clear the cache in incremental mode
+    if should_clear_cache():
         # clear cache without resetting stats
         ParserElement.packrat_cache.clear()
     return evaluate_tokens(tokens)
@@ -357,7 +373,7 @@ def final_evaluate_tokens(tokens):
 def final(item):
     """Collapse the computation graph upon parsing the given item."""
     # evaluate_tokens expects a computation graph, so we just call add_action directly
-    return add_action(item, final_evaluate_tokens)
+    return add_action(trace(item), final_evaluate_tokens)
 
 
 def defer(item):
@@ -375,29 +391,46 @@ def unpack(tokens):
     return tokens
 
 
+def force_reset_packrat_cache():
+    """Forcibly reset the packrat cache and all packrat stats."""
+    if ParserElement._incrementalEnabled:
+        ParserElement._incrementalEnabled = False
+        ParserElement.enableIncremental(incremental_cache_size, still_reset_cache=ParserElement._incrementalWithResets)
+    else:
+        ParserElement._packratEnabled = False
+        ParserElement.enablePackrat(packrat_cache_size)
+
+
 @contextmanager
 def parsing_context(inner_parse=True):
     """Context to manage the packrat cache across parse calls."""
-    if inner_parse and use_packrat_parser:
+    if inner_parse and should_clear_cache():
         # store old packrat cache
         old_cache = ParserElement.packrat_cache
         old_cache_stats = ParserElement.packrat_cache_stats[:]
 
         # give inner parser a new packrat cache
-        ParserElement._packratEnabled = False
-        ParserElement.enablePackrat(packrat_cache_size)
-    try:
-        yield
-    finally:
-        if inner_parse and use_packrat_parser:
+        force_reset_packrat_cache()
+        try:
+            yield
+        finally:
             ParserElement.packrat_cache = old_cache
             if logger.verbose:
                 ParserElement.packrat_cache_stats[0] += old_cache_stats[0]
                 ParserElement.packrat_cache_stats[1] += old_cache_stats[1]
+    elif inner_parse and ParserElement._incrementalWithResets:
+        incrementalWithResets, ParserElement._incrementalWithResets = ParserElement._incrementalWithResets, False
+        try:
+            yield
+        finally:
+            ParserElement._incrementalWithResets = incrementalWithResets
+    else:
+        yield
 
 
 def prep_grammar(grammar, streamline=False):
     """Prepare a grammar item to be used as the root of a parse."""
+    grammar = trace(grammar)
     if streamline:
         grammar.streamlined = False
         grammar.streamline()
@@ -454,16 +487,85 @@ def match_in(grammar, text, inner=True):
 def transform(grammar, text, inner=True):
     """Transform text by replacing matches to grammar."""
     with parsing_context(inner):
-        result = add_action(grammar, unpack).parseWithTabs().transformString(text)
+        result = prep_grammar(add_action(grammar, unpack)).transformString(text)
         if result == text:
             result = None
         return result
 
 
 # -----------------------------------------------------------------------------------------------------------------------
-# TARGETS:
+# PARSING INTROSPECTION:
 # -----------------------------------------------------------------------------------------------------------------------
 
+
+def get_func_closure(func):
+    """Get variables in func's closure."""
+    if PY2:
+        varnames = func.func_code.co_freevars
+        cells = func.func_closure
+    else:
+        varnames = func.__code__.co_freevars
+        cells = func.__closure__
+    return {v: c.cell_contents for v, c in zip(varnames, cells)}
+
+
+def get_pyparsing_cache():
+    """Extract the underlying pyparsing packrat cache."""
+    packrat_cache = ParserElement.packrat_cache
+    if isinstance(packrat_cache, dict):  # if enablePackrat is never called
+        return packrat_cache
+    elif hasattr(packrat_cache, "cache"):  # cPyparsing adds this
+        return packrat_cache.cache
+    else:  # on pyparsing we have to do this
+        try:
+            # this is sketchy, so errors should only be complained
+            return get_func_closure(packrat_cache.get.__func__)["cache"]
+        except Exception as err:
+            complain(err)
+            return {}
+
+
+def add_to_cache(new_cache_items):
+    """Add the given items directly to the pyparsing packrat cache."""
+    packrat_cache = ParserElement.packrat_cache
+    for lookup, value in new_cache_items:
+        packrat_cache.set(lookup, value)
+
+
+def get_cache_items_for(original):
+    """Get items from the pyparsing cache filtered to only from parsing original."""
+    cache = get_pyparsing_cache()
+    for lookup, value in cache.items():
+        got_orig = lookup[1]
+        if got_orig == original:
+            yield lookup, value
+
+
+def get_highest_parse_loc(original):
+    """Get the highest observed parse location."""
+    # find the highest observed parse location
+    highest_loc = 0
+    for item, _ in get_cache_items_for(original):
+        loc = item[2]
+        if loc > highest_loc:
+            highest_loc = loc
+    return highest_loc
+
+
+def enable_incremental_parsing(force=False):
+    """Enable incremental parsing mode where prefix parses are reused."""
+    if SUPPORTS_INCREMENTAL or force:
+        try:
+            ParserElement.enableIncremental(incremental_cache_size, still_reset_cache=False)
+        except ImportError as err:
+            raise CoconutException(str(err))
+        else:
+            logger.log("Incremental parsing mode enabled.")
+
+
+# -----------------------------------------------------------------------------------------------------------------------
+# TARGETS:
+# -----------------------------------------------------------------------------------------------------------------------
 on_new_python = False
 
 raw_sys_target = str(sys.version_info[0]) + str(sys.version_info[1])
@@ -480,6 +582,15 @@ elif sys.version_info < (3,):
     sys_target = "".join(str(i) for i in supported_py2_vers[-1])
 else:
     sys_target = "".join(str(i) for i in supported_py3_vers[0])
+
+
+def get_psf_target():
+    """Get the oldest PSF-supported Python version target."""
+    now = dt.datetime.now()
+    for ver, eol in py_vers_with_eols:
+        if now < eol:
+            break
+    return pseudo_targets.get(ver, ver)
 
 
 def get_vers_for_target(target):
@@ -535,31 +646,33 @@ def get_target_info_smart(target, mode="lowest"):
 
 class Wrap(ParseElementEnhance):
     """PyParsing token that wraps the given item in the given context manager."""
+    inside = False
 
     def __init__(self, item, wrapper, greedy=False, include_in_packrat_context=False):
         super(Wrap, self).__init__(item)
         self.wrapper = wrapper
         self.greedy = greedy
-        self.include_in_packrat_context = include_in_packrat_context
+        self.include_in_packrat_context = include_in_packrat_context and hasattr(ParserElement, "packrat_context")
 
     @property
     def wrapped_name(self):
         return get_name(self.expr) + " (Wrapped)"
 
     @contextmanager
-    def wrapped_packrat_context(self):
+    def wrapped_context(self):
         """Context manager that edits the packrat_context.
 
         Required to allow the packrat cache to distinguish between wrapped
         and unwrapped parses. Only supported natively on cPyparsing."""
-        if self.include_in_packrat_context and hasattr(self, "packrat_context"):
-            self.packrat_context.append(self.wrapper)
-            try:
-                yield
-            finally:
-                self.packrat_context.pop()
-        else:
+        was_inside, self.inside = self.inside, True
+        if self.include_in_packrat_context:
+            ParserElement.packrat_context.append(self.wrapper)
+        try:
             yield
+        finally:
+            if self.include_in_packrat_context:
+                ParserElement.packrat_context.pop()
+            self.inside = was_inside
 
     @override
     def parseImpl(self, original, loc, *args, **kwargs):
@@ -568,7 +681,7 @@ class Wrap(ParseElementEnhance):
             logger.log_trace(self.wrapped_name, original, loc)
         with logger.indent_tracing():
             with self.wrapper(self, original, loc):
-                with self.wrapped_packrat_context():
+                with self.wrapped_context():
                     parse_loc, tokens = super(Wrap, self).parseImpl(original, loc, *args, **kwargs)
                     if self.greedy:
                         tokens = evaluate_tokens(tokens)
@@ -586,7 +699,7 @@ class Wrap(ParseElementEnhance):
 def disable_inside(item, *elems, **kwargs):
     """Prevent elems from matching inside of item.
 
-    Returns (item with elem disabled, *new versions of elems).
+    Returns (item with elems disabled, *new versions of elems).
     """
     _invert = kwargs.pop("_invert", False)
     internal_assert(not kwargs, "excess keyword arguments passed to disable_inside", kwargs)
@@ -617,9 +730,9 @@ def disable_inside(item, *elems, **kwargs):
 def disable_outside(item, *elems):
     """Prevent elems from matching outside of item.
 
-    Returns (item with elem enabled, *new versions of elems).
+    Returns (item with elems enabled, *new versions of elems).
     """
-    for wrapped in disable_inside(item, *elems, **{"_invert": True}):
+    for wrapped in disable_inside(item, *elems, _invert=True):
         yield wrapped
 
 
@@ -665,6 +778,9 @@ def compile_regex(regex, options=None):
     else:
         options |= re.U
     return re.compile(regex, options)
+
+
+memoized_compile_regex = memoize(64)(compile_regex)
 
 
 def regex_item(regex, options=None):
@@ -799,20 +915,13 @@ always_match = Empty()
 stores_loc_item = attach(always_match, stores_loc_action)
 
 
-def disallow_keywords(kwds, with_suffix=None):
+def disallow_keywords(kwds, with_suffix=""):
     """Prevent the given kwds from matching."""
-    item = ~(
-        base_keyword(kwds[0])
-        if with_suffix is None else
-        base_keyword(kwds[0]) + with_suffix
+    to_disallow = (
+        k + r"\b" + re.escape(with_suffix)
+        for k in kwds
     )
-    for k in kwds[1:]:
-        item += ~(
-            base_keyword(k)
-            if with_suffix is None else
-            base_keyword(k) + with_suffix
-        )
-    return item
+    return regex_item(r"(?!" + "|".join(to_disallow) + r")").suppress()
 
 
 def any_keyword_in(kwds):
@@ -903,6 +1012,7 @@ def caseless_literal(literalstr, suppress=False):
 # -----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
 # -----------------------------------------------------------------------------------------------------------------------
+
 
 def ordered(items):
     """Return the items in a deterministic order."""
@@ -1249,43 +1359,6 @@ def handle_indentation(inputstr, add_newline=False, extra_indent=0):
     return out
 
 
-def get_func_closure(func):
-    """Get variables in func's closure."""
-    if PY2:
-        varnames = func.func_code.co_freevars
-        cells = func.func_closure
-    else:
-        varnames = func.__code__.co_freevars
-        cells = func.__closure__
-    return {v: c.cell_contents for v, c in zip(varnames, cells)}
-
-
-def get_highest_parse_loc():
-    """Get the highest observed parse location."""
-    try:
-        # extract the actual cache object (pyparsing does not make this easy)
-        packrat_cache = ParserElement.packrat_cache
-        if isinstance(packrat_cache, dict):  # if enablePackrat is never called
-            cache = packrat_cache
-        elif hasattr(packrat_cache, "cache"):  # cPyparsing adds this
-            cache = packrat_cache.cache
-        else:  # on pyparsing we have to do this
-            cache = get_func_closure(packrat_cache.get.__func__)["cache"]
-
-        # find the highest observed parse location
-        highest_loc = 0
-        for item in cache:
-            loc = item[2]
-            if loc > highest_loc:
-                highest_loc = loc
-        return highest_loc
-
-    # everything here is sketchy, so errors should only be complained
-    except Exception as err:
-        complain(err)
-        return 0
-
-
 def literal_eval(py_code):
     """Version of ast.literal_eval that attempts to be version-independent."""
     try:
@@ -1368,6 +1441,58 @@ def add_int_and_strs(int_part=0, str_parts=(), parens=False):
     if parens:
         out = "(" + out + ")"
     return out
+
+
+def base_move_loc(original, loc, chars_to_move_forwards):
+    """Move loc in original in accordance with chars_to_move_forwards."""
+    visited_locs = set()
+    while 0 <= loc <= len(original) - 1:
+        c = original[loc]
+        for charset, forwards in chars_to_move_forwards.items():
+            if c in charset:
+                break
+        else:  # no break
+            break
+        if forwards:
+            if loc >= len(original) - 1:
+                break
+            next_loc = loc + 1
+        else:
+            if loc <= 1:
+                break
+            next_loc = loc - 1
+        if next_loc in visited_locs:
+            loc = next_loc
+            break
+        visited_locs.add(next_loc)
+        loc = next_loc
+    return loc
+
+
+def move_loc_to_non_whitespace(original, loc, backwards=False):
+    """Move the given loc in original to the closest non-whitespace in the given direction.
+    Won't ever move far enough to set loc to 0 or len(original)."""
+    return base_move_loc(
+        original,
+        loc,
+        chars_to_move_forwards={
+            default_whitespace_chars: not backwards,
+            # for loc, move backwards on newlines/indents, which we can do safely without removing anything from the error
+            indchars: False,
+        },
+    )
+
+
+def move_endpt_to_non_whitespace(original, loc, backwards=False):
+    """Same as base_move_loc but for endpoints specifically."""
+    return base_move_loc(
+        original,
+        loc,
+        chars_to_move_forwards={
+            default_whitespace_chars: not backwards,
+            # for endpt, ignore newlines/indents to avoid introducing unnecessary lines into the error
+        },
+    )
 
 
 # -----------------------------------------------------------------------------------------------------------------------

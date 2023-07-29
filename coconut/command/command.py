@@ -55,8 +55,6 @@ from coconut.constants import (
     icoconut_custom_kernel_name,
     icoconut_old_kernel_names,
     exit_chars,
-    coconut_run_args,
-    coconut_run_verbose_args,
     verbose_mypy_args,
     default_mypy_args,
     report_this_text,
@@ -64,12 +62,17 @@ from coconut.constants import (
     mypy_silent_err_prefixes,
     mypy_err_infixes,
     mypy_install_arg,
+    jupyter_install_arg,
     mypy_builtin_regex,
     coconut_pth_file,
     error_color_code,
     jupyter_console_commands,
     default_jobs,
     create_package_retries,
+    default_use_cache_dir,
+    coconut_cache_dir,
+    coconut_run_kwargs,
+    interpreter_uses_incremental,
 )
 from coconut.util import (
     univ_open,
@@ -98,8 +101,7 @@ from coconut.command.util import (
     can_parse,
     invert_mypy_arg,
     run_with_stack_size,
-    memoized_isdir,
-    memoized_isfile,
+    proc_run_args,
 )
 from coconut.compiler.util import (
     should_indent,
@@ -122,7 +124,7 @@ class Command(object):
     exit_code = 0  # exit status to return
     errmsg = None  # error message to display
 
-    show = False  # corresponds to --display flag
+    display = False  # corresponds to --display flag
     jobs = 0  # corresponds to --jobs flag
     mypy_args = None  # corresponds to --mypy flag
     argv_args = None  # corresponds to --argv flag
@@ -142,22 +144,38 @@ class Command(object):
         if run:
             args, argv = [], []
             # for coconut-run, all args beyond the source file should be wrapped in an --argv
+            source = None
             for i in range(1, len(sys.argv)):
                 arg = sys.argv[i]
-                args.append(arg)
                 # if arg is source file, put everything else in argv
-                if not arg.startswith("-") and can_parse(arguments, args[:-1]):
+                if not arg.startswith("-") and can_parse(arguments, args):
+                    source = arg
                     argv = sys.argv[i + 1:]
                     break
-            for run_arg in (coconut_run_verbose_args if "--verbose" in args else coconut_run_args):
-                if run_arg not in args:
-                    args.append(run_arg)
-            self.cmd(args, argv=argv)
+                else:
+                    args.append(arg)
+            args = proc_run_args(args)
+            if "--run" in args:
+                logger.warn("extraneous --run argument passed; coconut-run implies --run")
+            else:
+                args.append("--run")
+            dest = None
+            if source is not None:
+                source = fixpath(source)
+                args.append(source)
+                if default_use_cache_dir:
+                    if os.path.isfile(source):
+                        dest = os.path.join(os.path.dirname(source), coconut_cache_dir)
+                    else:
+                        dest = os.path.join(source, coconut_cache_dir)
+            self.cmd(args, argv=argv, use_dest=dest, **coconut_run_kwargs)
         else:
             self.cmd()
 
-    def cmd(self, args=None, argv=None, interact=True, default_target=None):
+    # new external parameters should be updated in api.pyi and DOCS
+    def cmd(self, args=None, argv=None, interact=True, default_target=None, use_dest=None):
         """Process command-line arguments."""
+        result = None
         with self.handling_exceptions():
             if args is None:
                 parsed_args = arguments.parse_args()
@@ -169,10 +187,14 @@ class Command(object):
                 parsed_args.argv = argv
             if parsed_args.target is None:
                 parsed_args.target = default_target
+            if use_dest is not None and not parsed_args.no_write:
+                internal_assert(parsed_args.dest is None, "coconut-run got passed a dest", parsed_args)
+                parsed_args.dest = use_dest
             self.exit_code = 0
             self.stack_size = parsed_args.stack_size
-            self.run_with_stack_size(self.execute_args, parsed_args, interact, original_args=args)
+            result = self.run_with_stack_size(self.execute_args, parsed_args, interact, original_args=args)
         self.exit_on_error()
+        return result
 
     def run_with_stack_size(self, func, *args, **kwargs):
         """Execute func with the correct stack size."""
@@ -212,7 +234,11 @@ class Command(object):
                 args.trace = args.profile = False
 
             # set up logger
-            logger.quiet, logger.verbose, logger.tracing = args.quiet, args.verbose, args.trace
+            logger.setup(
+                quiet=args.quiet,
+                verbose=args.verbose,
+                tracing=args.trace,
+            )
             if args.verbose or args.trace or args.profile:
                 set_grammar_names()
             if args.trace or args.profile:
@@ -229,8 +255,10 @@ class Command(object):
             # validate general command args
             if args.stack_size and args.stack_size % 4 != 0:
                 logger.warn("--stack-size should generally be a multiple of 4, not {stack_size} (to support 4 KB pages)".format(stack_size=args.stack_size))
-            if args.mypy is not None and args.line_numbers:
-                logger.warn("extraneous --line-numbers argument passed; --mypy implies --line-numbers")
+            if args.mypy is not None and args.no_line_numbers:
+                logger.warn("using --mypy running with --no-line-numbers is not recommended; mypy error messages won't include Coconut line numbers")
+            if args.line_numbers and args.no_line_numbers:
+                raise CoconutException("cannot compile with both --line-numbers and --no-line-numbers")
             if args.site_install and args.site_uninstall:
                 raise CoconutException("cannot --site-install and --site-uninstall simultaneously")
             for and_args in getattr(args, "and") or []:
@@ -246,14 +274,16 @@ class Command(object):
             self.set_jobs(args.jobs, args.profile)
             if args.recursion_limit is not None:
                 set_recursion_limit(args.recursion_limit)
-            if args.display:
-                self.show = True
+            self.display = args.display
+            self.prompt.vi_mode = args.vi_mode
             if args.style is not None:
                 self.prompt.set_style(args.style)
             if args.history_file is not None:
                 self.prompt.set_history_file(args.history_file)
-            if args.vi_mode:
-                self.prompt.vi_mode = True
+            if args.argv is not None:
+                self.argv_args = list(args.argv)
+
+            # execute non-compilation tasks
             if args.docs:
                 launch_documentation()
             if args.tutorial:
@@ -262,25 +292,36 @@ class Command(object):
                 self.site_uninstall()
             if args.site_install:
                 self.site_install()
-            if args.argv is not None:
-                self.argv_args = list(args.argv)
 
             # process general compiler args
+            if args.line_numbers:
+                line_numbers = True
+            elif args.no_line_numbers:
+                line_numbers = False
+            else:
+                line_numbers = (
+                    not args.minify
+                    or args.mypy is not None
+                )
             self.setup(
                 target=args.target,
                 strict=args.strict,
                 minify=args.minify,
-                line_numbers=args.line_numbers or args.mypy is not None,
+                line_numbers=line_numbers,
                 keep_lines=args.keep_lines,
                 no_tco=args.no_tco,
                 no_wrap=args.no_wrap_types,
             )
+            if args.watch:
+                self.comp.warm_up(enable_incremental_mode=True)
 
             # process mypy args and print timing info (must come after compiler setup)
             if args.mypy is not None:
                 self.set_mypy_args(args.mypy)
             logger.log("Grammar init time: " + str(self.comp.grammar_init_time) + " secs / Total init time: " + str(get_clock_time() - first_import_time) + " secs")
 
+            # do compilation, keeping track of compiled filepaths
+            filepaths = []
             if args.source is not None:
                 # warnings if source is given
                 if args.interact and args.run:
@@ -307,12 +348,11 @@ class Command(object):
                     src_dest_package_triples.append(self.process_source_dest(src, dest, args))
 
                 # disable jobs if we know we're only compiling one file
-                if len(src_dest_package_triples) <= 1 and not any(memoized_isdir(source) for source, dest, package in src_dest_package_triples):
+                if len(src_dest_package_triples) <= 1 and not any(os.path.isdir(source) for source, dest, package in src_dest_package_triples):
                     self.disable_jobs()
 
                 # do compilation
                 with self.running_jobs(exit_on_error=not args.watch):
-                    filepaths = []
                     for source, dest, package in src_dest_package_triples:
                         filepaths += self.compile_path(source, dest, package, run=args.run or args.interact, force=args.force)
                 self.run_mypy(filepaths)
@@ -362,18 +402,21 @@ class Command(object):
             if args.profile:
                 print_timing_info()
 
+            # make sure to return inside handling_exceptions to ensure filepaths is available
+            return filepaths
+
     def process_source_dest(self, source, dest, args):
         """Determine the correct source, dest, package mode to use for the given source, dest, and args."""
         # determine source
         processed_source = fixpath(source)
 
         # validate args
-        if (args.run or args.interact) and memoized_isdir(processed_source):
+        if (args.run or args.interact) and os.path.isdir(processed_source):
             if args.run:
                 raise CoconutException("source path %r must point to file not directory when --run is enabled" % (source,))
             if args.interact:
                 raise CoconutException("source path %r must point to file not directory when --run (implied by --interact) is enabled" % (source,))
-        if args.watch and memoized_isfile(processed_source):
+        if args.watch and os.path.isfile(processed_source):
             raise CoconutException("source path %r must point to directory not file when --watch is enabled" % (source,))
 
         # determine dest
@@ -394,9 +437,9 @@ class Command(object):
             package = False
         else:
             # auto-decide package
-            if memoized_isfile(processed_source):
+            if os.path.isfile(processed_source):
                 package = False
-            elif memoized_isdir(processed_source):
+            elif os.path.isdir(processed_source):
                 package = True
             else:
                 raise CoconutException("could not find source path", source)
@@ -444,20 +487,20 @@ class Command(object):
             self.register_exit_code(err=err)
 
     def compile_path(self, path, write=True, package=True, **kwargs):
-        """Compile a path and returns paths to compiled files."""
+        """Compile a path and return paths to compiled files."""
         if not isinstance(write, bool):
             write = fixpath(write)
-        if memoized_isfile(path):
+        if os.path.isfile(path):
             destpath = self.compile_file(path, write, package, **kwargs)
             return [destpath] if destpath is not None else []
-        elif memoized_isdir(path):
+        elif os.path.isdir(path):
             return self.compile_folder(path, write, package, **kwargs)
         else:
             raise CoconutException("could not find source path", path)
 
     def compile_folder(self, directory, write=True, package=True, **kwargs):
-        """Compile a directory and returns paths to compiled files."""
-        if not isinstance(write, bool) and memoized_isfile(write):
+        """Compile a directory and return paths to compiled files."""
+        if not isinstance(write, bool) and os.path.isfile(write):
             raise CoconutException("destination path cannot point to a file when compiling a directory")
         filepaths = []
         for dirpath, dirnames, filenames in os.walk(directory):
@@ -479,7 +522,7 @@ class Command(object):
         return filepaths
 
     def compile_file(self, filepath, write=True, package=False, force=False, **kwargs):
-        """Compile a file and returns the compiled file's path."""
+        """Compile a file and return the compiled file's path."""
         set_ext = False
         if write is False:
             destpath = None
@@ -532,8 +575,8 @@ class Command(object):
         foundhash = None if force else self.has_hash_of(destpath, code, package_level)
         if foundhash:
             if show_unchanged:
-                logger.show_tabulated("Left unchanged", showpath(destpath), "(pass --force to override).")
-            if self.show:
+                logger.show_tabulated("Left unchanged", showpath(destpath), "(pass --force to overwrite).")
+            if self.display:
                 logger.print(foundhash)
             if run:
                 self.execute_file(destpath, argv_source_path=codepath)
@@ -548,7 +591,7 @@ class Command(object):
                     with univ_open(destpath, "w") as opened:
                         writefile(opened, compiled)
                     logger.show_tabulated("Compiled to", showpath(destpath), ".")
-                if self.show:
+                if self.display:
                     logger.print(compiled)
                 if run:
                     if destpath is None:
@@ -675,12 +718,15 @@ class Command(object):
 
     def has_hash_of(self, destpath, code, package_level):
         """Determine if a file has the hash of the code."""
-        if destpath is not None and memoized_isfile(destpath):
+        if destpath is not None and os.path.isfile(destpath):
             with univ_open(destpath, "r") as opened:
                 compiled = readfile(opened)
             hashash = gethash(compiled)
-            if hashash is not None and hashash == self.comp.genhash(code, package_level):
-                return True
+            if hashash is not None:
+                newhash = self.comp.genhash(code, package_level)
+                if hashash == newhash:
+                    return True
+                logger.log("old __coconut_hash__", hashash, "!= new __coconut_hash__", newhash)
         return False
 
     def get_input(self, more=False):
@@ -701,7 +747,7 @@ class Command(object):
 
     def start_running(self):
         """Start running the Runner."""
-        self.comp.warm_up()
+        self.comp.warm_up(enable_incremental_mode=interpreter_uses_incremental)
         self.check_runner()
         self.running = True
         logger.log("Time till prompt: " + str(get_clock_time() - first_import_time) + " secs")
@@ -709,8 +755,9 @@ class Command(object):
     def start_prompt(self):
         """Start the interpreter."""
         logger.show(
-            "Coconut Interpreter v{co_ver}:".format(
+            "Coconut Interpreter v{co_ver} (Python {py_ver}):".format(
                 co_ver=VERSION,
+                py_ver=".".join(str(v) for v in sys.version_info[:2]),
             ),
         )
         logger.show("(enter 'exit()' or press Ctrl-D to end)")
@@ -757,7 +804,7 @@ class Command(object):
         self.check_runner()
         if compiled is not None:
 
-            if allow_show and self.show:
+            if allow_show and self.display:
                 logger.print(compiled)
 
             if path is None:  # header is not included
@@ -872,9 +919,9 @@ class Command(object):
         """Same as run_cmd$(show_output=logger.verbose)."""
         return run_cmd(*args, show_output=logger.verbose)
 
-    def install_jupyter_kernel(self, jupyter, kernel_dir):
+    def install_jupyter_kernel(self, jupyter, kernel_dir, install_args=[]):
         """Install the given kernel via the command line and return whether successful."""
-        install_args = jupyter + ["kernelspec", "install", kernel_dir, "--replace"]
+        install_args = jupyter + ["kernelspec", "install", kernel_dir, "--replace"] + install_args
         try:
             self.run_silent_cmd(install_args)
         except CalledProcessError:
@@ -898,7 +945,7 @@ class Command(object):
             return False
         return True
 
-    def install_default_jupyter_kernels(self, jupyter, kernel_list):
+    def install_default_jupyter_kernels(self, jupyter, kernel_list, install_args=[]):
         """Install icoconut default kernels."""
         logger.show_sig("Installing Jupyter kernels '" + "', '".join(icoconut_default_kernel_names) + "'...")
         overall_success = True
@@ -909,7 +956,7 @@ class Command(object):
                 overall_success = overall_success and success
 
         for kernel_dir in icoconut_default_kernel_dirs:
-            success = self.install_jupyter_kernel(jupyter, kernel_dir)
+            success = self.install_jupyter_kernel(jupyter, kernel_dir, install_args)
             overall_success = overall_success and success
 
         if overall_success:
@@ -952,15 +999,27 @@ class Command(object):
         kernel_list = self.get_jupyter_kernels(jupyter)
         newly_installed_kernels = []
 
-        # always update the custom kernel, but only reinstall it if it isn't already there or given no args
+        # determine if we're just installing
+        if not args:
+            just_install = True
+        elif args[0].startswith("-"):
+            just_install = True
+        elif args[0] == jupyter_install_arg:
+            just_install = True
+            args = args[1:]
+        else:
+            just_install = False
+        install_args = args if just_install else []
+
+        # always update the custom kernel, but only reinstall it if it isn't already there or just installing
         custom_kernel_dir = install_custom_kernel(logger=logger)
-        if custom_kernel_dir is not None and (icoconut_custom_kernel_name not in kernel_list or not args):
+        if custom_kernel_dir is not None and (icoconut_custom_kernel_name not in kernel_list or just_install):
             logger.show_sig("Installing Jupyter kernel {name!r}...".format(name=icoconut_custom_kernel_name))
-            if self.install_jupyter_kernel(jupyter, custom_kernel_dir):
+            if self.install_jupyter_kernel(jupyter, custom_kernel_dir, install_args):
                 newly_installed_kernels.append(icoconut_custom_kernel_name)
 
-        if not args:
-            # install default kernels if given no args
+        if just_install:
+            # install default kernels if just installing
             newly_installed_kernels += self.install_default_jupyter_kernels(jupyter, kernel_list)
             run_args = None
 
@@ -979,7 +1038,7 @@ class Command(object):
                 else:
                     kernel = "coconut_py" + ver
                 if kernel not in kernel_list:
-                    newly_installed_kernels += self.install_default_jupyter_kernels(jupyter, kernel_list)
+                    newly_installed_kernels += self.install_default_jupyter_kernels(jupyter, kernel_list, install_args)
                 logger.warn("could not find {name!r} kernel; using {kernel!r} kernel instead".format(name=icoconut_custom_kernel_name, kernel=kernel))
 
             # pass the kernel to the console or otherwise just launch Jupyter now that we know our kernel is available
@@ -1007,7 +1066,7 @@ class Command(object):
 
         def recompile(path, src, dest, package):
             path = fixpath(path)
-            if memoized_isfile(path) and os.path.splitext(path)[1] in code_exts:
+            if os.path.isfile(path) and os.path.splitext(path)[1] in code_exts:
                 with self.handling_exceptions():
                     if dest is True or dest is None:
                         writedir = dest
@@ -1061,7 +1120,7 @@ class Command(object):
         python_lib = self.get_python_lib()
         pth_file = os.path.join(python_lib, os.path.basename(coconut_pth_file))
 
-        if memoized_isfile(pth_file):
+        if os.path.isfile(pth_file):
             os.remove(pth_file)
             logger.show_sig("Removed %s from %s" % (os.path.basename(coconut_pth_file), python_lib))
         else:

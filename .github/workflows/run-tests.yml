@@ -2,11 +2,12 @@ name: Coconut Test Suite
 on: [push]
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version:
           - '2.7'
+          - '3.4'
           - '3.5'
           - '3.6'
           - '3.7'
@@ -24,9 +25,10 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Setup python
-        uses: actions/setup-python@v4
+        uses: MatteoH2O1999/setup-python@v1.3.1
         with:
           python-version: ${{ matrix.python-version }}
+          cache: pip
       - run: make install
       - run: make test-all
       - run: make build

@@ -146,9 +146,9 @@ def py36_spec_test(tco: bool) -> bool:
     hello: Literal["hello"] = "hello"
     hello = HasStr(hello).get()
 
-    def and_then[**P, T, U](f: (**P) -> T, g: T -> U) -> (**P) -> U =
+    def forward_compose[**P, T, U](f: (**P) -> T, g: T -> U) -> (**P) -> U =
         (*args, **kwargs) -> g(f(*args, **kwargs))
-    assert (.+5) `and_then` (.*2) <| 3 == 16
+    assert (.+5) `forward_compose` (.*2) <| 3 == 16
 
     def mk_repeat[T, **P](f: (T, **P) -> T) -> (int, T, **P) -> T:
         def newf(n: int, x: T, *args, **kwargs) -> T:

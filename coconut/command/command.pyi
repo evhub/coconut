@@ -17,4 +17,5 @@ Description: MyPy stub file for command.py.
 
 
 class Command:
+    """Coconut command-line interface."""
     ...

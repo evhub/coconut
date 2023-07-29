@@ -60,7 +60,7 @@ from coconut.constants import (
     unwrapper,
     open_chars,
     close_chars,
-    hold_chars,
+    str_chars,
     tabideal,
     match_to_args_var,
     match_to_kwargs_var,
@@ -74,8 +74,6 @@ from coconut.constants import (
     data_defaults_var,
     funcwrapper,
     non_syntactic_newline,
-    indchars,
-    default_whitespace_chars,
     early_passthrough_wrapper,
     super_names,
     custom_op_var,
@@ -99,6 +97,8 @@ from coconut.util import (
     get_clock_time,
     get_name,
     assert_remove_prefix,
+    dictset,
+    noop_ctx,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -137,7 +137,6 @@ from coconut.compiler.util import (
     rem_comment,
     split_comment,
     attach,
-    trace_attach,
     split_leading_indent,
     split_trailing_indent,
     split_leading_trailing_indent,
@@ -167,6 +166,11 @@ from coconut.compiler.util import (
     tuple_str_of_str,
     dict_to_str,
     close_char_for,
+    base_keyword,
+    enable_incremental_parsing,
+    get_psf_target,
+    move_loc_to_non_whitespace,
+    move_endpt_to_non_whitespace,
 )
 from coconut.compiler.header import (
     minify_header,
@@ -199,7 +203,7 @@ def set_to_tuple(tokens):
 
 def import_stmt(imp_from, imp, imp_as, raw=False):
     """Generate an import statement."""
-    if not raw:
+    if not raw and imp != "*":
         module_path = (imp if imp_from is None else imp_from).split(".", 1)
         existing_imp = import_existing.get(module_path[0])
         if existing_imp is not None:
@@ -473,8 +477,8 @@ class Compiler(Grammar, pickleable_obj):
         """Creates a new compiler with the given parsing parameters."""
         self.setup(*args, **kwargs)
 
-    # changes here should be reflected in __reduce__ and in the stub for coconut.api.setup
-    def setup(self, target=None, strict=False, minify=False, line_numbers=False, keep_lines=False, no_tco=False, no_wrap=False):
+    # changes here should be reflected in __reduce__, get_cli_args, and in the stub for coconut.api.setup
+    def setup(self, target=None, strict=False, minify=False, line_numbers=True, keep_lines=False, no_tco=False, no_wrap=False):
         """Initializes parsing parameters."""
         if target is None:
             target = ""
@@ -486,12 +490,14 @@ class Compiler(Grammar, pickleable_obj):
             raise CoconutException("target Python version must be major.minor, not major.minor.micro")
         if target == "sys":
             target = sys_target
+        elif target == "psf":
+            target = get_psf_target()
         if target in pseudo_targets:
             target = pseudo_targets[target]
         if target not in targets:
             raise CoconutException(
                 "unsupported target Python version " + repr(target),
-                extra="supported targets are: " + ", ".join(repr(t) for t in specific_targets + tuple(pseudo_targets)) + ", and 'sys'",
+                extra="supported targets are: " + ", ".join(repr(t) for t in specific_targets + tuple(pseudo_targets)) + ", 'sys', 'psf'",
             )
         logger.log_vars("Compiler args:", locals())
         self.target = target
@@ -505,6 +511,23 @@ class Compiler(Grammar, pickleable_obj):
     def __reduce__(self):
         """Return pickling information."""
         return (self.__class__, (self.target, self.strict, self.minify, self.line_numbers, self.keep_lines, self.no_tco, self.no_wrap))
+
+    def get_cli_args(self):
+        """Get the Coconut CLI args that can be used to set up an equivalent compiler."""
+        args = ["--target=" + self.target]
+        if self.strict:
+            args.append("--strict")
+        if self.minify:
+            args.append("--minify")
+        if not self.line_numbers:
+            args.append("--no-line-numbers")
+        if self.keep_lines:
+            args.append("--keep-lines")
+        if self.no_tco:
+            args.append("--no-tco")
+        if self.no_wrap:
+            args.append("--no-wrap-types")
+        return args
 
     def __copy__(self):
         """Create a new, blank copy of the compiler."""
@@ -543,8 +566,9 @@ class Compiler(Grammar, pickleable_obj):
         IMPORTANT: When adding anything here, consider whether it should also be added to inner_environment.
         """
         self.filename = filename
+        self.outer_ln = None
         self.indchar = None
-        self.comments = {}
+        self.comments = defaultdict(set)
         self.wrapped_type_ignore = None
         self.refs = []
         self.skips = []
@@ -552,6 +576,8 @@ class Compiler(Grammar, pickleable_obj):
         # need to keep temp_var_counts in interpreter to avoid overwriting typevars
         if self.temp_var_counts is None or not keep_state:
             self.temp_var_counts = defaultdict(int)
+        # but always overwrite temp_vars_by_key since they store locs that will be invalidated
+        self.temp_vars_by_key = {}
         self.parsing_context = defaultdict(list)
         self.unused_imports = defaultdict(list)
         self.kept_lines = []
@@ -566,11 +592,12 @@ class Compiler(Grammar, pickleable_obj):
         self.add_code_before_ignore_names = {}
 
     @contextmanager
-    def inner_environment(self):
+    def inner_environment(self, ln=None):
         """Set up compiler to evaluate inner expressions."""
+        outer_ln, self.outer_ln = self.outer_ln, ln
         line_numbers, self.line_numbers = self.line_numbers, False
         keep_lines, self.keep_lines = self.keep_lines, False
-        comments, self.comments = self.comments, {}
+        comments, self.comments = self.comments, defaultdict(dictset)
         wrapped_type_ignore, self.wrapped_type_ignore = self.wrapped_type_ignore, None
         skips, self.skips = self.skips, []
         docstring, self.docstring = self.docstring, ""
@@ -580,6 +607,7 @@ class Compiler(Grammar, pickleable_obj):
         try:
             yield
         finally:
+            self.outer_ln = outer_ln
             self.line_numbers = line_numbers
             self.keep_lines = keep_lines
             self.comments = comments
@@ -616,12 +644,22 @@ class Compiler(Grammar, pickleable_obj):
                 return transform(grammar, text)
         return None
 
-    def get_temp_var(self, base_name="temp"):
+    def get_temp_var(self, base_name="temp", loc=None):
         """Get a unique temporary variable name."""
+        if loc is None:
+            key = None
+        else:
+            key = (base_name, loc)
+        if key is not None:
+            got_name = self.temp_vars_by_key.get(key)
+            if got_name is not None:
+                return got_name
         if self.minify:
             base_name = ""
         var_name = reserved_prefix + "_" + base_name + "_" + str(self.temp_var_counts[base_name])
         self.temp_var_counts[base_name] += 1
+        if key is not None:
+            self.temp_vars_by_key[key] = var_name
         return var_name
 
     @classmethod
@@ -654,125 +692,125 @@ class Compiler(Grammar, pickleable_obj):
     def bind(cls):
         """Binds reference objects to the proper parse actions."""
         # handle parsing_context for class definitions
-        new_classdef = trace_attach(cls.classdef_ref, cls.method("classdef_handle"))
+        new_classdef = attach(cls.classdef_ref, cls.method("classdef_handle"))
         cls.classdef <<= Wrap(new_classdef, cls.method("class_manage"), greedy=True)
 
-        new_datadef = trace_attach(cls.datadef_ref, cls.method("datadef_handle"))
+        new_datadef = attach(cls.datadef_ref, cls.method("datadef_handle"))
         cls.datadef <<= Wrap(new_datadef, cls.method("class_manage"), greedy=True)
 
-        new_match_datadef = trace_attach(cls.match_datadef_ref, cls.method("match_datadef_handle"))
+        new_match_datadef = attach(cls.match_datadef_ref, cls.method("match_datadef_handle"))
         cls.match_datadef <<= Wrap(new_match_datadef, cls.method("class_manage"), greedy=True)
 
         # handle parsing_context for function definitions
-        new_stmt_lambdef = trace_attach(cls.stmt_lambdef_ref, cls.method("stmt_lambdef_handle"))
+        new_stmt_lambdef = attach(cls.stmt_lambdef_ref, cls.method("stmt_lambdef_handle"))
         cls.stmt_lambdef <<= Wrap(new_stmt_lambdef, cls.method("func_manage"), greedy=True)
 
-        new_decoratable_normal_funcdef_stmt = trace_attach(
+        new_decoratable_normal_funcdef_stmt = attach(
             cls.decoratable_normal_funcdef_stmt_ref,
             cls.method("decoratable_funcdef_stmt_handle"),
         )
         cls.decoratable_normal_funcdef_stmt <<= Wrap(new_decoratable_normal_funcdef_stmt, cls.method("func_manage"), greedy=True)
 
-        new_decoratable_async_funcdef_stmt = trace_attach(
+        new_decoratable_async_funcdef_stmt = attach(
             cls.decoratable_async_funcdef_stmt_ref,
             cls.method("decoratable_funcdef_stmt_handle", is_async=True),
         )
         cls.decoratable_async_funcdef_stmt <<= Wrap(new_decoratable_async_funcdef_stmt, cls.method("func_manage"), greedy=True)
 
         # handle parsing_context for type aliases
-        new_type_alias_stmt = trace_attach(cls.type_alias_stmt_ref, cls.method("type_alias_stmt_handle"))
+        new_type_alias_stmt = attach(cls.type_alias_stmt_ref, cls.method("type_alias_stmt_handle"))
         cls.type_alias_stmt <<= Wrap(new_type_alias_stmt, cls.method("type_alias_stmt_manage"), greedy=True)
 
         # greedy handlers (we need to know about them even if suppressed and/or they use the parsing_context)
-        cls.comment <<= trace_attach(cls.comment_tokens, cls.method("comment_handle"), greedy=True)
-        cls.type_param <<= trace_attach(cls.type_param_ref, cls.method("type_param_handle"), greedy=True)
+        cls.comment <<= attach(cls.comment_tokens, cls.method("comment_handle"), greedy=True)
+        cls.type_param <<= attach(cls.type_param_ref, cls.method("type_param_handle"), greedy=True)
 
         # name handlers
         cls.refname <<= attach(cls.name_ref, cls.method("name_handle"))
         cls.setname <<= attach(cls.name_ref, cls.method("name_handle", assign=True))
-        cls.classname <<= trace_attach(cls.name_ref, cls.method("name_handle", assign=True, classname=True), greedy=True)
+        cls.classname <<= attach(cls.name_ref, cls.method("name_handle", assign=True, classname=True), greedy=True)
 
         # abnormally named handlers
-        cls.moduledoc_item <<= trace_attach(cls.moduledoc, cls.method("set_moduledoc"))
+        cls.moduledoc_item <<= attach(cls.moduledoc, cls.method("set_moduledoc"))
         cls.endline <<= attach(cls.endline_ref, cls.method("endline_handle"))
-        cls.normal_pipe_expr <<= trace_attach(cls.normal_pipe_expr_tokens, cls.method("pipe_handle"))
-        cls.return_typedef <<= trace_attach(cls.return_typedef_ref, cls.method("typedef_handle"))
-        cls.power_in_impl_call <<= trace_attach(cls.power, cls.method("power_in_impl_call_check"))
+        cls.normal_pipe_expr <<= attach(cls.normal_pipe_expr_tokens, cls.method("pipe_handle"))
+        cls.return_typedef <<= attach(cls.return_typedef_ref, cls.method("typedef_handle"))
+        cls.power_in_impl_call <<= attach(cls.power, cls.method("power_in_impl_call_check"))
 
         # handle all atom + trailers constructs with item_handle
-        cls.trailer_atom <<= trace_attach(cls.trailer_atom_ref, cls.method("item_handle"))
-        cls.no_partial_trailer_atom <<= trace_attach(cls.no_partial_trailer_atom_ref, cls.method("item_handle"))
-        cls.simple_assign <<= trace_attach(cls.simple_assign_ref, cls.method("item_handle"))
+        cls.trailer_atom <<= attach(cls.trailer_atom_ref, cls.method("item_handle"))
+        cls.no_partial_trailer_atom <<= attach(cls.no_partial_trailer_atom_ref, cls.method("item_handle"))
+        cls.simple_assign <<= attach(cls.simple_assign_ref, cls.method("item_handle"))
 
         # handle all string atoms with string_atom_handle
-        cls.string_atom <<= trace_attach(cls.string_atom_ref, cls.method("string_atom_handle"))
-        cls.f_string_atom <<= trace_attach(cls.f_string_atom_ref, cls.method("string_atom_handle"))
+        cls.string_atom <<= attach(cls.string_atom_ref, cls.method("string_atom_handle"))
+        cls.f_string_atom <<= attach(cls.f_string_atom_ref, cls.method("string_atom_handle"))
 
         # handle all keyword funcdefs with keyword_funcdef_handle
-        cls.keyword_funcdef <<= trace_attach(cls.keyword_funcdef_ref, cls.method("keyword_funcdef_handle"))
-        cls.async_keyword_funcdef <<= trace_attach(cls.async_keyword_funcdef_ref, cls.method("keyword_funcdef_handle"))
+        cls.keyword_funcdef <<= attach(cls.keyword_funcdef_ref, cls.method("keyword_funcdef_handle"))
+        cls.async_keyword_funcdef <<= attach(cls.async_keyword_funcdef_ref, cls.method("keyword_funcdef_handle"))
 
-        # standard handlers of the form name <<= trace_attach(name_tokens, method("name_handle")) (implies name_tokens is reused)
-        cls.function_call <<= trace_attach(cls.function_call_tokens, cls.method("function_call_handle"))
-        cls.testlist_star_namedexpr <<= trace_attach(cls.testlist_star_namedexpr_tokens, cls.method("testlist_star_expr_handle"))
-        cls.ellipsis <<= trace_attach(cls.ellipsis_tokens, cls.method("ellipsis_handle"))
-        cls.f_string <<= trace_attach(cls.f_string_tokens, cls.method("f_string_handle"))
+        # standard handlers of the form name <<= attach(name_tokens, method("name_handle")) (implies name_tokens is reused)
+        cls.function_call <<= attach(cls.function_call_tokens, cls.method("function_call_handle"))
+        cls.testlist_star_namedexpr <<= attach(cls.testlist_star_namedexpr_tokens, cls.method("testlist_star_expr_handle"))
+        cls.ellipsis <<= attach(cls.ellipsis_tokens, cls.method("ellipsis_handle"))
+        cls.f_string <<= attach(cls.f_string_tokens, cls.method("f_string_handle"))
 
-        # standard handlers of the form name <<= trace_attach(name_ref, method("name_handle"))
-        cls.term <<= trace_attach(cls.term_ref, cls.method("term_handle"))
-        cls.set_literal <<= trace_attach(cls.set_literal_ref, cls.method("set_literal_handle"))
-        cls.set_letter_literal <<= trace_attach(cls.set_letter_literal_ref, cls.method("set_letter_literal_handle"))
-        cls.import_stmt <<= trace_attach(cls.import_stmt_ref, cls.method("import_handle"))
-        cls.complex_raise_stmt <<= trace_attach(cls.complex_raise_stmt_ref, cls.method("complex_raise_stmt_handle"))
-        cls.augassign_stmt <<= trace_attach(cls.augassign_stmt_ref, cls.method("augassign_stmt_handle"))
-        cls.kwd_augassign <<= trace_attach(cls.kwd_augassign_ref, cls.method("kwd_augassign_handle"))
-        cls.dict_comp <<= trace_attach(cls.dict_comp_ref, cls.method("dict_comp_handle"))
-        cls.destructuring_stmt <<= trace_attach(cls.destructuring_stmt_ref, cls.method("destructuring_stmt_handle"))
-        cls.full_match <<= trace_attach(cls.full_match_ref, cls.method("full_match_handle"))
-        cls.name_match_funcdef <<= trace_attach(cls.name_match_funcdef_ref, cls.method("name_match_funcdef_handle"))
-        cls.op_match_funcdef <<= trace_attach(cls.op_match_funcdef_ref, cls.method("op_match_funcdef_handle"))
-        cls.yield_from <<= trace_attach(cls.yield_from_ref, cls.method("yield_from_handle"))
-        cls.typedef <<= trace_attach(cls.typedef_ref, cls.method("typedef_handle"))
-        cls.typedef_default <<= trace_attach(cls.typedef_default_ref, cls.method("typedef_handle"))
-        cls.unsafe_typedef_default <<= trace_attach(cls.unsafe_typedef_default_ref, cls.method("unsafe_typedef_handle"))
-        cls.typed_assign_stmt <<= trace_attach(cls.typed_assign_stmt_ref, cls.method("typed_assign_stmt_handle"))
-        cls.with_stmt <<= trace_attach(cls.with_stmt_ref, cls.method("with_stmt_handle"))
-        cls.await_expr <<= trace_attach(cls.await_expr_ref, cls.method("await_expr_handle"))
-        cls.cases_stmt <<= trace_attach(cls.cases_stmt_ref, cls.method("cases_stmt_handle"))
-        cls.decorators <<= trace_attach(cls.decorators_ref, cls.method("decorators_handle"))
-        cls.unsafe_typedef_or_expr <<= trace_attach(cls.unsafe_typedef_or_expr_ref, cls.method("unsafe_typedef_or_expr_handle"))
-        cls.testlist_star_expr <<= trace_attach(cls.testlist_star_expr_ref, cls.method("testlist_star_expr_handle"))
-        cls.list_expr <<= trace_attach(cls.list_expr_ref, cls.method("list_expr_handle"))
-        cls.dict_literal <<= trace_attach(cls.dict_literal_ref, cls.method("dict_literal_handle"))
-        cls.new_testlist_star_expr <<= trace_attach(cls.new_testlist_star_expr_ref, cls.method("new_testlist_star_expr_handle"))
-        cls.anon_namedtuple <<= trace_attach(cls.anon_namedtuple_ref, cls.method("anon_namedtuple_handle"))
-        cls.base_match_for_stmt <<= trace_attach(cls.base_match_for_stmt_ref, cls.method("base_match_for_stmt_handle"))
-        cls.async_with_for_stmt <<= trace_attach(cls.async_with_for_stmt_ref, cls.method("async_with_for_stmt_handle"))
-        cls.unsafe_typedef_tuple <<= trace_attach(cls.unsafe_typedef_tuple_ref, cls.method("unsafe_typedef_tuple_handle"))
-        cls.funcname_typeparams <<= trace_attach(cls.funcname_typeparams_ref, cls.method("funcname_typeparams_handle"))
-        cls.impl_call <<= trace_attach(cls.impl_call_ref, cls.method("impl_call_handle"))
-        cls.protocol_intersect_expr <<= trace_attach(cls.protocol_intersect_expr_ref, cls.method("protocol_intersect_expr_handle"))
+        # standard handlers of the form name <<= attach(name_ref, method("name_handle"))
+        cls.term <<= attach(cls.term_ref, cls.method("term_handle"))
+        cls.set_literal <<= attach(cls.set_literal_ref, cls.method("set_literal_handle"))
+        cls.set_letter_literal <<= attach(cls.set_letter_literal_ref, cls.method("set_letter_literal_handle"))
+        cls.import_stmt <<= attach(cls.import_stmt_ref, cls.method("import_handle"))
+        cls.complex_raise_stmt <<= attach(cls.complex_raise_stmt_ref, cls.method("complex_raise_stmt_handle"))
+        cls.augassign_stmt <<= attach(cls.augassign_stmt_ref, cls.method("augassign_stmt_handle"))
+        cls.kwd_augassign <<= attach(cls.kwd_augassign_ref, cls.method("kwd_augassign_handle"))
+        cls.dict_comp <<= attach(cls.dict_comp_ref, cls.method("dict_comp_handle"))
+        cls.destructuring_stmt <<= attach(cls.destructuring_stmt_ref, cls.method("destructuring_stmt_handle"))
+        cls.full_match <<= attach(cls.full_match_ref, cls.method("full_match_handle"))
+        cls.name_match_funcdef <<= attach(cls.name_match_funcdef_ref, cls.method("name_match_funcdef_handle"))
+        cls.op_match_funcdef <<= attach(cls.op_match_funcdef_ref, cls.method("op_match_funcdef_handle"))
+        cls.yield_from <<= attach(cls.yield_from_ref, cls.method("yield_from_handle"))
+        cls.typedef <<= attach(cls.typedef_ref, cls.method("typedef_handle"))
+        cls.typedef_default <<= attach(cls.typedef_default_ref, cls.method("typedef_handle"))
+        cls.unsafe_typedef_default <<= attach(cls.unsafe_typedef_default_ref, cls.method("unsafe_typedef_handle"))
+        cls.typed_assign_stmt <<= attach(cls.typed_assign_stmt_ref, cls.method("typed_assign_stmt_handle"))
+        cls.with_stmt <<= attach(cls.with_stmt_ref, cls.method("with_stmt_handle"))
+        cls.await_expr <<= attach(cls.await_expr_ref, cls.method("await_expr_handle"))
+        cls.cases_stmt <<= attach(cls.cases_stmt_ref, cls.method("cases_stmt_handle"))
+        cls.decorators <<= attach(cls.decorators_ref, cls.method("decorators_handle"))
+        cls.unsafe_typedef_or_expr <<= attach(cls.unsafe_typedef_or_expr_ref, cls.method("unsafe_typedef_or_expr_handle"))
+        cls.testlist_star_expr <<= attach(cls.testlist_star_expr_ref, cls.method("testlist_star_expr_handle"))
+        cls.list_expr <<= attach(cls.list_expr_ref, cls.method("list_expr_handle"))
+        cls.dict_literal <<= attach(cls.dict_literal_ref, cls.method("dict_literal_handle"))
+        cls.new_testlist_star_expr <<= attach(cls.new_testlist_star_expr_ref, cls.method("new_testlist_star_expr_handle"))
+        cls.anon_namedtuple <<= attach(cls.anon_namedtuple_ref, cls.method("anon_namedtuple_handle"))
+        cls.base_match_for_stmt <<= attach(cls.base_match_for_stmt_ref, cls.method("base_match_for_stmt_handle"))
+        cls.async_with_for_stmt <<= attach(cls.async_with_for_stmt_ref, cls.method("async_with_for_stmt_handle"))
+        cls.unsafe_typedef_tuple <<= attach(cls.unsafe_typedef_tuple_ref, cls.method("unsafe_typedef_tuple_handle"))
+        cls.funcname_typeparams <<= attach(cls.funcname_typeparams_ref, cls.method("funcname_typeparams_handle"))
+        cls.impl_call <<= attach(cls.impl_call_ref, cls.method("impl_call_handle"))
+        cls.protocol_intersect_expr <<= attach(cls.protocol_intersect_expr_ref, cls.method("protocol_intersect_expr_handle"))
 
         # these handlers just do strict/target checking
-        cls.u_string <<= trace_attach(cls.u_string_ref, cls.method("u_string_check"))
-        cls.nonlocal_stmt <<= trace_attach(cls.nonlocal_stmt_ref, cls.method("nonlocal_check"))
-        cls.star_assign_item <<= trace_attach(cls.star_assign_item_ref, cls.method("star_assign_item_check"))
-        cls.classic_lambdef <<= trace_attach(cls.classic_lambdef_ref, cls.method("lambdef_check"))
-        cls.star_sep_arg <<= trace_attach(cls.star_sep_arg_ref, cls.method("star_sep_check"))
-        cls.star_sep_setarg <<= trace_attach(cls.star_sep_setarg_ref, cls.method("star_sep_check"))
-        cls.slash_sep_arg <<= trace_attach(cls.slash_sep_arg_ref, cls.method("slash_sep_check"))
-        cls.slash_sep_setarg <<= trace_attach(cls.slash_sep_setarg_ref, cls.method("slash_sep_check"))
-        cls.endline_semicolon <<= trace_attach(cls.endline_semicolon_ref, cls.method("endline_semicolon_check"))
-        cls.async_stmt <<= trace_attach(cls.async_stmt_ref, cls.method("async_stmt_check"))
-        cls.async_comp_for <<= trace_attach(cls.async_comp_for_ref, cls.method("async_comp_check"))
-        cls.namedexpr <<= trace_attach(cls.namedexpr_ref, cls.method("namedexpr_check"))
-        cls.new_namedexpr <<= trace_attach(cls.new_namedexpr_ref, cls.method("new_namedexpr_check"))
-        cls.match_dotted_name_const <<= trace_attach(cls.match_dotted_name_const_ref, cls.method("match_dotted_name_const_check"))
-        cls.except_star_clause <<= trace_attach(cls.except_star_clause_ref, cls.method("except_star_clause_check"))
-        cls.subscript_star <<= trace_attach(cls.subscript_star_ref, cls.method("subscript_star_check"))
+        cls.u_string <<= attach(cls.u_string_ref, cls.method("u_string_check"))
+        cls.nonlocal_stmt <<= attach(cls.nonlocal_stmt_ref, cls.method("nonlocal_check"))
+        cls.star_assign_item <<= attach(cls.star_assign_item_ref, cls.method("star_assign_item_check"))
+        cls.keyword_lambdef <<= attach(cls.keyword_lambdef_ref, cls.method("lambdef_check"))
+        cls.star_sep_arg <<= attach(cls.star_sep_arg_ref, cls.method("star_sep_check"))
+        cls.star_sep_setarg <<= attach(cls.star_sep_setarg_ref, cls.method("star_sep_check"))
+        cls.slash_sep_arg <<= attach(cls.slash_sep_arg_ref, cls.method("slash_sep_check"))
+        cls.slash_sep_setarg <<= attach(cls.slash_sep_setarg_ref, cls.method("slash_sep_check"))
+        cls.endline_semicolon <<= attach(cls.endline_semicolon_ref, cls.method("endline_semicolon_check"))
+        cls.async_stmt <<= attach(cls.async_stmt_ref, cls.method("async_stmt_check"))
+        cls.async_comp_for <<= attach(cls.async_comp_for_ref, cls.method("async_comp_check"))
+        cls.namedexpr <<= attach(cls.namedexpr_ref, cls.method("namedexpr_check"))
+        cls.new_namedexpr <<= attach(cls.new_namedexpr_ref, cls.method("new_namedexpr_check"))
+        cls.match_dotted_name_const <<= attach(cls.match_dotted_name_const_ref, cls.method("match_dotted_name_const_check"))
+        cls.except_star_clause <<= attach(cls.except_star_clause_ref, cls.method("except_star_clause_check"))
+        cls.subscript_star <<= attach(cls.subscript_star_ref, cls.method("subscript_star_check"))
 
         # these checking handlers need to be greedy since they can be suppressed
-        cls.match_check_equals <<= trace_attach(cls.match_check_equals_ref, cls.method("match_check_equals_check"), greedy=True)
+        cls.match_check_equals <<= attach(cls.match_check_equals_ref, cls.method("match_check_equals_check"), greedy=True)
 
     def copy_skips(self):
         """Copy the line skips."""
@@ -804,19 +842,31 @@ class Compiler(Grammar, pickleable_obj):
         """Do post-processing that comes after deferred_code_proc."""
         return self.apply_procs(self.reformatprocs[1:], snip, reformatting=True, log=False)
 
-    def reformat(self, snip, *indices, **kwargs):
+    def reformat(self, snip, **kwargs):
         """Post process a preprocessed snippet."""
         internal_assert("ignore_errors" in kwargs, "reformat() missing required keyword argument: 'ignore_errors'")
-        if not indices:
-            with self.complain_on_err():
-                return self.apply_procs(self.reformatprocs, snip, reformatting=True, log=False, **kwargs)
-            return snip
-        else:
-            internal_assert(kwargs.get("ignore_errors", False), "cannot reformat with indices and ignore_errors=False")
-            return (
-                (self.reformat(snip, **kwargs),)
-                + tuple(len(self.reformat(snip[:index], **kwargs)) for index in indices)
-            )
+        with self.complain_on_err():
+            return self.apply_procs(self.reformatprocs, snip, reformatting=True, log=False, **kwargs)
+        return snip
+
+    def reformat_locs(self, snip, loc, endpt=None, **kwargs):
+        """Reformats a snippet and adjusts the locations in it."""
+        internal_assert("ignore_errors" not in kwargs, "cannot pass ignore_errors to reformat_locs")
+        kwargs["ignore_errors"] = True
+
+        new_snip = self.reformat(snip, **kwargs)
+        new_loc = move_loc_to_non_whitespace(
+            new_snip,
+            len(self.reformat(snip[:loc], **kwargs)),
+        )
+        if endpt is None:
+            return new_snip, new_loc
+
+        new_endpt = move_endpt_to_non_whitespace(
+            new_snip,
+            len(self.reformat(snip[:endpt], **kwargs)),
+        )
+        return new_snip, new_loc, new_endpt
 
     def reformat_without_adding_code_before(self, code, **kwargs):
         """Reformats without adding code before and instead returns what would have been added."""
@@ -850,14 +900,22 @@ class Compiler(Grammar, pickleable_obj):
         if self.strict:
             raise self.make_err(CoconutStyleError, *args, **kwargs)
 
+    def syntax_warning(self, *args, **kwargs):
+        """Show a CoconutSyntaxWarning. Usage:
+            self.syntax_warning(message, original, loc)
+        """
+        logger.warn_err(self.make_err(CoconutSyntaxWarning, *args, **kwargs))
+
     def strict_err_or_warn(self, *args, **kwargs):
-        """Raises an error if in strict mode, otherwise raises a warning."""
+        """Raises an error if in strict mode, otherwise raises a warning. Usage:
+            self.strict_err_or_warn(message, original, loc)
+        """
         internal_assert("extra" not in kwargs, "cannot pass extra=... to strict_err_or_warn")
         if self.strict:
             kwargs["extra"] = "remove --strict to downgrade to a warning"
             raise self.make_err(CoconutStyleError, *args, **kwargs)
         else:
-            logger.warn_err(self.make_err(CoconutSyntaxWarning, *args, **kwargs))
+            self.syntax_warning(*args, **kwargs)
 
     @contextmanager
     def complain_on_err(self):
@@ -866,14 +924,15 @@ class Compiler(Grammar, pickleable_obj):
             yield
         except ParseBaseException as err:
             # don't reformat, since we might have gotten here because reformat failed
-            complain(self.make_parse_err(err, reformat=False, include_ln=False))
+            complain(self.make_parse_err(err, include_ln=False, reformat=False, endpoint=True))
         except CoconutException as err:
             complain(err)
 
-    def remove_strs(self, inputstring):
+    def remove_strs(self, inputstring, inner_environment=True):
         """Remove strings/comments from the given input."""
         with self.complain_on_err():
-            return self.str_proc(inputstring)
+            with (self.inner_environment() if inner_environment else noop_ctx()):
+                return self.str_proc(inputstring)
         return inputstring
 
     def get_matcher(self, original, loc, check_var, name_list=None):
@@ -896,18 +955,40 @@ class Compiler(Grammar, pickleable_obj):
                 index,
                 extra="max index: {max_index}; wanted reftype: {reftype}".format(max_index=len(self.refs) - 1, reftype=reftype),
             )
-        internal_assert(
-            got_reftype == reftype,
-            "wanted {reftype} reference; got {got_reftype} reference".format(reftype=reftype, got_reftype=got_reftype),
-            extra="index: {index}; data: {data!r}".format(index=index, data=data),
-        )
-        return data
+        if reftype is None:
+            return got_reftype, data
+        else:
+            internal_assert(
+                got_reftype == reftype,
+                "wanted {reftype} reference; got {got_reftype} reference".format(reftype=reftype, got_reftype=got_reftype),
+                extra="index: {index}; data: {data!r}".format(index=index, data=data),
+            )
+            return data
+
+    def get_str_ref(self, index, reformatting):
+        """Get a reference to a string."""
+        if reformatting:
+            reftype, data = self.get_ref(None, index)
+            if reftype == "str":
+                return data
+            elif reftype == "f_str":
+                strchar, string_parts, exprs = data
+                text = interleaved_join(string_parts, exprs)
+                return text, strchar
+            else:
+                raise CoconutInternalException("unknown str ref type", reftype)
+        else:
+            return self.get_ref("str", index)
 
     def wrap_str(self, text, strchar, multiline=False):
         """Wrap a string."""
         if multiline:
             strchar *= 3
         return strwrapper + self.add_ref("str", (text, strchar)) + unwrapper
+
+    def wrap_f_str(self, strchar, string_parts, exprs):
+        """Wrap a format string."""
+        return strwrapper + self.add_ref("f_str", (strchar, string_parts, exprs)) + unwrapper
 
     def wrap_str_of(self, text, expect_bytes=False):
         """Wrap a string of a string."""
@@ -1007,21 +1088,33 @@ class Compiler(Grammar, pickleable_obj):
         """Return information on the current target as a version tuple."""
         return get_target_info(self.target)
 
-    def make_err(self, errtype, message, original, loc=0, ln=None, extra=None, reformat=True, endpoint=False, include_causes=False, **kwargs):
+    def make_err(self, errtype, message, original, loc=0, ln=None, extra=None, reformat=True, endpoint=None, include_causes=False, **kwargs):
         """Generate an error of the specified type."""
-        # move loc back to end of most recent actual text
-        while loc >= 2 and original[loc - 1:loc + 1].rstrip("".join(indchars) + default_whitespace_chars) == "":
-            loc -= 1
+        logger.log_loc("raw_loc", original, loc)
+        logger.log_loc("raw_endpoint", original, endpoint)
 
-        # get endpoint and line number
+        # move loc back to end of most recent actual text
+        loc = move_loc_to_non_whitespace(original, loc)
+        logger.log_loc("loc", original, loc)
+
+        # get endpoint
+        if endpoint is None:
+            endpoint = reformat
         if endpoint is False:
             endpoint = loc
-        elif endpoint is True:
-            endpoint = clip(get_highest_parse_loc() + 1, min=loc)
         else:
-            endpoint = clip(endpoint, min=loc)
+            if endpoint is True:
+                endpoint = get_highest_parse_loc(original)
+                logger.log_loc("highest_parse_loc", original, endpoint)
+            endpoint = clip(
+                move_endpt_to_non_whitespace(original, endpoint, backwards=True),
+                min=loc,
+            )
+        logger.log_loc("endpoint", original, endpoint)
+
+        # get line number
         if ln is None:
-            ln = self.adjust(lineno(loc, original))
+            ln = self.outer_ln or self.adjust(lineno(loc, original))
 
         # get line indices for the error locs
         original_lines = tuple(logical_lines(original, True))
@@ -1034,11 +1127,13 @@ class Compiler(Grammar, pickleable_obj):
         # fix error locations to correspond to the snippet
         loc_in_snip = getcol(loc, original) - 1
         endpt_in_snip = endpoint - sum(len(line) for line in original_lines[:loc_line_ind])
+        logger.log_loc("loc_in_snip", snippet, loc_in_snip)
+        logger.log_loc("endpt_in_snip", snippet, endpt_in_snip)
 
         # determine possible causes
         if include_causes:
             self.internal_assert(extra is None, original, loc, "make_err cannot include causes with extra")
-            causes = set()
+            causes = dictset()
             for cause, _, _ in all_matches(self.parse_err_msg, snippet[loc_in_snip:]):
                 causes.add(cause)
             for cause, _, _ in all_matches(self.parse_err_msg, snippet[endpt_in_snip:]):
@@ -1053,7 +1148,9 @@ class Compiler(Grammar, pickleable_obj):
 
         # reformat the snippet and fix error locations to match
         if reformat:
-            snippet, loc_in_snip, endpt_in_snip = self.reformat(snippet, loc_in_snip, endpt_in_snip, ignore_errors=True)
+            snippet, loc_in_snip, endpt_in_snip = self.reformat_locs(snippet, loc_in_snip, endpt_in_snip)
+            logger.log_loc("reformatted_loc", snippet, loc_in_snip)
+            logger.log_loc("reformatted_endpt", snippet, endpt_in_snip)
 
         if extra is not None:
             kwargs["extra"] = extra
@@ -1062,7 +1159,7 @@ class Compiler(Grammar, pickleable_obj):
     def make_syntax_err(self, err, original):
         """Make a CoconutSyntaxError from a CoconutDeferredSyntaxError."""
         msg, loc = err.args
-        return self.make_err(CoconutSyntaxError, msg, original, loc, endpoint=True)
+        return self.make_err(CoconutSyntaxError, msg, original, loc)
 
     def make_parse_err(self, err, msg=None, include_ln=True, **kwargs):
         """Make a CoconutParseError from a ParseBaseException."""
@@ -1070,12 +1167,12 @@ class Compiler(Grammar, pickleable_obj):
         loc = err.loc
         ln = self.adjust(err.lineno) if include_ln else None
 
-        return self.make_err(CoconutParseError, msg, original, loc, ln, endpoint=True, include_causes=True, **kwargs)
+        return self.make_err(CoconutParseError, msg, original, loc, ln, include_causes=True, **kwargs)
 
     def make_internal_syntax_err(self, original, loc, msg, item, extra):
         """Make a CoconutInternalSyntaxError."""
         message = msg + ": " + repr(item)
-        return self.make_err(CoconutInternalSyntaxError, message, original, loc, extra=extra, endpoint=True)
+        return self.make_err(CoconutInternalSyntaxError, message, original, loc, extra=extra)
 
     def internal_assert(self, cond, original, loc, msg=None, item=None):
         """Version of internal_assert that raises CoconutInternalSyntaxErrors."""
@@ -1084,6 +1181,8 @@ class Compiler(Grammar, pickleable_obj):
 
     def inner_parse_eval(
         self,
+        original,
+        loc,
         inputstring,
         parser=None,
         preargs={"strip": True},
@@ -1092,7 +1191,7 @@ class Compiler(Grammar, pickleable_obj):
         """Parse eval code in an inner environment."""
         if parser is None:
             parser = self.eval_parser
-        with self.inner_environment():
+        with self.inner_environment(ln=self.adjust(lineno(loc, original))):
             self.streamline(parser, inputstring)
             pre_procd = self.pre(inputstring, **preargs)
             parsed = parse(parser, pre_procd)
@@ -1106,9 +1205,9 @@ class Compiler(Grammar, pickleable_obj):
             self.current_compiler[0] = self
             yield
 
-    def streamline(self, grammar, inputstring=""):
+    def streamline(self, grammar, inputstring="", force=False):
         """Streamline the given grammar for the given inputstring."""
-        if streamline_grammar_for_len is not None and len(inputstring) >= streamline_grammar_for_len:
+        if force or (streamline_grammar_for_len is not None and len(inputstring) >= streamline_grammar_for_len):
             start_time = get_clock_time()
             prep_grammar(grammar, streamline=True)
             logger.log_lambda(
@@ -1128,7 +1227,7 @@ class Compiler(Grammar, pickleable_obj):
             for name, locs in self.unused_imports.items():
                 for loc in locs:
                     ln = self.adjust(lineno(loc, original))
-                    comment = self.reformat(self.comments.get(ln, ""), ignore_errors=True)
+                    comment = self.reformat(" ".join(self.comments[ln]), ignore_errors=True)
                     if not self.noqa_regex.search(comment):
                         self.strict_err_or_warn(
                             "found unused import " + repr(self.reformat(name, ignore_errors=True)) + " (add '# NOQA' to suppress)",
@@ -1180,94 +1279,219 @@ class Compiler(Grammar, pickleable_obj):
             inputstring = inputstring.strip()
         return inputstring
 
+    def wrap_str_hold(self, hold):
+        """Wrap a string hold from str_proc."""
+        if hold["type"] == "string":
+            return self.wrap_str(hold["contents"], hold["start"])
+        elif hold["type"] == "f string":
+            return self.wrap_f_str(hold["start"], hold["str_parts"], hold["exprs"])
+        else:
+            raise CoconutInternalException("invalid str_proc hold type", hold["type"])
+
+    def str_hold_contents(self, hold, append=None):
+        """Get the contents of a string hold from str_proc."""
+        if hold["type"] == "string":
+            if append is not None:
+                hold["contents"] += append
+            return hold["contents"]
+        elif hold["type"] == "f string":
+            if append is not None:
+                hold["str_parts"][-1] += append
+            return hold["str_parts"][-1]
+        else:
+            raise CoconutInternalException("invalid str_proc hold type", hold["type"])
+
     def str_proc(self, inputstring, **kwargs):
         """Process strings and comments."""
         out = []
         found = None  # store of characters that might be the start of a string
-        hold = None
-        # hold = [_comment]:
-        _comment = 0  # the contents of the comment so far
-        # hold = [_contents, _start, _stop]:
-        _contents = 0  # the contents of the string so far
-        _start = 1  # the string of characters that started the string
-        _stop = 2  # store of characters that might be the end of the string
+        hold = None  # dictionary of information on the string/comment we're currently in
         skips = self.copy_skips()
 
-        x = 0
-        while x <= len(inputstring):
+        i = 0
+        while i <= len(inputstring):
             try:
-                c = inputstring[x]
+                c = inputstring[i]
             except IndexError:
-                internal_assert(x == len(inputstring), "invalid index in str_proc", (inputstring, x))
+                internal_assert(i == len(inputstring), "invalid index in str_proc", (inputstring, i))
                 c = "\n"
 
             if hold is not None:
-                if len(hold) == 1:  # hold == [_comment]
+                internal_assert(found is None, "str_proc error, got both hold and found", (hold, found))
+                if hold["type"] == "comment":
                     if c == "\n":
-                        out += [self.wrap_comment(hold[_comment]), c]
+                        out += [self.wrap_comment(hold["comment"]), c]
                         hold = None
                     else:
-                        hold[_comment] += c
-                elif hold[_stop] is not None:
-                    if c == "\\":
-                        hold[_contents] += hold[_stop] + c
-                        hold[_stop] = None
-                    elif c == hold[_start][0]:
-                        hold[_stop] += c
-                    elif len(hold[_stop]) > len(hold[_start]):
-                        raise self.make_err(CoconutSyntaxError, "invalid number of closing " + repr(hold[_start][0]) + "s", inputstring, x, reformat=False)
-                    elif hold[_stop] == hold[_start]:
-                        out.append(self.wrap_str(hold[_contents], hold[_start][0], True))
-                        hold = None
-                        x -= 1
-                    else:
-                        if c == "\n":
-                            if len(hold[_start]) == 1:
-                                raise self.make_err(CoconutSyntaxError, "linebreak in non-multiline string", inputstring, x, reformat=False)
-                            skips = addskip(skips, self.adjust(lineno(x, inputstring)))
-                        hold[_contents] += hold[_stop] + c
-                        hold[_stop] = None
-                elif count_end(hold[_contents], "\\") % 2 == 1:
-                    if c == "\n":
-                        skips = addskip(skips, self.adjust(lineno(x, inputstring)))
-                    hold[_contents] += c
-                elif c == hold[_start]:
-                    out.append(self.wrap_str(hold[_contents], hold[_start], False))
-                    hold = None
-                elif c == hold[_start][0]:
-                    hold[_stop] = c
+                        hold["comment"] += c
+
                 else:
-                    if c == "\n":
-                        if len(hold[_start]) == 1:
-                            raise self.make_err(CoconutSyntaxError, "linebreak in non-multiline string", inputstring, x, reformat=False)
-                        skips = addskip(skips, self.adjust(lineno(x, inputstring)))
-                    hold[_contents] += c
+                    if hold["type"] == "string":
+                        is_f = False
+                    elif hold["type"] == "f string":
+                        is_f = True
+                    else:
+                        raise CoconutInternalException("invalid str_proc string hold type", hold["type"])
+                    done = False  # whether the string is finished
+                    rerun = False  # whether we want to rerun the loop with the same i next iteration
+
+                    # if we're inside an f string expr
+                    if hold.get("in_expr", False):
+                        internal_assert(is_f, "in_expr should only be for f string holds, not", hold)
+                        remaining_text = inputstring[i:]
+                        str_start, str_stop = parse_where(self.string_start, remaining_text)
+                        if str_start is not None:  # str_start >= 0; if > 0 means there is whitespace before the string
+                            hold["exprs"][-1] += remaining_text[:str_stop]
+                            # add any skips from where we're fast-forwarding (except don't include c since we handle that below)
+                            for j in range(1, str_stop):
+                                if inputstring[i + j] == "\n":
+                                    skips = addskip(skips, self.adjust(lineno(i + j, inputstring)))
+                            i += str_stop - 1
+                        elif hold["paren_level"] < 0:
+                            hold["paren_level"] += paren_change(c)
+                            hold["exprs"][-1] += c
+                        elif hold["paren_level"] > 0:
+                            raise self.make_err(CoconutSyntaxError, "imbalanced parentheses in format string expression", inputstring, i, reformat=False)
+                        elif match_in(self.end_f_str_expr, remaining_text):
+                            hold["in_expr"] = False
+                            hold["str_parts"].append(c)
+                        else:
+                            hold["paren_level"] += paren_change(c)
+                            hold["exprs"][-1] += c
+
+                    # if we might be at the end of the string
+                    elif hold["stop"] is not None:
+                        if c == "\\":
+                            self.str_hold_contents(hold, append=hold["stop"] + c)
+                            hold["stop"] = None
+                        elif c == hold["start"][0]:
+                            hold["stop"] += c
+                        elif len(hold["stop"]) > len(hold["start"]):
+                            raise self.make_err(CoconutSyntaxError, "invalid number of closing " + repr(hold["start"][0]) + "s", inputstring, i, reformat=False)
+                        elif hold["stop"] == hold["start"]:
+                            done = True
+                            rerun = True
+                        else:
+                            self.str_hold_contents(hold, append=hold["stop"] + c)
+                            hold["stop"] = None
+
+                    # if we might be at the start of an f string expr
+                    elif hold.get("saw_brace", False):
+                        internal_assert(is_f, "saw_brace should only be for f string holds, not", hold)
+                        hold["saw_brace"] = False
+                        if c == "{":
+                            self.str_hold_contents(hold, append=c)
+                        elif c == "}":
+                            raise self.make_err(CoconutSyntaxError, "empty expression in format string", inputstring, i, reformat=False)
+                        else:
+                            hold["in_expr"] = True
+                            hold["exprs"].append("")
+                            rerun = True
+
+                    elif count_end(self.str_hold_contents(hold), "\\") % 2 == 1:
+                        self.str_hold_contents(hold, append=c)
+                    elif c == hold["start"]:
+                        done = True
+                    elif c == hold["start"][0]:
+                        hold["stop"] = c
+                    elif is_f and c == "{":
+                        hold["saw_brace"] = True
+                        self.str_hold_contents(hold, append=c)
+                    else:
+                        self.str_hold_contents(hold, append=c)
+
+                    if rerun:
+                        i -= 1
+
+                    # wrap the string if it's complete
+                    if done:
+                        if is_f:
+                            # handle dangling detections
+                            if hold["saw_brace"]:
+                                raise self.make_err(CoconutSyntaxError, "format string ends with unescaped brace (escape by doubling to '{{')", inputstring, i, reformat=False)
+                            if hold["in_expr"]:
+                                raise self.make_err(CoconutSyntaxError, "imbalanced braces in format string (escape braces by doubling to '{{' and '}}')", inputstring, i, reformat=False)
+                        out.append(self.wrap_str_hold(hold))
+                        hold = None
+                    # add a line skip if c is inside the string (not done) and we wont be seeing this c again (not rerun)
+                    elif not rerun and c == "\n":
+                        if not hold.get("in_expr", False) and len(hold["start"]) == 1:
+                            raise self.make_err(CoconutSyntaxError, "linebreak in non-multi-line string", inputstring, i, reformat=False)
+                        skips = addskip(skips, self.adjust(lineno(i, inputstring)))
+
             elif found is not None:
+
+                # determine if we're at the start of a string
                 if c == found[0] and len(found) < 3:
                     found += c
                 elif len(found) == 1:  # found == "_"
-                    hold = ["", found, None]  # [_contents, _start, _stop]
+                    hold = {
+                        "start": found,
+                        "stop": None,
+                        "contents": ""
+                    }
                     found = None
-                    x -= 1
+                    i -= 1
                 elif len(found) == 2:  # found == "__"
-                    out.append(self.wrap_str("", found[0], False))
+                    # empty string; will be wrapped immediately below
+                    hold = {
+                        "start": found[0],
+                        "stop": found[-1],
+                    }
                     found = None
-                    x -= 1
+                    i -= 1
                 else:  # found == "___"
                     internal_assert(len(found) == 3, "invalid number of string starts", found)
-                    hold = ["", found, None]  # [_contents, _start, _stop]
+                    hold = {
+                        "start": found,
+                        "stop": None,
+                    }
                     found = None
-                    x -= 1
+                    i -= 1
+
+                # start the string hold if we're at the start of a string
+                if hold is not None:
+                    is_f = False
+                    j = i - len(hold["start"])
+                    while j >= 0:
+                        prev_c = inputstring[j]
+                        if prev_c == "f":
+                            is_f = True
+                            break
+                        elif prev_c != "r":
+                            break
+                        j -= 1
+                    if is_f:
+                        hold.update({
+                            "type": "f string",
+                            "str_parts": [""],
+                            "exprs": [],
+                            "saw_brace": False,
+                            "in_expr": False,
+                            "paren_level": 0,
+                        })
+                    else:
+                        hold.update({
+                            "type": "string",
+                            "contents": "",
+                        })
+                    if hold["stop"]:  # empty string; wrap immediately
+                        out.append(self.wrap_str_hold(hold))
+                        hold = None
+
             elif c == "#":
-                hold = [""]  # [_comment]
-            elif c in hold_chars:
+                hold = {
+                    "type": "comment",
+                    "comment": "",
+                }
+            elif c in str_chars:
                 found = c
             else:
                 out.append(c)
-            x += 1
+            i += 1
 
         if hold is not None or found is not None:
-            raise self.make_err(CoconutSyntaxError, "unclosed string", inputstring, x, reformat=False)
+            raise self.make_err(CoconutSyntaxError, "unclosed string", inputstring, i, reformat=False)
 
         self.set_skips(skips)
         return "".join(out)
@@ -1473,7 +1697,7 @@ class Compiler(Grammar, pickleable_obj):
                     open_char, _, open_col_ind, _, open_line_id = opens.pop()
                     if c != close_char_for(open_char):
                         if open_line_id is line_id:
-                            err_kwargs = {"loc": open_col_ind, "endpoint": i + 1}
+                            err_kwargs = {"loc": open_col_ind, "endpoint": i}
                         else:
                             err_kwargs = {"loc": i}
                         raise self.make_err(
@@ -1603,7 +1827,7 @@ class Compiler(Grammar, pickleable_obj):
                 # add comments based on source line number
                 src_ln = self.adjust(ln)
                 if not reformatting or has_wrapped_ln:
-                    line += self.comments.get(src_ln, "")
+                    line += " ".join(self.comments[src_ln])
                 if not reformatting and line.rstrip() and not line.lstrip().startswith("#"):
                     line += self.ln_comment(src_ln)
 
@@ -1656,7 +1880,7 @@ class Compiler(Grammar, pickleable_obj):
 
         return "".join(out)
 
-    def str_repl(self, inputstring, ignore_errors=False, **kwargs):
+    def str_repl(self, inputstring, reformatting=False, ignore_errors=False, **kwargs):
         """Add back strings and comments."""
         out = []
         comment = None
@@ -1682,7 +1906,7 @@ class Compiler(Grammar, pickleable_obj):
                     if c is not None and c in nums:
                         string += c
                     elif c == unwrapper and string:
-                        text, strchar = self.get_ref("str", string)
+                        text, strchar = self.get_str_ref(string, reformatting)
                         out += [strchar, text, strchar]
                         string = None
                     else:
@@ -1722,7 +1946,7 @@ class Compiler(Grammar, pickleable_obj):
                 return first_line, rest_of_lines
         return None, block
 
-    def tre_return(self, func_name, func_args, func_store, mock_var=None):
+    def tre_return_grammar(self, func_name, func_args, func_store, mock_var=None):
         """Generate grammar element that matches a string which is just a TRE return statement."""
         def tre_return_handle(loc, tokens):
             args = ", ".join(tokens)
@@ -1741,7 +1965,7 @@ class Compiler(Grammar, pickleable_obj):
             else:
                 tre_recurse = tuple_str_of_str(func_args) + " = " + mock_var + "(" + args + ")" + "\ncontinue"
 
-            tre_check_var = self.get_temp_var("tre_check")
+            tre_check_var = self.get_temp_var("tre_check", loc)
             return handle_indentation(
                 """
 try:
@@ -1762,8 +1986,9 @@ else:
                 tco_recurse=tco_recurse,
                 type_ignore=self.type_ignore_comment(),
             )
+        self.tre_func_name <<= base_keyword(func_name).suppress()
         return attach(
-            self.get_tre_return_grammar(func_name),
+            self.tre_return,
             tre_return_handle,
             greedy=True,
         )
@@ -1872,8 +2097,9 @@ else:
                         to_return = "(" + to_return + ")"
                     # only use trollius Return when trollius is imported
                     if is_async and self.target_info < (3, 4):
-                        ret_err = "_coconut.asyncio.Return"
-                    else:
+                        ret_err = "_coconut.asyncio_Return"
+                    # for both coroutines and generators, use StopIteration if return isn't supported
+                    elif self.target_info < (3, 3):
                         ret_err = "_coconut.StopIteration"
                         # warn about Python 3.7 incompatibility on any target with Python 3 support
                         if not self.target.startswith("2"):
@@ -1884,7 +2110,10 @@ else:
                                     original, loc,
                                 ),
                             )
-                    line = indent + "raise " + ret_err + "(" + to_return + ")" + comment + dedent
+                    else:
+                        ret_err = None
+                    if ret_err is not None:
+                        line = indent + "raise " + ret_err + "(" + to_return + ")" + comment + dedent
 
                 # handle async generator yields
                 if is_async and is_gen and self.target_info < (3, 6):
@@ -2004,7 +2233,7 @@ else:
         undotted_name = None
         if func_name is not None and "." in func_name:
             undotted_name = func_name.rsplit(".", 1)[-1]
-            def_name = self.get_temp_var(undotted_name)
+            def_name = self.get_temp_var("dotted_" + undotted_name, loc)
 
         # detect pattern-matching functions
         is_match_func = func_paramdef == match_func_paramdef
@@ -2014,7 +2243,7 @@ else:
             if func_name is None:
                 raise CoconutInternalException("could not find name in addpattern function definition", def_stmt)
             # binds most tightly, except for TCO
-            addpattern_decorator = self.get_temp_var("addpattern")
+            addpattern_decorator = self.get_temp_var("addpattern", loc)
             out.append(
                 handle_indentation(
                     """
@@ -2022,7 +2251,7 @@ try:
     {addpattern_decorator} = _coconut_addpattern({func_name}) {type_ignore}
 except _coconut.NameError:
     {addpattern_decorator} = lambda f: f
-                """,
+                    """,
                     add_newline=True,
                 ).format(
                     func_name=func_name,
@@ -2044,6 +2273,7 @@ except _coconut.NameError:
 
         # handle async functions
         if is_async:
+            force_gen = False
             if not self.target:
                 raise self.make_err(
                     CoconutTargetError,
@@ -2064,8 +2294,18 @@ except _coconut.NameError:
                 )
             else:
                 decorators += "@_coconut.asyncio.coroutine\n"
+                # raise StopIteration/Return will only work if we ensure it's a generator
+                force_gen = True
 
             func_code, _, _ = self.transform_returns(original, loc, raw_lines, is_async=True, is_gen=is_gen)
+            if force_gen:
+                func_code += "\n" + handle_indentation(
+                    """
+if False:
+    yield
+                    """,
+                    extra_indent=1,
+                )
 
         # handle normal functions
         else:
@@ -2078,11 +2318,11 @@ except _coconut.NameError:
             )
             if attempt_tre:
                 if func_args and func_args != func_paramdef:
-                    mock_var = self.get_temp_var("mock")
+                    mock_var = self.get_temp_var("mock", loc)
                 else:
                     mock_var = None
-                func_store = self.get_temp_var("recursive_func")
-                tre_return_grammar = self.tre_return(func_name, func_args, func_store, mock_var)
+                func_store = self.get_temp_var("recursive_func", loc)
+                tre_return_grammar = self.tre_return_grammar(func_name, func_args, func_store, mock_var)
             else:
                 mock_var = func_store = tre_return_grammar = None
 
@@ -2194,7 +2434,7 @@ if {temp_var} is not None:
                     func_code=func_code,
                     func_name=func_name,
                     undotted_name=undotted_name,
-                    temp_var=self.get_temp_var("qualname"),
+                    temp_var=self.get_temp_var("qualname", loc),
                 ),
             )
             # decorating the function must come after __name__ has been set,
@@ -2208,7 +2448,7 @@ if {temp_var} is not None:
 
         # handle copyclosure functions
         if copyclosure:
-            vars_var = self.get_temp_var("func_vars")
+            vars_var = self.get_temp_var("func_vars", loc)
             func_from_vars = vars_var + '["' + def_name + '"]'
             # for dotted copyclosure function definition, decoration was deferred until now
             if decorators:
@@ -2645,11 +2885,11 @@ else:
         self.docstring = self.reformat(moduledoc, ignore_errors=False) + "\n\n"
         return endline
 
-    def yield_from_handle(self, tokens):
+    def yield_from_handle(self, loc, tokens):
         """Process Python 3.3 yield from."""
         expr, = tokens
         if self.target_info < (3, 3):
-            ret_val_name = self.get_temp_var("yield_from")
+            ret_val_name = self.get_temp_var("yield_from_return", loc)
             self.add_code_before[ret_val_name] = handle_indentation(
                 '''
 {yield_from_var} = _coconut.iter({expr})
@@ -2662,8 +2902,8 @@ while True:
                 ''',
             ).format(
                 expr=expr,
-                yield_from_var=self.get_temp_var("yield_from"),
-                yield_err_var=self.get_temp_var("yield_err"),
+                yield_from_var=self.get_temp_var("yield_from", loc),
+                yield_err_var=self.get_temp_var("yield_err", loc),
                 ret_val_name=ret_val_name,
             )
             return ret_val_name
@@ -2687,10 +2927,7 @@ while True:
         """Store comment in comments."""
         comment_marker, = tokens
         ln = self.adjust(lineno(loc, original))
-        if ln in self.comments:
-            self.comments[ln] += " " + comment_marker
-        else:
-            self.comments[ln] = comment_marker
+        self.comments[ln].add(comment_marker)
         return ""
 
     def kwd_augassign_handle(self, original, loc, tokens):
@@ -2727,7 +2964,7 @@ while True:
         elif op == "??=":
             return name + " = " + item + " if " + name + " is None else " + name
         elif op == "::=":
-            ichain_var = self.get_temp_var("lazy_chain")
+            ichain_var = self.get_temp_var("lazy_chain", loc)
             # this is necessary to prevent a segfault caused by self-reference
             return (
                 ichain_var + " = " + name + "\n"
@@ -2802,7 +3039,7 @@ while True:
         else:
             raise CoconutInternalException("invalid pattern-matching tokens in data", match_tokens)
 
-        check_var = self.get_temp_var("match_check")
+        check_var = self.get_temp_var("match_check", loc)
         matcher = self.get_matcher(original, loc, check_var, name_list=[])
 
         pos_only_args, req_args, default_args, star_arg, kwd_only_args, dubstar_arg = split_args_list(matches, loc)
@@ -3103,7 +3340,7 @@ def __hash__(self):
         namedtuple_call = self.make_namedtuple_call(None, names, types)
         return namedtuple_call + "(" + ", ".join(items) + ")"
 
-    def single_import(self, path, imp_as, type_ignore=False):
+    def single_import(self, loc, path, imp_as, type_ignore=False):
         """Generate import statements from a fully qualified import and the name to bind it to."""
         out = []
 
@@ -3122,7 +3359,7 @@ def __hash__(self):
             imp, imp_as = imp_as, None
 
         if imp_as is not None and "." in imp_as:
-            import_as_var = self.get_temp_var("import")
+            import_as_var = self.get_temp_var("import", loc)
             out.append(import_stmt(imp_from, imp, import_as_var))
             fake_mods = imp_as.split(".")
             for i in range(1, len(fake_mods)):
@@ -3146,7 +3383,7 @@ def __hash__(self):
 
         return out
 
-    def universal_import(self, imports, imp_from=None):
+    def universal_import(self, loc, imports, imp_from=None):
         """Generate code for a universal import of imports from imp_from.
         imports = [[imp1], [imp2, as], ...]"""
         importmap = []  # [((imp | old_imp, imp, version_check), imp_as), ...]
@@ -3193,7 +3430,7 @@ def __hash__(self):
         stmts = []
         for paths, imp_as, type_ignore in importmap:
             if len(paths) == 1:
-                more_stmts = self.single_import(paths[0], imp_as)
+                more_stmts = self.single_import(loc, paths[0], imp_as)
                 stmts.extend(more_stmts)
             else:
                 old_imp, new_imp, version_check = paths
@@ -3212,11 +3449,11 @@ else:
 if {store_var} is not _coconut_sentinel:
     sys = {store_var}
                 """).format(
-                        store_var=self.get_temp_var("sys"),
+                        store_var=self.get_temp_var("sys", loc),
                         version_check=version_check,
-                        new_imp="\n".join(self.single_import(new_imp, imp_as)),
+                        new_imp="\n".join(self.single_import(loc, new_imp, imp_as)),
                         # should only type: ignore the old import
-                        old_imp="\n".join(self.single_import(old_imp, imp_as, type_ignore=type_ignore)),
+                        old_imp="\n".join(self.single_import(loc, old_imp, imp_as, type_ignore=type_ignore)),
                         type_ignore=self.type_ignore_comment(),
                     ),
                 )
@@ -3237,13 +3474,13 @@ if {store_var} is not _coconut_sentinel:
         if imp_from == "*" or imp_from is None and "*" in imports:
             if not (len(imports) == 1 and imports[0] == "*"):
                 raise self.make_err(CoconutSyntaxError, "only [from *] import * allowed, not from * import name", original, loc)
-            logger.warn_err(self.make_err(CoconutSyntaxWarning, "[from *] import * is a Coconut Easter egg and should not be used in production code", original, loc))
+            self.syntax_warning("[from *] import * is a Coconut Easter egg and should not be used in production code", original, loc)
             return special_starred_import_handle(imp_all=bool(imp_from))
         for imp_name in imported_names(imports):
             self.unused_imports[imp_name].append(loc)
-        return self.universal_import(imports, imp_from=imp_from)
+        return self.universal_import(loc, imports, imp_from=imp_from)
 
-    def complex_raise_stmt_handle(self, tokens):
+    def complex_raise_stmt_handle(self, loc, tokens):
         """Process Python 3 raise from statement."""
         raise_expr, from_expr = tokens
         if self.target.startswith("3"):
@@ -3256,7 +3493,7 @@ if {store_var} is not _coconut_sentinel:
 raise {raise_from_var}
                 ''',
             ).format(
-                raise_from_var=self.get_temp_var("raise_from"),
+                raise_from_var=self.get_temp_var("raise_from", loc),
                 raise_expr=raise_expr,
                 from_expr=from_expr,
             )
@@ -3305,9 +3542,9 @@ if not {check_var}:
             raise CoconutInternalException("invalid match type", match_type)
 
         if match_to_var is None:
-            match_to_var = self.get_temp_var("match_to")
+            match_to_var = self.get_temp_var("match_to", loc)
         if match_check_var is None:
-            match_check_var = self.get_temp_var("match_check")
+            match_check_var = self.get_temp_var("match_check", loc)
 
         matching = self.get_matcher(original, loc, match_check_var)
         matching.match(matches, match_to_var)
@@ -3327,8 +3564,8 @@ if not {check_var}:
     def destructuring_stmt_handle(self, original, loc, tokens):
         """Process match assign blocks."""
         matches, item = tokens
-        match_to_var = self.get_temp_var("match_to")
-        match_check_var = self.get_temp_var("match_check")
+        match_to_var = self.get_temp_var("match_to", loc)
+        match_check_var = self.get_temp_var("match_check", loc)
         out = self.full_match_handle(original, loc, [matches, "in", item, None], match_to_var, match_check_var)
         out += self.pattern_error(original, loc, match_to_var, match_check_var)
         return out
@@ -3343,7 +3580,7 @@ if not {check_var}:
         else:
             raise CoconutInternalException("invalid match function definition tokens", tokens)
 
-        check_var = self.get_temp_var("match_check")
+        check_var = self.get_temp_var("match_check", loc)
         matcher = self.get_matcher(original, loc, check_var)
 
         pos_only_args, req_args, default_args, star_arg, kwd_only_args, dubstar_arg = split_args_list(matches, loc)
@@ -3422,7 +3659,11 @@ if not {check_var}:
 
     def stmt_lambdef_handle(self, original, loc, tokens):
         """Process multi-line lambdef statements."""
-        got_kwds, params, stmts_toks, followed_by = tokens
+        if len(tokens) == 4:
+            got_kwds, params, stmts_toks, followed_by = tokens
+            typedef = None
+        else:
+            got_kwds, params, typedef, stmts_toks, followed_by = tokens
 
         if followed_by == ",":
             self.strict_err_or_warn("found statement lambda followed by comma; this isn't recommended as it can be unclear whether the comma is inside or outside the lambda (just wrap the lambda in parentheses)", original, loc)
@@ -3451,19 +3692,24 @@ if not {check_var}:
         else:
             raise CoconutInternalException("invalid statement lambda body tokens", stmts_toks)
 
-        name = self.get_temp_var("lambda")
+        name = self.get_temp_var("lambda", loc)
         body = openindent + "\n".join(stmts) + closeindent
 
+        if typedef is None:
+            colon = ":"
+        else:
+            colon = self.typedef_handle([typedef])
         if isinstance(params, str):
             decorators = ""
-            funcdef = "def " + name + params + ":\n" + body
+            funcdef = "def " + name + params + colon + "\n" + body
         else:
             match_tokens = [name] + list(params)
             before_colon, after_docstring = self.name_match_funcdef_handle(original, loc, match_tokens)
             decorators = "@_coconut_mark_as_match\n"
             funcdef = (
                 before_colon
-                + ":\n"
+                + colon
+                + "\n"
                 + after_docstring
                 + body
             )
@@ -3499,7 +3745,7 @@ if not {check_var}:
             return "await " + await_expr
         elif self.target_info >= (3, 3):
             # we have to wrap the yield here so it doesn't cause the function to be detected as an async generator
-            return self.wrap_passthrough("(yield from " + await_expr + ")", early=True)
+            return "(" + self.wrap_passthrough("yield from") + " " + await_expr + ")"
         else:
             # this yield is fine because we can detect the _coconut.asyncio.From
             return "(yield _coconut.asyncio.From(" + await_expr + "))"
@@ -3666,7 +3912,7 @@ __annotations__["{name}"] = {annotation}
             else:
                 if name in typevar_info["all_typevars"]:
                     raise CoconutDeferredSyntaxError("type variable {name!r} already defined".format(name=name), loc)
-                temp_name = self.get_temp_var("typevar_" + name)
+                temp_name = self.get_temp_var("typevar_" + name, name_loc)
                 typevar_info["all_typevars"][name] = temp_name
                 typevar_info["new_typevars"].append((TypeVarFunc, temp_name))
                 typevar_info["typevar_locs"][name] = name_loc
@@ -3777,8 +4023,8 @@ __annotations__["{name}"] = {annotation}
         if block_kwd == "case":
             self.strict_err_or_warn("deprecated case keyword at top level in case ...: match ...: block (use Python 3.10 match ...: case ...: syntax instead)", original, loc)
 
-        check_var = self.get_temp_var("case_match_check")
-        match_var = self.get_temp_var("case_match_to")
+        check_var = self.get_temp_var("case_match_check", loc)
+        match_var = self.get_temp_var("case_match_to", loc)
 
         out = (
             match_var + " = " + item + "\n"
@@ -3793,7 +4039,7 @@ __annotations__["{name}"] = {annotation}
             out += "if not " + check_var + default
         return out
 
-    def f_string_handle(self, loc, tokens):
+    def f_string_handle(self, original, loc, tokens):
         """Process Python 3.6 format strings."""
         string, = tokens
 
@@ -3806,57 +4052,12 @@ __annotations__["{name}"] = {annotation}
         internal_assert(string.startswith(strwrapper) and string.endswith(unwrapper), "invalid f string item", string)
         string = string[1:-1]
 
-        # get text
-        old_text, strchar = self.get_ref("str", string)
+        # get f string parts
+        strchar, string_parts, exprs = self.get_ref("f_str", string)
 
-        # separate expressions
-        string_parts = [""]
-        exprs = []
-        saw_brace = False
-        in_expr = False
-        paren_level = 0
-        i = 0
-        while i < len(old_text):
-            c = old_text[i]
-            if saw_brace:
-                saw_brace = False
-                if c == "{":
-                    string_parts[-1] += c
-                elif c == "}":
-                    raise CoconutDeferredSyntaxError("empty expression in format string", loc)
-                else:
-                    in_expr = True
-                    exprs.append("")
-                    i -= 1
-            elif in_expr:
-                remaining_text = old_text[i:]
-                str_start, str_stop = parse_where(self.string_start, remaining_text)
-                if str_start is not None:  # str_start >= 0; if > 0 means there is whitespace before the string
-                    exprs[-1] += remaining_text[:str_stop]
-                    i += str_stop - 1
-                elif paren_level < 0:
-                    paren_level += paren_change(c)
-                    exprs[-1] += c
-                elif paren_level > 0:
-                    raise CoconutDeferredSyntaxError("imbalanced parentheses in format string expression", loc)
-                elif match_in(self.end_f_str_expr, remaining_text):
-                    in_expr = False
-                    string_parts.append(c)
-                else:
-                    paren_level += paren_change(c)
-                    exprs[-1] += c
-            elif c == "{":
-                saw_brace = True
-                string_parts[-1] += c
-            else:
-                string_parts[-1] += c
-            i += 1
-
-        # handle dangling detections
-        if saw_brace:
-            raise CoconutDeferredSyntaxError("format string ends with unescaped brace (escape by doubling to '{{')", loc)
-        if in_expr:
-            raise CoconutDeferredSyntaxError("imbalanced braces in format string (escape braces by doubling to '{{' and '}}')", loc)
+        # warn if there are no exprs
+        if not exprs:
+            self.strict_err_or_warn("f-string with no expressions", original, loc)
 
         # handle Python 3.8 f string = specifier
         for i, expr in enumerate(exprs):
@@ -3870,29 +4071,31 @@ __annotations__["{name}"] = {annotation}
         compiled_exprs = []
         for co_expr in exprs:
             try:
-                py_expr = self.inner_parse_eval(co_expr)
+                py_expr = self.inner_parse_eval(original, loc, co_expr)
             except ParseBaseException:
                 raise CoconutDeferredSyntaxError("parsing failed for format string expression: " + co_expr, loc)
-            if "\n" in py_expr:
-                raise CoconutDeferredSyntaxError("invalid expression in format string: " + co_expr, loc)
+            if not does_parse(self.no_unquoted_newlines, py_expr):
+                raise CoconutDeferredSyntaxError("illegal complex expression in format string: " + co_expr, loc)
             compiled_exprs.append(py_expr)
 
         # reconstitute string
-        if self.target_info >= (3, 6):
+        #  (though f strings are supported on 3.6+, nested strings with the same strchars are only
+        #   supported on 3.12+, so we should only use the literal syntax there)
+        if self.target_info >= (3, 12):
             new_text = interleaved_join(string_parts, compiled_exprs)
-
             return "f" + ("r" if raw else "") + self.wrap_str(new_text, strchar)
+
         else:
             names = [format_var + "_" + str(i) for i in range(len(compiled_exprs))]
             new_text = interleaved_join(string_parts, names)
 
             # generate format call
             return ("r" if raw else "") + self.wrap_str(new_text, strchar) + ".format(" + ", ".join(
-                name + "=(" + expr + ")"
+                name + "=(" + self.wrap_passthrough(expr) + ")"
                 for name, expr in zip(names, compiled_exprs)
             ) + ")"
 
-    def decorators_handle(self, tokens):
+    def decorators_handle(self, loc, tokens):
         """Process decorators."""
         defs = []
         decorators = []
@@ -3903,7 +4106,7 @@ __annotations__["{name}"] = {annotation}
                 if self.target_info >= (3, 9):
                     decorators.append("@" + tok[0])
                 else:
-                    varname = self.get_temp_var("decorator")
+                    varname = self.get_temp_var("decorator", loc)
                     defs.append(varname + " = " + tok[0])
                     decorators.append("@" + varname + "\n")
             else:
@@ -4020,8 +4223,8 @@ __annotations__["{name}"] = {annotation}
         """Handle match for loops."""
         matches, item, body = tokens
 
-        match_to_var = self.get_temp_var("match_to")
-        match_check_var = self.get_temp_var("match_check")
+        match_to_var = self.get_temp_var("match_to", loc)
+        match_check_var = self.get_temp_var("match_check", loc)
 
         matcher = self.get_matcher(original, loc, match_check_var)
         matcher.match(matches, match_to_var)
@@ -4059,7 +4262,7 @@ for {match_to_var} in {item}:
             is_match = False
 
         loop_vars, iter_item, body = inner_toks
-        temp_var = self.get_temp_var("async_with_for")
+        temp_var = self.get_temp_var("async_with_for", loc)
 
         if is_match:
             loop = "async " + self.base_match_for_stmt_handle(
@@ -4148,11 +4351,11 @@ if False:
                 funcdef = kwd + " " + funcdef
         return funcdef
 
-    def protocol_intersect_expr_handle(self, tokens):
+    def protocol_intersect_expr_handle(self, loc, tokens):
         if len(tokens) == 1:
             return tokens[0]
         internal_assert(len(tokens) >= 2, "invalid protocol intersection tokens", tokens)
-        protocol_var = self.get_temp_var("protocol_intersection")
+        protocol_var = self.get_temp_var("protocol_intersection", loc)
         self.add_code_before[protocol_var] = handle_indentation(
             '''
 class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
@@ -4170,7 +4373,7 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
 # CHECKING HANDLERS:
 # -----------------------------------------------------------------------------------------------------------------------
 
-    def check_strict(self, name, original, loc, tokens, only_warn=False, always_warn=False):
+    def check_strict(self, name, original, loc, tokens=(None,), only_warn=False, always_warn=False):
         """Check that syntax meets --strict requirements."""
         self.internal_assert(len(tokens) == 1, original, loc, "invalid " + name + " tokens", tokens)
         message = "found " + name
@@ -4179,13 +4382,13 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
             if only_warn:
                 if not always_warn:
                     kwargs["extra"] = "remove --strict to dismiss"
-                logger.warn_err(self.make_err(CoconutSyntaxWarning, message, original, loc, **kwargs))
+                self.syntax_warning(message, original, loc, **kwargs)
             else:
                 if always_warn:
                     kwargs["extra"] = "remove --strict to downgrade to a warning"
                 raise self.make_err(CoconutStyleError, message, original, loc, **kwargs)
         elif always_warn:
-            logger.warn_err(self.make_err(CoconutSyntaxWarning, message, original, loc))
+            self.syntax_warning(message, original, loc)
         return tokens[0]
 
     def lambdef_check(self, original, loc, tokens):
@@ -4459,10 +4662,12 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
         """Parse xonsh code."""
         return self.parse(inputstring, self.xonsh_parser, {"strip": True}, {"header": "none", "initial": "none"}, streamline=False, **kwargs)
 
-    def warm_up(self):
+    def warm_up(self, force=False, enable_incremental_mode=False):
         """Warm up the compiler by streamlining the file_parser."""
-        self.streamline(self.file_parser)
-        self.streamline(self.eval_parser)
+        self.streamline(self.file_parser, force=force)
+        self.streamline(self.eval_parser, force=force)
+        if enable_incremental_mode:
+            enable_incremental_parsing()
 
 
 # end: ENDPOINTS

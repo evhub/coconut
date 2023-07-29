@@ -131,12 +131,13 @@ __pypackages__/
 .vscode
 
 # Coconut
-coconut/tests/dest/
-docs/
+/coconut/tests/dest/
+/docs/
 pyston/
 pyprover/
 bbopt/
 coconut-prelude/
 index.rst
 vprof.json
-coconut/icoconut/coconut/
+/coconut/icoconut/coconut/
+__coconut_cache__/

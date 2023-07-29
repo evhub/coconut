@@ -22,21 +22,27 @@ from coconut.root import *  # NOQA
 import sys
 import os.path
 import codecs
+from functools import partial
 try:
     from encodings import utf_8
 except ImportError:
     utf_8 = None
 
+from coconut.root import _coconut_exec
 from coconut.integrations import embed
 from coconut.exceptions import CoconutException
 from coconut.command import Command
 from coconut.command.cli import cli_version
+from coconut.command.util import proc_run_args
 from coconut.compiler import Compiler
 from coconut.constants import (
+    PY34,
     version_tag,
     code_exts,
-    coconut_import_hook_args,
     coconut_kernel_kwargs,
+    default_use_cache_dir,
+    coconut_cache_dir,
+    coconut_run_kwargs,
 )
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -59,11 +65,12 @@ def get_state(state=None):
         return state
 
 
-def cmd(cmd_args, interact=False, state=False, **kwargs):
+def cmd(cmd_args, **kwargs):
     """Process command-line arguments."""
+    state = kwargs.pop("state", False)
     if isinstance(cmd_args, (str, bytes)):
         cmd_args = cmd_args.split()
-    return get_state(state).cmd(cmd_args, interact=interact, **kwargs)
+    return get_state(state).cmd(cmd_args, **kwargs)
 
 
 VERSIONS = {
@@ -94,6 +101,12 @@ def setup(*args, **kwargs):
     """Set up the given state object."""
     state = kwargs.pop("state", False)
     return get_state(state).setup(*args, **kwargs)
+
+
+def warm_up(*args, **kwargs):
+    """Warm up the given state object."""
+    state = kwargs.pop("state", False)
+    return get_state(state).comp.warm_up(*args, **kwargs)
 
 
 PARSERS = {
@@ -127,7 +140,7 @@ def parse(code="", mode="sys", state=False, keep_internal_state=None):
     return PARSERS[mode](command.comp)(code, keep_state=keep_internal_state)
 
 
-def coconut_eval(expression, globals=None, locals=None, state=False, **kwargs):
+def coconut_base_exec(exec_func, mode, expression, globals=None, locals=None, state=False, **kwargs):
     """Compile and evaluate Coconut code."""
     command = get_state(state)
     if command.comp is None:
@@ -136,8 +149,12 @@ def coconut_eval(expression, globals=None, locals=None, state=False, **kwargs):
     if globals is None:
         globals = {}
     command.runner.update_vars(globals)
-    compiled_python = parse(expression, "eval", state, **kwargs)
-    return eval(compiled_python, globals, locals)
+    compiled_python = parse(expression, mode, state, **kwargs)
+    return exec_func(compiled_python, globals, locals)
+
+
+coconut_exec = partial(coconut_base_exec, _coconut_exec, "sys")
+coconut_eval = partial(coconut_base_exec, eval, "eval")
 
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -176,41 +193,98 @@ class CoconutImporter(object):
     ext = code_exts[0]
     command = None
 
-    def run_compiler(self, path):
-        """Run the Coconut compiler on the given path."""
+    def __init__(self, *args):
+        self.use_cache_dir(default_use_cache_dir)
+        self.set_args(args)
+
+    def use_cache_dir(self, use_cache_dir):
+        """Set the cache directory if any to use for compiled Coconut files."""
+        if use_cache_dir:
+            if not PY34:
+                raise CoconutException("coconut.api.auto_compilation only supports the usage of a cache directory on Python 3.4+")
+            self.cache_dir = coconut_cache_dir
+        else:
+            self.cache_dir = None
+
+    def set_args(self, args):
+        """Set the Coconut command line args to use for auto compilation."""
+        self.args = proc_run_args(args)
+
+    def cmd(self, *args):
+        """Run the Coconut compiler with the given args."""
         if self.command is None:
             self.command = Command()
-        self.command.cmd([path] + list(coconut_import_hook_args))
+        return self.command.cmd(list(args) + self.args, interact=False, **coconut_run_kwargs)
 
-    def find_module(self, fullname, path=None):
+    def compile(self, path, package):
+        """Compile a path to a file or package."""
+        extra_args = []
+        if self.cache_dir:
+            if package:
+                cache_dir = os.path.join(path, self.cache_dir)
+            else:
+                cache_dir = os.path.join(os.path.dirname(path), self.cache_dir)
+            extra_args.append(cache_dir)
+        else:
+            cache_dir = None
+
+        if package:
+            self.cmd(path, *extra_args)
+            return cache_dir or path
+        else:
+            destpath, = self.cmd(path, *extra_args)
+            return destpath
+
+    def find_coconut(self, fullname, path=None):
         """Searches for a Coconut file of the given name and compiles it."""
-        basepaths = [""] + list(sys.path)
+        basepaths = list(sys.path) + [""]
         if fullname.startswith("."):
             if path is None:
                 # we can't do a relative import if there's no package path
-                return
+                return None
             fullname = fullname[1:]
             basepaths.insert(0, path)
-        fullpath = os.path.join(*fullname.split("."))
-        for head in basepaths:
-            path = os.path.join(head, fullpath)
+
+        path_tail = os.path.join(*fullname.split("."))
+        for path_head in basepaths:
+            path = os.path.join(path_head, path_tail)
             filepath = path + self.ext
-            dirpath = os.path.join(path, "__init__" + self.ext)
+            initpath = os.path.join(path, "__init__" + self.ext)
             if os.path.exists(filepath):
-                self.run_compiler(filepath)
-                # Coconut file was found and compiled, now let Python import it
-                return
-            if os.path.exists(dirpath):
-                self.run_compiler(path)
-                # Coconut package was found and compiled, now let Python import it
-                return
+                return self.compile(filepath, package=False)
+            if os.path.exists(initpath):
+                return self.compile(path, package=True)
+        return None
+
+    def find_module(self, fullname, path=None):
+        """Get a loader for a Coconut module if it exists."""
+        destpath = self.find_coconut(fullname, path)
+        # return None to let Python do the import when nothing was found or compiling in-place
+        if destpath is None or not self.cache_dir:
+            return None
+        else:
+            from importlib.machinery import SourceFileLoader
+            return SourceFileLoader(fullname, destpath)
+
+    def find_spec(self, fullname, path=None, target=None):
+        """Get a modulespec for a Coconut module if it exists."""
+        loader = self.find_module(fullname, path)
+        if loader is None:
+            return None
+        else:
+            from importlib.util import spec_from_loader
+            return spec_from_loader(fullname, loader)
 
 
 coconut_importer = CoconutImporter()
 
 
-def auto_compilation(on=True):
+def auto_compilation(on=True, args=None, use_cache_dir=None):
     """Turn automatic compilation of Coconut files on or off."""
+    if args is not None:
+        coconut_importer.set_args(args)
+    if use_cache_dir is not None:
+        coconut_importer.use_cache_dir(use_cache_dir)
     if on:
         if coconut_importer not in sys.meta_path:
             sys.meta_path.insert(0, coconut_importer)

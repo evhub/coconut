@@ -96,10 +96,10 @@ class TestConstants(unittest.TestCase):
                 or PY26 and old_imp == "ttk"
                 # don't test tkinter on PyPy
                 or PYPY and new_imp.startswith("tkinter")
-                # don't test trollius on PyPy
-                or PYPY and old_imp == "trollius"
-                # don't test typing_extensions, async_generator on Python 2
-                or PY2 and old_imp.startswith(("typing_extensions", "async_generator"))
+                # don't test trollius, aenum on PyPy
+                or PYPY and old_imp in ("trollius", "aenum")
+                # don't test typing_extensions, async_generator
+                or old_imp.startswith(("typing_extensions", "async_generator"))
             ):
                 pass
             elif sys.version_info >= ver_cutoff:
@@ -112,6 +112,18 @@ class TestConstants(unittest.TestCase):
         assert set(constants.max_versions) <= set(constants.pinned_reqs) | set(("cPyparsing",)), "found unlisted constrained but unpinned requirements"
         for maxed_ver in constants.max_versions:
             assert isinstance(maxed_ver, tuple) or maxed_ver in ("pyparsing", "cPyparsing"), "maxed versions must be tagged to a specific Python version"
+
+    def test_run_args(self):
+        assert "--run" not in constants.coconut_base_run_args
+        assert "--quiet" not in constants.coconut_base_run_args
+        assert not any(arg.startswith("--target") for arg in constants.coconut_base_run_args)
+
+    def test_targets(self):
+        assert all(v in constants.specific_targets or v in constants.pseudo_targets for v in ROOT_HEADER_VERSIONS)
+
+    def test_tuples(self):
+        assert isinstance(constants.indchars, tuple)
+        assert isinstance(constants.comment_chars, tuple)
 
 
 # -----------------------------------------------------------------------------------------------------------------------

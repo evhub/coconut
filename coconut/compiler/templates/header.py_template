@@ -1,3 +1,9 @@
+class _coconut_missing_module{object}:
+    __slots__ = ("_import_err",)
+    def __init__(self, error):
+        self._import_err = error
+    def __getattr__(self, name):
+        raise self._import_err
 @_coconut_wraps(_coconut_py_super)
 def _coconut_super(type=None, object_or_type=None):
     if type is None:
@@ -19,10 +25,8 @@ class _coconut{object}:{COMMENT.EVERYTHING_HERE_MUST_BE_COPIED_TO_STUB_FILE}
 {import_asyncio}
     try:
         import async_generator
-    except ImportError:
-        class you_need_to_install_async_generator{object}:
-            __slots__ = ()
-        async_generator = you_need_to_install_async_generator()
+    except ImportError as async_generator_import_err:
+        async_generator = _coconut_missing_module(async_generator_import_err)
 {import_pickle}
 {import_OrderedDict}
 {import_collections_abc}
@@ -45,10 +49,8 @@ class _coconut{object}:{COMMENT.EVERYTHING_HERE_MUST_BE_COPIED_TO_STUB_FILE}
 {set_zip_longest}
     try:
         import numpy
-    except ImportError:
-        class you_need_to_install_numpy{object}:
-            __slots__ = ()
-        numpy = you_need_to_install_numpy()
+    except ImportError as numpy_import_err:
+        numpy = _coconut_missing_module(numpy_import_err)
     else:
         abc.Sequence.register(numpy.ndarray)
     numpy_modules = {numpy_modules}
@@ -352,25 +354,34 @@ def _coconut_iter_getitem(iterable, index):
                     return ()
                 iterable = _coconut.itertools.islice(iterable, 0, n)
             return _coconut.tuple(iterable)[i::step]
-class _coconut_base_compose(_coconut_baseclass):{COMMENT.no_slots_to_allow_update_wrapper}{COMMENT.must_use_coconut_attrs_to_avoid_interacting_with_update_wrapper}
+class _coconut_compostion_baseclass(_coconut_baseclass):{COMMENT.no_slots_to_allow_update_wrapper}{COMMENT.must_use_coconut_attrs_to_avoid_interacting_with_update_wrapper}
     def __init__(self, func, *func_infos):
         try:
             _coconut.functools.update_wrapper(self, func)
         except _coconut.AttributeError:
             pass
-        if _coconut.isinstance(func, _coconut_base_compose):
+        if _coconut.isinstance(func, self.__class__):
             self._coconut_func = func._coconut_func
             func_infos = func._coconut_func_infos + func_infos
         else:
             self._coconut_func = func
         self._coconut_func_infos = []
-        for f, stars, none_aware in func_infos:
-            if _coconut.isinstance(f, _coconut_base_compose):
-                self._coconut_func_infos.append((f._coconut_func, stars, none_aware))
+        for f_info in func_infos:
+            f = f_info[0]
+            if _coconut.isinstance(f, self.__class__):
+                self._coconut_func_infos.append((f._coconut_func,) + f_info[1:])
                 self._coconut_func_infos += f._coconut_func_infos
             else:
-                self._coconut_func_infos.append((f, stars, none_aware))
+                self._coconut_func_infos.append(f_info)
         self._coconut_func_infos = _coconut.tuple(self._coconut_func_infos)
+    def __reduce__(self):
+        return (self.__class__, (self._coconut_func,) + self._coconut_func_infos)
+    def __get__(self, obj, objtype=None):
+        if obj is None:
+            return self
+{return_method_of_self}
+class _coconut_base_compose(_coconut_compostion_baseclass):
+    __slots__ = ()
     def __call__(self, *args, **kwargs):
         arg = self._coconut_func(*args, **kwargs)
         for f, stars, none_aware in self._coconut_func_infos:
@@ -387,12 +398,42 @@ class _coconut_base_compose(_coconut_baseclass):{COMMENT.no_slots_to_allow_updat
         return arg
     def __repr__(self):
         return _coconut.repr(self._coconut_func) + " " + " ".join(".." + "?"*none_aware + "*"*stars + "> " + _coconut.repr(f) for f, stars, none_aware in self._coconut_func_infos)
-    def __reduce__(self):
-        return (self.__class__, (self._coconut_func,) + self._coconut_func_infos)
-    def __get__(self, obj, objtype=None):
-        if obj is None:
-            return self
-{return_method_of_self}
+class _coconut_async_compose(_coconut_compostion_baseclass):
+    __slots__ = ()
+{def_async_compose_call}
+    def __repr__(self):
+        return _coconut.repr(self._coconut_func) + " " + " ".join("`and_then" + "_await"*await_f + "` " + _coconut.repr(f) for f, await_f in self._coconut_func_infos)
+def and_then(first_async_func, second_func):
+    """Compose an async function with a normal function.
+
+    Effectively equivalent to:
+        def and_then[**T, U, V](
+            first_async_func: async (**T) -> U,
+            second_func: U -> V,
+        ) -> async (**T) -> V =
+            async def (*args, **kwargs) -> (
+                first_async_func(*args, **kwargs)
+                |> await
+                |> second_func
+            )
+    """
+    return _coconut_async_compose(first_async_func, (second_func, False))
+def and_then_await(first_async_func, second_async_func):
+    """Compose two async functions.
+
+    Effectively equivalent to:
+        def and_then_await[**T, U, V](
+            first_async_func: async (**T) -> U,
+            second_async_func: async U -> V,
+        ) -> async (**T) -> V =
+            async def (*args, **kwargs) -> (
+                first_async_func(*args, **kwargs)
+                |> await
+                |> second_async_func
+                |> await
+            )
+    """
+    return _coconut_async_compose(first_async_func, (second_async_func, True))
 def _coconut_forward_compose(func, *funcs):
     """Forward composition operator (..>).
 
@@ -403,26 +444,6 @@ def _coconut_back_compose(*funcs):
 
     (<..)(f, g) is effectively equivalent to (*args, **kwargs) -> f(g(*args, **kwargs))."""
     return _coconut_forward_compose(*_coconut.reversed(funcs))
-def _coconut_forward_star_compose(func, *funcs):
-    """Forward star composition operator (..*>).
-
-    (..*>)(f, g) is effectively equivalent to (*args, **kwargs) -> g(*f(*args, **kwargs))."""
-    return _coconut_base_compose(func, *((f, 1, False) for f in funcs))
-def _coconut_back_star_compose(*funcs):
-    """Backward star composition operator (<*..).
-
-    (<*..)(f, g) is effectively equivalent to (*args, **kwargs) -> f(*g(*args, **kwargs))."""
-    return _coconut_forward_star_compose(*_coconut.reversed(funcs))
-def _coconut_forward_dubstar_compose(func, *funcs):
-    """Forward double star composition operator (..**>).
-
-    (..**>)(f, g) is effectively equivalent to (*args, **kwargs) -> g(**f(*args, **kwargs))."""
-    return _coconut_base_compose(func, *((f, 2, False) for f in funcs))
-def _coconut_back_dubstar_compose(*funcs):
-    """Backward double star composition operator (<**..).
-
-    (<**..)(f, g) is effectively equivalent to (*args, **kwargs) -> f(**g(*args, **kwargs))."""
-    return _coconut_forward_dubstar_compose(*_coconut.reversed(funcs))
 def _coconut_forward_none_compose(func, *funcs):
     """Forward none-aware composition operator (..?>).
 
@@ -433,6 +454,16 @@ def _coconut_back_none_compose(*funcs):
 
     (<..?)(f, g) is effectively equivalent to (*args, **kwargs) -> f?(g(*args, **kwargs))."""
     return _coconut_forward_none_compose(*_coconut.reversed(funcs))
+def _coconut_forward_star_compose(func, *funcs):
+    """Forward star composition operator (..*>).
+
+    (..*>)(f, g) is effectively equivalent to (*args, **kwargs) -> g(*f(*args, **kwargs))."""
+    return _coconut_base_compose(func, *((f, 1, False) for f in funcs))
+def _coconut_back_star_compose(*funcs):
+    """Backward star composition operator (<*..).
+
+    (<*..)(f, g) is effectively equivalent to (*args, **kwargs) -> f(*g(*args, **kwargs))."""
+    return _coconut_forward_star_compose(*_coconut.reversed(funcs))
 def _coconut_forward_none_star_compose(func, *funcs):
     """Forward none-aware star composition operator (..?*>).
 
@@ -443,6 +474,16 @@ def _coconut_back_none_star_compose(*funcs):
 
     (<*?..)(f, g) is effectively equivalent to (*args, **kwargs) -> f?(*g(*args, **kwargs))."""
     return _coconut_forward_none_star_compose(*_coconut.reversed(funcs))
+def _coconut_forward_dubstar_compose(func, *funcs):
+    """Forward double star composition operator (..**>).
+
+    (..**>)(f, g) is effectively equivalent to (*args, **kwargs) -> g(**f(*args, **kwargs))."""
+    return _coconut_base_compose(func, *((f, 2, False) for f in funcs))
+def _coconut_back_dubstar_compose(*funcs):
+    """Backward double star composition operator (<**..).
+
+    (<**..)(f, g) is effectively equivalent to (*args, **kwargs) -> f(**g(*args, **kwargs))."""
+    return _coconut_forward_dubstar_compose(*_coconut.reversed(funcs))
 def _coconut_forward_none_dubstar_compose(func, *funcs):
     """Forward none-aware double star composition operator (..?**>).
 
@@ -1474,6 +1515,11 @@ class multiset(_coconut.collections.Counter{comma_object}):
         return not self & other
     def __xor__(self, other):
         return self - other | other - self
+    def __ixor__(self, other):
+        right = other - self
+        self -= other
+        self |= right
+        return self
     def count(self, item):
         """Return the number of times an element occurs in a multiset.
         Equivalent to multiset[item], but additionally verifies the count is non-negative."""
@@ -1483,7 +1529,8 @@ class multiset(_coconut.collections.Counter{comma_object}):
         return result
     def __fmap__(self, func):
         return self.__class__(_coconut.dict((func(obj), num) for obj, num in self.items()))
-{def_total_and_comparisons}{assign_multiset_views}_coconut.abc.MutableSet.register(multiset)
+{def_multiset_ops}
+{def_total_and_comparisons}{def_py2_multiset_methods}_coconut.abc.MutableSet.register(multiset)
 def _coconut_base_makedata(data_type, args, from_fmap=False, fallback_to_init=False):
     if _coconut.hasattr(data_type, "_make") and _coconut.issubclass(data_type, _coconut.tuple):
         return data_type._make(args)
@@ -1566,6 +1613,8 @@ def memoize(*args, **kwargs):
     return _coconut.functools.lru_cache(maxsize, typed)
 {def_call_set_names}
 class override(_coconut_baseclass):
+    """Declare a method in a subclass as an override of a parent class method.
+    Enforces at runtime that the parent class has such a method to be overwritten."""
     __slots__ = ("func",)
     def __init__(self, func):
         self.func = func

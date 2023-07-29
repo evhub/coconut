@@ -40,9 +40,9 @@ def fixpath(path):
 def get_bool_env_var(env_var, default=False):
     """Get a boolean from an environment variable."""
     boolstr = os.getenv(env_var, "").lower()
-    if boolstr in ("true", "yes", "on", "1"):
+    if boolstr in ("true", "yes", "on", "1", "t"):
         return True
-    elif boolstr in ("false", "no", "off", "0"):
+    elif boolstr in ("false", "no", "off", "0", "f"):
         return False
     else:
         if boolstr not in ("", "none", "default"):
@@ -78,8 +78,9 @@ PY310 = sys.version_info >= (3, 10)
 PY311 = sys.version_info >= (3, 11)
 IPY = (
     ((PY2 and not PY26) or PY35)
-    and not (PYPY and WINDOWS)
     and (PY37 or not PYPY)
+    and not (PYPY and WINDOWS)
+    and not (PY2 and WINDOWS)
     and sys.version_info[:2] != (3, 7)
 )
 MYPY = (
@@ -104,18 +105,29 @@ use_fast_pyparsing_reprs = True
 assert use_fast_pyparsing_reprs or DEVELOP, "use_fast_pyparsing_reprs should never be disabled on non-develop build"
 
 enable_pyparsing_warnings = DEVELOP
-
-# experimentally determined to maximize performance
-use_packrat_parser = True  # True also gives us better error messages
-use_left_recursion_if_available = False
-packrat_cache_size = None  # only works because final() clears the cache
-streamline_grammar_for_len = 4000
+warn_on_multiline_regex = False
 
 default_whitespace_chars = " \t\f"  # the only non-newline whitespace Python allows
 
 varchars = string.ascii_letters + string.digits + "_"
 
 use_computation_graph_env_var = "COCONUT_USE_COMPUTATION_GRAPH"
+
+# below constants are experimentally determined to maximize performance
+
+streamline_grammar_for_len = 4000
+
+use_packrat_parser = True  # True also gives us better error messages
+packrat_cache_size = None  # only works because final() clears the cache
+
+# note that _parseIncremental produces much smaller caches
+use_incremental_if_available = True
+incremental_cache_size = None
+# these only apply to use_incremental_if_available, not compiler.util.enable_incremental_parsing()
+repeatedly_clear_incremental_cache = True
+never_clear_incremental_cache = False
+
+use_left_recursion_if_available = False
 
 # -----------------------------------------------------------------------------------------------------------------------
 # COMPILER CONSTANTS:
@@ -171,6 +183,18 @@ supported_py3_vers = (
     (3, 10),
     (3, 11),
     (3, 12),
+    (3, 13),
+)
+
+# must be in ascending order and kept up-to-date with https://devguide.python.org/versions
+py_vers_with_eols = (
+    # (target, eol date)
+    ("38", dt.datetime(2024, 11, 1)),
+    ("39", dt.datetime(2025, 11, 1)),
+    ("310", dt.datetime(2026, 11, 1)),
+    ("311", dt.datetime(2027, 11, 1)),
+    ("312", dt.datetime(2028, 11, 1)),
+    ("313", dt.datetime(2029, 11, 1)),
 )
 
 # must match supported vers above and must be replicated in DOCS
@@ -188,13 +212,14 @@ specific_targets = (
     "310",
     "311",
     "312",
+    "313",
 )
 pseudo_targets = {
     "universal": "",
+    "univ": "",
     "26": "2",
     "32": "3",
 }
-assert all(v in specific_targets or v in pseudo_targets for v in ROOT_HEADER_VERSIONS)
 
 targets = ("",) + specific_targets
 
@@ -237,14 +262,16 @@ funcwrapper = "def:"
 indchars = (openindent, closeindent, "\n")
 comment_chars = ("#", lnwrapper)
 
+all_whitespace = default_whitespace_chars + "".join(indchars)
+
 # open_chars and close_chars MUST BE IN THE SAME ORDER
 open_chars = "([{"  # opens parenthetical
 close_chars = ")]}"  # closes parenthetical
 
-hold_chars = "'\""  # string open/close chars
+str_chars = "'\""  # string open/close chars
 
 # together should include all the constants defined above
-delimiter_symbols = tuple(open_chars + close_chars + hold_chars) + (
+delimiter_symbols = tuple(open_chars + close_chars + str_chars) + (
     strwrapper,
     errwrapper,
     early_passthrough_wrapper,
@@ -255,10 +282,13 @@ reserved_compiler_symbols = delimiter_symbols + (
     funcwrapper,
 )
 
-taberrfmt = 2  # spaces to indent exceptions
 tabideal = 4  # spaces to indent code for displaying
 
+taberrfmt = 2  # spaces to indent exceptions
+
 justify_len = 79  # ideal line length
+
+min_squiggles_in_err_msg = 1
 
 # for pattern-matching
 default_matcher_style = "python warn"
@@ -563,23 +593,27 @@ main_sig = "Coconut: "
 main_prompt = ">>> "
 more_prompt = "    "
 
+default_use_cache_dir = PY34
+coconut_cache_dir = "__coconut_cache__"
+
 mypy_path_env_var = "MYPYPATH"
 
 style_env_var = "COCONUT_STYLE"
 vi_mode_env_var = "COCONUT_VI_MODE"
 home_env_var = "COCONUT_HOME"
-use_color_env_var = "COCONUT_USE_COLOR"
+
+force_verbose_logger = get_bool_env_var("COCONUT_FORCE_VERBOSE", False)
 
 coconut_home = fixpath(os.getenv(home_env_var, "~"))
 
-use_color = get_bool_env_var(use_color_env_var, default=None)
+use_color = get_bool_env_var("COCONUT_USE_COLOR", None)
 error_color_code = "31"
 log_color_code = "93"
 
 default_style = "default"
 prompt_histfile = os.path.join(coconut_home, ".coconut_history")
 prompt_multiline = False
-prompt_vi_mode = get_bool_env_var(vi_mode_env_var)
+prompt_vi_mode = get_bool_env_var(vi_mode_env_var, False)
 prompt_wrap_lines = True
 prompt_history_search = True
 prompt_use_suggester = False
@@ -587,6 +621,11 @@ prompt_use_suggester = False
 base_dir = os.path.dirname(os.path.abspath(fixpath(__file__)))
 
 base_stub_dir = os.path.dirname(base_dir)
+stub_dir_names = (
+    "__coconut__",
+    "_coconut",
+    "coconut",
+)
 installed_stub_dir = os.path.join(coconut_home, ".coconut_stubs")
 
 watch_interval = .1  # seconds
@@ -612,9 +651,9 @@ reserved_command_symbols = exit_chars + (
 )
 
 # always use atomic --xxx=yyy rather than --xxx yyy
-coconut_run_verbose_args = ("--run", "--target=sys", "--line-numbers", "--keep-lines")
-coconut_run_args = coconut_run_verbose_args + ("--quiet",)
-coconut_import_hook_args = ("--target=sys", "--line-numbers", "--keep-lines", "--quiet")
+#  and don't include --run, --quiet, or --target as they're added separately
+coconut_base_run_args = ("--keep-lines",)
+coconut_run_kwargs = dict(default_target="sys")  # passed to Command.cmd
 
 default_mypy_args = (
     "--pretty",
@@ -649,11 +688,13 @@ min_stack_size_kbs = 160
 default_jobs = "sys" if not PY26 else 0
 
 mypy_install_arg = "install"
+jupyter_install_arg = "install"
 
 mypy_builtin_regex = re.compile(r"\b(reveal_type|reveal_locals)\b")
 
 interpreter_uses_auto_compilation = True
 interpreter_uses_coconut_breakpoint = True
+interpreter_uses_incremental = get_bool_env_var("COCONUT_INTERPRETER_USE_INCREMENTAL_PARSING", True)
 
 command_resources_dir = os.path.join(base_dir, "command", "resources")
 coconut_pth_file = os.path.join(command_resources_dir, "zcoconut.pth")
@@ -714,6 +755,8 @@ coconut_specific_builtins = (
     "multiset",
     "cycle",
     "windowsof",
+    "and_then",
+    "and_then_await",
     "py_chr",
     "py_dict",
     "py_hex",
@@ -766,10 +809,13 @@ new_operators = (
     r"\|\??\*?\*?>",
     r"<\*?\*?\??\|",
     r"->",
+    r"=>",
     r"\?\??",
     r"<:",
     r"&:",
+    # not raw strings since we want the actual unicode chars
     "\u2192",  # ->
+    "\u21d2",  # =>
     "\\??\\*?\\*?\u21a6",  # |>
     "\u21a4\\*?\\*?\\??",  # <|
     "<?\\*?\\*?\\??\u2218\\??\\*?\\*?>?",  # ..
@@ -790,6 +836,7 @@ new_operators = (
     "\u2287",  # ^reversed
     "\u228a",  # C!=
     "\u228b",  # ^reversed
+    "\u23e8",  # 10
 )
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -807,7 +854,7 @@ website_url = "http://coconut-lang.org"
 license_name = "Apache 2.0"
 
 pure_python_env_var = "COCONUT_PURE_PYTHON"
-PURE_PYTHON = get_bool_env_var(pure_python_env_var)
+PURE_PYTHON = get_bool_env_var(pure_python_env_var, False)
 
 # the different categories here are defined in requirements.py,
 #  tuples denote the use of environment markers
@@ -821,9 +868,9 @@ all_reqs = {
         ("prompt_toolkit", "py>=3"),
         ("pygments", "py<39"),
         ("pygments", "py>=39"),
-        ("typing_extensions", "py==35"),
+        ("typing_extensions", "py<36"),
         ("typing_extensions", "py==36"),
-        ("typing_extensions", "py37"),
+        ("typing_extensions", "py>=37"),
     ),
     "cpython": (
         "cPyparsing",
@@ -873,7 +920,7 @@ all_reqs = {
         ("aenum", "py<34"),
         ("dataclasses", "py==36"),
         ("typing", "py<35"),
-        ("async_generator", "py3"),
+        ("async_generator", "py35"),
     ),
     "dev": (
         ("pre-commit", "py3"),
@@ -899,7 +946,7 @@ all_reqs = {
 
 # min versions are inclusive
 min_versions = {
-    "cPyparsing": (2, 4, 7, 1, 2, 1),
+    "cPyparsing": (2, 4, 7, 2, 2, 1),
     ("pre-commit", "py3"): (3,),
     ("psutil", "py>=27"): (5,),
     "jupyter": (1, 0),
@@ -913,25 +960,24 @@ min_versions = {
     ("numpy", "py34"): (1,),
     ("numpy", "py<3;cpy"): (1,),
     ("dataclasses", "py==36"): (0, 8),
-    ("aenum", "py<34"): (3,),
+    ("aenum", "py<34"): (3, 1, 15),
     "pydata-sphinx-theme": (0, 13),
-    "myst-parser": (1,),
-    "mypy[python2]": (1, 3),
+    "myst-parser": (2,),
+    "sphinx": (7,),
+    "mypy[python2]": (1, 4),
     ("jupyter-console", "py37"): (6, 6),
     ("typing", "py<35"): (3, 10),
-    ("typing_extensions", "py37"): (4, 6),
+    ("typing_extensions", "py>=37"): (4, 7),
     ("ipython", "py38"): (8,),
     ("ipykernel", "py38"): (6,),
-    ("jedi", "py39"): (0, 18),
+    ("jedi", "py39"): (0, 19),
     ("pygments", "py>=39"): (2, 15),
     ("xonsh", "py38"): (0, 14),
     ("pytest", "py36"): (7,),
-    ("async_generator", "py3"): (1, 10),
+    ("async_generator", "py35"): (1, 10),
 
     # pinned reqs: (must be added to pinned_reqs below)
 
-    # don't upgrade until myst-parser supports the new version
-    "sphinx": (6,),
     # don't upgrade these; they breaks on Python 3.7
     ("ipython", "py==37"): (7, 34),
     # don't upgrade these; they breaks on Python 3.6
@@ -947,7 +993,7 @@ min_versions = {
     ("jupytext", "py3"): (1, 8),
     ("jupyterlab", "py35"): (2, 2),
     ("xonsh", "py<36"): (0, 9),
-    ("typing_extensions", "py==35"): (3, 10),
+    ("typing_extensions", "py<36"): (3, 10),
     # don't upgrade this to allow all versions
     ("prompt_toolkit", "py>=3"): (1,),
     # don't upgrade this; it breaks on Python 2.6
@@ -973,7 +1019,6 @@ min_versions = {
 
 # should match the reqs with comments above
 pinned_reqs = (
-    "sphinx",
     ("ipython", "py==37"),
     ("xonsh", "py>=36;py<38"),
     ("pandas", "py36"),
@@ -987,7 +1032,7 @@ pinned_reqs = (
     ("jupytext", "py3"),
     ("jupyterlab", "py35"),
     ("xonsh", "py<36"),
-    ("typing_extensions", "py==35"),
+    ("typing_extensions", "py<36"),
     ("prompt_toolkit", "py>=3"),
     ("pytest", "py<36"),
     "vprof",
@@ -1151,7 +1196,7 @@ requests_sleep_times = (0, 0.1, 0.2, 0.3, 0.4, 1)
 # -----------------------------------------------------------------------------------------------------------------------
 
 # must be replicated in DOCS; must include --line-numbers for xonsh line number extraction
-coconut_kernel_kwargs = dict(target="sys", line_numbers=True, keep_lines=True, no_wrap=True)
+coconut_kernel_kwargs = dict(target="sys", line_numbers=True, keep_lines=True, no_wrap=True)  # passed to Compiler.setup
 
 icoconut_dir = os.path.join(base_dir, "icoconut")
 

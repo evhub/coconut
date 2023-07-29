@@ -44,6 +44,8 @@ def it_ret_tuple(x, y):
 def asyncio_test() -> bool:
     import asyncio
 
+    def toa(f) = async def (*args, **kwargs) -> f(*args, **kwargs)
+
     async def async_map_0(args):
         return parallel_map(args[0], *args[1:])
     async def async_map_1(args) = parallel_map(args[0], *args[1:])
@@ -54,12 +56,35 @@ def asyncio_test() -> bool:
         for async_map in (async_map_0, async_map_1, async_map_2, async_map_3, async_map_4):
             assert (await ((pow$(2), range(5)) |> async_map)) |> tuple == (1, 2, 4, 8, 16)
         True
+
     async def aplus(x) = y -> x + y
     aplus_: async int -> int -> int = async def x -> y -> x + y
+
     if sys.version_info >= (3, 5) or TYPE_CHECKING:
         type AsyncNumFunc[T <: int | float] = async T -> T
     aplus1: AsyncNumFunc[int] = async def x -> x + 1
-    async def main():
+
+    def and_then_[**T, U, V](
+        first_async_func: async (**T) -> U,
+        second_func: U -> V,
+    ) -> async (**T) -> V =
+        async def (*args, **kwargs) -> (
+            first_async_func(*args, **kwargs)
+            |> await
+            |> second_func
+        )
+    def and_then_await_[**T, U, V](
+        first_async_func: async (**T) -> U,
+        second_async_func: async U -> V,
+    ) -> async (**T) -> V =
+        async def (*args, **kwargs) -> (
+            first_async_func(*args, **kwargs)
+            |> await
+            |> second_async_func
+            |> await
+        )
+
+    async def main() -> None:
         assert await async_map_test()
         assert `(+)$(1) .. await (aplus 1)` 1 == 3
         assert `(.+1) .. await (aplus_ 1)` 1 == 3
@@ -68,6 +93,52 @@ def asyncio_test() -> bool:
         assert await (async match def (int(x), int(y)) -> x + y)(1, 2) == 3
         assert await (match async def (int(x), int(y)) -> x + y)(1, 2) == 3
         assert await (aplus1 2) == 3
+        assert (
+            10
+            |> aplus1 `and_then` (.*2)
+            |> await
+        ) == 22 == (
+            10
+            |> aplus1 `and_then_` (.*2)
+            |> await
+        )
+        assert (
+            10
+            |> aplus1 `and_then_await` aplus1
+            |> await
+        ) == 12 == (
+            10
+            |> aplus1 `and_then_await_` aplus1
+            |> await
+        )
+        assert (
+            10
+            |> aplus1
+            `and_then` ((.*2) ..> (.*3))
+            `and_then_await` aplus1
+            `and_then_await` ((.+4) ..> aplus1)
+            `and_then` (./6)
+            |> await
+        ) == 12 == (
+            10
+            |> aplus1
+            `and_then_` ((.*2) ..> (.*3))
+            `and_then_await_` aplus1
+            `and_then_await_` ((.+4) ..> aplus1)
+            `and_then_` (./6)
+            |> await
+        )
+        assert (
+            4
+            |> toa(x -> (1, 2, 3, x))
+            `and_then` (ident ..*> (,))
+            |> await
+        ) == (1, 2, 3, 4) == (
+            4
+            |> toa(x -> (1, 2, 3, x))
+            `and_then_` (ident ..*> (,))
+            |> await
+        )
 
     loop = asyncio.new_event_loop()
     loop.run_until_complete(main())
@@ -129,3 +200,7 @@ def target_sys_test() -> bool:
     assert l == [10]
 
     return True
+
+
+if __name__ == "__main__":
+    target_sys_test() |> print

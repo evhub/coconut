@@ -50,6 +50,7 @@ from coconut.constants import (
     error_color_code,
     log_color_code,
     ansii_escape,
+    force_verbose_logger,
 )
 from coconut.util import (
     get_clock_time,
@@ -178,7 +179,8 @@ class LoggingStringIO(StringIO):
 
 class Logger(object):
     """Container object for various logger functions and variables."""
-    verbose = False
+    force_verbose = force_verbose_logger
+    verbose = force_verbose
     quiet = False
     path = None
     name = None
@@ -214,6 +216,15 @@ class Logger(object):
     def copy(self):
         """Make a copy of the logger."""
         return Logger(self)
+
+    def setup(self, quiet=None, verbose=None, tracing=None):
+        """Set up the logger with the given parameters."""
+        if quiet is not None:
+            self.quiet = quiet
+        if not self.force_verbose and verbose is not None:
+            self.verbose = verbose
+        if tracing is not None:
+            self.tracing = tracing
 
     def display(
         self,
@@ -337,6 +348,14 @@ class Logger(object):
                 del new_vars[v]
             self.printlog(message, new_vars)
 
+    def log_loc(self, name, original, loc):
+        """Log a location in source code."""
+        if self.verbose:
+            if isinstance(loc, int):
+                self.printlog("in error construction:", str(name), "=", repr(original[:loc]), "|", repr(original[loc:]))
+            else:
+                self.printlog("in error construction:", str(name), "=", repr(loc))
+
     def get_error(self, err=None, show_tb=None):
         """Properly formats the current error."""
         if err is None:
@@ -430,9 +449,10 @@ class Logger(object):
         trace = " ".join(str(arg) for arg in args)
         self.printlog(_indent(trace, self.trace_ind))
 
-    def log_tag(self, tag, code, multiline=False):
+    def log_tag(self, tag, code, multiline=False, force=False):
         """Logs a tagged message if tracing."""
-        if self.tracing:
+        if self.tracing or force:
+            assert not (not DEVELOP and force), tag
             if callable(code):
                 code = code()
             tagstr = "[" + str(tag) + "]"
@@ -471,16 +491,17 @@ class Logger(object):
                 self.print_trace(*out)
 
     def _trace_success_action(self, original, start_loc, end_loc, expr, tokens):
-        if self.tracing and self.verbose:  # avoid the overhead of an extra function call
+        if self.tracing:  # avoid the overhead of an extra function call
             self.log_trace(expr, original, start_loc, tokens)
 
     def _trace_exc_action(self, original, loc, expr, exc):
-        if self.tracing:  # avoid the overhead of an extra function call
+        if self.tracing and self.verbose:  # avoid the overhead of an extra function call
             self.log_trace(expr, original, loc, exc)
 
     def trace(self, item):
         """Traces a parse element (only enabled in develop)."""
         if DEVELOP and not MODERN_PYPARSING:
+            # setDebugActions doesn't work as it won't let us set any actions to None
             item.debugActions = (
                 None,  # no start action
                 self._trace_success_action,
@@ -498,10 +519,13 @@ class Logger(object):
                 yield
             finally:
                 elapsed_time = get_clock_time() - start_time
-                self.printlog("Time while parsing:", elapsed_time, "secs")
+                self.printlog("Time while parsing" + (" " + self.path if self.path else "") + ":", elapsed_time, "secs")
                 if use_packrat_parser:
                     hits, misses = ParserElement.packrat_cache_stats
                     self.printlog("\tPackrat parsing stats:", hits, "hits;", misses, "misses")
+                    # reset stats after printing if in incremental mode
+                    if ParserElement._incrementalEnabled:
+                        ParserElement.packrat_cache_stats[:] = [0] * len(ParserElement.packrat_cache_stats)
         else:
             yield
 
@@ -528,21 +552,24 @@ class Logger(object):
                 return func(*args, **kwargs)
         return timed_func
 
-    def debug_func(self, func):
+    def debug_func(self, func, func_name=None):
         """Decorates a function to print the input/output behavior."""
+        if func_name is None:
+            func_name = func
+
         @wraps(func)
         def printing_func(*args, **kwargs):
             """Function decorated by logger.debug_func."""
             if not DEVELOP or self.quiet:
                 return func(*args, **kwargs)
             if not kwargs:
-                self.printerr(func, "<*|", args)
+                self.printerr(func_name, "<*|", args)
             elif not args:
-                self.printerr(func, "<**|", kwargs)
+                self.printerr(func_name, "<**|", kwargs)
             else:
-                self.printerr(func, "<<|", args, kwargs)
+                self.printerr(func_name, "<<|", args, kwargs)
             out = func(*args, **kwargs)
-            self.printerr(func, "=>", repr(out))
+            self.printerr(func_name, "=>", repr(out))
             return out
         return printing_func
 

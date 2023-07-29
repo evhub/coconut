@@ -23,7 +23,9 @@ from types import MethodType
 
 from coconut.constants import (
     coconut_kernel_kwargs,
+    coconut_run_kwargs,
     enabled_xonsh_modes,
+    interpreter_uses_incremental,
 )
 from coconut.util import memoize_with_exceptions
 
@@ -63,6 +65,7 @@ def load_ipython_extension(ipython):
 
     magic_state = api.get_state()
     api.setup(state=magic_state, **coconut_kernel_kwargs)
+    api.warm_up(enable_incremental_mode=True, state=magic_state)
 
     # add magic function
     def magic(line, cell=None):
@@ -74,7 +77,7 @@ def load_ipython_extension(ipython):
                 # first line in block is cmd, rest is code
                 line = line.strip()
                 if line:
-                    api.cmd(line, default_target="sys", state=magic_state)
+                    api.cmd(line, state=magic_state, **coconut_run_kwargs)
                 code = cell
             compiled = api.parse(code, state=magic_state)
         except CoconutException:
@@ -99,7 +102,7 @@ class CoconutXontribLoader(object):
     def memoized_parse_xonsh(self, code):
         return self.compiler.parse_xonsh(code, keep_state=True)
 
-    def compile_code(self, code):
+    def compile_code(self, code, log_name="parse"):
         """Memoized self.compiler.parse_xonsh."""
         # hide imports to avoid circular dependencies
         from coconut.exceptions import CoconutException
@@ -120,7 +123,7 @@ class CoconutXontribLoader(object):
             success = True
         finally:
             logger.quiet = quiet
-            self.timing_info.append(("parse", get_clock_time() - parse_start_time))
+            self.timing_info.append((log_name, get_clock_time() - parse_start_time))
 
         return compiled, success
 
@@ -151,11 +154,11 @@ class CoconutXontribLoader(object):
             from coconut.terminal import logger
             from coconut.compiler.util import extract_line_num_from_comment
 
-            compiled, success = self.compile_code(inp)
+            compiled, success = self.compile_code(inp, log_name="ctxvisit")
 
             if success:
                 original_lines = tuple(inp.splitlines())
-                used_lines = set()
+                remaining_ln_pieces = {}
                 new_inp_lines = []
                 last_ln = 1
                 for compiled_line in compiled.splitlines():
@@ -165,11 +168,24 @@ class CoconutXontribLoader(object):
                     except IndexError:
                         logger.log_exc()
                         line = original_lines[-1]
-                    if line in used_lines:
-                        line = ""
+                    remaining_pieces = remaining_ln_pieces.get(ln)
+                    if remaining_pieces is None:
+                        # we handle our own inner_environment rather than have remove_strs do it so that we can reformat
+                        with self.compiler.inner_environment():
+                            line_no_strs = self.compiler.remove_strs(line, inner_environment=False)
+                            if ";" in line_no_strs:
+                                remaining_pieces = [
+                                    self.compiler.reformat(piece, ignore_errors=True)
+                                    for piece in line_no_strs.split(";")
+                                ]
+                            else:
+                                remaining_pieces = [line]
+                    if remaining_pieces:
+                        new_line = remaining_pieces.pop(0)
                     else:
-                        used_lines.add(line)
-                    new_inp_lines.append(line)
+                        new_line = ""
+                    remaining_ln_pieces[ln] = remaining_pieces
+                    new_inp_lines.append(new_line)
                     last_ln = ln
                 inp = "\n".join(new_inp_lines)
 
@@ -186,7 +202,7 @@ class CoconutXontribLoader(object):
         if self.compiler is None:
             from coconut.compiler import Compiler
             self.compiler = Compiler(**coconut_kernel_kwargs)
-            self.compiler.warm_up()
+            self.compiler.warm_up(enable_incremental_mode=interpreter_uses_incremental)
 
         if self.runner is None:
             from coconut.command.util import Runner
@@ -213,7 +229,7 @@ class CoconutXontribLoader(object):
         if not self.loaded:
             # hide imports to avoid circular dependencies
             from coconut.terminal import logger
-            logger.warn("attempting to unload Coconut xontrib but it was never loaded")
+            logger.warn("attempting to unload Coconut xontrib but it was already unloaded")
         self.loaded = False
 
 

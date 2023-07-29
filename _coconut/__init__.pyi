@@ -90,6 +90,7 @@ multiprocessing_dummy = _multiprocessing_dummy
 
 copyreg = _copyreg
 asyncio = _asyncio
+asyncio_Return = StopIteration
 async_generator = _async_generator
 pickle = _pickle
 if sys.version_info >= (2, 7):

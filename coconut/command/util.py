@@ -32,6 +32,7 @@ if PY2:
 else:
     import builtins
 
+from coconut.root import _coconut_exec
 from coconut.terminal import (
     logger,
     complain,
@@ -46,7 +47,6 @@ from coconut.util import (
     pickleable_obj,
     get_encoding,
     get_clock_time,
-    memoize,
     assert_remove_prefix,
 )
 from coconut.constants import (
@@ -72,6 +72,7 @@ from coconut.constants import (
     minimum_recursion_limit,
     oserror_retcode,
     base_stub_dir,
+    stub_dir_names,
     installed_stub_dir,
     interpreter_uses_auto_compilation,
     interpreter_uses_coconut_breakpoint,
@@ -79,6 +80,7 @@ from coconut.constants import (
     must_use_specific_target_builtins,
     kilobyte,
     min_stack_size_kbs,
+    coconut_base_run_args,
 )
 
 if PY26:
@@ -132,10 +134,6 @@ except KeyError:
 # -----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
 # -----------------------------------------------------------------------------------------------------------------------
-
-
-memoized_isdir = memoize(64)(os.path.isdir)
-memoized_isfile = memoize(64)(os.path.isfile)
 
 
 def writefile(openedfile, newcontents):
@@ -195,13 +193,6 @@ def rem_encoding(code):
     return "\n".join(new_lines)
 
 
-def exec_func(code, glob_vars, loc_vars=None):
-    """Wrapper around exec."""
-    if loc_vars is None:
-        loc_vars = glob_vars
-    exec(code, glob_vars, loc_vars)
-
-
 def interpret(code, in_vars):
     """Try to evaluate the given code, otherwise execute it."""
     try:
@@ -212,7 +203,7 @@ def interpret(code, in_vars):
         if result is not None:
             logger.print(ascii(result))
         return result  # don't also exec code
-    exec_func(code, in_vars)
+    _coconut_exec(code, in_vars)
 
 
 @contextmanager
@@ -325,19 +316,30 @@ def run_cmd(cmd, show_output=True, raise_errs=True, **kwargs):
             return ""
 
 
-def symlink(link_to, link_from):
-    """Link link_from to the directory link_to universally."""
-    if os.path.islink(link_from):
-        os.unlink(link_from)
-    elif os.path.exists(link_from):
+def unlink(link_path):
+    """Remove a symbolic link if one exists. Return whether anything was done."""
+    if os.path.islink(link_path):
+        os.unlink(link_path)
+        return True
+    return False
+
+
+def rm_dir_or_link(dir_to_rm):
+    """Safely delete a directory without deleting the contents of symlinks."""
+    if not unlink(dir_to_rm) and os.path.exists(dir_to_rm):
         if WINDOWS:
             try:
-                os.rmdir(link_from)
+                os.rmdir(dir_to_rm)
             except OSError:
                 logger.log_exc()
-                shutil.rmtree(link_from)
+                shutil.rmtree(dir_to_rm)
         else:
-            shutil.rmtree(link_from)
+            shutil.rmtree(dir_to_rm)
+
+
+def symlink(link_to, link_from):
+    """Link link_from to the directory link_to universally."""
+    rm_dir_or_link(link_from)
     try:
         if PY32:
             os.symlink(link_to, link_from, target_is_directory=True)
@@ -351,7 +353,23 @@ def symlink(link_to, link_from):
 
 def install_mypy_stubs():
     """Properly symlink mypy stub files."""
-    symlink(base_stub_dir, installed_stub_dir)
+    # unlink stub_dirs so we know rm_dir_or_link won't clear them
+    for stub_name in stub_dir_names:
+        unlink(os.path.join(base_stub_dir, stub_name))
+
+    # clean out the installed_stub_dir (which shouldn't follow symlinks,
+    #  but we still do the previous unlinking just to be sure)
+    rm_dir_or_link(installed_stub_dir)
+
+    # recreate installed_stub_dir
+    os.makedirs(installed_stub_dir)
+
+    # link stub dirs into the installed_stub_dir
+    for stub_name in stub_dir_names:
+        current_stub = os.path.join(base_stub_dir, stub_name)
+        install_stub = os.path.join(installed_stub_dir, stub_name)
+        symlink(current_stub, install_stub)
+
     return installed_stub_dir
 
 
@@ -449,6 +467,18 @@ def run_with_stack_size(stack_kbs, func, *args, **kwargs):
     return out[0]
 
 
+def proc_run_args(args=()):
+    """Process args to use for coconut-run or the import hook."""
+    args = list(args)
+    if "--verbose" not in args and "--quiet" not in args:
+        args.append("--quiet")
+    for run_arg in coconut_base_run_args:
+        run_arg_name = run_arg.split("=", 1)[0]
+        if not any(arg.startswith(run_arg_name) for arg in args):
+            args.append(run_arg)
+    return args
+
+
 # -----------------------------------------------------------------------------------------------------------------------
 # CLASSES:
 # -----------------------------------------------------------------------------------------------------------------------
@@ -479,7 +509,7 @@ class Prompt(object):
         if style == "none":
             self.style = None
         elif prompt_toolkit is None:
-            raise CoconutException("syntax highlighting is not supported on this Python version")
+            raise CoconutException("syntax highlighting requires prompt_toolkit (run 'pip install -U prompt_toolkit' to fix)")
         elif style == "list":
             logger.print("Coconut Styles: none, " + ", ".join(pygments.styles.get_all_styles()))
             sys.exit(0)
@@ -554,7 +584,7 @@ class Runner(object):
     def __init__(self, comp=None, exit=sys.exit, store=False, path=None):
         """Create the executor."""
         from coconut.api import auto_compilation, use_coconut_breakpoint
-        auto_compilation(on=interpreter_uses_auto_compilation)
+        auto_compilation(on=interpreter_uses_auto_compilation, args=comp.get_cli_args() if comp else None)
         use_coconut_breakpoint(on=interpreter_uses_coconut_breakpoint)
         self.exit = exit
         self.vars = self.build_vars(path, init=True)
@@ -572,9 +602,8 @@ class Runner(object):
             "__name__": "__main__",
             "__package__": None,
             "reload": reload,
+            "__file__": None if path is None else fixpath(path)
         }
-        if path is not None:
-            init_vars["__file__"] = fixpath(path)
         if init:
             # put reserved_vars in for auto-completion purposes only at the very beginning
             for var in reserved_vars:
@@ -632,7 +661,7 @@ class Runner(object):
         elif use_eval:
             run_func = eval
         else:
-            run_func = exec_func
+            run_func = _coconut_exec
         logger.log("Running {func}()...".format(func=getattr(run_func, "__name__", run_func)))
         start_time = get_clock_time()
         result = None
@@ -671,7 +700,7 @@ class Runner(object):
 
 class multiprocess_wrapper(pickleable_obj):
     """Wrapper for a method that needs to be multiprocessed."""
-    __slots__ = ("base", "method", "rec_limit", "logger", "argv")
+    __slots__ = ("base", "method", "stack_size", "rec_limit", "logger", "argv")
 
     def __init__(self, base, method, stack_size=None, _rec_limit=None, _logger=None, _argv=None):
         """Create new multiprocessable method."""

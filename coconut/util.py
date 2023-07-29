@@ -84,6 +84,7 @@ first_import_time = get_clock_time()
 
 class pickleable_obj(object):
     """Version of object that binds __reduce_ex__ to __reduce__."""
+    __slots__ = ()
 
     def __reduce_ex__(self, _):
         return self.__reduce__()
@@ -238,6 +239,13 @@ class keydefaultdict(defaultdict, object):
     def __missing__(self, key):
         self[key] = self.default_factory(key)
         return self[key]
+
+
+class dictset(dict, object):
+    """A set implemented using a dictionary to get ordering benefits."""
+
+    def add(self, item):
+        self[item] = True
 
 
 def assert_remove_prefix(inputstr, prefix):

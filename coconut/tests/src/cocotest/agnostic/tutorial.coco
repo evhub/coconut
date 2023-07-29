@@ -1,6 +1,6 @@
 # WEBSITE:
 
-plus1 = x -> x + 1
+plus1 = x => x + 1
 assert plus1(5) == 6
 
 assert range(10) |> map$(.**2) |> list == [0, 1, 4, 9, 16, 25, 36, 49, 64, 81]
@@ -328,7 +328,7 @@ data vector2(x, y):
 # Test cases:
 assert vector2(1, 2) |> str == "vector2(x=1, y=2)"
 assert vector2(3, 4) |> abs == 5
-assert vector2(1, 2) |> fmap$(x -> x*2) |> str == "vector2(x=2, y=4)"
+assert vector2(1, 2) |> fmap$(x => x*2) |> str == "vector2(x=2, y=4)"
 v = vector2(2, 3)
 try:
     v.x = 7
@@ -396,7 +396,7 @@ assert (vector(2, 4) == vector(2, 4)) is True
 assert 2*vector(1, 2) |> str == "vector(*pts=(2, 4))"
 assert vector(1, 2) * vector(1, 3) == 7
 
-def diagonal_line(n) = range(n+1) |> map$(i -> (i, n-i))
+def diagonal_line(n) = range(n+1) |> map$(i => (i, n-i))
 
 assert diagonal_line(0) `isinstance` (list, tuple) is False
 assert diagonal_line(0) |> list == [(0, 0)]
@@ -449,7 +449,7 @@ data vector(*pts):
         """Necessary to make scalar multiplication commutative."""
         self * other
 
-def diagonal_line(n) = range(n+1) |> map$(i -> (i, n-i))
+def diagonal_line(n) = range(n+1) |> map$(i => (i, n-i))
 def linearized_plane(n=0) = diagonal_line(n) :: linearized_plane(n+1)
 def vector_field() = linearized_plane() |> starmap$(vector)
 
@@ -497,7 +497,7 @@ data vector(*pts):
         """Necessary to make scalar multiplication commutative."""
         self * other
     # New one-line functions necessary for finding the angle between vectors:
-    def __truediv__(self, other) = self.pts |> map$(x -> x/other) |*> vector
+    def __truediv__(self, other) = self.pts |> map$(x => x/other) |*> vector
     def unit(self) = self / abs(self)
     def angle(self, other `isinstance` vector) = math.acos(self.unit() * other.unit())
 

@@ -41,6 +41,10 @@ from coconut.constants import (
     use_left_recursion_if_available,
     get_bool_env_var,
     use_computation_graph_env_var,
+    use_incremental_if_available,
+    incremental_cache_size,
+    never_clear_incremental_cache,
+    warn_on_multiline_regex,
 )
 from coconut.util import get_clock_time  # NOQA
 from coconut.util import (
@@ -80,7 +84,7 @@ except ImportError:
 
 
 # -----------------------------------------------------------------------------------------------------------------------
-# VERSION CHECKING:
+# VERSIONING:
 # -----------------------------------------------------------------------------------------------------------------------
 
 min_ver = min(min_versions["pyparsing"], min_versions["cPyparsing"][:3])  # inclusive
@@ -103,25 +107,81 @@ elif cur_ver >= max_ver:
         + " (run '{python} -m pip install {package}<{max_ver}' to fix)".format(python=sys.executable, package=PYPARSING_PACKAGE, max_ver=max_ver_str),
     )
 
-
-# -----------------------------------------------------------------------------------------------------------------------
-# SETUP:
-# -----------------------------------------------------------------------------------------------------------------------
-
-if cur_ver >= (3,):
-    MODERN_PYPARSING = True
-    _trim_arity = _pyparsing.core._trim_arity
-    _ParseResultsWithOffset = _pyparsing.core._ParseResultsWithOffset
-else:
-    MODERN_PYPARSING = False
-    _trim_arity = _pyparsing._trim_arity
-    _ParseResultsWithOffset = _pyparsing._ParseResultsWithOffset
+MODERN_PYPARSING = cur_ver >= (3,)
 
 if MODERN_PYPARSING:
     warn(
         "This version of Coconut is not built for pyparsing v3; some syntax features WILL NOT WORK"
         + " (run either '{python} -m pip install cPyparsing<{max_ver}' or '{python} -m pip install pyparsing<{max_ver}' to fix)".format(python=sys.executable, max_ver=max_ver_str),
     )
+
+
+# -----------------------------------------------------------------------------------------------------------------------
+# OVERRIDES:
+# -----------------------------------------------------------------------------------------------------------------------
+
+if PYPARSING_PACKAGE != "cPyparsing":
+    if not MODERN_PYPARSING:
+        HIT, MISS = 0, 1
+
+        def _parseCache(self, instring, loc, doActions=True, callPreParse=True):
+            # [CPYPARSING] include packrat_context
+            lookup = (self, instring, loc, callPreParse, doActions, tuple(self.packrat_context))
+            with ParserElement.packrat_cache_lock:
+                cache = ParserElement.packrat_cache
+                value = cache.get(lookup)
+                if value is cache.not_in_cache:
+                    ParserElement.packrat_cache_stats[MISS] += 1
+                    try:
+                        value = self._parseNoCache(instring, loc, doActions, callPreParse)
+                    except ParseBaseException as pe:
+                        # cache a copy of the exception, without the traceback
+                        cache.set(lookup, pe.__class__(*pe.args))
+                        raise
+                    else:
+                        cache.set(lookup, (value[0], value[1].copy()))
+                        return value
+                else:
+                    ParserElement.packrat_cache_stats[HIT] += 1
+                    if isinstance(value, Exception):
+                        raise value
+                    return value[0], value[1].copy()
+        ParserElement.packrat_context = []
+        ParserElement._parseCache = _parseCache
+
+elif not hasattr(ParserElement, "packrat_context"):
+    raise ImportError(
+        "This version of Coconut requires cPyparsing>=" + ver_tuple_to_str(min_versions["cPyparsing"])
+        + "; got cPyparsing==" + __version__
+        + " (run '{python} -m pip install --upgrade cPyparsing' to fix)".format(python=sys.executable),
+    )
+
+if hasattr(ParserElement, "enableIncremental"):
+    SUPPORTS_INCREMENTAL = sys.version_info >= (3, 8)  # avoids stack overflows on py<=37
+else:
+    SUPPORTS_INCREMENTAL = False
+    ParserElement._incrementalEnabled = False
+    ParserElement._incrementalWithResets = False
+
+    def enableIncremental(*args, **kwargs):
+        """Dummy version of enableIncremental that just raises an error."""
+        raise ImportError(
+            "incremental parsing only supported on cPyparsing>="
+            + ver_tuple_to_str(min_versions["cPyparsing"])
+            + " (run '{python} -m pip install --upgrade cPyparsing' to fix)".format(python=sys.executable)
+        )
+
+
+# -----------------------------------------------------------------------------------------------------------------------
+# SETUP:
+# -----------------------------------------------------------------------------------------------------------------------
+
+if MODERN_PYPARSING:
+    _trim_arity = _pyparsing.core._trim_arity
+    _ParseResultsWithOffset = _pyparsing.core._ParseResultsWithOffset
+else:
+    _trim_arity = _pyparsing._trim_arity
+    _ParseResultsWithOffset = _pyparsing._ParseResultsWithOffset
 
 USE_COMPUTATION_GRAPH = get_bool_env_var(
     use_computation_graph_env_var,
@@ -137,9 +197,12 @@ if enable_pyparsing_warnings:
     else:
         _pyparsing._enable_all_warnings()
     _pyparsing.__diag__.warn_name_set_on_empty_Forward = False
+    _pyparsing.__diag__.warn_on_incremental_multiline_regex = warn_on_multiline_regex
 
 if MODERN_PYPARSING and use_left_recursion_if_available:
     ParserElement.enable_left_recursion()
+elif SUPPORTS_INCREMENTAL and use_incremental_if_available:
+    ParserElement.enableIncremental(incremental_cache_size, still_reset_cache=not never_clear_incremental_cache)
 elif use_packrat_parser:
     ParserElement.enablePackrat(packrat_cache_size)
 
@@ -149,42 +212,18 @@ Keyword.setDefaultKeywordChars(varchars)
 
 
 # -----------------------------------------------------------------------------------------------------------------------
-# PACKRAT CONTEXT:
+# MISSING OBJECTS:
 # -----------------------------------------------------------------------------------------------------------------------
 
-if PYPARSING_PACKAGE == "cPyparsing":
-    if not hasattr(ParserElement, "packrat_context"):
-        raise ImportError(
-            "This version of Coconut requires cPyparsing>=" + ver_tuple_to_str(min_versions["cPyparsing"])
-            + "; got cPyparsing==" + __version__
-            + " (run '{python} -m pip install --upgrade cPyparsing' to fix)".format(python=sys.executable),
-        )
-elif not MODERN_PYPARSING:
-    def _parseCache(self, instring, loc, doActions=True, callPreParse=True):
-        HIT, MISS = 0, 1
-        # [CPYPARSING] include packrat_context
-        lookup = (self, instring, loc, callPreParse, doActions, tuple(self.packrat_context))
-        with ParserElement.packrat_cache_lock:
-            cache = ParserElement.packrat_cache
-            value = cache.get(lookup)
-            if value is cache.not_in_cache:
-                ParserElement.packrat_cache_stats[MISS] += 1
-                try:
-                    value = self._parseNoCache(instring, loc, doActions, callPreParse)
-                except ParseBaseException as pe:
-                    # cache a copy of the exception, without the traceback
-                    cache.set(lookup, pe.__class__(*pe.args))
-                    raise
-                else:
-                    cache.set(lookup, (value[0], value[1].copy()))
-                    return value
-            else:
-                ParserElement.packrat_cache_stats[HIT] += 1
-                if isinstance(value, Exception):
-                    raise value
-                return value[0], value[1].copy()
-    ParserElement.packrat_context = []
-    ParserElement._parseCache = _parseCache
+if not hasattr(_pyparsing, "python_quoted_string"):
+    import re as _re
+    python_quoted_string = _pyparsing.Combine(
+        (_pyparsing.Regex(r'"""(?:[^"\\]|""(?!")|"(?!"")|\\.)*', flags=_re.MULTILINE) + '"""').setName("multiline double quoted string")
+        ^ (_pyparsing.Regex(r"'''(?:[^'\\]|''(?!')|'(?!'')|\\.)*", flags=_re.MULTILINE) + "'''").setName("multiline single quoted string")
+        ^ (_pyparsing.Regex(r'"(?:[^"\n\r\\]|(?:\\")|(?:\\(?:[^x]|x[0-9a-fA-F]+)))*') + '"').setName("double quoted string")
+        ^ (_pyparsing.Regex(r"'(?:[^'\n\r\\]|(?:\\')|(?:\\(?:[^x]|x[0-9a-fA-F]+)))*") + "'").setName("single quoted string")
+    ).setName("Python quoted string")
+    _pyparsing.python_quoted_string = python_quoted_string
 
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -335,6 +374,7 @@ def collect_timing_info():
                         "_ErrorStop",
                         "_UnboundedCache",
                         "enablePackrat",
+                        "enableIncremental",
                         "inlineLiteralsUsing",
                         "setDefaultWhitespaceChars",
                         "setDefaultKeywordChars",

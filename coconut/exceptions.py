@@ -29,6 +29,7 @@ from coconut._pyparsing import (
 from coconut.constants import (
     taberrfmt,
     report_this_text,
+    min_squiggles_in_err_msg,
 )
 from coconut.util import (
     pickleable_obj,
@@ -116,6 +117,7 @@ class CoconutSyntaxError(CoconutException):
                     message += "\n" + " " * taberrfmt + clean(line)
             else:
                 source = normalize_newlines(source)
+                point = clip(point, 0, len(source))
 
                 if endpoint is None:
                     endpoint = 0
@@ -129,7 +131,7 @@ class CoconutSyntaxError(CoconutException):
 
                 source_lines = tuple(logical_lines(source, keep_newlines=True))
 
-                # walk the endpoint back until it points to real text
+                # walk the endpoint line back until it points to real text
                 while endpoint_ln > point_ln and not "".join(source_lines[endpoint_ln - 1:endpoint_ln]).strip():
                     endpoint_ln -= 1
                     endpoint_ind = len(source_lines[endpoint_ln - 1])
@@ -154,15 +156,20 @@ class CoconutSyntaxError(CoconutException):
                     message += "\n" + " " * taberrfmt + part
 
                     if point_ind > 0 or endpoint_ind > 0:
+                        err_len = endpoint_ind - point_ind
                         message += "\n" + " " * (taberrfmt + point_ind)
-                        if endpoint_ind - point_ind > 1:
+                        if err_len <= min_squiggles_in_err_msg:
                             if not self.point_to_endpoint:
                                 message += "^"
-                            message += "~" * (endpoint_ind - point_ind - 1)
+                            message += "~" * err_len  # err_len ~'s when there's only an extra char in one spot
                             if self.point_to_endpoint:
                                 message += "^"
                         else:
-                            message += "^"
+                            message += (
+                                ("^" if not self.point_to_endpoint else "\\")
+                                + "~" * (err_len - 1)  # err_len-1 ~'s when there's an extra char at the start and end
+                                + ("^" if self.point_to_endpoint else "/" if endpoint_ind < len(part) else "|")
+                            )
 
                 # multi-line error message
                 else:
@@ -170,14 +177,20 @@ class CoconutSyntaxError(CoconutException):
                     for line in source_lines[point_ln - 1:endpoint_ln]:
                         lines.append(clean(line))
 
-                    # adjust cols that are too large based on clean/rstrip
                     point_ind = clip(point_ind, 0, len(lines[0]))
                     endpoint_ind = clip(endpoint_ind, 0, len(lines[-1]))
 
-                    message += "\n" + " " * (taberrfmt + point_ind) + "|" + "~" * (len(lines[0]) - point_ind - 1) + "\n"
+                    message += "\n" + " " * (taberrfmt + point_ind)
+                    if point_ind >= len(lines[0]):
+                        message += "|\n"
+                    else:
+                        message += "/" + "~" * (len(lines[0]) - point_ind - 1) + "\n"
                     for line in lines:
                         message += "\n" + " " * taberrfmt + line
-                    message += "\n\n" + " " * taberrfmt + "~" * (endpoint_ind) + "^"
+                    message += (
+                        "\n\n" + " " * taberrfmt + "~" * endpoint_ind
+                        + ("^" if self.point_to_endpoint else "/" if 0 < endpoint_ind < len(lines[-1]) else "|")
+                    )
 
         return message
 

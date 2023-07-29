@@ -100,12 +100,12 @@ def memoized_parse_block(code):
 
 def syntaxerr_memoized_parse_block(code):
     """Version of memoized_parse_block that raises SyntaxError without any __cause__."""
-    to_raise = None
+    syntax_err = None
     try:
         return memoized_parse_block(code)
     except CoconutException as err:
-        to_raise = err.syntax_err()
-    raise to_raise
+        syntax_err = err.syntax_err()
+    raise syntax_err
 
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -114,7 +114,7 @@ def syntaxerr_memoized_parse_block(code):
 
 if LOAD_MODULE:
 
-    COMPILER.warm_up()
+    COMPILER.warm_up(enable_incremental_mode=True)
 
     class CoconutCompiler(CachingCompiler, object):
         """IPython compiler for Coconut."""
@@ -158,15 +158,14 @@ if LOAD_MODULE:
         def __init__(self, *args, **kwargs):
             """Version of __init__ that sets up Coconut code compilation."""
             super(CoconutSplitter, self).__init__(*args, **kwargs)
+            self._original_compile = self._compile
             self._compile = self._coconut_compile
 
         def _coconut_compile(self, source, *args, **kwargs):
             """Version of _compile that checks Coconut code.
             None means that the code should not be run as is.
             Any other value means that it can."""
-            if source.endswith("\n\n"):
-                return True
-            elif should_indent(source):
+            if not source.endswith("\n\n") and should_indent(source):
                 return None
             else:
                 return True

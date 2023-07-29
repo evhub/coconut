@@ -38,6 +38,7 @@ from coconut.constants import (
     self_match_types,
     is_data_var,
     data_defaults_var,
+    coconut_cache_dir,
 )
 from coconut.util import (
     univ_open,
@@ -224,6 +225,7 @@ def process_header_args(which, use_hash, target, no_tco, strict, no_wrap):
         module_docstring='"""Built-in Coconut utilities."""\n\n' if which == "__coconut__" else "",
         __coconut__=make_py_str("__coconut__", target),
         _coconut_cached__coconut__=make_py_str("_coconut_cached__coconut__", target),
+        coconut_cache_dir=make_py_str(coconut_cache_dir, target),
         object="" if target.startswith("3") else "(object)",
         comma_object="" if target.startswith("3") else ", object",
         comma_slash=", /" if target_info >= (3, 8) else "",
@@ -476,15 +478,67 @@ def __lt__(self, other):
             indent=1,
             newline=True,
         ),
-        assign_multiset_views=pycondition(
+        def_py2_multiset_methods=pycondition(
             (3,),
             if_lt='''
+def __bool__(self):
+    return _coconut.bool(_coconut.len(self))
 keys = _coconut.collections.Counter.viewkeys
 values = _coconut.collections.Counter.viewvalues
 items = _coconut.collections.Counter.viewitems
             ''',
             indent=1,
             newline=True,
+        ),
+        def_async_compose_call=prepare(
+            r'''
+async def __call__(self, *args, **kwargs):
+    arg = await self._coconut_func(*args, **kwargs)
+    for f, await_f in self._coconut_func_infos:
+        arg = f(arg)
+        if await_f:
+            arg = await arg
+    return arg
+            ''' if target_info >= (3, 5) else
+            pycondition(
+                (3, 5),
+                if_ge=r'''
+_coconut_call_ns = {"_coconut": _coconut}
+_coconut_exec("""async def __call__(self, *args, **kwargs):
+    arg = await self._coconut_func(*args, **kwargs)
+    for f, await_f in self._coconut_func_infos:
+        arg = f(arg)
+        if await_f:
+            arg = await arg
+    return arg""", _coconut_call_ns)
+__call__ = _coconut_call_ns["__call__"]
+                ''',
+                if_lt=pycondition(
+                    (3, 4),
+                    if_ge=r'''
+_coconut_call_ns = {"_coconut": _coconut}
+_coconut_exec("""def __call__(self, *args, **kwargs):
+    arg = yield from self._coconut_func(*args, **kwargs)
+    for f, await_f in self._coconut_func_infos:
+        arg = f(arg)
+        if await_f:
+            arg = yield from arg
+    raise _coconut.StopIteration(arg)""", _coconut_call_ns)
+__call__ = _coconut.asyncio.coroutine(_coconut_call_ns["__call__"])
+                    ''',
+                    if_lt='''
+@_coconut.asyncio.coroutine
+def __call__(self, *args, **kwargs):
+    arg = yield _coconut.asyncio.From(self._coconut_func(*args, **kwargs))
+    for f, await_f in self._coconut_func_infos:
+        arg = f(arg)
+        if await_f:
+            arg = yield _coconut.asyncio.From(arg)
+    raise _coconut.asyncio.Return(arg)
+                    ''',
+                ),
+            ),
+            indent=1
         ),
 
         # used in the second round
@@ -499,13 +553,13 @@ async def __anext__(self):
             pycondition(
                 (3, 5),
                 if_ge=r'''
-_coconut_anext_ns = {}
+_coconut_anext_ns = {"_coconut": _coconut}
 _coconut_exec("""async def __anext__(self):
     return self.func(await self.aiter.__anext__())""", _coconut_anext_ns)
 __anext__ = _coconut_anext_ns["__anext__"]
                 ''',
                 if_lt=r'''
-_coconut_anext_ns = {}
+_coconut_anext_ns = {"_coconut": _coconut}
 _coconut_exec("""def __anext__(self):
     result = yield from self.aiter.__anext__()
     return self.func(result)""", _coconut_anext_ns)
@@ -631,13 +685,21 @@ if not hasattr(typing, "Unpack"):
             if_lt='''
 try:
     import trollius as asyncio
-except ImportError:
-    class you_need_to_install_trollius{object}:
+except ImportError as trollius_import_err:
+    class you_need_to_install_trollius(_coconut_missing_module):
         __slots__ = ()
-    asyncio = you_need_to_install_trollius()
+        def coroutine(self, func):
+            def raise_import_error(*args, **kwargs):
+                raise self._import_err
+            return raise_import_error
+        def Return(self, obj):
+            raise self._import_err
+    asyncio = you_need_to_install_trollius(trollius_import_err)
+asyncio_Return = asyncio.Return
             '''.format(**format_dict),
             if_ge='''
 import asyncio
+asyncio_Return = StopIteration
             ''',
             indent=1,
         ),
@@ -667,14 +729,52 @@ class _coconut_amap(_coconut_baseclass):
 try:
     from backports.functools_lru_cache import lru_cache
     functools.lru_cache = lru_cache
-except ImportError:
-    class you_need_to_install_backports_functools_lru_cache{object}:
-        __slots__ = ()
-    functools.lru_cache = you_need_to_install_backports_functools_lru_cache()
+except ImportError as lru_cache_import_err:
+    functools.lru_cache = _coconut_missing_module(lru_cache_import_err)
             '''.format(**format_dict),
             if_ge=None,
             indent=1,
             newline=True,
+        ),
+        def_multiset_ops=pycondition(
+            (3,),
+            if_ge='''
+def __add__(self, other):
+    out = self.copy()
+    out += other
+    return out
+def __and__(self, other):
+    out = self.copy()
+    out &= other
+    return out
+def __or__(self, other):
+    out = self.copy()
+    out |= other
+    return out
+def __sub__(self, other):
+    out = self.copy()
+    out -= other
+    return out
+def __pos__(self):
+    return self.__class__(_coconut.super({_coconut_}multiset, self).__pos__())
+def __neg__(self):
+    return self.__class__(_coconut.super({_coconut_}multiset, self).__neg__())
+            '''.format(**format_dict),
+            if_lt='''
+def __add__(self, other):
+    return self.__class__(_coconut.super({_coconut_}multiset, self).__add__(other))
+def __and__(self, other):
+    return self.__class__(_coconut.super({_coconut_}multiset, self).__and__(other))
+def __or__(self, other):
+    return self.__class__(_coconut.super({_coconut_}multiset, self).__or__(other))
+def __sub__(self, other):
+    return self.__class__(_coconut.super({_coconut_}multiset, self).__sub__(other))
+def __pos__(self):
+    return self + {_coconut_}multiset()
+def __neg__(self):
+    return {_coconut_}multiset() - self
+            '''.format(**format_dict),
+            indent=1,
         ),
     )
     format_dict.update(extra_format_dict)
@@ -732,9 +832,11 @@ def getheader(which, use_hash, target, no_tco, strict, no_wrap):
 
     if not target.startswith("3"):
         header += "from __future__ import print_function, absolute_import, unicode_literals, division\n"
-    # including generator_stop here is fine, even though to universalize
-    #  generator returns we raise StopIteration errors, since we only do so
-    #  when target_info < (3, 3)
+    # including generator_stop here is fine, even though to universalize generator returns
+    #  we raise StopIteration errors, since we only do so when target_info < (3, 3)
+    elif target_info >= (3, 13):
+        # 3.13 supports lazy annotations, so we should just use that instead of from __future__ import annotations
+        header += "from __future__ import generator_stop\n"
     elif target_info >= (3, 7):
         if no_wrap:
             header += "from __future__ import generator_stop\n"
@@ -743,19 +845,21 @@ def getheader(which, use_hash, target, no_tco, strict, no_wrap):
     elif target_info >= (3, 5):
         header += "from __future__ import generator_stop\n"
 
-    header += "import sys as _coconut_sys\n"
+    header += '''import sys as _coconut_sys
+import os as _coconut_os
+'''
 
     if which.startswith("package") or which == "__coconut__":
         header += "_coconut_header_info = " + header_info + "\n"
 
+    levels_up = None
     if which.startswith("package"):
         levels_up = int(assert_remove_prefix(which, "package:"))
         coconut_file_dir = "_coconut_os.path.dirname(_coconut_os.path.abspath(__file__))"
         for _ in range(levels_up):
             coconut_file_dir = "_coconut_os.path.dirname(" + coconut_file_dir + ")"
-        return header + prepare(
+        header += prepare(
             '''
-import os as _coconut_os
 _coconut_cached__coconut__ = _coconut_sys.modules.get({__coconut__})
 _coconut_file_dir = {coconut_file_dir}
 _coconut_pop_path = False
@@ -788,14 +892,40 @@ if _coconut_pop_path:
         ).format(
             coconut_file_dir=coconut_file_dir,
             **format_dict
-        ) + section("Compiled Coconut")
+        )
 
     if which == "sys":
-        return header + '''from coconut.__coconut__ import *
+        header += '''from coconut.__coconut__ import *
 from coconut.__coconut__ import {underscore_imports}
-'''.format(**format_dict) + section("Compiled Coconut")
+'''.format(**format_dict)
+
+    # remove coconut_cache_dir from __file__ if it was put there by auto compilation
+    header += prepare(
+        '''
+try:
+    __file__ = _coconut_os.path.abspath(__file__) if __file__ else __file__
+except NameError:
+    pass
+else:
+    if __file__ and {coconut_cache_dir} in __file__:
+        _coconut_file_comps = []
+        while __file__:
+            __file__, _coconut_file_comp = _coconut_os.path.split(__file__)
+            if not _coconut_file_comp:
+                _coconut_file_comps.append(__file__)
+                break
+            if _coconut_file_comp != {coconut_cache_dir}:
+                _coconut_file_comps.append(_coconut_file_comp)
+        __file__ = _coconut_os.path.join(*reversed(_coconut_file_comps))
+        ''',
+        newline=True,
+    ).format(**format_dict)
+
+    if which == "sys" or which.startswith("package"):
+        return header + section("Compiled Coconut")
 
     # __coconut__, code, file
+    internal_assert(which in ("__coconut__", "code", "file"), "wrong header type", which)
 
     header += prepare(
         '''
