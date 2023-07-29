@@ -154,7 +154,7 @@ After you've tested your changes locally, you'll want to add more permanent test
 
 1. Preparation:
     1. Run `make check-reqs` and update dependencies as necessary
-    2. Run `make format`
+    2. Run `sudo make format`
     3. Make sure `make test`, `make test-py2`, and `make test-easter-eggs` are passing
     4. Ensure that `coconut --watch` can successfully compile files when they're modified
     5. Check changes in [`compiled-cocotest`](https://github.com/evhub/compiled-cocotest), [`pyprover`](https://github.com/evhub/pyprover), and [`coconut-prelude`](https://github.com/evhub/coconut-prelude)

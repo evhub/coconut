@@ -970,7 +970,7 @@ min_versions = {
     ("typing_extensions", "py>=37"): (4, 7),
     ("ipython", "py38"): (8,),
     ("ipykernel", "py38"): (6,),
-    ("jedi", "py39"): (0, 18),
+    ("jedi", "py39"): (0, 19),
     ("pygments", "py>=39"): (2, 15),
     ("xonsh", "py38"): (0, 14),
     ("pytest", "py36"): (7,),
