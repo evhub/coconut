@@ -184,6 +184,12 @@ arguments.add_argument(
 )
 
 arguments.add_argument(
+    "--incremental",
+    action="store_true",
+    help="enable incremental compilation mode (caches previous parses to improve recompilation performance for slightly modified files)",
+)
+
+arguments.add_argument(
     "-j", "--jobs",
     metavar="processes",
     type=str,

@@ -39,6 +39,11 @@ from collections import defaultdict
 from contextlib import contextmanager
 from pprint import pformat, pprint
 
+if sys.version_info >= (3,):
+    import pickle
+else:
+    import cPickle as pickle
+
 from coconut._pyparsing import (
     USE_COMPUTATION_GRAPH,
     SUPPORTS_INCREMENTAL,
@@ -62,6 +67,7 @@ from coconut._pyparsing import (
     _trim_arity,
     _ParseResultsWithOffset,
     line as _line,
+    all_parse_elements,
 )
 
 from coconut.integrations import embed
@@ -70,6 +76,7 @@ from coconut.util import (
     get_name,
     get_target_info,
     memoize,
+    univ_open,
 )
 from coconut.terminal import (
     logger,
@@ -102,6 +109,7 @@ from coconut.constants import (
     incremental_cache_size,
     repeatedly_clear_incremental_cache,
     py_vers_with_eols,
+    unwrapper,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -525,13 +533,6 @@ def get_pyparsing_cache():
             return {}
 
 
-def add_to_cache(new_cache_items):
-    """Add the given items directly to the pyparsing packrat cache."""
-    packrat_cache = ParserElement.packrat_cache
-    for lookup, value in new_cache_items:
-        packrat_cache.set(lookup, value)
-
-
 def get_cache_items_for(original):
     """Get items from the pyparsing cache filtered to only from parsing original."""
     cache = get_pyparsing_cache()
@@ -545,8 +546,8 @@ def get_highest_parse_loc(original):
     """Get the highest observed parse location."""
     # find the highest observed parse location
     highest_loc = 0
-    for item, _ in get_cache_items_for(original):
-        loc = item[2]
+    for lookup, _ in get_cache_items_for(original):
+        loc = lookup[2]
         if loc > highest_loc:
             highest_loc = loc
     return highest_loc
@@ -559,8 +560,54 @@ def enable_incremental_parsing(force=False):
             ParserElement.enableIncremental(incremental_cache_size, still_reset_cache=False)
         except ImportError as err:
             raise CoconutException(str(err))
-        else:
-            logger.log("Incremental parsing mode enabled.")
+        logger.log("Incremental parsing mode enabled.")
+        return True
+    else:
+        return False
+
+
+def pickle_incremental_cache(original, filename, protocol=pickle.HIGHEST_PROTOCOL):
+    """Pickle the pyparsing cache for original to filename. """
+    internal_assert(all_parse_elements is not None, "pickle_incremental_cache requires cPyparsing")
+    pickleable_cache_items = []
+    for lookup, value in get_cache_items_for(original):
+        pickleable_lookup = (lookup[0].parse_element_index,) + lookup[1:]
+        pickleable_cache_items.append((pickleable_lookup, value))
+    logger.log("Saving {num_items} incremental cache items to {filename!r}.".format(
+        num_items=len(pickleable_cache_items),
+        filename=filename,
+    ))
+    pickle_info_obj = {
+        "VERSION": VERSION,
+        "pickleable_cache_items": pickleable_cache_items,
+    }
+    with univ_open(filename, "wb") as pickle_file:
+        pickle.dump(pickle_info_obj, pickle_file, protocol=protocol)
+
+
+def unpickle_incremental_cache(filename):
+    """Unpickle and load the given incremental cache file."""
+    internal_assert(all_parse_elements is not None, "unpickle_incremental_cache requires cPyparsing")
+    if not os.path.exists(filename):
+        return False
+    try:
+        with univ_open(filename, "rb") as pickle_file:
+            pickle_info_obj = pickle.load(pickle_file)
+    except Exception:
+        logger.log_exc()
+        return False
+    if pickle_info_obj["VERSION"] != VERSION:
+        return False
+    pickleable_cache_items = pickle_info_obj["pickleable_cache_items"]
+    logger.log("Loaded {num_items} incremental cache items from {filename!r}.".format(
+        num_items=len(pickleable_cache_items),
+        filename=filename,
+    ))
+    packrat_cache = ParserElement.packrat_cache
+    for pickleable_lookup, value in pickleable_cache_items:
+        lookup = (all_parse_elements[pickleable_lookup[0]],) + pickleable_lookup[1:]
+        packrat_cache.set(lookup, value)
+    return True
 
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -646,6 +693,7 @@ def get_target_info_smart(target, mode="lowest"):
 
 class Wrap(ParseElementEnhance):
     """PyParsing token that wraps the given item in the given context manager."""
+    global_instance_counter = 0
     inside = False
 
     def __init__(self, item, wrapper, greedy=False, include_in_packrat_context=False):
@@ -653,6 +701,8 @@ class Wrap(ParseElementEnhance):
         self.wrapper = wrapper
         self.greedy = greedy
         self.include_in_packrat_context = include_in_packrat_context and hasattr(ParserElement, "packrat_context")
+        self.identifier = Wrap.global_instance_counter
+        Wrap.global_instance_counter += 1
 
     @property
     def wrapped_name(self):
@@ -666,12 +716,13 @@ class Wrap(ParseElementEnhance):
         and unwrapped parses. Only supported natively on cPyparsing."""
         was_inside, self.inside = self.inside, True
         if self.include_in_packrat_context:
-            ParserElement.packrat_context.append(self.wrapper)
+            ParserElement.packrat_context.append(self.identifier)
         try:
             yield
         finally:
             if self.include_in_packrat_context:
-                ParserElement.packrat_context.pop()
+                popped = ParserElement.packrat_context.pop()
+                internal_assert(popped == self.identifier, "invalid popped Wrap identifier", self.identifier)
             self.inside = was_inside
 
     @override
@@ -1476,9 +1527,9 @@ def move_loc_to_non_whitespace(original, loc, backwards=False):
         original,
         loc,
         chars_to_move_forwards={
-            default_whitespace_chars: not backwards,
             # for loc, move backwards on newlines/indents, which we can do safely without removing anything from the error
             indchars: False,
+            default_whitespace_chars: not backwards,
         },
     )
 
@@ -1489,8 +1540,10 @@ def move_endpt_to_non_whitespace(original, loc, backwards=False):
         original,
         loc,
         chars_to_move_forwards={
-            default_whitespace_chars: not backwards,
             # for endpt, ignore newlines/indents to avoid introducing unnecessary lines into the error
+            default_whitespace_chars: not backwards,
+            # always move forwards on unwrapper to ensure we don't cut wrapped objects in the middle
+            unwrapper: True,
         },
     )
 

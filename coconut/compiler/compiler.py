@@ -171,6 +171,8 @@ from coconut.compiler.util import (
     get_psf_target,
     move_loc_to_non_whitespace,
     move_endpt_to_non_whitespace,
+    unpickle_incremental_cache,
+    pickle_incremental_cache,
 )
 from coconut.compiler.header import (
     minify_header,
@@ -862,10 +864,14 @@ class Compiler(Grammar, pickleable_obj):
         if endpt is None:
             return new_snip, new_loc
 
-        new_endpt = move_endpt_to_non_whitespace(
-            new_snip,
-            len(self.reformat(snip[:endpt], **kwargs)),
+        new_endpt = clip(
+            move_endpt_to_non_whitespace(
+                new_snip,
+                len(self.reformat(snip[:endpt], **kwargs)),
+            ),
+            min=new_loc,
         )
+
         return new_snip, new_loc, new_endpt
 
     def reformat_without_adding_code_before(self, code, **kwargs):
@@ -1235,28 +1241,54 @@ class Compiler(Grammar, pickleable_obj):
                             loc,
                         )
 
-    def parse(self, inputstring, parser, preargs, postargs, streamline=True, keep_state=False, filename=None):
+    def parse(
+        self,
+        inputstring,
+        parser,
+        preargs,
+        postargs,
+        streamline=True,
+        keep_state=False,
+        filename=None,
+        incremental_cache_filename=None,
+    ):
         """Use the parser to parse the inputstring with appropriate setup and teardown."""
         with self.parsing(keep_state, filename):
             if streamline:
                 self.streamline(parser, inputstring)
-            with logger.gather_parsing_stats():
-                pre_procd = None
-                try:
-                    pre_procd = self.pre(inputstring, keep_state=keep_state, **preargs)
-                    parsed = parse(parser, pre_procd, inner=False)
-                    out = self.post(parsed, keep_state=keep_state, **postargs)
-                except ParseBaseException as err:
-                    raise self.make_parse_err(err)
-                except CoconutDeferredSyntaxError as err:
-                    internal_assert(pre_procd is not None, "invalid deferred syntax error in pre-processing", err)
-                    raise self.make_syntax_err(err, pre_procd)
-                # RuntimeError, not RecursionError, for Python < 3.5
-                except RuntimeError as err:
-                    raise CoconutException(
-                        str(err), extra="try again with --recursion-limit greater than the current "
-                        + str(sys.getrecursionlimit()) + " (you may also need to increase --stack-size)",
-                    )
+            # unpickling must happen after streamlining and must occur in the
+            #  compiler so that it happens in the same process as compilation
+            if incremental_cache_filename is not None:
+                incremental_enabled = enable_incremental_parsing()
+                if not incremental_enabled:
+                    raise CoconutException("--incremental mode requires cPyparsing (run '{python} -m pip install --upgrade cPyparsing' to fix)".format(python=sys.executable))
+                did_load_cache = unpickle_incremental_cache(incremental_cache_filename)
+                logger.log("{Loaded} incremental cache for {filename!r} from {incremental_cache_filename!r}.".format(
+                    Loaded="Loaded" if did_load_cache else "Failed to load",
+                    filename=filename,
+                    incremental_cache_filename=incremental_cache_filename,
+                ))
+            pre_procd = None
+            try:
+                with logger.gather_parsing_stats():
+                    try:
+                        pre_procd = self.pre(inputstring, keep_state=keep_state, **preargs)
+                        parsed = parse(parser, pre_procd, inner=False)
+                        out = self.post(parsed, keep_state=keep_state, **postargs)
+                    except ParseBaseException as err:
+                        raise self.make_parse_err(err)
+                    except CoconutDeferredSyntaxError as err:
+                        internal_assert(pre_procd is not None, "invalid deferred syntax error in pre-processing", err)
+                        raise self.make_syntax_err(err, pre_procd)
+                    # RuntimeError, not RecursionError, for Python < 3.5
+                    except RuntimeError as err:
+                        raise CoconutException(
+                            str(err), extra="try again with --recursion-limit greater than the current "
+                            + str(sys.getrecursionlimit()) + " (you may also need to increase --stack-size)",
+                        )
+            finally:
+                if incremental_cache_filename is not None and pre_procd is not None:
+                    pickle_incremental_cache(pre_procd, incremental_cache_filename)
             self.run_final_checks(pre_procd, keep_state)
         return out
 

@@ -125,9 +125,9 @@ depth: 1
 ```
 coconut [-h] [--and source [dest ...]] [-v] [-t version] [-i] [-p] [-a] [-l]
         [--no-line-numbers] [-k] [-w] [-r] [-n] [-d] [-q] [-s] [--no-tco]
-        [--no-wrap-types] [-c code] [-j processes] [-f] [--minify] [--jupyter ...]
-        [--mypy ...] [--argv ...] [--tutorial] [--docs] [--style name] [--vi-mode]
-        [--recursion-limit limit] [--stack-size kbs] [--site-install]
+        [--no-wrap-types] [-c code] [--incremental] [-j processes] [-f] [--minify]
+        [--jupyter ...] [--mypy ...] [--argv ...] [--tutorial] [--docs] [--style name]
+        [--vi-mode] [--recursion-limit limit] [--stack-size kbs] [--site-install]
         [--site-uninstall] [--verbose] [--trace] [--profile]
         [source] [dest]
 ```
@@ -176,6 +176,8 @@ dest                destination directory for compiled files (defaults to
                       disable wrapping type annotations in strings and turn off 'from
                       __future__ import annotations' behavior
 -c code, --code code  run Coconut passed in as a string (can also be piped into stdin)
+--incremental         enable incremental compilation mode (caches previous parses to
+                      improve recompilation performance for slightly modified files)
 -j processes, --jobs processes
                       number of additional processes to use (defaults to 'sys') (0 is no
                       additional processes; 'sys' uses machine default)

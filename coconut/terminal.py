@@ -51,6 +51,7 @@ from coconut.constants import (
     log_color_code,
     ansii_escape,
     force_verbose_logger,
+    max_orig_lines_in_log_loc,
 )
 from coconut.util import (
     get_clock_time,
@@ -352,7 +353,16 @@ class Logger(object):
         """Log a location in source code."""
         if self.verbose:
             if isinstance(loc, int):
-                self.printlog("in error construction:", str(name), "=", repr(original[:loc]), "|", repr(original[loc:]))
+                pre_loc_orig, post_loc_orig = original[:loc], original[loc:]
+                if pre_loc_orig.count("\n") > max_orig_lines_in_log_loc:
+                    pre_loc_orig_repr = "... " + repr(pre_loc_orig.rsplit("\n", 1)[-1])
+                else:
+                    pre_loc_orig_repr = repr(pre_loc_orig)
+                if post_loc_orig.count("\n") > max_orig_lines_in_log_loc:
+                    post_loc_orig_repr = repr(post_loc_orig.split("\n", 1)[0]) + " ..."
+                else:
+                    post_loc_orig_repr = repr(post_loc_orig)
+                self.printlog("in error construction:", str(name), "=", pre_loc_orig_repr, "|", post_loc_orig_repr)
             else:
                 self.printlog("in error construction:", str(name), "=", repr(loc))
 

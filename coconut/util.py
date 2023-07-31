@@ -254,6 +254,12 @@ def assert_remove_prefix(inputstr, prefix):
     return inputstr[len(prefix):]
 
 
+def ensure_dir(dirpath):
+    """Ensure that a directory exists."""
+    if not os.path.exists(dirpath):
+        os.makedirs(dirpath)
+
+
 # -----------------------------------------------------------------------------------------------------------------------
 # VERSIONING:
 # -----------------------------------------------------------------------------------------------------------------------
@@ -327,8 +333,7 @@ def install_custom_kernel(executable=None, logger=None):
     kernel_dest = fixpath(os.path.join(sys.exec_prefix, icoconut_custom_kernel_install_loc))
     try:
         make_custom_kernel(executable)
-        if not os.path.exists(kernel_dest):
-            os.makedirs(kernel_dest)
+        ensure_dir(kernel_dest)
         shutil.copy(kernel_source, kernel_dest)
     except OSError:
         existing_kernel = os.path.join(kernel_dest, "kernel.json")

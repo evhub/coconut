@@ -210,6 +210,11 @@ ParserElement.setDefaultWhitespaceChars(default_whitespace_chars)
 
 Keyword.setDefaultKeywordChars(varchars)
 
+if SUPPORTS_INCREMENTAL:
+    all_parse_elements = ParserElement.collectParseElements()
+else:
+    all_parse_elements = None
+
 
 # -----------------------------------------------------------------------------------------------------------------------
 # MISSING OBJECTS:
@@ -258,6 +263,7 @@ def unset_fast_pyparsing_reprs():
     for obj, (repr_method, str_method) in _old_pyparsing_reprs:
         obj.__repr__ = repr_method
         obj.__str__ = str_method
+    _old_pyparsing_reprs[:] = []
 
 
 if use_fast_pyparsing_reprs:

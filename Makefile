@@ -91,7 +91,7 @@ test-univ: clean
 .PHONY: test-univ-tests
 test-univ-tests: export COCONUT_USE_COLOR=TRUE
 test-univ-tests: clean-no-tests
-	python ./coconut/tests --strict --keep-lines
+	python ./coconut/tests --strict --keep-lines --incremental
 	python ./coconut/tests/dest/runner.py
 	python ./coconut/tests/dest/extras.py
 
@@ -131,7 +131,7 @@ test-pypy3: clean
 .PHONY: test-mypy-univ
 test-mypy-univ: export COCONUT_USE_COLOR=TRUE
 test-mypy-univ: clean
-	python ./coconut/tests --strict --force --keep-lines --mypy --follow-imports silent --ignore-missing-imports --allow-redefinition
+	python ./coconut/tests --strict --keep-lines --force --mypy --follow-imports silent --ignore-missing-imports --allow-redefinition
 	python ./coconut/tests/dest/runner.py
 	python ./coconut/tests/dest/extras.py
 
@@ -139,7 +139,7 @@ test-mypy-univ: clean
 .PHONY: test-mypy
 test-mypy: export COCONUT_USE_COLOR=TRUE
 test-mypy: clean
-	python ./coconut/tests --strict --force --target sys --keep-lines --mypy --follow-imports silent --ignore-missing-imports --allow-redefinition
+	python ./coconut/tests --strict --keep-lines --force --target sys --mypy --follow-imports silent --ignore-missing-imports --allow-redefinition
 	python ./coconut/tests/dest/runner.py
 	python ./coconut/tests/dest/extras.py
 
@@ -147,7 +147,7 @@ test-mypy: clean
 .PHONY: test-mypy-tests
 test-mypy-tests: export COCONUT_USE_COLOR=TRUE
 test-mypy-tests: clean-no-tests
-	python ./coconut/tests --strict --target sys --keep-lines --mypy --follow-imports silent --ignore-missing-imports --allow-redefinition
+	python ./coconut/tests --strict --keep-lines --incremental --target sys --mypy --follow-imports silent --ignore-missing-imports --allow-redefinition
 	python ./coconut/tests/dest/runner.py
 	python ./coconut/tests/dest/extras.py
 
@@ -171,7 +171,7 @@ test-verbose-sync: clean
 .PHONY: test-mypy-verbose
 test-mypy-verbose: export COCONUT_USE_COLOR=TRUE
 test-mypy-verbose: clean
-	python ./coconut/tests --strict --force --target sys --verbose --keep-lines --mypy --follow-imports silent --ignore-missing-imports --allow-redefinition
+	python ./coconut/tests --strict --keep-lines --force --target sys --verbose --mypy --follow-imports silent --ignore-missing-imports --allow-redefinition
 	python ./coconut/tests/dest/runner.py
 	python ./coconut/tests/dest/extras.py
 
@@ -179,7 +179,7 @@ test-mypy-verbose: clean
 .PHONY: test-mypy-all
 test-mypy-all: export COCONUT_USE_COLOR=TRUE
 test-mypy-all: clean
-	python ./coconut/tests --strict --force --target sys --keep-lines --mypy --follow-imports silent --ignore-missing-imports --allow-redefinition --check-untyped-defs
+	python ./coconut/tests --strict --keep-lines --force --target sys --mypy --follow-imports silent --ignore-missing-imports --allow-redefinition --check-untyped-defs
 	python ./coconut/tests/dest/runner.py
 	python ./coconut/tests/dest/extras.py
 
@@ -270,10 +270,10 @@ clean: clean-no-tests
 .PHONY: wipe
 wipe: clean
 	rm -rf ./coconut/tests/dest vprof.json profile.log *.egg-info
-	-find . -name "__pycache__" -delete
-	-C:/GnuWin32/bin/find.exe . -name "__pycache__" -delete
-	-find . -name "__coconut_cache__" -delete
-	-C:/GnuWin32/bin/find.exe . -name "__coconut_cache__" -delete
+	-find . -name "__pycache__" -type d -prune -exec rm -rf '{}' +
+	-C:/GnuWin32/bin/find.exe . -name "__pycache__" -type d -prune -exec rm -rf '{}' +
+	-find . -name "__coconut_cache__" -type d -prune -exec rm -rf '{}' +
+	-C:/GnuWin32/bin/find.exe . -name "__coconut_cache__" -type d -prune -exec rm -rf '{}' +
 	-find . -name "*.pyc" -delete
 	-C:/GnuWin32/bin/find.exe . -name "*.pyc" -delete
 	-python -m coconut --site-uninstall

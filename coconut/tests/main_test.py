@@ -128,6 +128,11 @@ always_err_strs = (
     "*** glibc detected ***",
     "INTERNAL ERROR",
 )
+ignore_error_lines_with = (
+    # ignore SyntaxWarnings containing assert_raises
+    "assert_raises(",
+    " raise ",
+)
 
 mypy_snip = "a: str = count()[0]"
 mypy_snip_err_2 = '''error: Incompatible types in assignment (expression has type\n"int", variable has type "unicode")'''
@@ -331,8 +336,7 @@ def call(
     for line in lines:
         for errstr in always_err_strs:
             assert errstr not in line, "{errstr!r} in {line!r}".format(errstr=errstr, line=line)
-        # ignore SyntaxWarnings containing assert_raises
-        if check_errors and "assert_raises(" not in line:
+        if check_errors and not any(ignore in line for ignore in ignore_error_lines_with):
             assert "Traceback (most recent call last):" not in line, "Traceback in " + repr(line)
             assert "Exception" not in line, "Exception in " + repr(line)
             assert "Error" not in line, "Error in " + repr(line)
@@ -914,6 +918,10 @@ class TestCompilation(unittest.TestCase):
 
         def test_and(self):
             run(["--and"])  # src and dest built by comp
+
+        def test_incremental(self):
+            run(["--incremental"])
+            run(["--incremental", "--force"])
 
     if PY35:
         def test_no_wrap(self):

@@ -713,6 +713,8 @@ jupyter_console_commands = ("console", "qtconsole")
 
 create_package_retries = 1
 
+max_orig_lines_in_log_loc = 2
+
 # -----------------------------------------------------------------------------------------------------------------------
 # HIGHLIGHTER CONSTANTS:
 # -----------------------------------------------------------------------------------------------------------------------
@@ -954,7 +956,7 @@ all_reqs = {
 
 # min versions are inclusive
 min_versions = {
-    "cPyparsing": (2, 4, 7, 2, 2, 1),
+    "cPyparsing": (2, 4, 7, 2, 2, 2),
     ("pre-commit", "py3"): (3,),
     ("psutil", "py>=27"): (5,),
     "jupyter": (1, 0),

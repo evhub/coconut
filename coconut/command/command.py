@@ -80,6 +80,7 @@ from coconut.util import (
     install_custom_kernel,
     get_clock_time,
     first_import_time,
+    ensure_dir,
 )
 from coconut.command.util import (
     writefile,
@@ -129,6 +130,7 @@ class Command(object):
     mypy_args = None  # corresponds to --mypy flag
     argv_args = None  # corresponds to --argv flag
     stack_size = 0  # corresponds to --stack-size flag
+    incremental = False  # corresponds to --incremental flag
 
     _prompt = None
 
@@ -280,6 +282,7 @@ class Command(object):
                 self.prompt.set_style(args.style)
             if args.argv is not None:
                 self.argv_args = list(args.argv)
+            self.incremental = args.incremental
 
             # execute non-compilation tasks
             if args.docs:
@@ -563,8 +566,7 @@ class Command(object):
         if destpath is not None:
             destpath = fixpath(destpath)
             destdir = os.path.dirname(destpath)
-            if not os.path.exists(destdir):
-                os.makedirs(destdir)
+            ensure_dir(destdir)
             if package is True:
                 package_level = self.get_package_level(codepath)
                 if package_level == 0:
@@ -597,10 +599,22 @@ class Command(object):
                     else:
                         self.execute_file(destpath, argv_source_path=codepath)
 
+            parse_kwargs = dict(
+                filename=os.path.basename(codepath),
+            )
+            if self.incremental:
+                code_dir, code_fname = os.path.split(codepath)
+
+                cache_dir = os.path.join(code_dir, coconut_cache_dir)
+                ensure_dir(cache_dir)
+
+                pickle_fname = code_fname + ".pickle"
+                parse_kwargs["incremental_cache_filename"] = os.path.join(cache_dir, pickle_fname)
+
             if package is True:
-                self.submit_comp_job(codepath, callback, "parse_package", code, package_level=package_level, filename=os.path.basename(codepath))
+                self.submit_comp_job(codepath, callback, "parse_package", code, package_level=package_level, **parse_kwargs)
             elif package is False:
-                self.submit_comp_job(codepath, callback, "parse_file", code, filename=os.path.basename(codepath))
+                self.submit_comp_job(codepath, callback, "parse_file", code, **parse_kwargs)
             else:
                 raise CoconutInternalException("invalid value for package", package)
 
