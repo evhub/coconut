@@ -921,7 +921,8 @@ class TestCompilation(unittest.TestCase):
 
         def test_incremental(self):
             run(["--incremental"])
-            run(["--incremental", "--force"])
+            # includes "Error" because exceptions include the whole file
+            run(["--incremental", "--force"], check_errors=False)
 
     if PY35:
         def test_no_wrap(self):
