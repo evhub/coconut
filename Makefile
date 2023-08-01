@@ -152,6 +152,7 @@ test-mypy-tests: clean-no-tests
 	python ./coconut/tests/dest/extras.py
 
 # same as test-univ but includes verbose output for better debugging
+#  regex for getting non-timing lines: ^(?!Time|\s+Packrat|Loaded|Saving).*
 .PHONY: test-verbose
 test-verbose: export COCONUT_USE_COLOR=TRUE
 test-verbose: clean
@@ -180,6 +181,22 @@ test-mypy-verbose: clean
 test-mypy-all: export COCONUT_USE_COLOR=TRUE
 test-mypy-all: clean
 	python ./coconut/tests --strict --keep-lines --force --target sys --mypy --follow-imports silent --ignore-missing-imports --allow-redefinition --check-untyped-defs
+	python ./coconut/tests/dest/runner.py
+	python ./coconut/tests/dest/extras.py
+
+# same as test-univ-tests, but forces recompilation for testing --incremental
+.PHONY: test-incremental
+test-incremental: export COCONUT_USE_COLOR=TRUE
+test-incremental: clean-no-tests
+	python ./coconut/tests --strict --keep-lines --incremental --force
+	python ./coconut/tests/dest/runner.py
+	python ./coconut/tests/dest/extras.py
+
+# same as test-incremental, but uses --verbose
+.PHONY: test-incremental-verbose
+test-incremental-verbose: export COCONUT_USE_COLOR=TRUE
+test-incremental-verbose: clean-no-tests
+	python ./coconut/tests --strict --keep-lines --incremental --force --verbose
 	python ./coconut/tests/dest/runner.py
 	python ./coconut/tests/dest/extras.py
 
@@ -267,13 +284,16 @@ clean-no-tests:
 clean: clean-no-tests
 	rm -rf ./coconut/tests/dest
 
+.PHONY: clean-cache
+clean-cache: clean
+	-find . -name "__coconut_cache__" -type d -prune -exec rm -rf '{}' +
+	-C:/GnuWin32/bin/find.exe . -name "__coconut_cache__" -type d -prune -exec rm -rf '{}' +
+
 .PHONY: wipe
-wipe: clean
+wipe: clean-cache
 	rm -rf ./coconut/tests/dest vprof.json profile.log *.egg-info
 	-find . -name "__pycache__" -type d -prune -exec rm -rf '{}' +
 	-C:/GnuWin32/bin/find.exe . -name "__pycache__" -type d -prune -exec rm -rf '{}' +
-	-find . -name "__coconut_cache__" -type d -prune -exec rm -rf '{}' +
-	-C:/GnuWin32/bin/find.exe . -name "__coconut_cache__" -type d -prune -exec rm -rf '{}' +
 	-find . -name "*.pyc" -delete
 	-C:/GnuWin32/bin/find.exe . -name "*.pyc" -delete
 	-python -m coconut --site-uninstall

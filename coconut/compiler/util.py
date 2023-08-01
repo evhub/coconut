@@ -98,7 +98,6 @@ from coconut.constants import (
     specific_targets,
     pseudo_targets,
     reserved_vars,
-    use_packrat_parser,
     packrat_cache_size,
     temp_grammar_item_ref_count,
     indchars,
@@ -106,10 +105,12 @@ from coconut.constants import (
     non_syntactic_newline,
     allow_explicit_keyword_vars,
     reserved_prefix,
-    incremental_cache_size,
+    incremental_mode_cache_size,
+    default_incremental_cache_size,
     repeatedly_clear_incremental_cache,
     py_vers_with_eols,
     unwrapper,
+    incremental_cache_limit,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -357,16 +358,16 @@ def attach(item, action, ignore_no_tokens=None, ignore_one_token=None, ignore_to
 
 def should_clear_cache():
     """Determine if we should be clearing the packrat cache."""
-    return (
-        use_packrat_parser
-        and (
-            not ParserElement._incrementalEnabled
-            or (
-                ParserElement._incrementalWithResets
-                and repeatedly_clear_incremental_cache
-            )
-        )
-    )
+    if not ParserElement._packratEnabled:
+        internal_assert(not ParserElement._incrementalEnabled)
+        return False
+    if not ParserElement._incrementalEnabled:
+        return True
+    if ParserElement._incrementalWithResets and repeatedly_clear_incremental_cache:
+        return True
+    if incremental_cache_limit is not None and len(ParserElement.packrat_cache) > incremental_cache_limit:
+        return True
+    return False
 
 
 def final_evaluate_tokens(tokens):
@@ -403,7 +404,10 @@ def force_reset_packrat_cache():
     """Forcibly reset the packrat cache and all packrat stats."""
     if ParserElement._incrementalEnabled:
         ParserElement._incrementalEnabled = False
-        ParserElement.enableIncremental(incremental_cache_size, still_reset_cache=ParserElement._incrementalWithResets)
+        if ParserElement._incrementalWithResets:
+            ParserElement.enableIncremental(default_incremental_cache_size, still_reset_cache=True)
+        else:
+            ParserElement.enableIncremental(incremental_mode_cache_size, still_reset_cache=False)
     else:
         ParserElement._packratEnabled = False
         ParserElement.enablePackrat(packrat_cache_size)
@@ -553,26 +557,35 @@ def get_highest_parse_loc(original):
     return highest_loc
 
 
-def enable_incremental_parsing(force=False):
-    """Enable incremental parsing mode where prefix parses are reused."""
-    if SUPPORTS_INCREMENTAL or force:
-        try:
-            ParserElement.enableIncremental(incremental_cache_size, still_reset_cache=False)
-        except ImportError as err:
-            raise CoconutException(str(err))
-        logger.log("Incremental parsing mode enabled.")
-        return True
-    else:
+def enable_incremental_parsing():
+    """Enable incremental parsing mode where prefix/suffix parses are reused."""
+    if not SUPPORTS_INCREMENTAL:
         return False
+    if ParserElement._incrementalEnabled and not ParserElement._incrementalWithResets:  # incremental mode is already enabled
+        return True
+    ParserElement._incrementalEnabled = False
+    try:
+        ParserElement.enableIncremental(incremental_mode_cache_size, still_reset_cache=False)
+    except ImportError as err:
+        raise CoconutException(str(err))
+    logger.log("Incremental parsing mode enabled.")
+    return True
 
 
 def pickle_incremental_cache(original, filename, protocol=pickle.HIGHEST_PROTOCOL):
-    """Pickle the pyparsing cache for original to filename. """
+    """Pickle the pyparsing cache for original to filename."""
     internal_assert(all_parse_elements is not None, "pickle_incremental_cache requires cPyparsing")
+
     pickleable_cache_items = []
     for lookup, value in get_cache_items_for(original):
+        if incremental_mode_cache_size is not None and len(pickleable_cache_items) > incremental_mode_cache_size:
+            complain("got too large incremental cache: " + str(len(get_pyparsing_cache())) + " > " + str(incremental_mode_cache_size))
+            break
+        if len(pickleable_cache_items) >= incremental_cache_limit:
+            break
         pickleable_lookup = (lookup[0].parse_element_index,) + lookup[1:]
         pickleable_cache_items.append((pickleable_lookup, value))
+
     logger.log("Saving {num_items} incremental cache items to {filename!r}.".format(
         num_items=len(pickleable_cache_items),
         filename=filename,
@@ -588,6 +601,7 @@ def pickle_incremental_cache(original, filename, protocol=pickle.HIGHEST_PROTOCO
 def unpickle_incremental_cache(filename):
     """Unpickle and load the given incremental cache file."""
     internal_assert(all_parse_elements is not None, "unpickle_incremental_cache requires cPyparsing")
+
     if not os.path.exists(filename):
         return False
     try:
@@ -603,6 +617,14 @@ def unpickle_incremental_cache(filename):
         num_items=len(pickleable_cache_items),
         filename=filename,
     ))
+
+    max_cache_size = min(
+        incremental_mode_cache_size or float("inf"),
+        incremental_cache_limit or float("inf"),
+    )
+    if max_cache_size != float("inf"):
+        pickleable_cache_items = pickleable_cache_items[-max_cache_size:]
+
     packrat_cache = ParserElement.packrat_cache
     for pickleable_lookup, value in pickleable_cache_items:
         lookup = (all_parse_elements[pickleable_lookup[0]],) + pickleable_lookup[1:]

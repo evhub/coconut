@@ -127,10 +127,15 @@ packrat_cache_size = None  # only works because final() clears the cache
 
 # note that _parseIncremental produces much smaller caches
 use_incremental_if_available = True
-incremental_cache_size = None
+
 # these only apply to use_incremental_if_available, not compiler.util.enable_incremental_parsing()
+default_incremental_cache_size = None
 repeatedly_clear_incremental_cache = True
 never_clear_incremental_cache = False
+
+# this is what gets used in compiler.util.enable_incremental_parsing()
+incremental_mode_cache_size = None
+incremental_cache_limit = 524288  # clear cache when it gets this large
 
 use_left_recursion_if_available = False
 

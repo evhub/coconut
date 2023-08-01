@@ -97,22 +97,24 @@ def format_error(err_value, err_type=None, err_trace=None):
         return "".join(traceback.format_exception(err_type, err_value, err_trace)).strip()
 
 
-def complain(error):
+def complain(error_or_msg, *args, **kwargs):
     """Raises in develop; warns in release."""
-    if callable(error):
+    if callable(error_or_msg):
         if DEVELOP:
-            error = error()
+            error_or_msg = error_or_msg()
         else:
             return
-    if not isinstance(error, BaseException) or (not isinstance(error, CoconutInternalException) and isinstance(error, CoconutException)):
-        error = CoconutInternalException(str(error))
+    if not isinstance(error_or_msg, BaseException) or (not isinstance(error_or_msg, CoconutInternalException) and isinstance(error_or_msg, CoconutException)):
+        error_or_msg = CoconutInternalException(str(error_or_msg), *args, **kwargs)
+    else:
+        internal_assert(not args and not kwargs, "if error_or_msg is an error, args and kwargs must be empty, not", (args, kwargs))
     if not DEVELOP:
-        logger.warn_err(error)
+        logger.warn_err(error_or_msg)
     elif embed_on_internal_exc:
-        logger.warn_err(error)
+        logger.warn_err(error_or_msg)
         embed(depth=1)
     else:
-        raise error
+        raise error_or_msg
 
 
 def internal_assert(condition, message=None, item=None, extra=None, exc_maker=None):
