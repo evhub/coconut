@@ -579,12 +579,19 @@ def pickle_incremental_cache(original, filename, protocol=pickle.HIGHEST_PROTOCO
     pickleable_cache_items = []
     for lookup, value in get_cache_items_for(original):
         if incremental_mode_cache_size is not None and len(pickleable_cache_items) > incremental_mode_cache_size:
-            complain("got too large incremental cache: " + str(len(get_pyparsing_cache())) + " > " + str(incremental_mode_cache_size))
+            complain(
+                "got too large incremental cache: "
+                + str(len(get_pyparsing_cache())) + " > " + str(incremental_mode_cache_size)
+            )
             break
         if len(pickleable_cache_items) >= incremental_cache_limit:
             break
-        pickleable_lookup = (lookup[0].parse_element_index,) + lookup[1:]
-        pickleable_cache_items.append((pickleable_lookup, value))
+        loc = lookup[2]
+        # only include cache items that aren't at the start or end, since those
+        #  are the only ones that parseIncremental will reuse
+        if 0 < loc < len(original) - 1:
+            pickleable_lookup = (lookup[0].parse_element_index,) + lookup[1:]
+            pickleable_cache_items.append((pickleable_lookup, value))
 
     logger.log("Saving {num_items} incremental cache items to {filename!r}.".format(
         num_items=len(pickleable_cache_items),
@@ -612,6 +619,7 @@ def unpickle_incremental_cache(filename):
         return False
     if pickle_info_obj["VERSION"] != VERSION:
         return False
+
     pickleable_cache_items = pickle_info_obj["pickleable_cache_items"]
     logger.log("Loaded {num_items} incremental cache items from {filename!r}.".format(
         num_items=len(pickleable_cache_items),
