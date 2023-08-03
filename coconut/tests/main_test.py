@@ -812,7 +812,7 @@ class TestShell(unittest.TestCase):
             p.sendline('echo f"{$ENV_VAR}"; echo f"{$ENV_VAR}"')
             p.expect("ABC")
             p.expect("ABC")
-            p.sendline('len("""1\n3\n5""")')
+            p.sendline('len("""1\n3\n5""") |> print')
             p.expect("5")
             if not PYPY or PY39:
                 if PY36:
@@ -910,6 +910,10 @@ class TestCompilation(unittest.TestCase):
     def test_no_tco(self):
         run(["--no-tco"])
 
+    if PY35:
+        def test_no_wrap(self):
+            run(["--no-wrap"])
+
     # run fewer tests on Windows so appveyor doesn't time out
     if not WINDOWS:
         def test_keep_lines(self):
@@ -921,14 +925,18 @@ class TestCompilation(unittest.TestCase):
         def test_and(self):
             run(["--and"])  # src and dest built by comp
 
-        def test_incremental(self):
-            run(["--incremental"])
-            # includes "Error" because exceptions include the whole file
-            run(["--incremental", "--force"], check_errors=False)
+        def test_run_arg(self):
+            run(use_run_arg=True)
 
-    if PY35:
-        def test_no_wrap(self):
-            run(["--no-wrap"])
+        if not PYPY and not PY26:
+            def test_jobs_zero(self):
+                run(["--jobs", "0"])
+
+        if not PYPY:
+            def test_incremental(self):
+                run(["--incremental"])
+                # includes "Error" because exceptions include the whole file
+                run(["--incremental", "--force"], check_errors=False)
 
     if get_bool_env_var("COCONUT_TEST_VERBOSE"):
         def test_verbose(self):
@@ -937,16 +945,6 @@ class TestCompilation(unittest.TestCase):
     if get_bool_env_var("COCONUT_TEST_TRACE"):
         def test_trace(self):
             run(["--jobs", "0", "--trace"], check_errors=False)
-
-    # avoids a strange, unreproducable failure on appveyor
-    if not (WINDOWS and sys.version_info[:2] == (3, 8)):
-        def test_run_arg(self):
-            run(use_run_arg=True)
-
-    # not WINDOWS is for appveyor timeout prevention
-    if not WINDOWS and not PYPY and not PY26:
-        def test_jobs_zero(self):
-            run(["--jobs", "0"])
 
 
 # more appveyor timeout prevention

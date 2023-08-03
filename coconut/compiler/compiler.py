@@ -1263,7 +1263,7 @@ class Compiler(Grammar, pickleable_obj):
             if incremental_cache_filename is not None:
                 incremental_enabled = enable_incremental_parsing()
                 if not incremental_enabled:
-                    raise CoconutException("--incremental mode requires cPyparsing (run '{python} -m pip install --upgrade cPyparsing' to fix)".format(python=sys.executable))
+                    raise CoconutException("incremental_cache_filename requires cPyparsing (run '{python} -m pip install --upgrade cPyparsing' to fix)".format(python=sys.executable))
                 did_load_cache = unpickle_incremental_cache(incremental_cache_filename)
                 logger.log("{Loaded} incremental cache for {filename!r} from {incremental_cache_filename!r}.".format(
                     Loaded="Loaded" if did_load_cache else "Failed to load",

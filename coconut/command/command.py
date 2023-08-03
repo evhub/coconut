@@ -31,6 +31,7 @@ from coconut._pyparsing import (
     unset_fast_pyparsing_reprs,
     collect_timing_info,
     print_timing_info,
+    SUPPORTS_INCREMENTAL,
 )
 
 from coconut.compiler import Compiler
@@ -264,6 +265,8 @@ class Command(object):
                 raise CoconutException("cannot compile with both --line-numbers and --no-line-numbers")
             if args.site_install and args.site_uninstall:
                 raise CoconutException("cannot --site-install and --site-uninstall simultaneously")
+            if args.incremental and not SUPPORTS_INCREMENTAL:
+                raise CoconutException("--incremental mode requires cPyparsing (run '{python} -m pip install --upgrade cPyparsing' to fix)".format(python=sys.executable))
             for and_args in getattr(args, "and") or []:
                 if len(and_args) > 2:
                     raise CoconutException(
