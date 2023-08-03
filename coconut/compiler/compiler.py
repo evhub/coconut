@@ -934,12 +934,14 @@ class Compiler(Grammar, pickleable_obj):
         except CoconutException as err:
             complain(err)
 
-    def remove_strs(self, inputstring, inner_environment=True):
-        """Remove strings/comments from the given input."""
-        with self.complain_on_err():
+    def remove_strs(self, inputstring, inner_environment=True, **kwargs):
+        """Remove strings/comments from the given input if possible."""
+        try:
             with (self.inner_environment() if inner_environment else noop_ctx()):
-                return self.str_proc(inputstring)
-        return inputstring
+                return self.str_proc(inputstring, **kwargs)
+        except Exception:
+            logger.log_exc()
+        return None
 
     def get_matcher(self, original, loc, check_var, name_list=None):
         """Get a Matcher object."""
@@ -1213,7 +1215,7 @@ class Compiler(Grammar, pickleable_obj):
 
     def streamline(self, grammar, inputstring="", force=False):
         """Streamline the given grammar for the given inputstring."""
-        if force or (streamline_grammar_for_len is not None and len(inputstring) >= streamline_grammar_for_len):
+        if force or (streamline_grammar_for_len is not None and len(inputstring) > streamline_grammar_for_len):
             start_time = get_clock_time()
             prep_grammar(grammar, streamline=True)
             logger.log_lambda(

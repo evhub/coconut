@@ -120,7 +120,8 @@ use_computation_graph_env_var = "COCONUT_USE_COMPUTATION_GRAPH"
 
 # below constants are experimentally determined to maximize performance
 
-streamline_grammar_for_len = 4000
+streamline_grammar_for_len = 4096
+disable_incremental_for_len = streamline_grammar_for_len  # disables --incremental
 
 use_packrat_parser = True  # True also gives us better error messages
 packrat_cache_size = None  # only works because final() clears the cache
@@ -135,7 +136,8 @@ never_clear_incremental_cache = False
 
 # this is what gets used in compiler.util.enable_incremental_parsing()
 incremental_mode_cache_size = None
-incremental_cache_limit = 524288  # clear cache when it gets this large
+incremental_cache_limit = 1048576  # clear cache when it gets this large
+incremental_mode_cache_successes = False
 
 use_left_recursion_if_available = False
 
@@ -961,7 +963,7 @@ all_reqs = {
 
 # min versions are inclusive
 min_versions = {
-    "cPyparsing": (2, 4, 7, 2, 2, 2),
+    "cPyparsing": (2, 4, 7, 2, 2, 3),
     ("pre-commit", "py3"): (3,),
     ("psutil", "py>=27"): (5,),
     "jupyter": (1, 0),

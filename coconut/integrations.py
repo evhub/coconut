@@ -173,7 +173,7 @@ class CoconutXontribLoader(object):
                         # we handle our own inner_environment rather than have remove_strs do it so that we can reformat
                         with self.compiler.inner_environment():
                             line_no_strs = self.compiler.remove_strs(line, inner_environment=False)
-                            if ";" in line_no_strs:
+                            if line_no_strs is not None and ";" in line_no_strs:
                                 remaining_pieces = [
                                     self.compiler.reformat(piece, ignore_errors=True)
                                     for piece in line_no_strs.split(";")

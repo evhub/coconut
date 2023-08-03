@@ -66,8 +66,9 @@ from coconut._pyparsing import (
     ParserElement,
     _trim_arity,
     _ParseResultsWithOffset,
-    line as _line,
     all_parse_elements,
+    line as _line,
+    __version__ as pyparsing_version,
 )
 
 from coconut.integrations import embed
@@ -111,6 +112,7 @@ from coconut.constants import (
     py_vers_with_eols,
     unwrapper,
     incremental_cache_limit,
+    incremental_mode_cache_successes,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -356,26 +358,9 @@ def attach(item, action, ignore_no_tokens=None, ignore_one_token=None, ignore_to
     return add_action(item, action, make_copy)
 
 
-def should_clear_cache():
-    """Determine if we should be clearing the packrat cache."""
-    if not ParserElement._packratEnabled:
-        internal_assert(not ParserElement._incrementalEnabled)
-        return False
-    if not ParserElement._incrementalEnabled:
-        return True
-    if ParserElement._incrementalWithResets and repeatedly_clear_incremental_cache:
-        return True
-    if incremental_cache_limit is not None and len(ParserElement.packrat_cache) > incremental_cache_limit:
-        return True
-    return False
-
-
 def final_evaluate_tokens(tokens):
     """Same as evaluate_tokens but should only be used once a parse is assured."""
-    # don't clear the cache in incremental mode
-    if should_clear_cache():
-        # clear cache without resetting stats
-        ParserElement.packrat_cache.clear()
+    clear_packrat_cache()
     return evaluate_tokens(tokens)
 
 
@@ -537,6 +522,39 @@ def get_pyparsing_cache():
             return {}
 
 
+def should_clear_cache():
+    """Determine if we should be clearing the packrat cache."""
+    if not ParserElement._packratEnabled:
+        return False
+    if SUPPORTS_INCREMENTAL:
+        if not ParserElement._incrementalEnabled:
+            return True
+        if ParserElement._incrementalWithResets and repeatedly_clear_incremental_cache:
+            return True
+        if incremental_cache_limit is not None and len(ParserElement.packrat_cache) > incremental_cache_limit:
+            # only clear the second half of the cache, since the first
+            #  half is what will help us next time we recompile
+            return "second half"
+    return False
+
+
+def clear_packrat_cache():
+    """Clear the packrat cache if applicable."""
+    clear_cache = should_clear_cache()
+    if not clear_cache:
+        return
+    if clear_cache == "second half":
+        cache_items = list(get_pyparsing_cache().items())
+        restore_items = cache_items[:len(cache_items) // 2]
+    else:
+        restore_items = ()
+    # clear cache without resetting stats
+    ParserElement.packrat_cache.clear()
+    # restore any items we want to keep
+    for lookup, value in restore_items:
+        ParserElement.packrat_cache.set(lookup, value)
+
+
 def get_cache_items_for(original):
     """Get items from the pyparsing cache filtered to only from parsing original."""
     cache = get_pyparsing_cache()
@@ -561,6 +579,7 @@ def enable_incremental_parsing():
     """Enable incremental parsing mode where prefix/suffix parses are reused."""
     if not SUPPORTS_INCREMENTAL:
         return False
+    ParserElement._should_cache_incremental_success = incremental_mode_cache_successes
     if ParserElement._incrementalEnabled and not ParserElement._incrementalWithResets:  # incremental mode is already enabled
         return True
     ParserElement._incrementalEnabled = False
@@ -599,6 +618,7 @@ def pickle_incremental_cache(original, filename, protocol=pickle.HIGHEST_PROTOCO
     ))
     pickle_info_obj = {
         "VERSION": VERSION,
+        "pyparsing_version": pyparsing_version,
         "pickleable_cache_items": pickleable_cache_items,
     }
     with univ_open(filename, "wb") as pickle_file:
@@ -617,7 +637,7 @@ def unpickle_incremental_cache(filename):
     except Exception:
         logger.log_exc()
         return False
-    if pickle_info_obj["VERSION"] != VERSION:
+    if pickle_info_obj["VERSION"] != VERSION or pickle_info_obj["pyparsing_version"] != pyparsing_version:
         return False
 
     pickleable_cache_items = pickle_info_obj["pickleable_cache_items"]
@@ -633,10 +653,9 @@ def unpickle_incremental_cache(filename):
     if max_cache_size != float("inf"):
         pickleable_cache_items = pickleable_cache_items[-max_cache_size:]
 
-    packrat_cache = ParserElement.packrat_cache
     for pickleable_lookup, value in pickleable_cache_items:
         lookup = (all_parse_elements[pickleable_lookup[0]],) + pickleable_lookup[1:]
-        packrat_cache.set(lookup, value)
+        ParserElement.packrat_cache.set(lookup, value)
     return True
 
 

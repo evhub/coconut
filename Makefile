@@ -152,7 +152,7 @@ test-mypy-tests: clean-no-tests
 	python ./coconut/tests/dest/extras.py
 
 # same as test-univ but includes verbose output for better debugging
-#  regex for getting non-timing lines: ^(?!Time|\s+Packrat|Loaded|Saving).*
+#  regex for getting non-timing lines: ^(?!Time|\s+Packrat|Loaded|Saving)[^\n]*
 .PHONY: test-verbose
 test-verbose: export COCONUT_USE_COLOR=TRUE
 test-verbose: clean

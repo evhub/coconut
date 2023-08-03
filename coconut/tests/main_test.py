@@ -812,6 +812,8 @@ class TestShell(unittest.TestCase):
             p.sendline('echo f"{$ENV_VAR}"; echo f"{$ENV_VAR}"')
             p.expect("ABC")
             p.expect("ABC")
+            p.sendline('len("""1\n3\n5""")')
+            p.expect("5")
             if not PYPY or PY39:
                 if PY36:
                     p.sendline("echo 123;; 123")
