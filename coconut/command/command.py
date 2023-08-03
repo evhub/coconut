@@ -608,7 +608,7 @@ class Command(object):
             )
             if self.incremental:
                 if disable_incremental_for_len is not None and len(code) > disable_incremental_for_len:
-                    logger.warn("--incremental mode is not currently supported for files as large as {codepath!r}")
+                    logger.warn("--incremental mode is not currently supported for files as large as {codepath!r}".format(codepath=codepath))
                 else:
                     code_dir, code_fname = os.path.split(codepath)
 
