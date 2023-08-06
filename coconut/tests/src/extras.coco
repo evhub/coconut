@@ -348,6 +348,16 @@ else:
     assert_raises(-> parse("def x -> pass, 1"), CoconutStyleError, err_has="statement lambda")
     assert_raises(-> parse("abc = f'abc'"), CoconutStyleError, err_has="\n        ^")
     assert_raises(-> parse('f"{f"{f"infinite"}"}"'), CoconutStyleError, err_has=" ^~~~~~~~~~~|")
+    try:
+        parse("""
+import abc
+1
+2
+3
+        """.strip())
+    except CoconutStyleError as err:
+        assert str(err) == """found unused import 'abc' (add '# NOQA' to suppress) (remove --strict to downgrade to a warning) (line 1)
+  import abc"""
 
     setup(line_numbers=False, strict=True, target="sys")
     assert_raises(-> parse("await f x"), CoconutParseError, err_has='invalid use of the keyword "await"')
