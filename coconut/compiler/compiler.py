@@ -1241,6 +1241,7 @@ class Compiler(Grammar, pickleable_obj):
                             "found unused import " + repr(self.reformat(name, ignore_errors=True)) + " (add '# NOQA' to suppress)",
                             original,
                             loc,
+                            endpoint=False,
                         )
 
     def parse(
