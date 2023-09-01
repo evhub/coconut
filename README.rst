@@ -16,10 +16,10 @@
     :alt: Join the chat at https://gitter.im/evhub/coconut
     :target: https://gitter.im/evhub/coconut?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
 
-Coconut (`coconut-lang.org`__) is a variant of Python_ that **adds on top of Python syntax** new features for simple, elegant, Pythonic **functional programming**.
+Coconut (`Coconut`__) is a variant of Python_ that **adds on top of Python syntax** new features for simple, elegant, Pythonic **functional programming**.
 
 __ Coconut_
-.. _Coconut: http://coconut-lang.org/
+.. _Coconut: https://coconut-lang.org/
 
 Coconut is developed on GitHub_ and hosted on PyPI_. Installing Coconut is as easy as opening a command prompt and entering::
 
