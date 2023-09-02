@@ -173,6 +173,7 @@ from coconut.compiler.util import (
     unpickle_incremental_cache,
     pickle_incremental_cache,
     handle_and_manage,
+    sub_all,
 )
 from coconut.compiler.header import (
     minify_header,
@@ -465,6 +466,7 @@ class Compiler(Grammar, pickleable_obj):
     reformatprocs = [
         # deferred_code_proc must come first
         lambda self: self.deferred_code_proc,
+        lambda self: partial(self.base_passthrough_repl, wrap_char=early_passthrough_wrapper),
         lambda self: self.reind_proc,
         lambda self: self.endline_repl,
         lambda self: partial(self.base_passthrough_repl, wrap_char="\\"),
@@ -1056,6 +1058,9 @@ class Compiler(Grammar, pickleable_obj):
         if not multiline:
             text = text.lstrip()
         if early:
+            # early passthroughs can be nested, so un-nest them
+            while early_passthrough_wrapper in text:
+                text = self.base_passthrough_repl(text, wrap_char=early_passthrough_wrapper)
             out = early_passthrough_wrapper
         elif multiline:
             out = "\\"
@@ -2566,6 +2571,14 @@ else:
         internal_assert(not decorators, "unhandled decorators", decorators)
         return "".join(out)
 
+    def modify_add_code_before(self, add_code_before_names, code_modifier):
+        """Apply code_modifier to all the code corresponding to add_code_before_names."""
+        for name in add_code_before_names:
+            self.add_code_before[name] = code_modifier(self.add_code_before[name])
+            replacement = self.add_code_before_replacements.get(name)
+            if replacement is not None:
+                self.add_code_before_replacements[name] = code_modifier(replacement)
+
     def add_code_before_marker_with_replacement(self, replacement, add_code_before, add_spaces=True, ignore_names=None):
         """Add code before a marker that will later be replaced."""
         # temp_marker will be set back later, but needs to be a unique name until then for add_code_before
@@ -2595,9 +2608,6 @@ else:
         out = []
         for raw_line in inputstring.splitlines(True):
             bef_ind, line, aft_ind = split_leading_trailing_indent(raw_line)
-
-            # handle early passthroughs
-            line = self.base_passthrough_repl(line, wrap_char=early_passthrough_wrapper, **kwargs)
 
             # look for deferred errors
             while errwrapper in raw_line:
@@ -4071,12 +4081,14 @@ __annotations__["{name}"] = {annotation}
 
     def where_stmt_handle(self, loc, tokens):
         """Process where statements."""
-        final_stmt, init_stmts = tokens
+        main_stmt, body_stmts = tokens
 
         where_assigns = self.current_parsing_context("where")["assigns"]
         internal_assert(lambda: where_assigns is not None, "missing where_assigns")
 
-        out = "".join(init_stmts) + final_stmt + "\n"
+        where_init = "".join(body_stmts)
+        where_final = main_stmt + "\n"
+        out = where_init + where_final
         if not where_assigns:
             return out
 
@@ -4084,22 +4096,18 @@ __annotations__["{name}"] = {annotation}
             name: compile_regex(r"\b" + name + r"\b")
             for name in where_assigns
         }
-        where_temp_vars = {
+        name_replacements = {
             name: self.get_temp_var("where_" + name, loc)
             for name in where_assigns
         }
 
-        out, ignore_names, add_code_before = self.extract_deferred_code(out)
+        where_init = self.deferred_code_proc(where_init)
+        where_final = self.deferred_code_proc(where_final)
+        out = where_init + where_final
 
-        for name in where_assigns:
-            out = name_regexes[name].sub(lambda match: where_temp_vars[name], out)
-            add_code_before = name_regexes[name].sub(lambda match: where_temp_vars[name], add_code_before)
+        out = sub_all(out, name_regexes, name_replacements)
 
-        return self.add_code_before_marker_with_replacement(
-            out,
-            add_code_before,
-            ignore_names=ignore_names,
-        )
+        return self.wrap_passthrough(out, early=True)
 
     def with_stmt_handle(self, tokens):
         """Process with statements."""

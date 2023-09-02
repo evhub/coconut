@@ -1601,6 +1601,13 @@ def move_endpt_to_non_whitespace(original, loc, backwards=False):
     )
 
 
+def sub_all(inputstr, regexes, replacements):
+    """Sub all regexes for replacements in inputstr."""
+    for key, regex in regexes.items():
+        inputstr = regex.sub(lambda match: replacements[key], inputstr)
+    return inputstr
+
+
 # -----------------------------------------------------------------------------------------------------------------------
 # PYTEST:
 # -----------------------------------------------------------------------------------------------------------------------
