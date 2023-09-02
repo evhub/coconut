@@ -796,6 +796,12 @@ class Wrap(ParseElementEnhance):
         return self.wrapped_name
 
 
+def handle_and_manage(item, handler, manager):
+    """Attach a handler and a manager to the given parse item."""
+    new_item = attach(item, handler)
+    return Wrap(new_item, manager, greedy=True)
+
+
 def disable_inside(item, *elems, **kwargs):
     """Prevent elems from matching inside of item.
 
@@ -871,6 +877,7 @@ def longest(*args):
     return matcher
 
 
+@memoize(64)
 def compile_regex(regex, options=None):
     """Compiles the given regex to support unicode."""
     if options is None:
@@ -878,9 +885,6 @@ def compile_regex(regex, options=None):
     else:
         options |= re.U
     return re.compile(regex, options)
-
-
-memoized_compile_regex = memoize(64)(compile_regex)
 
 
 def regex_item(regex, options=None):

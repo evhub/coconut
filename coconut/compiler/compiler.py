@@ -150,7 +150,6 @@ from coconut.compiler.util import (
     append_it,
     interleaved_join,
     handle_indentation,
-    Wrap,
     tuple_str_of,
     join_args,
     parse_where,
@@ -173,6 +172,7 @@ from coconut.compiler.util import (
     move_endpt_to_non_whitespace,
     unpickle_incremental_cache,
     pickle_incremental_cache,
+    handle_and_manage,
 )
 from coconut.compiler.header import (
     minify_header,
@@ -596,6 +596,8 @@ class Compiler(Grammar, pickleable_obj):
     @contextmanager
     def inner_environment(self, ln=None):
         """Set up compiler to evaluate inner expressions."""
+        if ln is None:
+            ln = self.outer_ln
         outer_ln, self.outer_ln = self.outer_ln, ln
         line_numbers, self.line_numbers = self.line_numbers, False
         keep_lines, self.keep_lines = self.keep_lines, False
@@ -627,6 +629,15 @@ class Compiler(Grammar, pickleable_obj):
             return stack[-1]
         else:
             return default
+
+    @contextmanager
+    def add_to_parsing_context(self, name, obj):
+        """Add the given object to the parsing context for the given name."""
+        self.parsing_context[name].append(obj)
+        try:
+            yield
+        finally:
+            self.parsing_context[name].pop()
 
     @contextmanager
     def disable_checks(self):
@@ -694,38 +705,63 @@ class Compiler(Grammar, pickleable_obj):
     def bind(cls):
         """Binds reference objects to the proper parse actions."""
         # handle parsing_context for class definitions
-        new_classdef = attach(cls.classdef_ref, cls.method("classdef_handle"))
-        cls.classdef <<= Wrap(new_classdef, cls.method("class_manage"), greedy=True)
-
-        new_datadef = attach(cls.datadef_ref, cls.method("datadef_handle"))
-        cls.datadef <<= Wrap(new_datadef, cls.method("class_manage"), greedy=True)
-
-        new_match_datadef = attach(cls.match_datadef_ref, cls.method("match_datadef_handle"))
-        cls.match_datadef <<= Wrap(new_match_datadef, cls.method("class_manage"), greedy=True)
+        cls.classdef <<= handle_and_manage(
+            cls.classdef_ref,
+            cls.method("classdef_handle"),
+            cls.method("class_manage"),
+        )
+        cls.datadef <<= handle_and_manage(
+            cls.datadef_ref,
+            cls.method("datadef_handle"),
+            cls.method("class_manage"),
+        )
+        cls.match_datadef <<= handle_and_manage(
+            cls.match_datadef_ref,
+            cls.method("match_datadef_handle"),
+            cls.method("class_manage"),
+        )
 
         # handle parsing_context for function definitions
-        new_stmt_lambdef = attach(cls.stmt_lambdef_ref, cls.method("stmt_lambdef_handle"))
-        cls.stmt_lambdef <<= Wrap(new_stmt_lambdef, cls.method("func_manage"), greedy=True)
-
-        new_decoratable_normal_funcdef_stmt = attach(
+        cls.stmt_lambdef <<= handle_and_manage(
+            cls.stmt_lambdef_ref,
+            cls.method("stmt_lambdef_handle"),
+            cls.method("func_manage"),
+        )
+        cls.decoratable_normal_funcdef_stmt <<= handle_and_manage(
             cls.decoratable_normal_funcdef_stmt_ref,
             cls.method("decoratable_funcdef_stmt_handle"),
+            cls.method("func_manage"),
         )
-        cls.decoratable_normal_funcdef_stmt <<= Wrap(new_decoratable_normal_funcdef_stmt, cls.method("func_manage"), greedy=True)
-
-        new_decoratable_async_funcdef_stmt = attach(
+        cls.decoratable_async_funcdef_stmt <<= handle_and_manage(
             cls.decoratable_async_funcdef_stmt_ref,
             cls.method("decoratable_funcdef_stmt_handle", is_async=True),
+            cls.method("func_manage"),
         )
-        cls.decoratable_async_funcdef_stmt <<= Wrap(new_decoratable_async_funcdef_stmt, cls.method("func_manage"), greedy=True)
 
         # handle parsing_context for type aliases
-        new_type_alias_stmt = attach(cls.type_alias_stmt_ref, cls.method("type_alias_stmt_handle"))
-        cls.type_alias_stmt <<= Wrap(new_type_alias_stmt, cls.method("type_alias_stmt_manage"), greedy=True)
+        cls.type_alias_stmt <<= handle_and_manage(
+            cls.type_alias_stmt_ref,
+            cls.method("type_alias_stmt_handle"),
+            cls.method("type_alias_stmt_manage"),
+        )
+
+        # handle parsing_context for where statements
+        cls.where_stmt <<= handle_and_manage(
+            cls.where_stmt_ref,
+            cls.method("where_stmt_handle"),
+            cls.method("where_stmt_manage"),
+        )
+        cls.implicit_return_where <<= handle_and_manage(
+            cls.implicit_return_where_ref,
+            cls.method("where_stmt_handle"),
+            cls.method("where_stmt_manage"),
+        )
 
         # greedy handlers (we need to know about them even if suppressed and/or they use the parsing_context)
         cls.comment <<= attach(cls.comment_tokens, cls.method("comment_handle"), greedy=True)
         cls.type_param <<= attach(cls.type_param_ref, cls.method("type_param_handle"), greedy=True)
+        cls.where_item <<= attach(cls.where_item_ref, cls.method("where_item_handle"), greedy=True)
+        cls.implicit_return_where_item <<= attach(cls.implicit_return_where_item_ref, cls.method("where_item_handle"), greedy=True)
 
         # name handlers
         cls.refname <<= attach(cls.name_ref, cls.method("name_handle"))
@@ -879,6 +915,14 @@ class Compiler(Grammar, pickleable_obj):
         got_code_to_add_before = {}
         reformatted_code = self.reformat(code, put_code_to_add_before_in=got_code_to_add_before, **kwargs)
         return reformatted_code, tuple(got_code_to_add_before.keys()), got_code_to_add_before.values()
+
+    def extract_deferred_code(self, code):
+        """Extract the code to be added before in code."""
+        got_code_to_add_before = {}
+        procd_out = self.deferred_code_proc(code, put_code_to_add_before_in=got_code_to_add_before)
+        added_names = tuple(got_code_to_add_before.keys())
+        add_code_before = "\n".join(got_code_to_add_before.values())
+        return procd_out, added_names, add_code_before
 
     def literal_eval(self, code):
         """Version of ast.literal_eval that reformats first."""
@@ -1122,7 +1166,10 @@ class Compiler(Grammar, pickleable_obj):
 
         # get line number
         if ln is None:
-            ln = self.outer_ln or self.adjust(lineno(loc, original))
+            if self.outer_ln is None:
+                ln = self.adjust(lineno(loc, original))
+            else:
+                ln = self.outer_ln
 
         # get line indices for the error locs
         original_lines = tuple(logical_lines(original, True))
@@ -1199,7 +1246,10 @@ class Compiler(Grammar, pickleable_obj):
         """Parse eval code in an inner environment."""
         if parser is None:
             parser = self.eval_parser
-        with self.inner_environment(ln=self.adjust(lineno(loc, original))):
+        outer_ln = self.outer_ln
+        if outer_ln is None:
+            outer_ln = self.adjust(lineno(loc, original))
+        with self.inner_environment(ln=outer_ln):
             self.streamline(parser, inputstring)
             pre_procd = self.pre(inputstring, **preargs)
             parsed = parse(parser, pre_procd)
@@ -3980,17 +4030,13 @@ __annotations__["{name}"] = {annotation}
     @contextmanager
     def type_alias_stmt_manage(self, item=None, original=None, loc=None):
         """Manage the typevars parsing context."""
-        typevars_stack = self.parsing_context["typevars"]
         prev_typevar_info = self.current_parsing_context("typevars")
-        typevars_stack.append({
+        with self.add_to_parsing_context("typevars", {
             "all_typevars": {} if prev_typevar_info is None else prev_typevar_info["all_typevars"].copy(),
             "new_typevars": [],
             "typevar_locs": {},
-        })
-        try:
+        }):
             yield
-        finally:
-            typevars_stack.pop()
 
     def type_alias_stmt_handle(self, tokens):
         """Handle type alias statements."""
@@ -4007,6 +4053,53 @@ __annotations__["{name}"] = {annotation}
                 "_coconut.typing.TypeAlias",
                 self.wrap_typedef(typedef, for_py_typedef=False),
             ])
+
+    def where_item_handle(self, tokens):
+        """Manage where items."""
+        where_context = self.current_parsing_context("where")
+        internal_assert(not where_context["assigns"], "invalid where_context", where_context)
+        where_context["assigns"] = set()
+        return tokens
+
+    @contextmanager
+    def where_stmt_manage(self, item, original, loc):
+        """Manage where statements."""
+        with self.add_to_parsing_context("where", {
+            "assigns": None,
+        }):
+            yield
+
+    def where_stmt_handle(self, loc, tokens):
+        """Process where statements."""
+        final_stmt, init_stmts = tokens
+
+        where_assigns = self.current_parsing_context("where")["assigns"]
+        internal_assert(lambda: where_assigns is not None, "missing where_assigns")
+
+        out = "".join(init_stmts) + final_stmt + "\n"
+        if not where_assigns:
+            return out
+
+        name_regexes = {
+            name: compile_regex(r"\b" + name + r"\b")
+            for name in where_assigns
+        }
+        where_temp_vars = {
+            name: self.get_temp_var("where_" + name, loc)
+            for name in where_assigns
+        }
+
+        out, ignore_names, add_code_before = self.extract_deferred_code(out)
+
+        for name in where_assigns:
+            out = name_regexes[name].sub(lambda match: where_temp_vars[name], out)
+            add_code_before = name_regexes[name].sub(lambda match: where_temp_vars[name], add_code_before)
+
+        return self.add_code_before_marker_with_replacement(
+            out,
+            add_code_before,
+            ignore_names=ignore_names,
+        )
 
     def with_stmt_handle(self, tokens):
         """Process with statements."""
@@ -4521,13 +4614,20 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
         else:
             escaped = False
 
+        if self.disable_name_check:
+            return name
+
+        if assign:
+            where_context = self.current_parsing_context("where")
+            if where_context is not None:
+                where_assigns = where_context["assigns"]
+                if where_assigns is not None:
+                    where_assigns.add(name)
+
         if classname:
             cls_context = self.current_parsing_context("class")
             self.internal_assert(cls_context is not None, original, loc, "found classname outside of class", tokens)
             cls_context["name"] = name
-
-        if self.disable_name_check:
-            return name
 
         # raise_or_wrap_error for all errors here to make sure we don't
         #  raise spurious errors if not using the computation graph

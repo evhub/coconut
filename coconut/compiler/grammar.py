@@ -518,12 +518,6 @@ def join_match_funcdef(tokens):
     )
 
 
-def where_handle(tokens):
-    """Process where statements."""
-    final_stmt, init_stmts = tokens
-    return "".join(init_stmts) + final_stmt + "\n"
-
-
 def kwd_err_msg_handle(tokens):
     """Handle keyword parse error messages."""
     kwd, = tokens
@@ -2089,27 +2083,26 @@ class Grammar(object):
     )
     match_funcdef = addspace(match_def_modifiers + def_match_funcdef)
 
-    where_stmt = attach(
-        unsafe_simple_stmt_item
-        + keyword("where").suppress()
-        - full_suite,
-        where_handle,
-    )
+    where_suite = keyword("where").suppress() - full_suite
+
+    where_stmt = Forward()
+    where_item = Forward()
+    where_item_ref = unsafe_simple_stmt_item
+    where_stmt_ref = where_item + where_suite
 
     implicit_return = (
         invalid_syntax(return_stmt, "expected expression but got return statement")
         | attach(new_testlist_star_expr, implicit_return_handle)
     )
-    implicit_return_where = attach(
-        implicit_return
-        + keyword("where").suppress()
-        - full_suite,
-        where_handle,
-    )
+    implicit_return_where = Forward()
+    implicit_return_where_item = Forward()
+    implicit_return_where_item_ref = implicit_return
+    implicit_return_where_ref = implicit_return_where_item + where_suite
     implicit_return_stmt = (
         condense(implicit_return + newline)
         | implicit_return_where
     )
+
     math_funcdef_body = condense(ZeroOrMore(~(implicit_return_stmt + dedent) + stmt) - implicit_return_stmt)
     math_funcdef_suite = (
         attach(implicit_return_stmt, make_suite_handle)

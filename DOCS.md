@@ -1543,27 +1543,27 @@ _Can't be done without a series of method definitions for each data type. See th
 
 ### `where`
 
-Coconut's `where` statement is extremely straightforward. The syntax for a `where` statement is just
+Coconut's `where` statement is fairly straightforward. The syntax for a `where` statement is just
 ```
 <stmt> where:
     <body>
 ```
-which just executes `<body>` followed by `<stmt>`.
+which executes `<body>` followed by `<stmt>`, with the exception that any new variables defined in `<body>` are available _only_ in `<stmt>` (though they are only mangled, not deleted, such that e.g. lambdas can still capture them).
 
 ##### Example
 
 **Coconut:**
 ```coconut
-c = a + b where:
+result = a + b where:
     a = 1
     b = 2
 ```
 
 **Python:**
 ```coconut_python
-a = 1
-b = 2
-c = a + b
+_a = 1
+_b = 2
+result = _a + _b
 ```
 
 ### `async with for`

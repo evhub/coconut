@@ -207,10 +207,12 @@ operator !!  # bool
 
 operator lol
 lols = [-1]
-match def lol = "lol" where:
+match def lol =
     lols[0] += 1
-addpattern def (s) lol = s + "ol" where:  # type: ignore
+    "lol"
+addpattern def (s) lol =  # type: ignore
     lols[0] += 1
+    s + "ol"
 lol
 
 operator ***
