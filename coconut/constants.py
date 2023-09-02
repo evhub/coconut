@@ -951,13 +951,15 @@ all_reqs = {
         "myst-parser",
         "pydata-sphinx-theme",
     ),
+    "numpy": (
+        ("numpy", "py34"),
+        ("numpy", "py<3;cpy"),
+        ("pandas", "py36"),
+    ),
     "tests": (
         ("pytest", "py<36"),
         ("pytest", "py36"),
         "pexpect",
-        ("numpy", "py34"),
-        ("numpy", "py<3;cpy"),
-        ("pandas", "py36"),
     ),
 }
 

@@ -96,6 +96,7 @@ The full list of optional dependencies is:
   - Installs [`async_generator`](https://github.com/python-trio/async_generator) to backport [`async` generators](https://peps.python.org/pep-0525/) and [`asynccontextmanager`](https://docs.python.org/3/library/contextlib.html#contextlib.asynccontextmanager).
   - Installs [`trollius`](https://pypi.python.org/pypi/trollius) to backport [`async`/`await`](https://docs.python.org/3/library/asyncio-task.html) and [`asyncio`](https://docs.python.org/3/library/asyncio.html).
 - `xonsh`: enables use of Coconut's [`xonsh` support](#xonsh-support).
+- `numpy`: installs everything necessary for making use of Coconut's [`numpy` integration](#numpy-integration).
 - `kernel`: lightweight subset of `jupyter` that only includes the dependencies that are strictly necessary for Coconut's [Jupyter kernel](#kernel).
 - `tests`: everything necessary to test the Coconut language itself.
 - `docs`: everything necessary to build Coconut's documentation.

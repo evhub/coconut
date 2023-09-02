@@ -661,6 +661,8 @@ class Compiler(Grammar, pickleable_obj):
 
     def get_temp_var(self, base_name="temp", loc=None):
         """Get a unique temporary variable name."""
+        if isinstance(base_name, tuple):
+            base_name = "_".join(base_name)
         if loc is None:
             key = None
         else:
@@ -2323,7 +2325,7 @@ else:
         undotted_name = None
         if func_name is not None and "." in func_name:
             undotted_name = func_name.rsplit(".", 1)[-1]
-            def_name = self.get_temp_var("dotted_" + undotted_name, loc)
+            def_name = self.get_temp_var(("dotted", undotted_name), loc)
 
         # detect pattern-matching functions
         is_match_func = func_paramdef == match_func_paramdef
@@ -4007,7 +4009,7 @@ __annotations__["{name}"] = {annotation}
             else:
                 if name in typevar_info["all_typevars"]:
                     raise CoconutDeferredSyntaxError("type variable {name!r} already defined".format(name=name), loc)
-                temp_name = self.get_temp_var("typevar_" + name, name_loc)
+                temp_name = self.get_temp_var(("typevar", name), name_loc)
                 typevar_info["all_typevars"][name] = temp_name
                 typevar_info["new_typevars"].append((TypeVarFunc, temp_name))
                 typevar_info["typevar_locs"][name] = name_loc
@@ -4097,7 +4099,7 @@ __annotations__["{name}"] = {annotation}
             for name in where_assigns
         }
         name_replacements = {
-            name: self.get_temp_var("where_" + name, loc)
+            name: self.get_temp_var(("where", name), loc)
             for name in where_assigns
         }
 

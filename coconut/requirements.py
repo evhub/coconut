@@ -222,6 +222,7 @@ extras = {
     "mypy": get_reqs("mypy"),
     "backports": get_reqs("backports"),
     "xonsh": get_reqs("xonsh"),
+    "numpy": get_reqs("numpy"),
 }
 
 extras["jupyter"] = uniqueify_all(
@@ -237,6 +238,7 @@ extras.update({
     "tests": uniqueify_all(
         get_reqs("tests"),
         extras["backports"],
+        extras["numpy"],
         extras["jupyter"] if IPY else [],
         extras["mypy"] if MYPY else [],
         extras["xonsh"] if XONSH else [],
