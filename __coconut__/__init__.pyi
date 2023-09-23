@@ -640,6 +640,12 @@ def _coconut_iter_getitem(
     ...
 
 
+def _coconut_attritemgetter(
+    attr: _t.Optional[_t.Text],
+    *is_iter_and_items: _t.Tuple[_t.Tuple[bool, _t.Any], ...],
+) -> _t.Callable[[_t.Any], _t.Any]: ...
+
+
 def _coconut_base_compose(
     func: _t.Callable[[_T], _t.Any],
     *func_infos: _t.Tuple[_Callable, int, bool],

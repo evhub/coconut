@@ -437,22 +437,24 @@ def subscriptgroup_handle(tokens):
 
 def itemgetter_handle(tokens):
     """Process implicit itemgetter partials."""
-    if len(tokens) == 2:
-        op, args = tokens
+    if len(tokens) == 1:
+        attr = None
+        ops_and_args, = tokens
+    else:
+        attr, ops_and_args = tokens
+    if attr is None and len(ops_and_args) == 1:
+        (op, args), = ops_and_args
         if op == "[":
             return "_coconut.operator.itemgetter((" + args + "))"
         elif op == "$[":
             return "_coconut.functools.partial(_coconut_iter_getitem, index=(" + args + "))"
         else:
             raise CoconutInternalException("invalid implicit itemgetter type", op)
-    elif len(tokens) > 2:
-        internal_assert(len(tokens) % 2 == 0, "invalid itemgetter composition tokens", tokens)
-        itemgetters = []
-        for i in range(0, len(tokens), 2):
-            itemgetters.append(itemgetter_handle(tokens[i:i + 2]))
-        return "_coconut_forward_compose(" + ", ".join(itemgetters) + ")"
     else:
-        raise CoconutInternalException("invalid implicit itemgetter tokens", tokens)
+        return "_coconut_attritemgetter({attr}, {is_iter_and_items})".format(
+            attr=repr(attr),
+            is_iter_and_items=", ".join("({is_iter}, ({item}))".format(is_iter=op == "$[", item=args) for op, args in ops_and_args),
+        )
 
 
 def class_suite_handle(tokens):
@@ -1300,11 +1302,21 @@ class Grammar(object):
         lparen + Optional(methodcaller_args) + rparen.suppress()
     )
     attrgetter_atom = attach(attrgetter_atom_tokens, attrgetter_atom_handle)
-    itemgetter_atom_tokens = dot.suppress() + OneOrMore(condense(Optional(dollar) + lbrack) + subscriptgrouplist + rbrack.suppress())
+
+    itemgetter_atom_tokens = (
+        dot.suppress()
+        + Optional(unsafe_dotted_name)
+        + Group(OneOrMore(Group(
+            condense(Optional(dollar) + lbrack)
+            + subscriptgrouplist
+            + rbrack.suppress()
+        )))
+    )
     itemgetter_atom = attach(itemgetter_atom_tokens, itemgetter_handle)
+
     implicit_partial_atom = (
-        attrgetter_atom
-        | itemgetter_atom
+        itemgetter_atom
+        | attrgetter_atom
         | fixto(dot + lbrack + rbrack, "_coconut.operator.getitem")
         | fixto(dot + dollar + lbrack + rbrack, "_coconut_iter_getitem")
     )
@@ -1485,8 +1497,8 @@ class Grammar(object):
     pipe_item = (
         # we need the pipe_op since any of the atoms could otherwise be the start of an expression
         labeled_group(keyword("await"), "await") + pipe_op
-        | labeled_group(attrgetter_atom_tokens, "attrgetter") + pipe_op
         | labeled_group(itemgetter_atom_tokens, "itemgetter") + pipe_op
+        | labeled_group(attrgetter_atom_tokens, "attrgetter") + pipe_op
         | labeled_group(partial_atom_tokens, "partial") + pipe_op
         | labeled_group(partial_op_atom_tokens, "op partial") + pipe_op
         # expr must come at end
@@ -1495,8 +1507,8 @@ class Grammar(object):
     pipe_augassign_item = (
         # should match pipe_item but with pipe_op -> end_simple_stmt_item and no expr
         labeled_group(keyword("await"), "await") + end_simple_stmt_item
-        | labeled_group(attrgetter_atom_tokens, "attrgetter") + end_simple_stmt_item
         | labeled_group(itemgetter_atom_tokens, "itemgetter") + end_simple_stmt_item
+        | labeled_group(attrgetter_atom_tokens, "attrgetter") + end_simple_stmt_item
         | labeled_group(partial_atom_tokens, "partial") + end_simple_stmt_item
         | labeled_group(partial_op_atom_tokens, "op partial") + end_simple_stmt_item
     )
@@ -1505,8 +1517,8 @@ class Grammar(object):
         # we need longest here because there's no following pipe_op we can use as above
         | longest(
             keyword("await")("await"),
-            attrgetter_atom_tokens("attrgetter"),
             itemgetter_atom_tokens("itemgetter"),
+            attrgetter_atom_tokens("attrgetter"),
             partial_atom_tokens("partial"),
             partial_op_atom_tokens("op partial"),
             comp_pipe_expr("expr"),

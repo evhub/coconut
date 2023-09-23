@@ -1053,6 +1053,18 @@ forward 2""") == 900
     assert ret_args_kwargs(123, ...=really_long_var, abc="abc") == ((123,), {"really_long_var": 10, "abc": "abc"}) == ret_args_kwargs$(123, ...=really_long_var, abc="abc")()
     assert "Coconut version of typing" in typing.__doc__
     numlist: NumList = [1, 2.3, 5]
+    assert hasloc([[1, 2]]).loc[0][1] == 2 == hasloc([[1, 2]]) |> .loc[0][1]
+    locgetter = .loc[0][1]
+    assert hasloc([[1, 2]]) |> locgetter == 2 == (hasloc([[1, 2]]) |> .loc[0])[1]
+    haslocobj = hasloc([[1, 2]])
+    haslocobj |>= .loc[0][1]
+    assert haslocobj == 2
+    assert hasloc([[1, 2]]).iloc$[0]$[1] == 2 == hasloc([[1, 2]]) |> .iloc$[0]$[1]
+    locgetter = .iloc$[0]$[1]
+    assert hasloc([[1, 2]]) |> locgetter == 2 == (hasloc([[1, 2]]) |> .iloc$[0])$[1]
+    haslocobj = hasloc([[1, 2]])
+    haslocobj |>= .iloc$[0]$[1]
+    assert haslocobj == 2
 
     # must come at end
     assert fibs_calls[0] == 1

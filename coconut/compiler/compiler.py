@@ -2747,7 +2747,7 @@ else:
             - (expr,) for expression
             - (func, pos_args, kwd_args) for partial
             - (name, args) for attr/method
-            - (op, args)+ for itemgetter
+            - (attr, [(op, args)]) for itemgetter
             - (op, arg) for right op partial
         """
         # list implies artificial tokens, which must be expr
@@ -2762,8 +2762,12 @@ else:
             name, args = attrgetter_atom_split(tokens)
             return "attrgetter", (name, args)
         elif "itemgetter" in tokens:
-            internal_assert(len(tokens) >= 2, "invalid itemgetter pipe item tokens", tokens)
-            return "itemgetter", tokens
+            if len(tokens) == 1:
+                attr = None
+                ops_and_args, = tokens
+            else:
+                attr, ops_and_args = tokens
+            return "itemgetter", (attr, ops_and_args)
         elif "op partial" in tokens:
             inner_toks, = tokens
             if "left partial" in inner_toks:
@@ -2853,12 +2857,13 @@ else:
                 elif name == "itemgetter":
                     if stars:
                         raise CoconutDeferredSyntaxError("cannot star pipe into item getting", loc)
-                    self.internal_assert(len(split_item) % 2 == 0, original, loc, "invalid itemgetter pipe tokens", split_item)
-                    out = subexpr
-                    for i in range(0, len(split_item), 2):
-                        op, args = split_item[i:i + 2]
+                    attr, ops_and_args = split_item
+                    out = "(" + subexpr + ")"
+                    if attr is not None:
+                        out += "." + attr
+                    for op, args in ops_and_args:
                         if op == "[":
-                            fmtstr = "({x})[{args}]"
+                            fmtstr = "{x}[{args}]"
                         elif op == "$[":
                             fmtstr = "_coconut_iter_getitem({x}, ({args}))"
                         else:

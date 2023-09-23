@@ -1059,6 +1059,25 @@ class unrepresentable:
     def __repr__(self):
         raise Fail("unrepresentable")
 
+class hasloc:
+    def __init__(self, arr):
+        self.arr = arr
+    class Loc:
+        def __init__(inner, outer):
+            inner.outer = outer
+        def __getitem__(inner, item) =
+            inner.outer.arr[item]
+    @property
+    def loc(self) = self.Loc(self)
+    class ILoc:
+        def __init__(inner, outer):
+            inner.outer = outer
+        def __iter_getitem__(inner, item) =
+            inner.outer.arr$[item]
+    @property
+    def iloc(self) = self.ILoc(self)
+
+
 # Typing
 if TYPE_CHECKING or sys.version_info >= (3, 5):
     # test from typing import *, but that doesn't actually get us

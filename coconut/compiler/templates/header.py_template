@@ -103,6 +103,12 @@ class _coconut_baseclass{object}:
         if getitem is None:
             raise _coconut.NotImplementedError
         return getitem(index)
+class _coconut_base_callable(_coconut_baseclass):
+    __slots__ = ()
+    def __get__(self, obj, objtype=None):
+        if obj is None:
+            return self
+{return_method_of_self}
 class _coconut_Sentinel(_coconut_baseclass):
     __slots__ = ()
     def __reduce__(self):
@@ -354,7 +360,26 @@ def _coconut_iter_getitem(iterable, index):
                     return ()
                 iterable = _coconut.itertools.islice(iterable, 0, n)
             return _coconut.tuple(iterable)[i::step]
-class _coconut_compostion_baseclass(_coconut_baseclass):{COMMENT.no_slots_to_allow_update_wrapper}{COMMENT.must_use_coconut_attrs_to_avoid_interacting_with_update_wrapper}
+class _coconut_attritemgetter(_coconut_base_callable):
+    __slots__ = ("attr", "is_iter_and_items")
+    def __init__(self, attr, *is_iter_and_items):
+        self.attr = attr
+        self.is_iter_and_items = is_iter_and_items
+    def __call__(self, obj):
+        out = obj
+        if self.attr is not None:
+            out = _coconut.getattr(out, self.attr)
+        for is_iter, item in self.is_iter_and_items:
+            if is_iter:
+                out = _coconut_iter_getitem(out, item)
+            else:
+                out = out[item]
+        return out
+    def __repr__(self):
+        return "." + (self.attr or "") + "".join(("$" if is_iter else "") + "[" + _coconut.repr(item) + "]" for is_iter, item in self.is_iter_and_items)
+    def __reduce__(self):
+        return (self.__class__, (self.attr,) + self.is_iter_and_items)
+class _coconut_compostion_baseclass(_coconut_base_callable):{COMMENT.no_slots_to_allow_update_wrapper}{COMMENT.must_use_coconut_attrs_to_avoid_interacting_with_update_wrapper}
     def __init__(self, func, *func_infos):
         try:
             _coconut.functools.update_wrapper(self, func)
@@ -376,10 +401,6 @@ class _coconut_compostion_baseclass(_coconut_baseclass):{COMMENT.no_slots_to_all
         self._coconut_func_infos = _coconut.tuple(self._coconut_func_infos)
     def __reduce__(self):
         return (self.__class__, (self._coconut_func,) + self._coconut_func_infos)
-    def __get__(self, obj, objtype=None):
-        if obj is None:
-            return self
-{return_method_of_self}
 class _coconut_base_compose(_coconut_compostion_baseclass):
     __slots__ = ()
     def __call__(self, *args, **kwargs):
@@ -1278,7 +1299,7 @@ class groupsof(_coconut_has_iter):
         return (self.__class__, (self.group_size, self.iter))
     def __copy__(self):
         return self.__class__(self.group_size, self.get_new_iter())
-class recursive_iterator(_coconut_baseclass):
+class recursive_iterator(_coconut_base_callable):
     """Decorator that memoizes a recursive function that returns an iterator (e.g. a recursive generator)."""
     __slots__ = ("func", "reit_store", "backup_reit_store")
     def __init__(self, func):
@@ -1312,10 +1333,6 @@ class recursive_iterator(_coconut_baseclass):
         return "recursive_iterator(%r)" % (self.func,)
     def __reduce__(self):
         return (self.__class__, (self.func,))
-    def __get__(self, obj, objtype=None):
-        if obj is None:
-            return self
-{return_method_of_self}
 class _coconut_FunctionMatchErrorContext(_coconut_baseclass):
     __slots__ = ("exc_class", "taken")
     threadlocal_ns = _coconut.threading.local()
@@ -1340,7 +1357,7 @@ def _coconut_get_function_match_error():
         return {_coconut_}MatchError
     ctx.taken = True
     return ctx.exc_class
-class _coconut_base_pattern_func(_coconut_baseclass):{COMMENT.no_slots_to_allow_func_attrs}
+class _coconut_base_pattern_func(_coconut_base_callable):{COMMENT.no_slots_to_allow_func_attrs}
     _coconut_is_match = True
     def __init__(self, *funcs):
         self.FunctionMatchError = _coconut.type(_coconut_py_str("MatchError"), ({_coconut_}MatchError,), {empty_py_dict})
@@ -1378,10 +1395,6 @@ class _coconut_base_pattern_func(_coconut_baseclass):{COMMENT.no_slots_to_allow_
         return "addpattern(%r)(*%r)" % (self.patterns[0], self.patterns[1:])
     def __reduce__(self):
         return (self.__class__, _coconut.tuple(self.patterns))
-    def __get__(self, obj, objtype=None):
-        if obj is None:
-            return self
-{return_method_of_self}
 def _coconut_mark_as_match(base_func):{COMMENT._coconut_is_match_is_used_above_and_in_main_coco}
     base_func._coconut_is_match = True
     return base_func
@@ -1401,7 +1414,7 @@ def addpattern(base_func, *add_funcs, **kwargs):
     return _coconut.functools.partial(_coconut_base_pattern_func, base_func)
 _coconut_addpattern = addpattern
 {def_prepattern}
-class _coconut_partial(_coconut_baseclass):
+class _coconut_partial(_coconut_base_callable):
     __slots__ = ("func", "_argdict", "_arglen", "_pos_kwargs", "_stargs", "keywords")
     def __init__(self, _coconut_func, _coconut_argdict, _coconut_arglen, _coconut_pos_kwargs, *args, **kwargs):
         self.func = _coconut_func
@@ -1779,7 +1792,7 @@ class Expected(_coconut.collections.namedtuple("Expected", ("result", "error")){
         if not self:
             raise self.error
         return self.result
-class flip(_coconut_baseclass):
+class flip(_coconut_base_callable):
     """Given a function, return a new function with inverse argument order.
     If nargs is passed, only the first nargs arguments are reversed."""
     __slots__ = ("func", "nargs")
@@ -1801,7 +1814,7 @@ class flip(_coconut_baseclass):
         return self.func(*(args[self.nargs-1::-1] + args[self.nargs:]), **kwargs)
     def __repr__(self):
         return "flip(%r%s)" % (self.func, "" if self.nargs is None else ", " + _coconut.repr(self.nargs))
-class const(_coconut_baseclass):
+class const(_coconut_base_callable):
     """Create a function that, whatever its arguments, just returns the given value."""
     __slots__ = ("value",)
     def __init__(self, value):
@@ -1812,7 +1825,7 @@ class const(_coconut_baseclass):
         return self.value
     def __repr__(self):
         return "const(%s)" % (_coconut.repr(self.value),)
-class _coconut_lifted(_coconut_baseclass):
+class _coconut_lifted(_coconut_base_callable):
     __slots__ = ("func", "func_args", "func_kwargs")
     def __init__(self, _coconut_func, *func_args, **func_kwargs):
         self.func = _coconut_func
@@ -1824,7 +1837,7 @@ class _coconut_lifted(_coconut_baseclass):
         return self.func(*(g(*args, **kwargs) for g in self.func_args), **_coconut_py_dict((k, h(*args, **kwargs)) for k, h in self.func_kwargs.items()))
     def __repr__(self):
         return "lift(%r)(%s%s)" % (self.func, ", ".join(_coconut.repr(g) for g in self.func_args), ", ".join(k + "=" + _coconut.repr(h) for k, h in self.func_kwargs.items()))
-class lift(_coconut_baseclass):
+class lift(_coconut_base_callable):
     """Lifts a function up so that all of its arguments are functions.
 
     For a binary function f(x, y) and two unary functions g(z) and h(z), lift works as the S' combinator:
