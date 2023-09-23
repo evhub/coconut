@@ -165,7 +165,11 @@ if LOAD_MODULE:
             """Version of _compile that checks Coconut code.
             None means that the code should not be run as is.
             Any other value means that it can."""
-            if not source.endswith("\n\n") and should_indent(source):
+            if source.replace(" ", "").endswith("\n\n"):
+                return True
+            elif should_indent(source):
+                return None
+            elif "\n" in source.rstrip():
                 return None
             else:
                 return True
