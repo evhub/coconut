@@ -1818,7 +1818,7 @@ iter$[]         =>      # the equivalent of seq[] for iterators
 .$[a:b:c]       =>      # the equivalent of .[a:b:c] for iterators
 ```
 
-Additionally, `.attr.method(args)`, `.[x][y]`, and `.$[x]$[y]` are also supported.
+Additionally, `.attr.method(args)`, `.[x][y]`, `.$[x]$[y]`, and `.method[x]` are also supported.
 
 In addition, for every Coconut [operator function](#operator-functions), Coconut supports syntax for implicitly partially applying that operator function as
 ```

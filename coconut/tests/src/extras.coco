@@ -455,11 +455,12 @@ def test_kernel() -> bool:
 
     k = CoconutKernel()
     fake_session = FakeSession()
+    assert k.shell is not None
     k.shell.displayhook.session = fake_session
 
     exec_result = k.do_execute("derp = pow$(?, 2)", False, True, {"two": "(+)(1, 1)"}, True) |> unwrap_future$(loop)
-    assert exec_result["status"] == "ok"
-    assert exec_result["user_expressions"]["two"]["data"]["text/plain"] == "2"
+    assert exec_result["status"] == "ok", exec_result
+    assert exec_result["user_expressions"]["two"]["data"]["text/plain"] == "2", exec_result
 
     assert k.do_execute("operator ++", False, True, {}, True) |> unwrap_future$(loop) |> .["status"] == "ok"
     assert k.do_execute("(++) = 1", False, True, {}, True) |> unwrap_future$(loop) |> .["status"] == "ok"
