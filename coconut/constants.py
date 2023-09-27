@@ -987,7 +987,7 @@ min_versions = {
     ("jupyter-console", "py37"): (6, 6),
     ("typing", "py<35"): (3, 10),
     ("typing_extensions", "py>=37"): (4, 7),
-    ("ipython", "py38"): (8,),
+    ("ipython", "py38"): (8, 15),
     ("ipykernel", "py38"): (6,),
     ("jedi", "py39"): (0, 19),
     ("pygments", "py>=39"): (2, 15),
