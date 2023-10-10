@@ -562,6 +562,11 @@ def comp_38(args=[], always_sys=False, **kwargs):
     comp(path="cocotest", folder="target_38", args=["--target", "38" if not always_sys else "sys"] + args, **kwargs)
 
 
+def comp_311(args=[], always_sys=False, **kwargs):
+    """Compiles target_311."""
+    comp(path="cocotest", folder="target_311", args=["--target", "311" if not always_sys else "sys"] + args, **kwargs)
+
+
 def comp_sys(args=[], **kwargs):
     """Compiles target_sys."""
     comp(path="cocotest", folder="target_sys", args=["--target", "sys"] + args, **kwargs)
@@ -605,6 +610,8 @@ def run(args=[], agnostic_target=None, use_run_arg=False, convert_to_import=Fals
                     comp_36(args, **spec_kwargs)
                 if sys.version_info >= (3, 8):
                     comp_38(args, **spec_kwargs)
+                if sys.version_info >= (3, 11):
+                    comp_311(args, **spec_kwargs)
 
             comp_agnostic(agnostic_args, **kwargs)
             comp_sys(args, **kwargs)
@@ -646,6 +653,7 @@ def comp_all(args=[], agnostic_target=None, **kwargs):
     comp_35(args, **kwargs)
     comp_36(args, **kwargs)
     comp_38(args, **kwargs)
+    comp_311(args, **kwargs)
     comp_sys(args, **kwargs)
     comp_non_strict(args, **kwargs)
 

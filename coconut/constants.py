@@ -904,7 +904,8 @@ all_reqs = {
         ("ipython", "py<3"),
         ("ipython", "py3;py<37"),
         ("ipython", "py==37"),
-        ("ipython", "py38"),
+        ("ipython", "py==38"),
+        ("ipython", "py>=39"),
         ("ipykernel", "py<3"),
         ("ipykernel", "py3;py<38"),
         ("ipykernel", "py38"),
@@ -920,9 +921,10 @@ all_reqs = {
         ("jupyter-console", "py<35"),
         ("jupyter-console", "py>=35;py<37"),
         ("jupyter-console", "py37"),
-        ("jupyterlab", "py35"),
-        ("jupytext", "py3"),
         "papermill",
+        # these are fully optional, so no need to pull them in here
+        # ("jupyterlab", "py35"),
+        # ("jupytext", "py3"),
     ),
     "mypy": (
         "mypy[python2]",
@@ -993,7 +995,6 @@ min_versions = {
     ("jupyter-console", "py37"): (6, 6),
     ("typing", "py<35"): (3, 10),
     ("typing_extensions", "py>=37"): (4, 7),
-    ("ipython", "py38"): (8, 15),
     ("ipykernel", "py38"): (6,),
     ("jedi", "py39"): (0, 19),
     ("pygments", "py>=39"): (2, 15),
@@ -1001,9 +1002,12 @@ min_versions = {
     ("pytest", "py36"): (7,),
     ("async_generator", "py35"): (1, 10),
     ("exceptiongroup", "py37"): (1,),
+    ("ipython", "py>=39"): (8, 15),
 
     # pinned reqs: (must be added to pinned_reqs below)
 
+    # don't upgrade these; they breaks on Python 3.8
+    ("ipython", "py==38"): (8, 12),
     # don't upgrade these; they breaks on Python 3.7
     ("ipython", "py==37"): (7, 34),
     # don't upgrade these; they breaks on Python 3.6
