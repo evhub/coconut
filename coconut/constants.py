@@ -945,7 +945,7 @@ all_reqs = {
         ("dataclasses", "py==36"),
         ("typing", "py<35"),
         ("async_generator", "py35"),
-        ("exceptiongroup", "py37"),
+        ("exceptiongroup", "py37;py<311"),
     ),
     "dev": (
         ("pre-commit", "py3"),
