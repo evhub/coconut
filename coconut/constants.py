@@ -583,7 +583,9 @@ python_builtins = (
     '__file__',
     '__annotations__',
     '__debug__',
-    # # don't include builtins that aren't always made available by Coconut:
+    # we treat these as coconut_exceptions so the highlighter will always know about them:
+    # 'ExceptionGroup', 'BaseExceptionGroup',
+    # don't include builtins that aren't always made available by Coconut:
     # 'BlockingIOError', 'ChildProcessError', 'ConnectionError',
     # 'BrokenPipeError', 'ConnectionAbortedError', 'ConnectionRefusedError',
     # 'ConnectionResetError', 'FileExistsError', 'FileNotFoundError',
@@ -807,8 +809,11 @@ must_use_specific_target_builtins = (
 
 coconut_exceptions = (
     "MatchError",
+    "ExceptionGroup",
+    "BaseExceptionGroup",
 )
 
+highlight_builtins = coconut_specific_builtins + interp_only_builtins
 all_builtins = frozenset(python_builtins + coconut_specific_builtins + coconut_exceptions)
 
 magic_methods = (
@@ -938,6 +943,7 @@ all_reqs = {
         ("dataclasses", "py==36"),
         ("typing", "py<35"),
         ("async_generator", "py35"),
+        ("exceptiongroup", "py37"),
     ),
     "dev": (
         ("pre-commit", "py3"),
@@ -994,6 +1000,7 @@ min_versions = {
     ("xonsh", "py38"): (0, 14),
     ("pytest", "py36"): (7,),
     ("async_generator", "py35"): (1, 10),
+    ("exceptiongroup", "py37"): (1,),
 
     # pinned reqs: (must be added to pinned_reqs below)
 

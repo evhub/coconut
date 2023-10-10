@@ -52,6 +52,10 @@ setup-pypy3:
 install: setup
 	python -m pip install -e .[tests]
 
+.PHONY: install-purepy
+install-purepy: setup
+	python -m pip install --no-deps --upgrade -e . "pyparsing<3"
+
 .PHONY: install-py2
 install-py2: setup-py2
 	python2 -m pip install -e .[tests]

@@ -214,7 +214,7 @@ def evaluate_tokens(tokens, **kwargs):
 
 class ComputationNode(object):
     """A single node in the computation graph."""
-    __slots__ = ("action", "original", "loc", "tokens") + (("been_called",) if DEVELOP else ())
+    __slots__ = ("action", "original", "loc", "tokens")
     pprinting = False
 
     def __new__(cls, action, original, loc, tokens, ignore_no_tokens=False, ignore_one_token=False, greedy=False, trim_arity=True):
@@ -236,8 +236,6 @@ class ComputationNode(object):
             self.original = original
             self.loc = loc
             self.tokens = tokens
-            if DEVELOP:
-                self.been_called = False
             if greedy:
                 return self.evaluate()
             else:
@@ -253,9 +251,9 @@ class ComputationNode(object):
     def evaluate(self):
         """Get the result of evaluating the computation graph at this node.
         Very performance sensitive."""
-        if DEVELOP:  # avoid the overhead of the call if not develop
-            internal_assert(not self.been_called, "inefficient reevaluation of action " + self.name + " with tokens", self.tokens)
-            self.been_called = True
+        # note that this should never cache, since if a greedy Wrap that doesn't add to the packrat context
+        #  hits the cache, it'll get the same ComputationNode object, but since it's greedy that object needs
+        #  to actually be reevaluated
         evaluated_toks = evaluate_tokens(self.tokens)
         if logger.tracing:  # avoid the overhead of the call if not tracing
             logger.log_trace(self.name, self.original, self.loc, evaluated_toks, self.tokens)

@@ -39,6 +39,7 @@ else:
     except ImportError:
         lru_cache = None
 
+from coconut.root import _get_target_info
 from coconut.constants import (
     fixpath,
     default_encoding,
@@ -265,6 +266,9 @@ def ensure_dir(dirpath):
 # -----------------------------------------------------------------------------------------------------------------------
 
 
+get_target_info = _get_target_info
+
+
 def ver_tuple_to_str(req_ver):
     """Converts a requirement version tuple into a version string."""
     return ".".join(str(x) for x in req_ver)
@@ -285,16 +289,6 @@ def ver_str_to_tuple(ver_str):
 def get_next_version(req_ver, point_to_increment=-1):
     """Get the next version after the given version."""
     return req_ver[:point_to_increment] + (req_ver[point_to_increment] + 1,)
-
-
-def get_target_info(target):
-    """Return target information as a version tuple."""
-    if not target:
-        return ()
-    elif len(target) == 1:
-        return (int(target),)
-    else:
-        return (int(target[0]), int(target[1:]))
 
 
 def get_displayable_target(target):

@@ -90,6 +90,7 @@ The full list of optional dependencies is:
 - `watch`: enables use of the `--watch` flag.
 - `mypy`: enables use of the `--mypy` flag.
 - `backports`: installs libraries that backport newer Python features to older versions, which Coconut will automatically use instead of the standard library if the standard library is not available. Specifically:
+  - Installs [`exceptiongroup`](https://pypi.org/project/exceptiongroup/) to backport [`ExceptionGroup` and `BaseExceptionGroup`](https://docs.python.org/3/library/exceptions.html#ExceptionGroup).
   - Installs [`dataclasses`](https://pypi.org/project/dataclasses/) to backport [`dataclasses`](https://docs.python.org/3/library/dataclasses.html).
   - Installs [`typing`](https://pypi.org/project/typing/) to backport [`typing`](https://docs.python.org/3/library/typing.html) ([`typing_extensions`](https://pypi.org/project/typing-extensions/) is always installed for backporting individual `typing` objects).
   - Installs [`aenum`](https://pypi.org/project/aenum) to backport [`enum`](https://docs.python.org/3/library/enum.html).

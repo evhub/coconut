@@ -26,7 +26,7 @@ import sys as _coconut_sys
 VERSION = "3.0.3"
 VERSION_NAME = None
 # False for release, int >= 1 for develop
-DEVELOP = 8
+DEVELOP = 9
 ALPHA = False  # for pre releases rather than post releases
 
 assert DEVELOP is False or DEVELOP >= 1, "DEVELOP must be False or an int >= 1"
@@ -43,6 +43,16 @@ def _indent(code, by=1, tabsize=4, strip=False, newline=False, initial_newline=F
         (" " * (tabsize * by) if line.strip() else "") + line
         for line in (code.strip() if strip else code).splitlines(True)
     ) + ("\n" if newline else "")
+
+
+def _get_target_info(target):
+    """Return target information as a version tuple."""
+    if not target or target == "universal":
+        return ()
+    elif len(target) == 1:
+        return (int(target),)
+    else:
+        return (int(target[0]), int(target[1:]))
 
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -264,15 +274,24 @@ _py26_extras = '''if _coconut_sys.version_info < (2, 7):
     _coconut_copy_reg.pickle(_coconut_functools.partial, _coconut_reduce_partial)
 '''
 
+_py3_before_py311_extras = '''try:
+    from exceptiongroup import ExceptionGroup, BaseExceptionGroup
+except ImportError:
+    class you_need_to_install_exceptiongroup(object):
+        __slots__ = ()
+    ExceptionGroup = BaseExceptionGroup = you_need_to_install_exceptiongroup()
+'''
+
 
 # whenever new versions are added here, header.py must be updated to use them
 ROOT_HEADER_VERSIONS = (
     "universal",
     "2",
-    "3",
     "27",
+    "3",
     "37",
     "39",
+    "311",
 )
 
 
@@ -284,6 +303,7 @@ def _get_root_header(version="universal"):
 ''' + _indent(_get_root_header("2")) + '''else:
 ''' + _indent(_get_root_header("3"))
 
+    version_info = _get_target_info(version)
     header = ""
 
     if version.startswith("3"):
@@ -293,7 +313,7 @@ def _get_root_header(version="universal"):
         # if a new assignment is added below, a new builtins import should be added alongside it
         header += _base_py2_header
 
-    if version in ("37", "39"):
+    if version_info >= (3, 7):
         header += r'''py_breakpoint = breakpoint
 '''
     elif version == "3":
@@ -311,7 +331,7 @@ def _get_root_header(version="universal"):
         header += r'''if _coconut_sys.version_info < (3, 7):
 ''' + _indent(_below_py37_extras) + r'''elif _coconut_sys.version_info < (3, 9):
 ''' + _indent(_py37_py38_extras)
-    elif version == "37":
+    elif (3, 7) <= version_info < (3, 9):
         header += r'''if _coconut_sys.version_info < (3, 9):
 ''' + _indent(_py37_py38_extras)
     elif version.startswith("2"):
@@ -320,7 +340,11 @@ dict.values = _coconut_OrderedDict.viewvalues
 dict.items = _coconut_OrderedDict.viewitems
 '''
     else:
-        assert version == "39", version
+        assert version_info >= (3, 9), version
+
+    if (3,) <= version_info < (3, 11):
+        header += r'''if _coconut_sys.version_info < (3, 11):
+''' + _indent(_py3_before_py311_extras)
 
     return header
 

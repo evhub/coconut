@@ -934,7 +934,9 @@ _coconut_cached__coconut__ = _coconut_sys.modules.get({_coconut_cached__coconut_
         newline=True,
     ).format(**format_dict)
 
-    if target_info >= (3, 9):
+    if target_info >= (3, 11):
+        header += _get_root_header("311")
+    elif target_info >= (3, 9):
         header += _get_root_header("39")
     if target_info >= (3, 7):
         header += _get_root_header("37")

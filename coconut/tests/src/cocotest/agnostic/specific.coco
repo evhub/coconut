@@ -2,7 +2,7 @@ from io import StringIO
 if TYPE_CHECKING:
     from typing import Any
 
-from .util import mod  # NOQA
+from .util import mod, assert_raises  # NOQA
 
 
 def non_py26_test() -> bool:
@@ -181,6 +181,8 @@ def py37_spec_test() -> bool:
     class HasVarGen[*Ts]  # type: ignore
     assert HasVarGen `issubclass` object
     assert typing.Protocol.__module__ == "typing_extensions"
+    assert_raises((def -> raise ExceptionGroup("derp", [Exception("herp")])), ExceptionGroup)
+    assert_raises((def -> raise BaseExceptionGroup("derp", [BaseException("herp")])), BaseExceptionGroup)
     return True
 
 
