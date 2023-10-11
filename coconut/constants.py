@@ -1001,7 +1001,7 @@ min_versions = {
     ("xonsh", "py38"): (0, 14),
     ("pytest", "py36"): (7,),
     ("async_generator", "py35"): (1, 10),
-    ("exceptiongroup", "py37"): (1,),
+    ("exceptiongroup", "py37;py<311"): (1,),
     ("ipython", "py>=39"): (8, 15),
 
     # pinned reqs: (must be added to pinned_reqs below)
