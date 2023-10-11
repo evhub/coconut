@@ -33,7 +33,7 @@ from coconut.constants import (
     all_reqs,
     min_versions,
     max_versions,
-    pinned_reqs,
+    pinned_min_versions,
     requests_sleep_times,
     embed_on_internal_exc,
 )
@@ -342,7 +342,7 @@ def print_new_versions(strict=False):
             + " = " + ver_tuple_to_str(min_versions[req])
             + " -> " + ", ".join(new_versions + ["(" + v + ")" for v in same_versions])
         )
-        if req in pinned_reqs:
+        if req in pinned_min_versions:
             pinned_updates.append(update_str)
         elif new_versions:
             new_updates.append(update_str)

@@ -108,8 +108,8 @@ class TestConstants(unittest.TestCase):
                 assert is_importable(old_imp), "Failed to import " + old_imp
 
     def test_reqs(self):
-        assert set(constants.pinned_reqs) <= set(constants.min_versions), "found old pinned requirement"
-        assert set(constants.max_versions) <= set(constants.pinned_reqs) | set(("cPyparsing",)), "found unlisted constrained but unpinned requirements"
+        assert not set(constants.unpinned_min_versions) & set(constants.pinned_min_versions), "found pinned and unpinned requirements"
+        assert set(constants.max_versions) <= set(constants.pinned_min_versions) | set(("cPyparsing",)), "found unlisted constrained but unpinned requirements"
         for maxed_ver in constants.max_versions:
             assert isinstance(maxed_ver, tuple) or maxed_ver in ("pyparsing", "cPyparsing"), "maxed versions must be tagged to a specific Python version"
 
