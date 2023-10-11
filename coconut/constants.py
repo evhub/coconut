@@ -988,16 +988,16 @@ min_versions = {
     ("numpy", "py<3;cpy"): (1,),
     ("dataclasses", "py==36"): (0, 8),
     ("aenum", "py<34"): (3, 1, 15),
-    "pydata-sphinx-theme": (0, 13),
+    "pydata-sphinx-theme": (0, 14),
     "myst-parser": (2,),
     "sphinx": (7,),
-    "mypy[python2]": (1, 4),
+    "mypy[python2]": (1, 6),
     ("jupyter-console", "py37"): (6, 6),
     ("typing", "py<35"): (3, 10),
-    ("typing_extensions", "py>=37"): (4, 7),
+    ("typing_extensions", "py>=37"): (4, 8),
     ("ipykernel", "py38"): (6,),
     ("jedi", "py39"): (0, 19),
-    ("pygments", "py>=39"): (2, 15),
+    ("pygments", "py>=39"): (2, 16),
     ("xonsh", "py38"): (0, 14),
     ("pytest", "py36"): (7,),
     ("async_generator", "py35"): (1, 10),
@@ -1049,6 +1049,7 @@ min_versions = {
 
 # should match the reqs with comments above
 pinned_reqs = (
+    ("ipython", "py==38"),
     ("ipython", "py==37"),
     ("xonsh", "py>=36;py<38"),
     ("pandas", "py36"),
