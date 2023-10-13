@@ -1586,7 +1586,7 @@ This is especially true when using [`trio`](https://github.com/python-trio/trio)
 
 Since this pattern can often be quite syntactically cumbersome, Coconut provides the shortcut syntax
 ```
-async with for aclosing(my_generator()) as values:
+async with for value in aclosing(my_generator()):
     ...
 ```
 which compiles to exactly the pattern above.

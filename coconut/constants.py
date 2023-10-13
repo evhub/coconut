@@ -89,7 +89,7 @@ IPY = (
     and sys.version_info[:2] != (3, 7)
 )
 MYPY = (
-    PY37
+    PY38
     and not WINDOWS
     and not PYPY
 )
