@@ -271,30 +271,30 @@ def call(
     _y: _U,
     _z: _V,
 ) -> _W: ...
-@_t.overload
-def call(
-    _func: _t.Callable[_t.Concatenate[_T, _P], _U],
-    _x: _T,
-    *args: _t.Any,
-    **kwargs: _t.Any,
-) -> _U: ...
-@_t.overload
-def call(
-    _func: _t.Callable[_t.Concatenate[_T, _U, _P], _V],
-    _x: _T,
-    _y: _U,
-    *args: _t.Any,
-    **kwargs: _t.Any,
-) -> _V: ...
-@_t.overload
-def call(
-    _func: _t.Callable[_t.Concatenate[_T, _U, _V, _P], _W],
-    _x: _T,
-    _y: _U,
-    _z: _V,
-    *args: _t.Any,
-    **kwargs: _t.Any,
-) -> _W: ...
+# @_t.overload
+# def call(
+#     _func: _t.Callable[_t.Concatenate[_T, _P], _U],
+#     _x: _T,
+#     *args: _t.Any,
+#     **kwargs: _t.Any,
+# ) -> _U: ...
+# @_t.overload
+# def call(
+#     _func: _t.Callable[_t.Concatenate[_T, _U, _P], _V],
+#     _x: _T,
+#     _y: _U,
+#     *args: _t.Any,
+#     **kwargs: _t.Any,
+# ) -> _V: ...
+# @_t.overload
+# def call(
+#     _func: _t.Callable[_t.Concatenate[_T, _U, _V, _P], _W],
+#     _x: _T,
+#     _y: _U,
+#     _z: _V,
+#     *args: _t.Any,
+#     **kwargs: _t.Any,
+# ) -> _W: ...
 @_t.overload
 def call(
     _func: _t.Callable[..., _T],
@@ -439,30 +439,30 @@ def safe_call(
     _y: _U,
     _z: _V,
 ) -> Expected[_W]: ...
-@_t.overload
-def safe_call(
-    _func: _t.Callable[_t.Concatenate[_T, _P], _U],
-    _x: _T,
-    *args: _t.Any,
-    **kwargs: _t.Any,
-) -> Expected[_U]: ...
-@_t.overload
-def safe_call(
-    _func: _t.Callable[_t.Concatenate[_T, _U, _P], _V],
-    _x: _T,
-    _y: _U,
-    *args: _t.Any,
-    **kwargs: _t.Any,
-) -> Expected[_V]: ...
-@_t.overload
-def safe_call(
-    _func: _t.Callable[_t.Concatenate[_T, _U, _V, _P], _W],
-    _x: _T,
-    _y: _U,
-    _z: _V,
-    *args: _t.Any,
-    **kwargs: _t.Any,
-) -> Expected[_W]: ...
+# @_t.overload
+# def safe_call(
+#     _func: _t.Callable[_t.Concatenate[_T, _P], _U],
+#     _x: _T,
+#     *args: _t.Any,
+#     **kwargs: _t.Any,
+# ) -> Expected[_U]: ...
+# @_t.overload
+# def safe_call(
+#     _func: _t.Callable[_t.Concatenate[_T, _U, _P], _V],
+#     _x: _T,
+#     _y: _U,
+#     *args: _t.Any,
+#     **kwargs: _t.Any,
+# ) -> Expected[_V]: ...
+# @_t.overload
+# def safe_call(
+#     _func: _t.Callable[_t.Concatenate[_T, _U, _V, _P], _W],
+#     _x: _T,
+#     _y: _U,
+#     _z: _V,
+#     *args: _t.Any,
+#     **kwargs: _t.Any,
+# ) -> Expected[_W]: ...
 @_t.overload
 def safe_call(
     _func: _t.Callable[..., _T],
@@ -501,27 +501,27 @@ def _coconut_call_or_coefficient(
     _y: _U,
     _z: _V,
 ) -> _W: ...
-@_t.overload
-def _coconut_call_or_coefficient(
-    _func: _t.Callable[_t.Concatenate[_T, _P], _U],
-    _x: _T,
-    *args: _t.Any,
-) -> _U: ...
-@_t.overload
-def _coconut_call_or_coefficient(
-    _func: _t.Callable[_t.Concatenate[_T, _U, _P], _V],
-    _x: _T,
-    _y: _U,
-    *args: _t.Any,
-) -> _V: ...
-@_t.overload
-def _coconut_call_or_coefficient(
-    _func: _t.Callable[_t.Concatenate[_T, _U, _V, _P], _W],
-    _x: _T,
-    _y: _U,
-    _z: _V,
-    *args: _t.Any,
-) -> _W: ...
+# @_t.overload
+# def _coconut_call_or_coefficient(
+#     _func: _t.Callable[_t.Concatenate[_T, _P], _U],
+#     _x: _T,
+#     *args: _t.Any,
+# ) -> _U: ...
+# @_t.overload
+# def _coconut_call_or_coefficient(
+#     _func: _t.Callable[_t.Concatenate[_T, _U, _P], _V],
+#     _x: _T,
+#     _y: _U,
+#     *args: _t.Any,
+# ) -> _V: ...
+# @_t.overload
+# def _coconut_call_or_coefficient(
+#     _func: _t.Callable[_t.Concatenate[_T, _U, _V, _P], _W],
+#     _x: _T,
+#     _y: _U,
+#     _z: _V,
+#     *args: _t.Any,
+# ) -> _W: ...
 @_t.overload
 def _coconut_call_or_coefficient(
     _func: _t.Callable[..., _T],
