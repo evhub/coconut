@@ -961,8 +961,8 @@ all_reqs = {
         "pydata-sphinx-theme",
     ),
     "numpy": (
-        ("numpy", "py34"),
         ("numpy", "py<3;cpy"),
+        ("numpy", "py34;py<39"),
         ("pandas", "py36"),
     ),
     "tests": (
@@ -985,8 +985,7 @@ unpinned_min_versions = {
     "pexpect": (4,),
     ("trollius", "py<3;cpy"): (2, 2),
     "requests": (2, 31),
-    ("numpy", "py34"): (1,),
-    ("numpy", "py<3;cpy"): (1,),
+    ("numpy", "py39"): (1, 26),
     ("dataclasses", "py==36"): (0, 8),
     ("aenum", "py<34"): (3, 1, 15),
     "pydata-sphinx-theme": (0, 14),
@@ -1003,16 +1002,18 @@ unpinned_min_versions = {
     ("pytest", "py36"): (7,),
     ("async_generator", "py35"): (1, 10),
     ("exceptiongroup", "py37;py<311"): (1,),
-    ("ipython", "py>=39"): (8, 15),
+    ("ipython", "py>=39"): (8, 16),
 }
 
 pinned_min_versions = {
-    # don't upgrade these; they breaks on Python 3.8
+    # don't upgrade these; they break on Python 3.9
+    ("numpy", "py34;py<39"): (1, 18),
+    # don't upgrade these; they break on Python 3.8
     ("ipython", "py==38"): (8, 12),
-    # don't upgrade these; they breaks on Python 3.7
+    # don't upgrade these; they break on Python 3.7
     ("ipython", "py==37"): (7, 34),
     ("typing_extensions", "py==37"): (4, 7),
-    # don't upgrade these; they breaks on Python 3.6
+    # don't upgrade these; they break on Python 3.6
     ("xonsh", "py>=36;py<38"): (0, 11),
     ("pandas", "py36"): (1,),
     ("jupyter-client", "py36"): (7, 1, 2),
@@ -1043,6 +1044,7 @@ pinned_min_versions = {
     ("prompt_toolkit", "py<3"): (1,),
     "watchdog": (0, 10),
     "papermill": (1, 2),
+    ("numpy", "py<3;cpy"): (1, 16),
     # don't upgrade this; it breaks with old IPython versions
     ("jedi", "py<39"): (0, 17),
     # Coconut requires pyparsing 2
