@@ -266,7 +266,7 @@ class Command(object):
             if args.site_install and args.site_uninstall:
                 raise CoconutException("cannot --site-install and --site-uninstall simultaneously")
             if args.incremental and not SUPPORTS_INCREMENTAL:
-                raise CoconutException("--incremental mode requires cPyparsing (run '{python} -m pip install --upgrade cPyparsing' to fix)".format(python=sys.executable))
+                raise CoconutException("--incremental mode not supported in current environment (try '{python} -m pip install --upgrade cPyparsing' to fix)".format(python=sys.executable))
             for and_args in getattr(args, "and") or []:
                 if len(and_args) > 2:
                     raise CoconutException(

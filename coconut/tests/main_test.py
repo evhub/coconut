@@ -940,7 +940,7 @@ class TestCompilation(unittest.TestCase):
             def test_jobs_zero(self):
                 run(["--jobs", "0"])
 
-        if not PYPY:
+        if not PYPY and PY38:
             def test_incremental(self):
                 run(["--incremental"])
                 # includes "Error" because exceptions include the whole file

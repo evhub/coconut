@@ -963,6 +963,7 @@ all_reqs = {
     "numpy": (
         ("numpy", "py<3;cpy"),
         ("numpy", "py34;py<39"),
+        ("numpy", "py39"),
         ("pandas", "py36"),
     ),
     "tests": (
