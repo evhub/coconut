@@ -89,8 +89,8 @@ os.environ["PYDEVD_DISABLE_FILE_VALIDATION"] = "1"
 # -----------------------------------------------------------------------------------------------------------------------
 
 
-default_recursion_limit = "7168"
-default_stack_size = "7168"
+default_recursion_limit = "8192"
+default_stack_size = "8192"
 
 jupyter_timeout = 120
 
