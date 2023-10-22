@@ -3841,7 +3841,7 @@ max_so_far = input_data[0]
 for x in input_data:
     if x > max_so_far:
         max_so_far = x
-    running_max.append(x)
+    running_max.append(max_so_far)
 ```
 
 #### `count`
