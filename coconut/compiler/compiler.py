@@ -2355,10 +2355,7 @@ except _coconut.NameError:
 
         # modify function definition to use def_name
         if def_name != func_name:
-            def_stmt_pre_lparen, def_stmt_post_lparen = def_stmt.split("(", 1)
-            def_stmt_def, def_stmt_name = def_stmt_pre_lparen.rsplit(" ", 1)
-            def_stmt_name = def_stmt_name.replace(func_name, def_name)
-            def_stmt = def_stmt_def + " " + def_stmt_name + "(" + def_stmt_post_lparen
+            def_stmt = compile_regex(r"\b" + re.escape(func_name) + r"\b").sub(def_name, def_stmt)
 
         # detect generators
         is_gen = self.detect_is_gen(raw_lines)
@@ -3985,8 +3982,8 @@ __annotations__["{name}"] = {annotation}
         kwargs = ""
         if bound_op is not None:
             self.internal_assert(bound_op_type in ("bound", "constraint"), original, loc, "invalid type_param bound_op", bound_op)
-            # # uncomment this line whenever mypy adds support for infer_variance in TypeVar
-            # #  (and remove the warning about it in the DOCS)
+            # uncomment this line whenever mypy adds support for infer_variance in TypeVar
+            #  (and remove the warning about it in the DOCS)
             # kwargs = ", infer_variance=True"
             if bound_op == "<=":
                 self.strict_err_or_warn(

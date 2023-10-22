@@ -572,8 +572,9 @@ def primary_test() -> bool:
     a = A()
     f = 10
     def a.f(x) = x  # type: ignore
+    def a.a(x) = x  # type: ignore
     assert f == 10
-    assert a.f 1 == 1
+    assert a.f 1 == 1 == a.a 1
     def f(x, y) = (x, y)  # type: ignore
     assert f 1 2 == (1, 2)
     def f(0) = 'a'  # type: ignore

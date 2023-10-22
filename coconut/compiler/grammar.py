@@ -2495,6 +2495,7 @@ class Grammar(object):
         start_marker
         - keyword("def").suppress()
         - unsafe_dotted_name
+        - Optional(brackets).suppress()
         - lparen.suppress() - parameters_tokens - rparen.suppress()
     )
 
