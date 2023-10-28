@@ -1593,21 +1593,73 @@ def all_equal(iterable: _Iterable) -> bool:
 def collectby(
     key_func: _t.Callable[[_T], _U],
     iterable: _t.Iterable[_T],
+    *,
+    map_using: _t.Callable | None = None,
 ) -> _t.DefaultDict[_U, _t.List[_T]]: ...
 @_t.overload
 def collectby(
     key_func: _t.Callable[[_T], _U],
     iterable: _t.Iterable[_T],
+    *,
     reduce_func: _t.Callable[[_T, _T], _V],
+    map_using: _t.Callable | None = None,
+) -> _t.DefaultDict[_U, _V]: ...
+@_t.overload
+def collectby(
+    key_func: _t.Callable[[_T], _U],
+    iterable: _t.Iterable[_T],
+    value_func: _t.Callable[[_T], _W],
+    *,
+    map_using: _t.Callable | None = None,
+) -> _t.DefaultDict[_U, _t.List[_W]]: ...
+@_t.overload
+def collectby(
+    key_func: _t.Callable[[_T], _U],
+    iterable: _t.Iterable[_T],
+    value_func: _t.Callable[[_T], _W],
+    *,
+    reduce_func: _t.Callable[[_W, _W], _V],
+    map_using: _t.Callable | None = None,
 ) -> _t.DefaultDict[_U, _V]:
     """Collect the items in iterable into a dictionary of lists keyed by key_func(item).
 
-    if value_func is passed, collect value_func(item) into each list instead of item.
+    If value_func is passed, collect value_func(item) into each list instead of item.
 
     If reduce_func is passed, instead of collecting the items into lists, reduce over
-    the items of each key with reduce_func, effectively implementing a MapReduce operation.
+    the items for each key with reduce_func, effectively implementing a MapReduce operation.
+
+    If map_using is passed, calculate key_func and value_func by mapping them over
+    the iterable using map_using as map. Useful with process_map/thread_map.
     """
     ...
+
+
+@_t.overload
+def mapreduce(
+    key_value_func: _t.Callable[[_T], _t.Tuple[_U, _W]],
+    iterable: _t.Iterable[_T],
+    *,
+    map_using: _t.Callable | None = None,
+) -> _t.DefaultDict[_U, _t.List[_W]]: ...
+@_t.overload
+def mapreduce(
+    key_value_func: _t.Callable[[_T], _t.Tuple[_U, _W]],
+    iterable: _t.Iterable[_T],
+    *,
+    reduce_func: _t.Callable[[_W, _W], _V],
+    map_using: _t.Callable | None = None,
+) -> _t.DefaultDict[_U, _V]:
+    """Map key_value_func over iterable, then collect the values into a dictionary of lists keyed by the keys.
+
+    If reduce_func is passed, instead of collecting the values into lists, reduce over
+    the values for each key with reduce_func, effectively implementing a MapReduce operation.
+
+    If map_using is passed, calculate key_value_func by mapping them over
+    the iterable using map_using as map. Useful with process_map/thread_map.
+    """
+    ...
+
+_coconut_mapreduce = mapreduce
 
 
 @_t.overload

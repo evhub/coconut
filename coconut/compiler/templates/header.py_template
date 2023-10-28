@@ -845,7 +845,7 @@ class _coconut_parallel_map_func_wrapper(_coconut_baseclass):
     def __reduce__(self):
         return (self.__class__, (self.map_cls, self.func, self.star))
     def __call__(self, *args, **kwargs):
-        self.map_cls.get_pool_stack().append(None)
+        self.map_cls._get_pool_stack().append(None)
         try:
             if self.star:
                 assert _coconut.len(args) == 1, "internal process/thread map error {report_this_text}"
@@ -857,52 +857,65 @@ class _coconut_parallel_map_func_wrapper(_coconut_baseclass):
             _coconut.traceback.print_exc()
             raise
         finally:
-            assert self.map_cls.get_pool_stack().pop() is None, "internal process/thread map error {report_this_text}"
+            assert self.map_cls._get_pool_stack().pop() is None, "internal process/thread map error {report_this_text}"
 class _coconut_base_parallel_map(map):
-    __slots__ = ("result", "chunksize", "strict")
+    __slots__ = ("result", "chunksize", "strict", "stream", "ordered")
     @classmethod
-    def get_pool_stack(cls):
+    def _get_pool_stack(cls):
         return cls.threadlocal_ns.__dict__.setdefault("pool_stack", [None])
     def __new__(cls, function, *iterables, **kwargs):
         self = _coconut.super(_coconut_base_parallel_map, cls).__new__(cls, function, *iterables)
         self.result = None
         self.chunksize = kwargs.pop("chunksize", 1)
         self.strict = kwargs.pop("strict", False)
+        self.stream = kwargs.pop("stream", False)
+        self.ordered = kwargs.pop("ordered", True)
         if kwargs:
             raise _coconut.TypeError(cls.__name__ + "() got unexpected keyword arguments " + _coconut.repr(kwargs))
-        if cls.get_pool_stack()[-1] is not None:
-            return self.get_list()
+        if not self.stream and cls._get_pool_stack()[-1] is not None:
+            return self.to_tuple()
         return self
+    def __reduce__(self):
+        return (self.__class__, (self.func,) + self.iters, {lbrace}"chunksize": self.chunksize, "strict": self.strict, "stream": self.stream, "ordered": self.ordered{rbrace})
     @classmethod
     @_coconut.contextlib.contextmanager
     def multiple_sequential_calls(cls, max_workers=None):
-        """Context manager that causes nested calls to use the same pool.
-        Yields True if this is at the top-level otherwise False."""
-        if cls.get_pool_stack()[-1] is None:
-            cls.get_pool_stack()[-1] = cls.make_pool(max_workers)
+        """Context manager that causes nested calls to use the same pool."""
+        if cls._get_pool_stack()[-1] is None:
+            cls._get_pool_stack()[-1] = cls.make_pool(max_workers)
             try:
-                yield True
+                yield
             finally:
-                cls.get_pool_stack()[-1].terminate()
-                cls.get_pool_stack()[-1] = None
+                cls._get_pool_stack()[-1].terminate()
+                cls._get_pool_stack()[-1] = None
         else:
-            yield False
-    def execute_map_method(self, map_method="imap"):
+            yield
+    def _execute_map(self):
+        map_func = self._get_pool_stack()[-1].imap if self.ordered else self._get_pool_stack()[-1].imap_unordered
         if _coconut.len(self.iters) == 1:
-            return _coconut.getattr(self.get_pool_stack()[-1], map_method)(_coconut_parallel_map_func_wrapper(self.__class__, self.func, False), self.iters[0], self.chunksize)
+            return map_func(_coconut_parallel_map_func_wrapper(self.__class__, self.func, False), self.iters[0], self.chunksize)
         elif self.strict:
-            return _coconut.getattr(self.get_pool_stack()[-1], map_method)(_coconut_parallel_map_func_wrapper(self.__class__, self.func, True), {_coconut_}zip(*self.iters, strict=True), self.chunksize)
+            return map_func(_coconut_parallel_map_func_wrapper(self.__class__, self.func, True), {_coconut_}zip(*self.iters, strict=True), self.chunksize)
         else:
-            return _coconut.getattr(self.get_pool_stack()[-1], map_method)(_coconut_parallel_map_func_wrapper(self.__class__, self.func, True), _coconut.zip(*self.iters), self.chunksize)
-    def get_list(self):
+            return map_func(_coconut_parallel_map_func_wrapper(self.__class__, self.func, True), _coconut.zip(*self.iters), self.chunksize)
+    def to_tuple(self):
+        """Execute the map operation and return the results as a tuple."""
         if self.result is None:
             with self.multiple_sequential_calls():
-                self.result = _coconut.tuple(self.execute_map_method())
+                self.result = _coconut.tuple(self._execute_map())
             self.func = {_coconut_}ident
             self.iters = (self.result,)
         return self.result
+    def to_stream(self):
+        """Stream the map operation, yielding results one at a time."""
+        if self._get_pool_stack()[-1] is None:
+            raise _coconut.RuntimeError("cannot stream outside of " + cls.__name__ + ".multiple_sequential_calls context")
+        return self._execute_map()
     def __iter__(self):
-        return _coconut.iter(self.get_list()){COMMENT.have_to_get_list_so_finishes_before_return_else_cant_manage_context}
+        if self.stream:
+            return self.to_stream()
+        else:
+            return _coconut.iter(self.to_tuple()){COMMENT.have_to_to_tuple_so_finishes_before_return_else_cant_manage_context}
 class process_map(_coconut_base_parallel_map):
     """Multi-process implementation of map. Requires arguments to be pickleable.
 
@@ -1303,7 +1316,8 @@ class groupsof(_coconut_has_iter):
     def __copy__(self):
         return self.__class__(self.group_size, self.get_new_iter())
 class recursive_iterator(_coconut_base_callable):
-    """Decorator that memoizes a recursive function that returns an iterator (e.g. a recursive generator)."""
+    """Decorator that memoizes a generator (or any function that returns an iterator).
+    Particularly useful for recursive generators, which may require recursive_iterator to function properly."""
     __slots__ = ("func", "reit_store", "backup_reit_store")
     def __init__(self, func):
         self.func = func
@@ -1879,27 +1893,41 @@ def all_equal(iterable):
         elif first_item != item:
             return False
     return True
-def collectby(key_func, iterable, value_func=None, reduce_func=None):
+def mapreduce(key_value_func, iterable, **kwargs):
+    """Map key_value_func over iterable, then collect the values into a dictionary of lists keyed by the keys.
+
+    If reduce_func is passed, instead of collecting the values into lists, reduce over
+    the values for each key with reduce_func, effectively implementing a MapReduce operation.
+
+    If map_using is passed, calculate key_value_func by mapping them over
+    the iterable using map_using as map. Useful with process_map/thread_map.
+    """
+    reduce_func = kwargs.pop("reduce_func", None)
+    map_using = kwargs.pop("map_using", _coconut.map)
+    if kwargs:
+        raise _coconut.TypeError("mapreduce()/collectby() got unexpected keyword arguments " + _coconut.repr(kwargs))
+    collection = _coconut.collections.defaultdict(_coconut.list) if reduce_func is None else {empty_dict}
+    for key, val in map_using(key_value_func, iterable):
+        if reduce_func is None:
+            collection[key].append(val)
+        else:
+            old_val = collection.get(key, _coconut_sentinel)
+            if old_val is not _coconut_sentinel:
+                val = reduce_func(old_val, val)
+            collection[key] = val
+    return collection
+def collectby(key_func, iterable, value_func=None, **kwargs):
     """Collect the items in iterable into a dictionary of lists keyed by key_func(item).
 
-    if value_func is passed, collect value_func(item) into each list instead of item.
+    If value_func is passed, collect value_func(item) into each list instead of item.
 
     If reduce_func is passed, instead of collecting the items into lists, reduce over
-    the items of each key with reduce_func, effectively implementing a MapReduce operation.
+    the items for each key with reduce_func, effectively implementing a MapReduce operation.
+
+    If map_using is passed, calculate key_func and value_func by mapping them over
+    the iterable using map_using as map. Useful with process_map/thread_map.
     """
-    collection = _coconut.collections.defaultdict(_coconut.list) if reduce_func is None else {empty_dict}
-    for item in iterable:
-        key = key_func(item)
-        if value_func is not None:
-            item = value_func(item)
-        if reduce_func is None:
-            collection[key].append(item)
-        else:
-            old_item = collection.get(key, _coconut_sentinel)
-            if old_item is not _coconut_sentinel:
-                item = reduce_func(old_item, item)
-            collection[key] = item
-    return collection
+    return {_coconut_}mapreduce(_coconut_lifted(_coconut_comma_op, key_func, {_coconut_}ident if value_func is None else value_func), iterable, **kwargs)
 def _namedtuple_of(**kwargs):
     """Construct an anonymous namedtuple of the given keyword arguments."""
 {namedtuple_of_implementation}
@@ -2106,4 +2134,4 @@ class _coconut_SupportsInv(_coconut.typing.Protocol):
         raise NotImplementedError("Protocol methods cannot be called at runtime ((~) in a typing context is a Protocol)")
 {def_aliases}
 _coconut_self_match_types = {self_match_types}
-_coconut_Expected, _coconut_MatchError, _coconut_cartesian_product, _coconut_count, _coconut_cycle, _coconut_enumerate, _coconut_flatten, _coconut_filter, _coconut_groupsof, _coconut_ident, _coconut_lift, _coconut_map, _coconut_multiset, _coconut_range, _coconut_reiterable, _coconut_reversed, _coconut_scan, _coconut_starmap, _coconut_tee, _coconut_windowsof, _coconut_zip, _coconut_zip_longest, TYPE_CHECKING, reduce, takewhile, dropwhile = Expected, MatchError, cartesian_product, count, cycle, enumerate, flatten, filter, groupsof, ident, lift, map, multiset, range, reiterable, reversed, scan, starmap, tee, windowsof, zip, zip_longest, False, _coconut.functools.reduce, _coconut.itertools.takewhile, _coconut.itertools.dropwhile{COMMENT.anything_added_here_should_be_copied_to_stub_file}
+_coconut_Expected, _coconut_MatchError, _coconut_cartesian_product, _coconut_count, _coconut_cycle, _coconut_enumerate, _coconut_flatten, _coconut_filter, _coconut_groupsof, _coconut_ident, _coconut_lift, _coconut_map, _coconut_mapreduce, _coconut_multiset, _coconut_range, _coconut_reiterable, _coconut_reversed, _coconut_scan, _coconut_starmap, _coconut_tee, _coconut_windowsof, _coconut_zip, _coconut_zip_longest, TYPE_CHECKING, reduce, takewhile, dropwhile = Expected, MatchError, cartesian_product, count, cycle, enumerate, flatten, filter, groupsof, ident, lift, map, mapreduce, multiset, range, reiterable, reversed, scan, starmap, tee, windowsof, zip, zip_longest, False, _coconut.functools.reduce, _coconut.itertools.takewhile, _coconut.itertools.dropwhile{COMMENT.anything_added_here_should_be_copied_to_stub_file}

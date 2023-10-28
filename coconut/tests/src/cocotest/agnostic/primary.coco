@@ -221,7 +221,7 @@ def primary_test() -> bool:
     assert process_map((+), range(5), range(5), chunksize=2) |> list == map((*)$(2), range(5)) |> list == thread_map((+), range(5), range(5), chunksize=2) |> list  # type: ignore
     assert repr(thread_map((-), range(5))).startswith("thread_map(")  # type: ignore
     with thread_map.multiple_sequential_calls(max_workers=4):  # type: ignore
-        assert thread_map((-), range(5)) |> tuple == (0, -1, -2, -3, -4) == thread_map(map$((-)), (range(5),))$[0] |> tuple  # type: ignore
+        assert thread_map((-), range(5), stream=True) |> tuple == (0, -1, -2, -3, -4) == thread_map(map$((-)), (range(5),))$[0] |> tuple  # type: ignore
     assert thread_map(zip, (range(2),), (range(2),)) |> map$(tuple) |> tuple == (((0,0), (1,1)),)  # type: ignore
     assert (range(0, 5), range(5, 10)) |*> map$(+) |> tuple == (5, 7, 9, 11, 13)
     assert thread_map((*)$(2)..(+)$(1), range(5)) |> tuple == (2, 4, 6, 8, 10)
@@ -632,6 +632,11 @@ def primary_test() -> bool:
             assert m2 `isinstance` tuple
             assert m1.result is None
             assert m2 == (1, 2, 3, 4, 5) == tuple(m1)
+            m3 = tuple(map_func((.+1), range(5), stream=True))
+            assert m3 == (1, 2, 3, 4, 5)
+            m4 = set(map_func((.+1), range(5), ordered=False))
+            m5 = set(map_func((.+1), range(5), ordered=False, stream=True))
+            assert m4 == {1, 2, 3, 4, 5} == m5
         assert m1.result == (1, 2, 3, 4, 5) == tuple(m1)
     for it in ((), [], (||)):
         assert_raises(-> it$[0], IndexError)
@@ -945,13 +950,13 @@ def primary_test() -> bool:
     assert 1 `(,)` 2 == (1, 2) == (,) 1 2
     assert (-1+.)(2) == 1
     ==-1 = -1
-    assert collectby((def -> assert False), [], (def (x,y) -> assert False)) == {}
-    assert collectby(ident, range(5)) == {0: [0], 1: [1], 2: [2], 3: [3], 4: [4]}
-    assert collectby(.[1], zip(range(5), reversed(range(5)))) == {0: [(4, 0)], 1: [(3, 1)], 2: [(2, 2)], 3: [(1, 3)], 4: [(0, 4)]}
-    assert collectby(ident, range(5) :: range(5)) == {0: [0, 0], 1: [1, 1], 2: [2, 2], 3: [3, 3], 4: [4, 4]}
-    assert collectby(ident, range(5) :: range(5), reduce_func=(+)) == {0: 0, 1: 2, 2: 4, 3: 6, 4: 8} == collectby(ident, range(5) :: range(5), ident, (+))
+    assert collectby((def -> assert False), [], (def (x,y) -> assert False)) == {} == collectby((def -> assert False), [], (def (x,y) -> assert False), map_using=map)
+    assert collectby(ident, range(5)) == {0: [0], 1: [1], 2: [2], 3: [3], 4: [4]} == collectby(ident, range(5), map_using=map)
+    assert collectby(.[1], zip(range(5), reversed(range(5)))) == {0: [(4, 0)], 1: [(3, 1)], 2: [(2, 2)], 3: [(1, 3)], 4: [(0, 4)]} == collectby(.[1], zip(range(5), reversed(range(5))), map_using=map)
+    assert collectby(ident, range(5) :: range(5)) == {0: [0, 0], 1: [1, 1], 2: [2, 2], 3: [3, 3], 4: [4, 4]} == collectby(ident, range(5) :: range(5), map_using=map)
+    assert collectby(ident, range(5) :: range(5), reduce_func=(+)) == {0: 0, 1: 2, 2: 4, 3: 6, 4: 8} == collectby(ident, range(5) :: range(5), reduce_func=(+), map_using=map)
     def dub(xs) = xs :: xs
-    assert collectby(.[0], dub <| zip(range(5), reversed(range(5))), value_func=.[1], reduce_func=(+)) == {0: 8, 1: 6, 2: 4, 3: 2, 4: 0}
+    assert collectby(.[0], dub <| zip(range(5), reversed(range(5))), value_func=.[1], reduce_func=(+)) == {0: 8, 1: 6, 2: 4, 3: 2, 4: 0} == mapreduce(ident, dub <| zip(range(5), reversed(range(5))), reduce_func=(+))
     assert int(1e9) in range(2**31-1)
     assert (a=1, b=2) == (1, 2) == (a:int=1, b=2)
     assert (a=1, b: int = 2) == (1, 2) == (a: int=1, b: int=2)

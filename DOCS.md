@@ -4042,36 +4042,23 @@ assert "12345" |> windowsof$(3) |> list == [("1", "2", "3"), ("2", "3", "4"), ("
 **Python:**
 _Can't be done without the definition of `windowsof`; see the compiled header for the full definition._
 
-#### `collectby`
+#### `collectby` and `mapreduce`
 
-**collectby**(_key\_func_, _iterable_, _value\_func_=`None`, _reduce\_func_=`None`)
+**collectby**(_key\_func_, _iterable_, _value\_func_=`None`, \*, _reduce\_func_=`None`, _map\_using_=`None`)
 
 `collectby(key_func, iterable)` collects the items in `iterable` into a dictionary of lists keyed by `key_func(item)`.
 
-If `value_func` is passed, `collectby(key_func, iterable, value_func=value_func)` instead collects value_func(item) into each list instead of item.
+If `value_func` is passed, `collectby(key_func, iterable, value_func=value_func)` instead collects `value_func(item)` into each list instead of `item`.
 
-If `reduce_func` is passed, `collectby(key_func, iterable, reduce_func=reduce_func)`, instead of collecting the items into lists, reduces over the items of each key with reduce_func, effectively implementing a MapReduce operation.
+If `reduce_func` is passed, `collectby(key_func, iterable, reduce_func=reduce_func)`, instead of collecting the items into lists, reduces over the items of each key with `reduce_func`, effectively implementing a MapReduce operation.
 
-`collectby` is effectively equivalent to:
-```coconut_python
-from collections import defaultdict
-
-def collectby(key_func, iterable, value_func=ident, reduce_func=None):
-    collection = defaultdict(list) if reduce_func is None else {}
-    for item in iterable:
-        key = key_func(item)
-        value = value_func(item)
-        if reduce_func is None:
-            collection[key].append(value)
-        else:
-            old_value = collection.get(key, sentinel)
-            if old_value is not sentinel:
-                value = reduce_func(old_value, value)
-            collection[key] = value
-    return collection
-```
+If `map_using` is passed, calculate `key_func` and `value_func` by mapping them over the iterable using `map_using` as `map`. Useful with [`process_map`](#process_map)/[`thread_map`](#thread_map). To immediately start calling `reduce_func` as soon as results arrive, pass `map_using=process_map$(stream=True)` (though note that `stream=True` requires the use of `process_map.multiple_sequential_calls`).
 
 `collectby` is similar to [`itertools.groupby`](https://docs.python.org/3/library/itertools.html#itertools.groupby) except that `collectby` aggregates common elements regardless of their order in the input iterable, whereas `groupby` only aggregates common elements that are adjacent in the input iterable.
+
+**mapreduce**(_key\_value\_func_, _iterable_, \*, _reduce\_func_=`None`, _map\_using_=`None`)
+
+`mapreduce(key_value_func, iterable)` functions the same as `collectby`, but allows calculating the keys and values together in one function. _key\_value\_func_ must return a 2-tuple of `(key, value)`.
 
 ##### Example
 
@@ -4123,19 +4110,23 @@ all_equal([1, 1, 2])
 
 #### `process_map`
 
-**process\_map**(_function_, *_iterables_, *, _chunksize_=`1`, _strict_=`False`)
+**process\_map**(_function_, *_iterables_, *, _chunksize_=`1`, _strict_=`False`, _stream_=`False`, _ordered_=`True`)
 
-Coconut provides a `multiprocessing`-based version of `map` under the name `process_map`. `process_map` makes use of multiple processes, and is therefore much faster than `map` for CPU-bound tasks. `process_map` never loads the entire input iterator into memory, though it does consume the entire input iterator as soon as a single output is requested. If any exceptions are raised inside of `process_map`, a traceback will be printed as soon as they are encountered.
+Coconut provides a `multiprocessing`-based version of `map` under the name `process_map`. `process_map` makes use of multiple processes, and is therefore much faster than `map` for CPU-bound tasks. If any exceptions are raised inside of `process_map`, a traceback will be printed as soon as they are encountered. Results will be in the same order as the input unless _ordered_=`False`.
+
+`process_map` never loads the entire input iterator into memory, though by default it does consume the entire input iterator as soon as a single output is requested. Results can be streamed one at a time when iterating by passing _stream_=`True`, however note that _stream_=`True` requires that the resulting iterator only be iterated over inside of a `process_map.multiple_sequential_calls` block (see below).
 
 Because `process_map` uses multiple processes for its execution, it is necessary that all of its arguments be pickleable. Only objects defined at the module level, and not lambdas, objects defined inside of a function, or objects defined inside of the interpreter, are pickleable. Furthermore, on Windows, it is necessary that all calls to `process_map` occur inside of an `if __name__ == "__main__"` guard.
 
 `process_map` supports a `chunksize` argument, which determines how many items are passed to each process at a time. Larger values of _chunksize_ are recommended when dealing with very long iterables. Additionally, in the multi-iterable case, _strict_ can be set to `True` to ensure that all iterables are the same length.
 
+_Deprecated: `parallel_map` is available as a deprecated alias for `process_map`. Note that deprecated features are disabled in `--strict` mode._
+
+**process\_map\.multiple\_sequential\_calls**(_max\_workers_=`None`)
+
 If multiple sequential calls to `process_map` need to be made, it is highly recommended that they be done inside of a `with process_map.multiple_sequential_calls():` block, which will cause the different calls to use the same process pool and result in `process_map` immediately returning a list rather than a `process_map` object. If multiple sequential calls are necessary and the laziness of process_map is required, then the `process_map` objects should be constructed before the `multiple_sequential_calls` block and then only iterated over once inside the block.
 
 `process_map.multiple_sequential_calls` also supports a `max_workers` argument to set the number of processes.
-
-_Deprecated: `parallel_map` is available as a deprecated alias for `process_map`. Note that deprecated features are disabled in `--strict` mode._
 
 ##### Python Docs
 
@@ -4162,7 +4153,7 @@ with Pool() as pool:
 
 #### `thread_map`
 
-**thread\_map**(_function_, *_iterables_, *, _chunksize_=`1`, _strict_=`False`)
+**thread\_map**(_function_, *_iterables_, *, _chunksize_=`1`, _strict_=`False`, _stream_=`False`, _ordered_=`True`)
 
 Coconut provides a `multithreading`-based version of [`process_map`](#process_map) under the name `thread_map`. `thread_map` behaves identically to `process_map` (including support for `thread_map.multiple_sequential_calls`) except that it uses multithreading instead of multiprocessing, and is therefore primarily useful only for IO-bound tasks due to CPython's Global Interpreter Lock.
 

@@ -769,6 +769,7 @@ coconut_specific_builtins = (
     "lift",
     "all_equal",
     "collectby",
+    "mapreduce",
     "multi_enumerate",
     "cartesian_product",
     "multiset",
