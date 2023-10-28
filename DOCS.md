@@ -2316,8 +2316,6 @@ Coconut will perform automatic [tail call](https://en.wikipedia.org/wiki/Tail_ca
 
 Tail call optimization (though not tail recursion elimination) will work even for 1) mutual recursion and 2) pattern-matching functions split across multiple definitions using [`addpattern`](#addpattern).
 
-If you are encountering a `RuntimeError` due to maximum recursion depth, it is highly recommended that you rewrite your function to meet either the criteria above for tail call optimization, or the corresponding criteria for [`recursive_iterator`](#recursive-iterator), either of which should prevent such errors.
-
 ##### Example
 
 **Coconut:**
@@ -2960,6 +2958,8 @@ Coconut provides `functools.lru_cache` as a built-in under the name `memoize` wi
 
 Use of `memoize` requires `functools.lru_cache`, which exists in the Python 3 standard library, but under Python 2 will require `pip install backports.functools_lru_cache` to function. Additionally, if on Python 2 and `backports.functools_lru_cache` is present, Coconut will patch `functools` such that `functools.lru_cache = backports.functools_lru_cache.lru_cache`.
 
+Note that, if the function to be memoized is a generator or otherwise returns an iterator, [`recursive_generator`](#recursive_generator) can also be used to achieve a similar effect, the use of which is required for recursive generators.
+
 ##### Python Docs
 
 @**memoize**(_user\_function_)
@@ -3060,36 +3060,36 @@ class B:
 **Python:**
 _Can't be done without a long decorator definition. The full definition of the decorator in Python can be found in the Coconut header._
 
-#### `recursive_iterator`
+#### `recursive_generator`
 
-**recursive\_iterator**(_func_)
+**recursive\_generator**(_func_)
 
-Coconut provides a `recursive_iterator` decorator that memoizes any stateless, recursive function that returns an iterator. To use `recursive_iterator` on a function, it must meet the following criteria:
+Coconut provides a `recursive_generator` decorator that memoizes and makes [`reiterable`](#reiterable) any generator or other stateless function that returns an iterator. To use `recursive_generator` on a function, it must meet the following criteria:
 
 1. your function either always `return`s an iterator or generates an iterator using `yield`,
 2. when called multiple times with arguments that are equal, your function produces the same iterator (your function is stateless), and
 3. your function gets called (usually calls itself) multiple times with the same arguments.
 
-If you are encountering a `RuntimeError` due to maximum recursion depth, it is highly recommended that you rewrite your function to meet either the criteria above for `recursive_iterator`, or the corresponding criteria for Coconut's [tail call optimization](#tail-call-optimization), either of which should prevent such errors.
-
-Furthermore, `recursive_iterator` also allows the resolution of a [nasty segmentation fault in Python's iterator logic that has never been fixed](http://bugs.python.org/issue14010). Specifically, instead of writing
+Importantly, `recursive_generator` also allows the resolution of a [nasty segmentation fault in Python's iterator logic that has never been fixed](http://bugs.python.org/issue14010). Specifically, instead of writing
 ```coconut
 seq = get_elem() :: seq
 ```
 which will crash due to the aforementioned Python issue, write
 ```coconut
-@recursive_iterator
+@recursive_generator
 def seq() = get_elem() :: seq()
 ```
 which will work just fine.
 
-One pitfall to keep in mind working with `recursive_iterator` is that it shouldn't be used in contexts where the function can potentially be called multiple times with the same iterator object as an input, but with that object not actually corresponding to the same items (e.g. because the first time the object hasn't been iterated over yet and the second time it has been).
+One pitfall to keep in mind working with `recursive_generator` is that it shouldn't be used in contexts where the function can potentially be called multiple times with the same iterator object as an input, but with that object not actually corresponding to the same items (e.g. because the first time the object hasn't been iterated over yet and the second time it has been).
+
+_Deprecated: `recursive_iterator` is available as a deprecated alias for `recursive_generator`. Note that deprecated features are disabled in `--strict` mode._
 
 ##### Example
 
 **Coconut:**
 ```coconut
-@recursive_iterator
+@recursive_generator
 def fib() = (1, 1) :: map((+), fib(), fib()$[1:])
 ```
 

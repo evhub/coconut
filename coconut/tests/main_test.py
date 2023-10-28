@@ -615,6 +615,8 @@ def run(args=[], agnostic_target=None, use_run_arg=False, convert_to_import=Fals
 
             comp_agnostic(agnostic_args, **kwargs)
             comp_sys(args, **kwargs)
+            # do non-strict at the end so we get the non-strict header
+            comp_non_strict(args, **kwargs)
 
             if use_run_arg:
                 _kwargs = kwargs.copy()
@@ -633,9 +635,6 @@ def run(args=[], agnostic_target=None, use_run_arg=False, convert_to_import=Fals
             else:
                 comp_extras(agnostic_args, **kwargs)
                 run_extras(convert_to_import=convert_to_import)  # **kwargs are for comp, not run
-
-            # do non-strict at the end so we get the non-strict header
-            comp_non_strict(args, **kwargs)
 
 
 def comp_all(args=[], agnostic_target=None, **kwargs):

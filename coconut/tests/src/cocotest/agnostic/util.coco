@@ -417,7 +417,7 @@ def partition(items, pivot, lprefix=[], rprefix=[]):
                 return partition(tail, pivot, lprefix, [head]::rprefix)
         match []::_:
             return lprefix, rprefix
-partition_ = recursive_iterator(partition)
+partition_ = recursive_generator(partition)
 
 def myreduce(func, items):
     match [first]::tail1 in items:
@@ -965,21 +965,21 @@ addpattern def `pattern_abs_` (x) = x  # type: ignore
 
 # Recursive iterator
 
-@recursive_iterator
+@recursive_generator
 def fibs() =
     fibs_calls[0] += 1
     (1, 1) :: map((+), fibs(), fibs()$[1:])
 
 fibs_calls = [0]
 
-@recursive_iterator
+@recursive_generator
 def fibs_() = map((+), (1, 1) :: fibs_(), (0, 0) :: fibs_()$[1:])
 
 # use separate name for base func for pickle
 def _loop(it) = it :: loop(it)
-loop = recursive_iterator(_loop)
+loop = recursive_generator(_loop)
 
-@recursive_iterator
+@recursive_generator
 def nest(x) = (|x, nest(x)|)
 
 # Sieve Example
@@ -1294,7 +1294,7 @@ def fib(n if n < 2) = n
 @memoize()  # type: ignore
 addpattern def fib(n) = fib(n-1) + fib(n-2)  # type: ignore
 
-@recursive_iterator
+@recursive_generator
 def Fibs() = (0, 1) :: map((+), Fibs(), Fibs()$[1:])
 
 fib_ = reiterable(Fibs())$[]
@@ -1353,11 +1353,11 @@ class descriptor_test:
     lam = self -> self
     comp = tuplify .. ident
 
-    @recursive_iterator
+    @recursive_generator
     def N(self, i=0) =
         [(self, i)] :: self.N(i+1)
 
-    @recursive_iterator
+    @recursive_generator
     match def N_(self, *, i=0) =
         [(self, i)] :: self.N_(i=i+1)
 

@@ -34,9 +34,9 @@ Information on every Coconut release is chronicled on the [GitHub releases page]
 
 Yes! Coconut compiles the [newest](https://www.python.org/dev/peps/pep-0526/), [fanciest](https://www.python.org/dev/peps/pep-0484/) type annotation syntax into version-independent type comments which can then by checked using Coconut's built-in [MyPy Integration](./DOCS.md#mypy-integration).
 
-### Help! I tried to write a recursive iterator and my Python segfaulted!
+### Help! I tried to write a recursive generator and my Python segfaulted!
 
-No problem—just use Coconut's [`recursive_iterator`](./DOCS.md#recursive-iterator) decorator and you should be fine. This is a [known Python issue](http://bugs.python.org/issue14010) but `recursive_iterator` will fix it for you.
+No problem—just use Coconut's [`recursive_generator`](./DOCS.md#recursive_generator) decorator and you should be fine. This is a [known Python issue](http://bugs.python.org/issue14010) but `recursive_generator` will fix it for you.
 
 ### How do I split an expression across multiple lines in Coconut?
 

@@ -534,9 +534,10 @@ def _coconut_call_or_coefficient(
 ) -> _T: ...
 
 
-def recursive_iterator(func: _T_iter_func) -> _T_iter_func:
+def recursive_generator(func: _T_iter_func) -> _T_iter_func:
     """Decorator that memoizes a recursive function that returns an iterator (e.g. a recursive generator)."""
     return func
+recursive_iterator = recursive_generator
 
 
 # if sys.version_info >= (3, 12):
@@ -590,7 +591,7 @@ def addpattern(
     *add_funcs: _Callable,
     allow_any_func: bool=False,
 ) -> _t.Callable[..., _t.Any]:
-    """Decorator to add a new case to a pattern-matching function (where the new case is checked last).
+    """Decorator to add new cases to a pattern-matching function (where the new case is checked last).
 
     Pass allow_any_func=True to allow any object as the base_func rather than just pattern-matching functions.
     If add_funcs are passed, addpattern(base_func, add_func) is equivalent to addpattern(base_func)(add_func).

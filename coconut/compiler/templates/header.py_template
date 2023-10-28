@@ -13,7 +13,7 @@ def _coconut_super(type=None, object_or_type=None):
         try:
             cls = frame.f_locals["__class__"]
         except _coconut.AttributeError:
-            raise _coconut.RuntimeError("super(): __class__ cell not found")
+            raise _coconut.RuntimeError("super(): __class__ cell not found"){from_None}
         self = frame.f_locals[frame.f_code.co_varnames[0]]
         return _coconut_py_super(cls, self)
     return _coconut_py_super(type, object_or_type)
@@ -1315,39 +1315,29 @@ class groupsof(_coconut_has_iter):
         return (self.__class__, (self.group_size, self.iter))
     def __copy__(self):
         return self.__class__(self.group_size, self.get_new_iter())
-class recursive_iterator(_coconut_base_callable):
+class recursive_generator(_coconut_base_callable):
     """Decorator that memoizes a generator (or any function that returns an iterator).
-    Particularly useful for recursive generators, which may require recursive_iterator to function properly."""
-    __slots__ = ("func", "reit_store", "backup_reit_store")
+    Particularly useful for recursive generators, which may require recursive_generator to function properly."""
+    __slots__ = ("func", "reit_store")
     def __init__(self, func):
         self.func = func
         self.reit_store = {empty_dict}
-        self.backup_reit_store = []
     def __call__(self, *args, **kwargs):
-        key = (args, _coconut.frozenset(kwargs.items()))
-        use_backup = False
+        key = (0, args, _coconut.frozenset(kwargs.items()))
         try:
             _coconut.hash(key)
-        except _coconut.Exception:
+        except _coconut.TypeError:
             try:
-                key = _coconut.pickle.dumps(key, -1)
+                key = (1, _coconut.pickle.dumps(key, -1))
             except _coconut.Exception:
-                use_backup = True
-        if use_backup:
-            for k, v in self.backup_reit_store:
-                if k == key:
-                    return reit
+                raise _coconut.TypeError("recursive_generator() requires function arguments to be hashable or pickleable"){from_None}
+        reit = self.reit_store.get(key)
+        if reit is None:
             reit = {_coconut_}reiterable(self.func(*args, **kwargs))
-            self.backup_reit_store.append([key, reit])
-            return reit
-        else:
-            reit = self.reit_store.get(key)
-            if reit is None:
-                reit = {_coconut_}reiterable(self.func(*args, **kwargs))
-                self.reit_store[key] = reit
-            return reit
+            self.reit_store[key] = reit
+        return reit
     def __repr__(self):
-        return "recursive_iterator(%r)" % (self.func,)
+        return "recursive_generator(%r)" % (self.func,)
     def __reduce__(self):
         return (self.__class__, (self.func,))
 class _coconut_FunctionMatchErrorContext(_coconut_baseclass):
@@ -1416,7 +1406,7 @@ def _coconut_mark_as_match(base_func):{COMMENT._coconut_is_match_is_used_above_a
     base_func._coconut_is_match = True
     return base_func
 def addpattern(base_func, *add_funcs, **kwargs):
-    """Decorator to add a new case to a pattern-matching function (where the new case is checked last).
+    """Decorator to add new cases to a pattern-matching function (where the new case is checked last).
 
     Pass allow_any_func=True to allow any object as the base_func rather than just pattern-matching functions.
     If add_funcs are passed, addpattern(base_func, add_func) is equivalent to addpattern(base_func)(add_func).
@@ -2010,7 +2000,7 @@ class _coconut_SupportsAdd(_coconut.typing.Protocol):
                 raise NotImplementedError(...)
     """
     def __add__(self, other):
-        raise NotImplementedError("Protocol methods cannot be called at runtime ((+) in a typing context is a Protocol)")
+        raise _coconut.NotImplementedError("Protocol methods cannot be called at runtime ((+) in a typing context is a Protocol)")
 class _coconut_SupportsMinus(_coconut.typing.Protocol):
     """Coconut (-) Protocol. Equivalent to:
 
@@ -2021,9 +2011,9 @@ class _coconut_SupportsMinus(_coconut.typing.Protocol):
                 raise NotImplementedError
     """
     def __sub__(self, other):
-        raise NotImplementedError("Protocol methods cannot be called at runtime ((-) in a typing context is a Protocol)")
+        raise _coconut.NotImplementedError("Protocol methods cannot be called at runtime ((-) in a typing context is a Protocol)")
     def __neg__(self):
-        raise NotImplementedError("Protocol methods cannot be called at runtime ((-) in a typing context is a Protocol)")
+        raise _coconut.NotImplementedError("Protocol methods cannot be called at runtime ((-) in a typing context is a Protocol)")
 class _coconut_SupportsMul(_coconut.typing.Protocol):
     """Coconut (*) Protocol. Equivalent to:
 
@@ -2032,7 +2022,7 @@ class _coconut_SupportsMul(_coconut.typing.Protocol):
                 raise NotImplementedError(...)
     """
     def __mul__(self, other):
-        raise NotImplementedError("Protocol methods cannot be called at runtime ((*) in a typing context is a Protocol)")
+        raise _coconut.NotImplementedError("Protocol methods cannot be called at runtime ((*) in a typing context is a Protocol)")
 class _coconut_SupportsPow(_coconut.typing.Protocol):
     """Coconut (**) Protocol. Equivalent to:
 
@@ -2041,7 +2031,7 @@ class _coconut_SupportsPow(_coconut.typing.Protocol):
                 raise NotImplementedError(...)
     """
     def __pow__(self, other):
-        raise NotImplementedError("Protocol methods cannot be called at runtime ((**) in a typing context is a Protocol)")
+        raise _coconut.NotImplementedError("Protocol methods cannot be called at runtime ((**) in a typing context is a Protocol)")
 class _coconut_SupportsTruediv(_coconut.typing.Protocol):
     """Coconut (/) Protocol. Equivalent to:
 
@@ -2050,7 +2040,7 @@ class _coconut_SupportsTruediv(_coconut.typing.Protocol):
                 raise NotImplementedError(...)
     """
     def __truediv__(self, other):
-        raise NotImplementedError("Protocol methods cannot be called at runtime ((/) in a typing context is a Protocol)")
+        raise _coconut.NotImplementedError("Protocol methods cannot be called at runtime ((/) in a typing context is a Protocol)")
 class _coconut_SupportsFloordiv(_coconut.typing.Protocol):
     """Coconut (//) Protocol. Equivalent to:
 
@@ -2059,7 +2049,7 @@ class _coconut_SupportsFloordiv(_coconut.typing.Protocol):
                 raise NotImplementedError(...)
     """
     def __floordiv__(self, other):
-        raise NotImplementedError("Protocol methods cannot be called at runtime ((//) in a typing context is a Protocol)")
+        raise _coconut.NotImplementedError("Protocol methods cannot be called at runtime ((//) in a typing context is a Protocol)")
 class _coconut_SupportsMod(_coconut.typing.Protocol):
     """Coconut (%) Protocol. Equivalent to:
 
@@ -2068,7 +2058,7 @@ class _coconut_SupportsMod(_coconut.typing.Protocol):
                 raise NotImplementedError(...)
     """
     def __mod__(self, other):
-        raise NotImplementedError("Protocol methods cannot be called at runtime ((%) in a typing context is a Protocol)")
+        raise _coconut.NotImplementedError("Protocol methods cannot be called at runtime ((%) in a typing context is a Protocol)")
 class _coconut_SupportsAnd(_coconut.typing.Protocol):
     """Coconut (&) Protocol. Equivalent to:
 
@@ -2077,7 +2067,7 @@ class _coconut_SupportsAnd(_coconut.typing.Protocol):
                 raise NotImplementedError(...)
     """
     def __and__(self, other):
-        raise NotImplementedError("Protocol methods cannot be called at runtime ((&) in a typing context is a Protocol)")
+        raise _coconut.NotImplementedError("Protocol methods cannot be called at runtime ((&) in a typing context is a Protocol)")
 class _coconut_SupportsXor(_coconut.typing.Protocol):
     """Coconut (^) Protocol. Equivalent to:
 
@@ -2086,7 +2076,7 @@ class _coconut_SupportsXor(_coconut.typing.Protocol):
                 raise NotImplementedError(...)
     """
     def __xor__(self, other):
-        raise NotImplementedError("Protocol methods cannot be called at runtime ((^) in a typing context is a Protocol)")
+        raise _coconut.NotImplementedError("Protocol methods cannot be called at runtime ((^) in a typing context is a Protocol)")
 class _coconut_SupportsOr(_coconut.typing.Protocol):
     """Coconut (|) Protocol. Equivalent to:
 
@@ -2095,7 +2085,7 @@ class _coconut_SupportsOr(_coconut.typing.Protocol):
                 raise NotImplementedError(...)
     """
     def __or__(self, other):
-        raise NotImplementedError("Protocol methods cannot be called at runtime ((|) in a typing context is a Protocol)")
+        raise _coconut.NotImplementedError("Protocol methods cannot be called at runtime ((|) in a typing context is a Protocol)")
 class _coconut_SupportsLshift(_coconut.typing.Protocol):
     """Coconut (<<) Protocol. Equivalent to:
 
@@ -2104,7 +2094,7 @@ class _coconut_SupportsLshift(_coconut.typing.Protocol):
                 raise NotImplementedError(...)
     """
     def __lshift__(self, other):
-        raise NotImplementedError("Protocol methods cannot be called at runtime ((<<) in a typing context is a Protocol)")
+        raise _coconut.NotImplementedError("Protocol methods cannot be called at runtime ((<<) in a typing context is a Protocol)")
 class _coconut_SupportsRshift(_coconut.typing.Protocol):
     """Coconut (>>) Protocol. Equivalent to:
 
@@ -2113,7 +2103,7 @@ class _coconut_SupportsRshift(_coconut.typing.Protocol):
                 raise NotImplementedError(...)
     """
     def __rshift__(self, other):
-        raise NotImplementedError("Protocol methods cannot be called at runtime ((>>) in a typing context is a Protocol)")
+        raise _coconut.NotImplementedError("Protocol methods cannot be called at runtime ((>>) in a typing context is a Protocol)")
 class _coconut_SupportsMatmul(_coconut.typing.Protocol):
     """Coconut (@) Protocol. Equivalent to:
 
@@ -2122,7 +2112,7 @@ class _coconut_SupportsMatmul(_coconut.typing.Protocol):
                 raise NotImplementedError(...)
     """
     def __matmul__(self, other):
-        raise NotImplementedError("Protocol methods cannot be called at runtime ((@) in a typing context is a Protocol)")
+        raise _coconut.NotImplementedError("Protocol methods cannot be called at runtime ((@) in a typing context is a Protocol)")
 class _coconut_SupportsInv(_coconut.typing.Protocol):
     """Coconut (~) Protocol. Equivalent to:
 
@@ -2131,7 +2121,7 @@ class _coconut_SupportsInv(_coconut.typing.Protocol):
                 raise NotImplementedError(...)
     """
     def __invert__(self):
-        raise NotImplementedError("Protocol methods cannot be called at runtime ((~) in a typing context is a Protocol)")
+        raise _coconut.NotImplementedError("Protocol methods cannot be called at runtime ((~) in a typing context is a Protocol)")
 {def_aliases}
 _coconut_self_match_types = {self_match_types}
 _coconut_Expected, _coconut_MatchError, _coconut_cartesian_product, _coconut_count, _coconut_cycle, _coconut_enumerate, _coconut_flatten, _coconut_filter, _coconut_groupsof, _coconut_ident, _coconut_lift, _coconut_map, _coconut_mapreduce, _coconut_multiset, _coconut_range, _coconut_reiterable, _coconut_reversed, _coconut_scan, _coconut_starmap, _coconut_tee, _coconut_windowsof, _coconut_zip, _coconut_zip_longest, TYPE_CHECKING, reduce, takewhile, dropwhile = Expected, MatchError, cartesian_product, count, cycle, enumerate, flatten, filter, groupsof, ident, lift, map, mapreduce, multiset, range, reiterable, reversed, scan, starmap, tee, windowsof, zip, zip_longest, False, _coconut.functools.reduce, _coconut.itertools.takewhile, _coconut.itertools.dropwhile{COMMENT.anything_added_here_should_be_copied_to_stub_file}

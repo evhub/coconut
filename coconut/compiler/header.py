@@ -230,6 +230,7 @@ def process_header_args(which, use_hash, target, no_tco, strict, no_wrap):
         comma_object="" if target.startswith("3") else ", object",
         comma_slash=", /" if target_info >= (3, 8) else "",
         report_this_text=report_this_text,
+        from_None=" from None" if target.startswith("3") else "",
         numpy_modules=tuple_str_of(numpy_modules, add_quotes=True),
         pandas_numpy_modules=tuple_str_of(pandas_numpy_modules, add_quotes=True),
         jax_numpy_modules=tuple_str_of(jax_numpy_modules, add_quotes=True),
@@ -310,7 +311,7 @@ def prepattern(base_func, **kwargs):
 def datamaker(data_type):
     """DEPRECATED: use makedata instead."""
     return _coconut.functools.partial(makedata, data_type)
-of, parallel_map, concurrent_map = call, process_map, thread_map
+of, parallel_map, concurrent_map, recursive_iterator = call, process_map, thread_map, recursive_generator
             '''
             if not strict else
             r'''
@@ -329,6 +330,9 @@ def parallel_map(*args, **kwargs):
 def concurrent_map(*args, **kwargs):
     """Deprecated Coconut built-in 'concurrent_map' disabled by --strict compilation; use 'thread_map' instead."""
     raise _coconut.NameError("deprecated Coconut built-in 'concurrent_map' disabled by --strict compilation; use 'thread_map' instead")
+def recursive_iterator(*args, **kwargs):
+    """Deprecated Coconut built-in 'recursive_iterator' disabled by --strict compilation; use 'recursive_generator' instead."""
+    raise _coconut.NameError("deprecated Coconut built-in 'recursive_iterator' disabled by --strict compilation; use 'recursive_generator' instead")
             '''
         ),
         return_method_of_self=pycondition(
