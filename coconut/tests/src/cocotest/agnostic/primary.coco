@@ -212,19 +212,19 @@ def primary_test() -> bool:
     assert map((-), range(5)).iters[0] |> tuple == range(5) |> tuple == zip(range(5), range(6)).iters[0] |> tuple  # type: ignore
     assert repr(zip((0,1), (1,2))) == "zip((0, 1), (1, 2))"
     assert repr(map((-), range(5))).startswith("map(")  # type: ignore
-    assert repr(parallel_map((-), range(5))).startswith("parallel_map(")  # type: ignore
-    assert parallel_map((-), range(5)) |> tuple == (0, -1, -2, -3, -4) == parallel_map(map$((-)), (range(5),))$[0] |> tuple  # type: ignore
-    assert parallel_map(zip, (range(2),), (range(2),)) |> map$(tuple) |> tuple == (((0,0), (1,1)),)  # type: ignore
-    assert parallel_map(zip_longest$(fillvalue=10), (range(1),), (range(2),)) |> map$(tuple) |> tuple == (((0,0), (10,1)),)  # type: ignore
+    assert repr(process_map((-), range(5))).startswith("process_map(")  # type: ignore
+    assert process_map((-), range(5)) |> tuple == (0, -1, -2, -3, -4) == process_map(map$((-)), (range(5),))$[0] |> tuple  # type: ignore
+    assert process_map(zip, (range(2),), (range(2),)) |> map$(tuple) |> tuple == (((0,0), (1,1)),)  # type: ignore
+    assert process_map(zip_longest$(fillvalue=10), (range(1),), (range(2),)) |> map$(tuple) |> tuple == (((0,0), (10,1)),)  # type: ignore
     assert (range(0, 5), range(5, 10)) |*> map$(+) |> tuple == (5, 7, 9, 11, 13)
-    assert parallel_map((*)$(2)..(+)$(1), range(5)) |> tuple == (2, 4, 6, 8, 10)
-    assert parallel_map((+), range(5), range(5), chunksize=2) |> list == map((*)$(2), range(5)) |> list == concurrent_map((+), range(5), range(5), chunksize=2) |> list  # type: ignore
-    assert repr(concurrent_map((-), range(5))).startswith("concurrent_map(")  # type: ignore
-    with concurrent_map.multiple_sequential_calls(max_workers=4):  # type: ignore
-        assert concurrent_map((-), range(5)) |> tuple == (0, -1, -2, -3, -4) == concurrent_map(map$((-)), (range(5),))$[0] |> tuple  # type: ignore
-    assert concurrent_map(zip, (range(2),), (range(2),)) |> map$(tuple) |> tuple == (((0,0), (1,1)),)  # type: ignore
+    assert process_map((*)$(2)..(+)$(1), range(5)) |> tuple == (2, 4, 6, 8, 10)
+    assert process_map((+), range(5), range(5), chunksize=2) |> list == map((*)$(2), range(5)) |> list == thread_map((+), range(5), range(5), chunksize=2) |> list  # type: ignore
+    assert repr(thread_map((-), range(5))).startswith("thread_map(")  # type: ignore
+    with thread_map.multiple_sequential_calls(max_workers=4):  # type: ignore
+        assert thread_map((-), range(5)) |> tuple == (0, -1, -2, -3, -4) == thread_map(map$((-)), (range(5),))$[0] |> tuple  # type: ignore
+    assert thread_map(zip, (range(2),), (range(2),)) |> map$(tuple) |> tuple == (((0,0), (1,1)),)  # type: ignore
     assert (range(0, 5), range(5, 10)) |*> map$(+) |> tuple == (5, 7, 9, 11, 13)
-    assert concurrent_map((*)$(2)..(+)$(1), range(5)) |> tuple == (2, 4, 6, 8, 10)
+    assert thread_map((*)$(2)..(+)$(1), range(5)) |> tuple == (2, 4, 6, 8, 10)
     assert 0 in range(1)
     assert range(1).count(0) == 1
     assert 2 in range(5)
@@ -320,7 +320,7 @@ def primary_test() -> bool:
     assert pow$(?, 2)(3) == 9
     assert [] |> reduce$((+), ?, ()) == ()
     assert pow$(?, 2) |> repr == "<built-in function pow>$(?, 2)"
-    assert parallel_map(pow$(?, 2), range(10)) |> tuple == (0, 1, 4, 9, 16, 25, 36, 49, 64, 81)
+    assert process_map(pow$(?, 2), range(10)) |> tuple == (0, 1, 4, 9, 16, 25, 36, 49, 64, 81)
     assert pow$(?, 2).args == (None, 2)
     assert range(20) |> filter$((x) -> x < 5) |> reversed |> tuple == (4,3,2,1,0) == (0,1,2,3,4,5,6,7,8,9) |> filter$((x) -> x < 5) |> reversed |> tuple  # type: ignore
     assert (range(10) |> map$((x) -> x) |> reversed) `isinstance` map  # type: ignore
@@ -624,15 +624,15 @@ def primary_test() -> bool:
         it3 = iter(it2)
         item3 = next(it3)
         assert item3 != item2
-    for map_func in (parallel_map, concurrent_map):
+    for map_func in (process_map, thread_map):
         m1 = map_func((+)$(1), range(5))
         assert m1 `isinstance` map_func
         with map_func.multiple_sequential_calls():  # type: ignore
             m2 = map_func((+)$(1), range(5))
-            assert m2 `isinstance` list
+            assert m2 `isinstance` tuple
             assert m1.result is None
-            assert m2 == [1, 2, 3, 4, 5] == list(m1)
-        assert m1.result == [1, 2, 3, 4, 5] == list(m1)
+            assert m2 == (1, 2, 3, 4, 5) == tuple(m1)
+        assert m1.result == (1, 2, 3, 4, 5) == tuple(m1)
     for it in ((), [], (||)):
         assert_raises(-> it$[0], IndexError)
         assert_raises(-> it$[-1], IndexError)
@@ -1145,7 +1145,7 @@ def primary_test() -> bool:
                 def __call__(self) = super().__call__()
             HasSuper
     assert HasSuper5.HasHasSuper.HasSuper()() == 10 == HasSuper6().get_HasSuper()()()
-    assert parallel_map((.+(10,)), [
+    assert process_map((.+(10,)), [
         (a=1, b=2),
         (x=3, y=4),
     ]) |> list == [(1, 2, 10), (3, 4, 10)]
@@ -1409,8 +1409,8 @@ def primary_test() -> bool:
     assert flatten([[[1,2]], [[3], [4]]], 2) |> list == [1, 2, 3, 4]
     assert flatten([[[1,2]], [[3], [4]]], 2) |> reversed |> list == [4, 3, 2, 1]
     assert_raises(-> map((+), range(3), range(4), strict=True) |> list, ValueError)
-    assert map((+), range(3), range(4)$[:-1], strict=True) |> list == [0, 2, 4] == parallel_map((+), range(3), range(4)$[:-1], strict=True) |> list
-    assert range(3) |> map$((.+1), strict=True) |> list == [1, 2, 3] == range(3) |> parallel_map$((.+1), strict=True) |> list
+    assert map((+), range(3), range(4)$[:-1], strict=True) |> list == [0, 2, 4] == process_map((+), range(3), range(4)$[:-1], strict=True) |> list
+    assert range(3) |> map$((.+1), strict=True) |> list == [1, 2, 3] == range(3) |> process_map$((.+1), strict=True) |> list
     assert cartesian_product((1, 2), (3, 4), repeat=0) |> list == [()]
     assert (a=1, b=2)[1] == 2
     obj = object()
@@ -1418,9 +1418,9 @@ def primary_test() -> bool:
     hardref = map((.+1), [1,2,3])
     assert weakref.ref(hardref)() |> list == [2, 3, 4]
     my_match_err = MatchError("my match error", 123)
-    assert parallel_map(ident, [my_match_err]) |> list |> str == str([my_match_err])
+    assert process_map(ident, [my_match_err]) |> list |> str == str([my_match_err])
     # repeat the same thing again now that my_match_err.str has been called
-    assert parallel_map(ident, [my_match_err]) |> list |> str == str([my_match_err])
+    assert process_map(ident, [my_match_err]) |> list |> str == str([my_match_err])
     match data tuple(1, 2) in (1, 2, 3):
         assert False
     data TestDefaultMatching(x="x default", y="y default")
@@ -1659,4 +1659,29 @@ def primary_test() -> bool:
         g = f$(?, 1)
     has_partial = HasPartial()
     assert has_partial.g() == (has_partial, 1)
+    xs = zip([1, 2], [3, 4])
+    py_xs = py_zip([1, 2], [3, 4])
+    assert list(xs) == [(1, 3), (2, 4)] == list(xs)
+    assert list(py_xs) == [(1, 3), (2, 4)]
+    assert list(py_xs) == []
+    xs = map((+), [1, 2], [3, 4])
+    py_xs = py_map((+), [1, 2], [3, 4])
+    assert list(xs) == [4, 6] == list(xs)
+    assert list(py_xs) == [4, 6]
+    assert list(py_xs) == []
+    for xs in [
+        zip((x for x in range(5)), (x for x in range(10))),
+        py_zip((x for x in range(5)), (x for x in range(10))),
+        map((,), (x for x in range(5)), (x for x in range(10))),
+        py_map((,), (x for x in range(5)), (x for x in range(10))),
+    ]:
+        assert list(xs) == list(zip(range(5), range(5)))
+        assert list(xs) == []
+    xs = map((.+1), range(5))
+    py_xs = py_map((.+1), range(5))
+    assert list(xs) == list(range(1, 6)) == list(xs)
+    assert list(py_xs) == list(range(1, 6))
+    assert list(py_xs) == []
+    assert count()[:10:2] == range(0, 10, 2)
+    assert count()[10:2] == range(10, 2)
     return True

@@ -836,7 +836,7 @@ class map(_coconut_baseclass, _coconut.map):
         return _coconut.iter(_coconut.map(self.func, *self.iters))
     def __fmap__(self, func):
         return self.__class__(_coconut_forward_compose(self.func, func), *self.iters)
-class _coconut_parallel_concurrent_map_func_wrapper(_coconut_baseclass):
+class _coconut_parallel_map_func_wrapper(_coconut_baseclass):
     __slots__ = ("map_cls", "func", "star")
     def __init__(self, map_cls, func, star):
         self.map_cls = map_cls
@@ -848,7 +848,7 @@ class _coconut_parallel_concurrent_map_func_wrapper(_coconut_baseclass):
         self.map_cls.get_pool_stack().append(None)
         try:
             if self.star:
-                assert _coconut.len(args) == 1, "internal parallel/concurrent map error {report_this_text}"
+                assert _coconut.len(args) == 1, "internal process/thread map error {report_this_text}"
                 return self.func(*args[0], **kwargs)
             else:
                 return self.func(*args, **kwargs)
@@ -857,14 +857,14 @@ class _coconut_parallel_concurrent_map_func_wrapper(_coconut_baseclass):
             _coconut.traceback.print_exc()
             raise
         finally:
-            assert self.map_cls.get_pool_stack().pop() is None, "internal parallel/concurrent map error {report_this_text}"
-class _coconut_base_parallel_concurrent_map(map):
+            assert self.map_cls.get_pool_stack().pop() is None, "internal process/thread map error {report_this_text}"
+class _coconut_base_parallel_map(map):
     __slots__ = ("result", "chunksize", "strict")
     @classmethod
     def get_pool_stack(cls):
         return cls.threadlocal_ns.__dict__.setdefault("pool_stack", [None])
     def __new__(cls, function, *iterables, **kwargs):
-        self = _coconut.super(_coconut_base_parallel_concurrent_map, cls).__new__(cls, function, *iterables)
+        self = _coconut.super(_coconut_base_parallel_map, cls).__new__(cls, function, *iterables)
         self.result = None
         self.chunksize = kwargs.pop("chunksize", 1)
         self.strict = kwargs.pop("strict", False)
@@ -876,35 +876,38 @@ class _coconut_base_parallel_concurrent_map(map):
     @classmethod
     @_coconut.contextlib.contextmanager
     def multiple_sequential_calls(cls, max_workers=None):
-        """Context manager that causes nested calls to use the same pool."""
+        """Context manager that causes nested calls to use the same pool.
+        Yields True if this is at the top-level otherwise False."""
         if cls.get_pool_stack()[-1] is None:
             cls.get_pool_stack()[-1] = cls.make_pool(max_workers)
             try:
-                yield
+                yield True
             finally:
                 cls.get_pool_stack()[-1].terminate()
                 cls.get_pool_stack()[-1] = None
         else:
-            yield
+            yield False
+    def execute_map_method(self, map_method="imap"):
+        if _coconut.len(self.iters) == 1:
+            return _coconut.getattr(self.get_pool_stack()[-1], map_method)(_coconut_parallel_map_func_wrapper(self.__class__, self.func, False), self.iters[0], self.chunksize)
+        elif self.strict:
+            return _coconut.getattr(self.get_pool_stack()[-1], map_method)(_coconut_parallel_map_func_wrapper(self.__class__, self.func, True), {_coconut_}zip(*self.iters, strict=True), self.chunksize)
+        else:
+            return _coconut.getattr(self.get_pool_stack()[-1], map_method)(_coconut_parallel_map_func_wrapper(self.__class__, self.func, True), _coconut.zip(*self.iters), self.chunksize)
     def get_list(self):
         if self.result is None:
             with self.multiple_sequential_calls():
-                if _coconut.len(self.iters) == 1:
-                    self.result = _coconut.list(self.get_pool_stack()[-1].imap(_coconut_parallel_concurrent_map_func_wrapper(self.__class__, self.func, False), self.iters[0], self.chunksize))
-                elif self.strict:
-                    self.result = _coconut.list(self.get_pool_stack()[-1].imap(_coconut_parallel_concurrent_map_func_wrapper(self.__class__, self.func, True), {_coconut_}zip(*self.iters, strict=True), self.chunksize))
-                else:
-                    self.result = _coconut.list(self.get_pool_stack()[-1].imap(_coconut_parallel_concurrent_map_func_wrapper(self.__class__, self.func, True), _coconut.zip(*self.iters), self.chunksize))
+                self.result = _coconut.tuple(self.execute_map_method())
             self.func = {_coconut_}ident
             self.iters = (self.result,)
         return self.result
     def __iter__(self):
-        return _coconut.iter(self.get_list())
-class parallel_map(_coconut_base_parallel_concurrent_map):
+        return _coconut.iter(self.get_list()){COMMENT.have_to_get_list_so_finishes_before_return_else_cant_manage_context}
+class process_map(_coconut_base_parallel_map):
     """Multi-process implementation of map. Requires arguments to be pickleable.
 
     For multiple sequential calls, use:
-        with parallel_map.multiple_sequential_calls():
+        with process_map.multiple_sequential_calls():
             ...
     """
     __slots__ = ()
@@ -912,11 +915,11 @@ class parallel_map(_coconut_base_parallel_concurrent_map):
     @staticmethod
     def make_pool(max_workers=None):
         return _coconut.multiprocessing.Pool(max_workers)
-class concurrent_map(_coconut_base_parallel_concurrent_map):
+class thread_map(_coconut_base_parallel_map):
     """Multi-thread implementation of map.
 
     For multiple sequential calls, use:
-        with concurrent_map.multiple_sequential_calls():
+        with thread_map.multiple_sequential_calls():
             ...
     """
     __slots__ = ()
@@ -1413,7 +1416,6 @@ def addpattern(base_func, *add_funcs, **kwargs):
         return _coconut_base_pattern_func(base_func, *add_funcs)
     return _coconut.functools.partial(_coconut_base_pattern_func, base_func)
 _coconut_addpattern = addpattern
-{def_prepattern}
 class _coconut_partial(_coconut_base_callable):
     __slots__ = ("func", "_argdict", "_arglen", "_pos_kwargs", "_stargs", "keywords")
     def __init__(self, _coconut_func, _coconut_argdict, _coconut_arglen, _coconut_pos_kwargs, *args, **kwargs):
@@ -1562,7 +1564,6 @@ def makedata(data_type, *args, **kwargs):
     if kwargs:
         raise _coconut.TypeError("makedata() got unexpected keyword arguments " + _coconut.repr(kwargs))
     return _coconut_base_makedata(data_type, args, fallback_to_init=fallback_to_init)
-{def_datamaker}
 {class_amap}
 def fmap(func, obj, **kwargs):
     """fmap(func, obj) creates a copy of obj with func applied to its contents.
@@ -1676,7 +1677,6 @@ def call(_coconut_f{comma_slash}, *args, **kwargs):
         def call(f, /, *args, **kwargs) = f(*args, **kwargs).
     """
     return _coconut_f(*args, **kwargs)
-{of_is_call}
 def safe_call(_coconut_f{comma_slash}, *args, **kwargs):
     """safe_call is a version of call that catches any Exceptions and
     returns an Expected containing either the result or the error.
@@ -2104,5 +2104,6 @@ class _coconut_SupportsInv(_coconut.typing.Protocol):
     """
     def __invert__(self):
         raise NotImplementedError("Protocol methods cannot be called at runtime ((~) in a typing context is a Protocol)")
+{def_aliases}
 _coconut_self_match_types = {self_match_types}
 _coconut_Expected, _coconut_MatchError, _coconut_cartesian_product, _coconut_count, _coconut_cycle, _coconut_enumerate, _coconut_flatten, _coconut_filter, _coconut_groupsof, _coconut_ident, _coconut_lift, _coconut_map, _coconut_multiset, _coconut_range, _coconut_reiterable, _coconut_reversed, _coconut_scan, _coconut_starmap, _coconut_tee, _coconut_windowsof, _coconut_zip, _coconut_zip_longest, TYPE_CHECKING, reduce, takewhile, dropwhile = Expected, MatchError, cartesian_product, count, cycle, enumerate, flatten, filter, groupsof, ident, lift, map, multiset, range, reiterable, reversed, scan, starmap, tee, windowsof, zip, zip_longest, False, _coconut.functools.reduce, _coconut.itertools.takewhile, _coconut.itertools.dropwhile{COMMENT.anything_added_here_should_be_copied_to_stub_file}

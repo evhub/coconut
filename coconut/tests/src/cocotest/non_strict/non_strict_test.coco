@@ -89,6 +89,7 @@ def non_strict_test() -> bool:
     assert f"a" r"b" fr"c" rf"d" == "abcd"
     assert "a" fr"b" == "ab" == "a" rf"b"
     assert f"{f"{f"infinite"}"}" + " " + f"{f"nesting!!!"}" == "infinite nesting!!!"
+    assert parallel_map((.+1), range(5)) |> tuple == tuple(range(1, 6))
     return True
 
 if __name__ == "__main__":

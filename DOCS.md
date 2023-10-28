@@ -3506,11 +3506,12 @@ depth: 1
 
 Coconut's `map`, `zip`, `filter`, `reversed`, and `enumerate` objects are enhanced versions of their Python equivalents that support:
 
+- The ability to be iterated over multiple times if the underlying iterators can be iterated over multiple times.
+  - _Note: This can lead to different behavior between Coconut built-ins and Python built-ins. Use `py_` versions if the Python behavior is necessary._
 - `reversed`
 - `repr`
 - Optimized normal (and iterator) indexing/slicing (`map`, `zip`, `reversed`, and `enumerate` but not `filter`).
 - `len` (all but `filter`) (though `bool` will still always yield `True`).
-- The ability to be iterated over multiple times if the underlying iterators can be iterated over multiple times.
 - [PEP 618](https://www.python.org/dev/peps/pep-0618) `zip(..., strict=True)` support on all Python versions.
 - Added `strict=True` support to `map` as well (enforces that iterables are the same length in the multi-iterable case; uses `zip` under the hood such that errors will show up as `zip(..., strict=True)` errors).
 - Added attributes which subclasses can make use of to get at the original arguments to the object:
@@ -3848,9 +3849,9 @@ for x in input_data:
 
 **count**(_start_=`0`, _step_=`1`)
 
-Coconut provides a modified version of `itertools.count` that supports `in`, normal slicing, optimized iterator slicing, the standard `count` and `index` sequence methods, `repr`, and `start`/`step` attributes as a built-in under the name `count`.
+Coconut provides a modified version of `itertools.count` that supports `in`, normal slicing, optimized iterator slicing, the standard `count` and `index` sequence methods, `repr`, and `start`/`step` attributes as a built-in under the name `count`. If the _step_ parameter is set to `None`, `count` will behave like `itertools.repeat` instead.
 
-Additionally, if the _step_ parameter is set to `None`, `count` will behave like `itertools.repeat` instead.
+Since `count` supports slicing, `count()` can be used as a version of `range` that can in some cases be more readable. In particular, it is easy to accidentally write `range(10, 2)` when you meant `range(0, 10, 2)`, but it is hard to accidentally write `count()[10:2]` when you mean `count()[:10:2]`.
 
 ##### Python Docs
 
@@ -4120,33 +4121,35 @@ all_equal([1, 1, 1])
 all_equal([1, 1, 2])
 ```
 
-#### `parallel_map`
+#### `process_map`
 
-**parallel\_map**(_function_, *_iterables_, *, _chunksize_=`1`, _strict_=`False`)
+**process\_map**(_function_, *_iterables_, *, _chunksize_=`1`, _strict_=`False`)
 
-Coconut provides a parallel version of `map` under the name `parallel_map`. `parallel_map` makes use of multiple processes, and is therefore much faster than `map` for CPU-bound tasks. `parallel_map` never loads the entire input iterator into memory, though it does consume the entire input iterator as soon as a single output is requested. If any exceptions are raised inside of `parallel_map`, a traceback will be printed as soon as they are encountered.
+Coconut provides a `multiprocessing`-based version of `map` under the name `process_map`. `process_map` makes use of multiple processes, and is therefore much faster than `map` for CPU-bound tasks. `process_map` never loads the entire input iterator into memory, though it does consume the entire input iterator as soon as a single output is requested. If any exceptions are raised inside of `process_map`, a traceback will be printed as soon as they are encountered.
 
-Because `parallel_map` uses multiple processes for its execution, it is necessary that all of its arguments be pickleable. Only objects defined at the module level, and not lambdas, objects defined inside of a function, or objects defined inside of the interpreter, are pickleable. Furthermore, on Windows, it is necessary that all calls to `parallel_map` occur inside of an `if __name__ == "__main__"` guard.
+Because `process_map` uses multiple processes for its execution, it is necessary that all of its arguments be pickleable. Only objects defined at the module level, and not lambdas, objects defined inside of a function, or objects defined inside of the interpreter, are pickleable. Furthermore, on Windows, it is necessary that all calls to `process_map` occur inside of an `if __name__ == "__main__"` guard.
 
-`parallel_map` supports a `chunksize` argument, which determines how many items are passed to each process at a time. Larger values of _chunksize_ are recommended when dealing with very long iterables. Additionally, in the multi-iterable case, _strict_ can be set to `True` to ensure that all iterables are the same length.
+`process_map` supports a `chunksize` argument, which determines how many items are passed to each process at a time. Larger values of _chunksize_ are recommended when dealing with very long iterables. Additionally, in the multi-iterable case, _strict_ can be set to `True` to ensure that all iterables are the same length.
 
-If multiple sequential calls to `parallel_map` need to be made, it is highly recommended that they be done inside of a `with parallel_map.multiple_sequential_calls():` block, which will cause the different calls to use the same process pool and result in `parallel_map` immediately returning a list rather than a `parallel_map` object. If multiple sequential calls are necessary and the laziness of parallel_map is required, then the `parallel_map` objects should be constructed before the `multiple_sequential_calls` block and then only iterated over once inside the block.
+If multiple sequential calls to `process_map` need to be made, it is highly recommended that they be done inside of a `with process_map.multiple_sequential_calls():` block, which will cause the different calls to use the same process pool and result in `process_map` immediately returning a list rather than a `process_map` object. If multiple sequential calls are necessary and the laziness of process_map is required, then the `process_map` objects should be constructed before the `multiple_sequential_calls` block and then only iterated over once inside the block.
 
-`parallel_map.multiple_sequential_calls` also supports a `max_workers` argument to set the number of processes.
+`process_map.multiple_sequential_calls` also supports a `max_workers` argument to set the number of processes.
+
+_Deprecated: `parallel_map` is available as a deprecated alias for `process_map`. Note that deprecated features are disabled in `--strict` mode._
 
 ##### Python Docs
 
-**parallel_map**(_func, \*iterables_, _chunksize_=`1`)
+**process_map**(_func, \*iterables_, _chunksize_=`1`)
 
 Equivalent to `map(func, *iterables)` except _func_ is executed asynchronously and several calls to _func_ may be made concurrently. If a call raises an exception, then that exception will be raised when its value is retrieved from the iterator.
 
-`parallel_map` chops the iterable into a number of chunks which it submits to the process pool as separate tasks. The (approximate) size of these chunks can be specified by setting _chunksize_ to a positive integer. For very long iterables using a large value for _chunksize_ can make the job complete **much** faster than using the default value of `1`.
+`process_map` chops the iterable into a number of chunks which it submits to the process pool as separate tasks. The (approximate) size of these chunks can be specified by setting _chunksize_ to a positive integer. For very long iterables using a large value for _chunksize_ can make the job complete **much** faster than using the default value of `1`.
 
 ##### Example
 
 **Coconut:**
 ```coconut
-parallel_map(pow$(2), range(100)) |> list |> print
+process_map(pow$(2), range(100)) |> list |> print
 ```
 
 **Python:**
@@ -4157,25 +4160,27 @@ with Pool() as pool:
     print(list(pool.imap(functools.partial(pow, 2), range(100))))
 ```
 
-#### `concurrent_map`
+#### `thread_map`
 
-**concurrent\_map**(_function_, *_iterables_, *, _chunksize_=`1`, _strict_=`False`)
+**thread\_map**(_function_, *_iterables_, *, _chunksize_=`1`, _strict_=`False`)
 
-Coconut provides a concurrent version of [`parallel_map`](#parallel_map) under the name `concurrent_map`. `concurrent_map` behaves identically to `parallel_map` (including support for `concurrent_map.multiple_sequential_calls`) except that it uses multithreading instead of multiprocessing, and is therefore primarily useful only for IO-bound tasks due to CPython's Global Interpreter Lock.
+Coconut provides a `multithreading`-based version of [`process_map`](#process_map) under the name `thread_map`. `thread_map` behaves identically to `process_map` (including support for `thread_map.multiple_sequential_calls`) except that it uses multithreading instead of multiprocessing, and is therefore primarily useful only for IO-bound tasks due to CPython's Global Interpreter Lock.
+
+_Deprecated: `concurrent_map` is available as a deprecated alias for `thread_map`. Note that deprecated features are disabled in `--strict` mode._
 
 ##### Python Docs
 
-**concurrent_map**(_func, \*iterables_, _chunksize_=`1`)
+**thread_map**(_func, \*iterables_, _chunksize_=`1`)
 
 Equivalent to `map(func, *iterables)` except _func_ is executed asynchronously and several calls to _func_ may be made concurrently. If a call raises an exception, then that exception will be raised when its value is retrieved from the iterator.
 
-`concurrent_map` chops the iterable into a number of chunks which it submits to the thread pool as separate tasks. The (approximate) size of these chunks can be specified by setting _chunksize_ to a positive integer. For very long iterables using a large value for _chunksize_ can make the job complete **much** faster than using the default value of `1`.
+`thread_map` chops the iterable into a number of chunks which it submits to the thread pool as separate tasks. The (approximate) size of these chunks can be specified by setting _chunksize_ to a positive integer. For very long iterables using a large value for _chunksize_ can make the job complete **much** faster than using the default value of `1`.
 
 ##### Example
 
 **Coconut:**
 ```coconut
-concurrent_map(get_data_for_user, get_all_users()) |> list |> print
+thread_map(get_data_for_user, get_all_users()) |> list |> print
 ```
 
 **Python:**
@@ -4546,5 +4551,5 @@ All Coconut built-ins are accessible from `coconut.__coconut__`. The recommended
 ##### Example
 
 ```coconut_python
-from coconut.__coconut__ import parallel_map
+from coconut.__coconut__ import process_map
 ```

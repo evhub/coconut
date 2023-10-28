@@ -300,31 +300,36 @@ for items in _coconut.iter(_coconut.zip_longest(*self.iters, fillvalue=_coconut_
         ),
         # disabled mocks must have different docstrings so the
         #  interpreter can tell them apart from the real thing
-        def_prepattern=(
-            r'''def prepattern(base_func, **kwargs):
+        def_aliases=prepare(
+            r'''
+def prepattern(base_func, **kwargs):
     """DEPRECATED: use addpattern instead."""
     def pattern_prepender(func):
         return addpattern(func, base_func, **kwargs)
-    return pattern_prepender'''
-            if not strict else
-            r'''def prepattern(*args, **kwargs):
-    """Deprecated Coconut built-in 'prepattern' disabled by --strict compilation; use 'addpattern' instead."""
-    raise _coconut.NameError("deprecated Coconut built-in 'prepattern' disabled by --strict compilation; use 'addpattern' instead")'''
-        ),
-        def_datamaker=(
-            r'''def datamaker(data_type):
+    return pattern_prepender
+def datamaker(data_type):
     """DEPRECATED: use makedata instead."""
-    return _coconut.functools.partial(makedata, data_type)'''
+    return _coconut.functools.partial(makedata, data_type)
+of, parallel_map, concurrent_map = call, process_map, thread_map
+            '''
             if not strict else
-            r'''def datamaker(*args, **kwargs):
+            r'''
+def prepattern(*args, **kwargs):
+    """Deprecated Coconut built-in 'prepattern' disabled by --strict compilation; use 'addpattern' instead."""
+    raise _coconut.NameError("deprecated Coconut built-in 'prepattern' disabled by --strict compilation; use 'addpattern' instead")
+def datamaker(*args, **kwargs):
     """Deprecated Coconut built-in 'datamaker' disabled by --strict compilation; use 'makedata' instead."""
-    raise _coconut.NameError("deprecated Coconut built-in 'datamaker' disabled by --strict compilation; use 'makedata' instead")'''
-        ),
-        of_is_call=(
-            "of = call" if not strict else
-            r'''def of(*args, **kwargs):
+    raise _coconut.NameError("deprecated Coconut built-in 'datamaker' disabled by --strict compilation; use 'makedata' instead")
+def of(*args, **kwargs):
     """Deprecated Coconut built-in 'of' disabled by --strict compilation; use 'call' instead."""
-    raise _coconut.NameError("deprecated Coconut built-in 'of' disabled by --strict compilation; use 'call' instead")'''
+    raise _coconut.NameError("deprecated Coconut built-in 'of' disabled by --strict compilation; use 'call' instead")
+def parallel_map(*args, **kwargs):
+    """Deprecated Coconut built-in 'parallel_map' disabled by --strict compilation; use 'process_map' instead."""
+    raise _coconut.NameError("deprecated Coconut built-in 'parallel_map' disabled by --strict compilation; use 'process_map' instead")
+def concurrent_map(*args, **kwargs):
+    """Deprecated Coconut built-in 'concurrent_map' disabled by --strict compilation; use 'thread_map' instead."""
+    raise _coconut.NameError("deprecated Coconut built-in 'concurrent_map' disabled by --strict compilation; use 'thread_map' instead")
+            '''
         ),
         return_method_of_self=pycondition(
             (3,),

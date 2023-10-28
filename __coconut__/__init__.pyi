@@ -215,7 +215,7 @@ _coconut_cartesian_product = cartesian_product
 _coconut_multiset = multiset
 
 
-parallel_map = concurrent_map = _coconut_map = map
+process_map = thread_map = parallel_map = concurrent_map = _coconut_map = map
 
 
 TYPE_CHECKING = _t.TYPE_CHECKING

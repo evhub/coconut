@@ -44,12 +44,12 @@ def suite_test() -> bool:
     def test_sqplus1_plus1sq(sqplus1, plus1sq, parallel=True):
         assert sqplus1(3) == 10 == (plus1..square)(3), sqplus1
         if parallel:
-            assert parallel_map(sqplus1, range(3)) |> tuple == (1, 2, 5), sqplus1  # type: ignore
+            assert process_map(sqplus1, range(3)) |> tuple == (1, 2, 5), sqplus1  # type: ignore
         assert 3 `plus1sq` == 16, plus1sq
         assert 3 `sqplus1` == 10, sqplus1
     test_sqplus1_plus1sq(sqplus1_1, plus1sq_1)
     test_sqplus1_plus1sq(sqplus1_2, plus1sq_2, parallel=False)
-    with parallel_map.multiple_sequential_calls(max_workers=2):  # type: ignore
+    with process_map.multiple_sequential_calls(max_workers=2):  # type: ignore
         test_sqplus1_plus1sq(sqplus1_3, plus1sq_3)
         test_sqplus1_plus1sq(sqplus1_4, plus1sq_4)
         test_sqplus1_plus1sq(sqplus1_5, plus1sq_5)
@@ -67,7 +67,7 @@ def suite_test() -> bool:
         to_sort = rand_list(10)
         assert to_sort |> qsort |> tuple == to_sort |> sorted |> tuple, qsort  # type: ignore
     to_sort = rand_list(10)
-    assert parallel_map(tuple <.. (|>)$(to_sort), qsorts) |> list == [to_sort |> sorted |> tuple] * len(qsorts)
+    assert process_map(tuple <.. (|>)$(to_sort), qsorts) |> list == [to_sort |> sorted |> tuple] * len(qsorts)
     assert repeat(3)$[2] == 3 == repeat_(3)$[2]
     assert sum_(repeat(1)$[:5]) == 5 == sum_(repeat_(1)$[:5])
     assert (sum_(takewhile((x)-> x<5, N()))
@@ -279,7 +279,7 @@ def suite_test() -> bool:
     assert fibs()$[:10] |> list == [1,1,2,3,5,8,13,21,34,55] == fibs_()$[:10] |> list
     assert fibs() |> takewhile$((i) -> i < 4000000 ) |> filter$((i) -> i % 2 == 0 ) |> sum == 4613732 == fibs_() |> takewhile$((i) -> i < 4000000 ) |> filter$((i) -> i % 2 == 0 ) |> sum  # type: ignore
     assert loop([1,2])$[:4] |> list == [1, 2] * 2
-    assert parallel_map(list .. .$[:2] .. loop, ([1], [2]))$[:2] |> tuple == ([1, 1], [2, 2])
+    assert process_map(list .. .$[:2] .. loop, ([1], [2]))$[:2] |> tuple == ([1, 1], [2, 2])
     assert nest("a") |> .$[1] |> .$[1] |> .$[0] == "a"
     assert (def -> mod)()(5, 3) == 2
     assert sieve((2, 3, 4, 5)) |> list == [2, 3, 5]
@@ -748,7 +748,7 @@ def suite_test() -> bool:
     class inh_A() `isinstance` clsA `isinstance` object = inh_A()
     for maxdiff in (maxdiff1, maxdiff2, maxdiff3, maxdiff_):
         assert maxdiff([7,1,4,5]) == 4, "failed for " + repr(maxdiff)
-    assert all(r == 4 for r in parallel_map(call$(?, [7,1,4,5]), [maxdiff1, maxdiff2, maxdiff3]))
+    assert all(r == 4 for r in process_map(call$(?, [7,1,4,5]), [maxdiff1, maxdiff2, maxdiff3]))
     assert ret_ret_func(1) == ((), {"func": 1}) == ret_args_kwargs$(func=1)()  # type: ignore
     assert ret_args_kwargs$(?, func=2)(1) == ((1,), {"func": 2})
     assert lift(ret_args_kwargs)(ident, plus1, times2, sq=square)(3) == ((3, 4, 6), {"sq": 9})

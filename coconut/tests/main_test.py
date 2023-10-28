@@ -615,7 +615,6 @@ def run(args=[], agnostic_target=None, use_run_arg=False, convert_to_import=Fals
 
             comp_agnostic(agnostic_args, **kwargs)
             comp_sys(args, **kwargs)
-            comp_non_strict(args, **kwargs)
 
             if use_run_arg:
                 _kwargs = kwargs.copy()
@@ -635,6 +634,9 @@ def run(args=[], agnostic_target=None, use_run_arg=False, convert_to_import=Fals
                 comp_extras(agnostic_args, **kwargs)
                 run_extras(convert_to_import=convert_to_import)  # **kwargs are for comp, not run
 
+            # do non-strict at the end so we get the non-strict header
+            comp_non_strict(args, **kwargs)
+
 
 def comp_all(args=[], agnostic_target=None, **kwargs):
     """Compile Coconut tests."""
@@ -648,6 +650,10 @@ def comp_all(args=[], agnostic_target=None, **kwargs):
     except Exception:
         pass
 
+    comp_agnostic(agnostic_args, **kwargs)
+    comp_runner(agnostic_args, **kwargs)
+    comp_extras(agnostic_args, **kwargs)
+
     comp_2(args, **kwargs)
     comp_3(args, **kwargs)
     comp_35(args, **kwargs)
@@ -655,11 +661,8 @@ def comp_all(args=[], agnostic_target=None, **kwargs):
     comp_38(args, **kwargs)
     comp_311(args, **kwargs)
     comp_sys(args, **kwargs)
+    # do non-strict at the end so we get the non-strict header
     comp_non_strict(args, **kwargs)
-
-    comp_agnostic(agnostic_args, **kwargs)
-    comp_runner(agnostic_args, **kwargs)
-    comp_extras(agnostic_args, **kwargs)
 
 
 def comp_pyston(args=[], **kwargs):

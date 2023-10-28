@@ -924,7 +924,7 @@ def grid_map(func, gridsample):
 
 def parallel_grid_map(func, gridsample):
     """Map a function over every point in a grid in parallel."""
-    return gridsample |> parallel_map$(parallel_map$(func))
+    return gridsample |> process_map$(process_map$(func))
 
 def grid_trim(gridsample, xmax, ymax):
     """Convert a grid to a list of lists up to xmax and ymax."""
