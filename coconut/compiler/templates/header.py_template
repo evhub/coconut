@@ -833,7 +833,7 @@ class map(_coconut_baseclass, _coconut.map):
         self.iters = _coconut.tuple({_coconut_}reiterable(it) for it in self.iters)
         return self.__class__(self.func, *self.iters)
     def __iter__(self):
-        return _coconut.iter(_coconut.map(self.func, *self.iters))
+        return _coconut.map(self.func, *self.iters)
     def __fmap__(self, func):
         return self.__class__(_coconut_forward_compose(self.func, func), *self.iters)
 class _coconut_parallel_map_func_wrapper(_coconut_baseclass):
@@ -848,7 +848,7 @@ class _coconut_parallel_map_func_wrapper(_coconut_baseclass):
         self.map_cls._get_pool_stack().append(None)
         try:
             if self.star:
-                assert _coconut.len(args) == 1, "internal process/thread map error {report_this_text}"
+                assert _coconut.len(args) == 1, "internal process_map/thread_map error {report_this_text}"
                 return self.func(*args[0], **kwargs)
             else:
                 return self.func(*args, **kwargs)
@@ -857,12 +857,12 @@ class _coconut_parallel_map_func_wrapper(_coconut_baseclass):
             _coconut.traceback.print_exc()
             raise
         finally:
-            assert self.map_cls._get_pool_stack().pop() is None, "internal process/thread map error {report_this_text}"
+            assert self.map_cls._get_pool_stack().pop() is None, "internal process_map/thread_map error {report_this_text}"
 class _coconut_base_parallel_map(map):
     __slots__ = ("result", "chunksize", "strict", "stream", "ordered")
     @classmethod
     def _get_pool_stack(cls):
-        return cls.threadlocal_ns.__dict__.setdefault("pool_stack", [None])
+        return cls._threadlocal_ns.__dict__.setdefault("pool_stack", [None])
     def __new__(cls, function, *iterables, **kwargs):
         self = _coconut.super(_coconut_base_parallel_map, cls).__new__(cls, function, *iterables)
         self.result = None
@@ -882,7 +882,7 @@ class _coconut_base_parallel_map(map):
     def multiple_sequential_calls(cls, max_workers=None):
         """Context manager that causes nested calls to use the same pool."""
         if cls._get_pool_stack()[-1] is None:
-            cls._get_pool_stack()[-1] = cls.make_pool(max_workers)
+            cls._get_pool_stack()[-1] = cls._make_pool(max_workers)
             try:
                 yield
             finally:
@@ -924,9 +924,9 @@ class process_map(_coconut_base_parallel_map):
             ...
     """
     __slots__ = ()
-    threadlocal_ns = _coconut.threading.local()
+    _threadlocal_ns = _coconut.threading.local()
     @staticmethod
-    def make_pool(max_workers=None):
+    def _make_pool(max_workers=None):
         return _coconut.multiprocessing.Pool(max_workers)
 class thread_map(_coconut_base_parallel_map):
     """Multi-thread implementation of map.
@@ -936,9 +936,9 @@ class thread_map(_coconut_base_parallel_map):
             ...
     """
     __slots__ = ()
-    threadlocal_ns = _coconut.threading.local()
+    _threadlocal_ns = _coconut.threading.local()
     @staticmethod
-    def make_pool(max_workers=None):
+    def _make_pool(max_workers=None):
         return _coconut.multiprocessing_dummy.Pool(_coconut.multiprocessing.cpu_count() * 5 if max_workers is None else max_workers)
 class zip(_coconut_baseclass, _coconut.zip):
     __slots__ = ("iters", "strict")
@@ -1342,13 +1342,13 @@ class recursive_generator(_coconut_base_callable):
         return (self.__class__, (self.func,))
 class _coconut_FunctionMatchErrorContext(_coconut_baseclass):
     __slots__ = ("exc_class", "taken")
-    threadlocal_ns = _coconut.threading.local()
+    _threadlocal_ns = _coconut.threading.local()
     def __init__(self, exc_class):
         self.exc_class = exc_class
         self.taken = False
     @classmethod
     def get_contexts(cls):
-        return cls.threadlocal_ns.__dict__.setdefault("contexts", [])
+        return cls._threadlocal_ns.__dict__.setdefault("contexts", [])
     def __enter__(self):
         self.get_contexts().append(self)
     def __exit__(self, type, value, traceback):
