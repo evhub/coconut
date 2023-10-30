@@ -1689,4 +1689,15 @@ def primary_test() -> bool:
     assert list(py_xs) == []
     assert count()[:10:2] == range(0, 10, 2)
     assert count()[10:2] == range(10, 2)
+    some_data = [
+        (name="a", val="123"),
+        (name="b", val="567"),
+    ]
+    for mapreducer in (
+        mapreduce.using_processes$(lift(,)(.name, .val)),  # type: ignore
+        mapreduce.using_threads$(lift(,)(.name, .val)),  # type: ignore
+        collectby.using_processes$(.name, value_func=.val),  # type: ignore
+        collectby.using_threads$(.name, value_func=.val),  # type: ignore
+    ):
+        assert some_data |> mapreducer == {"a": ["123"], "b": ["567"]}
     return True

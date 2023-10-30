@@ -888,6 +888,13 @@ class _coconut_base_parallel_map(map):
             finally:
                 cls._get_pool_stack()[-1].terminate()
                 cls._get_pool_stack()[-1] = None
+        elif max_workers is not None:
+            self.map_cls._get_pool_stack().append(cls._make_pool(max_workers))
+            try:
+                yield
+            finally:
+                cls._get_pool_stack()[-1].terminate()
+                cls._get_pool_stack().pop()
         else:
             yield
     def _execute_map(self):
@@ -1906,6 +1913,15 @@ def mapreduce(key_value_func, iterable, **kwargs):
                 val = reduce_func(old_val, val)
             collection[key] = val
     return collection
+def _coconut_parallel_mapreduce(mapreduce_func, map_cls, *args, **kwargs):
+    """Run collectby/mapreduce in parallel using threads or processes."""
+    if "map_using" in kwargs:
+        raise _coconut.TypeError("redundant map_using argument to process/thread mapreduce/collectby")
+    kwargs["map_using"] = _coconut.functools.partial(map_cls, stream=True, ordered=kwargs.pop("ordered", False), chunksize=kwargs.pop("chunksize", 1))
+    with map_cls.multiple_sequential_calls(max_workers=kwargs.pop("max_workers", None)):
+        return mapreduce_func(*args, **kwargs)
+mapreduce.using_processes = _coconut.functools.partial(_coconut_parallel_mapreduce, mapreduce, process_map)
+mapreduce.using_threads = _coconut.functools.partial(_coconut_parallel_mapreduce, mapreduce, thread_map)
 def collectby(key_func, iterable, value_func=None, **kwargs):
     """Collect the items in iterable into a dictionary of lists keyed by key_func(item).
 
@@ -1918,6 +1934,8 @@ def collectby(key_func, iterable, value_func=None, **kwargs):
     the iterable using map_using as map. Useful with process_map/thread_map.
     """
     return {_coconut_}mapreduce(_coconut_lifted(_coconut_comma_op, key_func, {_coconut_}ident if value_func is None else value_func), iterable, **kwargs)
+collectby.using_processes = _coconut.functools.partial(_coconut_parallel_mapreduce, collectby, process_map)
+collectby.using_threads = _coconut.functools.partial(_coconut_parallel_mapreduce, collectby, thread_map)
 def _namedtuple_of(**kwargs):
     """Construct an anonymous namedtuple of the given keyword arguments."""
 {namedtuple_of_implementation}
