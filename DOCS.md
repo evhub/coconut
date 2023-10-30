@@ -4073,7 +4073,7 @@ all_equal([1, 1, 2])
 
 #### `process_map` and `thread_map`
 
-**process\_map**(_function_, *_iterables_, *, _chunksize_=`1`, _strict_=`False`, _stream_=`False`, _ordered_=`True`)
+##### **process\_map**(_function_, *_iterables_, *, _chunksize_=`1`, _strict_=`False`, _stream_=`False`, _ordered_=`True`)
 
 Coconut provides a `multiprocessing`-based version of `map` under the name `process_map`. `process_map` makes use of multiple processes, and is therefore much faster than `map` for CPU-bound tasks. If any exceptions are raised inside of `process_map`, a traceback will be printed as soon as they are encountered. Results will be in the same order as the input unless _ordered_=`False`.
 
@@ -4085,15 +4085,17 @@ Because `process_map` uses multiple processes for its execution, it is necessary
 
 _Deprecated: `parallel_map` is available as a deprecated alias for `process_map`. Note that deprecated features are disabled in `--strict` mode._
 
-**process\_map\.multiple\_sequential\_calls**(_max\_workers_=`None`)
+##### **process\_map\.multiple\_sequential\_calls**(_max\_workers_=`None`)
 
 If multiple sequential calls to `process_map` need to be made, it is highly recommended that they be done inside of a `with process_map.multiple_sequential_calls():` block, which will cause the different calls to use the same process pool and result in `process_map` immediately returning a list rather than a `process_map` object. If multiple sequential calls are necessary and the laziness of process_map is required, then the `process_map` objects should be constructed before the `multiple_sequential_calls` block and then only iterated over once inside the block.
 
 `process_map.multiple_sequential_calls` also supports a  _max\_workers_ argument to set the number of processes. If `max_workers=None`, Coconut will pick a suitable _max\_workers_, including reusing worker pools from higher up in the call stack.
 
-**thread\_map**(_function_, *_iterables_, *, _chunksize_=`1`, _strict_=`False`, _stream_=`False`, _ordered_=`True`)
+##### **thread\_map**(_function_, *_iterables_, *, _chunksize_=`1`, _strict_=`False`, _stream_=`False`, _ordered_=`True`)
 
-Coconut provides a `multithreading`-based version of [`process_map`](#process_map) under the name `thread_map`. `thread_map` behaves identically to `process_map` (including support for `thread_map.multiple_sequential_calls`) except that it uses multithreading instead of multiprocessing, and is therefore primarily useful only for IO-bound tasks due to CPython's Global Interpreter Lock.
+##### **thread\_map\.multiple\_sequential\_calls**(_max\_workers_=`None`)
+
+Coconut provides a `multithreading`-based version of [`process_map`](#process_map) under the name `thread_map`. `thread_map` and `thread_map.multiple_sequential_calls` behave identically to `process_map` except that they use multithreading instead of multiprocessing, and are therefore primarily useful only for IO-bound tasks due to CPython's Global Interpreter Lock.
 
 _Deprecated: `concurrent_map` is available as a deprecated alias for `thread_map`. Note that deprecated features are disabled in `--strict` mode._
 
@@ -4142,7 +4144,7 @@ with concurrent.futures.ThreadPoolExecutor() as executor:
 
 #### `collectby` and `mapreduce`
 
-**collectby**(_key\_func_, _iterable_, _value\_func_=`None`, \*, _reduce\_func_=`None`, _map\_using_=`None`)
+##### **collectby**(_key\_func_, _iterable_, _value\_func_=`None`, \*, _reduce\_func_=`None`, _map\_using_=`None`)
 
 `collectby(key_func, iterable)` collects the items in `iterable` into a dictionary of lists keyed by `key_func(item)`.
 
@@ -4154,17 +4156,17 @@ If `map_using` is passed, calculate `key_func` and `value_func` by mapping them 
 
 `collectby` is similar to [`itertools.groupby`](https://docs.python.org/3/library/itertools.html#itertools.groupby) except that `collectby` aggregates common elements regardless of their order in the input iterable, whereas `groupby` only aggregates common elements that are adjacent in the input iterable.
 
-**mapreduce**(_key\_value\_func_, _iterable_, \*, _reduce\_func_=`None`, _map\_using_=`None`)
+##### **mapreduce**(_key\_value\_func_, _iterable_, \*, _reduce\_func_=`None`, _map\_using_=`None`)
 
 `mapreduce(key_value_func, iterable)` functions the same as `collectby`, but allows calculating the keys and values together in one function. _key\_value\_func_ must return a 2-tuple of `(key, value)`.
 
-**collectby.using_threads**(_key\_func_, _iterable_, _value\_func_=`None`, \*, _reduce\_func_=`None`, _ordered_=`False`, _chunksize_=`1`, _max\_workers_=`None`)
+##### **collectby.using_threads**(_key\_func_, _iterable_, _value\_func_=`None`, \*, _reduce\_func_=`None`, _ordered_=`False`, _chunksize_=`1`, _max\_workers_=`None`)
 
-**collectby.using_processes**(_key\_func_, _iterable_, _value\_func_=`None`, \*, _reduce\_func_=`None`, _ordered_=`False`, _chunksize_=`1`, _max\_workers_=`None`)
+##### **collectby.using_processes**(_key\_func_, _iterable_, _value\_func_=`None`, \*, _reduce\_func_=`None`, _ordered_=`False`, _chunksize_=`1`, _max\_workers_=`None`)
 
-**mapreduce.using_threads**(_key\_value\_func_, _iterable_, \*, _reduce\_func_=`None`, _ordered_=`False`, _chunksize_=`1`, _max\_workers_=`None`)
+##### **mapreduce.using_threads**(_key\_value\_func_, _iterable_, \*, _reduce\_func_=`None`, _ordered_=`False`, _chunksize_=`1`, _max\_workers_=`None`)
 
-**mapreduce.using_processes**(_key\_value\_func_, _iterable_, \*, _reduce\_func_=`None`, _ordered_=`False`, _chunksize_=`1`, _max\_workers_=`None`)
+##### **mapreduce.using_processes**(_key\_value\_func_, _iterable_, \*, _reduce\_func_=`None`, _ordered_=`False`, _chunksize_=`1`, _max\_workers_=`None`)
 
 These shortcut methods call `collectby`/`mapreduce` with `map_using` set to [`process_map`](#process_map)/[`thread_map`](#thread_map), properly managed using the `.multiple_sequential_calls` method and the `stream=True` argument of [`process_map`](#process_map)/[`thread_map`](#thread_map). `reduce_func` will be called as soon as results arrive, and by default in whatever order they arrive in (to enforce the original order, pass _ordered_=`True`). Note that, for very long iterables, it is highly recommended to pass a value other than the default `1` for _chunksize_.
 
