@@ -1914,7 +1914,6 @@ def mapreduce(key_value_func, iterable, **kwargs):
             collection[key] = val
     return collection
 def _coconut_parallel_mapreduce(mapreduce_func, map_cls, *args, **kwargs):
-    """Run collectby/mapreduce in parallel using threads or processes."""
     if "map_using" in kwargs:
         raise _coconut.TypeError("redundant map_using argument to process/thread mapreduce/collectby")
     kwargs["map_using"] = _coconut.functools.partial(map_cls, stream=True, ordered=kwargs.pop("ordered", False), chunksize=kwargs.pop("chunksize", 1))
