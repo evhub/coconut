@@ -3186,6 +3186,10 @@ data Expected[T](result: T? = None, error: BaseException? = None):
         if not self:
             raise self.error
         return self.result
+    def handle(self, err_type, handler: BaseException -> T) -> Expected[T]:
+        if not self and _coconut.isinstance(self.error, err_type):
+            return self.__class__(handler(self.error))
+        return self
 ```
 
 `Expected` is primarily used as the return type for [`safe_call`](#safe_call). Generally, the best way to use `Expected` is with [`fmap`](#fmap), which will apply a function to the result if it exists, or otherwise retain the error. If you want to sequence multiple `Expected`-returning operations, `.and_then` should be used instead of `fmap`.
@@ -3335,6 +3339,8 @@ def safe_call(f, /, *args, **kwargs):
     except Exception as err:
         return Expected(error=err)
 ```
+
+To define a function that always returns an `Expected` rather than raising any errors, simply decorate it with `@safe_call$`.
 
 ##### Example
 

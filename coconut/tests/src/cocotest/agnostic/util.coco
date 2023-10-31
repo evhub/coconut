@@ -1014,6 +1014,10 @@ def minus(a, b) = b - a
 def raise_exc():
     raise Exception("raise_exc")
 
+@safe_call$
+def safe_raise_exc() =
+    raise_exc()
+
 def does_raise_exc(func):
     try:
         return func()

@@ -354,6 +354,10 @@ class Expected(_BaseExpected[_T]):
                 if not self:
                     raise self.error
                 return self.result
+            def handle(self, err_type, handler: BaseException -> T) -> Expected[T]:
+                if not self and _coconut.isinstance(self.error, err_type):
+                    return self.__class__(handler(self.error))
+                return self
     '''
     __slots__ = ()
     _coconut_is_data = True
@@ -415,6 +419,9 @@ class Expected(_BaseExpected[_T]):
         ...
     def unwrap(self) -> _T:
         """Unwrap the result or raise the error."""
+        ...
+    def handle(self, err_type: _t.Type[BaseException], handler: _t.Callable[[BaseException], _T]) -> Expected[_T]:
+        """Recover from the given err_type by calling handler on the error to determine the result."""
         ...
 
 _coconut_Expected = Expected

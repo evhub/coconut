@@ -1741,6 +1741,10 @@ class Expected(_coconut.collections.namedtuple("Expected", ("result", "error")){
                 if not self:
                     raise self.error
                 return self.result
+            def handle(self, err_type, handler: BaseException -> T) -> Expected[T]:
+                if not self and _coconut.isinstance(self.error, err_type):
+                    return self.__class__(handler(self.error))
+                return self
     '''
     __slots__ = ()
     {is_data_var} = True
@@ -1803,6 +1807,11 @@ class Expected(_coconut.collections.namedtuple("Expected", ("result", "error")){
         if not self:
             raise self.error
         return self.result
+    def handle(self, err_type, handler):
+        """Recover from the given err_type by calling handler on the error to determine the result."""
+        if not self and _coconut.isinstance(self.error, err_type):
+            return self.__class__(handler(self.error))
+        return self
 class flip(_coconut_base_callable):
     """Given a function, return a new function with inverse argument order.
     If nargs is passed, only the first nargs arguments are reversed."""
@@ -1912,7 +1921,7 @@ def mapreduce(key_value_func, iterable, **kwargs):
             old_val = collection.get(key, _coconut_sentinel)
             if old_val is not _coconut_sentinel:
                 if reduce_func is False:
-                    raise ValueError("duplicate key " + repr(key) + " with reduce_func=False")
+                    raise ValueError("mapreduce()/collectby() got duplicate key " + repr(key) + " with reduce_func=False")
                 val = reduce_func(old_val, val)
             collection[key] = val
     return collection
