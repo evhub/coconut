@@ -4144,29 +4144,31 @@ with concurrent.futures.ThreadPoolExecutor() as executor:
 
 #### `collectby` and `mapreduce`
 
-##### **collectby**(_key\_func_, _iterable_, _value\_func_=`None`, \*, _reduce\_func_=`None`, _map\_using_=`None`)
+##### **collectby**(_key\_func_, _iterable_, _value\_func_=`None`, \*, _reduce\_func_=`None`, _init\_collection_=`None`, _map\_using_=`None`)
 
 `collectby(key_func, iterable)` collects the items in `iterable` into a dictionary of lists keyed by `key_func(item)`.
 
-If `value_func` is passed, `collectby(key_func, iterable, value_func=value_func)` instead collects `value_func(item)` into each list instead of `item`.
+If _value\_func_ is passed, instead collects `value_func(item)` into each list instead of `item`.
 
-If `reduce_func` is passed, `collectby(key_func, iterable, reduce_func=reduce_func)`, instead of collecting the items into lists, reduces over the items of each key with `reduce_func`, effectively implementing a MapReduce operation.
+If _reduce\_func_ is passed, instead of collecting the items into lists, reduces over the items of each key with `reduce_func`, effectively implementing a MapReduce operation. If keys are intended to be unique, set `reduce_func=False`.
 
-If `map_using` is passed, calculate `key_func` and `value_func` by mapping them over the iterable using `map_using` as `map`. Useful with [`process_map`](#process_map)/[`thread_map`](#thread_map). See `.using_threads` and `.using_processes` methods below for simple shortcut methods that make use of `map_using` internally.
+If _init\_collection_ is passed, initializes the collection from _init\_collection_ rather than as a `collections.defaultdict` (if `reduce_func=None`) or an empty `dict` (otherwise). Useful when you want to collect the results into a `pandas.DataFrame`.
+
+If _map_using_ is passed, calculates `key_func` and `value_func` by mapping them over the iterable using `map_using` as `map`. Useful with [`process_map`](#process_map)/[`thread_map`](#thread_map). See `.using_threads` and `.using_processes` methods below for simple shortcut methods that make use of `map_using` internally.
 
 `collectby` is similar to [`itertools.groupby`](https://docs.python.org/3/library/itertools.html#itertools.groupby) except that `collectby` aggregates common elements regardless of their order in the input iterable, whereas `groupby` only aggregates common elements that are adjacent in the input iterable.
 
-##### **mapreduce**(_key\_value\_func_, _iterable_, \*, _reduce\_func_=`None`, _map\_using_=`None`)
+##### **mapreduce**(_key\_value\_func_, _iterable_, \*, _reduce\_func_=`None`, _init\_collection_=`None`, _map\_using_=`None`)
 
 `mapreduce(key_value_func, iterable)` functions the same as `collectby`, but allows calculating the keys and values together in one function. _key\_value\_func_ must return a 2-tuple of `(key, value)`.
 
-##### **collectby.using_threads**(_key\_func_, _iterable_, _value\_func_=`None`, \*, _reduce\_func_=`None`, _ordered_=`False`, _chunksize_=`1`, _max\_workers_=`None`)
+##### **collectby.using_threads**(_key\_func_, _iterable_, _value\_func_=`None`, \*, _reduce\_func_=`None`, _init\_collection_=`None`, _ordered_=`False`, _chunksize_=`1`, _max\_workers_=`None`)
 
-##### **collectby.using_processes**(_key\_func_, _iterable_, _value\_func_=`None`, \*, _reduce\_func_=`None`, _ordered_=`False`, _chunksize_=`1`, _max\_workers_=`None`)
+##### **collectby.using_processes**(_key\_func_, _iterable_, _value\_func_=`None`, \*, _reduce\_func_=`None`, _init\_collection_=`None`, _ordered_=`False`, _chunksize_=`1`, _max\_workers_=`None`)
 
-##### **mapreduce.using_threads**(_key\_value\_func_, _iterable_, \*, _reduce\_func_=`None`, _ordered_=`False`, _chunksize_=`1`, _max\_workers_=`None`)
+##### **mapreduce.using_threads**(_key\_value\_func_, _iterable_, \*, _reduce\_func_=`None`, _init\_collection_=`None`, _ordered_=`False`, _chunksize_=`1`, _max\_workers_=`None`)
 
-##### **mapreduce.using_processes**(_key\_value\_func_, _iterable_, \*, _reduce\_func_=`None`, _ordered_=`False`, _chunksize_=`1`, _max\_workers_=`None`)
+##### **mapreduce.using_processes**(_key\_value\_func_, _iterable_, \*, _reduce\_func_=`None`, _init\_collection_=`None`, _ordered_=`False`, _chunksize_=`1`, _max\_workers_=`None`)
 
 These shortcut methods call `collectby`/`mapreduce` with `map_using` set to [`process_map`](#process_map)/[`thread_map`](#thread_map), properly managed using the `.multiple_sequential_calls` method and the `stream=True` argument of [`process_map`](#process_map)/[`thread_map`](#thread_map). `reduce_func` will be called as soon as results arrive, and by default in whatever order they arrive in (to enforce the original order, pass _ordered_=`True`). Note that, for very long iterables, it is highly recommended to pass a value other than the default `1` for _chunksize_.
 

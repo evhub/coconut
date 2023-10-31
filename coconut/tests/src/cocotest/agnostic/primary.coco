@@ -1700,4 +1700,5 @@ def primary_test() -> bool:
         collectby.using_threads$(.name, value_func=.val),  # type: ignore
     ):
         assert some_data |> mapreducer == {"a": ["123"], "b": ["567"]}
+    assert_raises(-> collectby(.[0], [(0, 1), (0, 2)], reduce_func=False), ValueError)
     return True

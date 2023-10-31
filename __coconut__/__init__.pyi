@@ -1604,7 +1604,7 @@ def collectby(
     *,
     reduce_func: _t.Callable[[_T, _T], _V],
     map_using: _t.Callable | None = None,
-) -> _t.DefaultDict[_U, _V]: ...
+) -> _t.Dict[_U, _V]: ...
 @_t.overload
 def collectby(
     key_func: _t.Callable[[_T], _U],
@@ -1621,7 +1621,17 @@ def collectby(
     *,
     reduce_func: _t.Callable[[_W, _W], _V],
     map_using: _t.Callable | None = None,
-) -> _t.DefaultDict[_U, _V]:
+) -> _t.Dict[_U, _V]: ...
+@_t.overload
+def collectby(
+    key_func: _t.Callable,
+    iterable: _t.Iterable,
+    value_func: _t.Callable | None = None,
+    *,
+    reduce_func: _t.Callable | None | _t.Literal[False] = None,
+    map_using: _t.Callable | None = None,
+    init_collection: _T
+) -> _T:
     """Collect the items in iterable into a dictionary of lists keyed by key_func(item).
 
     If value_func is passed, collect value_func(item) into each list instead of item.
@@ -1649,7 +1659,16 @@ def mapreduce(
     *,
     reduce_func: _t.Callable[[_W, _W], _V],
     map_using: _t.Callable | None = None,
-) -> _t.DefaultDict[_U, _V]:
+) -> _t.Dict[_U, _V]: ...
+@_t.overload
+def mapreduce(
+    key_value_func: _t.Callable,
+    iterable: _t.Iterable,
+    *,
+    reduce_func: _t.Callable | None | _t.Literal[False] = None,
+    map_using: _t.Callable | None = None,
+    init_collection: _T
+) -> _T:
     """Map key_value_func over iterable, then collect the values into a dictionary of lists keyed by the keys.
 
     If reduce_func is passed, instead of collecting the values into lists, reduce over
