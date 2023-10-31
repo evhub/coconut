@@ -13,7 +13,7 @@ depth: 2
 
 ## Overview
 
-This documentation covers all the features of the [Coconut Programming Language](http://evhub.github.io/coconut/), and is intended as a reference/specification, not a tutorialized introduction. For a full introduction and tutorial of Coconut, see [the tutorial](./HELP.md).
+This documentation covers all the features of the [Coconut Programming Language](http://evhub.github.io/coconut/), and is intended as a reference/specification, not a tutorialized introduction. For an introduction to and tutorial of Coconut, see [the tutorial](./HELP.md).
 
 Coconut is a variant of [Python](https://www.python.org/) built for **simple, elegant, Pythonic functional programming**. Coconut syntax is a strict superset of the latest Python 3 syntax. Thus, users familiar with Python will already be familiar with most of Coconut.
 
@@ -407,7 +407,7 @@ Simply installing Coconut should add a `Coconut` kernel to your Jupyter/IPython 
 
 The Coconut kernel will always compile using the parameters: `--target sys --line-numbers --keep-lines --no-wrap-types`.
 
-Coconut also provides the following api commands:
+Coconut also provides the following commands:
 
 - `coconut --jupyter notebook` will ensure that the Coconut kernel is available and launch a Jupyter/IPython notebook.
 - `coconut --jupyter console` will launch a Jupyter/IPython console using the Coconut kernel.
@@ -517,11 +517,11 @@ f x                    n/a
 +, -                   left
 <<, >>                 left
 &                      left
-&:                     left
+&:                     yes
 ^                      left
 |                      left
-::                     n/a (lazy)
-..                     n/a
+::                     yes (lazy)
+..                     yes
 a `b` c,               left (captures lambda)
   all custom operators
 ??                     left (short-circuits)
@@ -536,7 +536,7 @@ a `b` c,               left (captures lambda)
 not                    unary
 and                    left (short-circuits)
 or                     left (short-circuits)
-x if c else y,         ternary left (short-circuits)
+x if c else y,         ternary (short-circuits)
   if c then x else y
 =>                     right
 ====================== ==========================
@@ -3851,7 +3851,7 @@ for x in input_data:
 
 Coconut provides a modified version of `itertools.count` that supports `in`, normal slicing, optimized iterator slicing, the standard `count` and `index` sequence methods, `repr`, and `start`/`step` attributes as a built-in under the name `count`. If the _step_ parameter is set to `None`, `count` will behave like `itertools.repeat` instead.
 
-Since `count` supports slicing, `count()` can be used as a version of `range` that can in some cases be more readable. In particular, it is easy to accidentally write `range(10, 2)` when you meant `range(0, 10, 2)`, but it is hard to accidentally write `count()[10:2]` when you mean `count()[:10:2]`.
+Since `count` supports slicing, `count()[...]` can be used as a version of `range` that can in some cases be more readable. In particular, it is easy to accidentally write `range(10, 2)` when you meant `range(0, 10, 2)`, but it is hard to accidentally write `count()[10:2]` when you mean `count()[:10:2]`.
 
 ##### Python Docs
 
