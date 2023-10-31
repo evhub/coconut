@@ -1628,9 +1628,9 @@ def collectby(
     iterable: _t.Iterable,
     value_func: _t.Callable | None = None,
     *,
+    collect_in: _T,
     reduce_func: _t.Callable | None | _t.Literal[False] = None,
     map_using: _t.Callable | None = None,
-    init_collection: _T
 ) -> _T:
     """Collect the items in iterable into a dictionary of lists keyed by key_func(item).
 
@@ -1665,9 +1665,9 @@ def mapreduce(
     key_value_func: _t.Callable,
     iterable: _t.Iterable,
     *,
+    collect_in: _T,
     reduce_func: _t.Callable | None | _t.Literal[False] = None,
     map_using: _t.Callable | None = None,
-    init_collection: _T
 ) -> _T:
     """Map key_value_func over iterable, then collect the values into a dictionary of lists keyed by the keys.
 

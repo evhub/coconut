@@ -606,9 +606,9 @@ def test_pandas() -> bool:
     d4 = d1 |> fmap$(def r -> r["nums2"] = r["nums"]*2; r)
     assert (d4["nums"] * 2 == d4["nums2"]).all()
     df = pd.DataFrame({"123": [1, 2, 3]})
-    mapreduce(ident, [("123", [4, 5, 6])], init_collection=df)
-    assert df["123"] |> list == [4, 5, 6]
-    mapreduce(ident, [("789", [7, 8, 9])], init_collection=df, reduce_func=False)
+    mapreduce(ident, [("456", [4, 5, 6])], collect_in=df)
+    assert df["456"] |> list == [4, 5, 6]
+    mapreduce(ident, [("789", [7, 8, 9])], collect_in=df, reduce_func=False)
     assert df["789"] |> list == [7, 8, 9]
     return True
 

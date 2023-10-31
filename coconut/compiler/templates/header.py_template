@@ -1899,12 +1899,12 @@ def mapreduce(key_value_func, iterable, **kwargs):
     If map_using is passed, calculate key_value_func by mapping them over
     the iterable using map_using as map. Useful with process_map/thread_map.
     """
-    reduce_func = kwargs.pop("reduce_func", None)
-    init_collection = kwargs.pop("init_collection", None)
+    collect_in = kwargs.pop("collect_in", None)
+    reduce_func = kwargs.pop("reduce_func", None if collect_in is None else False)
     map_using = kwargs.pop("map_using", _coconut.map)
     if kwargs:
         raise _coconut.TypeError("mapreduce()/collectby() got unexpected keyword arguments " + _coconut.repr(kwargs))
-    collection = init_collection if init_collection is not None else _coconut.collections.defaultdict(_coconut.list) if reduce_func is None else {empty_dict}
+    collection = collect_in if collect_in is not None else _coconut.collections.defaultdict(_coconut.list) if reduce_func is None else {empty_dict}
     for key, val in map_using(key_value_func, iterable):
         if reduce_func is None:
             collection[key].append(val)
