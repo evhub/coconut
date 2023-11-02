@@ -1015,8 +1015,8 @@ def raise_exc():
     raise Exception("raise_exc")
 
 @safe_call$
-def safe_raise_exc() =
-    raise_exc()
+def safe_raise_exc(exc_cls = Exception):
+    raise exc_cls()
 
 def does_raise_exc(func):
     try:

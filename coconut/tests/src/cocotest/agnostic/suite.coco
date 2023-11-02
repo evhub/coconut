@@ -1065,8 +1065,8 @@ forward 2""") == 900
     haslocobj = hasloc([[1, 2]])
     haslocobj |>= .iloc$[0]$[1]
     assert haslocobj == 2
-    assert safe_raise_exc().error `isinstance` Exception
-    assert safe_raise_exc().handle(Exception, const 10).result == 10
+    assert safe_raise_exc(IOError).error `isinstance` IOError
+    assert safe_raise_exc(IOError).handle(IOError, const 10).unwrap() == 10 == safe_raise_exc(IOError).expect_error(IOError).result_or(10)
 
     # must come at end
     assert fibs_calls[0] == 1

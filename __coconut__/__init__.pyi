@@ -325,6 +325,10 @@ class Expected(_BaseExpected[_T]):
             def __bool__(self) -> bool:
                 return self.error is None
             def __fmap__[U](self, func: T -> U) -> Expected[U]:
+                """Maps func over the result if it exists.
+
+                __fmap__ should be used directly only when fmap is not available (e.g. when consuming an Expected in vanilla Python).
+                """
                 return self.__class__(func(self.result)) if self else self
             def and_then[U](self, func: T -> Expected[U]) -> Expected[U]:
                 """Maps a T -> Expected[U] over an Expected[T] to produce an Expected[U].
@@ -340,24 +344,34 @@ class Expected(_BaseExpected[_T]):
             def map_error(self, func: BaseException -> BaseException) -> Expected[T]:
                 """Maps func over the error if it exists."""
                 return self if self else self.__class__(error=func(self.error))
-            def or_else[U](self, func: BaseException -> Expected[U]) -> Expected[T | U]:
-                """Return self if no error, otherwise return the result of evaluating func on the error."""
-                return self if self else func(self.error)
-            def result_or[U](self, default: U) -> T | U:
-                """Return the result if it exists, otherwise return the default."""
-                return self.result if self else default
-            def result_or_else[U](self, func: BaseException -> U) -> T | U:
-                """Return the result if it exists, otherwise return the result of evaluating func on the error."""
-                return self.result if self else func(self.error)
+            def handle(self, err_type, handler: BaseException -> T) -> Expected[T]:
+                """Recover from the given err_type by calling handler on the error to determine the result."""
+                if not self and isinstance(self.error, err_type):
+                    return self.__class__(handler(self.error))
+                return self
+            def expect_error(self, *err_types: BaseException) -> Expected[T]:
+                """Raise any errors that do not match the given error types."""
+                if not self and not isinstance(self.error, err_types):
+                    raise self.error
+                return self
             def unwrap(self) -> T:
                 """Unwrap the result or raise the error."""
                 if not self:
                     raise self.error
                 return self.result
-            def handle(self, err_type, handler: BaseException -> T) -> Expected[T]:
-                if not self and _coconut.isinstance(self.error, err_type):
-                    return self.__class__(handler(self.error))
-                return self
+            def or_else[U](self, func: BaseException -> Expected[U]) -> Expected[T | U]:
+                """Return self if no error, otherwise return the result of evaluating func on the error."""
+                return self if self else func(self.error)
+            def result_or_else[U](self, func: BaseException -> U) -> T | U:
+                """Return the result if it exists, otherwise return the result of evaluating func on the error."""
+                return self.result if self else func(self.error)
+            def result_or[U](self, default: U) -> T | U:
+                """Return the result if it exists, otherwise return the default.
+
+                Since .result_or() completely silences errors, it is highly recommended that you
+                call .expect_error() first to explicitly declare what errors you are okay silencing.
+                """
+                return self.result if self else default
     '''
     __slots__ = ()
     _coconut_is_data = True
@@ -408,20 +422,27 @@ class Expected(_BaseExpected[_T]):
     def map_error(self, func: _t.Callable[[BaseException], BaseException]) -> Expected[_T]:
         """Maps func over the error if it exists."""
         ...
-    def or_else(self, func: _t.Callable[[BaseException], Expected[_U]]) -> Expected[_T | _U]:
-        """Return self if no error, otherwise return the result of evaluating func on the error."""
+    def handle(self, err_type: _t.Type[BaseException], handler: _t.Callable[[BaseException], _T]) -> Expected[_T]:
+        """Recover from the given err_type by calling handler on the error to determine the result."""
         ...
-    def result_or(self, default: _U) -> _T | _U:
-        """Return the result if it exists, otherwise return the default."""
-        ...
-    def result_or_else(self, func: _t.Callable[[BaseException], _U]) -> _T | _U:
-        """Return the result if it exists, otherwise return the result of evaluating func on the error."""
+    def expect_error(self, *err_types: BaseException) -> Expected[_T]:
+        """Raise any errors that do not match the given error types."""
         ...
     def unwrap(self) -> _T:
         """Unwrap the result or raise the error."""
         ...
-    def handle(self, err_type: _t.Type[BaseException], handler: _t.Callable[[BaseException], _T]) -> Expected[_T]:
-        """Recover from the given err_type by calling handler on the error to determine the result."""
+    def or_else(self, func: _t.Callable[[BaseException], Expected[_U]]) -> Expected[_T | _U]:
+        """Return self if no error, otherwise return the result of evaluating func on the error."""
+        ...
+    def result_or_else(self, func: _t.Callable[[BaseException], _U]) -> _T | _U:
+        """Return the result if it exists, otherwise return the result of evaluating func on the error."""
+        ...
+    def result_or(self, default: _U) -> _T | _U:
+        """Return the result if it exists, otherwise return the default.
+
+        Since .result_or() completely silences errors, it is highly recommended that you
+        call .expect_error() first to explicitly declare what errors you are okay silencing.
+        """
         ...
 
 _coconut_Expected = Expected
@@ -1574,7 +1595,7 @@ def lift(func: _t.Callable[[_T, _U], _W]) -> _coconut_lifted_2[_T, _U, _W]: ...
 def lift(func: _t.Callable[[_T, _U, _V], _W]) -> _coconut_lifted_3[_T, _U, _V, _W]: ...
 @_t.overload
 def lift(func: _t.Callable[..., _W]) -> _t.Callable[..., _t.Callable[..., _W]]:
-    """Lifts a function up so that all of its arguments are functions.
+    """Lift a function up so that all of its arguments are functions.
 
     For a binary function f(x, y) and two unary functions g(z) and h(z), lift works as the S' combinator:
         lift(f)(g, h)(z) == f(g(z), h(z))
