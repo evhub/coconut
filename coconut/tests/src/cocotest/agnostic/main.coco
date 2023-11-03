@@ -1,6 +1,8 @@
 import sys
 
-from .primary import assert_raises, primary_test
+from .util import assert_raises
+from .primary_1 import primary_test_1
+from .primary_2 import primary_test_2
 
 
 def test_asyncio() -> bool:
@@ -49,7 +51,8 @@ def run_main(outer_MatchError, test_easter_eggs=False) -> bool:
     using_tco = "_coconut_tco" in globals() or "_coconut_tco" in locals()
 
     print_dot()  # ..
-    assert primary_test() is True
+    assert primary_test_1() is True
+    assert primary_test_2() is True
 
     print_dot()  # ...
     from .specific import (

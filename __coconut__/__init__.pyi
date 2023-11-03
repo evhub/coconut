@@ -207,12 +207,10 @@ dropwhile = _coconut.itertools.dropwhile
 tee = _coconut.itertools.tee
 starmap = _coconut.itertools.starmap
 cartesian_product = _coconut.itertools.product
-multiset = _coconut.collections.Counter
 
 _coconut_tee = tee
 _coconut_starmap = starmap
 _coconut_cartesian_product = cartesian_product
-_coconut_multiset = multiset
 
 
 process_map = thread_map = parallel_map = concurrent_map = _coconut_map = map
@@ -253,6 +251,10 @@ def _coconut_tco(func: _Tfunc) -> _Tfunc:
 
 
 # any changes here should also be made to safe_call and call_or_coefficient below
+@_t.overload
+def call(
+    _func: _t.Callable[[], _U],
+) -> _U: ...
 @_t.overload
 def call(
     _func: _t.Callable[[_T], _U],
@@ -451,6 +453,10 @@ _coconut_Expected = Expected
 # should match call above but with Expected
 @_t.overload
 def safe_call(
+    _func: _t.Callable[[], _U],
+) -> Expected[_U]: ...
+@_t.overload
+def safe_call(
     _func: _t.Callable[[_T], _U],
     _x: _T,
 ) -> Expected[_U]: ...
@@ -510,7 +516,11 @@ def safe_call(
     ...
 
 
-# based on call above
+# based on call above@_t.overload
+@_t.overload
+def _coconut_call_or_coefficient(
+    _func: _t.Callable[[], _U],
+) -> _U: ...
 @_t.overload
 def _coconut_call_or_coefficient(
     _func: _t.Callable[[_T], _U],
@@ -678,7 +688,7 @@ def _coconut_attritemgetter(
 def _coconut_base_compose(
     func: _t.Callable[[_T], _t.Any],
     *func_infos: _t.Tuple[_Callable, int, bool],
-    ) -> _t.Callable[[_T], _t.Any]: ...
+) -> _t.Callable[[_T], _t.Any]: ...
 
 
 def and_then(
@@ -1303,6 +1313,7 @@ class groupsof(_t.Generic[_T]):
         cls,
         n: _SupportsIndex,
         iterable: _t.Iterable[_T],
+        fillvalue: _T = ...,
     ) -> groupsof[_T]: ...
     def __iter__(self) -> _t.Iterator[_t.Tuple[_T, ...]]: ...
     def __hash__(self) -> int: ...
@@ -1322,8 +1333,8 @@ class windowsof(_t.Generic[_T]):
         cls,
         size: _SupportsIndex,
         iterable: _t.Iterable[_T],
-        fillvalue: _T=...,
-        step: _SupportsIndex=1,
+        fillvalue: _T = ...,
+        step: _SupportsIndex = 1,
     ) -> windowsof[_T]: ...
     def __iter__(self) -> _t.Iterator[_t.Tuple[_T, ...]]: ...
     def __hash__(self) -> int: ...
@@ -1339,7 +1350,7 @@ class flatten(_t.Iterable[_T]):
     def __new__(
         cls,
         iterable: _t.Iterable[_t.Iterable[_T]],
-        levels: _t.Optional[_SupportsIndex]=1,
+        levels: _t.Optional[_SupportsIndex] = 1,
     ) -> flatten[_T]: ...
 
     def __iter__(self) -> _t.Iterator[_T]: ...
@@ -1378,6 +1389,17 @@ def consume(
     ) -> _t.Sequence[_T]:
     """consume(iterable, keep_last) fully exhausts iterable and returns the last keep_last elements."""
     ...
+
+
+class multiset(_t.Generic[_T], _coconut.collections.Counter[_T]):
+    def add(self, item: _T) -> None: ...
+    def discard(self, item: _T) -> None: ...
+    def remove(self, item: _T) -> None: ...
+    def isdisjoint(self, other: _coconut.collections.Counter[_T]) -> bool: ...
+    def __xor__(self, other: _coconut.collections.Counter[_T]) -> multiset[_T]: ...
+    def count(self, item: _T) -> int: ...
+    def __fmap__(self, func: _t.Callable[[_T], _U]) -> multiset[_U]: ...
+_coconut_multiset = multiset
 
 
 class _FMappable(_t.Protocol[_Tfunc_contra, _Tco]):
