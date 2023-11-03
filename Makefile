@@ -217,6 +217,11 @@ test-easter-eggs: clean
 test-pyparsing: export COCONUT_PURE_PYTHON=TRUE
 test-pyparsing: test-univ
 
+# same as test-univ but disables the computation graph
+.PHONY: test-no-computation-graph
+test-no-computation-graph: export COCONUT_USE_COMPUTATION_GRAPH=FALSE
+test-no-computation-graph: test-univ
+
 # same as test-univ but uses --minify
 .PHONY: test-minify
 test-minify: export COCONUT_USE_COLOR=TRUE
@@ -330,16 +335,21 @@ check-reqs:
 profile-parser: export COCONUT_USE_COLOR=TRUE
 profile-parser: export COCONUT_PURE_PYTHON=TRUE
 profile-parser:
-	coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --force --profile --verbose --stack-size 4096 --recursion-limit 4096 2>&1 | tee ./profile.log
+	coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --force --jobs 0 --profile --verbose --stack-size 4096 --recursion-limit 4096 2>&1 | tee ./profile.log
 
-.PHONY: profile-time
-profile-time:
-	vprof -c h "./coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --force --stack-size 4096 --recursion-limit 4096" --output-file ./vprof.json
+.PHONY: pyspy
+pyspy:
+	py-spy record -o profile.svg --native -- python -m coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --force --jobs 0
+	open profile.svg
 
-.PHONY: profile-memory
-profile-memory:
-	vprof -c m "./coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --force --stack-size 4096 --recursion-limit 4096" --output-file ./vprof.json
+.PHONY: vprof-time
+vprof-time:
+	vprof -c h "./coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --force --jobs 0 --stack-size 4096 --recursion-limit 4096" --output-file ./vprof.json
 
-.PHONY: view-profile
-view-profile:
+.PHONY: vprof-memory
+vprof-memory:
+	vprof -c m "./coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --force --jobs 0 --stack-size 4096 --recursion-limit 4096" --output-file ./vprof.json
+
+.PHONY: view-vprof
+view-vprof:
 	vprof --input-file ./vprof.json

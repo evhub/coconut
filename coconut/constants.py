@@ -953,6 +953,7 @@ all_reqs = {
         ("pre-commit", "py3"),
         "requests",
         "vprof",
+        "py-spy",
     ),
     "docs": (
         "sphinx",
@@ -1005,6 +1006,7 @@ unpinned_min_versions = {
     ("async_generator", "py35"): (1, 10),
     ("exceptiongroup", "py37;py<311"): (1,),
     ("ipython", "py>=39"): (8, 16),
+    "py-spy": (0, 3),
 }
 
 pinned_min_versions = {

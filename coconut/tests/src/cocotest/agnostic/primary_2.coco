@@ -361,7 +361,7 @@ def primary_test_2() -> bool:
     x = 10
     assert x == 5 where:
         x = 5
-    assert x == 10
+    assert x == 10, x
     def nested() = f where:
         f = def -> g where:
             def g() = x where:
