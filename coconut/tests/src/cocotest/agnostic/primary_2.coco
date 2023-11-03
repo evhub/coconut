@@ -4,6 +4,8 @@ import weakref
 
 if TYPE_CHECKING:
     from typing import Any, Iterable
+else:
+    Any = Iterable = None
 from importlib import reload  # NOQA
 
 from .util import assert_raises, typed_eq
