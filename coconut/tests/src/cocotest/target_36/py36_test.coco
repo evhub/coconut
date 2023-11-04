@@ -35,6 +35,7 @@ def py36_test() -> bool:
             |> await
             |> reversed
             |> map$(.*10)
+            |> list
         ) == range(5) |> list
     loop.run_until_complete(atest())
 

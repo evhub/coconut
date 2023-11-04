@@ -33,8 +33,6 @@ from coconut.exceptions import (
     CoconutInternalException,
 )
 from coconut.constants import (
-    WINDOWS,
-    PY38,
     PY311,
     py_syntax_version,
     mimetype,
@@ -50,9 +48,6 @@ from coconut.util import override, memoize_with_exceptions
 from coconut.compiler import Compiler
 from coconut.compiler.util import should_indent
 from coconut.command.util import Runner
-
-if WINDOWS and PY38 and asyncio is not None:  # attempt to fix zmq warning
-    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 try:
     from IPython.core.inputsplitter import IPythonInputSplitter
