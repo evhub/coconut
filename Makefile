@@ -346,20 +346,27 @@ open-speedscope:
 pyspy-purepy: export COCONUT_PURE_PYTHON=TRUE
 pyspy-purepy:
 	py-spy record -o profile.speedscope --format speedscope --subprocesses -- python -m coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --force
-	open-speedscope
+	make open-speedscope
 
 .PHONY: pyspy-native
 pyspy-native:
 	py-spy record -o profile.speedscope --format speedscope --native -- python -m coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --force --jobs 0
-	open-speedscope
+	make open-speedscope
+
+.PHONY: pyspy-runtime
+pyspy-runtime:
+	py-spy record -o runtime_profile.speedscope --format speedscope --subprocesses -- python ./coconut/tests/dest/runner.py
+	speedscope ./runtime_profile.speedscope
 
 .PHONY: vprof-time
 vprof-time:
 	vprof -c h "./coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --force --jobs 0 --stack-size 4096 --recursion-limit 4096" --output-file ./vprof.json
+	make view-vprof
 
 .PHONY: vprof-memory
 vprof-memory:
 	vprof -c m "./coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --force --jobs 0 --stack-size 4096 --recursion-limit 4096" --output-file ./vprof.json
+	make view-vprof
 
 .PHONY: view-vprof
 view-vprof:

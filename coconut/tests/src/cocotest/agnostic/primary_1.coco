@@ -211,13 +211,6 @@ def primary_test_1() -> bool:
     assert map((-), range(5)).iters[0] |> tuple == range(5) |> tuple == zip(range(5), range(6)).iters[0] |> tuple  # type: ignore
     assert repr(zip((0,1), (1,2))) == "zip((0, 1), (1, 2))"
     assert repr(map((-), range(5))).startswith("map(")  # type: ignore
-    assert repr(process_map((-), range(5))).startswith("process_map(")  # type: ignore
-    assert process_map((-), range(5)) |> tuple == (0, -1, -2, -3, -4) == process_map(map$((-)), (range(5),))$[0] |> tuple  # type: ignore
-    assert process_map(zip, (range(2),), (range(2),)) |> map$(tuple) |> tuple == (((0,0), (1,1)),)  # type: ignore
-    assert process_map(zip_longest$(fillvalue=10), (range(1),), (range(2),)) |> map$(tuple) |> tuple == (((0,0), (10,1)),)  # type: ignore
-    assert (range(0, 5), range(5, 10)) |*> map$(+) |> tuple == (5, 7, 9, 11, 13)
-    assert process_map((*)$(2)..(+)$(1), range(5)) |> tuple == (2, 4, 6, 8, 10)
-    assert process_map((+), range(5), range(5), chunksize=2) |> list == map((*)$(2), range(5)) |> list == thread_map((+), range(5), range(5), chunksize=2) |> list  # type: ignore
     assert repr(thread_map((-), range(5))).startswith("thread_map(")  # type: ignore
     with thread_map.multiple_sequential_calls(max_workers=4):  # type: ignore
         assert thread_map((-), range(5), stream=True) |> tuple == (0, -1, -2, -3, -4) == thread_map(map$((-)), (range(5),))$[0] |> tuple  # type: ignore
@@ -319,7 +312,6 @@ def primary_test_1() -> bool:
     assert pow$(?, 2)(3) == 9
     assert [] |> reduce$((+), ?, ()) == ()
     assert pow$(?, 2) |> repr == "<built-in function pow>$(?, 2)"
-    assert process_map(pow$(?, 2), range(10)) |> tuple == (0, 1, 4, 9, 16, 25, 36, 49, 64, 81)
     assert pow$(?, 2).args == (None, 2)
     assert range(20) |> filter$((x) -> x < 5) |> reversed |> tuple == (4,3,2,1,0) == (0,1,2,3,4,5,6,7,8,9) |> filter$((x) -> x < 5) |> reversed |> tuple  # type: ignore
     assert (range(10) |> map$((x) -> x) |> reversed) `isinstance` map  # type: ignore
@@ -1149,10 +1141,6 @@ def primary_test_1() -> bool:
                 def __call__(self) = super().__call__()
             HasSuper
     assert HasSuper5.HasHasSuper.HasSuper()() == 10 == HasSuper6().get_HasSuper()()()
-    assert process_map((.+(10,)), [
-        (a=1, b=2),
-        (x=3, y=4),
-    ]) |> list == [(1, 2, 10), (3, 4, 10)]
     assert f"{'a' + 'b'}" == "ab"
     int_str_tup: (int; str) = (1, "a")
     key = "abc"
@@ -1303,4 +1291,18 @@ def primary_test_1() -> bool:
     assert err is some_err
     assert Expected(error=TypeError()).map_error(const some_err) == Expected(error=some_err)
     assert Expected(10).map_error(const some_err) == Expected(10)
+    assert repr(process_map((-), range(5))).startswith("process_map(")  # type: ignore
+
+    with process_map.multiple_sequential_calls():  # type: ignore
+        assert process_map((-), range(5)) |> tuple == (0, -1, -2, -3, -4) == process_map(map$((-)), (range(5),))$[0] |> tuple  # type: ignore
+        assert process_map(zip, (range(2),), (range(2),)) |> map$(tuple) |> tuple == (((0,0), (1,1)),)  # type: ignore
+        assert process_map(zip_longest$(fillvalue=10), (range(1),), (range(2),)) |> map$(tuple) |> tuple == (((0,0), (10,1)),)  # type: ignore
+        assert (range(0, 5), range(5, 10)) |*> map$(+) |> tuple == (5, 7, 9, 11, 13)
+        assert process_map((*)$(2)..(+)$(1), range(5)) |> tuple == (2, 4, 6, 8, 10)
+        assert process_map((+), range(5), range(5), chunksize=2) |> list == map((*)$(2), range(5)) |> list == thread_map((+), range(5), range(5), chunksize=2) |> list  # type: ignore
+        assert process_map(pow$(?, 2), range(10)) |> tuple == (0, 1, 4, 9, 16, 25, 36, 49, 64, 81)
+        assert process_map((.+(10,)), [
+            (a=1, b=2),
+            (x=3, y=4),
+        ]) |> list == [(1, 2, 10), (3, 4, 10)]
     return True

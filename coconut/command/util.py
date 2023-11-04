@@ -495,14 +495,24 @@ class Prompt(object):
     session = None
     style = None
     runner = None
+    lexer = None
+    suggester = None if prompt_use_suggester else False
 
-    def __init__(self, use_suggester=prompt_use_suggester):
+    def __init__(self, setup_now=False):
         """Set up the prompt."""
         if prompt_toolkit is not None:
             self.set_style(os.getenv(style_env_var, default_style))
             self.set_history_file(prompt_histfile)
+            if setup_now:
+                self.setup()
+
+    def setup(self):
+        """Actually initialize the underlying Prompt.
+        We do this lazily since it's expensive."""
+        if self.lexer is None:
             self.lexer = PygmentsLexer(CoconutLexer)
-            self.suggester = AutoSuggestFromHistory() if use_suggester else None
+        if self.suggester is None:
+            self.suggester = AutoSuggestFromHistory()
 
     def set_style(self, style):
         """Set pygments syntax highlighting style."""
@@ -555,6 +565,7 @@ class Prompt(object):
 
     def prompt(self, msg):
         """Get input using prompt_toolkit."""
+        self.setup()
         try:
             # prompt_toolkit v2
             if self.session is None:

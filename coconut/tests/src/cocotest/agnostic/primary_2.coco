@@ -121,18 +121,12 @@ def primary_test_2() -> bool:
     assert flatten([[[1,2]], [[3], [4]]], 2) |> list == [1, 2, 3, 4]
     assert flatten([[[1,2]], [[3], [4]]], 2) |> reversed |> list == [4, 3, 2, 1]
     assert_raises(-> map((+), range(3), range(4), strict=True) |> list, ValueError)  # type: ignore
-    assert map((+), range(3), range(4)$[:-1], strict=True) |> list == [0, 2, 4] == process_map((+), range(3), range(4)$[:-1], strict=True) |> list  # type: ignore
-    assert range(3) |> map$((.+1), strict=True) |> list == [1, 2, 3] == range(3) |> process_map$((.+1), strict=True) |> list  # type: ignore
     assert cartesian_product((1, 2), (3, 4), repeat=0) |> list == [()]
     assert (a=1, b=2)[1] == 2
     obj = object()
     assert_raises((def -> obj.abc = 123), AttributeError)  # type: ignore
     hardref = map((.+1), [1,2,3])
     assert weakref.ref(hardref)() |> list == [2, 3, 4]  # type: ignore
-    my_match_err = MatchError("my match error", 123)
-    assert process_map(ident, [my_match_err]) |> list |> str == str([my_match_err])  # type: ignore
-    # repeat the same thing again now that my_match_err.str has been called
-    assert process_map(ident, [my_match_err]) |> list |> str == str([my_match_err])  # type: ignore
     match data tuple(1, 2) in (1, 2, 3):
         assert False
     data TestDefaultMatching(x="x default", y="y default")
@@ -409,4 +403,13 @@ def primary_test_2() -> bool:
         assert some_data |> mapreducer == {"a": ["123"], "b": ["567"]}
     assert_raises(-> collectby(.[0], [(0, 1), (0, 2)], reduce_func=False), ValueError)  # type: ignore
     assert ident$(x=?).__name__ == "ident" == ident$(1).__name__  # type: ignore
+
+    with process_map.multiple_sequential_calls():  # type: ignore
+        assert map((+), range(3), range(4)$[:-1], strict=True) |> list == [0, 2, 4] == process_map((+), range(3), range(4)$[:-1], strict=True) |> list  # type: ignore
+        assert range(3) |> map$((.+1), strict=True) |> list == [1, 2, 3] == range(3) |> process_map$((.+1), strict=True) |> list  # type: ignore
+        my_match_err = MatchError("my match error", 123)
+        assert process_map(ident, [my_match_err]) |> list |> str == str([my_match_err])  # type: ignore
+        # repeat the same thing again now that my_match_err.str has been called
+        assert process_map(ident, [my_match_err]) |> list |> str == str([my_match_err])  # type: ignore
+
     return True

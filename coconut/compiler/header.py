@@ -840,6 +840,7 @@ def async_map(*args, **kwargs):
 # -----------------------------------------------------------------------------------------------------------------------
 
 
+@memoize()
 def getheader(which, use_hash, target, no_tco, strict, no_wrap):
     """Generate the specified header.
 

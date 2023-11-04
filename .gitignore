@@ -145,3 +145,5 @@ __coconut_cache__/
 vprof.json
 profile.svg
 profile.speedscope
+runtime_profile.svg
+runtime_profile.speedscope

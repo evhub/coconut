@@ -91,9 +91,12 @@ os.environ["PYDEVD_DISABLE_FILE_VALIDATION"] = "1"
 
 default_recursion_limit = "6144"
 default_stack_size = "6144"
-
-# fix EOM on GitHub actions
-default_jobs = None if PY36 and not PYPY else "4"
+default_jobs = (
+    # fix EOMs on GitHub actions
+    "2" if PYPY
+    else "4" if not PY36
+    else None
+)
 
 jupyter_timeout = 120
 

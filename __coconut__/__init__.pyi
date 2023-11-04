@@ -1750,7 +1750,8 @@ def mapreduce(
     """
     ...
 
-_coconut_mapreduce = mapreduce.using_processes = mapreduce.using_threads = mapreduce  # type: ignore
+mapreduce.using_processes = mapreduce.using_threads = mapreduce  # type: ignore
+_coconut_mapreduce = mapreduce
 
 
 @_t.overload

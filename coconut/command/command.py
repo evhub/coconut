@@ -134,14 +134,7 @@ class Command(object):
     stack_size = 0  # corresponds to --stack-size flag
     incremental = False  # corresponds to --incremental flag
 
-    _prompt = None
-
-    @property
-    def prompt(self):
-        """Delay creation of a Prompt() until it's needed."""
-        if self._prompt is None:
-            self._prompt = Prompt()
-        return self._prompt
+    prompt = Prompt()
 
     def start(self, run=False):
         """Endpoint for coconut and coconut-run."""
