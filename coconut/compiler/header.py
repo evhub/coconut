@@ -233,6 +233,8 @@ def process_header_args(which, use_hash, target, no_tco, strict, no_wrap):
         comma_slash=", /" if target_info >= (3, 8) else "",
         report_this_text=report_this_text,
         from_None=" from None" if target.startswith("3") else "",
+        process_="process_" if target_info >= (3, 13) else "",
+
         numpy_modules=tuple_str_of(numpy_modules, add_quotes=True),
         pandas_numpy_modules=tuple_str_of(pandas_numpy_modules, add_quotes=True),
         jax_numpy_modules=tuple_str_of(jax_numpy_modules, add_quotes=True),
@@ -716,10 +718,10 @@ asyncio_Return = StopIteration
         ),
         class_amap=pycondition(
             (3, 3),
-            if_lt=r'''
+            if_lt='''
 _coconut_amap = None
             ''',
-            if_ge=r'''
+            if_ge='''
 class _coconut_amap(_coconut_baseclass):
     __slots__ = ("func", "aiter")
     def __init__(self, func, aiter):
@@ -786,6 +788,46 @@ def __neg__(self):
     return {_coconut_}multiset() - self
             '''.format(**format_dict),
             indent=1,
+        ),
+        def_async_map=prepare(
+            '''
+async def async_map(async_func, *iters, strict=False):
+    """Map async_func over iters asynchronously using anyio."""
+    import anyio
+    results = []
+    async def store_func_in_of(i, args):
+        got = await async_func(*args)
+        results.extend([None] * (1 + i - _coconut.len(results)))
+        results[i] = got
+    async with anyio.create_task_group() as nursery:
+        for i, args in _coconut.enumerate({_coconut_}zip(*iters, strict=strict)):
+            nursery.start_soon(store_func_in_of, i, args)
+    return results
+            '''.format(**format_dict) if target_info >= (3, 5) else
+            pycondition(
+                (3, 5),
+                if_ge='''
+_coconut_async_map_ns = {lbrace}"_coconut": _coconut, "zip": zip{rbrace}
+_coconut_exec("""async def async_map(async_func, *iters, strict=False):
+    \'''Map async_func over iters asynchronously using anyio.\'''
+    import anyio
+    results = []
+    async def store_func_in_of(i, args):
+        got = await async_func(*args)
+        results.extend([None] * (1 + i - _coconut.len(results)))
+        results[i] = got
+    async with anyio.create_task_group() as nursery:
+        for i, args in _coconut.enumerate({_coconut_}zip(*iters, strict=strict)):
+            nursery.start_soon(store_func_in_of, i, args)
+    return results""", _coconut_async_map_ns)
+async_map = _coconut_async_map_ns["async_map"]
+                '''.format(**format_dict),
+                if_lt='''
+def async_map(*args, **kwargs):
+    """async_map not available on Python < 3.5"""
+    raise _coconut.NameError("async_map not available on Python < 3.5")
+                ''',
+            ),
         ),
     )
     format_dict.update(extra_format_dict)

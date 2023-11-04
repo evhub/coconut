@@ -220,7 +220,6 @@ extras = {
     "kernel": get_reqs("kernel"),
     "watch": get_reqs("watch"),
     "mypy": get_reqs("mypy"),
-    "backports": get_reqs("backports"),
     "xonsh": get_reqs("xonsh"),
     "numpy": get_reqs("numpy"),
 }
@@ -230,6 +229,15 @@ extras["jupyter"] = uniqueify_all(
     get_reqs("jupyter"),
 )
 
+extras["jupyterlab"] = uniqueify_all(
+    extras["jupyter"],
+    get_reqs("jupyterlab"),
+)
+extras["jupytext"] = uniqueify_all(
+    extras["jupyter"],
+    get_reqs("jupytext"),
+)
+
 extras["all"] = everything_in(extras)
 
 extras.update({
@@ -237,7 +245,6 @@ extras.update({
     "docs": unique_wrt(get_reqs("docs"), requirements),
     "tests": uniqueify_all(
         get_reqs("tests"),
-        extras["backports"],
         extras["numpy"],
         extras["jupyter"] if IPY else [],
         extras["mypy"] if MYPY else [],

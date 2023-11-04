@@ -946,7 +946,7 @@ class thread_map(_coconut_base_parallel_map):
     _threadlocal_ns = _coconut.threading.local()
     @staticmethod
     def _make_pool(max_workers=None):
-        return _coconut.multiprocessing_dummy.Pool(_coconut.multiprocessing.cpu_count() * 5 if max_workers is None else max_workers)
+        return _coconut.multiprocessing_dummy.Pool(_coconut.multiprocessing.{process_}cpu_count() * 5 if max_workers is None else max_workers)
 class zip(_coconut_baseclass, _coconut.zip):
     __slots__ = ("iters", "strict")
     __doc__ = getattr(_coconut.zip, "__doc__", "<see help(py_zip)>")
@@ -978,6 +978,7 @@ class zip(_coconut_baseclass, _coconut.zip):
 {zip_iter}
     def __fmap__(self, func):
         return {_coconut_}map(func, self)
+{def_async_map}
 class zip_longest(zip):
     __slots__ = ("fillvalue",)
     __doc__ = getattr(_coconut.zip_longest, "__doc__", "Version of zip that fills in missing values with fillvalue.")
@@ -1520,22 +1521,21 @@ class multiset(_coconut.collections.Counter{comma_object}):
     def add(self, item):
         """Add an element to a multiset."""
         self[item] += 1
+    def remove(self, item, **kwargs):
+        """Remove an element from a multiset; it must be a member."""
+        allow_missing = kwargs.pop("allow_missing", False)
+        if kwargs:
+            raise _coconut.TypeError("multiset.remove() got unexpected keyword arguments " + _coconut.repr(kwargs))
+        item_count = self[item]
+        if item_count > 0:
+            self[item] = item_count - 1
+            if item_count - 1 <= 0:
+                del self[item]
+        elif not allow_missing:
+            raise _coconut.KeyError(item)
     def discard(self, item):
         """Remove an element from a multiset if it is a member."""
-        item_count = self[item]
-        if item_count > 0:
-            self[item] = item_count - 1
-            if item_count - 1 <= 0:
-                del self[item]
-    def remove(self, item):
-        """Remove an element from a multiset; it must be a member."""
-        item_count = self[item]
-        if item_count > 0:
-            self[item] = item_count - 1
-            if item_count - 1 <= 0:
-                del self[item]
-        else:
-            raise _coconut.KeyError(item)
+        return self.remove(item, allow_missing=True)
     def isdisjoint(self, other):
         """Return True if two multisets have a null intersection."""
         return not self & other

@@ -1230,6 +1230,22 @@ def reiterable(iterable: _t.Iterable[_T]) -> _t.Iterable[_T]:
 _coconut_reiterable = reiterable
 
 
+@_t.overload
+def async_map(
+    async_func: _t.Callable[[_T], _t.Awaitable[_U]],
+    iter: _t.Iterable[_T],
+    strict: bool = False,
+) -> _t.Awaitable[_t.List[_U]]: ...
+@_t.overload
+def async_map(
+    async_func: _t.Callable[..., _t.Awaitable[_U]],
+    *iters: _t.Iterable,
+    strict: bool = False,
+) -> _t.Awaitable[_t.List[_U]]:
+    """Map async_func over iters asynchronously using anyio."""
+    ...
+
+
 def multi_enumerate(iterable: _Iterable) -> _t.Iterable[_t.Tuple[_t.Tuple[int, ...], _t.Any]]:
     """Enumerate an iterable of iterables. Works like enumerate, but indexes
     through inner iterables and produces a tuple index representing the index
@@ -1694,6 +1710,8 @@ def collectby(
     """
     ...
 
+collectby.using_processes = collectby.using_threads = collectby  # type: ignore
+
 
 @_t.overload
 def mapreduce(
@@ -1729,7 +1747,7 @@ def mapreduce(
     """
     ...
 
-_coconut_mapreduce = mapreduce
+_coconut_mapreduce = mapreduce.using_processes = mapreduce.using_threads = mapreduce  # type: ignore
 
 
 @_t.overload

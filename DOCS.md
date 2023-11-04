@@ -11,6 +11,7 @@ depth: 2
 ---
 ```
 
+
 ## Overview
 
 This documentation covers all the features of the [Coconut Programming Language](http://evhub.github.io/coconut/), and is intended as a reference/specification, not a tutorialized introduction. For an introduction to and tutorial of Coconut, see [the tutorial](./HELP.md).
@@ -24,6 +25,7 @@ Thought Coconut syntax is primarily based on that of Python, other languages tha
 #### Try It Out
 
 If you want to try Coconut in your browser, check out the [online interpreter](https://cs121-team-panda.github.io/coconut-interpreter). Note, however, that it may be running an outdated version of Coconut.
+
 
 ## Installation
 
@@ -85,23 +87,15 @@ pip install coconut[opt_dep_1,opt_dep_2]
 
 The full list of optional dependencies is:
 
-- `all`: alias for `jupyter,watch,mypy,backports,xonsh` (this is the recommended way to install a feature-complete version of Coconut).
+- `all`: alias for everything below (this is the recommended way to install a feature-complete version of Coconut).
 - `jupyter`/`ipython`: enables use of the `--jupyter` / `--ipython` flag.
+- `kernel`: lightweight subset of `jupyter` that only includes the dependencies that are strictly necessary for Coconut's [Jupyter kernel](#kernel).
 - `watch`: enables use of the `--watch` flag.
 - `mypy`: enables use of the `--mypy` flag.
-- `backports`: installs libraries that backport newer Python features to older versions, which Coconut will automatically use instead of the standard library if the standard library is not available. Specifically:
-  - Installs [`exceptiongroup`](https://pypi.org/project/exceptiongroup/) to backport [`ExceptionGroup` and `BaseExceptionGroup`](https://docs.python.org/3/library/exceptions.html#ExceptionGroup).
-  - Installs [`dataclasses`](https://pypi.org/project/dataclasses/) to backport [`dataclasses`](https://docs.python.org/3/library/dataclasses.html).
-  - Installs [`typing`](https://pypi.org/project/typing/) to backport [`typing`](https://docs.python.org/3/library/typing.html) ([`typing_extensions`](https://pypi.org/project/typing-extensions/) is always installed for backporting individual `typing` objects).
-  - Installs [`aenum`](https://pypi.org/project/aenum) to backport [`enum`](https://docs.python.org/3/library/enum.html).
-  - Installs [`async_generator`](https://github.com/python-trio/async_generator) to backport [`async` generators](https://peps.python.org/pep-0525/) and [`asynccontextmanager`](https://docs.python.org/3/library/contextlib.html#contextlib.asynccontextmanager).
-  - Installs [`trollius`](https://pypi.python.org/pypi/trollius) to backport [`async`/`await`](https://docs.python.org/3/library/asyncio-task.html) and [`asyncio`](https://docs.python.org/3/library/asyncio.html).
 - `xonsh`: enables use of Coconut's [`xonsh` support](#xonsh-support).
 - `numpy`: installs everything necessary for making use of Coconut's [`numpy` integration](#numpy-integration).
-- `kernel`: lightweight subset of `jupyter` that only includes the dependencies that are strictly necessary for Coconut's [Jupyter kernel](#kernel).
-- `tests`: everything necessary to test the Coconut language itself.
-- `docs`: everything necessary to build Coconut's documentation.
-- `dev`: everything necessary to develop on the Coconut language itself, including all of the dependencies above.
+- `jupyterlab`: installs everything necessary to use [JupyterLab](https://github.com/jupyterlab/jupyterlab) with Coconut.
+- `jupytext`: installs everything necessary to use [Jupytext](https://github.com/mwouts/jupytext) with Coconut.
 
 #### Develop Version
 
@@ -112,6 +106,7 @@ pip install coconut-develop
 which will install the most recent working version from Coconut's [`develop` branch](https://github.com/evhub/coconut/tree/develop). Optional dependency installation is supported in the same manner as above. For more information on the current development build, check out the [development version of this documentation](http://coconut.readthedocs.io/en/develop/DOCS.html). Be warned: `coconut-develop` is likely to be unstable—if you find a bug, please report it by [creating a new issue](https://github.com/evhub/coconut/issues/new).
 
 _Note: if you have an existing release version of `coconut` installed, you'll need to `pip uninstall coconut` before installing `coconut-develop`._
+
 
 ## Compilation
 
@@ -291,7 +286,7 @@ Finally, while Coconut will try to compile Python-3-specific syntax to its unive
 
 - the `nonlocal` keyword,
 - keyword-only function parameters (use [pattern-matching function definition](#pattern-matching-functions) for universal code),
-- `async` and `await` statements (requires a specific target; Coconut will attempt different backports based on the targeted version),
+- `async` and `await` statements (requires a specific target; Coconut will attempt different [backports](#backports) based on the targeted version),
 - `:=` assignment expressions (requires `--target 3.8`),
 - positional-only function parameters (use [pattern-matching function definition](#pattern-matching-functions) for universal code) (requires `--target 3.8`),
 - `a[x, *y]` variadic generic syntax (use [type parameter syntax](#type-parameter-syntax) for universal code) (requires `--target 3.11`), and
@@ -350,6 +345,21 @@ The style issues which will cause `--strict` to throw an error are:
 - use of `:` instead of `<:` to specify upper bounds in [Coconut's type parameter syntax](#type-parameter-syntax)
 
 Note that many of the above style issues will still show a warning if `--strict` is not present.
+
+#### Backports
+
+In addition to the newer Python features that Coconut can backport automatically itself to older Python versions, Coconut will also automatically compile code to make use of a variety of external backports as well. These backports are automatically installed with Coconut if needed and Coconut will automatically use them instead of the standard library if the standard library is not available. These backports are:
+- [`typing`](https://pypi.org/project/typing/) for backporting [`typing`](https://docs.python.org/3/library/typing.html).
+- [`typing_extensions`](https://pypi.org/project/typing-extensions/) for backporting individual `typing` objects.
+- [`backports.functools-lru-cache`](https://pypi.org/project/backports.functools-lru-cache/) for backporting [`functools.lru_cache`](https://docs.python.org/3/library/functools.html#functools.lru_cache).
+- [`exceptiongroup`](https://pypi.org/project/exceptiongroup/) for backporting [`ExceptionGroup` and `BaseExceptionGroup`](https://docs.python.org/3/library/exceptions.html#ExceptionGroup).
+- [`dataclasses`](https://pypi.org/project/dataclasses/) for backporting [`dataclasses`](https://docs.python.org/3/library/dataclasses.html).
+- [`aenum`](https://pypi.org/project/aenum) for backporting [`enum`](https://docs.python.org/3/library/enum.html).
+- [`async_generator`](https://github.com/python-trio/async_generator) for backporting [`async` generators](https://peps.python.org/pep-0525/) and [`asynccontextmanager`](https://docs.python.org/3/library/contextlib.html#contextlib.asynccontextmanager).
+- [`trollius`](https://pypi.python.org/pypi/trollius) for backporting [`async`/`await`](https://docs.python.org/3/library/asyncio-task.html) and [`asyncio`](https://docs.python.org/3/library/asyncio.html).
+
+Note that, when distributing compiled Coconut code, if you use any of these backports, you'll need to make sure that the requisite backport module is included as a dependency.
+
 
 ## Integrations
 
@@ -493,6 +503,7 @@ Compilation always uses the same parameters as in the [Coconut Jupyter kernel](#
 
 Note that the way that Coconut integrates with `xonsh`, `@(<code>)` syntax and the `execx` command will only work with Python code, not Coconut code. Additionally, Coconut will only compile individual commands—Coconut will not touch the `.xonshrc` or any other `.xsh` files.
 
+
 ## Operators
 
 ```{contents}
@@ -501,6 +512,7 @@ local:
 depth: 1
 ---
 ```
+
 
 ### Precedence
 
@@ -543,6 +555,7 @@ x if c else y,         ternary (short-circuits)
 ```
 
 For example, since addition has a higher precedence than piping, expressions of the form `x |> y + z` are equivalent to `x |> (y + z)`.
+
 
 ### Lambdas
 
@@ -601,6 +614,7 @@ get_random_number = (=> random.random())
 
 _Note: Nesting implicit lambdas can lead to problems with the scope of the `_` parameter to each lambda. It is recommended that nesting implicit lambdas be avoided._
 
+
 ### Partial Application
 
 Coconut uses a `$` sign right after a function's name but before the open parenthesis used to call the function to denote partial application.
@@ -648,6 +662,7 @@ expnums |> list |> print
 expnums = map(lambda x: pow(x, 2), range(5))
 print(list(expnums))
 ```
+
 
 ### Pipes
 
@@ -720,6 +735,7 @@ async def do_stuff(some_data):
     return post_proc(await async_func(some_data))
 ```
 
+
 ### Function Composition
 
 Coconut has three basic function composition operators: `..`, `..>`, and `<..`. Both `..` and `<..` use math-style "backwards" function composition, where the first function is called last, while `..>` uses "forwards" function composition, where the first function is called first. Forwards and backwards function composition pipes cannot be used together in the same expression (unlike normal pipes) and have precedence in-between `None`-coalescing and normal pipes.
@@ -765,6 +781,7 @@ fog = lambda *args, **kwargs: f(g(*args, **kwargs))
 f_into_g = lambda *args, **kwargs: g(f(*args, **kwargs))
 ```
 
+
 ### Iterator Slicing
 
 Coconut uses a `$` sign right after an iterator before a slice to perform iterator slicing, as in `it$[:5]`. Coconut's iterator slicing works much the same as Python's sequence slicing, and looks much the same as Coconut's partial application, but with brackets instead of parentheses.
@@ -782,6 +799,7 @@ map(x => x*2, range(10**100))$[-1] |> print
 
 **Python:**
 _Can't be done without a complicated iterator slicing function and inspection of custom objects. The necessary definitions in Python can be found in the Coconut header._
+
 
 ### Iterator Chaining
 
@@ -815,6 +833,7 @@ def N(n=0) = (n,) :: N(n+1)  # no infinite loop because :: is lazy
 
 **Python:**
 _Can't be done without a complicated iterator comprehension in place of the lazy chaining. See the compiled code for the Python syntax._
+
 
 ### Infix Functions
 
@@ -855,6 +874,7 @@ def a `mod` b = a % b
 def mod(a, b): return a % b
 print(mod(x, 2))
 ```
+
 
 ### Custom Operators
 
@@ -925,6 +945,7 @@ print(bool(0))
 
 print(math.log10(100))
 ```
+
 
 ### None Coalescing
 
@@ -997,6 +1018,7 @@ import functools
 (lambda result: None if result is None else result.attr[index].method())(could_be_none())
 ```
 
+
 ### Protocol Intersection
 
 Coconut uses the `&:` operator to indicate protocol intersection. That is, for two [`typing.Protocol`s](https://docs.python.org/3/library/typing.html#typing.Protocol) `Protocol1` and `Protocol1`, `Protocol1 &: Protocol2` is equivalent to a `Protocol` that combines the requirements of both `Protocol1` and `Protocol2`.
@@ -1051,6 +1073,7 @@ class CanAddAndSub(Protocol, Generic[T, U, V]):
     def __neg__(self: T) -> V:
         raise NotImplementedError
 ```
+
 
 ### Unicode Alternatives
 
@@ -1107,6 +1130,7 @@ _Note: these are only the default, built-in unicode operators. Coconut supports 
 ⏨ (\u23e8)                  => "e" (in scientific notation)
 ```
 
+
 ## Keywords
 
 ```{contents}
@@ -1115,6 +1139,7 @@ local:
 depth: 1
 ---
 ```
+
 
 ### `match`
 
@@ -1329,6 +1354,7 @@ _Showcases the use of an iterable search pattern and a view pattern to construct
 **Python:**
 _Can't be done without a long series of checks for each `match` statement. See the compiled code for the Python syntax._
 
+
 ### `case`
 
 Coconut's `case` blocks serve as an extension of Coconut's `match` statement for performing multiple `match` statements against the same value, where only one of them should succeed. Unlike lone `match` statements, only one match statement inside of a `case` block will ever succeed, and thus more general matches should be put below more specific ones.
@@ -1392,6 +1418,7 @@ _Example of the `cases` keyword instead._
 **Python:**
 _Can't be done without a long series of checks for each `match` statement. See the compiled code for the Python syntax._
 
+
 ### `match for`
 
 Coconut supports pattern-matching in for loops, where the pattern is matched against each item in the iterable. The syntax is
@@ -1422,6 +1449,7 @@ for user_data in get_data():
     uid = user_data["user"]
     print(uid)
 ```
+
 
 ### `data`
 
@@ -1543,6 +1571,7 @@ data namedpt(name `isinstance` str, x `isinstance` int, y `isinstance` int):
 **Python:**
 _Can't be done without a series of method definitions for each data type. See the compiled code for the Python syntax._
 
+
 ### `where`
 
 Coconut's `where` statement is fairly straightforward. The syntax for a `where` statement is just
@@ -1567,6 +1596,7 @@ _a = 1
 _b = 2
 result = _a + _b
 ```
+
 
 ### `async with for`
 
@@ -1622,6 +1652,7 @@ async with my_generator() as agen:
         print(value)
 ```
 
+
 ### Handling Keyword/Variable Name Overlap
 
 In Coconut, the following keywords are also valid variable names:
@@ -1666,6 +1697,7 @@ print(data)
 x, y = input_list
 ```
 
+
 ## Expressions
 
 ```{contents}
@@ -1674,6 +1706,7 @@ local:
 depth: 1
 ---
 ```
+
 
 ### Statement Lambdas
 
@@ -1721,6 +1754,7 @@ g = def (a: int, b: int) -> int => a ** b
 ```
 
 _Deprecated: if the deprecated `->` is used in place of `=>`, then return type annotations will not be available._
+
 
 ### Operator Functions
 
@@ -1806,6 +1840,7 @@ import operator
 print(list(map(operator.add, range(0, 5), range(5, 10))))
 ```
 
+
 ### Implicit Partial Application
 
 Coconut supports a number of different syntactical aliases for common partial application use cases. These are:
@@ -1852,6 +1887,7 @@ mod$ <| 5 <| 3
 mod(5, 3)
 (3 * 2) + 1
 ```
+
 
 ### Enhanced Type Annotation
 
@@ -1992,6 +2028,7 @@ class CanAddAndSub(typing.Protocol, typing.Generic[T, U, V]):
         raise NotImplementedError
 ```
 
+
 ### Multidimensional Array Literal/Concatenation Syntax
 
 Coconut supports multidimensional array literal and array [concatenation](https://numpy.org/doc/stable/reference/generated/numpy.concatenate.html)/[stack](https://numpy.org/doc/stable/reference/generated/numpy.stack.html) syntax.
@@ -2067,6 +2104,7 @@ _General showcase of how the different concatenation operators work using `numpy
 
 **Python:** _The equivalent Python array literals can be seen in the printed representations in each example._
 
+
 ### Lazy Lists
 
 Coconut supports the creation of lazy lists, where the contents in the list will be treated as an iterator and not evaluated until they are needed. Unlike normal iterators, however, lazy lists can be iterated over multiple times and still return the same result. Lazy lists can be created in Coconut simply by surrounding a comma-separated list of items with `(|` and `|)` (so-called "banana brackets") instead of `[` and `]` for a list or `(` and `)` for a tuple.
@@ -2086,6 +2124,7 @@ Lazy lists, where sequences are only evaluated when their contents are requested
 
 **Python:**
 _Can't be done without a complicated iterator comprehension in place of the lazy list. See the compiled code for the Python syntax._
+
 
 ### Implicit Function Application and Coefficients
 
@@ -2144,6 +2183,7 @@ print(p1(5))
 quad = 5 * x**2 + 3 * x + 1
 ```
 
+
 ### Keyword Argument Name Elision
 
 When passing in long variable names as keyword arguments of the same name, Coconut supports the syntax
@@ -2178,6 +2218,7 @@ main_func(
     really_long_variable_name_2=really_long_variable_name_2,
 )
 ```
+
 
 ### Anonymous Namedtuples
 
@@ -2217,6 +2258,7 @@ users = [
 ]
 ```
 
+
 ### Set Literals
 
 Coconut allows an optional `s` to be prepended in front of Python set literals. While in most cases this does nothing, in the case of the empty set it lets Coconut know that it is an empty set and not an empty dictionary. Set literals also support unpacking syntax (e.g. `s{*xs}`).
@@ -2234,6 +2276,7 @@ empty_frozen_set = f{}
 ```coconut_python
 empty_frozen_set = frozenset()
 ```
+
 
 ### Imaginary Literals
 
@@ -2261,6 +2304,7 @@ An imaginary literal yields a complex number with a real part of 0.0. Complex nu
 ```coconut_python
 print(abs(3 + 4j))
 ```
+
 
 ### Alternative Ternary Operator
 
@@ -2298,6 +2342,7 @@ value = (
 )
 ```
 
+
 ## Function Definition
 
 ```{contents}
@@ -2306,6 +2351,7 @@ local:
 depth: 1
 ---
 ```
+
 
 ### Tail Call Optimization
 
@@ -2370,6 +2416,7 @@ print(foo())  # 2 (!)
 
 Because this could have unintended and potentially damaging consequences, Coconut opts to not perform TRE on any function with a lambda or inner function.
 
+
 ### Assignment Functions
 
 Coconut allows for assignment function definition that automatically returns the last line of the function body. An assignment function is constructed by substituting `=` for `:` after the function definition line. Thus, the syntax for assignment function definition is either
@@ -2403,6 +2450,7 @@ def binexp(x) = 2**x
 def binexp(x): return 2**x
 print(binexp(5))
 ```
+
 
 ### Pattern-Matching Functions
 
@@ -2441,6 +2489,7 @@ range(5) |> last_two |> print
 **Python:**
 _Can't be done without a long series of checks at the top of the function. See the compiled code for the Python syntax._
 
+
 ### `addpattern` Functions
 
 Coconut provides the `addpattern def` syntax as a shortcut for the full
@@ -2465,6 +2514,7 @@ addpattern def factorial(n) = n * factorial(n - 1)
 
 **Python:**
 _Can't be done without a complicated decorator definition and a long series of checks for each pattern-matching. See the compiled code for the Python syntax._
+
 
 ### `copyclosure` Functions
 
@@ -2517,6 +2567,7 @@ def outer_func():
     return funcs
 ```
 
+
 ### Explicit Generators
 
 Coconut supports the syntax
@@ -2542,6 +2593,7 @@ def empty_it():
         yield
 ```
 
+
 ### Dotted Function Definition
 
 Coconut allows for function definition using a dotted name to assign a function as a method of an object as specified in [PEP 542](https://www.python.org/dev/peps/pep-0542/). Dotted function definition can be combined with all other types of function definition above.
@@ -2561,6 +2613,7 @@ def my_method(self):
 MyClass.my_method = my_method
 ```
 
+
 ## Statements
 
 ```{contents}
@@ -2569,6 +2622,7 @@ local:
 depth: 1
 ---
 ```
+
 
 ### Destructuring Assignment
 
@@ -2598,6 +2652,7 @@ print(a, b)
 
 **Python:**
 _Can't be done without a long series of checks in place of the destructuring assignment statement. See the compiled code for the Python syntax._
+
 
 ### Type Parameter Syntax
 
@@ -2682,6 +2737,7 @@ def my_ident[T](x: T) -> T = x
 **Python:**
 _Can't be done without a complex definition for the data type. See the compiled code for the Python syntax._
 
+
 ### Implicit `pass`
 
 Coconut supports the simple `class name(base)` and `data name(args)` as aliases for `class name(base): pass` and `data name(args): pass`.
@@ -2698,6 +2754,7 @@ data Node(left, right) from Tree
 
 **Python:**
 _Can't be done without a series of method definitions for each data type. See the compiled code for the Python syntax._
+
 
 ### Statement Nesting
 
@@ -2727,6 +2784,7 @@ else:
     print(input_list)
 ```
 
+
 ### `except` Statements
 
 Python 3 requires that if multiple exceptions are to be caught, they must be placed inside of parentheses, so as to disallow Python 2's use of a comma instead of `as`. Coconut allows commas in except statements to translate to catching multiple exceptions without the need for parentheses, since, as in Python 3, `as` is always required to bind the exception to a name.
@@ -2749,6 +2807,7 @@ except (SyntaxError, ValueError) as err:
     handle(err)
 ```
 
+
 ### In-line `global` And `nonlocal` Assignment
 
 Coconut allows for `global` or `nonlocal` to precede assignment to a list of variables or (augmented) assignment to a variable to make that assignment `global` or `nonlocal`, respectively.
@@ -2766,6 +2825,7 @@ global state_c += 1
 global state_a, state_b; state_a, state_b = 10, 100
 global state_c; state_c += 1
 ```
+
 
 ### Code Passthrough
 
@@ -2786,6 +2846,7 @@ Anything placed between `\(` and the corresponding close parenthesis will be pas
 cdef f(x):
     return g(x)
 ```
+
 
 ### Enhanced Parenthetical Continuation
 
@@ -2816,6 +2877,7 @@ with open('/path/to/some/file/you/want/to/read') as file_1:
         file_2.write(file_1.read())
 ```
 
+
 ### Assignment Expression Chaining
 
 Unlike Python, Coconut allows assignment expressions to be chained, as in `a := b := c`. Note, however, that assignment expressions in general are currently only supported on `--target 3.8` or higher.
@@ -2832,6 +2894,7 @@ Unlike Python, Coconut allows assignment expressions to be chained, as in `a := 
 (a := (b := 1))
 ```
 
+
 ## Built-Ins
 
 ```{contents}
@@ -2840,6 +2903,7 @@ local:
 depth: 2
 ---
 ```
+
 
 ### Built-In Function Decorators
 
@@ -3096,6 +3160,7 @@ def fib() = (1, 1) :: map((+), fib(), fib()$[1:])
 **Python:**
 _Can't be done without a long decorator definition. The full definition of the decorator in Python can be found in the Coconut header._
 
+
 ### Built-In Types
 
 ```{contents}
@@ -3244,6 +3309,7 @@ A `MatchError` is raised when a [destructuring assignment](#destructuring-assign
 Additionally, if you are using [view patterns](#match), you might need to raise your own `MatchError` (though you can also just use a destructuring assignment or pattern-matching function definition to do so). To raise your own `MatchError`, just `raise MatchError(pattern, value)` (both arguments are optional).
 
 In some cases where there are multiple Coconut packages installed at the same time, there may be multiple `MatchError`s defined in different packages. Coconut can perform some magic under the hood to make sure that all these `MatchError`s will seamlessly interoperate, but only if all such packages are compiled in [`--package` mode rather than `--standalone` mode](#compilation-modes).
+
 
 ### Generic Built-In Functions
 
@@ -3518,6 +3584,7 @@ load_and_send_data = (
 async def load_and_send_data():
     return await send_data(proc_data(await load_data_async()))
 ```
+
 
 ### Built-Ins for Working with Iterators
 
@@ -4167,7 +4234,6 @@ with concurrent.futures.ThreadPoolExecutor() as executor:
     print(list(executor.map(get_data_for_user, get_all_users())))
 ```
 
-
 #### `collectby` and `mapreduce`
 
 ##### **collectby**(_key\_func_, _iterable_, _value\_func_=`None`, \*, _reduce\_func_=`None`, _collect\_in_=`None`, _map\_using_=`None`)
@@ -4231,6 +4297,57 @@ from collections import defaultdict
 user_balances = defaultdict(int)
 for item in balance_data:
     user_balances[item.user] += item.balance
+```
+
+#### `async_map`
+
+**async\_map**(_async\_func_, *_iters_, _strict_=`False`)
+
+`async_map` maps _async\_func_ over _iters_ asynchronously using [`anyio`](https://anyio.readthedocs.io/en/stable/), which must be installed for _async\_func_ to work. _strict_ functions as in [`map`/`zip`](#enhanced-built-ins), enforcing that all the _iters_ must have the same length.
+
+Equivalent to:
+```coconut
+async def async_map[T, U](
+    async_func: async T -> U,
+    *iters: T$[],
+    strict: bool = False
+) -> U[]:
+    """Map async_func over iters asynchronously using anyio."""
+    import anyio
+    results = []
+    async def store_func_in_of(i, args):
+        got = await async_func(*args)
+        results.extend([None] * (1 + i - len(results)))
+        results[i] = got
+    async with anyio.create_task_group() as nursery:
+        for i, args in enumerate(zip(*iters, strict=strict)):
+            nursery.start_soon(store_func_in_of, i, args)
+    return results
+```
+
+##### Example
+
+**Coconut:**
+```coconut
+async def load_pages(urls) = (
+    urls
+    |> async_map$(load_page)
+    |> await
+)
+```
+
+**Python:**
+```coconut_python
+import anyio
+
+async def load_pages(urls):
+    results = [None] * len(urls)
+    async def proc_url(i, url):
+        results[i] = await load_page(url)
+    async with anyio.create_task_group() as nursery:
+        for i, url in enumerate(urls)
+          nursery.start_soon(proc_url, i, url)
+    return results
 ```
 
 #### `tee`
@@ -4308,6 +4425,7 @@ range(10) |> map$((x) => x**2) |> map$(print) |> consume
 ```coconut_python
 collections.deque(map(print, map(lambda x: x**2, range(10))), maxlen=0)
 ```
+
 
 ### Typing-Specific Built-Ins
 
@@ -4410,6 +4528,7 @@ from coconut.__coconut__ import fmap
 reveal_type(fmap)
 ```
 
+
 ## Coconut API
 
 ```{contents}
@@ -4419,6 +4538,7 @@ depth: 2
 ---
 ```
 
+
 ### `coconut.embed`
 
 **coconut.embed**(_kernel_=`None`, _depth_=`0`, \*\*_kwargs_)
@@ -4426,6 +4546,7 @@ depth: 2
 If _kernel_=`False` (default), embeds a Coconut Jupyter console initialized from the current local namespace. If _kernel_=`True`, launches a Coconut Jupyter kernel initialized from the local namespace that can then be attached to. The _depth_ indicates how many additional call frames to ignore. _kwargs_ are as in [IPython.embed](https://ipython.readthedocs.io/en/stable/api/generated/IPython.terminal.embed.html#IPython.terminal.embed.embed) or [IPython.embed_kernel](https://ipython.readthedocs.io/en/stable/api/generated/IPython.html#IPython.embed_kernel) based on _kernel_.
 
 Recommended usage is as a debugging tool, where the code `from coconut import embed; embed()` can be inserted to launch an interactive Coconut shell initialized from that point.
+
 
 ### Automatic Compilation
 
@@ -4439,6 +4560,7 @@ Automatic compilation is always available in the Coconut interpreter or when usi
 
 If using the Coconut interpreter, a `reload` built-in is always provided to easily reload (and thus recompile) imported modules.
 
+
 ### Coconut Encoding
 
 While automatic compilation is the preferred method for dynamically compiling Coconut files, as it caches the compiled code as a `.py` file to prevent recompilation, Coconut also supports a special
@@ -4446,6 +4568,7 @@ While automatic compilation is the preferred method for dynamically compiling Co
 # coding: coconut
 ```
 declaration which can be added to `.py` files to have them treated as Coconut files instead. To use such a coding declaration, you'll need to either run `coconut --site-install` or `import coconut.api` at some point before you first attempt to import a file with a `# coding: coconut` declaration. Like automatic compilation, the Coconut encoding is always available from the Coconut interpreter. Compilation always uses the same parameters as in the [Coconut Jupyter kernel](#kernel).
+
 
 ### `coconut.api`
 
@@ -4583,6 +4706,7 @@ Switches the [`breakpoint` built-in](https://www.python.org/dev/peps/pep-0553/) 
 #### `CoconutException`
 
 If an error is encountered in a api function, a `CoconutException` instance may be raised. `coconut.api.CoconutException` is provided to allow catching such errors.
+
 
 ### `coconut.__coconut__`
 

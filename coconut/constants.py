@@ -777,6 +777,7 @@ coconut_specific_builtins = (
     "windowsof",
     "and_then",
     "and_then_await",
+    "async_map",
     "py_chr",
     "py_dict",
     "py_hex",
@@ -895,6 +896,13 @@ all_reqs = {
         ("typing_extensions", "py==36"),
         ("typing_extensions", "py==37"),
         ("typing_extensions", "py>=38"),
+        ("trollius", "py<3;cpy"),
+        ("aenum", "py<34"),
+        ("dataclasses", "py==36"),
+        ("typing", "py<35"),
+        ("async_generator", "py35"),
+        ("exceptiongroup", "py37;py<311"),
+        ("anyio", "py36"),
     ),
     "cpython": (
         "cPyparsing",
@@ -924,9 +932,12 @@ all_reqs = {
         ("jupyter-console", "py>=35;py<37"),
         ("jupyter-console", "py37"),
         "papermill",
-        # these are fully optional, so no need to pull them in here
-        # ("jupyterlab", "py35"),
-        # ("jupytext", "py3"),
+    ),
+    "jupyterlab": (
+        ("jupyterlab", "py35"),
+    ),
+    "jupytext": (
+        ("jupytext", "py3"),
     ),
     "mypy": (
         "mypy[python2]",
@@ -940,14 +951,6 @@ all_reqs = {
         ("xonsh", "py<36"),
         ("xonsh", "py>=36;py<38"),
         ("xonsh", "py38"),
-    ),
-    "backports": (
-        ("trollius", "py<3;cpy"),
-        ("aenum", "py<34"),
-        ("dataclasses", "py==36"),
-        ("typing", "py<35"),
-        ("async_generator", "py35"),
-        ("exceptiongroup", "py37;py<311"),
     ),
     "dev": (
         ("pre-commit", "py3"),
@@ -1007,6 +1010,7 @@ unpinned_min_versions = {
     ("exceptiongroup", "py37;py<311"): (1,),
     ("ipython", "py>=39"): (8, 16),
     "py-spy": (0, 3),
+    ("anyio", "py36"): (3,),
 }
 
 pinned_min_versions = {
