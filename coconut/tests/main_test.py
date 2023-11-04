@@ -92,6 +92,9 @@ os.environ["PYDEVD_DISABLE_FILE_VALIDATION"] = "1"
 default_recursion_limit = "6144"
 default_stack_size = "6144"
 
+# fix EOM on GitHub actions
+default_jobs = None if PY36 and not PYPY else "4"
+
 jupyter_timeout = 120
 
 base = os.path.dirname(os.path.relpath(__file__))
@@ -375,6 +378,8 @@ def call_coconut(args, **kwargs):
         args = ["--recursion-limit", default_recursion_limit] + args
     if default_stack_size is not None and "--stack-size" not in args:
         args = ["--stack-size", default_stack_size] + args
+    if default_jobs is not None and "--jobs" not in args:
+        args = ["--jobs", default_jobs] + args
     if "--mypy" in args and "check_mypy" not in kwargs:
         kwargs["check_mypy"] = True
     if PY26:

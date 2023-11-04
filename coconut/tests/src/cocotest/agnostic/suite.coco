@@ -1067,6 +1067,7 @@ forward 2""") == 900
     assert haslocobj == 2
     assert safe_raise_exc(IOError).error `isinstance` IOError
     assert safe_raise_exc(IOError).handle(IOError, const 10).unwrap() == 10 == safe_raise_exc(IOError).expect_error(IOError).result_or(10)
+    assert pickle_round_trip(ident$(1))() == 1 == pickle_round_trip(ident$(x=?))(1)
 
     # must come at end
     assert fibs_calls[0] == 1

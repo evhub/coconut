@@ -1,6 +1,7 @@
 # Imports:
 import sys
 import random
+import pickle
 import operator  # NOQA
 from contextlib import contextmanager
 from functools import wraps
@@ -44,6 +45,12 @@ except NameError, TypeError:
         return pattern_prepender
 
 def x `typed_eq` y = (type(x), x) == (type(y), y)
+
+def pickle_round_trip(obj) = (
+    obj
+    |> pickle.dumps
+    |> pickle.loads
+)
 
 
 # Old functions:
