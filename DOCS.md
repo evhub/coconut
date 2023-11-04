@@ -628,6 +628,8 @@ def new_f(x, *args, **kwargs):
     return f(*args, **kwargs)
 ```
 
+Unlike `functools.partial`, Coconut's partial application will preserve the `__name__` of the wrapped function.
+
 ##### Rationale
 
 Partial application, or currying, is a mainstay of functional programming, and for good reason: it allows the dynamic customization of functions to fit the needs of where they are being used. Partial application allows a new function to be created out of an old function with some of its arguments pre-specified.
@@ -4262,7 +4264,11 @@ If _map_using_ is passed, calculates `key_func` and `value_func` by mapping them
 
 ##### **mapreduce.using_processes**(_key\_value\_func_, _iterable_, \*, _reduce\_func_=`None`, _collect\_in_=`None`, _ordered_=`False`, _chunksize_=`1`, _max\_workers_=`None`)
 
-These shortcut methods call `collectby`/`mapreduce` with `map_using` set to [`process_map`](#process_map)/[`thread_map`](#thread_map), properly managed using the `.multiple_sequential_calls` method and the `stream=True` argument of [`process_map`](#process_map)/[`thread_map`](#thread_map). `reduce_func` will be called as soon as results arrive, and by default in whatever order they arrive in (to enforce the original order, pass _ordered_=`True`). Note that, for very long iterables, it is highly recommended to pass a value other than the default `1` for _chunksize_.
+These shortcut methods call `collectby`/`mapreduce` with `map_using` set to [`process_map`](#process_map)/[`thread_map`](#thread_map), properly managed using the `.multiple_sequential_calls` method and the `stream=True` argument of [`process_map`](#process_map)/[`thread_map`](#thread_map). `reduce_func` will be called as soon as results arrive, and by default in whatever order they arrive in (to enforce the original order, pass _ordered_=`True`).
+
+To make multiple sequential calls to `collectby.using_threads()`/`mapreduce.using_threads()`, manage them using `thread_map.multiple_sequential_calls()`. Similarly, use `process_map.multiple_sequential_calls()` to manage `.using_processes()`.
+
+Note that, for very long iterables, it is highly recommended to pass a value other than the default `1` for _chunksize_.
 
 As an example, `mapreduce.using_processes` is effectively equivalent to:
 ```coconut

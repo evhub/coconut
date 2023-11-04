@@ -208,6 +208,7 @@ tee = _coconut.itertools.tee
 starmap = _coconut.itertools.starmap
 cartesian_product = _coconut.itertools.product
 
+_coconut_partial = _coconut.functools.partial
 _coconut_tee = tee
 _coconut_starmap = starmap
 _coconut_cartesian_product = cartesian_product
@@ -644,7 +645,8 @@ def _coconut_mark_as_match(func: _Tfunc) -> _Tfunc:
     return func
 
 
-class _coconut_partial(_t.Generic[_T]):
+class _coconut_complex_partial(_t.Generic[_T]):
+    func: _t.Callable[..., _T] = ...
     args: _Tuple = ...
     required_nargs: int = ...
     keywords: _t.Dict[_t.Text, _t.Any] = ...
@@ -658,6 +660,7 @@ class _coconut_partial(_t.Generic[_T]):
         **kwargs: _t.Any,
         ) -> None: ...
     def __call__(self, *args: _t.Any, **kwargs: _t.Any) -> _T: ...
+    __name__: str | None = ...
 
 
 @_t.overload

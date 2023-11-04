@@ -2797,7 +2797,7 @@ else:
                 return expr
             elif name == "partial":
                 self.internal_assert(len(split_item) == 3, original, loc)
-                return "_coconut.functools.partial(" + join_args(split_item) + ")"
+                return "_coconut_partial(" + join_args(split_item) + ")"
             elif name == "attrgetter":
                 return attrgetter_atom_handle(loc, item)
             elif name == "itemgetter":
@@ -2891,14 +2891,14 @@ else:
                 out += trailer
             elif len(trailer) == 1:
                 if trailer[0] == "$[]":
-                    out = "_coconut.functools.partial(_coconut_iter_getitem, " + out + ")"
+                    out = "_coconut_partial(_coconut_iter_getitem, " + out + ")"
                 elif trailer[0] == "$":
-                    out = "_coconut.functools.partial(_coconut.functools.partial, " + out + ")"
+                    out = "_coconut_partial(_coconut_partial, " + out + ")"
                 elif trailer[0] == "[]":
-                    out = "_coconut.functools.partial(_coconut.operator.getitem, " + out + ")"
+                    out = "_coconut_partial(_coconut.operator.getitem, " + out + ")"
                 elif trailer[0] == ".":
                     self.strict_err_or_warn("'obj.' as a shorthand for 'getattr$(obj)' is deprecated (just use the getattr partial)", original, loc)
-                    out = "_coconut.functools.partial(_coconut.getattr, " + out + ")"
+                    out = "_coconut_partial(_coconut.getattr, " + out + ")"
                 elif trailer[0] == "type:[]":
                     out = "_coconut.typing.Sequence[" + out + "]"
                 elif trailer[0] == "type:$[]":
@@ -2931,7 +2931,7 @@ else:
                     args = trailer[1][1:-1]
                     if not args:
                         raise CoconutDeferredSyntaxError("a partial application argument is required", loc)
-                    out = "_coconut.functools.partial(" + out + ", " + args + ")"
+                    out = "_coconut_partial(" + out + ", " + args + ")"
                 elif trailer[0] == "$[":
                     out = "_coconut_iter_getitem(" + out + ", " + trailer[1] + ")"
                 elif trailer[0] == "$(?":
@@ -2959,7 +2959,7 @@ else:
                         raise CoconutInternalException("no question mark in question mark partial", trailer[1])
                     elif argdict_pairs or pos_kwargs or extra_args_str:
                         out = (
-                            "_coconut_partial("
+                            "_coconut_complex_partial("
                             + out
                             + ", {" + ", ".join(argdict_pairs) + "}"
                             + ", " + str(len(pos_args))

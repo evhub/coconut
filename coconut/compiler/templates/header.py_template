@@ -61,6 +61,11 @@ class _coconut{object}:{COMMENT.EVERYTHING_HERE_MUST_BE_COPIED_TO_STUB_FILE}
     fmappables = list, tuple, dict, set, frozenset
     abc.Sequence.register(collections.deque)
     Ellipsis, NotImplemented, NotImplementedError, Exception, AttributeError, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, RuntimeError, all, any, bool, bytes, callable, classmethod, complex, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, locals, globals, map, min, max, next, object, property, range, reversed, set, setattr, slice, str, sum, super, tuple, type, vars, zip, repr, print{comma_bytearray} = Ellipsis, NotImplemented, NotImplementedError, Exception, AttributeError, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, RuntimeError, all, any, bool, bytes, callable, classmethod, complex, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, locals, globals, map, min, max, next, object, property, range, reversed, set, setattr, slice, str, sum, {lstatic}super{rstatic}, tuple, type, vars, zip, {lstatic}repr{rstatic}, {lstatic}print{rstatic}{comma_bytearray}
+@_coconut.functools.wraps(_coconut.functools.partial)
+def _coconut_partial(_coconut_func, *args, **kwargs):
+    partial_func = _coconut.functools.partial(_coconut_func, *args, **kwargs)
+    partial_func.__name__ = _coconut.getattr(_coconut_func, "__name__", None)
+    return partial_func
 def _coconut_handle_cls_kwargs(**kwargs):
     """Some code taken from six under the terms of its MIT license."""
     metaclass = kwargs.pop("metaclass", None)
@@ -171,7 +176,7 @@ def _coconut_tco(func):
                     if call_func.__self__ is None:
                         call_func = call_func._coconut_tco_func
                     else:
-                        call_func = _coconut.functools.partial(call_func._coconut_tco_func, call_func.__self__)
+                        call_func = _coconut_partial(call_func._coconut_tco_func, call_func.__self__)
             else:
                 wkref = _coconut_tco_func_dict.get(_coconut.id(call_func))
                 wkref_func = None if wkref is None else wkref()
@@ -731,7 +736,7 @@ class flatten(_coconut_has_iter):{COMMENT.cant_implement_len_else_list_calls_bec
         raise ValueError("%r not in %r" % (elem, self))
     def __fmap__(self, func):
         if self.levels == 1:
-            return self.__class__({_coconut_}map(_coconut.functools.partial({_coconut_}map, func), self.get_new_iter()))
+            return self.__class__({_coconut_}map(_coconut_partial({_coconut_}map, func), self.get_new_iter()))
         return {_coconut_}map(func, self)
 class cartesian_product(_coconut_baseclass):
     __slots__ = ("iters", "repeat")
@@ -1426,10 +1431,10 @@ def addpattern(base_func, *add_funcs, **kwargs):
         raise _coconut.TypeError("addpattern() got unexpected keyword arguments " + _coconut.repr(kwargs))
     if add_funcs:
         return _coconut_base_pattern_func(base_func, *add_funcs)
-    return _coconut.functools.partial(_coconut_base_pattern_func, base_func)
+    return _coconut_partial(_coconut_base_pattern_func, base_func)
 _coconut_addpattern = addpattern
-class _coconut_partial(_coconut_base_callable):
-    __slots__ = ("func", "_argdict", "_arglen", "_pos_kwargs", "_stargs", "keywords")
+class _coconut_complex_partial(_coconut_base_callable):
+    __slots__ = ("func", "_argdict", "_arglen", "_pos_kwargs", "_stargs", "keywords", "__name__")
     def __init__(self, _coconut_func, _coconut_argdict, _coconut_arglen, _coconut_pos_kwargs, *args, **kwargs):
         self.func = _coconut_func
         self._argdict = _coconut_argdict
@@ -1437,6 +1442,7 @@ class _coconut_partial(_coconut_base_callable):
         self._pos_kwargs = _coconut_pos_kwargs
         self._stargs = args
         self.keywords = kwargs
+        self.__name__ = _coconut.getattr(_coconut_func, "__name__", None)
     def __reduce__(self):
         return (self.__class__, (self.func, self._argdict, self._arglen, self._pos_kwargs) + self._stargs, {lbrace}"keywords": self.keywords{rbrace})
     @property
@@ -1954,8 +1960,8 @@ def _coconut_parallel_mapreduce(mapreduce_func, map_cls, *args, **kwargs):
     kwargs["map_using"] = _coconut.functools.partial(map_cls, stream=True, ordered=kwargs.pop("ordered", False), chunksize=kwargs.pop("chunksize", 1))
     with map_cls.multiple_sequential_calls(max_workers=kwargs.pop("max_workers", None)):
         return mapreduce_func(*args, **kwargs)
-mapreduce.using_processes = _coconut.functools.partial(_coconut_parallel_mapreduce, mapreduce, process_map)
-mapreduce.using_threads = _coconut.functools.partial(_coconut_parallel_mapreduce, mapreduce, thread_map)
+mapreduce.using_processes = _coconut_partial(_coconut_parallel_mapreduce, mapreduce, process_map)
+mapreduce.using_threads = _coconut_partial(_coconut_parallel_mapreduce, mapreduce, thread_map)
 def collectby(key_func, iterable, value_func=None, **kwargs):
     """Collect the items in iterable into a dictionary of lists keyed by key_func(item).
 
@@ -1968,8 +1974,8 @@ def collectby(key_func, iterable, value_func=None, **kwargs):
     the iterable using map_using as map. Useful with process_map/thread_map.
     """
     return {_coconut_}mapreduce(_coconut_lifted(_coconut_comma_op, key_func, {_coconut_}ident if value_func is None else value_func), iterable, **kwargs)
-collectby.using_processes = _coconut.functools.partial(_coconut_parallel_mapreduce, collectby, process_map)
-collectby.using_threads = _coconut.functools.partial(_coconut_parallel_mapreduce, collectby, thread_map)
+collectby.using_processes = _coconut_partial(_coconut_parallel_mapreduce, collectby, process_map)
+collectby.using_threads = _coconut_partial(_coconut_parallel_mapreduce, collectby, thread_map)
 def _namedtuple_of(**kwargs):
     """Construct an anonymous namedtuple of the given keyword arguments."""
 {namedtuple_of_implementation}

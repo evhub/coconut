@@ -447,7 +447,7 @@ def itemgetter_handle(tokens):
         if op == "[":
             return "_coconut.operator.itemgetter((" + args + "))"
         elif op == "$[":
-            return "_coconut.functools.partial(_coconut_iter_getitem, index=(" + args + "))"
+            return "_coconut_partial(_coconut_iter_getitem, index=(" + args + "))"
         else:
             raise CoconutInternalException("invalid implicit itemgetter type", op)
     else:
@@ -540,10 +540,10 @@ def partial_op_item_handle(tokens):
     tok_grp, = tokens
     if "left partial" in tok_grp:
         arg, op = tok_grp
-        return "_coconut.functools.partial(" + op + ", " + arg + ")"
+        return "_coconut_partial(" + op + ", " + arg + ")"
     elif "right partial" in tok_grp:
         op, arg = tok_grp
-        return "_coconut_partial(" + op + ", {1: " + arg + "}, 2, ())"
+        return "_coconut_complex_partial(" + op + ", {1: " + arg + "}, 2, ())"
     else:
         raise CoconutInternalException("invalid operator function implicit partial token group", tok_grp)
 
@@ -1013,7 +1013,7 @@ class Grammar(object):
         | fixto(dubquestion, "_coconut_none_coalesce")
         | fixto(dot, "_coconut.getattr")
         | fixto(unsafe_dubcolon, "_coconut.itertools.chain")
-        | fixto(dollar, "_coconut.functools.partial")
+        | fixto(dollar, "_coconut_partial")
         | fixto(exp_dubstar, "_coconut.operator.pow")
         | fixto(mul_star, "_coconut.operator.mul")
         | fixto(div_dubslash, "_coconut.operator.floordiv")
