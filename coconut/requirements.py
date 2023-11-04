@@ -247,6 +247,7 @@ extras.update({
 
 extras["dev"] = uniqueify_all(
     everything_in(extras),
+    get_reqs("purepython"),
     get_reqs("dev"),
 )
 

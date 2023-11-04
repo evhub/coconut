@@ -138,7 +138,10 @@ pyprover/
 bbopt/
 coconut-prelude/
 index.rst
-vprof.json
 /coconut/icoconut/coconut/
 __coconut_cache__/
+
+# Profiling
+vprof.json
 profile.svg
+profile.speedscope

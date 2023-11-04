@@ -44,6 +44,7 @@ from coconut.util import (
     univ_open,
     get_target_info,
     assert_remove_prefix,
+    memoize,
 )
 from coconut.compiler.util import (
     split_comment,
@@ -96,6 +97,7 @@ def minify_header(compiled):
 template_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates")
 
 
+@memoize()
 def get_template(template):
     """Read the given template file."""
     with univ_open(os.path.join(template_dir, template) + template_ext, "r") as template_file:

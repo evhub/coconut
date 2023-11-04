@@ -25,27 +25,27 @@ dev-py3: clean setup-py3
 
 .PHONY: setup
 setup:
-	python -m ensurepip
+	-python -m ensurepip
 	python -m pip install --upgrade setuptools wheel pip pytest_remotedata cython
 
 .PHONY: setup-py2
 setup-py2:
-	python2 -m ensurepip
+	-python2 -m ensurepip
 	python2 -m pip install --upgrade "setuptools<58" wheel pip pytest_remotedata cython
 
 .PHONY: setup-py3
 setup-py3:
-	python3 -m ensurepip
+	-python3 -m ensurepip
 	python3 -m pip install --upgrade setuptools wheel pip pytest_remotedata cython
 
 .PHONY: setup-pypy
 setup-pypy:
-	pypy -m ensurepip
+	-pypy -m ensurepip
 	pypy -m pip install --upgrade "setuptools<58" wheel pip pytest_remotedata
 
 .PHONY: setup-pypy3
 setup-pypy3:
-	pypy3 -m ensurepip
+	-pypy3 -m ensurepip
 	pypy3 -m pip install --upgrade setuptools wheel pip pytest_remotedata
 
 .PHONY: install
@@ -337,10 +337,21 @@ profile-parser: export COCONUT_PURE_PYTHON=TRUE
 profile-parser:
 	coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --force --jobs 0 --profile --verbose --stack-size 4096 --recursion-limit 4096 2>&1 | tee ./profile.log
 
-.PHONY: pyspy
-pyspy:
-	py-spy record -o profile.svg --native -- python -m coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --force --jobs 0
-	open profile.svg
+.PHONY: open-speedscope
+open-speedscope:
+	npm install -g speedscope
+	speedscope ./profile.speedscope
+
+.PHONY: pyspy-purepy
+pyspy-purepy: export COCONUT_PURE_PYTHON=TRUE
+pyspy-purepy:
+	py-spy record -o profile.speedscope --format speedscope --subprocesses -- python -m coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --force
+	open-speedscope
+
+.PHONY: pyspy-native
+pyspy-native:
+	py-spy record -o profile.speedscope --format speedscope --native -- python -m coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --force --jobs 0
+	open-speedscope
 
 .PHONY: vprof-time
 vprof-time:

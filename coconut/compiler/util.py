@@ -514,7 +514,7 @@ def get_pyparsing_cache():
     else:  # on pyparsing we have to do this
         try:
             # this is sketchy, so errors should only be complained
-            return get_func_closure(packrat_cache.get.__func__)["cache"]
+            return get_func_closure(packrat_cache.set.__func__)["cache"]
         except Exception as err:
             complain(err)
             return {}
