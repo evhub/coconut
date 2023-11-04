@@ -277,6 +277,21 @@ def gam_eps_rate(bitarr) = (
     else:
         assert False
 
+    try:
+        parse("""
+def f(x=1, y) = x, y
+
+class A
+
+def g(x) = x
+        """.strip())
+    except CoconutSyntaxError as err:
+        err_str = str(err)
+        assert "non-default arguments must come first" in err_str, err_str
+        assert "class A" not in err_str, err_str
+    else:
+        assert False
+
     assert parse("def f(x):\n ${var}", "xonsh") == "def f(x):\n    ${var}\n"
     assert "data ABC" not in parse("data ABC:\n ${var}", "xonsh")
 

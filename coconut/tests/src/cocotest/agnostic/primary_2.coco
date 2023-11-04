@@ -1,11 +1,10 @@
 import collections
 import collections.abc
 import weakref
+import sys
 
-if TYPE_CHECKING:
+if TYPE_CHECKING or sys.version_info >= (3, 5):
     from typing import Any, Iterable
-else:
-    Any = Iterable = None
 from importlib import reload  # NOQA
 
 from .util import assert_raises, typed_eq

@@ -1218,10 +1218,10 @@ class Compiler(Grammar, pickleable_obj):
             kwargs["extra"] = extra
         return errtype(message, snippet, loc_in_snip, ln, endpoint=endpt_in_snip, filename=self.filename, **kwargs)
 
-    def make_syntax_err(self, err, original):
+    def make_syntax_err(self, err, original, after_parsing=False):
         """Make a CoconutSyntaxError from a CoconutDeferredSyntaxError."""
         msg, loc = err.args
-        return self.make_err(CoconutSyntaxError, msg, original, loc)
+        return self.make_err(CoconutSyntaxError, msg, original, loc, endpoint=not after_parsing)
 
     def make_parse_err(self, err, msg=None, include_ln=True, **kwargs):
         """Make a CoconutParseError from a ParseBaseException."""
@@ -1328,7 +1328,7 @@ class Compiler(Grammar, pickleable_obj):
                     filename=filename,
                     incremental_cache_filename=incremental_cache_filename,
                 ))
-            pre_procd = None
+            pre_procd = parsed = None
             try:
                 with logger.gather_parsing_stats():
                     try:
@@ -1339,7 +1339,7 @@ class Compiler(Grammar, pickleable_obj):
                         raise self.make_parse_err(err)
                     except CoconutDeferredSyntaxError as err:
                         internal_assert(pre_procd is not None, "invalid deferred syntax error in pre-processing", err)
-                        raise self.make_syntax_err(err, pre_procd)
+                        raise self.make_syntax_err(err, pre_procd, after_parsing=parsed is not None)
                     # RuntimeError, not RecursionError, for Python < 3.5
                     except RuntimeError as err:
                         raise CoconutException(
