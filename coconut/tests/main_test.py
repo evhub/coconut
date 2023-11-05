@@ -93,8 +93,7 @@ default_recursion_limit = "6144"
 default_stack_size = "6144"
 default_jobs = (
     # fix EOMs on GitHub actions
-    "2" if PYPY
-    else "4" if not PY36
+    "0" if PYPY
     else None
 )
 
