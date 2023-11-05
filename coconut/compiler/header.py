@@ -218,7 +218,7 @@ def base_async_def(
     no_async_def,
     needs_vars={},
     decorator=None,
-    **kwargs,
+    **kwargs  # no comma; breaks on <=3.5
 ):
     """Build up a universal async function definition."""
     target_info = get_target_info(target)
