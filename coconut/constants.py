@@ -669,7 +669,7 @@ reserved_command_symbols = exit_chars + (
 # always use atomic --xxx=yyy rather than --xxx yyy
 #  and don't include --run, --quiet, or --target as they're added separately
 coconut_base_run_args = ("--keep-lines",)
-coconut_sys_kwargs = dict(default_target="sys")  # passed to Command.cmd
+coconut_sys_kwargs = dict(default_target="sys", default_jobs="0")  # passed to Command.cmd
 
 default_mypy_args = (
     "--pretty",
@@ -701,7 +701,7 @@ oserror_retcode = 127
 kilobyte = 1024
 min_stack_size_kbs = 160
 
-default_jobs = "sys" if not PY26 else 0
+base_default_jobs = "sys" if not PY26 else 0
 
 mypy_install_arg = "install"
 jupyter_install_arg = "install"

@@ -68,7 +68,7 @@ from coconut.constants import (
     coconut_pth_file,
     error_color_code,
     jupyter_console_commands,
-    default_jobs,
+    base_default_jobs,
     create_package_retries,
     default_use_cache_dir,
     coconut_cache_dir,
@@ -176,7 +176,7 @@ class Command(object):
         return self.cmd(*args, **out_kwargs)
 
     # new external parameters should be updated in api.pyi and DOCS
-    def cmd(self, args=None, argv=None, interact=True, default_target=None, use_dest=None):
+    def cmd(self, args=None, argv=None, interact=True, default_target=None, default_jobs=None, use_dest=None):
         """Process command-line arguments."""
         result = None
         with self.handling_exceptions():
@@ -190,6 +190,8 @@ class Command(object):
                 parsed_args.argv = argv
             if parsed_args.target is None:
                 parsed_args.target = default_target
+            if parsed_args.jobs is None:
+                parsed_args.jobs = default_jobs
             if use_dest is not None and not parsed_args.no_write:
                 internal_assert(parsed_args.dest is None, "coconut-run got passed a dest", parsed_args)
                 parsed_args.dest = use_dest
@@ -706,7 +708,7 @@ class Command(object):
 
     def get_max_workers(self):
         """Get the max_workers to use for creating ProcessPoolExecutor."""
-        jobs = self.jobs if self.jobs is not None else default_jobs
+        jobs = self.jobs if self.jobs is not None else base_default_jobs
         if jobs == "sys":
             return None
         else:

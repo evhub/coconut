@@ -4666,7 +4666,7 @@ Can optionally be called to warm up the compiler and get it ready for parsing. P
 
 #### `cmd`
 
-**coconut.api.cmd**(_args_=`None`, *, _argv_=`None`, _interact_=`False`, _default\_target_=`None`, _state_=`False`)
+**coconut.api.cmd**(_args_=`None`, *, _argv_=`None`, _interact_=`False`, _default\_target_=`None`, _default\_jobs_=`None`, _state_=`False`)
 
 Executes the given _args_ as if they were fed to `coconut` on the command-line, with the exception that unless _interact_ is true or `-i` is passed, the interpreter will not be started. Additionally, _argv_ can be used to pass in arguments as in `--argv` and _default\_target_ can be used to set the default `--target`.
 
@@ -4674,9 +4674,9 @@ Has the same effect of setting the command-line flags on the given _state_ objec
 
 #### `cmd_sys`
 
-**coconut.api.cmd_sys**(_args_=`None`, *, _argv_=`None`, _interact_=`False`, _default\_target_=`"sys"`, _state_=`False`)
+**coconut.api.cmd_sys**(_args_=`None`, *, _argv_=`None`, _interact_=`False`, _default\_target_=`"sys"`, _default\_jobs_=`"0"`, _state_=`False`)
 
-Same as `coconut.api.cmd` but _default\_target_ is `"sys"` rather than `None` (universal).
+Same as `coconut.api.cmd` but _default\_target_ is `"sys"` rather than `None` (universal) and _default\_jobs_=`"0"` rather than `None` (`"sys"`)`.
 
 #### `coconut_exec`
 

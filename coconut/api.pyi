@@ -48,6 +48,7 @@ def cmd(
     argv: Iterable[Text] | None = None,
     interact: bool = False,
     default_target: Text | None = None,
+    default_jobs: Text | None = None,
 ) -> None:
     """Process command-line arguments."""
     ...
