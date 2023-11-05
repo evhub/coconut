@@ -29,6 +29,7 @@ import traceback as _traceback
 import weakref as _weakref
 import multiprocessing as _multiprocessing
 import pickle as _pickle
+import inspect as _inspect
 from multiprocessing import dummy as _multiprocessing_dummy
 
 if sys.version_info >= (3,):
@@ -86,6 +87,8 @@ contextlib = _contextlib
 traceback = _traceback
 weakref = _weakref
 multiprocessing = _multiprocessing
+inspect = _inspect
+
 multiprocessing_dummy = _multiprocessing_dummy
 
 copyreg = _copyreg

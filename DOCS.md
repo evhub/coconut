@@ -4166,6 +4166,85 @@ all_equal([1, 1, 1])
 all_equal([1, 1, 2])
 ```
 
+#### `tee`
+
+**tee**(_iterable_, _n_=`2`)
+
+Coconut provides an optimized version of `itertools.tee` as a built-in under the name `tee`.
+
+Though `tee` is not deprecated, [`reiterable`](#reiterable) is generally recommended over `tee`.
+
+Custom `tee`/`reiterable` implementations for custom [Containers/Collections](https://docs.python.org/3/library/collections.abc.html) should be put in the `__copy__` method. Note that all [Sequences/Mappings/Sets](https://docs.python.org/3/library/collections.abc.html) are always assumed to be reiterable even without calling `__copy__`.
+
+##### Python Docs
+
+**tee**(_iterable, n=2_)
+
+Return _n_ independent iterators from a single iterable. Equivalent to:
+```coconut_python
+def tee(iterable, n=2):
+    it = iter(iterable)
+    deques = [collections.deque() for i in range(n)]
+    def gen(mydeque):
+        while True:
+            if not mydeque:             # when the local deque is empty
+                newval = next(it)       # fetch a new value and
+                for d in deques:        # load it to all the deques
+                    d.append(newval)
+            yield mydeque.popleft()
+    return tuple(gen(d) for d in deques)
+```
+Once `tee()` has made a split, the original _iterable_ should not be used anywhere else; otherwise, the _iterable_ could get advanced without the tee objects being informed.
+
+This itertool may require significant auxiliary storage (depending on how much temporary data needs to be stored). In general, if one iterator uses most or all of the data before another iterator starts, it is faster to use `list()` instead of `tee()`.
+
+##### Example
+
+**Coconut:**
+```coconut
+original, temp = tee(original)
+sliced = temp$[5:]
+```
+
+**Python:**
+```coconut_python
+import itertools
+original, temp = itertools.tee(original)
+sliced = itertools.islice(temp, 5, None)
+```
+
+#### `consume`
+
+**consume**(_iterable_, _keep\_last_=`0`)
+
+Coconut provides the `consume` function to efficiently exhaust an iterator and thus perform any lazy evaluation contained within it. `consume` takes one optional argument, `keep_last`, that defaults to 0 and specifies how many, if any, items from the end to return as a sequence (`None` will keep all elements).
+
+Equivalent to:
+```coconut
+def consume(iterable, keep_last=0):
+    """Fully exhaust iterable and return the last keep_last elements."""
+    return collections.deque(iterable, maxlen=keep_last)  # fastest way to exhaust an iterator
+```
+
+##### Rationale
+
+In the process of lazily applying operations to iterators, eventually a point is reached where evaluation of the iterator is necessary. To do this efficiently, Coconut provides the `consume` function, which will fully exhaust the iterator given to it.
+
+##### Example
+
+**Coconut:**
+```coconut
+range(10) |> map$((x) => x**2) |> map$(print) |> consume
+```
+
+**Python:**
+```coconut_python
+collections.deque(map(print, map(lambda x: x**2, range(10))), maxlen=0)
+```
+
+
+### Built-Ins for Parallelization
+
 #### `process_map` and `thread_map`
 
 ##### **process\_map**(_function_, *_iterables_, *, _chunksize_=`1`, _strict_=`False`, _stream_=`False`, _ordered_=`True`)
@@ -4238,13 +4317,13 @@ with concurrent.futures.ThreadPoolExecutor() as executor:
 
 #### `collectby` and `mapreduce`
 
-##### **collectby**(_key\_func_, _iterable_, _value\_func_=`None`, \*, _reduce\_func_=`None`, _collect\_in_=`None`, _map\_using_=`None`)
+##### **collectby**(_key\_func_, _iterable_, _value\_func_=`None`, \*, _reduce\_func_=`None`, _collect\_in_=`None`, _reduce\_func\_init_=`...`, _map\_using_=`None`)
 
 `collectby(key_func, iterable)` collects the items in `iterable` into a dictionary of lists keyed by `key_func(item)`.
 
 If _value\_func_ is passed, instead collects `value_func(item)` into each list instead of `item`.
 
-If _reduce\_func_ is passed, instead of collecting the items into lists, reduces over the items of each key with `reduce_func`, effectively implementing a MapReduce operation. If keys are intended to be unique, set `reduce_func=False` (`reduce_func=False` is also the default if _collect\_in_ is passed).
+If _reduce\_func_ is passed, instead of collecting the items into lists, [`reduce`](#reduce) over the items of each key with _reduce\_func_, effectively implementing a MapReduce operation. If keys are intended to be unique, set `reduce_func=False` (`reduce_func=False` is also the default if _collect\_in_ is passed). If _reduce\_func_ is passed, then _reduce\_func\_init_ may also be passed, and will determine the initial value when reducing with _reduce\_func_.
 
 If _collect\_in_ is passed, initializes the collection from _collect\_in_ rather than as a `collections.defaultdict` (if `reduce_func=None`) or an empty `dict` (otherwise). Additionally, _reduce\_func_ defaults to `False` rather than `None` when _collect\_in_ is passed. Useful when you want to collect the results into a `pandas.DataFrame`.
 
@@ -4252,17 +4331,17 @@ If _map_using_ is passed, calculates `key_func` and `value_func` by mapping them
 
 `collectby` is similar to [`itertools.groupby`](https://docs.python.org/3/library/itertools.html#itertools.groupby) except that `collectby` aggregates common elements regardless of their order in the input iterable, whereas `groupby` only aggregates common elements that are adjacent in the input iterable.
 
-##### **mapreduce**(_key\_value\_func_, _iterable_, \*, _reduce\_func_=`None`, _collect\_in_=`None`, _map\_using_=`None`)
+##### **mapreduce**(_key\_value\_func_, _iterable_, \*, _reduce\_func_=`None`, _collect\_in_=`None`, _reduce\_func\_init_=`...`, _map\_using_=`None`)
 
 `mapreduce(key_value_func, iterable)` functions the same as `collectby`, but allows calculating the keys and values together in one function. _key\_value\_func_ must return a 2-tuple of `(key, value)`.
 
-##### **collectby.using_threads**(_key\_func_, _iterable_, _value\_func_=`None`, \*, _reduce\_func_=`None`, _collect\_in_=`None`, _ordered_=`False`, _chunksize_=`1`, _max\_workers_=`None`)
+##### **collectby.using_threads**(_key\_func_, _iterable_, _value\_func_=`None`, \*, _reduce\_func_=`None`, _collect\_in_=`None`, _reduce\_func\_init_=`...`, _ordered_=`False`, _chunksize_=`1`, _max\_workers_=`None`)
 
-##### **collectby.using_processes**(_key\_func_, _iterable_, _value\_func_=`None`, \*, _reduce\_func_=`None`, _collect\_in_=`None`, _ordered_=`False`, _chunksize_=`1`, _max\_workers_=`None`)
+##### **collectby.using_processes**(_key\_func_, _iterable_, _value\_func_=`None`, \*, _reduce\_func_=`None`, _collect\_in_=`None`, _reduce\_func\_init_=`...`, _ordered_=`False`, _chunksize_=`1`, _max\_workers_=`None`)
 
-##### **mapreduce.using_threads**(_key\_value\_func_, _iterable_, \*, _reduce\_func_=`None`, _collect\_in_=`None`, _ordered_=`False`, _chunksize_=`1`, _max\_workers_=`None`)
+##### **mapreduce.using_threads**(_key\_value\_func_, _iterable_, \*, _reduce\_func_=`None`, _collect\_in_=`None`, _reduce\_func\_init_=`...`, _ordered_=`False`, _chunksize_=`1`, _max\_workers_=`None`)
 
-##### **mapreduce.using_processes**(_key\_value\_func_, _iterable_, \*, _reduce\_func_=`None`, _collect\_in_=`None`, _ordered_=`False`, _chunksize_=`1`, _max\_workers_=`None`)
+##### **mapreduce.using_processes**(_key\_value\_func_, _iterable_, \*, _reduce\_func_=`None`, _collect\_in_=`None`, _reduce\_func\_init_=`...`, _ordered_=`False`, _chunksize_=`1`, _max\_workers_=`None`)
 
 These shortcut methods call `collectby`/`mapreduce` with `map_using` set to [`process_map`](#process_map)/[`thread_map`](#thread_map), properly managed using the `.multiple_sequential_calls` method and the `stream=True` argument of [`process_map`](#process_map)/[`thread_map`](#thread_map). `reduce_func` will be called as soon as results arrive, and by default in whatever order they arrive in (to enforce the original order, pass _ordered_=`True`).
 
@@ -4354,82 +4433,6 @@ async def load_pages(urls):
         for i, url in enumerate(urls)
           nursery.start_soon(proc_url, i, url)
     return results
-```
-
-#### `tee`
-
-**tee**(_iterable_, _n_=`2`)
-
-Coconut provides an optimized version of `itertools.tee` as a built-in under the name `tee`.
-
-Though `tee` is not deprecated, [`reiterable`](#reiterable) is generally recommended over `tee`.
-
-Custom `tee`/`reiterable` implementations for custom [Containers/Collections](https://docs.python.org/3/library/collections.abc.html) should be put in the `__copy__` method. Note that all [Sequences/Mappings/Sets](https://docs.python.org/3/library/collections.abc.html) are always assumed to be reiterable even without calling `__copy__`.
-
-##### Python Docs
-
-**tee**(_iterable, n=2_)
-
-Return _n_ independent iterators from a single iterable. Equivalent to:
-```coconut_python
-def tee(iterable, n=2):
-    it = iter(iterable)
-    deques = [collections.deque() for i in range(n)]
-    def gen(mydeque):
-        while True:
-            if not mydeque:             # when the local deque is empty
-                newval = next(it)       # fetch a new value and
-                for d in deques:        # load it to all the deques
-                    d.append(newval)
-            yield mydeque.popleft()
-    return tuple(gen(d) for d in deques)
-```
-Once `tee()` has made a split, the original _iterable_ should not be used anywhere else; otherwise, the _iterable_ could get advanced without the tee objects being informed.
-
-This itertool may require significant auxiliary storage (depending on how much temporary data needs to be stored). In general, if one iterator uses most or all of the data before another iterator starts, it is faster to use `list()` instead of `tee()`.
-
-##### Example
-
-**Coconut:**
-```coconut
-original, temp = tee(original)
-sliced = temp$[5:]
-```
-
-**Python:**
-```coconut_python
-import itertools
-original, temp = itertools.tee(original)
-sliced = itertools.islice(temp, 5, None)
-```
-
-#### `consume`
-
-**consume**(_iterable_, _keep\_last_=`0`)
-
-Coconut provides the `consume` function to efficiently exhaust an iterator and thus perform any lazy evaluation contained within it. `consume` takes one optional argument, `keep_last`, that defaults to 0 and specifies how many, if any, items from the end to return as a sequence (`None` will keep all elements).
-
-Equivalent to:
-```coconut
-def consume(iterable, keep_last=0):
-    """Fully exhaust iterable and return the last keep_last elements."""
-    return collections.deque(iterable, maxlen=keep_last)  # fastest way to exhaust an iterator
-```
-
-##### Rationale
-
-In the process of lazily applying operations to iterators, eventually a point is reached where evaluation of the iterator is necessary. To do this efficiently, Coconut provides the `consume` function, which will fully exhaust the iterator given to it.
-
-##### Example
-
-**Coconut:**
-```coconut
-range(10) |> map$((x) => x**2) |> map$(print) |> consume
-```
-
-**Python:**
-```coconut_python
-collections.deque(map(print, map(lambda x: x**2, range(10))), maxlen=0)
 ```
 
 

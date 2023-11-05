@@ -7,7 +7,6 @@ jobs:
       matrix:
         python-version:
           - '2.7'
-          - '3.4'
           - '3.5'
           - '3.6'
           - '3.7'
@@ -21,6 +20,7 @@ jobs:
           - 'pypy-3.7'
           - 'pypy-3.8'
           - 'pypy-3.9'
+          - 'pypy-3.10'
       fail-fast: false
     name: Python ${{ matrix.python-version }}
     steps:

@@ -1672,6 +1672,7 @@ def collectby(
     iterable: _t.Iterable[_T],
     *,
     reduce_func: _t.Callable[[_T, _T], _V],
+    reduce_func_init: _T = ...,
     map_using: _t.Callable | None = None,
 ) -> _t.Dict[_U, _V]: ...
 @_t.overload
@@ -1689,16 +1690,27 @@ def collectby(
     value_func: _t.Callable[[_T], _W],
     *,
     reduce_func: _t.Callable[[_W, _W], _V],
+    reduce_func_init: _W = ...,
     map_using: _t.Callable | None = None,
 ) -> _t.Dict[_U, _V]: ...
 @_t.overload
 def collectby(
-    key_func: _t.Callable,
-    iterable: _t.Iterable,
-    value_func: _t.Callable | None = None,
+    key_func: _t.Callable[[_T], _U],
+    iterable: _t.Iterable[_T],
+    *,
+    reduce_func: _t.Callable[[_T, _T], _V],
+    reduce_func_init: _T = ...,
+    map_using: _t.Callable | None = None,
+) -> _t.Dict[_U, _V]: ...
+@_t.overload
+def collectby(
+    key_func: _t.Callable[[_U], _t.Any],
+    iterable: _t.Iterable[_U],
+    value_func: _t.Callable[[_U], _t.Any] | None = None,
     *,
     collect_in: _T,
     reduce_func: _t.Callable | None | _t.Literal[False] = None,
+    reduce_func_init: _t.Any = ...,
     map_using: _t.Callable | None = None,
 ) -> _T:
     """Collect the items in iterable into a dictionary of lists keyed by key_func(item).
@@ -1729,15 +1741,26 @@ def mapreduce(
     iterable: _t.Iterable[_T],
     *,
     reduce_func: _t.Callable[[_W, _W], _V],
+    reduce_func_init: _W = ...,
     map_using: _t.Callable | None = None,
 ) -> _t.Dict[_U, _V]: ...
 @_t.overload
 def mapreduce(
-    key_value_func: _t.Callable,
-    iterable: _t.Iterable,
+    key_value_func: _t.Callable[[_T], _t.Tuple[_U, _W]],
+    iterable: _t.Iterable[_T],
+    *,
+    reduce_func: _t.Callable[[_X, _W], _V],
+    reduce_func_init: _X = ...,
+    map_using: _t.Callable | None = None,
+) -> _t.Dict[_U, _V]: ...
+@_t.overload
+def mapreduce(
+    key_value_func: _t.Callable[[_U], _t.Tuple[_t.Any, _t.Any]],
+    iterable: _t.Iterable[_U],
     *,
     collect_in: _T,
     reduce_func: _t.Callable | None | _t.Literal[False] = None,
+    reduce_func_init: _t.Any = ...,
     map_using: _t.Callable | None = None,
 ) -> _T:
     """Map key_value_func over iterable, then collect the values into a dictionary of lists keyed by the keys.

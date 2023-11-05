@@ -30,6 +30,7 @@ from warnings import warn
 from types import MethodType
 from contextlib import contextmanager
 from collections import defaultdict
+from functools import partial
 
 if sys.version_info >= (3, 2):
     from functools import lru_cache
@@ -249,10 +250,16 @@ class dictset(dict, object):
         self[item] = True
 
 
-def assert_remove_prefix(inputstr, prefix):
+def assert_remove_prefix(inputstr, prefix, allow_no_prefix=False):
     """Remove prefix asserting that inputstr starts with it."""
-    assert inputstr.startswith(prefix), inputstr
+    if not allow_no_prefix:
+        assert inputstr.startswith(prefix), inputstr
+    elif not inputstr.startswith(prefix):
+        return inputstr
     return inputstr[len(prefix):]
+
+
+remove_prefix = partial(assert_remove_prefix, allow_no_prefix=True)
 
 
 def ensure_dir(dirpath):

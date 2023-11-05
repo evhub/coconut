@@ -19,7 +19,7 @@ def _coconut_super(type=None, object_or_type=None):
     return _coconut_py_super(type, object_or_type)
 {set_super}
 class _coconut{object}:{COMMENT.EVERYTHING_HERE_MUST_BE_COPIED_TO_STUB_FILE}
-    import collections, copy, functools, types, itertools, operator, threading, os, warnings, contextlib, traceback, weakref, multiprocessing
+    import collections, copy, functools, types, itertools, operator, threading, os, warnings, contextlib, traceback, weakref, multiprocessing, inspect
     from multiprocessing import dummy as multiprocessing_dummy
 {maybe_bind_lru_cache}{import_copyreg}
 {import_asyncio}
@@ -195,7 +195,7 @@ def _coconut_tco(func):
 @_coconut.functools.wraps(_coconut.itertools.tee)
 def tee(iterable, n=2):
     if n < 0:
-        raise ValueError("tee: n cannot be negative")
+        raise _coconut.ValueError("tee: n cannot be negative")
     elif n == 0:
         return ()
     elif n == 1:
@@ -733,7 +733,7 @@ class flatten(_coconut_has_iter):{COMMENT.cant_implement_len_else_list_calls_bec
                 return ind + it.index(elem)
             except _coconut.ValueError:
                 ind += _coconut.len(it)
-        raise ValueError("%r not in %r" % (elem, self))
+        raise _coconut.ValueError("%r not in %r" % (elem, self))
     def __fmap__(self, func):
         if self.levels == 1:
             return self.__class__({_coconut_}map(_coconut_partial({_coconut_}map, func), self.get_new_iter()))
@@ -983,7 +983,6 @@ class zip(_coconut_baseclass, _coconut.zip):
 {zip_iter}
     def __fmap__(self, func):
         return {_coconut_}map(func, self)
-{def_async_map}
 class zip_longest(zip):
     __slots__ = ("fillvalue",)
     __doc__ = getattr(_coconut.zip_longest, "__doc__", "Version of zip that fills in missing values with fillvalue.")
@@ -1934,11 +1933,13 @@ def mapreduce(key_value_func, iterable, **kwargs):
     If reduce_func is passed, instead of collecting the values into lists, reduce over
     the values for each key with reduce_func, effectively implementing a MapReduce operation.
 
-    If map_using is passed, calculate key_value_func by mapping them over
-    the iterable using map_using as map. Useful with process_map/thread_map.
+    If collect_in is passed, initialize the collection from .
     """
     collect_in = kwargs.pop("collect_in", None)
     reduce_func = kwargs.pop("reduce_func", None if collect_in is None else False)
+    reduce_func_init = kwargs.pop("reduce_func_init", _coconut_sentinel)
+    if reduce_func_init is not _coconut_sentinel and not reduce_func:
+        raise _coconut.TypeError("reduce_func_init requires reduce_func")
     map_using = kwargs.pop("map_using", _coconut.map)
     if kwargs:
         raise _coconut.TypeError("mapreduce()/collectby() got unexpected keyword arguments " + _coconut.repr(kwargs))
@@ -1947,10 +1948,10 @@ def mapreduce(key_value_func, iterable, **kwargs):
         if reduce_func is None:
             collection[key].append(val)
         else:
-            old_val = collection.get(key, _coconut_sentinel)
+            old_val = collection.get(key, reduce_func_init)
             if old_val is not _coconut_sentinel:
                 if reduce_func is False:
-                    raise ValueError("mapreduce()/collectby() got duplicate key " + repr(key) + " with reduce_func=False")
+                    raise _coconut.ValueError("mapreduce()/collectby() got duplicate key " + repr(key) + " with reduce_func=False")
                 val = reduce_func(old_val, val)
             collection[key] = val
     return collection
@@ -2180,6 +2181,7 @@ class _coconut_SupportsInv(_coconut.typing.Protocol):
     """
     def __invert__(self):
         raise _coconut.NotImplementedError("Protocol methods cannot be called at runtime ((~) in a typing context is a Protocol)")
+{def_async_map}
 {def_aliases}
 _coconut_self_match_types = {self_match_types}
 _coconut_Expected, _coconut_MatchError, _coconut_cartesian_product, _coconut_count, _coconut_cycle, _coconut_enumerate, _coconut_flatten, _coconut_filter, _coconut_groupsof, _coconut_ident, _coconut_lift, _coconut_map, _coconut_mapreduce, _coconut_multiset, _coconut_range, _coconut_reiterable, _coconut_reversed, _coconut_scan, _coconut_starmap, _coconut_tee, _coconut_windowsof, _coconut_zip, _coconut_zip_longest, TYPE_CHECKING, reduce, takewhile, dropwhile = Expected, MatchError, cartesian_product, count, cycle, enumerate, flatten, filter, groupsof, ident, lift, map, mapreduce, multiset, range, reiterable, reversed, scan, starmap, tee, windowsof, zip, zip_longest, False, _coconut.functools.reduce, _coconut.itertools.takewhile, _coconut.itertools.dropwhile{COMMENT.anything_added_here_should_be_copied_to_stub_file}

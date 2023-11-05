@@ -125,7 +125,16 @@ def prepare(code, indent=0, **kwargs):
     return _indent(code, by=indent, strip=True, **kwargs)
 
 
-def base_pycondition(target, ver, if_lt=None, if_ge=None, indent=None, newline=False, initial_newline=False, fallback=""):
+def base_pycondition(
+    target,
+    ver,
+    if_lt=None,
+    if_ge=None,
+    indent=None,
+    newline=False,
+    initial_newline=False,
+    fallback="",
+):
     """Produce code that depends on the Python version for the given target."""
     internal_assert(isinstance(ver, tuple), "invalid pycondition version")
     internal_assert(if_lt or if_ge, "either if_lt or if_ge must be specified")
@@ -179,6 +188,52 @@ else:
     return out
 
 
+def def_in_exec(name, code, needs_vars={}, decorator=None):
+    """Get code that runs code in an exec and extracts name."""
+    return '''
+_coconut_{name}_ns = {lbrace}"_coconut": _coconut{needs_vars}{rbrace}
+_coconut_exec({code}, _coconut_{name}_ns)
+{name} = {open_decorator}_coconut_{name}_ns["{name}"]{close_decorator}
+    '''.format(
+        lbrace="{",
+        rbrace="}",
+        name=name,
+        code=repr(code.strip()),
+        needs_vars=(
+            ", " + ", ".join(
+                repr(var_in_def) + ": " + var_out_def
+                for var_in_def, var_out_def in needs_vars.items()
+            )
+            if needs_vars else ""
+        ),
+        open_decorator=decorator + "(" if decorator is not None else "",
+        close_decorator=")" if decorator is not None else "",
+    )
+
+
+def base_async_def(
+    target,
+    func_name,
+    async_def,
+    no_async_def,
+    needs_vars={},
+    decorator=None,
+    **kwargs,
+):
+    """Build up a universal async function definition."""
+    target_info = get_target_info(target)
+    if target_info >= (3, 5):
+        out = async_def
+    else:
+        out = base_pycondition(
+            target,
+            (3, 5),
+            if_ge=def_in_exec(func_name, async_def, needs_vars=needs_vars, decorator=decorator),
+            if_lt=no_async_def,
+        )
+    return prepare(out, **kwargs)
+
+
 def make_py_str(str_contents, target, after_py_str_defined=False):
     """Get code that effectively wraps the given code in py_str."""
     return (
@@ -209,6 +264,7 @@ def process_header_args(which, use_hash, target, no_tco, strict, no_wrap):
     """Create the dictionary passed to str.format in the header."""
     target_info = get_target_info(target)
     pycondition = partial(base_pycondition, target)
+    async_def = partial(base_async_def, target)
 
     format_dict = dict(
         COMMENT=COMMENT,
@@ -503,8 +559,9 @@ items = _coconut.collections.Counter.viewitems
             indent=1,
             newline=True,
         ),
-        def_async_compose_call=prepare(
-            r'''
+        def_async_compose_call=async_def(
+            "__call__",
+            async_def=r'''
 async def __call__(self, *args, **kwargs):
     arg = await self._coconut_func(*args, **kwargs)
     for f, await_f in self._coconut_func_infos:
@@ -512,34 +569,23 @@ async def __call__(self, *args, **kwargs):
         if await_f:
             arg = await arg
     return arg
-            ''' if target_info >= (3, 5) else
-            pycondition(
-                (3, 5),
-                if_ge=r'''
-_coconut_call_ns = {"_coconut": _coconut}
-_coconut_exec("""async def __call__(self, *args, **kwargs):
-    arg = await self._coconut_func(*args, **kwargs)
-    for f, await_f in self._coconut_func_infos:
-        arg = f(arg)
-        if await_f:
-            arg = await arg
-    return arg""", _coconut_call_ns)
-__call__ = _coconut_call_ns["__call__"]
-                ''',
-                if_lt=pycondition(
-                    (3, 4),
-                    if_ge=r'''
-_coconut_call_ns = {"_coconut": _coconut}
-_coconut_exec("""def __call__(self, *args, **kwargs):
+            ''',
+            no_async_def=pycondition(
+                (3, 4),
+                if_ge=def_in_exec(
+                    "__call__",
+                    r'''
+def __call__(self, *args, **kwargs):
     arg = yield from self._coconut_func(*args, **kwargs)
     for f, await_f in self._coconut_func_infos:
         arg = f(arg)
         if await_f:
             arg = yield from arg
-    raise _coconut.StopIteration(arg)""", _coconut_call_ns)
-__call__ = _coconut.asyncio.coroutine(_coconut_call_ns["__call__"])
+    raise _coconut.StopIteration(arg)
                     ''',
-                    if_lt='''
+                    decorator="_coconut.asyncio.coroutine",
+                ),
+                if_lt='''
 @_coconut.asyncio.coroutine
 def __call__(self, *args, **kwargs):
     arg = yield _coconut.asyncio.From(self._coconut_func(*args, **kwargs))
@@ -549,7 +595,6 @@ def __call__(self, *args, **kwargs):
             arg = yield _coconut.asyncio.From(arg)
     raise _coconut.asyncio.Return(arg)
                     ''',
-                ),
             ),
             indent=1
         ),
@@ -558,26 +603,20 @@ def __call__(self, *args, **kwargs):
         tco_comma="_coconut_tail_call, _coconut_tco, " if not no_tco else "",
         call_set_names_comma="_coconut_call_set_names, " if target_info < (3, 6) else "",
         handle_cls_args_comma="_coconut_handle_cls_kwargs, _coconut_handle_cls_stargs, " if not target.startswith("3") else "",
-        async_def_anext=prepare(
-            r'''
+        async_def_anext=async_def(
+            "__anext__",
+            async_def=r'''
 async def __anext__(self):
     return self.func(await self.aiter.__anext__())
-            ''' if target_info >= (3, 5) else
-            pycondition(
-                (3, 5),
-                if_ge=r'''
-_coconut_anext_ns = {"_coconut": _coconut}
-_coconut_exec("""async def __anext__(self):
-    return self.func(await self.aiter.__anext__())""", _coconut_anext_ns)
-__anext__ = _coconut_anext_ns["__anext__"]
-                ''',
-                if_lt=r'''
-_coconut_anext_ns = {"_coconut": _coconut}
-_coconut_exec("""def __anext__(self):
+            ''',
+            no_async_def=def_in_exec(
+                "__anext__",
+                r'''
+def __anext__(self):
     result = yield from self.aiter.__anext__()
-    return self.func(result)""", _coconut_anext_ns)
-__anext__ = _coconut.asyncio.coroutine(_coconut_anext_ns["__anext__"])
+    return self.func(result)
                 ''',
+                decorator="_coconut.asyncio.coroutine",
             ),
             indent=1,
         ),
@@ -789,8 +828,9 @@ def __neg__(self):
             '''.format(**format_dict),
             indent=1,
         ),
-        def_async_map=prepare(
-            '''
+        def_async_map=async_def(
+            "async_map",
+            async_def='''
 async def async_map(async_func, *iters, strict=False):
     """Map async_func over iters asynchronously using anyio."""
     import anyio
@@ -803,31 +843,15 @@ async def async_map(async_func, *iters, strict=False):
         for i, args in _coconut.enumerate({_coconut_}zip(*iters, strict=strict)):
             nursery.start_soon(store_func_in_of, i, args)
     return results
-            '''.format(**format_dict) if target_info >= (3, 5) else
-            pycondition(
-                (3, 5),
-                if_ge='''
-_coconut_async_map_ns = {lbrace}"_coconut": _coconut, "zip": zip{rbrace}
-_coconut_exec("""async def async_map(async_func, *iters, strict=False):
-    \'''Map async_func over iters asynchronously using anyio.\'''
-    import anyio
-    results = []
-    async def store_func_in_of(i, args):
-        got = await async_func(*args)
-        results.extend([None] * (1 + i - _coconut.len(results)))
-        results[i] = got
-    async with anyio.create_task_group() as nursery:
-        for i, args in _coconut.enumerate({_coconut_}zip(*iters, strict=strict)):
-            nursery.start_soon(store_func_in_of, i, args)
-    return results""", _coconut_async_map_ns)
-async_map = _coconut_async_map_ns["async_map"]
-                '''.format(**format_dict),
-                if_lt='''
+            '''.format(**format_dict),
+            no_async_def='''
 def async_map(*args, **kwargs):
     """async_map not available on Python < 3.5"""
     raise _coconut.NameError("async_map not available on Python < 3.5")
-                ''',
-            ),
+            ''',
+            needs_vars={
+                "{_coconut_}zip".format(**format_dict): "zip",
+            },
         ),
     )
     format_dict.update(extra_format_dict)

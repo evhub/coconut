@@ -962,13 +962,15 @@ def still_ident(x) =
 @prepattern(ident, allow_any_func=True)
 def not_ident(x) = "bar"
 
-# Pattern-matching functions with guards
+# Pattern-matching functions
 
 def pattern_abs(x if x < 0) = -x
 addpattern def pattern_abs(x) = x  # type: ignore
 
 def `pattern_abs_` (x) if x < 0 = -x
 addpattern def `pattern_abs_` (x) = x  # type: ignore
+
+def x_or_y(x and y) = (x, y)
 
 # Recursive iterator
 
