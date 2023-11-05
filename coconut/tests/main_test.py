@@ -105,6 +105,8 @@ dest = os.path.join(base, "dest")
 additional_dest = os.path.join(base, "dest", "additional_dest")
 
 src_cache_dir = os.path.join(src, coconut_cache_dir)
+cocotest_dir = os.path.join(src, "cocotest")
+agnostic_dir = os.path.join(cocotest_dir, "agnostic")
 
 runnable_coco = os.path.join(src, "runnable.coco")
 runnable_py = os.path.join(src, "runnable.py")
@@ -472,6 +474,26 @@ def using_coconut(fresh_logger=True, fresh_api=False):
         logger.copy_from(saved_logger)
 
 
+def remove_pys_in(dirpath):
+    removed_pys = 0
+    for fname in os.listdir(dirpath):
+        if fname.endswith(".py"):
+            rm_path(os.path.join(dirpath, fname))
+            removed_pys += 1
+    return removed_pys
+
+
+@contextmanager
+def using_pys_in(dirpath):
+    """Remove *.py in dirpath at start and finish."""
+    remove_pys_in(dirpath)
+    try:
+        yield
+    finally:
+        removed_pys = remove_pys_in(dirpath)
+        assert removed_pys > 0, os.listdir(dirpath)
+
+
 @contextmanager
 def using_sys_path(path, prepend=False):
     """Adds a path to sys.path."""
@@ -796,6 +818,12 @@ class TestShell(unittest.TestCase):
                     import runnable
                     reload(runnable)
         assert runnable.success == "<success>"
+
+    def test_find_packages(self):
+        with using_pys_in(agnostic_dir):
+            with using_coconut():
+                from coconut.api import find_and_compile_packages
+                assert find_and_compile_packages(cocotest_dir) == ["agnostic"]
 
     def test_runnable(self):
         run_runnable()

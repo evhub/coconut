@@ -669,7 +669,7 @@ reserved_command_symbols = exit_chars + (
 # always use atomic --xxx=yyy rather than --xxx yyy
 #  and don't include --run, --quiet, or --target as they're added separately
 coconut_base_run_args = ("--keep-lines",)
-coconut_run_kwargs = dict(default_target="sys")  # passed to Command.cmd
+coconut_sys_kwargs = dict(default_target="sys")  # passed to Command.cmd
 
 default_mypy_args = (
     "--pretty",
@@ -902,6 +902,7 @@ all_reqs = {
         ("async_generator", "py35"),
         ("exceptiongroup", "py37;py<311"),
         ("anyio", "py36"),
+        "setuptools",
     ),
     "cpython": (
         "cPyparsing",
@@ -1043,6 +1044,7 @@ pinned_min_versions = {
     # don't upgrade this; it breaks on Python 3.4
     ("pygments", "py<39"): (2, 3),
     # don't upgrade these; they break on Python 2
+    "setuptools": (44,),
     ("jupyter-client", "py<35"): (5, 3),
     ("pywinpty", "py<3;windows"): (0, 5),
     ("jupyter-console", "py<35"): (5, 2),

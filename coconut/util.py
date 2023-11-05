@@ -107,6 +107,11 @@ class override(pickleable_obj):
         self.func = func
 
     def __get__(self, obj, objtype=None):
+        if hasattr(self.func, "__get__"):
+            if objtype is None:
+                return self.func.__get__(obj)
+            else:
+                return self.func.__get__(obj, objtype)
         if obj is None:
             return self.func
         if PY2:

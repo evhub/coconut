@@ -1649,6 +1649,12 @@ class override(_coconut_baseclass):
     def __init__(self, func):
         self.func = func
     def __get__(self, obj, objtype=None):
+        self_func_get = _coconut.getattr(self.func, "__get__", None)
+        if self_func_get is not None:
+            if objtype is None:
+                return self_func_get(obj)
+            else:
+                return self_func_get(obj, objtype)
         if obj is None:
             return self.func
 {return_method_of_self_func}

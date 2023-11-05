@@ -72,7 +72,7 @@ from coconut.constants import (
     create_package_retries,
     default_use_cache_dir,
     coconut_cache_dir,
-    coconut_run_kwargs,
+    coconut_sys_kwargs,
     interpreter_uses_incremental,
     disable_incremental_for_len,
 )
@@ -165,9 +165,15 @@ class Command(object):
                         dest = os.path.join(os.path.dirname(source), coconut_cache_dir)
                     else:
                         dest = os.path.join(source, coconut_cache_dir)
-            self.cmd(args, argv=argv, use_dest=dest, **coconut_run_kwargs)
+            self.cmd_sys(args, argv=argv, use_dest=dest)
         else:
             self.cmd()
+
+    def cmd_sys(self, *args, **in_kwargs):
+        """Same as .cmd(), but uses defaults from coconut_sys_kwargs."""
+        out_kwargs = coconut_sys_kwargs.copy()
+        out_kwargs.update(in_kwargs)
+        return self.cmd(*args, **out_kwargs)
 
     # new external parameters should be updated in api.pyi and DOCS
     def cmd(self, args=None, argv=None, interact=True, default_target=None, use_dest=None):

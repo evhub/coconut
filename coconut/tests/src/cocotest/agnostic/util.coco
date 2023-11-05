@@ -881,6 +881,20 @@ class inh_inh_A(inh_A):
     @override
     def true(self) = False
 
+class BaseWithMeths:
+    @classmethod
+    def cls_meth(cls) = False
+    @staticmethod
+    def static_meth() = False
+
+class DerivedWithMeths(BaseWithMeths):
+    @override
+    @classmethod
+    def cls_meth(cls) = True
+    @override
+    @staticmethod
+    def static_meth() = True
+
 class MyExc(Exception):
     def __init__(self, m):
         super().__init__(m)

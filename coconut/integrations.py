@@ -23,7 +23,6 @@ from types import MethodType
 
 from coconut.constants import (
     coconut_kernel_kwargs,
-    coconut_run_kwargs,
     enabled_xonsh_modes,
     interpreter_uses_incremental,
 )
@@ -77,7 +76,7 @@ def load_ipython_extension(ipython):
                 # first line in block is cmd, rest is code
                 line = line.strip()
                 if line:
-                    api.cmd(line, state=magic_state, **coconut_run_kwargs)
+                    api.cmd_sys(line, state=magic_state)
                 code = cell
             compiled = api.parse(code, state=magic_state)
         except CoconutException:

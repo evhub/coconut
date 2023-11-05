@@ -3106,7 +3106,7 @@ def fib(n):
 
 **override**(_func_)
 
-Coconut provides the `@override` decorator to allow declaring a method definition in a subclass as an override of some parent class method. When `@override` is used on a method, if a method of the same name does not exist on some parent class, the class definition will raise a `RuntimeError`.
+Coconut provides the `@override` decorator to allow declaring a method definition in a subclass as an override of some parent class method. When `@override` is used on a method, if a method of the same name does not exist on some parent class, the class definition will raise a `RuntimeError`. `@override` works with other decorators such as `@classmethod` and `@staticmethod`, but only if `@override` is the outer-most decorator.
 
 Additionally, `override` will present to type checkers as [`typing_extensions.override`](https://pypi.org/project/typing-extensions/).
 
@@ -4672,6 +4672,12 @@ Executes the given _args_ as if they were fed to `coconut` on the command-line, 
 
 Has the same effect of setting the command-line flags on the given _state_ object as `setup` (with the global `state` object used when _state_ is `False`).
 
+#### `cmd_sys`
+
+**coconut.api.cmd_sys**(_args_=`None`, *, _argv_=`None`, _interact_=`False`, _default\_target_=`"sys"`, _state_=`False`)
+
+Same as `coconut.api.cmd` but _default\_target_ is `"sys"` rather than `None` (universal).
+
 #### `coconut_exec`
 
 **coconut.api.coconut_exec**(_expression_, _globals_=`None`, _locals_=`None`, _state_=`False`, _keep\_internal\_state_=`None`)
@@ -4683,18 +4689,6 @@ Version of [`exec`](https://docs.python.org/3/library/functions.html#exec) which
 **coconut.api.coconut_eval**(_expression_, _globals_=`None`, _locals_=`None`, _state_=`False`, _keep\_internal\_state_=`None`)
 
 Version of [`eval`](https://docs.python.org/3/library/functions.html#eval) which can evaluate Coconut code.
-
-#### `version`
-
-**coconut.api.version**(**[**_which_**]**)
-
-Retrieves a string containing information about the Coconut version. The optional argument _which_ is the type of version information desired. Possible values of _which_ are:
-
-- `"num"`: the numerical version (the default)
-- `"name"`: the version codename
-- `"spec"`: the numerical version with the codename attached
-- `"tag"`: the version tag used in GitHub and documentation URLs
-- `"-v"`: the full string printed by `coconut -v`
 
 #### `auto_compilation`
 
@@ -4711,6 +4705,41 @@ If _use\_cache\_dir_ is passed, it will turn on or off the usage of a `__coconut
 **coconut.api.use_coconut_breakpoint**(_on_=`True`)
 
 Switches the [`breakpoint` built-in](https://www.python.org/dev/peps/pep-0553/) which Coconut makes universally available to use [`coconut.embed`](#coconut-embed) instead of [`pdb.set_trace`](https://docs.python.org/3/library/pdb.html#pdb.set_trace) (or undoes that switch if `on=False`). This function is called automatically when `coconut.api` is imported.
+
+#### `find_and_compile_packages`
+
+**coconut.api.find_and_compile_packages**(_where_=`"."`, _exclude_=`()`, _include_=`("*",)`)
+
+Behaves similarly to [`setuptools.find_packages`](https://setuptools.pypa.io/en/latest/userguide/quickstart.html#package-discovery) except that it finds Coconut packages rather than Python packages, and compiles any Coconut packages that it finds in-place.
+
+Note that if you want to use `find_and_compile_packages` in your `setup.py`, you'll need to include `coconut` as a [build-time dependency in your `pyproject.toml`](https://pip.pypa.io/en/stable/reference/build-system/pyproject-toml/#build-time-dependencies).
+
+##### Example
+
+```coconut_python
+# if you put this in your setup.py, your Coconut package will be compiled in-place whenever it is installed
+
+from setuptools import setup
+from coconut.api import find_and_compile_packages
+
+setup(
+    name=...,
+    version=...,
+    packages=find_and_compile_packages(),
+)
+```
+
+#### `version`
+
+**coconut.api.version**(**[**_which_**]**)
+
+Retrieves a string containing information about the Coconut version. The optional argument _which_ is the type of version information desired. Possible values of _which_ are:
+
+- `"num"`: the numerical version (the default)
+- `"name"`: the version codename
+- `"spec"`: the numerical version with the codename attached
+- `"tag"`: the version tag used in GitHub and documentation URLs
+- `"-v"`: the full string printed by `coconut -v`
 
 #### `CoconutException`
 
