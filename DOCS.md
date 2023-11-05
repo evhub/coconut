@@ -4676,7 +4676,7 @@ Has the same effect of setting the command-line flags on the given _state_ objec
 
 **coconut.api.cmd_sys**(_args_=`None`, *, _argv_=`None`, _interact_=`False`, _default\_target_=`"sys"`, _default\_jobs_=`"0"`, _state_=`False`)
 
-Same as `coconut.api.cmd` but _default\_target_ is `"sys"` rather than `None` (universal) and _default\_jobs_=`"0"` rather than `None` (`"sys"`)`.
+Same as `coconut.api.cmd` but _default\_target_ is `"sys"` rather than `None` (universal) and _default\_jobs_=`"0"` rather than `None` (`"sys"`). Since `cmd_sys` defaults to not using `multiprocessing`, it is preferred whenever that might be a problem, e.g. [if you're not inside an `if __name__ == "__main__"` block on Windows](https://stackoverflow.com/questions/20360686/compulsory-usage-of-if-name-main-in-windows-while-using-multiprocessi).
 
 #### `coconut_exec`
 
