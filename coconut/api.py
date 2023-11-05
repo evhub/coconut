@@ -375,7 +375,7 @@ class CoconutPackageFinder(PackageFinder, object):
 
     @override
     @classmethod
-    def _looks_like_package(cls, path, _package_name):
+    def _looks_like_package(cls, path, _package_name=None):
         is_coconut_package = any(
             os.path.isfile(os.path.join(path, "__init__" + ext))
             for ext in code_exts
