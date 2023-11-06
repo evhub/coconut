@@ -29,8 +29,8 @@ from subprocess import CalledProcessError
 
 from coconut._pyparsing import (
     unset_fast_pyparsing_reprs,
-    collect_timing_info,
-    print_timing_info,
+    start_profiling,
+    print_profiling_results,
     SUPPORTS_INCREMENTAL,
 )
 
@@ -249,7 +249,7 @@ class Command(object):
             if args.trace or args.profile:
                 unset_fast_pyparsing_reprs()
             if args.profile:
-                collect_timing_info()
+                start_profiling()
             logger.enable_colors()
 
             logger.log(cli_version)
@@ -358,7 +358,10 @@ class Command(object):
                     self.disable_jobs()
 
                 # do compilation
-                with self.running_jobs(exit_on_error=not args.watch):
+                with self.running_jobs(exit_on_error=not (
+                    args.watch
+                    or args.profile
+                )):
                     for source, dest, package in src_dest_package_triples:
                         filepaths += self.compile_path(source, dest, package, run=args.run or args.interact, force=args.force)
                 self.run_mypy(filepaths)
@@ -406,7 +409,7 @@ class Command(object):
                 # src_dest_package_triples is always available here
                 self.watch(src_dest_package_triples, args.run, args.force)
             if args.profile:
-                print_timing_info()
+                print_profiling_results()
 
             # make sure to return inside handling_exceptions to ensure filepaths is available
             return filepaths

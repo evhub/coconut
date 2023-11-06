@@ -331,10 +331,10 @@ upload: wipe dev just-upload
 check-reqs:
 	python ./coconut/requirements.py
 
-.PHONY: profile-parser
-profile-parser: export COCONUT_USE_COLOR=TRUE
-profile-parser: export COCONUT_PURE_PYTHON=TRUE
-profile-parser:
+.PHONY: profile
+profile: export COCONUT_USE_COLOR=TRUE
+profile: export COCONUT_PURE_PYTHON=TRUE
+profile:
 	coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --force --jobs 0 --profile --verbose --stack-size 4096 --recursion-limit 4096 2>&1 | tee ./profile.log
 
 .PHONY: open-speedscope

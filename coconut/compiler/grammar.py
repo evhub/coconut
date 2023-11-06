@@ -1122,9 +1122,9 @@ class Grammar(object):
     ))
 
     call_item = (
-        dubstar + test
+        unsafe_name + default
+        | dubstar + test
         | star + test
-        | unsafe_name + default
         | ellipsis_tokens + equals.suppress() + refname
         | namedexpr_test
     )

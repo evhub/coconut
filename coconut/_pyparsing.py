@@ -287,7 +287,10 @@ def add_timing_to_method(cls, method_name, method):
     It's a monstrosity, but it's only used for profiling."""
     from coconut.terminal import internal_assert  # hide to avoid circular import
 
-    args, varargs, keywords, defaults = inspect.getargspec(method)
+    if hasattr(inspect, "getargspec"):
+        args, varargs, varkw, defaults = inspect.getargspec(method)
+    else:
+        args, varargs, varkw, defaults, kwonlyargs, kwonlydefaults, annotations = inspect.getfullargspec(method)
     internal_assert(args[:1] == ["self"], "cannot add timing to method", method_name)
 
     if not defaults:
@@ -316,9 +319,9 @@ def add_timing_to_method(cls, method_name, method):
     if varargs:
         def_args.append("*" + varargs)
         call_args.append("*" + varargs)
-    if keywords:
-        def_args.append("**" + keywords)
-        call_args.append("**" + keywords)
+    if varkw:
+        def_args.append("**" + varkw)
+        call_args.append("**" + varkw)
 
     new_method_name = "new_" + method_name + "_func"
     _exec_dict = globals().copy()
@@ -391,6 +394,7 @@ def collect_timing_info():
                     added_timing |= add_timing_to_method(obj, attr_name, attr)
             if added_timing:
                 logger.log("\tadded timing to", obj)
+    return _timing_info
 
 
 def print_timing_info():
@@ -408,3 +412,84 @@ Timing info:
     sorted_timing_info = sorted(_timing_info[0].items(), key=lambda kv: kv[1])
     for method_name, total_time in sorted_timing_info:
         print("{method_name}:\t{total_time}".format(method_name=method_name, total_time=total_time))
+
+
+_profiled_MatchFirst_objs = {}
+
+
+def add_profiling_to_MatchFirsts():
+    """Add profiling to MatchFirst objects to look for possible reorderings."""
+
+    def new_parseImpl(self, instring, loc, doActions=True):
+        if id(self) not in _profiled_MatchFirst_objs:
+            _profiled_MatchFirst_objs[id(self)] = self
+            self.expr_usage_stats = [0] * len(self.exprs)
+            self.expr_timing_stats = [[] for _ in range(len(self.exprs))]
+        maxExcLoc = -1
+        maxException = None
+        for i, e in enumerate(self.exprs):
+            try:
+                start_time = get_clock_time()
+                try:
+                    ret = e._parse(instring, loc, doActions)
+                finally:
+                    self.expr_timing_stats[i].append(get_clock_time() - start_time)
+                self.expr_usage_stats[i] += 1
+                return ret
+            except _pyparsing.ParseException as err:
+                if err.loc > maxExcLoc:
+                    maxException = err
+                    maxExcLoc = err.loc
+            except IndexError:
+                if len(instring) > maxExcLoc:
+                    maxException = _pyparsing.ParseException(instring, len(instring), e.errmsg, self)
+                    maxExcLoc = len(instring)
+        else:
+            if maxException is not None:
+                maxException.msg = self.errmsg
+                raise maxException
+            else:
+                raise _pyparsing.ParseException(instring, loc, "no defined alternatives to match", self)
+    _pyparsing.MatchFirst.parseImpl = new_parseImpl
+    return _profiled_MatchFirst_objs
+
+
+def time_for_ordering(expr_usage_stats, expr_timing_aves):
+    """Get the total time for a given MatchFirst ordering."""
+    total_time = 0
+    for i, n in enumerate(expr_usage_stats):
+        total_time += n * sum(expr_timing_aves[:i + 1])
+    return total_time
+
+
+def naive_timing_improvement(expr_usage_stats, expr_timing_aves):
+    """Get the expected timing improvement for a better MatchFirst ordering."""
+    usage_ordered_expr_usage_stats, usage_ordered_expr_timing_aves = zip(*sorted(
+        zip(expr_usage_stats, expr_timing_aves),
+        reverse=True,
+    ))
+    return time_for_ordering(usage_ordered_expr_usage_stats, usage_ordered_expr_timing_aves) - time_for_ordering(expr_usage_stats, expr_timing_aves)
+
+
+def print_poorly_ordered_MatchFirsts():
+    """Print poorly ordered MatchFirsts."""
+    for obj in _profiled_MatchFirst_objs.values():
+        obj.expr_timing_aves = [sum(ts) / len(ts) if ts else 0 for ts in obj.expr_timing_stats]
+        obj.naive_timing_improvement = naive_timing_improvement(obj.expr_usage_stats, obj.expr_timing_aves)
+    most_improveable = sorted(_profiled_MatchFirst_objs.values(), key=lambda obj: obj.naive_timing_improvement)[-100:]
+    for obj in most_improveable:
+        print(obj, ":", obj.naive_timing_improvement)
+        print("\t" + repr(obj.expr_usage_stats))
+        print("\t" + repr(obj.expr_timing_aves))
+
+
+def start_profiling():
+    """Do all the setup to begin profiling."""
+    collect_timing_info()
+    add_profiling_to_MatchFirsts()
+
+
+def print_profiling_results():
+    """Print all profiling results."""
+    print_timing_info()
+    print_poorly_ordered_MatchFirsts()
