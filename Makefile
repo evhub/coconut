@@ -213,9 +213,9 @@ test-easter-eggs: clean
 	python ./coconut/tests/dest/extras.py
 
 # same as test-univ but uses python pyparsing
-.PHONY: test-pyparsing
-test-pyparsing: export COCONUT_PURE_PYTHON=TRUE
-test-pyparsing: test-univ
+.PHONY: test-purepy
+test-purepy: export COCONUT_PURE_PYTHON=TRUE
+test-purepy: test-univ
 
 # same as test-univ but disables the computation graph
 .PHONY: test-no-computation-graph
@@ -264,9 +264,9 @@ test-mini-debug:
 	python -X dev -m coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --strict --keep-lines --force --jobs 0 --stack-size 4096 --recursion-limit 4096
 
 # same as test-mini-debug but uses vanilla pyparsing
-.PHONY: test-mini-debug-pyparsing
-test-mini-debug-pyparsing: export COCONUT_PURE_PYTHON=TRUE
-test-mini-debug-pyparsing: test-mini-debug
+.PHONY: test-mini-debug-purepy
+test-mini-debug-purepy: export COCONUT_PURE_PYTHON=TRUE
+test-mini-debug-purepy: test-mini-debug
 
 .PHONY: debug-test-crash
 debug-test-crash:

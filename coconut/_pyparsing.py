@@ -20,6 +20,7 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 from coconut.root import *  # NOQA
 
 import os
+import re
 import sys
 import traceback
 import functools
@@ -220,13 +221,13 @@ else:
 # MISSING OBJECTS:
 # -----------------------------------------------------------------------------------------------------------------------
 
-if not hasattr(_pyparsing, "python_quoted_string"):
-    import re as _re
+python_quoted_string = getattr(_pyparsing, "python_quoted_string", None)
+if python_quoted_string is None:
     python_quoted_string = _pyparsing.Combine(
-        (_pyparsing.Regex(r'"""(?:[^"\\]|""(?!")|"(?!"")|\\.)*', flags=_re.MULTILINE) + '"""').setName("multiline double quoted string")
-        ^ (_pyparsing.Regex(r"'''(?:[^'\\]|''(?!')|'(?!'')|\\.)*", flags=_re.MULTILINE) + "'''").setName("multiline single quoted string")
-        ^ (_pyparsing.Regex(r'"(?:[^"\n\r\\]|(?:\\")|(?:\\(?:[^x]|x[0-9a-fA-F]+)))*') + '"').setName("double quoted string")
-        ^ (_pyparsing.Regex(r"'(?:[^'\n\r\\]|(?:\\')|(?:\\(?:[^x]|x[0-9a-fA-F]+)))*") + "'").setName("single quoted string")
+        (_pyparsing.Regex(r'"""(?:[^"\\]|""(?!")|"(?!"")|\\.)*', flags=re.MULTILINE) + '"""').setName("multiline double quoted string")
+        | (_pyparsing.Regex(r"'''(?:[^'\\]|''(?!')|'(?!'')|\\.)*", flags=re.MULTILINE) + "'''").setName("multiline single quoted string")
+        | (_pyparsing.Regex(r'"(?:[^"\n\r\\]|(?:\\")|(?:\\(?:[^x]|x[0-9a-fA-F]+)))*') + '"').setName("double quoted string")
+        | (_pyparsing.Regex(r"'(?:[^'\n\r\\]|(?:\\')|(?:\\(?:[^x]|x[0-9a-fA-F]+)))*") + "'").setName("single quoted string")
     ).setName("Python quoted string")
     _pyparsing.python_quoted_string = python_quoted_string
 
