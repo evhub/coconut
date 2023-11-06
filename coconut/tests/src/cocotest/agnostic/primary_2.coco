@@ -377,12 +377,16 @@ def primary_test_2() -> bool:
     assert list(py_xs) == [] if sys.version_info >= (3,) else [4, 6]
     for xs in [
         zip((x for x in range(5)), (x for x in range(10))),
-        py_zip((x for x in range(5)), (x for x in range(10))),
         map((,), (x for x in range(5)), (x for x in range(10))),
-        py_map((,), (x for x in range(5)), (x for x in range(10))),
     ]:  # type: ignore
         assert list(xs) == list(zip(range(5), range(5)))
         assert list(xs) == []
+    for xs in [
+        py_zip((x for x in range(5)), (x for x in range(10))),
+        py_map((,), (x for x in range(5)), (x for x in range(10))),
+    ]:  # type: ignore
+        assert list(xs) == list(zip(range(5), range(5)))
+        assert list(xs) == [] if sys.version_info >= (3,) else list(zip(range(5), range(5)))
     xs = map((.+1), range(5))
     py_xs = py_map((.+1), range(5))
     assert list(xs) == list(range(1, 6)) == list(xs)

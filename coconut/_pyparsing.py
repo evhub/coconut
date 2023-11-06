@@ -28,7 +28,6 @@ from warnings import warn
 from collections import defaultdict
 
 from coconut.constants import (
-    PYPY,
     PURE_PYTHON,
     use_fast_pyparsing_reprs,
     use_packrat_parser,
@@ -187,7 +186,8 @@ USE_COMPUTATION_GRAPH = get_bool_env_var(
     use_computation_graph_env_var,
     default=(
         not MODERN_PYPARSING  # not yet supported
-        and not PYPY  # experimentally determined
+        # commented out to minimize memory footprint when running tests:
+        # and not PYPY  # experimentally determined
     ),
 )
 
