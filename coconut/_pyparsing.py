@@ -450,6 +450,7 @@ def add_profiling_to_MatchFirsts():
                 raise maxException
             else:
                 raise _pyparsing.ParseException(instring, loc, "no defined alternatives to match", self)
+
     _pyparsing.MatchFirst.parseImpl = new_parseImpl
     return _profiled_MatchFirst_objs
 
@@ -485,8 +486,8 @@ def print_poorly_ordered_MatchFirsts():
 
 def start_profiling():
     """Do all the setup to begin profiling."""
-    collect_timing_info()
     add_profiling_to_MatchFirsts()
+    collect_timing_info()
 
 
 def print_profiling_results():
