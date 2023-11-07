@@ -117,6 +117,8 @@ varchars = string.ascii_letters + string.digits + "_"
 
 use_computation_graph_env_var = "COCONUT_USE_COMPUTATION_GRAPH"
 
+num_displayed_timing_items = 100
+
 # below constants are experimentally determined to maximize performance
 
 streamline_grammar_for_len = 4096

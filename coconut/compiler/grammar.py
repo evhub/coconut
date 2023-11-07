@@ -1290,7 +1290,7 @@ class Grammar(object):
     ) + ~questionmark
     partial_trailer_tokens = Group(dollar.suppress() + function_call_tokens)
 
-    no_call_trailer = simple_trailer | partial_trailer | known_trailer
+    no_call_trailer = simple_trailer | known_trailer | partial_trailer
 
     no_partial_complex_trailer = call_trailer | known_trailer
     no_partial_trailer = simple_trailer | no_partial_complex_trailer

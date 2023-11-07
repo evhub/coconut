@@ -333,9 +333,8 @@ check-reqs:
 
 .PHONY: profile
 profile: export COCONUT_USE_COLOR=TRUE
-profile: export COCONUT_PURE_PYTHON=TRUE
 profile:
-	coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --force --jobs 0 --profile --verbose --stack-size 4096 --recursion-limit 4096 2>&1 | tee ./profile.log
+	coconut ./coconut/tests/src/cocotest/agnostic/util.coco ./coconut/tests/dest/cocotest --force --jobs 0 --profile --verbose --stack-size 4096 --recursion-limit 4096 2>&1 | tee ./profile.log
 
 .PHONY: open-speedscope
 open-speedscope:

@@ -24,9 +24,11 @@ import re
 import sys
 import traceback
 import functools
-import inspect
 from warnings import warn
 from collections import defaultdict
+from itertools import permutations
+from functools import wraps
+from pprint import pprint
 
 from coconut.constants import (
     PURE_PYTHON,
@@ -45,6 +47,7 @@ from coconut.constants import (
     default_incremental_cache_size,
     never_clear_incremental_cache,
     warn_on_multiline_regex,
+    num_displayed_timing_items,
 )
 from coconut.util import get_clock_time  # NOQA
 from coconut.util import (
@@ -285,69 +288,15 @@ class _timing_sentinel(object):
 def add_timing_to_method(cls, method_name, method):
     """Add timing collection to the given method.
     It's a monstrosity, but it's only used for profiling."""
-    from coconut.terminal import internal_assert  # hide to avoid circular import
-
-    if hasattr(inspect, "getargspec"):
-        args, varargs, varkw, defaults = inspect.getargspec(method)
-    else:
-        args, varargs, varkw, defaults, kwonlyargs, kwonlydefaults, annotations = inspect.getfullargspec(method)
-    internal_assert(args[:1] == ["self"], "cannot add timing to method", method_name)
-
-    if not defaults:
-        defaults = []
-    num_undefaulted_args = len(args) - len(defaults)
-    def_args = []
-    call_args = []
-    fix_arg_defaults = []
-    defaults_dict = {}
-    for i, arg in enumerate(args):
-        if i >= num_undefaulted_args:
-            default = defaults[i - num_undefaulted_args]
-            def_args.append(arg + "=_timing_sentinel")
-            defaults_dict[arg] = default
-            fix_arg_defaults.append(
-                """
-    if {arg} is _timing_sentinel:
-        {arg} = _exec_dict["defaults_dict"]["{arg}"]
-""".strip("\n").format(
-                    arg=arg,
-                ),
-            )
-        else:
-            def_args.append(arg)
-        call_args.append(arg)
-    if varargs:
-        def_args.append("*" + varargs)
-        call_args.append("*" + varargs)
-    if varkw:
-        def_args.append("**" + varkw)
-        call_args.append("**" + varkw)
-
-    new_method_name = "new_" + method_name + "_func"
-    _exec_dict = globals().copy()
-    _exec_dict.update(locals())
-    new_method_code = """
-def {new_method_name}({def_args}):
-{fix_arg_defaults}
-
-    _all_args = (lambda *args, **kwargs: args + tuple(kwargs.values()))({call_args})
-    _exec_dict["internal_assert"](not any(_arg is _timing_sentinel for _arg in _all_args), "error handling arguments in timed method {new_method_name}({def_args}); got", _all_args)
-
-    _start_time = _exec_dict["get_clock_time"]()
-    try:
-        return _exec_dict["method"]({call_args})
-    finally:
-        _timing_info[0][str(self)] += _exec_dict["get_clock_time"]() - _start_time
-{new_method_name}._timed = True
-    """.format(
-        fix_arg_defaults="\n".join(fix_arg_defaults),
-        new_method_name=new_method_name,
-        def_args=", ".join(def_args),
-        call_args=", ".join(call_args),
-    )
-    exec(new_method_code, _exec_dict)
-
-    setattr(cls, method_name, _exec_dict[new_method_name])
+    @wraps(method)
+    def new_method(self, *args, **kwargs):
+        start_time = get_clock_time()
+        try:
+            return method(self, *args, **kwargs)
+        finally:
+            _timing_info[0][ascii(self)] += get_clock_time() - start_time
+    new_method._timed = True
+    setattr(cls, method_name, new_method)
     return True
 
 
@@ -409,7 +358,7 @@ Timing info:
             num=len(_timing_info[0]),
         ),
     )
-    sorted_timing_info = sorted(_timing_info[0].items(), key=lambda kv: kv[1])
+    sorted_timing_info = sorted(_timing_info[0].items(), key=lambda kv: kv[1])[-num_displayed_timing_items:]
     for method_name, total_time in sorted_timing_info:
         print("{method_name}:\t{total_time}".format(method_name=method_name, total_time=total_time))
 
@@ -420,11 +369,15 @@ _profiled_MatchFirst_objs = {}
 def add_profiling_to_MatchFirsts():
     """Add profiling to MatchFirst objects to look for possible reorderings."""
 
+    @wraps(MatchFirst.parseImpl)
     def new_parseImpl(self, instring, loc, doActions=True):
         if id(self) not in _profiled_MatchFirst_objs:
             _profiled_MatchFirst_objs[id(self)] = self
-            self.expr_usage_stats = [0] * len(self.exprs)
-            self.expr_timing_stats = [[] for _ in range(len(self.exprs))]
+            self.expr_usage_stats = []
+            self.expr_timing_stats = []
+        while len(self.expr_usage_stats) < len(self.exprs):
+            self.expr_usage_stats.append(0)
+            self.expr_timing_stats.append([])
         maxExcLoc = -1
         maxException = None
         for i, e in enumerate(self.exprs):
@@ -463,25 +416,58 @@ def time_for_ordering(expr_usage_stats, expr_timing_aves):
     return total_time
 
 
-def naive_timing_improvement(expr_usage_stats, expr_timing_aves):
+def find_best_ordering(obj, num_perms_to_eval=None):
+    """Get the best ordering of the MatchFirst."""
+    if num_perms_to_eval is None:
+        num_perms_to_eval = True if len(obj.exprs) <= 10 else 100000
+    best_exprs = None
+    best_time = float("inf")
+    stats_zip = tuple(zip(obj.expr_usage_stats, obj.expr_timing_aves, obj.exprs))
+    if num_perms_to_eval is True:
+        perms_to_eval = permutations(stats_zip)
+    else:
+        perms_to_eval = [
+            stats_zip,
+            sorted(stats_zip, key=lambda u_t_e: (-u_t_e[0], u_t_e[1])),
+            sorted(stats_zip, key=lambda u_t_e: (u_t_e[1], -u_t_e[0])),
+        ]
+        if num_perms_to_eval:
+            max_usage = max(obj.expr_usage_stats)
+            max_time = max(obj.expr_timing_aves)
+            for i in range(1, num_perms_to_eval):
+                a = i / num_perms_to_eval
+                perms_to_eval.append(sorted(
+                    stats_zip,
+                    key=lambda u_t_e:
+                        -a * u_t_e[0] / max_usage
+                        + (1 - a) * u_t_e[1] / max_time,
+                ))
+    for perm in perms_to_eval:
+        perm_expr_usage_stats, perm_expr_timing_aves = zip(*[(usage, timing) for usage, timing, expr in perm])
+        perm_time = time_for_ordering(perm_expr_usage_stats, perm_expr_timing_aves)
+        if perm_time < best_time:
+            best_time = perm_time
+            best_exprs = [expr for usage, timing, expr in perm]
+    return best_exprs, best_time
+
+
+def naive_timing_improvement(obj):
     """Get the expected timing improvement for a better MatchFirst ordering."""
-    usage_ordered_expr_usage_stats, usage_ordered_expr_timing_aves = zip(*sorted(
-        zip(expr_usage_stats, expr_timing_aves),
-        reverse=True,
-    ))
-    return time_for_ordering(usage_ordered_expr_usage_stats, usage_ordered_expr_timing_aves) - time_for_ordering(expr_usage_stats, expr_timing_aves)
+    _, best_time = find_best_ordering(obj, num_perms_to_eval=False)
+    return time_for_ordering(obj.expr_usage_stats, obj.expr_timing_aves) - best_time
 
 
 def print_poorly_ordered_MatchFirsts():
     """Print poorly ordered MatchFirsts."""
     for obj in _profiled_MatchFirst_objs.values():
         obj.expr_timing_aves = [sum(ts) / len(ts) if ts else 0 for ts in obj.expr_timing_stats]
-        obj.naive_timing_improvement = naive_timing_improvement(obj.expr_usage_stats, obj.expr_timing_aves)
-    most_improveable = sorted(_profiled_MatchFirst_objs.values(), key=lambda obj: obj.naive_timing_improvement)[-100:]
+        obj.naive_timing_improvement = naive_timing_improvement(obj)
+    most_improveable = sorted(_profiled_MatchFirst_objs.values(), key=lambda obj: obj.naive_timing_improvement)[-num_displayed_timing_items:]
     for obj in most_improveable:
-        print(obj, ":", obj.naive_timing_improvement)
-        print("\t" + repr(obj.expr_usage_stats))
-        print("\t" + repr(obj.expr_timing_aves))
+        print(ascii(obj), ":", obj.naive_timing_improvement)
+        pprint(list(zip(obj.exprs, obj.expr_usage_stats, obj.expr_timing_aves)))
+        best_ordering, best_time = find_best_ordering(obj)
+        print("\tbest (" + str(best_time) + "):", ascii(best_ordering))
 
 
 def start_profiling():

@@ -216,16 +216,14 @@ def tee(iterable, n=2):
                 return _coconut.tuple(existing_copies)
         return _coconut.itertools.tee(iterable, n)
 class _coconut_has_iter(_coconut_baseclass):
-    __slots__ = ("lock", "iter")
+    __slots__ = ("iter",)
     def __new__(cls, iterable):
         self = _coconut.super(_coconut_has_iter, cls).__new__(cls)
-        self.lock = _coconut.threading.Lock()
         self.iter = iterable
         return self
     def get_new_iter(self):
         """Tee the underlying iterator."""
-        with self.lock:
-            self.iter = {_coconut_}reiterable(self.iter)
+        self.iter = {_coconut_}reiterable(self.iter)
         return self.iter
     def __fmap__(self, func):
         return {_coconut_}map(func, self)
@@ -238,8 +236,7 @@ class reiterable(_coconut_has_iter):
         return _coconut.super({_coconut_}reiterable, cls).__new__(cls, iterable)
     def get_new_iter(self):
         """Tee the underlying iterator."""
-        with self.lock:
-            self.iter, new_iter = {_coconut_}tee(self.iter)
+        self.iter, new_iter = {_coconut_}tee(self.iter)
         return new_iter
     def __iter__(self):
         return _coconut.iter(self.get_new_iter())
@@ -674,14 +671,13 @@ class flatten(_coconut_has_iter):{COMMENT.cant_implement_len_else_list_calls_bec
         return self
     def get_new_iter(self):
         """Tee the underlying iterator."""
-        with self.lock:
-            if not self._made_reit:
-                for i in _coconut.reversed(_coconut.range(0 if self.levels is None else self.levels + 1)):
-                    mapper = {_coconut_}reiterable
-                    for _ in _coconut.range(i):
-                        mapper = _coconut.functools.partial({_coconut_}map, mapper)
-                    self.iter = mapper(self.iter)
-                self._made_reit = True
+        if not self._made_reit:
+            for i in _coconut.reversed(_coconut.range(0 if self.levels is None else self.levels + 1)):
+                mapper = {_coconut_}reiterable
+                for _ in _coconut.range(i):
+                    mapper = _coconut.functools.partial({_coconut_}map, mapper)
+                self.iter = mapper(self.iter)
+            self._made_reit = True
         return self.iter
     def __iter__(self):
         if self.levels is None:
