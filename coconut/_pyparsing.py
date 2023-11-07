@@ -465,7 +465,7 @@ def print_poorly_ordered_MatchFirsts():
     most_improveable = sorted(_profiled_MatchFirst_objs.values(), key=lambda obj: obj.naive_timing_improvement)[-num_displayed_timing_items:]
     for obj in most_improveable:
         print(ascii(obj), ":", obj.naive_timing_improvement)
-        pprint(list(zip(obj.exprs, obj.expr_usage_stats, obj.expr_timing_aves)))
+        pprint(list(zip(map(ascii, obj.exprs), obj.expr_usage_stats, obj.expr_timing_aves)))
         best_ordering, best_time = find_best_ordering(obj)
         print("\tbest (" + str(best_time) + "):", ascii(best_ordering))
 
