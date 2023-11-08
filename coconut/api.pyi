@@ -85,7 +85,7 @@ def setup(
 
 
 def warm_up(
-    force: bool = False,
+    streamline: bool = False,
     enable_incremental_mode: bool = False,
     *,
     state: Optional[Command] = ...,

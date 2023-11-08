@@ -4809,10 +4809,12 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
         """Parse xonsh code."""
         return self.parse(inputstring, self.xonsh_parser, {"strip": True}, {"header": "none", "initial": "none"}, streamline=False, **kwargs)
 
-    def warm_up(self, force=False, enable_incremental_mode=False):
+    def warm_up(self, streamline=False, enable_incremental_mode=False, set_debug_names=False):
         """Warm up the compiler by streamlining the file_parser."""
-        self.streamline(self.file_parser, force=force)
-        self.streamline(self.eval_parser, force=force)
+        if set_debug_names:
+            self.set_grammar_names()
+        self.streamline(self.file_parser, force=streamline)
+        self.streamline(self.eval_parser, force=streamline)
         if enable_incremental_mode:
             enable_incremental_parsing()
 

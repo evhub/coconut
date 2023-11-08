@@ -420,7 +420,7 @@ def find_best_ordering(obj, num_perms_to_eval=None):
     """Get the best ordering of the MatchFirst."""
     if num_perms_to_eval is None:
         num_perms_to_eval = True if len(obj.exprs) <= 10 else 100000
-    best_exprs = None
+    best_ordering = None
     best_time = float("inf")
     stats_zip = tuple(zip(obj.expr_usage_stats, obj.expr_timing_aves, obj.exprs))
     if num_perms_to_eval is True:
@@ -447,14 +447,19 @@ def find_best_ordering(obj, num_perms_to_eval=None):
         perm_time = time_for_ordering(perm_expr_usage_stats, perm_expr_timing_aves)
         if perm_time < best_time:
             best_time = perm_time
-            best_exprs = [expr for usage, timing, expr in perm]
-    return best_exprs, best_time
+            best_ordering = [(obj.exprs.index(expr), parse_expr_repr(expr)) for usage, timing, expr in perm]
+    return best_ordering, best_time
 
 
 def naive_timing_improvement(obj):
     """Get the expected timing improvement for a better MatchFirst ordering."""
     _, best_time = find_best_ordering(obj, num_perms_to_eval=False)
     return time_for_ordering(obj.expr_usage_stats, obj.expr_timing_aves) - best_time
+
+
+def parse_expr_repr(obj):
+    """Get a clean repr of a parse expression for displaying."""
+    return getattr(obj, "name", None) or ascii(obj)
 
 
 def print_poorly_ordered_MatchFirsts():
@@ -464,10 +469,11 @@ def print_poorly_ordered_MatchFirsts():
         obj.naive_timing_improvement = naive_timing_improvement(obj)
     most_improveable = sorted(_profiled_MatchFirst_objs.values(), key=lambda obj: obj.naive_timing_improvement)[-num_displayed_timing_items:]
     for obj in most_improveable:
-        print(ascii(obj), ":", obj.naive_timing_improvement)
-        pprint(list(zip(map(ascii, obj.exprs), obj.expr_usage_stats, obj.expr_timing_aves)))
+        print("\n" + parse_expr_repr(obj), "(" + str(obj.naive_timing_improvement) + "):")
+        pprint(list(zip(map(parse_expr_repr, obj.exprs), obj.expr_usage_stats, obj.expr_timing_aves)))
         best_ordering, best_time = find_best_ordering(obj)
-        print("\tbest (" + str(best_time) + "):", ascii(best_ordering))
+        print("\tbest (" + str(best_time) + "):")
+        pprint(best_ordering)
 
 
 def start_profiling():

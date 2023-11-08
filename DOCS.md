@@ -4660,9 +4660,9 @@ If _state_ is `False`, the global state object is used.
 
 #### `warm_up`
 
-**coconut.api.warm_up**(_force_=`True`, _enable\_incremental\_mode_=`False`, *, _state_=`False`)
+**coconut.api.warm_up**(_streamline_=`True`, _enable\_incremental\_mode_=`False`, *, _state_=`False`)
 
-Can optionally be called to warm up the compiler and get it ready for parsing. Passing _force_ will cause the warm up to take longer but will substantially reduce parsing times (by default, this level of warm up is only done when the compiler encounters a large file). Passing _enable\_incremental\_mode_ will enable the compiler's incremental mdoe, where parsing some string, then later parsing a continuation of that string, will yield substantial performance improvements.
+Can optionally be called to warm up the compiler and get it ready for parsing. Passing _streamline_ will cause the warm up to take longer but will substantially reduce parsing times (by default, this level of warm up is only done when the compiler encounters a large file). Passing _enable\_incremental\_mode_ will enable the compiler's incremental mdoe, where parsing some string, then later parsing a continuation of that string, will yield substantial performance improvements.
 
 #### `cmd`
 

@@ -1476,8 +1476,8 @@ class Grammar(object):
         comp_pipe_handle,
     )
     comp_pipe_expr = (
-        comp_pipe_item
-        | none_coalesce_expr
+        none_coalesce_expr + ~comp_pipe_op
+        | comp_pipe_item
     )
 
     pipe_op = (
@@ -2308,8 +2308,8 @@ class Grammar(object):
     compound_stmt = (
         decoratable_class_stmt
         | decoratable_func_stmt
-        | for_stmt
         | while_stmt
+        | for_stmt
         | with_stmt
         | async_stmt
         | match_for_stmt
@@ -2567,12 +2567,12 @@ class Grammar(object):
         finally:
             cls.grammar_init_time += get_clock_time() - start_time
 
-
-def set_grammar_names():
-    """Set names of grammar elements to their variable names."""
-    for varname, val in vars(Grammar).items():
-        if isinstance(val, ParserElement):
-            val.setName(varname)
+    @staticmethod
+    def set_grammar_names():
+        """Set names of grammar elements to their variable names."""
+        for varname, val in vars(Grammar).items():
+            if isinstance(val, ParserElement):
+                val.setName(varname)
 
 
 # end: TRACING

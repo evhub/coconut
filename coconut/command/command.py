@@ -111,7 +111,6 @@ from coconut.compiler.util import (
     get_target_info_smart,
 )
 from coconut.compiler.header import gethash
-from coconut.compiler.grammar import set_grammar_names
 from coconut.command.cli import arguments, cli_version
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -244,8 +243,6 @@ class Command(object):
                 verbose=args.verbose,
                 tracing=args.trace,
             )
-            if args.verbose or args.trace or args.profile:
-                set_grammar_names()
             if args.trace or args.profile:
                 unset_fast_pyparsing_reprs()
             if args.profile:
@@ -318,8 +315,11 @@ class Command(object):
                 no_tco=args.no_tco,
                 no_wrap=args.no_wrap_types,
             )
-            if args.watch:
-                self.comp.warm_up(enable_incremental_mode=True)
+            self.comp.warm_up(
+                streamline=args.watch or args.profile,
+                enable_incremental_mode=args.watch,
+                set_debug_names=args.verbose or args.trace or args.profile,
+            )
 
             # process mypy args and print timing info (must come after compiler setup)
             if args.mypy is not None:
