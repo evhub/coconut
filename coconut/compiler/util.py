@@ -47,6 +47,7 @@ else:
 from coconut._pyparsing import (
     USE_COMPUTATION_GRAPH,
     SUPPORTS_INCREMENTAL,
+    USE_ADAPTIVE,
     replaceWith,
     ZeroOrMore,
     OneOrMore,
@@ -64,6 +65,7 @@ from coconut._pyparsing import (
     CaselessLiteral,
     Group,
     ParserElement,
+    MatchFirst,
     _trim_arity,
     _ParseResultsWithOffset,
     all_parse_elements,
@@ -113,6 +115,7 @@ from coconut.constants import (
     unwrapper,
     incremental_cache_limit,
     incremental_mode_cache_successes,
+    adaptive_reparse_usage_weight,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -362,8 +365,36 @@ def final_evaluate_tokens(tokens):
     return evaluate_tokens(tokens)
 
 
+@contextmanager
+def adaptive_manager(item, original, loc, reparse=False):
+    """Manage the use of MatchFirst.setAdaptiveMode."""
+    if reparse:
+        item.include_in_packrat_context = True
+        MatchFirst.setAdaptiveMode(False, usage_weight=adaptive_reparse_usage_weight)
+        try:
+            yield
+        finally:
+            MatchFirst.setAdaptiveMode(False, usage_weight=1)
+            item.include_in_packrat_context = False
+    else:
+        MatchFirst.setAdaptiveMode(True)
+        try:
+            yield
+        except Exception as exc:
+            if DEVELOP:
+                logger.log("reparsing due to:", exc)
+                logger.record_adaptive_stat(False)
+        else:
+            if DEVELOP:
+                logger.record_adaptive_stat(True)
+        finally:
+            MatchFirst.setAdaptiveMode(False)
+
+
 def final(item):
     """Collapse the computation graph upon parsing the given item."""
+    if USE_ADAPTIVE:
+        item = Wrap(item, adaptive_manager, greedy=True)
     # evaluate_tokens expects a computation graph, so we just call add_action directly
     return add_action(trace(item), final_evaluate_tokens)
 
@@ -778,11 +809,17 @@ class Wrap(ParseElementEnhance):
         if logger.tracing:  # avoid the overhead of the call if not tracing
             logger.log_trace(self.wrapped_name, original, loc)
         with logger.indent_tracing():
-            with self.wrapper(self, original, loc):
-                with self.wrapped_context():
-                    parse_loc, tokens = super(Wrap, self).parseImpl(original, loc, *args, **kwargs)
-                    if self.greedy:
-                        tokens = evaluate_tokens(tokens)
+            reparse = False
+            parse_loc = None
+            while parse_loc is None:  # lets wrapper catch errors to trigger a reparse
+                with self.wrapper(self, original, loc, **(dict(reparse=True) if reparse else {})):
+                    with self.wrapped_context():
+                        parse_loc, tokens = super(Wrap, self).parseImpl(original, loc, *args, **kwargs)
+                        if self.greedy:
+                            tokens = evaluate_tokens(tokens)
+                if reparse and parse_loc is None:
+                    raise CoconutInternalException("illegal double reparse in", self)
+                reparse = True
         if logger.tracing:  # avoid the overhead of the call if not tracing
             logger.log_trace(self.wrapped_name, original, loc, tokens)
         return parse_loc, tokens

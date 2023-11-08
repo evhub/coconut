@@ -522,10 +522,19 @@ class Logger(object):
             item.debug = True
         return item
 
+    adaptive_stats = None
+
+    def record_adaptive_stat(self, success):
+        if self.verbose:
+            if self.adaptive_stats is None:
+                self.adaptive_stats = [0, 0]
+            self.adaptive_stats[success] += 1
+
     @contextmanager
     def gather_parsing_stats(self):
         """Times parsing if --verbose."""
         if self.verbose:
+            self.adaptive_stats = None
             start_time = get_clock_time()
             try:
                 yield
@@ -538,6 +547,9 @@ class Logger(object):
                     # reset stats after printing if in incremental mode
                     if ParserElement._incrementalEnabled:
                         ParserElement.packrat_cache_stats[:] = [0] * len(ParserElement.packrat_cache_stats)
+                if self.adaptive_stats:
+                    failures, successes = self.adaptive_stats
+                    self.printlog("\tAdaptive parsing stats:", successes, "successes;", failures, "failures")
         else:
             yield
 

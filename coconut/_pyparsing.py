@@ -48,6 +48,7 @@ from coconut.constants import (
     never_clear_incremental_cache,
     warn_on_multiline_regex,
     num_displayed_timing_items,
+    use_adaptive_if_available,
 )
 from coconut.util import get_clock_time  # NOQA
 from coconut.util import (
@@ -173,6 +174,8 @@ else:
             + ver_tuple_to_str(min_versions["cPyparsing"])
             + " (run '{python} -m pip install --upgrade cPyparsing' to fix)".format(python=sys.executable)
         )
+
+USE_ADAPTIVE = hasattr(MatchFirst, "setAdaptiveMode") and use_adaptive_if_available
 
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -459,7 +462,7 @@ def naive_timing_improvement(obj):
 
 def parse_expr_repr(obj):
     """Get a clean repr of a parse expression for displaying."""
-    return getattr(obj, "name", None) or ascii(obj)
+    return ascii(getattr(obj, "name", None) or obj)
 
 
 def print_poorly_ordered_MatchFirsts():
@@ -469,7 +472,7 @@ def print_poorly_ordered_MatchFirsts():
         obj.naive_timing_improvement = naive_timing_improvement(obj)
     most_improveable = sorted(_profiled_MatchFirst_objs.values(), key=lambda obj: obj.naive_timing_improvement)[-num_displayed_timing_items:]
     for obj in most_improveable:
-        print("\n" + parse_expr_repr(obj), "(" + str(obj.naive_timing_improvement) + "):")
+        print("\n" + parse_expr_repr(obj) + " (" + str(obj.naive_timing_improvement) + "):")
         pprint(list(zip(map(parse_expr_repr, obj.exprs), obj.expr_usage_stats, obj.expr_timing_aves)))
         best_ordering, best_time = find_best_ordering(obj)
         print("\tbest (" + str(best_time) + "):")
