@@ -369,13 +369,16 @@ def final_evaluate_tokens(tokens):
 def adaptive_manager(item, original, loc, reparse=False):
     """Manage the use of MatchFirst.setAdaptiveMode."""
     if reparse:
-        item.include_in_packrat_context = True
+        cleared_cache = clear_packrat_cache(force=True)
+        if cleared_cache is not True:
+            item.include_in_packrat_context = True
         MatchFirst.setAdaptiveMode(False, usage_weight=adaptive_reparse_usage_weight)
         try:
             yield
         finally:
             MatchFirst.setAdaptiveMode(False, usage_weight=1)
-            item.include_in_packrat_context = False
+            if cleared_cache is not True:
+                item.include_in_packrat_context = False
     else:
         MatchFirst.setAdaptiveMode(True)
         try:
@@ -551,37 +554,43 @@ def get_pyparsing_cache():
             return {}
 
 
-def should_clear_cache():
+def should_clear_cache(force=False):
     """Determine if we should be clearing the packrat cache."""
     if not ParserElement._packratEnabled:
         return False
     if SUPPORTS_INCREMENTAL:
-        if not ParserElement._incrementalEnabled:
+        if (
+            not ParserElement._incrementalEnabled
+            or ParserElement._incrementalWithResets and repeatedly_clear_incremental_cache
+        ):
             return True
-        if ParserElement._incrementalWithResets and repeatedly_clear_incremental_cache:
-            return True
-        if incremental_cache_limit is not None and len(ParserElement.packrat_cache) > incremental_cache_limit:
+        if force or (
+            incremental_cache_limit is not None
+            and len(ParserElement.packrat_cache) > incremental_cache_limit
+        ):
             # only clear the second half of the cache, since the first
             #  half is what will help us next time we recompile
             return "second half"
-    return False
-
-
-def clear_packrat_cache():
-    """Clear the packrat cache if applicable."""
-    clear_cache = should_clear_cache()
-    if not clear_cache:
-        return
-    if clear_cache == "second half":
-        cache_items = list(get_pyparsing_cache().items())
-        restore_items = cache_items[:len(cache_items) // 2]
+        return False
     else:
-        restore_items = ()
-    # clear cache without resetting stats
-    ParserElement.packrat_cache.clear()
-    # restore any items we want to keep
-    for lookup, value in restore_items:
-        ParserElement.packrat_cache.set(lookup, value)
+        return True
+
+
+def clear_packrat_cache(force=False):
+    """Clear the packrat cache if applicable."""
+    clear_cache = should_clear_cache(force=force)
+    if clear_cache:
+        if clear_cache == "second half":
+            cache_items = list(get_pyparsing_cache().items())
+            restore_items = cache_items[:len(cache_items) // 2]
+        else:
+            restore_items = ()
+        # clear cache without resetting stats
+        ParserElement.packrat_cache.clear()
+        # restore any items we want to keep
+        for lookup, value in restore_items:
+            ParserElement.packrat_cache.set(lookup, value)
+    return clear_cache
 
 
 def get_cache_items_for(original):
@@ -768,6 +777,17 @@ def get_target_info_smart(target, mode="lowest"):
 # -----------------------------------------------------------------------------------------------------------------------
 # PARSE ELEMENTS:
 # -----------------------------------------------------------------------------------------------------------------------
+
+class MatchAny(MatchFirst):
+    """Version of MatchFirst that always uses adaptive parsing."""
+    adaptive_mode = True
+
+
+def any_of(match_first):
+    """Build a MatchAny of the given MatchFirst."""
+    internal_assert(isinstance(match_first, MatchFirst), "invalid any_of target", match_first)
+    return MatchAny(match_first.exprs)
+
 
 class Wrap(ParseElementEnhance):
     """PyParsing token that wraps the given item in the given context manager."""
