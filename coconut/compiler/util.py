@@ -353,7 +353,7 @@ def hasaction(elem):
 @contextmanager
 def using_fast_grammar_methods():
     """Enables grammar methods that modify their operands when they aren't referenced elsewhere."""
-    if True:  # MODERN_PYPARSING:
+    if MODERN_PYPARSING:
         yield
         return
 
