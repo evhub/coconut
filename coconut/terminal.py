@@ -183,13 +183,16 @@ class LoggingStringIO(StringIO):
 class Logger(object):
     """Container object for various logger functions and variables."""
     force_verbose = force_verbose_logger
+    colors_enabled = False
+
     verbose = force_verbose
     quiet = False
     path = None
     name = None
-    colors_enabled = False
     tracing = False
     trace_ind = 0
+
+    recorded_stats = defaultdict(lambda: [0, 0])
 
     def __init__(self, other=None):
         """Create a logger, optionally from another logger."""
@@ -522,19 +525,15 @@ class Logger(object):
             item.debug = True
         return item
 
-    adaptive_stats = None
-
-    def record_adaptive_stat(self, success):
-        if self.verbose:
-            if self.adaptive_stats is None:
-                self.adaptive_stats = [0, 0]
-            self.adaptive_stats[success] += 1
+    def record_stat(self, stat_name, stat_bool):
+        """Record the given boolean statistic for the given stat_name."""
+        self.recorded_stats[stat_name][stat_bool] += 1
 
     @contextmanager
     def gather_parsing_stats(self):
         """Times parsing if --verbose."""
         if self.verbose:
-            self.adaptive_stats = None
+            self.recorded_stats.pop("adaptive", None)
             start_time = get_clock_time()
             try:
                 yield
@@ -547,8 +546,8 @@ class Logger(object):
                     # reset stats after printing if in incremental mode
                     if ParserElement._incrementalEnabled:
                         ParserElement.packrat_cache_stats[:] = [0] * len(ParserElement.packrat_cache_stats)
-                if self.adaptive_stats:
-                    failures, successes = self.adaptive_stats
+                if "adaptive" in self.recorded_stats:
+                    failures, successes = self.recorded_stats["adaptive"]
                     self.printlog("\tAdaptive parsing stats:", successes, "successes;", failures, "failures")
         else:
             yield

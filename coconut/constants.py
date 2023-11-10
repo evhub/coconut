@@ -153,8 +153,8 @@ use_left_recursion_if_available = False
 embed_on_internal_exc = False
 assert not embed_on_internal_exc or DEVELOP, "embed_on_internal_exc should never be enabled on non-develop build"
 
-# should be the minimal ref count observed by attach
-temp_grammar_item_ref_count = 3 if PY311 else 5
+# should be the minimal ref count observed by maybe_copy_elem
+temp_grammar_item_ref_count = 4 if PY311 else 5
 
 minimum_recursion_limit = 128
 # shouldn't be raised any higher to avoid stack overflows

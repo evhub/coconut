@@ -83,6 +83,7 @@ from coconut.util import (
     get_clock_time,
     first_import_time,
     ensure_dir,
+    assert_remove_prefix,
 )
 from coconut.command.util import (
     writefile,
@@ -324,7 +325,13 @@ class Command(object):
             # process mypy args and print timing info (must come after compiler setup)
             if args.mypy is not None:
                 self.set_mypy_args(args.mypy)
-            logger.log("Grammar init time: " + str(self.comp.grammar_init_time) + " secs / Total init time: " + str(get_clock_time() - first_import_time) + " secs")
+            if logger.verbose:
+                logger.log("Grammar init time: " + str(self.comp.grammar_init_time) + " secs / Total init time: " + str(get_clock_time() - first_import_time) + " secs")
+                for stat_name, (no_copy, yes_copy) in logger.recorded_stats.items():
+                    if not stat_name.startswith("maybe_copy_"):
+                        continue
+                    name = assert_remove_prefix(stat_name, "maybe_copy_")
+                    logger.printlog("\tGrammar copying stats (" + name + "):", no_copy, "not copied;", yes_copy, "copied")
 
             # do compilation, keeping track of compiled filepaths
             filepaths = []

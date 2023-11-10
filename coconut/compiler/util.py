@@ -45,6 +45,7 @@ else:
     import cPickle as pickle
 
 from coconut._pyparsing import (
+    MODERN_PYPARSING,
     USE_COMPUTATION_GRAPH,
     SUPPORTS_INCREMENTAL,
     USE_ADAPTIVE,
@@ -66,6 +67,7 @@ from coconut._pyparsing import (
     Group,
     ParserElement,
     MatchFirst,
+    And,
     _trim_arity,
     _ParseResultsWithOffset,
     all_parse_elements,
@@ -324,13 +326,65 @@ else:
     combine = Combine
 
 
+def maybe_copy_elem(item, name):
+    """Copy the given grammar element if it's referenced somewhere else."""
+    item_ref_count = sys.getrefcount(item) if CPYTHON and not on_new_python else float("inf")
+    internal_assert(lambda: item_ref_count >= temp_grammar_item_ref_count, "add_action got item with too low ref count", (item, type(item), item_ref_count))
+    if item_ref_count <= temp_grammar_item_ref_count:
+        if DEVELOP:
+            logger.record_stat("maybe_copy_" + name, False)
+        return item
+    else:
+        if DEVELOP:
+            logger.record_stat("maybe_copy_" + name, True)
+        return item.copy()
+
+
+def hasaction(elem):
+    """Determine if the given grammar element has any actions associated with it."""
+    return (
+        MODERN_PYPARSING
+        or elem.parseAction
+        or elem.resultsName is not None
+        or elem.debug
+    )
+
+
+@contextmanager
+def using_fast_grammar_methods():
+    """Enables grammar methods that modify their operands when they aren't referenced elsewhere."""
+    if MODERN_PYPARSING:
+        yield
+        return
+
+    def fast_add(self, other):
+        if hasaction(self):
+            return old_add(self, other)
+        self = maybe_copy_elem(self, "add")
+        self += other
+        return self
+    old_add, And.__add__ = And.__add__, fast_add
+
+    def fast_or(self, other):
+        if hasaction(self):
+            return old_or(self, other)
+        self = maybe_copy_elem(self, "or")
+        self |= other
+        return self
+    old_or, MatchFirst.__or__ = MatchFirst.__or__, fast_or
+
+    try:
+        yield
+    finally:
+        And.__add__ = old_add
+        MatchFirst.__or__ = old_or
+
+
 def add_action(item, action, make_copy=None):
     """Add a parse action to the given item."""
     if make_copy is None:
-        item_ref_count = sys.getrefcount(item) if CPYTHON and not on_new_python else float("inf")
-        internal_assert(lambda: item_ref_count >= temp_grammar_item_ref_count, "add_action got item with too low ref count", (item, type(item), item_ref_count))
-        make_copy = item_ref_count > temp_grammar_item_ref_count
-    if make_copy:
+        item = maybe_copy_elem(item, "attach")
+    elif make_copy:
         item = item.copy()
     return item.addParseAction(action)
 
@@ -386,10 +440,10 @@ def adaptive_manager(item, original, loc, reparse=False):
         except Exception as exc:
             if DEVELOP:
                 logger.log("reparsing due to:", exc)
-                logger.record_adaptive_stat(False)
+                logger.record_stat("adaptive", False)
         else:
             if DEVELOP:
-                logger.record_adaptive_stat(True)
+                logger.record_stat("adaptive", True)
         finally:
             MatchFirst.setAdaptiveMode(False)
 
@@ -783,10 +837,9 @@ class MatchAny(MatchFirst):
     adaptive_mode = True
 
 
-def any_of(match_first):
+def any_of(*exprs):
     """Build a MatchAny of the given MatchFirst."""
-    internal_assert(isinstance(match_first, MatchFirst), "invalid any_of target", match_first)
-    return MatchAny(match_first.exprs)
+    return MatchAny(exprs)
 
 
 class Wrap(ParseElementEnhance):

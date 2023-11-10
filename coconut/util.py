@@ -92,6 +92,20 @@ class pickleable_obj(object):
         return self.__reduce__()
 
 
+class const(pickleable_obj):
+    """Implementaiton of Coconut's const for use within Coconut."""
+    __slots__ = ("value",)
+
+    def __init__(self, value):
+        self.value = value
+
+    def __reduce__(self):
+        return (self.__class__, (self.value,))
+
+    def __call__(self, *args, **kwargs):
+        return self.value
+
+
 class override(pickleable_obj):
     """Implementation of Coconut's @override for use within Coconut."""
     __slots__ = ("func",)
@@ -271,6 +285,11 @@ def ensure_dir(dirpath):
     """Ensure that a directory exists."""
     if not os.path.exists(dirpath):
         os.makedirs(dirpath)
+
+
+def without_keys(inputdict, rem_keys):
+    """Get a copy of inputdict without rem_keys."""
+    return {k: v for k, v in inputdict.items() if k not in rem_keys}
 
 
 # -----------------------------------------------------------------------------------------------------------------------

@@ -2936,13 +2936,18 @@ else:
                     out = "_coconut_iter_getitem(" + out + ", " + trailer[1] + ")"
                 elif trailer[0] == "$(?":
                     pos_args, star_args, base_kwd_args, dubstar_args = self.split_function_call(trailer[1], loc)
+
                     has_question_mark = False
+                    needs_complex_partial = False
 
                     argdict_pairs = []
+                    last_pos_i = -1
                     for i, arg in enumerate(pos_args):
                         if arg == "?":
                             has_question_mark = True
                         else:
+                            if last_pos_i != i - 1:
+                                needs_complex_partial = True
                             argdict_pairs.append(str(i) + ": " + arg)
 
                     pos_kwargs = []
@@ -2950,25 +2955,36 @@ else:
                     for i, arg in enumerate(base_kwd_args):
                         if arg.endswith("=?"):
                             has_question_mark = True
+                            needs_complex_partial = True
                             pos_kwargs.append(arg[:-2])
                         else:
                             kwd_args.append(arg)
 
-                    extra_args_str = join_args(star_args, kwd_args, dubstar_args)
                     if not has_question_mark:
                         raise CoconutInternalException("no question mark in question mark partial", trailer[1])
-                    elif argdict_pairs or pos_kwargs or extra_args_str:
+
+                    if needs_complex_partial:
+                        extra_args_str = join_args(star_args, kwd_args, dubstar_args)
+                        if argdict_pairs or pos_kwargs or extra_args_str:
+                            out = (
+                                "_coconut_complex_partial("
+                                + out
+                                + ", {" + ", ".join(argdict_pairs) + "}"
+                                + ", " + str(len(pos_args))
+                                + ", " + tuple_str_of(pos_kwargs, add_quotes=True)
+                                + (", " if extra_args_str else "") + extra_args_str
+                                + ")"
+                            )
+                        else:
+                            raise CoconutDeferredSyntaxError("a non-? partial application argument is required", loc)
+                    else:
                         out = (
-                            "_coconut_complex_partial("
+                            "_coconut_partial("
                             + out
-                            + ", {" + ", ".join(argdict_pairs) + "}"
-                            + ", " + str(len(pos_args))
-                            + ", " + tuple_str_of(pos_kwargs, add_quotes=True)
-                            + (", " if extra_args_str else "") + extra_args_str
+                            + ", "
+                            + join_args([arg for arg in pos_args if arg != "?"], star_args, kwd_args, dubstar_args)
                             + ")"
                         )
-                    else:
-                        raise CoconutDeferredSyntaxError("a non-? partial application argument is required", loc)
 
                 else:
                     raise CoconutInternalException("invalid special trailer", trailer[0])
