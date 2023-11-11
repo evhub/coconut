@@ -232,6 +232,9 @@ class Logger(object):
         if tracing is not None:
             self.tracing = tracing
 
+        if self.verbose:
+            ParserElement.verbose_stacktrace = True
+
     def display(
         self,
         messages,
