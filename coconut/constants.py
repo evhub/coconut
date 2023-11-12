@@ -128,9 +128,9 @@ use_packrat_parser = True  # True also gives us better error messages
 packrat_cache_size = None  # only works because final() clears the cache
 
 # note that _parseIncremental produces much smaller caches
-use_incremental_if_available = True
+use_incremental_if_available = False
 
-use_adaptive_any_of = False
+use_adaptive_any_of = True
 
 use_adaptive_if_available = False  # currently broken
 adaptive_reparse_usage_weight = 10

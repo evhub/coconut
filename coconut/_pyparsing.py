@@ -67,7 +67,7 @@ try:
     from cPyparsing import *  # NOQA
     from cPyparsing import __version__
 
-    PYPARSING_PACKAGE = "cPyparsing"
+    CPYPARSING = True
     PYPARSING_INFO = "Cython cPyparsing v" + __version__
 
 except ImportError:
@@ -77,19 +77,21 @@ except ImportError:
         from pyparsing import *  # NOQA
         from pyparsing import __version__
 
-        PYPARSING_PACKAGE = "pyparsing"
+        CPYPARSING = False
         PYPARSING_INFO = "Python pyparsing v" + __version__
 
     except ImportError:
         traceback.print_exc()
         __version__ = None
-        PYPARSING_PACKAGE = "cPyparsing"
+        CPYPARSING = True
         PYPARSING_INFO = None
 
 
 # -----------------------------------------------------------------------------------------------------------------------
 # VERSIONING:
 # -----------------------------------------------------------------------------------------------------------------------
+
+PYPARSING_PACKAGE = "cPyparsing" if CPYPARSING else "pyparsing"
 
 min_ver = min(min_versions["pyparsing"], min_versions["cPyparsing"][:3])  # inclusive
 max_ver = get_next_version(max(min_versions["pyparsing"], min_versions["cPyparsing"][:3]))  # exclusive
@@ -124,7 +126,7 @@ if MODERN_PYPARSING:
 # OVERRIDES:
 # -----------------------------------------------------------------------------------------------------------------------
 
-if PYPARSING_PACKAGE != "cPyparsing":
+if not CPYPARSING:
     if not MODERN_PYPARSING:
         HIT, MISS = 0, 1
 

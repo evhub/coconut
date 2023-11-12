@@ -38,6 +38,7 @@ from threading import Lock
 
 from coconut._pyparsing import (
     USE_COMPUTATION_GRAPH,
+    CPYPARSING,
     ParseBaseException,
     ParseResults,
     col as getcol,
@@ -86,6 +87,7 @@ from coconut.constants import (
     in_place_op_funcs,
     match_first_arg_var,
     import_existing,
+    disable_incremental_for_len,
 )
 from coconut.util import (
     pickleable_obj,
@@ -170,8 +172,8 @@ from coconut.compiler.util import (
     get_psf_target,
     move_loc_to_non_whitespace,
     move_endpt_to_non_whitespace,
-    unpickle_incremental_cache,
-    pickle_incremental_cache,
+    unpickle_cache,
+    pickle_cache,
     handle_and_manage,
     sub_all,
 )
@@ -1310,7 +1312,7 @@ class Compiler(Grammar, pickleable_obj):
         streamline=True,
         keep_state=False,
         filename=None,
-        incremental_cache_filename=None,
+        cache_filename=None,
     ):
         """Use the parser to parse the inputstring with appropriate setup and teardown."""
         with self.parsing(keep_state, filename):
@@ -1318,15 +1320,30 @@ class Compiler(Grammar, pickleable_obj):
                 self.streamline(parser, inputstring)
             # unpickling must happen after streamlining and must occur in the
             #  compiler so that it happens in the same process as compilation
-            if incremental_cache_filename is not None:
-                incremental_enabled = enable_incremental_parsing()
-                if not incremental_enabled:
-                    raise CoconutException("incremental_cache_filename requires cPyparsing (run '{python} -m pip install --upgrade cPyparsing' to fix)".format(python=sys.executable))
-                did_load_cache = unpickle_incremental_cache(incremental_cache_filename)
-                logger.log("{Loaded} incremental cache for {filename!r} from {incremental_cache_filename!r}.".format(
+            if cache_filename is not None:
+                if not CPYPARSING:
+                    raise CoconutException("cache_filename requires cPyparsing (run '{python} -m pip install --upgrade cPyparsing' to fix)".format(python=sys.executable))
+                if len(inputstring) < disable_incremental_for_len:
+                    incremental_enabled = enable_incremental_parsing()
+                    if incremental_enabled:
+                        incremental_info = "incremental parsing mode enabled due to len == {input_len} < {max_len}".format(
+                            input_len=len(inputstring),
+                            max_len=disable_incremental_for_len,
+                        )
+                    else:
+                        incremental_info = "failed to enable incremental parsing mode"
+                else:
+                    incremental_enabled = False
+                    incremental_info = "not using incremental parsing mode due to len == {input_len} >= {max_len}".format(
+                        input_len=len(inputstring),
+                        max_len=disable_incremental_for_len,
+                    )
+                did_load_cache = unpickle_cache(cache_filename)
+                logger.log("{Loaded} cache for {filename!r} from {cache_filename!r} ({incremental_info}).".format(
                     Loaded="Loaded" if did_load_cache else "Failed to load",
                     filename=filename,
-                    incremental_cache_filename=incremental_cache_filename,
+                    cache_filename=cache_filename,
+                    incremental_info=incremental_info,
                 ))
             pre_procd = parsed = None
             try:
@@ -1347,8 +1364,8 @@ class Compiler(Grammar, pickleable_obj):
                             + str(sys.getrecursionlimit()) + " (you may also need to increase --stack-size)",
                         )
             finally:
-                if incremental_cache_filename is not None and pre_procd is not None:
-                    pickle_incremental_cache(pre_procd, incremental_cache_filename)
+                if cache_filename is not None and pre_procd is not None:
+                    pickle_cache(pre_procd, cache_filename, include_incremental=incremental_enabled)
             self.run_final_checks(pre_procd, keep_state)
         return out
 

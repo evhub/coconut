@@ -74,7 +74,6 @@ from coconut.constants import (
     coconut_cache_dir,
     coconut_sys_kwargs,
     interpreter_uses_incremental,
-    disable_incremental_for_len,
 )
 from coconut.util import (
     univ_open,
@@ -611,16 +610,13 @@ class Command(object):
                 filename=os.path.basename(codepath),
             )
             if self.incremental:
-                if disable_incremental_for_len is not None and len(code) > disable_incremental_for_len:
-                    logger.warn("--incremental mode is not currently supported for files as large as {codepath!r}".format(codepath=codepath))
-                else:
-                    code_dir, code_fname = os.path.split(codepath)
+                code_dir, code_fname = os.path.split(codepath)
 
-                    cache_dir = os.path.join(code_dir, coconut_cache_dir)
-                    ensure_dir(cache_dir)
+                cache_dir = os.path.join(code_dir, coconut_cache_dir)
+                ensure_dir(cache_dir)
 
-                    pickle_fname = code_fname + ".pickle"
-                    parse_kwargs["incremental_cache_filename"] = os.path.join(cache_dir, pickle_fname)
+                pickle_fname = code_fname + ".pickle"
+                parse_kwargs["cache_filename"] = os.path.join(cache_dir, pickle_fname)
 
             if package is True:
                 self.submit_comp_job(codepath, callback, "parse_package", code, package_level=package_level, **parse_kwargs)

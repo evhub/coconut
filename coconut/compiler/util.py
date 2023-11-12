@@ -689,43 +689,50 @@ def enable_incremental_parsing():
     return True
 
 
-def pickle_incremental_cache(original, filename, protocol=pickle.HIGHEST_PROTOCOL):
+def pickle_cache(original, filename, include_incremental=True, protocol=pickle.HIGHEST_PROTOCOL):
     """Pickle the pyparsing cache for original to filename."""
-    internal_assert(all_parse_elements is not None, "pickle_incremental_cache requires cPyparsing")
+    internal_assert(all_parse_elements is not None, "pickle_cache requires cPyparsing")
 
     pickleable_cache_items = []
-    for lookup, value in get_cache_items_for(original):
-        if incremental_mode_cache_size is not None and len(pickleable_cache_items) > incremental_mode_cache_size:
-            complain(
-                "got too large incremental cache: "
-                + str(len(get_pyparsing_cache())) + " > " + str(incremental_mode_cache_size)
-            )
-            break
-        if len(pickleable_cache_items) >= incremental_cache_limit:
-            break
-        loc = lookup[2]
-        # only include cache items that aren't at the start or end, since those
-        #  are the only ones that parseIncremental will reuse
-        if 0 < loc < len(original) - 1:
-            pickleable_lookup = (lookup[0].parse_element_index,) + lookup[1:]
-            pickleable_cache_items.append((pickleable_lookup, value))
+    if include_incremental:
+        for lookup, value in get_cache_items_for(original):
+            if incremental_mode_cache_size is not None and len(pickleable_cache_items) > incremental_mode_cache_size:
+                complain(
+                    "got too large incremental cache: "
+                    + str(len(get_pyparsing_cache())) + " > " + str(incremental_mode_cache_size)
+                )
+                break
+            if len(pickleable_cache_items) >= incremental_cache_limit:
+                break
+            loc = lookup[2]
+            # only include cache items that aren't at the start or end, since those
+            #  are the only ones that parseIncremental will reuse
+            if 0 < loc < len(original) - 1:
+                pickleable_lookup = (lookup[0].parse_element_index,) + lookup[1:]
+                pickleable_cache_items.append((pickleable_lookup, value))
 
-    logger.log("Saving {num_items} incremental cache items to {filename!r}.".format(
-        num_items=len(pickleable_cache_items),
+    all_adaptive_stats = {}
+    for match_any in MatchAny.all_match_anys:
+        all_adaptive_stats[match_any.parse_element_index] = match_any.adaptive_usage
+
+    logger.log("Saving {num_inc} incremental and {num_adapt} adaptive cache items to {filename!r}.".format(
+        num_inc=len(pickleable_cache_items),
+        num_adapt=len(all_adaptive_stats),
         filename=filename,
     ))
     pickle_info_obj = {
         "VERSION": VERSION,
         "pyparsing_version": pyparsing_version,
         "pickleable_cache_items": pickleable_cache_items,
+        "all_adaptive_stats": all_adaptive_stats,
     }
     with univ_open(filename, "wb") as pickle_file:
         pickle.dump(pickle_info_obj, pickle_file, protocol=protocol)
 
 
-def unpickle_incremental_cache(filename):
+def unpickle_cache(filename):
     """Unpickle and load the given incremental cache file."""
-    internal_assert(all_parse_elements is not None, "unpickle_incremental_cache requires cPyparsing")
+    internal_assert(all_parse_elements is not None, "unpickle_cache requires cPyparsing")
 
     if not os.path.exists(filename):
         return False
@@ -739,10 +746,16 @@ def unpickle_incremental_cache(filename):
         return False
 
     pickleable_cache_items = pickle_info_obj["pickleable_cache_items"]
-    logger.log("Loaded {num_items} incremental cache items from {filename!r}.".format(
-        num_items=len(pickleable_cache_items),
+    all_adaptive_stats = pickle_info_obj["all_adaptive_stats"]
+
+    logger.log("Loaded {num_inc} incremental and {num_adapt} adaptive cache items from {filename!r}.".format(
+        num_inc=len(pickleable_cache_items),
+        num_adapt=len(all_adaptive_stats),
         filename=filename,
     ))
+
+    for identifier, adaptive_usage in all_adaptive_stats.items():
+        all_parse_elements[identifier].adaptive_usage = adaptive_usage
 
     max_cache_size = min(
         incremental_mode_cache_size or float("inf"),
@@ -841,6 +854,11 @@ def get_target_info_smart(target, mode="lowest"):
 class MatchAny(MatchFirst):
     """Version of MatchFirst that always uses adaptive parsing."""
     adaptive_mode = True
+    all_match_anys = []
+
+    def __init__(self, *args, **kwargs):
+        super(MatchAny, self).__init__(*args, **kwargs)
+        self.all_match_anys.append(self)
 
     def __or__(self, other):
         if hasaction(self):
