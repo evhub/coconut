@@ -130,7 +130,7 @@ class Command(object):
     mypy_args = None  # corresponds to --mypy flag
     argv_args = None  # corresponds to --argv flag
     stack_size = 0  # corresponds to --stack-size flag
-    incremental = False  # corresponds to --incremental flag
+    use_cache = True  # corresponds to --no-cache flag
 
     prompt = Prompt()
 
@@ -262,8 +262,6 @@ class Command(object):
                 raise CoconutException("cannot compile with both --line-numbers and --no-line-numbers")
             if args.site_install and args.site_uninstall:
                 raise CoconutException("cannot --site-install and --site-uninstall simultaneously")
-            if args.incremental and not SUPPORTS_INCREMENTAL:
-                raise CoconutException("--incremental mode not supported in current environment (try '{python} -m pip install --upgrade cPyparsing' to fix)".format(python=sys.executable))
             for and_args in getattr(args, "and") or []:
                 if len(and_args) > 2:
                     raise CoconutException(
@@ -283,7 +281,13 @@ class Command(object):
                 self.prompt.set_style(args.style)
             if args.argv is not None:
                 self.argv_args = list(args.argv)
-            self.incremental = args.incremental
+            if args.no_cache:
+                self.use_cache = False
+            elif SUPPORTS_INCREMENTAL:
+                self.use_cache = True
+            else:
+                logger.log("incremental parsing mode not supported in current environment (try '{python} -m pip install --upgrade cPyparsing' to fix)".format(python=sys.executable))
+                self.use_cache = False
 
             # execute non-compilation tasks
             if args.docs:
@@ -609,7 +613,7 @@ class Command(object):
             parse_kwargs = dict(
                 filename=os.path.basename(codepath),
             )
-            if self.incremental:
+            if self.use_cache:
                 code_dir, code_fname = os.path.split(codepath)
 
                 cache_dir = os.path.join(code_dir, coconut_cache_dir)

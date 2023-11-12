@@ -977,11 +977,10 @@ class TestCompilation(unittest.TestCase):
             def test_jobs_zero(self):
                 run(["--jobs", "0"])
 
-        if not PYPY and PY38:
+        if not PYPY:
             def test_incremental(self):
-                run(["--incremental"])
-                # includes "Error" because exceptions include the whole file
-                run(["--incremental", "--force"], check_errors=False)
+                run()
+                run(["--force"])
 
     if get_bool_env_var("COCONUT_TEST_VERBOSE"):
         def test_verbose(self):

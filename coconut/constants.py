@@ -122,7 +122,13 @@ num_displayed_timing_items = 100
 # below constants are experimentally determined to maximize performance
 
 streamline_grammar_for_len = 4096
-disable_incremental_for_len = streamline_grammar_for_len  # disables --incremental
+
+# Current problems with this:
+# - only actually helpful for tiny files (< streamline_grammar_for_len)
+# - sets incremental mode for the whole process, which can really slow down some compilations
+# - makes exceptions include the entire file
+# disable_incremental_for_len = streamline_grammar_for_len
+disable_incremental_for_len = 0
 
 use_packrat_parser = True  # True also gives us better error messages
 packrat_cache_size = None  # only works because final() clears the cache

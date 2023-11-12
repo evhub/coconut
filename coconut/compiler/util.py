@@ -45,7 +45,6 @@ else:
     import cPickle as pickle
 
 from coconut._pyparsing import (
-    CPYPARSING,
     MODERN_PYPARSING,
     USE_COMPUTATION_GRAPH,
     SUPPORTS_INCREMENTAL,
@@ -421,7 +420,7 @@ def unpack(tokens):
 
 
 def in_incremental_mode():
-    """Determine if we are using the --incremental parsing mode."""
+    """Determine if we are using incremental parsing mode."""
     return ParserElement._incrementalEnabled and not ParserElement._incrementalWithResets
 
 
@@ -746,7 +745,10 @@ def unpickle_cache(filename):
     if pickle_info_obj["VERSION"] != VERSION or pickle_info_obj["pyparsing_version"] != pyparsing_version:
         return False
 
-    pickleable_cache_items = pickle_info_obj["pickleable_cache_items"]
+    if ParserElement._incrementalEnabled:
+        pickleable_cache_items = pickle_info_obj["pickleable_cache_items"]
+    else:
+        pickleable_cache_items = []
     all_adaptive_stats = pickle_info_obj["all_adaptive_stats"]
 
     logger.log("Loaded {num_inc} incremental and {num_adapt} adaptive cache items from {filename!r}.".format(
@@ -774,8 +776,8 @@ def unpickle_cache(filename):
 
 def load_cache_for(inputstring, filename, cache_filename):
     """Load cache_filename (for the given inputstring and filename)."""
-    if not CPYPARSING:
-        raise CoconutException("--incremental requires cPyparsing (run '{python} -m pip install --upgrade cPyparsing' to fix)".format(python=sys.executable))
+    if not SUPPORTS_INCREMENTAL:
+        raise CoconutException("incremental parsing mode requires cPyparsing (run '{python} -m pip install --upgrade cPyparsing' to fix)".format(python=sys.executable))
     if len(inputstring) < disable_incremental_for_len:
         incremental_enabled = enable_incremental_parsing()
         if incremental_enabled:

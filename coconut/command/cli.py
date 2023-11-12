@@ -184,12 +184,6 @@ arguments.add_argument(
 )
 
 arguments.add_argument(
-    "--incremental",
-    action="store_true",
-    help="enable incremental compilation mode (caches previous parses to improve recompilation performance for slightly modified files)",
-)
-
-arguments.add_argument(
     "-j", "--jobs",
     metavar="processes",
     type=str,
@@ -267,6 +261,12 @@ arguments.add_argument(
     metavar="kbs",
     type=int,
     help="run the compiler in a separate thread with the given stack size in kilobytes",
+)
+
+arguments.add_argument(
+    "--no-cache",
+    action="store_true",
+    help="disables use of Coconut's incremental parsing cache (caches previous parses to improve recompilation performance for slightly modified files)",
 )
 
 arguments.add_argument(

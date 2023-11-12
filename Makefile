@@ -95,7 +95,7 @@ test-univ: clean
 .PHONY: test-univ-tests
 test-univ-tests: export COCONUT_USE_COLOR=TRUE
 test-univ-tests: clean-no-tests
-	python ./coconut/tests --strict --keep-lines --incremental
+	python ./coconut/tests --strict --keep-lines
 	python ./coconut/tests/dest/runner.py
 	python ./coconut/tests/dest/extras.py
 
@@ -151,7 +151,7 @@ test-mypy: clean
 .PHONY: test-mypy-tests
 test-mypy-tests: export COCONUT_USE_COLOR=TRUE
 test-mypy-tests: clean-no-tests
-	python ./coconut/tests --strict --keep-lines --incremental --target sys --mypy --follow-imports silent --ignore-missing-imports --allow-redefinition
+	python ./coconut/tests --strict --keep-lines --target sys --mypy --follow-imports silent --ignore-missing-imports --allow-redefinition
 	python ./coconut/tests/dest/runner.py
 	python ./coconut/tests/dest/extras.py
 
@@ -164,7 +164,15 @@ test-verbose: clean
 	python ./coconut/tests/dest/runner.py
 	python ./coconut/tests/dest/extras.py
 
-# same as test-univ but includes verbose output for better debugging and is fully synchronous
+# same as test-verbose but doesn't use the incremental cache
+.PHONY: test-verbose-no-cache
+test-verbose-no-cache: export COCONUT_USE_COLOR=TRUE
+test-verbose-no-cache: clean
+	python ./coconut/tests --strict --keep-lines --force --verbose --no-cache
+	python ./coconut/tests/dest/runner.py
+	python ./coconut/tests/dest/extras.py
+
+# same as test-verbose but is fully synchronous
 .PHONY: test-verbose-sync
 test-verbose-sync: export COCONUT_USE_COLOR=TRUE
 test-verbose-sync: clean
@@ -185,22 +193,6 @@ test-mypy-verbose: clean
 test-mypy-all: export COCONUT_USE_COLOR=TRUE
 test-mypy-all: clean
 	python ./coconut/tests --strict --keep-lines --force --target sys --mypy --follow-imports silent --ignore-missing-imports --allow-redefinition --check-untyped-defs
-	python ./coconut/tests/dest/runner.py
-	python ./coconut/tests/dest/extras.py
-
-# same as test-univ-tests, but forces recompilation for testing --incremental
-.PHONY: test-incremental
-test-incremental: export COCONUT_USE_COLOR=TRUE
-test-incremental: clean-no-tests
-	python ./coconut/tests --strict --keep-lines --incremental --force
-	python ./coconut/tests/dest/runner.py
-	python ./coconut/tests/dest/extras.py
-
-# same as test-incremental, but uses --verbose
-.PHONY: test-incremental-verbose
-test-incremental-verbose: export COCONUT_USE_COLOR=TRUE
-test-incremental-verbose: clean-no-tests
-	python ./coconut/tests --strict --keep-lines --incremental --force --verbose
 	python ./coconut/tests/dest/runner.py
 	python ./coconut/tests/dest/extras.py
 
