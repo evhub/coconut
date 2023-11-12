@@ -36,6 +36,7 @@ from coconut._pyparsing import (
     lineno,
     col,
     ParserElement,
+    maybe_make_safe,
 )
 
 from coconut.root import _indent
@@ -57,6 +58,8 @@ from coconut.util import (
     get_clock_time,
     get_name,
     displayable,
+    first_import_time,
+    assert_remove_prefix,
 )
 from coconut.exceptions import (
     CoconutWarning,
@@ -231,9 +234,7 @@ class Logger(object):
             self.verbose = verbose
         if tracing is not None:
             self.tracing = tracing
-
-        if self.verbose:
-            ParserElement.verbose_stacktrace = True
+        ParserElement.verbose_stacktrace = self.verbose
 
     def display(
         self,
@@ -552,8 +553,21 @@ class Logger(object):
                 if "adaptive" in self.recorded_stats:
                     failures, successes = self.recorded_stats["adaptive"]
                     self.printlog("\tAdaptive parsing stats:", successes, "successes;", failures, "failures")
+                if maybe_make_safe is not None:
+                    hits, misses = maybe_make_safe.stats
+                    self.printlog("\tErrorless parsing stats:", hits, "errorless;", misses, "with errors")
         else:
             yield
+
+    def log_compiler_stats(self, comp):
+        """Log stats for the given compiler."""
+        if self.verbose:
+            self.log("Grammar init time: " + str(comp.grammar_init_time) + " secs / Total init time: " + str(get_clock_time() - first_import_time) + " secs")
+            for stat_name, (no_copy, yes_copy) in self.recorded_stats.items():
+                if not stat_name.startswith("maybe_copy_"):
+                    continue
+                name = assert_remove_prefix(stat_name, "maybe_copy_")
+                self.printlog("\tGrammar copying stats (" + name + "):", no_copy, "not copied;", yes_copy, "copied")
 
     total_block_time = defaultdict(int)
 

@@ -117,6 +117,8 @@ from coconut.compiler.util import (
     always_match,
     caseless_literal,
     using_fast_grammar_methods,
+    disambiguate_literal,
+    any_of,
 )
 
 
@@ -636,7 +638,7 @@ class Grammar(object):
         rbrack = Literal("]")
         lbrace = Literal("{")
         rbrace = Literal("}")
-        lbanana = ~Literal("(|)") + ~Literal("(|>") + ~Literal("(|*") + ~Literal("(|?") + Literal("(|")
+        lbanana = disambiguate_literal("(|", ["(|)", "(|>", "(|*", "(|?"])
         rbanana = Literal("|)")
         lparen = ~lbanana + Literal("(")
         rparen = Literal(")")
@@ -675,8 +677,8 @@ class Grammar(object):
             | invalid_syntax("<?**|", "Coconut's None-aware backward keyword pipe is '<**?|', not '<?**|'")
         )
         dotdot = (
-            ~Literal("...") + ~Literal("..>") + ~Literal("..*") + ~Literal("..?") + Literal("..")
-            | ~Literal("\u2218>") + ~Literal("\u2218*") + ~Literal("\u2218?") + fixto(Literal("\u2218"), "..")
+            disambiguate_literal("..", ["...", "..>", "..*", "..?"])
+            | fixto(disambiguate_literal("\u2218", ["\u2218>", "\u2218*", "\u2218?"]), "..")
         )
         comp_pipe = Literal("..>") | fixto(Literal("\u2218>"), "..>")
         comp_back_pipe = Literal("<..") | fixto(Literal("<\u2218"), "<..")
@@ -709,7 +711,10 @@ class Grammar(object):
         amp_colon = Literal("&:")
         amp = ~amp_colon + Literal("&") | fixto(Literal("\u2229"), "&")
         caret = Literal("^")
-        unsafe_bar = ~Literal("|>") + ~Literal("|*") + Literal("|") | fixto(Literal("\u222a"), "|")
+        unsafe_bar = (
+            disambiguate_literal("|", ["|>", "|*"])
+            | fixto(Literal("\u222a"), "|")
+        )
         bar = ~rbanana + unsafe_bar | invalid_syntax("\xa6", "invalid broken bar character", greedy=True)
         percent = Literal("%")
         dollar = Literal("$")
@@ -737,19 +742,11 @@ class Grammar(object):
         ellipsis_tokens = Literal("...") | fixto(Literal("\u2026"), "...")
 
         lt = (
-            ~Literal("<<")
-            + ~Literal("<=")
-            + ~Literal("<|")
-            + ~Literal("<..")
-            + ~Literal("<*")
-            + ~Literal("<:")
-            + Literal("<")
+            disambiguate_literal("<", ["<<", "<=", "<|", "<..", "<*", "<:"])
             | fixto(Literal("\u228a"), "<")
         )
         gt = (
-            ~Literal(">>")
-            + ~Literal(">=")
-            + Literal(">")
+            disambiguate_literal(">", [">>", ">="])
             | fixto(Literal("\u228b"), ">")
         )
         le = Literal("<=") | fixto(Literal("\u2264") | Literal("\u2286"), "<=")
@@ -800,21 +797,21 @@ class Grammar(object):
 
         imag_j = caseless_literal("j") | fixto(caseless_literal("i", suppress=True), "j")
         basenum = combine(
-            integer + dot + Optional(integer)
-            | Optional(integer) + dot + integer
-        ) | integer
+            Optional(integer) + dot + integer
+            | integer + Optional(dot + Optional(integer))
+        )
         sci_e = combine((caseless_literal("e") | fixto(Literal("\u23e8"), "e")) + Optional(plus | neg_minus))
         numitem = ~(Literal("0") + Word(nums + "_", exact=1)) + combine(basenum + Optional(sci_e + integer))
         imag_num = combine(numitem + imag_j)
+        maybe_imag_num = combine(numitem + Optional(imag_j))
         bin_num = combine(caseless_literal("0b") + Optional(underscore.suppress()) + binint)
         oct_num = combine(caseless_literal("0o") + Optional(underscore.suppress()) + octint)
         hex_num = combine(caseless_literal("0x") + Optional(underscore.suppress()) + hexint)
         number = (
-            bin_num
-            | oct_num
+            maybe_imag_num
             | hex_num
-            | imag_num
-            | numitem
+            | bin_num
+            | oct_num
         )
         # make sure that this gets addspaced not condensed so it doesn't produce a SyntaxError
         num_atom = addspace(number + Optional(condense(dot + unsafe_name)))
@@ -829,7 +826,7 @@ class Grammar(object):
         )
 
         xonsh_command = Forward()
-        passthrough_item = combine((backslash | Literal(early_passthrough_wrapper)) + integer + unwrap) | xonsh_command
+        passthrough_item = combine((Literal(early_passthrough_wrapper) | backslash) + integer + unwrap) | xonsh_command
         passthrough_block = combine(fixto(dubbackslash, "\\") + integer + unwrap)
 
         endline = Forward()
@@ -837,7 +834,7 @@ class Grammar(object):
         lineitem = ZeroOrMore(comment) + endline
         newline = condense(OneOrMore(lineitem))
         # rparen handles simple stmts ending parenthesized stmt lambdas
-        end_simple_stmt_item = FollowedBy(semicolon | newline | rparen)
+        end_simple_stmt_item = FollowedBy(newline | semicolon | rparen)
 
         start_marker = StringStart()
         moduledoc_marker = condense(ZeroOrMore(lineitem) - Optional(moduledoc_item))
@@ -865,58 +862,63 @@ class Grammar(object):
         moduledoc = any_string + newline
         docstring = condense(moduledoc)
 
-        pipe_augassign = (
-            combine(pipe + equals)
-            | combine(star_pipe + equals)
-            | combine(dubstar_pipe + equals)
-            | combine(back_pipe + equals)
-            | combine(back_star_pipe + equals)
-            | combine(back_dubstar_pipe + equals)
-            | combine(none_pipe + equals)
-            | combine(none_star_pipe + equals)
-            | combine(none_dubstar_pipe + equals)
-            | combine(back_none_pipe + equals)
-            | combine(back_none_star_pipe + equals)
-            | combine(back_none_dubstar_pipe + equals)
+        pipe_augassign = any_of(
+            combine(pipe + equals),
+            combine(star_pipe + equals),
+            combine(dubstar_pipe + equals),
+            combine(back_pipe + equals),
+            combine(back_star_pipe + equals),
+            combine(back_dubstar_pipe + equals),
+            combine(none_pipe + equals),
+            combine(none_star_pipe + equals),
+            combine(none_dubstar_pipe + equals),
+            combine(back_none_pipe + equals),
+            combine(back_none_star_pipe + equals),
+            combine(back_none_dubstar_pipe + equals),
         )
-        augassign = (
-            pipe_augassign
-            | combine(comp_pipe + equals)
-            | combine(dotdot + equals)
-            | combine(comp_back_pipe + equals)
-            | combine(comp_star_pipe + equals)
-            | combine(comp_back_star_pipe + equals)
-            | combine(comp_dubstar_pipe + equals)
-            | combine(comp_back_dubstar_pipe + equals)
-            | combine(comp_none_pipe + equals)
-            | combine(comp_back_none_pipe + equals)
-            | combine(comp_none_star_pipe + equals)
-            | combine(comp_back_none_star_pipe + equals)
-            | combine(comp_none_dubstar_pipe + equals)
-            | combine(comp_back_none_dubstar_pipe + equals)
-            | combine(unsafe_dubcolon + equals)
-            | combine(div_dubslash + equals)
-            | combine(div_slash + equals)
-            | combine(exp_dubstar + equals)
-            | combine(mul_star + equals)
-            | combine(plus + equals)
-            | combine(sub_minus + equals)
-            | combine(percent + equals)
-            | combine(amp + equals)
-            | combine(bar + equals)
-            | combine(caret + equals)
-            | combine(lshift + equals)
-            | combine(rshift + equals)
-            | combine(matrix_at + equals)
-            | combine(dubquestion + equals)
+        augassign = any_of(
+            pipe_augassign,
+            combine(comp_pipe + equals),
+            combine(dotdot + equals),
+            combine(comp_back_pipe + equals),
+            combine(comp_star_pipe + equals),
+            combine(comp_back_star_pipe + equals),
+            combine(comp_dubstar_pipe + equals),
+            combine(comp_back_dubstar_pipe + equals),
+            combine(comp_none_pipe + equals),
+            combine(comp_back_none_pipe + equals),
+            combine(comp_none_star_pipe + equals),
+            combine(comp_back_none_star_pipe + equals),
+            combine(comp_none_dubstar_pipe + equals),
+            combine(comp_back_none_dubstar_pipe + equals),
+            combine(unsafe_dubcolon + equals),
+            combine(div_dubslash + equals),
+            combine(div_slash + equals),
+            combine(exp_dubstar + equals),
+            combine(mul_star + equals),
+            combine(plus + equals),
+            combine(sub_minus + equals),
+            combine(percent + equals),
+            combine(amp + equals),
+            combine(bar + equals),
+            combine(caret + equals),
+            combine(lshift + equals),
+            combine(rshift + equals),
+            combine(matrix_at + equals),
+            combine(dubquestion + equals),
         )
 
-        comp_op = (
-            le | ge | ne | lt | gt | eq
-            | addspace(keyword("not") + keyword("in"))
-            | keyword("in")
-            | addspace(keyword("is") + keyword("not"))
-            | keyword("is")
+        comp_op = any_of(
+            eq,
+            ne,
+            keyword("in"),
+            addspace(keyword("not") + keyword("in")),
+            lt,
+            gt,
+            le,
+            ge,
+            keyword("is") + ~keyword("not"),
+            addspace(keyword("is") + keyword("not")),
         )
 
         atom_item = Forward()
@@ -958,7 +960,11 @@ class Grammar(object):
         dict_literal = Forward()
         yield_classic = addspace(keyword("yield") + Optional(new_testlist_star_expr))
         yield_from_ref = keyword("yield").suppress() + keyword("from").suppress() + test
-        yield_expr = yield_from | yield_classic
+        yield_expr = (
+            # yield_from must come first
+            yield_from
+            | yield_classic
+        )
         dict_comp_ref = lbrace.suppress() + (
             test + colon.suppress() + test + comp_for
             | invalid_syntax(dubstar_expr + comp_for, "dict unpacking cannot be used in dict comprehension")
@@ -972,7 +978,7 @@ class Grammar(object):
             ))
             + rbrace.suppress()
         )
-        test_expr = yield_expr | testlist_star_expr
+        test_expr = testlist_star_expr | yield_expr
 
         base_op_item = (
             # must go dubstar then star then no star
@@ -1050,8 +1056,8 @@ class Grammar(object):
         )
         partial_op_item = attach(partial_op_item_tokens, partial_op_item_handle)
         op_item = (
-            typedef_op_item
-            | partial_op_item
+            partial_op_item
+            | typedef_op_item
             | base_op_item
         )
 
@@ -1064,8 +1070,8 @@ class Grammar(object):
         default = condense(equals + test)
         unsafe_typedef_default_ref = setname + colon.suppress() + typedef_test + Optional(default)
         typedef_default_ref = unsafe_typedef_default_ref + arg_comma
-        tfpdef = typedef | condense(setname + arg_comma)
-        tfpdef_default = typedef_default | condense(setname + Optional(default) + arg_comma)
+        tfpdef = condense(setname + arg_comma) | typedef
+        tfpdef_default = condense(setname + Optional(default) + arg_comma) | typedef_default
 
         star_sep_arg = Forward()
         star_sep_arg_ref = condense(star + arg_comma)
@@ -1088,10 +1094,10 @@ class Grammar(object):
                 ZeroOrMore(
                     condense(
                         # everything here must end with arg_comma
-                        (star | dubstar) + tfpdef
+                        tfpdef_default
+                        | (star | dubstar) + tfpdef
                         | star_sep_arg
                         | slash_sep_arg
-                        | tfpdef_default
                     )
                 )
             )
@@ -1103,10 +1109,10 @@ class Grammar(object):
                 ZeroOrMore(
                     condense(
                         # everything here must end with setarg_comma
-                        (star | dubstar) + setname + setarg_comma
+                        setname + Optional(default) + setarg_comma
+                        | (star | dubstar) + setname + setarg_comma
                         | star_sep_setarg
                         | slash_sep_setarg
-                        | setname + Optional(default) + setarg_comma
                     )
                 )
             )
@@ -1125,10 +1131,10 @@ class Grammar(object):
 
         call_item = (
             unsafe_name + default
-            | dubstar + test
-            | star + test
             | ellipsis_tokens + equals.suppress() + refname
             | namedexpr_test
+            | star + test
+            | dubstar + test
         )
         function_call_tokens = lparen.suppress() + (
             # everything here must end with rparen
@@ -1187,14 +1193,14 @@ class Grammar(object):
             | invalid_syntax(star_expr + comp_for, "iterable unpacking cannot be used in comprehension")
         )
         paren_atom = condense(
-            lparen + (
+            lparen + any_of(
                 # everything here must end with rparen
-                rparen
-                | yield_expr + rparen
-                | comprehension_expr + rparen
-                | testlist_star_namedexpr + rparen
-                | op_item + rparen
-                | anon_namedtuple + rparen
+                rparen,
+                testlist_star_namedexpr + rparen,
+                comprehension_expr + rparen,
+                op_item + rparen,
+                yield_expr + rparen,
+                anon_namedtuple + rparen,
             ) | (
                 lparen.suppress()
                 + typedef_tuple
@@ -1214,8 +1220,8 @@ class Grammar(object):
             array_literal_handle,
         )
         list_item = (
-            condense(lbrack + Optional(comprehension_expr) + rbrack)
-            | lbrack.suppress() + list_expr + rbrack.suppress()
+            lbrack.suppress() + list_expr + rbrack.suppress()
+            | condense(lbrack + Optional(comprehension_expr) + rbrack)
             | array_literal
         )
 
@@ -1251,11 +1257,12 @@ class Grammar(object):
             | string_atom
             | num_atom
             | list_item
-            | dict_comp
             | dict_literal
+            | dict_comp
             | set_literal
             | set_letter_literal
             | lazy_list
+            # typedef ellipsis must come before ellipsis
             | typedef_ellipsis
             | ellipsis
         )
@@ -1292,7 +1299,7 @@ class Grammar(object):
         ) + ~questionmark
         partial_trailer_tokens = Group(dollar.suppress() + function_call_tokens)
 
-        no_call_trailer = simple_trailer | known_trailer | partial_trailer
+        no_call_trailer = simple_trailer | partial_trailer | known_trailer
 
         no_partial_complex_trailer = call_trailer | known_trailer
         no_partial_trailer = simple_trailer | no_partial_complex_trailer
@@ -1317,6 +1324,7 @@ class Grammar(object):
         itemgetter_atom = attach(itemgetter_atom_tokens, itemgetter_handle)
 
         implicit_partial_atom = (
+            # itemgetter must come before attrgetter
             itemgetter_atom
             | attrgetter_atom
             | fixto(dot + lbrack + rbrack, "_coconut.operator.getitem")
@@ -1351,7 +1359,7 @@ class Grammar(object):
             | lbrack + assignlist + rbrack
         )
         star_assign_item_ref = condense(star + base_assign_item)
-        assign_item = star_assign_item | base_assign_item
+        assign_item = base_assign_item | star_assign_item
         assignlist <<= itemlist(assign_item, comma, suppress_trailing=False)
 
         typed_assign_stmt = Forward()
@@ -1363,6 +1371,7 @@ class Grammar(object):
         type_var_name = stores_loc_item + setname
         type_param_constraint = lparen.suppress() + Group(tokenlist(typedef_test, comma, require_sep=True)) + rparen.suppress()
         type_param_ref = (
+            # constraint must come before test
             (type_var_name + type_param_bound_op + type_param_constraint)("TypeVar constraint")
             | (type_var_name + Optional(type_param_bound_op + typedef_test))("TypeVar")
             | (star.suppress() + type_var_name)("TypeVarTuple")
@@ -1378,15 +1387,15 @@ class Grammar(object):
         await_item = await_expr | atom_item
 
         factor = Forward()
-        unary = plus | neg_minus | tilde
+        unary = neg_minus | plus | tilde
 
         power = condense(exp_dubstar + ZeroOrMore(unary) + await_item)
         power_in_impl_call = Forward()
 
         impl_call_arg = condense((
-            keyword_atom
+            disallow_keywords(reserved_vars) + dotted_refname
             | number
-            | disallow_keywords(reserved_vars) + dotted_refname
+            | keyword_atom
         ) + Optional(power_in_impl_call))
         impl_call_item = condense(
             disallow_keywords(reserved_vars)
@@ -1448,7 +1457,10 @@ class Grammar(object):
         infix_item = attach(
             Group(Optional(compose_expr))
             + OneOrMore(
-                infix_op + Group(Optional(lambdef | compose_expr))
+                infix_op + Group(Optional(
+                    # lambdef must come first
+                    lambdef | compose_expr
+                ))
             ),
             infix_handle,
         )
@@ -1459,22 +1471,25 @@ class Grammar(object):
 
         none_coalesce_expr = attach(tokenlist(infix_expr, dubquestion, allow_trailing=False), none_coalesce_handle)
 
-        comp_pipe_op = (
-            comp_pipe
-            | comp_star_pipe
-            | comp_back_pipe
-            | comp_back_star_pipe
-            | comp_dubstar_pipe
-            | comp_back_dubstar_pipe
-            | comp_none_dubstar_pipe
-            | comp_back_none_dubstar_pipe
-            | comp_none_star_pipe
-            | comp_back_none_star_pipe
-            | comp_none_pipe
-            | comp_back_none_pipe
+        comp_pipe_op = any_of(
+            comp_pipe,
+            comp_star_pipe,
+            comp_back_pipe,
+            comp_back_star_pipe,
+            comp_dubstar_pipe,
+            comp_back_dubstar_pipe,
+            comp_none_dubstar_pipe,
+            comp_back_none_dubstar_pipe,
+            comp_none_star_pipe,
+            comp_back_none_star_pipe,
+            comp_none_pipe,
+            comp_back_none_pipe,
         )
         comp_pipe_item = attach(
-            OneOrMore(none_coalesce_expr + comp_pipe_op) + (lambdef | none_coalesce_expr),
+            OneOrMore(none_coalesce_expr + comp_pipe_op) + (
+                # lambdef must come first
+                lambdef | none_coalesce_expr
+            ),
             comp_pipe_handle,
         )
         comp_pipe_expr = (
@@ -1482,26 +1497,27 @@ class Grammar(object):
             | comp_pipe_item
         )
 
-        pipe_op = (
-            pipe
-            | star_pipe
-            | dubstar_pipe
-            | back_pipe
-            | back_star_pipe
-            | back_dubstar_pipe
-            | none_pipe
-            | none_star_pipe
-            | none_dubstar_pipe
-            | back_none_pipe
-            | back_none_star_pipe
-            | back_none_dubstar_pipe
+        pipe_op = any_of(
+            pipe,
+            star_pipe,
+            dubstar_pipe,
+            back_pipe,
+            back_star_pipe,
+            back_dubstar_pipe,
+            none_pipe,
+            none_star_pipe,
+            none_dubstar_pipe,
+            back_none_pipe,
+            back_none_star_pipe,
+            back_none_dubstar_pipe,
         )
         pipe_item = (
             # we need the pipe_op since any of the atoms could otherwise be the start of an expression
             labeled_group(keyword("await"), "await") + pipe_op
+            | labeled_group(partial_atom_tokens, "partial") + pipe_op
+            # itemgetter must come before attrgetter
             | labeled_group(itemgetter_atom_tokens, "itemgetter") + pipe_op
             | labeled_group(attrgetter_atom_tokens, "attrgetter") + pipe_op
-            | labeled_group(partial_atom_tokens, "partial") + pipe_op
             | labeled_group(partial_op_atom_tokens, "op partial") + pipe_op
             # expr must come at end
             | labeled_group(comp_pipe_expr, "expr") + pipe_op
@@ -1509,9 +1525,9 @@ class Grammar(object):
         pipe_augassign_item = (
             # should match pipe_item but with pipe_op -> end_simple_stmt_item and no expr
             labeled_group(keyword("await"), "await") + end_simple_stmt_item
+            | labeled_group(partial_atom_tokens, "partial") + end_simple_stmt_item
             | labeled_group(itemgetter_atom_tokens, "itemgetter") + end_simple_stmt_item
             | labeled_group(attrgetter_atom_tokens, "attrgetter") + end_simple_stmt_item
-            | labeled_group(partial_atom_tokens, "partial") + end_simple_stmt_item
             | labeled_group(partial_op_atom_tokens, "op partial") + end_simple_stmt_item
         )
         last_pipe_item = Group(
@@ -1566,7 +1582,11 @@ class Grammar(object):
         keyword_lambdef_ref = addspace(keyword("lambda") + condense(keyword_lambdef_params + colon))
         arrow_lambdef = attach(arrow_lambdef_params + lambda_arrow.suppress(), lambdef_handle)
         implicit_lambdef = fixto(lambda_arrow, "lambda _=None:")
-        lambdef_base = keyword_lambdef | arrow_lambdef | implicit_lambdef
+        lambdef_base = (
+            arrow_lambdef
+            | implicit_lambdef
+            | keyword_lambdef
+        )
 
         stmt_lambdef = Forward()
         match_guard = Optional(keyword("if").suppress() + namedexpr_test)
@@ -1678,8 +1698,9 @@ class Grammar(object):
         test <<= (
             typedef_callable
             | lambdef
+            # must come near end since it includes plain test_item
+            | addspace(test_item + Optional(keyword("if") + test_item + keyword("else") + test))
             | alt_ternary_expr
-            | addspace(test_item + Optional(keyword("if") + test_item + keyword("else") + test))  # must come last since it includes plain test_item
         )
         test_no_cond <<= lambdef_no_cond | test_item
 
@@ -1726,7 +1747,7 @@ class Grammar(object):
         )
         base_comp_for = addspace(keyword("for") + assignlist + keyword("in") + comp_it_item + Optional(comp_iter))
         async_comp_for_ref = addspace(keyword("async") + base_comp_for)
-        comp_for <<= async_comp_for | base_comp_for
+        comp_for <<= base_comp_for | async_comp_for
         comp_if = addspace(keyword("if") + test_no_cond + Optional(comp_iter))
         comp_iter <<= comp_for | comp_if
 
@@ -1736,15 +1757,15 @@ class Grammar(object):
         pass_stmt = keyword("pass")
         break_stmt = keyword("break")
         continue_stmt = keyword("continue")
-        simple_raise_stmt = addspace(keyword("raise") + Optional(test))
+        simple_raise_stmt = addspace(keyword("raise") + Optional(test)) + ~keyword("from")
         complex_raise_stmt_ref = keyword("raise").suppress() + test + keyword("from").suppress() - test
-        raise_stmt = complex_raise_stmt | simple_raise_stmt
-        flow_stmt = (
-            return_stmt
-            | raise_stmt
-            | break_stmt
-            | yield_expr
-            | continue_stmt
+        flow_stmt = any_of(
+            return_stmt,
+            simple_raise_stmt,
+            break_stmt,
+            continue_stmt,
+            yield_expr,
+            complex_raise_stmt,
         )
 
         imp_name = (
@@ -1911,26 +1932,44 @@ class Grammar(object):
             | (keyword("data").suppress() + dotted_refname + lparen.suppress() + matchlist_data + rparen.suppress())("data")
             | (keyword("class").suppress() + dotted_refname + lparen.suppress() + matchlist_data + rparen.suppress())("class")
             | (dotted_refname + lparen.suppress() + matchlist_data + rparen.suppress())("data_or_class")
-            | Optional(keyword("as").suppress()) + setname("var")
+            | Optional(keyword("as").suppress()) + setname("var"),
         )
 
         matchlist_isinstance = base_match + OneOrMore(keyword("is").suppress() + negable_atom_item)
-        isinstance_match = labeled_group(matchlist_isinstance, "isinstance_is") | base_match
+        isinstance_match = (
+            labeled_group(matchlist_isinstance, "isinstance_is")
+            | base_match
+        )
 
         matchlist_bar_or = isinstance_match + OneOrMore(bar.suppress() + isinstance_match)
-        bar_or_match = labeled_group(matchlist_bar_or, "or") | isinstance_match
+        bar_or_match = (
+            labeled_group(matchlist_bar_or, "or")
+            | isinstance_match
+        )
 
         matchlist_infix = bar_or_match + OneOrMore(Group(infix_op + Optional(negable_atom_item)))
-        infix_match = labeled_group(matchlist_infix, "infix") | bar_or_match
+        infix_match = (
+            labeled_group(matchlist_infix, "infix")
+            | bar_or_match
+        )
 
         matchlist_as = infix_match + OneOrMore(keyword("as").suppress() + setname)
-        as_match = labeled_group(matchlist_as, "as") | infix_match
+        as_match = (
+            labeled_group(matchlist_as, "as")
+            | infix_match
+        )
 
         matchlist_and = as_match + OneOrMore(keyword("and").suppress() + as_match)
-        and_match = labeled_group(matchlist_and, "and") | as_match
+        and_match = (
+            labeled_group(matchlist_and, "and")
+            | as_match
+        )
 
         matchlist_kwd_or = and_match + OneOrMore(keyword("or").suppress() + and_match)
-        kwd_or_match = labeled_group(matchlist_kwd_or, "or") | and_match
+        kwd_or_match = (
+            labeled_group(matchlist_kwd_or, "or")
+            | and_match
+        )
 
         match <<= kwd_or_match
 
@@ -2075,14 +2114,14 @@ class Grammar(object):
         op_match_funcdef_ref = keyword("def").suppress() + op_match_funcdef_arg + op_funcdef_name + op_match_funcdef_arg + match_guard
         base_match_funcdef = op_match_funcdef | name_match_funcdef
         func_suite = (
-            attach(simple_stmt, make_suite_handle)
-            | (
+            (
                 newline.suppress()
                 - indent.suppress()
                 - Optional(docstring)
                 - attach(condense(OneOrMore(stmt)), make_suite_handle)
                 - dedent.suppress()
             )
+            | attach(simple_stmt, make_suite_handle)
         )
         def_match_funcdef = attach(
             base_match_funcdef
@@ -2119,8 +2158,8 @@ class Grammar(object):
 
         math_funcdef_body = condense(ZeroOrMore(~(implicit_return_stmt + dedent) + stmt) - implicit_return_stmt)
         math_funcdef_suite = (
-            attach(implicit_return_stmt, make_suite_handle)
-            | condense(newline - indent - math_funcdef_body - dedent)
+            condense(newline - indent - math_funcdef_body - dedent)
+            | attach(implicit_return_stmt, make_suite_handle)
         )
         end_func_equals = return_typedef + equals.suppress() | fixto(equals, ":")
         math_funcdef = attach(
@@ -2203,6 +2242,7 @@ class Grammar(object):
         async_keyword_funcdef_ref = async_keyword_normal_funcdef | async_keyword_match_funcdef
 
         async_funcdef_stmt = (
+            # match funcdefs must come after normal
             async_funcdef
             | async_match_funcdef
             | async_keyword_funcdef
@@ -2227,6 +2267,7 @@ class Grammar(object):
         keyword_funcdef_ref = keyword_normal_funcdef | keyword_match_funcdef
 
         normal_funcdef_stmt = (
+            # match funcdefs must come after normal
             funcdef
             | math_funcdef
             | math_match_funcdef
@@ -2301,33 +2342,33 @@ class Grammar(object):
 
         passthrough_stmt = condense(passthrough_block - (base_suite | newline))
 
-        simple_compound_stmt = (
-            if_stmt
-            | try_stmt
-            | match_stmt
-            | passthrough_stmt
+        simple_compound_stmt = any_of(
+            if_stmt,
+            try_stmt,
+            match_stmt,
+            passthrough_stmt,
         )
-        compound_stmt = (
-            decoratable_class_stmt
-            | decoratable_func_stmt
-            | while_stmt
-            | for_stmt
-            | with_stmt
-            | async_stmt
-            | match_for_stmt
-            | simple_compound_stmt
-            | where_stmt
+        compound_stmt = any_of(
+            decoratable_class_stmt,
+            decoratable_func_stmt,
+            while_stmt,
+            for_stmt,
+            with_stmt,
+            async_stmt,
+            match_for_stmt,
+            simple_compound_stmt,
+            where_stmt,
         )
         endline_semicolon = Forward()
         endline_semicolon_ref = semicolon.suppress() + newline
-        keyword_stmt = (
-            flow_stmt
-            | import_stmt
-            | assert_stmt
-            | pass_stmt
-            | del_stmt
-            | global_stmt
-            | nonlocal_stmt
+        keyword_stmt = any_of(
+            flow_stmt,
+            import_stmt,
+            assert_stmt,
+            pass_stmt,
+            del_stmt,
+            global_stmt,
+            nonlocal_stmt,
         )
         special_stmt = (
             keyword_stmt
@@ -2337,6 +2378,7 @@ class Grammar(object):
         )
         unsafe_simple_stmt_item <<= special_stmt | longest(basic_stmt, destructuring_stmt)
         simple_stmt_item <<= (
+            # destructuring stmt must come after basic
             special_stmt
             | basic_stmt + end_simple_stmt_item
             | destructuring_stmt + end_simple_stmt_item
@@ -2439,13 +2481,19 @@ class Grammar(object):
                 lparen,
                 disallow_keywords(untcoable_funcs, with_suffix="(")
                 + condense(
-                    (unsafe_name | parens | brackets | braces | string_atom)
-                    + ZeroOrMore(
-                        dot + unsafe_name
-                        | brackets
+                    any_of(
+                        unsafe_name,
+                        parens,
+                        string_atom,
+                        brackets,
+                        braces,
+                    )
+                    + ZeroOrMore(any_of(
+                        dot + unsafe_name,
+                        brackets,
                         # don't match the last set of parentheses
-                        | parens + ~end_marker + ~rparen
-                    ),
+                        parens + ~end_marker + ~rparen,
+                    )),
                 )
                 + original_function_call_tokens,
                 rparen,
@@ -2484,10 +2532,10 @@ class Grammar(object):
         parameters_tokens = Group(
             Optional(tokenlist(
                 Group(
-                    dubstar - tfpdef_tokens
+                    tfpdef_default_tokens
                     | star - Optional(tfpdef_tokens)
+                    | dubstar - tfpdef_tokens
                     | slash
-                    | tfpdef_default_tokens
                 ) + type_comment,
                 comma + type_comment,
             ))
@@ -2530,7 +2578,7 @@ class Grammar(object):
             )
         )
 
-        end_f_str_expr = combine(start_marker + (bang | colon | rbrace))
+        end_f_str_expr = combine(start_marker + (rbrace | colon | bang))
 
         string_start = start_marker + python_quoted_string
 

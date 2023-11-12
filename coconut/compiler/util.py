@@ -118,6 +118,7 @@ from coconut.constants import (
     incremental_cache_limit,
     incremental_mode_cache_successes,
     adaptive_reparse_usage_weight,
+    use_adaptive_any_of,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -471,14 +472,16 @@ def unpack(tokens):
     return tokens
 
 
+def in_incremental_mode():
+    """Determine if we are using the --incremental parsing mode."""
+    return ParserElement._incrementalEnabled and not ParserElement._incrementalWithResets
+
+
 def force_reset_packrat_cache():
     """Forcibly reset the packrat cache and all packrat stats."""
     if ParserElement._incrementalEnabled:
         ParserElement._incrementalEnabled = False
-        if ParserElement._incrementalWithResets:
-            ParserElement.enableIncremental(default_incremental_cache_size, still_reset_cache=True)
-        else:
-            ParserElement.enableIncremental(incremental_mode_cache_size, still_reset_cache=False)
+        ParserElement.enableIncremental(incremental_mode_cache_size if in_incremental_mode() else default_incremental_cache_size, still_reset_cache=False)
     else:
         ParserElement._packratEnabled = False
         ParserElement.enablePackrat(packrat_cache_size)
@@ -487,7 +490,9 @@ def force_reset_packrat_cache():
 @contextmanager
 def parsing_context(inner_parse=True):
     """Context to manage the packrat cache across parse calls."""
-    if inner_parse and should_clear_cache():
+    if not inner_parse:
+        yield
+    elif should_clear_cache():
         # store old packrat cache
         old_cache = ParserElement.packrat_cache
         old_cache_stats = ParserElement.packrat_cache_stats[:]
@@ -501,7 +506,8 @@ def parsing_context(inner_parse=True):
             if logger.verbose:
                 ParserElement.packrat_cache_stats[0] += old_cache_stats[0]
                 ParserElement.packrat_cache_stats[1] += old_cache_stats[1]
-    elif inner_parse and ParserElement._incrementalWithResets:
+    # if we shouldn't clear the cache, but we're using incrementalWithResets, then do this to avoid clearing it
+    elif ParserElement._incrementalWithResets:
         incrementalWithResets, ParserElement._incrementalWithResets = ParserElement._incrementalWithResets, False
         try:
             yield
@@ -615,7 +621,7 @@ def should_clear_cache(force=False):
     if SUPPORTS_INCREMENTAL:
         if (
             not ParserElement._incrementalEnabled
-            or ParserElement._incrementalWithResets and repeatedly_clear_incremental_cache
+            or not in_incremental_mode() and repeatedly_clear_incremental_cache
         ):
             return True
         if force or (
@@ -672,7 +678,7 @@ def enable_incremental_parsing():
     if not SUPPORTS_INCREMENTAL:
         return False
     ParserElement._should_cache_incremental_success = incremental_mode_cache_successes
-    if ParserElement._incrementalEnabled and not ParserElement._incrementalWithResets:  # incremental mode is already enabled
+    if in_incremental_mode():  # incremental mode is already enabled
         return True
     ParserElement._incrementalEnabled = False
     try:
@@ -836,10 +842,30 @@ class MatchAny(MatchFirst):
     """Version of MatchFirst that always uses adaptive parsing."""
     adaptive_mode = True
 
+    def __or__(self, other):
+        if hasaction(self):
+            return MatchFirst([self, other])
+        self = maybe_copy_elem(self, "any_or")
+        if not isinstance(other, MatchAny):
+            self.__class__ = MatchFirst
+        self |= other
+        return self
 
-def any_of(*exprs):
+
+def any_of(*exprs, **kwargs):
     """Build a MatchAny of the given MatchFirst."""
-    return MatchAny(exprs)
+    use_adaptive = kwargs.pop("use_adaptive", use_adaptive_any_of)
+    internal_assert(not kwargs, "excess keyword arguments passed to any_of", kwargs)
+
+    AnyOf = MatchAny if use_adaptive else MatchFirst
+
+    flat_exprs = []
+    for e in exprs:
+        if isinstance(e, AnyOf) and not hasaction(e):
+            flat_exprs.extend(e.exprs)
+        else:
+            flat_exprs.append(e)
+    return AnyOf(flat_exprs)
 
 
 class Wrap(ParseElementEnhance):
@@ -1134,6 +1160,14 @@ def disallow_keywords(kwds, with_suffix=""):
         for k in kwds
     )
     return regex_item(r"(?!" + "|".join(to_disallow) + r")").suppress()
+
+
+def disambiguate_literal(literal, not_literals):
+    """Get an item that matchesl literal and not any of not_literals."""
+    return regex_item(
+        r"(?!" + "|".join(re.escape(s) for s in not_literals) + ")"
+        + re.escape(literal)
+    )
 
 
 def any_keyword_in(kwds):

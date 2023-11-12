@@ -130,7 +130,9 @@ packrat_cache_size = None  # only works because final() clears the cache
 # note that _parseIncremental produces much smaller caches
 use_incremental_if_available = True
 
-use_adaptive_if_available = False
+use_adaptive_any_of = False
+
+use_adaptive_if_available = False  # currently broken
 adaptive_reparse_usage_weight = 10
 
 # these only apply to use_incremental_if_available, not compiler.util.enable_incremental_parsing()
@@ -985,7 +987,7 @@ all_reqs = {
 
 # min versions are inclusive
 unpinned_min_versions = {
-    "cPyparsing": (2, 4, 7, 2, 2, 3),
+    "cPyparsing": (2, 4, 7, 2, 2, 4),
     ("pre-commit", "py3"): (3,),
     ("psutil", "py>=27"): (5,),
     "jupyter": (1, 0),

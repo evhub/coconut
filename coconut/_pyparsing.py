@@ -153,6 +153,36 @@ if PYPARSING_PACKAGE != "cPyparsing":
         ParserElement.packrat_context = []
         ParserElement._parseCache = _parseCache
 
+        # [CPYPARSING] fix append
+        def append(self, other):
+            if (self.parseAction
+                    or self.resultsName is not None
+                    or self.debug):
+                return self.__class__([self, other])
+            elif (other.__class__ == self.__class__
+                    and not other.parseAction
+                    and other.resultsName is None
+                    and not other.debug):
+                self.exprs += other.exprs
+                self.strRepr = None
+                self.saveAsList |= other.saveAsList
+                if isinstance(self, And):
+                    self.mayReturnEmpty &= other.mayReturnEmpty
+                else:
+                    self.mayReturnEmpty |= other.mayReturnEmpty
+                self.mayIndexError |= other.mayIndexError
+            else:
+                self.exprs.append(other)
+                self.strRepr = None
+                if isinstance(self, And):
+                    self.mayReturnEmpty &= other.mayReturnEmpty
+                else:
+                    self.mayReturnEmpty |= other.mayReturnEmpty
+                self.mayIndexError |= other.mayIndexError
+                self.saveAsList |= other.saveAsList
+            return self
+        ParseExpression.append = append
+
 elif not hasattr(ParserElement, "packrat_context"):
     raise ImportError(
         "This version of Coconut requires cPyparsing>=" + ver_tuple_to_str(min_versions["cPyparsing"])
@@ -176,6 +206,8 @@ else:
         )
 
 USE_ADAPTIVE = hasattr(MatchFirst, "setAdaptiveMode") and use_adaptive_if_available
+
+maybe_make_safe = getattr(_pyparsing, "maybe_make_safe", None)
 
 
 # -----------------------------------------------------------------------------------------------------------------------
