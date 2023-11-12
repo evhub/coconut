@@ -360,7 +360,7 @@ class Logger(object):
 
     def log_loc(self, name, original, loc):
         """Log a location in source code."""
-        if self.verbose:
+        if self.tracing:
             if isinstance(loc, int):
                 pre_loc_orig, post_loc_orig = original[:loc], original[loc:]
                 if pre_loc_orig.count("\n") > max_orig_lines_in_log_loc:

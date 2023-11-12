@@ -38,7 +38,6 @@ from threading import Lock
 
 from coconut._pyparsing import (
     USE_COMPUTATION_GRAPH,
-    CPYPARSING,
     ParseBaseException,
     ParseResults,
     col as getcol,
@@ -87,7 +86,6 @@ from coconut.constants import (
     in_place_op_funcs,
     match_first_arg_var,
     import_existing,
-    disable_incremental_for_len,
 )
 from coconut.util import (
     pickleable_obj,
@@ -172,7 +170,7 @@ from coconut.compiler.util import (
     get_psf_target,
     move_loc_to_non_whitespace,
     move_endpt_to_non_whitespace,
-    unpickle_cache,
+    load_cache_for,
     pickle_cache,
     handle_and_manage,
     sub_all,
@@ -1321,30 +1319,11 @@ class Compiler(Grammar, pickleable_obj):
             # unpickling must happen after streamlining and must occur in the
             #  compiler so that it happens in the same process as compilation
             if cache_filename is not None:
-                if not CPYPARSING:
-                    raise CoconutException("cache_filename requires cPyparsing (run '{python} -m pip install --upgrade cPyparsing' to fix)".format(python=sys.executable))
-                if len(inputstring) < disable_incremental_for_len:
-                    incremental_enabled = enable_incremental_parsing()
-                    if incremental_enabled:
-                        incremental_info = "incremental parsing mode enabled due to len == {input_len} < {max_len}".format(
-                            input_len=len(inputstring),
-                            max_len=disable_incremental_for_len,
-                        )
-                    else:
-                        incremental_info = "failed to enable incremental parsing mode"
-                else:
-                    incremental_enabled = False
-                    incremental_info = "not using incremental parsing mode due to len == {input_len} >= {max_len}".format(
-                        input_len=len(inputstring),
-                        max_len=disable_incremental_for_len,
-                    )
-                did_load_cache = unpickle_cache(cache_filename)
-                logger.log("{Loaded} cache for {filename!r} from {cache_filename!r} ({incremental_info}).".format(
-                    Loaded="Loaded" if did_load_cache else "Failed to load",
+                incremental_enabled = load_cache_for(
+                    inputstring=inputstring,
                     filename=filename,
                     cache_filename=cache_filename,
-                    incremental_info=incremental_info,
-                ))
+                )
             pre_procd = parsed = None
             try:
                 with logger.gather_parsing_stats():

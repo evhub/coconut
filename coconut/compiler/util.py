@@ -45,6 +45,7 @@ else:
     import cPickle as pickle
 
 from coconut._pyparsing import (
+    CPYPARSING,
     MODERN_PYPARSING,
     USE_COMPUTATION_GRAPH,
     SUPPORTS_INCREMENTAL,
@@ -119,6 +120,7 @@ from coconut.constants import (
     incremental_mode_cache_successes,
     adaptive_reparse_usage_weight,
     use_adaptive_any_of,
+    disable_incremental_for_len,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -327,60 +329,6 @@ else:
     combine = Combine
 
 
-def maybe_copy_elem(item, name):
-    """Copy the given grammar element if it's referenced somewhere else."""
-    item_ref_count = sys.getrefcount(item) if CPYTHON and not on_new_python else float("inf")
-    internal_assert(lambda: item_ref_count >= temp_grammar_item_ref_count, "add_action got item with too low ref count", (item, type(item), item_ref_count))
-    if item_ref_count <= temp_grammar_item_ref_count:
-        if DEVELOP:
-            logger.record_stat("maybe_copy_" + name, False)
-        return item
-    else:
-        if DEVELOP:
-            logger.record_stat("maybe_copy_" + name, True)
-        return item.copy()
-
-
-def hasaction(elem):
-    """Determine if the given grammar element has any actions associated with it."""
-    return (
-        MODERN_PYPARSING
-        or elem.parseAction
-        or elem.resultsName is not None
-        or elem.debug
-    )
-
-
-@contextmanager
-def using_fast_grammar_methods():
-    """Enables grammar methods that modify their operands when they aren't referenced elsewhere."""
-    if MODERN_PYPARSING:
-        yield
-        return
-
-    def fast_add(self, other):
-        if hasaction(self):
-            return old_add(self, other)
-        self = maybe_copy_elem(self, "add")
-        self += other
-        return self
-    old_add, And.__add__ = And.__add__, fast_add
-
-    def fast_or(self, other):
-        if hasaction(self):
-            return old_or(self, other)
-        self = maybe_copy_elem(self, "or")
-        self |= other
-        return self
-    old_or, MatchFirst.__or__ = MatchFirst.__or__, fast_or
-
-    try:
-        yield
-    finally:
-        And.__add__ = old_add
-        MatchFirst.__or__ = old_or
-
-
 def add_action(item, action, make_copy=None):
     """Add a parse action to the given item."""
     if make_copy is None:
@@ -586,6 +534,59 @@ def transform(grammar, text, inner=True):
 # PARSING INTROSPECTION:
 # -----------------------------------------------------------------------------------------------------------------------
 
+def maybe_copy_elem(item, name):
+    """Copy the given grammar element if it's referenced somewhere else."""
+    item_ref_count = sys.getrefcount(item) if CPYTHON and not on_new_python else float("inf")
+    internal_assert(lambda: item_ref_count >= temp_grammar_item_ref_count, "add_action got item with too low ref count", (item, type(item), item_ref_count))
+    if item_ref_count <= temp_grammar_item_ref_count:
+        if DEVELOP:
+            logger.record_stat("maybe_copy_" + name, False)
+        return item
+    else:
+        if DEVELOP:
+            logger.record_stat("maybe_copy_" + name, True)
+        return item.copy()
+
+
+def hasaction(elem):
+    """Determine if the given grammar element has any actions associated with it."""
+    return (
+        MODERN_PYPARSING
+        or elem.parseAction
+        or elem.resultsName is not None
+        or elem.debug
+    )
+
+
+@contextmanager
+def using_fast_grammar_methods():
+    """Enables grammar methods that modify their operands when they aren't referenced elsewhere."""
+    if MODERN_PYPARSING:
+        yield
+        return
+
+    def fast_add(self, other):
+        if hasaction(self):
+            return old_add(self, other)
+        self = maybe_copy_elem(self, "add")
+        self += other
+        return self
+    old_add, And.__add__ = And.__add__, fast_add
+
+    def fast_or(self, other):
+        if hasaction(self):
+            return old_or(self, other)
+        self = maybe_copy_elem(self, "or")
+        self |= other
+        return self
+    old_or, MatchFirst.__or__ = MatchFirst.__or__, fast_or
+
+    try:
+        yield
+    finally:
+        And.__add__ = old_add
+        MatchFirst.__or__ = old_or
+
 
 def get_func_closure(func):
     """Get variables in func's closure."""
@@ -713,7 +714,7 @@ def pickle_cache(original, filename, include_incremental=True, protocol=pickle.H
 
     all_adaptive_stats = {}
     for match_any in MatchAny.all_match_anys:
-        all_adaptive_stats[match_any.parse_element_index] = match_any.adaptive_usage
+        all_adaptive_stats[match_any.parse_element_index] = (match_any.adaptive_usage, match_any.expr_order)
 
     logger.log("Saving {num_inc} incremental and {num_adapt} adaptive cache items to {filename!r}.".format(
         num_inc=len(pickleable_cache_items),
@@ -754,8 +755,9 @@ def unpickle_cache(filename):
         filename=filename,
     ))
 
-    for identifier, adaptive_usage in all_adaptive_stats.items():
+    for identifier, (adaptive_usage, expr_order) in all_adaptive_stats.items():
         all_parse_elements[identifier].adaptive_usage = adaptive_usage
+        all_parse_elements[identifier].expr_order = expr_order
 
     max_cache_size = min(
         incremental_mode_cache_size or float("inf"),
@@ -768,6 +770,35 @@ def unpickle_cache(filename):
         lookup = (all_parse_elements[pickleable_lookup[0]],) + pickleable_lookup[1:]
         ParserElement.packrat_cache.set(lookup, value)
     return True
+
+
+def load_cache_for(inputstring, filename, cache_filename):
+    """Load cache_filename (for the given inputstring and filename)."""
+    if not CPYPARSING:
+        raise CoconutException("--incremental requires cPyparsing (run '{python} -m pip install --upgrade cPyparsing' to fix)".format(python=sys.executable))
+    if len(inputstring) < disable_incremental_for_len:
+        incremental_enabled = enable_incremental_parsing()
+        if incremental_enabled:
+            incremental_info = "incremental parsing mode enabled due to len == {input_len} < {max_len}".format(
+                input_len=len(inputstring),
+                max_len=disable_incremental_for_len,
+            )
+        else:
+            incremental_info = "failed to enable incremental parsing mode"
+    else:
+        incremental_enabled = False
+        incremental_info = "not using incremental parsing mode due to len == {input_len} >= {max_len}".format(
+            input_len=len(inputstring),
+            max_len=disable_incremental_for_len,
+        )
+    did_load_cache = unpickle_cache(cache_filename)
+    logger.log("{Loaded} cache for {filename!r} from {cache_filename!r} ({incremental_info}).".format(
+        Loaded="Loaded" if did_load_cache else "Failed to load",
+        filename=filename,
+        cache_filename=cache_filename,
+        incremental_info=incremental_info,
+    ))
+    return incremental_enabled
 
 
 # -----------------------------------------------------------------------------------------------------------------------
