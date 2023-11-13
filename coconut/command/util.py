@@ -81,6 +81,7 @@ from coconut.constants import (
     kilobyte,
     min_stack_size_kbs,
     coconut_base_run_args,
+    high_proc_prio,
 )
 
 if PY26:
@@ -130,6 +131,11 @@ except KeyError:
         ),
     )
     prompt_toolkit = None
+try:
+    import psutil
+except ImportError:
+    psutil = None
+
 
 # -----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
@@ -222,9 +228,7 @@ def handling_broken_process_pool():
 
 def kill_children():
     """Terminate all child processes."""
-    try:
-        import psutil
-    except ImportError:
+    if psutil is None:
         logger.warn(
             "missing psutil; --jobs may not properly terminate",
             extra="run '{python} -m pip install psutil' to fix".format(python=sys.executable),
@@ -709,6 +713,19 @@ class Runner(object):
             return self.stored[-1]
 
 
+def highten_process():
+    """Set the current process to high priority."""
+    if high_proc_prio and psutil is not None:
+        try:
+            p = psutil.Process()
+            if WINDOWS:
+                p.nice(psutil.HIGH_PRIORITY_CLASS)
+            else:
+                p.nice(-10)
+        except Exception:
+            logger.log_exc()
+
+
 class multiprocess_wrapper(pickleable_obj):
     """Wrapper for a method that needs to be multiprocessed."""
     __slots__ = ("base", "method", "stack_size", "rec_limit", "logger", "argv")
@@ -728,6 +745,7 @@ class multiprocess_wrapper(pickleable_obj):
 
     def __call__(self, *args, **kwargs):
         """Call the method."""
+        highten_process()
         sys.setrecursionlimit(self.rec_limit)
         logger.copy_from(self.logger)
         sys.argv = self.argv

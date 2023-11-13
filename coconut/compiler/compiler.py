@@ -30,6 +30,7 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 from coconut.root import *  # NOQA
 
 import sys
+import os
 import re
 from contextlib import contextmanager
 from functools import partial, wraps
@@ -38,6 +39,7 @@ from threading import Lock
 
 from coconut._pyparsing import (
     USE_COMPUTATION_GRAPH,
+    USE_CACHE,
     ParseBaseException,
     ParseResults,
     col as getcol,
@@ -174,6 +176,7 @@ from coconut.compiler.util import (
     pickle_cache,
     handle_and_manage,
     sub_all,
+    get_cache_path,
 )
 from coconut.compiler.header import (
     minify_header,
@@ -1257,7 +1260,7 @@ class Compiler(Grammar, pickleable_obj):
         if outer_ln is None:
             outer_ln = self.adjust(lineno(loc, original))
         with self.inner_environment(ln=outer_ln):
-            self.streamline(parser, inputstring)
+            self.streamline(parser, inputstring, inner=True)
             pre_procd = self.pre(inputstring, **preargs)
             parsed = parse(parser, pre_procd)
             return self.post(parsed, **postargs)
@@ -1270,7 +1273,7 @@ class Compiler(Grammar, pickleable_obj):
             self.current_compiler[0] = self
             yield
 
-    def streamline(self, grammar, inputstring="", force=False):
+    def streamline(self, grammar, inputstring="", force=False, inner=False):
         """Streamline the given grammar for the given inputstring."""
         if force or (streamline_grammar_for_len is not None and len(inputstring) > streamline_grammar_for_len):
             start_time = get_clock_time()
@@ -1282,7 +1285,7 @@ class Compiler(Grammar, pickleable_obj):
                     length=len(inputstring),
                 ),
             )
-        else:
+        elif not inner:
             logger.log("No streamlining done for input of length {length}.".format(length=len(inputstring)))
 
     def run_final_checks(self, original, keep_state=False):
@@ -1309,20 +1312,25 @@ class Compiler(Grammar, pickleable_obj):
         postargs,
         streamline=True,
         keep_state=False,
-        filename=None,
-        cache_filename=None,
+        codepath=None,
+        use_cache=None,
     ):
         """Use the parser to parse the inputstring with appropriate setup and teardown."""
+        if use_cache is None:
+            use_cache = codepath is not None and USE_CACHE
+        if use_cache:
+            cache_path = get_cache_path(codepath)
+        filename = os.path.basename(codepath) if codepath is not None else None
         with self.parsing(keep_state, filename):
             if streamline:
                 self.streamline(parser, inputstring)
             # unpickling must happen after streamlining and must occur in the
             #  compiler so that it happens in the same process as compilation
-            if cache_filename is not None:
+            if use_cache:
                 incremental_enabled = load_cache_for(
                     inputstring=inputstring,
                     filename=filename,
-                    cache_filename=cache_filename,
+                    cache_path=cache_path,
                 )
             pre_procd = parsed = None
             try:
@@ -1343,8 +1351,8 @@ class Compiler(Grammar, pickleable_obj):
                             + str(sys.getrecursionlimit()) + " (you may also need to increase --stack-size)",
                         )
             finally:
-                if cache_filename is not None and pre_procd is not None:
-                    pickle_cache(pre_procd, cache_filename, include_incremental=incremental_enabled)
+                if use_cache and pre_procd is not None:
+                    pickle_cache(pre_procd, cache_path, include_incremental=incremental_enabled)
             self.run_final_checks(pre_procd, keep_state)
         return out
 

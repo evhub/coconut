@@ -28,10 +28,10 @@ from contextlib import contextmanager
 from subprocess import CalledProcessError
 
 from coconut._pyparsing import (
+    USE_CACHE,
     unset_fast_pyparsing_reprs,
     start_profiling,
     print_profiling_results,
-    SUPPORTS_INCREMENTAL,
 )
 
 from coconut.compiler import Compiler
@@ -130,7 +130,7 @@ class Command(object):
     mypy_args = None  # corresponds to --mypy flag
     argv_args = None  # corresponds to --argv flag
     stack_size = 0  # corresponds to --stack-size flag
-    use_cache = True  # corresponds to --no-cache flag
+    use_cache = USE_CACHE  # corresponds to --no-cache flag
 
     prompt = Prompt()
 
@@ -282,11 +282,6 @@ class Command(object):
             if args.argv is not None:
                 self.argv_args = list(args.argv)
             if args.no_cache:
-                self.use_cache = False
-            elif SUPPORTS_INCREMENTAL:
-                self.use_cache = True
-            else:
-                logger.log("incremental parsing mode not supported in current environment (try '{python} -m pip install --upgrade cPyparsing' to fix)".format(python=sys.executable))
                 self.use_cache = False
 
             # execute non-compilation tasks
@@ -611,17 +606,9 @@ class Command(object):
                         self.execute_file(destpath, argv_source_path=codepath)
 
             parse_kwargs = dict(
-                filename=os.path.basename(codepath),
+                codepath=codepath,
+                use_cache=self.use_cache,
             )
-            if self.use_cache:
-                code_dir, code_fname = os.path.split(codepath)
-
-                cache_dir = os.path.join(code_dir, coconut_cache_dir)
-                ensure_dir(cache_dir)
-
-                pickle_fname = code_fname + ".pickle"
-                parse_kwargs["cache_filename"] = os.path.join(cache_dir, pickle_fname)
-
             if package is True:
                 self.submit_comp_job(codepath, callback, "parse_package", code, package_level=package_level, **parse_kwargs)
             elif package is False:

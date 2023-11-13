@@ -28,6 +28,7 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 from coconut.root import *  # NOQA
 
 import sys
+import os
 import re
 import ast
 import inspect
@@ -48,7 +49,7 @@ from coconut._pyparsing import (
     MODERN_PYPARSING,
     USE_COMPUTATION_GRAPH,
     SUPPORTS_INCREMENTAL,
-    USE_ADAPTIVE,
+    SUPPORTS_ADAPTIVE,
     replaceWith,
     ZeroOrMore,
     OneOrMore,
@@ -82,6 +83,7 @@ from coconut.util import (
     get_target_info,
     memoize,
     univ_open,
+    ensure_dir,
 )
 from coconut.terminal import (
     logger,
@@ -120,6 +122,8 @@ from coconut.constants import (
     adaptive_reparse_usage_weight,
     use_adaptive_any_of,
     disable_incremental_for_len,
+    coconut_cache_dir,
+    use_adaptive_if_available,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -398,7 +402,7 @@ def adaptive_manager(item, original, loc, reparse=False):
 
 def final(item):
     """Collapse the computation graph upon parsing the given item."""
-    if USE_ADAPTIVE:
+    if SUPPORTS_ADAPTIVE and use_adaptive_if_available:
         item = Wrap(item, adaptive_manager, greedy=True)
     # evaluate_tokens expects a computation graph, so we just call add_action directly
     return add_action(trace(item), final_evaluate_tokens)
@@ -774,8 +778,8 @@ def unpickle_cache(filename):
     return True
 
 
-def load_cache_for(inputstring, filename, cache_filename):
-    """Load cache_filename (for the given inputstring and filename)."""
+def load_cache_for(inputstring, filename, cache_path):
+    """Load cache_path (for the given inputstring and filename)."""
     if not SUPPORTS_INCREMENTAL:
         raise CoconutException("incremental parsing mode requires cPyparsing (run '{python} -m pip install --upgrade cPyparsing' to fix)".format(python=sys.executable))
     if len(inputstring) < disable_incremental_for_len:
@@ -793,14 +797,25 @@ def load_cache_for(inputstring, filename, cache_filename):
             input_len=len(inputstring),
             max_len=disable_incremental_for_len,
         )
-    did_load_cache = unpickle_cache(cache_filename)
-    logger.log("{Loaded} cache for {filename!r} from {cache_filename!r} ({incremental_info}).".format(
+    did_load_cache = unpickle_cache(cache_path)
+    logger.log("{Loaded} cache for {filename!r} from {cache_path!r} ({incremental_info}).".format(
         Loaded="Loaded" if did_load_cache else "Failed to load",
         filename=filename,
-        cache_filename=cache_filename,
+        cache_path=cache_path,
         incremental_info=incremental_info,
     ))
     return incremental_enabled
+
+
+def get_cache_path(codepath):
+    """Get the cache filename to use for the given codepath."""
+    code_dir, code_fname = os.path.split(codepath)
+
+    cache_dir = os.path.join(code_dir, coconut_cache_dir)
+    ensure_dir(cache_dir)
+
+    pickle_fname = code_fname + ".pkl"
+    return os.path.join(cache_dir, pickle_fname)
 
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -886,7 +901,6 @@ def get_target_info_smart(target, mode="lowest"):
 
 class MatchAny(MatchFirst):
     """Version of MatchFirst that always uses adaptive parsing."""
-    adaptive_mode = True
     all_match_anys = []
 
     def __init__(self, *args, **kwargs):
@@ -903,9 +917,13 @@ class MatchAny(MatchFirst):
         return self
 
 
+if SUPPORTS_ADAPTIVE:
+    MatchAny.setAdaptiveMode(True)
+
+
 def any_of(*exprs, **kwargs):
     """Build a MatchAny of the given MatchFirst."""
-    use_adaptive = kwargs.pop("use_adaptive", use_adaptive_any_of)
+    use_adaptive = kwargs.pop("use_adaptive", use_adaptive_any_of) and SUPPORTS_ADAPTIVE
     internal_assert(not kwargs, "excess keyword arguments passed to any_of", kwargs)
 
     AnyOf = MatchAny if use_adaptive else MatchFirst

@@ -48,7 +48,7 @@ from coconut.constants import (
     never_clear_incremental_cache,
     warn_on_multiline_regex,
     num_displayed_timing_items,
-    use_adaptive_if_available,
+    use_cache_file,
 )
 from coconut.util import get_clock_time  # NOQA
 from coconut.util import (
@@ -152,6 +152,7 @@ if not CPYPARSING:
                     if isinstance(value, Exception):
                         raise value
                     return value[0], value[1].copy()
+
         ParserElement.packrat_context = []
         ParserElement._parseCache = _parseCache
 
@@ -207,7 +208,8 @@ else:
             + " (run '{python} -m pip install --upgrade cPyparsing' to fix)".format(python=sys.executable)
         )
 
-USE_ADAPTIVE = hasattr(MatchFirst, "setAdaptiveMode") and use_adaptive_if_available
+SUPPORTS_ADAPTIVE = hasattr(MatchFirst, "setAdaptiveMode")
+USE_CACHE = SUPPORTS_INCREMENTAL and use_cache_file
 
 maybe_make_safe = getattr(_pyparsing, "maybe_make_safe", None)
 

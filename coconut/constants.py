@@ -121,6 +121,9 @@ num_displayed_timing_items = 100
 
 # below constants are experimentally determined to maximize performance
 
+use_packrat_parser = True  # True also gives us better error messages
+packrat_cache_size = None  # only works because final() clears the cache
+
 streamline_grammar_for_len = 4096
 
 # Current problems with this:
@@ -130,13 +133,11 @@ streamline_grammar_for_len = 4096
 # disable_incremental_for_len = streamline_grammar_for_len
 disable_incremental_for_len = 0
 
-use_packrat_parser = True  # True also gives us better error messages
-packrat_cache_size = None  # only works because final() clears the cache
+use_cache_file = True
+use_adaptive_any_of = True
 
 # note that _parseIncremental produces much smaller caches
 use_incremental_if_available = False
-
-use_adaptive_any_of = True
 
 use_adaptive_if_available = False  # currently broken
 adaptive_reparse_usage_weight = 10
@@ -716,6 +717,8 @@ min_stack_size_kbs = 160
 
 base_default_jobs = "sys" if not PY26 else 0
 
+high_proc_prio = True
+
 mypy_install_arg = "install"
 jupyter_install_arg = "install"
 
@@ -993,7 +996,7 @@ all_reqs = {
 
 # min versions are inclusive
 unpinned_min_versions = {
-    "cPyparsing": (2, 4, 7, 2, 2, 4),
+    "cPyparsing": (2, 4, 7, 2, 2, 5),
     ("pre-commit", "py3"): (3,),
     ("psutil", "py>=27"): (5,),
     "jupyter": (1, 0),
