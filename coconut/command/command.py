@@ -572,7 +572,7 @@ class Command(object):
         if destpath is not None:
             destpath = fixpath(destpath)
             destdir = os.path.dirname(destpath)
-            ensure_dir(destdir)
+            ensure_dir(destdir, logger=logger)
             if package is True:
                 package_level = self.get_package_level(codepath)
                 if package_level == 0:

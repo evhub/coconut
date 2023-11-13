@@ -281,10 +281,16 @@ def assert_remove_prefix(inputstr, prefix, allow_no_prefix=False):
 remove_prefix = partial(assert_remove_prefix, allow_no_prefix=True)
 
 
-def ensure_dir(dirpath):
+def ensure_dir(dirpath, logger=None):
     """Ensure that a directory exists."""
     if not os.path.exists(dirpath):
-        os.makedirs(dirpath)
+        try:
+            os.makedirs(dirpath)
+        except OSError:
+            if logger is not None:
+                logger.log_exc()
+            return False
+    return True
 
 
 def without_keys(inputdict, rem_keys):

@@ -812,7 +812,7 @@ def get_cache_path(codepath):
     code_dir, code_fname = os.path.split(codepath)
 
     cache_dir = os.path.join(code_dir, coconut_cache_dir)
-    ensure_dir(cache_dir)
+    ensure_dir(cache_dir, logger=logger)
 
     pickle_fname = code_fname + ".pkl"
     return os.path.join(cache_dir, pickle_fname)

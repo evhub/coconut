@@ -336,12 +336,12 @@ open-speedscope:
 .PHONY: pyspy-purepy
 pyspy-purepy: export COCONUT_PURE_PYTHON=TRUE
 pyspy-purepy:
-	py-spy record -o profile.speedscope --format speedscope --subprocesses -- python -m coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --force
+	py-spy record -o profile.speedscope --format speedscope --subprocesses --rate 75 -- python -m coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --force
 	make open-speedscope
 
 .PHONY: pyspy-native
 pyspy-native:
-	py-spy record -o profile.speedscope --format speedscope --native -- python -m coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --force --jobs 0
+	py-spy record -o profile.speedscope --format speedscope --native --subprocesses --rate 15 -- python -m coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --force
 	make open-speedscope
 
 .PHONY: pyspy-runtime

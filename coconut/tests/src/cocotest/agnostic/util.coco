@@ -134,7 +134,7 @@ product = reduce$((*), ?, 1)
 product_ = reduce$(*)
 def zipwith(f, *args) = map((items) -> f(*items), zip(*args))
 def zipwith_(f, *args) = starmap$(f)..zip <*| args
-zipsum = zip ..> map$(sum)
+zipsum = zip ..> map$(sum)  # type: ignore
 ident_ = (x) -> x
 @ ident .. ident  # type: ignore
 def plus1_(x: int) -> int = x + 1
