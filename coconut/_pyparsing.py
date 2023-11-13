@@ -266,6 +266,7 @@ else:
 python_quoted_string = getattr(_pyparsing, "python_quoted_string", None)
 if python_quoted_string is None:
     python_quoted_string = _pyparsing.Combine(
+        # multiline strings must come first
         (_pyparsing.Regex(r'"""(?:[^"\\]|""(?!")|"(?!"")|\\.)*', flags=re.MULTILINE) + '"""').setName("multiline double quoted string")
         | (_pyparsing.Regex(r"'''(?:[^'\\]|''(?!')|'(?!'')|\\.)*", flags=re.MULTILINE) + "'''").setName("multiline single quoted string")
         | (_pyparsing.Regex(r'"(?:[^"\n\r\\]|(?:\\")|(?:\\(?:[^x]|x[0-9a-fA-F]+)))*') + '"').setName("double quoted string")

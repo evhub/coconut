@@ -908,13 +908,11 @@ class MatchAny(MatchFirst):
         self.all_match_anys.append(self)
 
     def __or__(self, other):
-        if hasaction(self):
+        if isinstance(other, MatchAny):
+            self = maybe_copy_elem(self, "any_or")
+            return self.append(other)
+        else:
             return MatchFirst([self, other])
-        self = maybe_copy_elem(self, "any_or")
-        if not isinstance(other, MatchAny):
-            self.__class__ = MatchFirst
-        self |= other
-        return self
 
 
 if SUPPORTS_ADAPTIVE:
@@ -930,7 +928,7 @@ def any_of(*exprs, **kwargs):
 
     flat_exprs = []
     for e in exprs:
-        if isinstance(e, AnyOf) and not hasaction(e):
+        if e.__class__ == AnyOf and not hasaction(e):
             flat_exprs.extend(e.exprs)
         else:
             flat_exprs.append(e)

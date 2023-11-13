@@ -333,20 +333,23 @@ open-speedscope:
 	npm install -g speedscope
 	speedscope ./profile.speedscope
 
-.PHONY: pyspy-purepy
-pyspy-purepy: export COCONUT_PURE_PYTHON=TRUE
-pyspy-purepy:
+.PHONY: pyspy
+pyspy:
 	py-spy record -o profile.speedscope --format speedscope --subprocesses --rate 75 -- python -m coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --force
 	make open-speedscope
 
+.PHONY: pyspy-purepy
+pyspy-purepy: export COCONUT_PURE_PYTHON=TRUE
+pyspy-purepy: pyspy
+
 .PHONY: pyspy-native
 pyspy-native:
-	py-spy record -o profile.speedscope --format speedscope --native --subprocesses --rate 15 -- python -m coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --force
+	py-spy record -o profile.speedscope --format speedscope --native --rate 75 -- python -m coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --force --jobs 0
 	make open-speedscope
 
 .PHONY: pyspy-runtime
 pyspy-runtime:
-	py-spy record -o runtime_profile.speedscope --format speedscope --subprocesses -- python ./coconut/tests/dest/runner.py
+	py-spy record -o runtime_profile.speedscope --format speedscope -- python ./coconut/tests/dest/runner.py
 	speedscope ./runtime_profile.speedscope
 
 .PHONY: vprof-time

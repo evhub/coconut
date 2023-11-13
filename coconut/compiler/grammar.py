@@ -807,11 +807,12 @@ class Grammar(object):
         bin_num = combine(caseless_literal("0b") + Optional(underscore.suppress()) + binint)
         oct_num = combine(caseless_literal("0o") + Optional(underscore.suppress()) + octint)
         hex_num = combine(caseless_literal("0x") + Optional(underscore.suppress()) + hexint)
-        number = (
-            maybe_imag_num
-            | hex_num
-            | bin_num
-            | oct_num
+        number = any_of(
+            maybe_imag_num,
+            hex_num,
+            bin_num,
+            oct_num,
+            use_adaptive=False,
         )
         # make sure that this gets addspaced not condensed so it doesn't produce a SyntaxError
         num_atom = addspace(number + Optional(condense(dot + unsafe_name)))
@@ -877,9 +878,21 @@ class Grammar(object):
             combine(back_none_dubstar_pipe + equals),
         )
         augassign = any_of(
-            pipe_augassign,
+            combine(plus + equals),
+            combine(sub_minus + equals),
+            combine(bar + equals),
+            combine(amp + equals),
+            combine(mul_star + equals),
+            combine(div_slash + equals),
+            combine(div_dubslash + equals),
+            combine(percent + equals),
+            combine(lshift + equals),
+            combine(rshift + equals),
+            combine(matrix_at + equals),
+            combine(exp_dubstar + equals),
+            combine(caret + equals),
+            combine(dubquestion + equals),
             combine(comp_pipe + equals),
-            combine(dotdot + equals),
             combine(comp_back_pipe + equals),
             combine(comp_star_pipe + equals),
             combine(comp_back_star_pipe + equals),
@@ -892,31 +905,19 @@ class Grammar(object):
             combine(comp_none_dubstar_pipe + equals),
             combine(comp_back_none_dubstar_pipe + equals),
             combine(unsafe_dubcolon + equals),
-            combine(div_dubslash + equals),
-            combine(div_slash + equals),
-            combine(exp_dubstar + equals),
-            combine(mul_star + equals),
-            combine(plus + equals),
-            combine(sub_minus + equals),
-            combine(percent + equals),
-            combine(amp + equals),
-            combine(bar + equals),
-            combine(caret + equals),
-            combine(lshift + equals),
-            combine(rshift + equals),
-            combine(matrix_at + equals),
-            combine(dubquestion + equals),
+            combine(dotdot + equals),
+            pipe_augassign,
         )
 
         comp_op = any_of(
             eq,
             ne,
             keyword("in"),
-            addspace(keyword("not") + keyword("in")),
             lt,
             gt,
             le,
             ge,
+            addspace(keyword("not") + keyword("in")),
             keyword("is") + ~keyword("not"),
             addspace(keyword("is") + keyword("not")),
         )
@@ -981,7 +982,7 @@ class Grammar(object):
         test_expr = testlist_star_expr | yield_expr
 
         base_op_item = (
-            # must go dubstar then star then no star
+            # pipes must come first, and must go dubstar then star then no star
             fixto(dubstar_pipe, "_coconut_dubstar_pipe")
             | fixto(back_dubstar_pipe, "_coconut_back_dubstar_pipe")
             | fixto(none_dubstar_pipe, "_coconut_none_dubstar_pipe")
@@ -995,7 +996,7 @@ class Grammar(object):
             | fixto(none_pipe, "_coconut_none_pipe")
             | fixto(back_none_pipe, "_coconut_back_none_pipe")
 
-            # must go dubstar then star then no star
+            # comp pipes must come early, and must go dubstar then star then no star
             | fixto(comp_dubstar_pipe, "_coconut_forward_dubstar_compose")
             | fixto(comp_back_dubstar_pipe, "_coconut_back_dubstar_compose")
             | fixto(comp_none_dubstar_pipe, "_coconut_forward_none_dubstar_compose")
@@ -1005,32 +1006,16 @@ class Grammar(object):
             | fixto(comp_none_star_pipe, "_coconut_forward_none_star_compose")
             | fixto(comp_back_none_star_pipe, "_coconut_back_none_star_compose")
             | fixto(comp_pipe, "_coconut_forward_compose")
-            | fixto(dotdot | comp_back_pipe, "_coconut_back_compose")
             | fixto(comp_none_pipe, "_coconut_forward_none_compose")
             | fixto(comp_back_none_pipe, "_coconut_back_none_compose")
+            # dotdot must come last
+            | fixto(dotdot | comp_back_pipe, "_coconut_back_compose")
 
-            # neg_minus must come after minus
-            | fixto(minus, "_coconut_minus")
-            | fixto(neg_minus, "_coconut.operator.neg")
-
-            | fixto(keyword("assert"), "_coconut_assert")
-            | fixto(keyword("raise"), "_coconut_raise")
-            | fixto(keyword("and"), "_coconut_bool_and")
-            | fixto(keyword("or"), "_coconut_bool_or")
-            | fixto(comma, "_coconut_comma_op")
-            | fixto(dubquestion, "_coconut_none_coalesce")
-            | fixto(dot, "_coconut.getattr")
-            | fixto(unsafe_dubcolon, "_coconut.itertools.chain")
-            | fixto(dollar, "_coconut_partial")
-            | fixto(exp_dubstar, "_coconut.operator.pow")
-            | fixto(mul_star, "_coconut.operator.mul")
-            | fixto(div_dubslash, "_coconut.operator.floordiv")
-            | fixto(div_slash, "_coconut.operator.truediv")
-            | fixto(percent, "_coconut.operator.mod")
             | fixto(plus, "_coconut.operator.add")
-            | fixto(amp, "_coconut.operator.and_")
-            | fixto(caret, "_coconut.operator.xor")
+            | fixto(mul_star, "_coconut.operator.mul")
+            | fixto(div_slash, "_coconut.operator.truediv")
             | fixto(unsafe_bar, "_coconut.operator.or_")
+            | fixto(amp, "_coconut.operator.and_")
             | fixto(lshift, "_coconut.operator.lshift")
             | fixto(rshift, "_coconut.operator.rshift")
             | fixto(lt, "_coconut.operator.lt")
@@ -1039,10 +1024,27 @@ class Grammar(object):
             | fixto(le, "_coconut.operator.le")
             | fixto(ge, "_coconut.operator.ge")
             | fixto(ne, "_coconut.operator.ne")
-            | fixto(tilde, "_coconut.operator.inv")
             | fixto(matrix_at, "_coconut_matmul")
+            | fixto(div_dubslash, "_coconut.operator.floordiv")
+            | fixto(caret, "_coconut.operator.xor")
+            | fixto(percent, "_coconut.operator.mod")
+            | fixto(exp_dubstar, "_coconut.operator.pow")
+            | fixto(tilde, "_coconut.operator.inv")
+            | fixto(dot, "_coconut.getattr")
+            | fixto(comma, "_coconut_comma_op")
+            | fixto(keyword("and"), "_coconut_bool_and")
+            | fixto(keyword("or"), "_coconut_bool_or")
+            | fixto(dubquestion, "_coconut_none_coalesce")
+            | fixto(unsafe_dubcolon, "_coconut.itertools.chain")
+            | fixto(dollar, "_coconut_partial")
+            | fixto(keyword("assert"), "_coconut_assert")
+            | fixto(keyword("raise"), "_coconut_raise")
             | fixto(keyword("is") + keyword("not"), "_coconut.operator.is_not")
             | fixto(keyword("not") + keyword("in"), "_coconut_not_in")
+
+            # neg_minus must come after minus
+            | fixto(minus, "_coconut_minus")
+            | fixto(neg_minus, "_coconut.operator.neg")
 
             # must come after is not / not in
             | fixto(keyword("not"), "_coconut.operator.not_")
@@ -1056,6 +1058,7 @@ class Grammar(object):
         )
         partial_op_item = attach(partial_op_item_tokens, partial_op_item_handle)
         op_item = (
+            # partial_op_item must come first, then typedef_op_item must come after base_op_item
             partial_op_item
             | typedef_op_item
             | base_op_item
@@ -1131,6 +1134,7 @@ class Grammar(object):
 
         call_item = (
             unsafe_name + default
+            # ellipsis must come before namedexpr_test
             | ellipsis_tokens + equals.suppress() + refname
             | namedexpr_test
             | star + test
@@ -1193,9 +1197,9 @@ class Grammar(object):
             | invalid_syntax(star_expr + comp_for, "iterable unpacking cannot be used in comprehension")
         )
         paren_atom = condense(
-            lparen + any_of(
+            lparen + rparen
+            | lparen + any_of(
                 # everything here must end with rparen
-                rparen,
                 testlist_star_namedexpr + rparen,
                 comprehension_expr + rparen,
                 op_item + rparen,
@@ -1222,6 +1226,7 @@ class Grammar(object):
         list_item = (
             lbrack.suppress() + list_expr + rbrack.suppress()
             | condense(lbrack + Optional(comprehension_expr) + rbrack)
+            # array_literal must come last
             | array_literal
         )
 
@@ -1277,9 +1282,10 @@ class Grammar(object):
         typedef_trailer = Forward()
         typedef_or_expr = Forward()
 
-        simple_trailer = (
-            condense(dot + unsafe_name)
-            | condense(lbrack + subscriptlist + rbrack)
+        simple_trailer = any_of(
+            condense(dot + unsafe_name),
+            condense(lbrack + subscriptlist + rbrack),
+            use_adaptive=False,
         )
         call_trailer = (
             function_call
@@ -1417,9 +1423,15 @@ class Grammar(object):
             )
         )
 
-        mulop = mul_star | div_slash | div_dubslash | percent | matrix_at
-        addop = plus | sub_minus
-        shift = lshift | rshift
+        mulop = any_of(
+            mul_star,
+            div_slash,
+            div_dubslash,
+            percent,
+            matrix_at,
+        )
+        addop = any_of(plus, sub_minus)
+        shift = any_of(lshift, rshift)
 
         term = Forward()
         term_ref = tokenlist(factor, mulop, allow_trailing=False, suppress=False)
@@ -1430,9 +1442,11 @@ class Grammar(object):
         # and_expr = exprlist(shift_expr, amp)
         and_expr = exprlist(
             term,
-            addop
-            | shift
-            | amp,
+            any_of(
+                addop,
+                shift,
+                amp,
+            ),
         )
 
         protocol_intersect_expr = Forward()
@@ -1484,6 +1498,7 @@ class Grammar(object):
             comp_back_none_star_pipe,
             comp_none_pipe,
             comp_back_none_pipe,
+            use_adaptive=False,
         )
         comp_pipe_item = attach(
             OneOrMore(none_coalesce_expr + comp_pipe_op) + (
@@ -1510,6 +1525,7 @@ class Grammar(object):
             back_none_pipe,
             back_none_star_pipe,
             back_none_dubstar_pipe,
+            use_adaptive=False,
         )
         pipe_item = (
             # we need the pipe_op since any of the atoms could otherwise be the start of an expression
@@ -1573,7 +1589,7 @@ class Grammar(object):
 
         fat_arrow = Forward()
         lambda_arrow = Forward()
-        unsafe_lambda_arrow = fat_arrow | arrow
+        unsafe_lambda_arrow = any_of(fat_arrow, arrow)
 
         keyword_lambdef_params = maybeparens(lparen, set_args_list, rparen)
         arrow_lambdef_params = lparen.suppress() + set_args_list + rparen.suppress() | setname
@@ -1582,10 +1598,10 @@ class Grammar(object):
         keyword_lambdef_ref = addspace(keyword("lambda") + condense(keyword_lambdef_params + colon))
         arrow_lambdef = attach(arrow_lambdef_params + lambda_arrow.suppress(), lambdef_handle)
         implicit_lambdef = fixto(lambda_arrow, "lambda _=None:")
-        lambdef_base = (
-            arrow_lambdef
-            | implicit_lambdef
-            | keyword_lambdef
+        lambdef_base = any_of(
+            arrow_lambdef,
+            implicit_lambdef,
+            keyword_lambdef,
         )
 
         stmt_lambdef = Forward()
@@ -1749,7 +1765,7 @@ class Grammar(object):
         async_comp_for_ref = addspace(keyword("async") + base_comp_for)
         comp_for <<= base_comp_for | async_comp_for
         comp_if = addspace(keyword("if") + test_no_cond + Optional(comp_iter))
-        comp_iter <<= comp_for | comp_if
+        comp_iter <<= any_of(comp_for, comp_if)
 
         return_stmt = addspace(keyword("return") - Optional(new_testlist_star_expr))
 
@@ -1821,6 +1837,7 @@ class Grammar(object):
 
         augassign_stmt = Forward()
         augassign_rhs = (
+            # pipe_augassign must come first
             labeled_group(pipe_augassign + pipe_augassign_item, "pipe")
             | labeled_group(augassign + test_expr, "simple")
         )
@@ -2095,7 +2112,7 @@ class Grammar(object):
         return_typedef = Forward()
         return_typedef_ref = arrow.suppress() + typedef_test
         end_func_colon = return_typedef + colon.suppress() | colon
-        base_funcdef = op_funcdef | name_funcdef
+        base_funcdef = name_funcdef | op_funcdef
         funcdef = addspace(keyword("def") + condense(base_funcdef + end_func_colon + nocolon_suite))
 
         name_match_funcdef = Forward()
@@ -2112,7 +2129,7 @@ class Grammar(object):
         ))
         name_match_funcdef_ref = keyword("def").suppress() + funcname_typeparams + lparen.suppress() + match_args_list + match_guard + rparen.suppress()
         op_match_funcdef_ref = keyword("def").suppress() + op_match_funcdef_arg + op_funcdef_name + op_match_funcdef_arg + match_guard
-        base_match_funcdef = op_match_funcdef | name_match_funcdef
+        base_match_funcdef = name_match_funcdef | op_match_funcdef
         func_suite = (
             (
                 newline.suppress()
@@ -2370,11 +2387,11 @@ class Grammar(object):
             global_stmt,
             nonlocal_stmt,
         )
-        special_stmt = (
-            keyword_stmt
-            | augassign_stmt
-            | typed_assign_stmt
-            | type_alias_stmt
+        special_stmt = any_of(
+            keyword_stmt,
+            augassign_stmt,
+            typed_assign_stmt,
+            type_alias_stmt,
         )
         unsafe_simple_stmt_item <<= special_stmt | longest(basic_stmt, destructuring_stmt)
         simple_stmt_item <<= (
@@ -2420,7 +2437,12 @@ class Grammar(object):
         unsafe_xonsh_command = originalTextFor(
             (Optional(at) + dollar | bang)
             + ~(lparen + rparen | lbrack + rbrack | lbrace + rbrace)
-            + (parens | brackets | braces | unsafe_name)
+            + any_of(
+                parens,
+                brackets,
+                braces,
+                unsafe_name,
+            )
         )
         unsafe_xonsh_parser, _impl_call_ref = disable_inside(
             single_parser,
