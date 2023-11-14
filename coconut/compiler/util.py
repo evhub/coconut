@@ -690,7 +690,7 @@ def clear_packrat_cache(force=False):
     return clear_cache
 
 
-def get_cache_items_for(original, only_useful=False, exclude_stale=False):
+def get_cache_items_for(original, only_useful=False, exclude_stale=True):
     """Get items from the pyparsing cache filtered to only from parsing original."""
     cache = get_pyparsing_cache()
     for lookup, value in cache.items():
@@ -710,7 +710,7 @@ def get_highest_parse_loc(original):
     """Get the highest observed parse location."""
     # find the highest observed parse location
     highest_loc = 0
-    for lookup, _ in get_cache_items_for(original, exclude_stale=True):
+    for lookup, _ in get_cache_items_for(original):
         loc = lookup[2]
         if loc > highest_loc:
             highest_loc = loc
@@ -738,6 +738,8 @@ def pickle_cache(original, filename, include_incremental=True, protocol=pickle.H
 
     pickleable_cache_items = []
     if ParserElement._incrementalEnabled and include_incremental:
+        # note that exclude_stale is fine here because that means it was never used,
+        #  since _parseIncremental sets usefullness to True when a cache item is used
         for lookup, value in get_cache_items_for(original, only_useful=True):
             if incremental_mode_cache_size is not None and len(pickleable_cache_items) > incremental_mode_cache_size:
                 logger.log(
