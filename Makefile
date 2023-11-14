@@ -156,7 +156,7 @@ test-mypy-tests: clean-no-tests
 	python ./coconut/tests/dest/extras.py
 
 # same as test-univ but includes verbose output for better debugging
-#  regex for getting non-timing lines: ^(?!\s*(Time|Packrat|Loaded|Saving|Adaptive|Errorless|Grammar|Failed)\s)[^\n]*\n*
+#  regex for getting non-timing lines: ^(?!\s*(Time|Packrat|Loaded|Saving|Adaptive|Errorless|Grammar|Failed|Incremental)\s)[^\n]*\n*
 .PHONY: test-verbose
 test-verbose: export COCONUT_USE_COLOR=TRUE
 test-verbose: clean
@@ -289,19 +289,16 @@ clean-no-tests:
 .PHONY: clean
 clean: clean-no-tests
 	rm -rf ./coconut/tests/dest
-
-.PHONY: clean-cache
-clean-cache: clean
 	-find . -name "__coconut_cache__" -type d -prune -exec rm -rf '{}' +
-	-C:/GnuWin32/bin/find.exe . -name "__coconut_cache__" -type d -prune -exec rm -rf '{}' +
+	-powershell -Command "get-childitem -Include __coconut_cache__ -Recurse -force | Remove-Item -Force -Recurse"
 
 .PHONY: wipe
-wipe: clean-cache
+wipe: clean
 	rm -rf ./coconut/tests/dest vprof.json profile.log *.egg-info
 	-find . -name "__pycache__" -type d -prune -exec rm -rf '{}' +
-	-C:/GnuWin32/bin/find.exe . -name "__pycache__" -type d -prune -exec rm -rf '{}' +
+	-powershell -Command "get-childitem -Include __pycache__ -Recurse -force | Remove-Item -Force -Recurse"
 	-find . -name "*.pyc" -delete
-	-C:/GnuWin32/bin/find.exe . -name "*.pyc" -delete
+	-powershell -Command "get-childitem -Include *.pyc -Recurse -force | Remove-Item -Force -Recurse"
 	-python -m coconut --site-uninstall
 	-python3 -m coconut --site-uninstall
 	-python2 -m coconut --site-uninstall

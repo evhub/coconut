@@ -34,6 +34,7 @@ import ast
 import inspect
 import __future__
 import itertools
+import weakref
 import datetime as dt
 from functools import partial, reduce
 from collections import defaultdict
@@ -612,6 +613,7 @@ def get_pyparsing_cache():
     else:  # on pyparsing we have to do this
         try:
             # this is sketchy, so errors should only be complained
+            #  use .set instead of .get for the sake of MODERN_PYPARSING
             return get_func_closure(packrat_cache.set.__func__)["cache"]
         except Exception as err:
             complain(err)
@@ -622,20 +624,21 @@ def should_clear_cache(force=False):
     """Determine if we should be clearing the packrat cache."""
     if not ParserElement._packratEnabled:
         return False
-    if SUPPORTS_INCREMENTAL:
+    elif SUPPORTS_INCREMENTAL and ParserElement._incrementalEnabled:
+        if not in_incremental_mode():
+            return repeatedly_clear_incremental_cache
+        if force:
+            # force is for when we know the recent cache is invalid,
+            #  and second half is guaranteed to clear out recent entries
+            return "second half"
         if (
-            not ParserElement._incrementalEnabled
-            or not in_incremental_mode() and repeatedly_clear_incremental_cache
-        ):
-            return True
-        if force or (
             incremental_cache_limit is not None
             and len(ParserElement.packrat_cache) > incremental_cache_limit
         ):
-            if should_clear_cache.last_cache_clear_strat == "failed parents":
+            if should_clear_cache.last_cache_clear_strat == "useless":
                 clear_strat = "second half"
             else:
-                clear_strat = "failed parents"
+                clear_strat = "useless"
             should_clear_cache.last_cache_clear_strat = clear_strat
             return clear_strat
         return False
@@ -646,6 +649,16 @@ def should_clear_cache(force=False):
 should_clear_cache.last_cache_clear_strat = None
 
 
+def add_packrat_cache_items(new_items):
+    """Add the given items to the packrat cache."""
+    if new_items:
+        if PY2:
+            for lookup, value in new_items:
+                ParserElement.packrat_cache.set(lookup, value)
+        else:
+            ParserElement.packrat_cache.update(new_items)
+
+
 def clear_packrat_cache(force=False):
     """Clear the packrat cache if applicable."""
     clear_cache = should_clear_cache(force=force)
@@ -654,14 +667,15 @@ def clear_packrat_cache(force=False):
         if clear_cache == "second half":
             cache_items = list(get_pyparsing_cache().items())
             restore_items = cache_items[:len(cache_items) // 2]
-        elif clear_cache == "failed parents":
+        elif clear_cache == "useless":
             cache_items = get_pyparsing_cache().items()
             restore_items = [
                 (lookup, value)
                 for lookup, value in cache_items
-                if value[2][0] is not False
+                if value[2][0]
             ]
         else:
+            internal_assert(clear_cache is True, "invalid clear_cache strategy", clear_cache)
             restore_items = ()
         if DEVELOP and cache_items is not None:
             logger.log("Pruned packrat cache from {orig_len} items to {new_len} items using {strat} strategy.".format(
@@ -672,24 +686,21 @@ def clear_packrat_cache(force=False):
         # clear cache without resetting stats
         ParserElement.packrat_cache.clear()
         # restore any items we want to keep
-        if PY2:
-            for lookup, value in restore_items:
-                ParserElement.packrat_cache.set(lookup, value)
-        else:
-            ParserElement.packrat_cache.update(restore_items)
+        add_packrat_cache_items(restore_items)
     return clear_cache
 
 
-def get_cache_items_for(original, no_failing_parents=False):
+def get_cache_items_for(original, only_useful=False, exclude_stale=False):
     """Get items from the pyparsing cache filtered to only from parsing original."""
     cache = get_pyparsing_cache()
     for lookup, value in cache.items():
         got_orig = lookup[1]
         internal_assert(lambda: isinstance(got_orig, (bytes, str)), "failed to look up original in pyparsing cache item", (lookup, value))
-        if no_failing_parents:
-            got_parent_success = value[2][0]
-            internal_assert(lambda: got_parent_success in (True, False, None), "failed to look up parent success in pyparsing cache item", (lookup, value))
-            if got_parent_success is False:
+        if ParserElement._incrementalEnabled:
+            (is_useful,) = value[-1]
+            if only_useful and not is_useful:
+                continue
+            if exclude_stale and is_useful >= 2:
                 continue
         if got_orig == original:
             yield lookup, value
@@ -699,7 +710,7 @@ def get_highest_parse_loc(original):
     """Get the highest observed parse location."""
     # find the highest observed parse location
     highest_loc = 0
-    for lookup, _ in get_cache_items_for(original):
+    for lookup, _ in get_cache_items_for(original, exclude_stale=True):
         loc = lookup[2]
         if loc > highest_loc:
             highest_loc = loc
@@ -726,11 +737,11 @@ def pickle_cache(original, filename, include_incremental=True, protocol=pickle.H
     internal_assert(all_parse_elements is not None, "pickle_cache requires cPyparsing")
 
     pickleable_cache_items = []
-    if include_incremental:
-        for lookup, value in get_cache_items_for(original, no_failing_parents=True):
+    if ParserElement._incrementalEnabled and include_incremental:
+        for lookup, value in get_cache_items_for(original, only_useful=True):
             if incremental_mode_cache_size is not None and len(pickleable_cache_items) > incremental_mode_cache_size:
-                complain(
-                    "got too large incremental cache: "
+                logger.log(
+                    "Got too large incremental cache: "
                     + str(len(get_pyparsing_cache())) + " > " + str(incremental_mode_cache_size)
                 )
                 break
@@ -744,8 +755,10 @@ def pickle_cache(original, filename, include_incremental=True, protocol=pickle.H
                 pickleable_cache_items.append((pickleable_lookup, value))
 
     all_adaptive_stats = {}
-    for match_any in MatchAny.all_match_anys:
-        all_adaptive_stats[match_any.parse_element_index] = (match_any.adaptive_usage, match_any.expr_order)
+    for wkref in MatchAny.all_match_anys:
+        match_any = wkref()
+        if match_any is not None:
+            all_adaptive_stats[match_any.parse_element_index] = (match_any.adaptive_usage, match_any.expr_order)
 
     logger.log("Saving {num_inc} incremental and {num_adapt} adaptive cache items to {filename!r}.".format(
         num_inc=len(pickleable_cache_items),
@@ -774,7 +787,10 @@ def unpickle_cache(filename):
     except Exception:
         logger.log_exc()
         return False
-    if pickle_info_obj["VERSION"] != VERSION or pickle_info_obj["pyparsing_version"] != pyparsing_version:
+    if (
+        pickle_info_obj["VERSION"] != VERSION
+        or pickle_info_obj["pyparsing_version"] != pyparsing_version
+    ):
         return False
 
     if ParserElement._incrementalEnabled:
@@ -784,8 +800,10 @@ def unpickle_cache(filename):
     all_adaptive_stats = pickle_info_obj["all_adaptive_stats"]
 
     for identifier, (adaptive_usage, expr_order) in all_adaptive_stats.items():
-        all_parse_elements[identifier].adaptive_usage = adaptive_usage
-        all_parse_elements[identifier].expr_order = expr_order
+        maybe_elem = all_parse_elements[identifier]()
+        if maybe_elem is not None:
+            maybe_elem.adaptive_usage = adaptive_usage
+            maybe_elem.expr_order = expr_order
 
     max_cache_size = min(
         incremental_mode_cache_size or float("inf"),
@@ -794,9 +812,15 @@ def unpickle_cache(filename):
     if max_cache_size != float("inf"):
         pickleable_cache_items = pickleable_cache_items[-max_cache_size:]
 
+    new_cache_items = []
     for pickleable_lookup, value in pickleable_cache_items:
-        lookup = (all_parse_elements[pickleable_lookup[0]],) + pickleable_lookup[1:]
-        ParserElement.packrat_cache.set(lookup, value)
+        maybe_elem = all_parse_elements[pickleable_lookup[0]]()
+        if maybe_elem is not None:
+            lookup = (maybe_elem,) + pickleable_lookup[1:]
+            internal_assert(value[-1], "loaded useless cache item", (lookup, value))
+            stale_value = value[:-1] + ([value[-1][0] + 1],)
+            new_cache_items.append((lookup, stale_value))
+    add_packrat_cache_items(new_cache_items)
 
     num_inc = len(pickleable_cache_items)
     num_adapt = len(all_adaptive_stats)
@@ -940,7 +964,7 @@ class MatchAny(MatchFirst):
 
     def __init__(self, *args, **kwargs):
         super(MatchAny, self).__init__(*args, **kwargs)
-        self.all_match_anys.append(self)
+        self.all_match_anys.append(weakref.ref(self))
 
     def __or__(self, other):
         if isinstance(other, MatchAny):
@@ -995,13 +1019,15 @@ class Wrap(ParseElementEnhance):
         and unwrapped parses. Only supported natively on cPyparsing."""
         was_inside, self.inside = self.inside, True
         if self.include_in_packrat_context:
-            ParserElement.packrat_context.append(self.identifier)
+            old_packrat_context = ParserElement.packrat_context
+            new_packrat_context = old_packrat_context + (self.identifier,)
+            ParserElement.packrat_context = new_packrat_context
         try:
             yield
         finally:
             if self.include_in_packrat_context:
-                popped = ParserElement.packrat_context.pop()
-                internal_assert(popped == self.identifier, "invalid popped Wrap identifier", self.identifier)
+                internal_assert(ParserElement.packrat_context == new_packrat_context, "invalid popped Wrap identifier", self.identifier)
+                ParserElement.packrat_context = old_packrat_context
             self.inside = was_inside
 
     @override

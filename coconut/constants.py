@@ -129,8 +129,8 @@ streamline_grammar_for_len = 4096
 # Current problems with this:
 # - only actually helpful for tiny files (< streamline_grammar_for_len)
 # - sets incremental mode for the whole process, which can really slow down later compilations in that process
-# - makes exceptions include the entire file when recompiling with --force
-disable_incremental_for_len = streamline_grammar_for_len
+# - recompilation for suite and util is currently broken for some reason
+disable_incremental_for_len = 0
 
 use_cache_file = True
 use_adaptive_any_of = True
@@ -148,7 +148,7 @@ never_clear_incremental_cache = False
 
 # this is what gets used in compiler.util.enable_incremental_parsing()
 incremental_mode_cache_size = None
-incremental_cache_limit = 1048576  # clear cache when it gets this large
+incremental_cache_limit = 2097152  # clear cache when it gets this large
 incremental_mode_cache_successes = False
 
 use_left_recursion_if_available = False
@@ -995,7 +995,7 @@ all_reqs = {
 
 # min versions are inclusive
 unpinned_min_versions = {
-    "cPyparsing": (2, 4, 7, 2, 2, 6),
+    "cPyparsing": (2, 4, 7, 2, 2, 7),
     ("pre-commit", "py3"): (3,),
     ("psutil", "py>=27"): (5,),
     "jupyter": (1, 0),

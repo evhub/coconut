@@ -161,7 +161,7 @@ class _coconut_tail_call(_coconut_baseclass):
         self.kwargs = kwargs
     def __reduce__(self):
         return (self.__class__, (self.func, self.args, self.kwargs))
-_coconut_tco_func_dict = {empty_dict}
+_coconut_tco_func_dict = _coconut.weakref.WeakValueDictionary()
 def _coconut_tco(func):
     @_coconut.functools.wraps(func)
     def tail_call_optimized_func(*args, **kwargs):
@@ -170,16 +170,14 @@ def _coconut_tco(func):
             if _coconut.isinstance(call_func, _coconut_base_pattern_func):
                 call_func = call_func._coconut_tco_func
             elif _coconut.isinstance(call_func, _coconut.types.MethodType):
-                wkref = _coconut_tco_func_dict.get(_coconut.id(call_func.__func__))
-                wkref_func = None if wkref is None else wkref()
+                wkref_func = _coconut_tco_func_dict.get(_coconut.id(call_func.__func__))
                 if wkref_func is call_func.__func__:
                     if call_func.__self__ is None:
                         call_func = call_func._coconut_tco_func
                     else:
                         call_func = _coconut_partial(call_func._coconut_tco_func, call_func.__self__)
             else:
-                wkref = _coconut_tco_func_dict.get(_coconut.id(call_func))
-                wkref_func = None if wkref is None else wkref()
+                wkref_func = _coconut_tco_func_dict.get(_coconut.id(call_func))
                 if wkref_func is call_func:
                     call_func = call_func._coconut_tco_func
             result = call_func(*args, **kwargs)  # use 'coconut --no-tco' to clean up your traceback
@@ -190,7 +188,7 @@ def _coconut_tco(func):
     tail_call_optimized_func.__module__ = _coconut.getattr(func, "__module__", None)
     tail_call_optimized_func.__name__ = _coconut.getattr(func, "__name__", None)
     tail_call_optimized_func.__qualname__ = _coconut.getattr(func, "__qualname__", None)
-    _coconut_tco_func_dict[_coconut.id(tail_call_optimized_func)] = _coconut.weakref.ref(tail_call_optimized_func)
+    _coconut_tco_func_dict[_coconut.id(tail_call_optimized_func)] = tail_call_optimized_func
     return tail_call_optimized_func
 @_coconut.functools.wraps(_coconut.itertools.tee)
 def tee(iterable, n=2):

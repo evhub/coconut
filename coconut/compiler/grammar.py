@@ -1196,21 +1196,16 @@ class Grammar(object):
             addspace(namedexpr_test + comp_for)
             | invalid_syntax(star_expr + comp_for, "iterable unpacking cannot be used in comprehension")
         )
-        paren_atom = condense(
-            lparen + rparen
-            | lparen + any_of(
-                # everything here must end with rparen
-                testlist_star_namedexpr + rparen,
-                comprehension_expr + rparen,
-                op_item + rparen,
-                yield_expr + rparen,
-                anon_namedtuple + rparen,
-            ) | (
-                lparen.suppress()
-                + typedef_tuple
-                + rparen.suppress()
-            )
-        )
+        paren_atom = condense(lparen + any_of(
+            # everything here must end with rparen
+            rparen,
+            testlist_star_namedexpr + rparen,
+            comprehension_expr + rparen,
+            op_item + rparen,
+            yield_expr + rparen,
+            anon_namedtuple + rparen,
+            typedef_tuple + rparen,
+        ))
 
         list_expr = Forward()
         list_expr_ref = testlist_star_namedexpr_tokens

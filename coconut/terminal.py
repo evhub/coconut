@@ -417,6 +417,11 @@ class Logger(object):
             except Exception:
                 self.print_exc(warning=True)
 
+    def log_warn(self, *args, **kwargs):
+        """Log a warning."""
+        if self.verbose:
+            return self.warn(*args, **kwargs)
+
     def print_exc(self, err=None, show_tb=None, warning=False):
         """Properly prints an exception."""
         self.print_formatted_error(self.get_error(err, show_tb), warning)
