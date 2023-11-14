@@ -128,10 +128,9 @@ streamline_grammar_for_len = 4096
 
 # Current problems with this:
 # - only actually helpful for tiny files (< streamline_grammar_for_len)
-# - sets incremental mode for the whole process, which can really slow down some compilations
-# - makes exceptions include the entire file
-# disable_incremental_for_len = streamline_grammar_for_len
-disable_incremental_for_len = 0
+# - sets incremental mode for the whole process, which can really slow down later compilations in that process
+# - makes exceptions include the entire file when recompiling with --force
+disable_incremental_for_len = streamline_grammar_for_len
 
 use_cache_file = True
 use_adaptive_any_of = True
@@ -996,7 +995,7 @@ all_reqs = {
 
 # min versions are inclusive
 unpinned_min_versions = {
-    "cPyparsing": (2, 4, 7, 2, 2, 5),
+    "cPyparsing": (2, 4, 7, 2, 2, 6),
     ("pre-commit", "py3"): (3,),
     ("psutil", "py>=27"): (5,),
     "jupyter": (1, 0),

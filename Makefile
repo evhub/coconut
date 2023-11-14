@@ -244,6 +244,11 @@ test-watch: clean
 test-mini:
 	coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --force --jobs 0 --stack-size 4096 --recursion-limit 4096
 
+# same as test mini but allows parallelization and turns on verbose
+.PHONY: test-mini-verbose
+test-mini-verbose:
+	coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --force --verbose --stack-size 4096 --recursion-limit 4096
+
 # same as test-univ but debugs crashes
 .PHONY: test-univ-debug
 test-univ-debug: export COCONUT_TEST_DEBUG_PYTHON=TRUE

@@ -632,36 +632,65 @@ def should_clear_cache(force=False):
             incremental_cache_limit is not None
             and len(ParserElement.packrat_cache) > incremental_cache_limit
         ):
-            # only clear the second half of the cache, since the first
-            #  half is what will help us next time we recompile
-            return "second half"
+            if should_clear_cache.last_cache_clear_strat == "failed parents":
+                clear_strat = "second half"
+            else:
+                clear_strat = "failed parents"
+            should_clear_cache.last_cache_clear_strat = clear_strat
+            return clear_strat
         return False
     else:
         return True
+
+
+should_clear_cache.last_cache_clear_strat = None
 
 
 def clear_packrat_cache(force=False):
     """Clear the packrat cache if applicable."""
     clear_cache = should_clear_cache(force=force)
     if clear_cache:
+        cache_items = None
         if clear_cache == "second half":
             cache_items = list(get_pyparsing_cache().items())
             restore_items = cache_items[:len(cache_items) // 2]
+        elif clear_cache == "failed parents":
+            cache_items = get_pyparsing_cache().items()
+            restore_items = [
+                (lookup, value)
+                for lookup, value in cache_items
+                if value[2][0] is not False
+            ]
         else:
             restore_items = ()
+        if DEVELOP and cache_items is not None:
+            logger.log("Pruned packrat cache from {orig_len} items to {new_len} items using {strat} strategy.".format(
+                orig_len=len(cache_items),
+                new_len=len(restore_items),
+                strat=clear_cache,
+            ))
         # clear cache without resetting stats
         ParserElement.packrat_cache.clear()
         # restore any items we want to keep
-        for lookup, value in restore_items:
-            ParserElement.packrat_cache.set(lookup, value)
+        if PY2:
+            for lookup, value in restore_items:
+                ParserElement.packrat_cache.set(lookup, value)
+        else:
+            ParserElement.packrat_cache.update(restore_items)
     return clear_cache
 
 
-def get_cache_items_for(original):
+def get_cache_items_for(original, no_failing_parents=False):
     """Get items from the pyparsing cache filtered to only from parsing original."""
     cache = get_pyparsing_cache()
     for lookup, value in cache.items():
         got_orig = lookup[1]
+        internal_assert(lambda: isinstance(got_orig, (bytes, str)), "failed to look up original in pyparsing cache item", (lookup, value))
+        if no_failing_parents:
+            got_parent_success = value[2][0]
+            internal_assert(lambda: got_parent_success in (True, False, None), "failed to look up parent success in pyparsing cache item", (lookup, value))
+            if got_parent_success is False:
+                continue
         if got_orig == original:
             yield lookup, value
 
@@ -681,12 +710,11 @@ def enable_incremental_parsing():
     """Enable incremental parsing mode where prefix/suffix parses are reused."""
     if not SUPPORTS_INCREMENTAL:
         return False
-    ParserElement._should_cache_incremental_success = incremental_mode_cache_successes
     if in_incremental_mode():  # incremental mode is already enabled
         return True
     ParserElement._incrementalEnabled = False
     try:
-        ParserElement.enableIncremental(incremental_mode_cache_size, still_reset_cache=False)
+        ParserElement.enableIncremental(incremental_mode_cache_size, still_reset_cache=False, cache_successes=incremental_mode_cache_successes)
     except ImportError as err:
         raise CoconutException(str(err))
     logger.log("Incremental parsing mode enabled.")
@@ -699,7 +727,7 @@ def pickle_cache(original, filename, include_incremental=True, protocol=pickle.H
 
     pickleable_cache_items = []
     if include_incremental:
-        for lookup, value in get_cache_items_for(original):
+        for lookup, value in get_cache_items_for(original, no_failing_parents=True):
             if incremental_mode_cache_size is not None and len(pickleable_cache_items) > incremental_mode_cache_size:
                 complain(
                     "got too large incremental cache: "
@@ -755,12 +783,6 @@ def unpickle_cache(filename):
         pickleable_cache_items = []
     all_adaptive_stats = pickle_info_obj["all_adaptive_stats"]
 
-    logger.log("Loaded {num_inc} incremental and {num_adapt} adaptive cache items from {filename!r}.".format(
-        num_inc=len(pickleable_cache_items),
-        num_adapt=len(all_adaptive_stats),
-        filename=filename,
-    ))
-
     for identifier, (adaptive_usage, expr_order) in all_adaptive_stats.items():
         all_parse_elements[identifier].adaptive_usage = adaptive_usage
         all_parse_elements[identifier].expr_order = expr_order
@@ -775,7 +797,10 @@ def unpickle_cache(filename):
     for pickleable_lookup, value in pickleable_cache_items:
         lookup = (all_parse_elements[pickleable_lookup[0]],) + pickleable_lookup[1:]
         ParserElement.packrat_cache.set(lookup, value)
-    return True
+
+    num_inc = len(pickleable_cache_items)
+    num_adapt = len(all_adaptive_stats)
+    return num_inc, num_adapt
 
 
 def load_cache_for(inputstring, filename, cache_path):
@@ -797,13 +822,23 @@ def load_cache_for(inputstring, filename, cache_path):
             input_len=len(inputstring),
             max_len=disable_incremental_for_len,
         )
+
     did_load_cache = unpickle_cache(cache_path)
-    logger.log("{Loaded} cache for {filename!r} from {cache_path!r} ({incremental_info}).".format(
-        Loaded="Loaded" if did_load_cache else "Failed to load",
-        filename=filename,
-        cache_path=cache_path,
-        incremental_info=incremental_info,
-    ))
+    if did_load_cache:
+        num_inc, num_adapt = did_load_cache
+        logger.log("Loaded {num_inc} incremental and {num_adapt} adaptive cache items for {filename!r} ({incremental_info}).".format(
+            num_inc=num_inc,
+            num_adapt=num_adapt,
+            filename=filename,
+            incremental_info=incremental_info,
+        ))
+    else:
+        logger.log("Failed to load cache for {filename!r} from {cache_path!r} ({incremental_info}).".format(
+            filename=filename,
+            cache_path=cache_path,
+            incremental_info=incremental_info,
+        ))
+
     return incremental_enabled
 
 
