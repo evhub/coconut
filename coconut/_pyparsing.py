@@ -126,72 +126,75 @@ if MODERN_PYPARSING:
 # OVERRIDES:
 # -----------------------------------------------------------------------------------------------------------------------
 
-if not CPYPARSING:
-    if not MODERN_PYPARSING:
-        HIT, MISS = 0, 1
-
-        def _parseCache(self, instring, loc, doActions=True, callPreParse=True):
-            # [CPYPARSING] include packrat_context
-            lookup = (self, instring, loc, callPreParse, doActions, tuple(self.packrat_context))
-            with ParserElement.packrat_cache_lock:
-                cache = ParserElement.packrat_cache
-                value = cache.get(lookup)
-                if value is cache.not_in_cache:
-                    ParserElement.packrat_cache_stats[MISS] += 1
-                    try:
-                        value = self._parseNoCache(instring, loc, doActions, callPreParse)
-                    except ParseBaseException as pe:
-                        # cache a copy of the exception, without the traceback
-                        cache.set(lookup, pe.__class__(*pe.args))
-                        raise
-                    else:
-                        cache.set(lookup, (value[0], value[1].copy()))
-                        return value
-                else:
-                    ParserElement.packrat_cache_stats[HIT] += 1
-                    if isinstance(value, Exception):
-                        raise value
-                    return value[0], value[1].copy()
-
-        ParserElement.packrat_context = []
-        ParserElement._parseCache = _parseCache
-
-        # [CPYPARSING] fix append
-        def append(self, other):
-            if (self.parseAction
-                    or self.resultsName is not None
-                    or self.debug):
-                return self.__class__([self, other])
-            elif (other.__class__ == self.__class__
-                    and not other.parseAction
-                    and other.resultsName is None
-                    and not other.debug):
-                self.exprs += other.exprs
-                self.strRepr = None
-                self.saveAsList |= other.saveAsList
-                if isinstance(self, And):
-                    self.mayReturnEmpty &= other.mayReturnEmpty
-                else:
-                    self.mayReturnEmpty |= other.mayReturnEmpty
-                self.mayIndexError |= other.mayIndexError
-            else:
-                self.exprs.append(other)
-                self.strRepr = None
-                if isinstance(self, And):
-                    self.mayReturnEmpty &= other.mayReturnEmpty
-                else:
-                    self.mayReturnEmpty |= other.mayReturnEmpty
-                self.mayIndexError |= other.mayIndexError
-                self.saveAsList |= other.saveAsList
-            return self
-        ParseExpression.append = append
-
-elif not hasattr(ParserElement, "packrat_context"):
-    raise ImportError(
+if MODERN_PYPARSING:
+    SUPPORTS_PACKRAT_CONTEXT = False
+elif CPYPARSING:
+    assert hasattr(ParserElement, "packrat_context"), (
         "This version of Coconut requires cPyparsing>=" + ver_tuple_to_str(min_versions["cPyparsing"])
         + "; got cPyparsing==" + __version__
         + " (run '{python} -m pip install --upgrade cPyparsing' to fix)".format(python=sys.executable),
     )
+    SUPPORTS_PACKRAT_CONTEXT = True
+else:
+    SUPPORTS_PACKRAT_CONTEXT = True
+
+    HIT, MISS = 0, 1
+
+    def _parseCache(self, instring, loc, doActions=True, callPreParse=True):
+        # [CPYPARSING] include packrat_context
+        lookup = (self, instring, loc, callPreParse, doActions, tuple(self.packrat_context))
+        with ParserElement.packrat_cache_lock:
+            cache = ParserElement.packrat_cache
+            value = cache.get(lookup)
+            if value is cache.not_in_cache:
+                ParserElement.packrat_cache_stats[MISS] += 1
+                try:
+                    value = self._parseNoCache(instring, loc, doActions, callPreParse)
+                except ParseBaseException as pe:
+                    # cache a copy of the exception, without the traceback
+                    cache.set(lookup, pe.__class__(*pe.args))
+                    raise
+                else:
+                    cache.set(lookup, (value[0], value[1].copy()))
+                    return value
+            else:
+                ParserElement.packrat_cache_stats[HIT] += 1
+                if isinstance(value, Exception):
+                    raise value
+                return value[0], value[1].copy()
+
+    ParserElement.packrat_context = []
+    ParserElement._parseCache = _parseCache
+
+    # [CPYPARSING] fix append
+    def append(self, other):
+        if (self.parseAction
+                or self.resultsName is not None
+                or self.debug):
+            return self.__class__([self, other])
+        elif (other.__class__ == self.__class__
+                and not other.parseAction
+                and other.resultsName is None
+                and not other.debug):
+            self.exprs += other.exprs
+            self.strRepr = None
+            self.saveAsList |= other.saveAsList
+            if isinstance(self, And):
+                self.mayReturnEmpty &= other.mayReturnEmpty
+            else:
+                self.mayReturnEmpty |= other.mayReturnEmpty
+            self.mayIndexError |= other.mayIndexError
+        else:
+            self.exprs.append(other)
+            self.strRepr = None
+            if isinstance(self, And):
+                self.mayReturnEmpty &= other.mayReturnEmpty
+            else:
+                self.mayReturnEmpty |= other.mayReturnEmpty
+            self.mayIndexError |= other.mayIndexError
+            self.saveAsList |= other.saveAsList
+        return self
+    ParseExpression.append = append
 
 if hasattr(ParserElement, "enableIncremental"):
     SUPPORTS_INCREMENTAL = sys.version_info >= (3, 8)  # avoids stack overflows on py<=37

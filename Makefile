@@ -239,22 +239,27 @@ test-watch: clean
 	python ./coconut/tests/dest/runner.py
 	python ./coconut/tests/dest/extras.py
 
-# mini test that just compiles agnostic tests with fully synchronous output
+# mini test that just compiles agnostic tests with verbose output
 .PHONY: test-mini
 test-mini:
-	coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --force --jobs 0 --stack-size 4096 --recursion-limit 4096
-
-# same as test mini but allows parallelization and turns on verbose
-.PHONY: test-mini-verbose
-test-mini-verbose:
 	coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --force --verbose --stack-size 4096 --recursion-limit 4096
+
+# same as test-mini but doesn't overwrite the cache
+.PHONY: test-cache-mini
+test-cache-mini: export COCONUT_ALLOW_SAVE_TO_CACHE=FALSE
+test-cache-mini: test-mini
+
+# same as test-mini but with fully synchronous output and fast failing
+.PHONY: test-mini-sync
+test-mini-sync:
+	coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --force --verbose --jobs 0 --fail-fast --stack-size 4096 --recursion-limit 4096
 
 # same as test-univ but debugs crashes
 .PHONY: test-univ-debug
 test-univ-debug: export COCONUT_TEST_DEBUG_PYTHON=TRUE
 test-univ-debug: test-univ
 
-# same as test-mini but debugs crashes
+# same as test-mini but debugs crashes, is fully synchronous, and doesn't use verbose output
 .PHONY: test-mini-debug
 test-mini-debug: export COCONUT_USE_COLOR=TRUE
 test-mini-debug:

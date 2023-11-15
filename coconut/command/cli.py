@@ -264,6 +264,12 @@ arguments.add_argument(
 )
 
 arguments.add_argument(
+    "--fail-fast",
+    action="store_true",
+    help="causes the compiler to fail immediately upon encountering a compilation error rather than attempting to continue compiling other files",
+)
+
+arguments.add_argument(
     "--no-cache",
     action="store_true",
     help="disables use of Coconut's incremental parsing cache (caches previous parses to improve recompilation performance for slightly modified files)",

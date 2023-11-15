@@ -131,6 +131,7 @@ class Command(object):
     argv_args = None  # corresponds to --argv flag
     stack_size = 0  # corresponds to --stack-size flag
     use_cache = USE_CACHE  # corresponds to --no-cache flag
+    fail_fast = False  # corresponds to --fail-fast flag
 
     prompt = Prompt()
 
@@ -177,7 +178,7 @@ class Command(object):
     def cmd(self, args=None, argv=None, interact=True, default_target=None, default_jobs=None, use_dest=None):
         """Process command-line arguments."""
         result = None
-        with self.handling_exceptions():
+        with self.handling_exceptions(exit_on_error=True):
             if args is None:
                 parsed_args = arguments.parse_args()
             else:
@@ -196,7 +197,6 @@ class Command(object):
             self.exit_code = 0
             self.stack_size = parsed_args.stack_size
             result = self.run_with_stack_size(self.execute_args, parsed_args, interact, original_args=args)
-        self.exit_on_error()
         return result
 
     def run_with_stack_size(self, func, *args, **kwargs):
@@ -275,6 +275,7 @@ class Command(object):
             self.set_jobs(args.jobs, args.profile)
             if args.recursion_limit is not None:
                 set_recursion_limit(args.recursion_limit)
+            self.fail_fast = args.fail_fast
             self.display = args.display
             self.prompt.vi_mode = args.vi_mode
             if args.style is not None:
@@ -315,7 +316,7 @@ class Command(object):
             )
             self.comp.warm_up(
                 streamline=args.watch or args.profile,
-                enable_incremental_mode=args.watch,
+                enable_incremental_mode=self.use_cache and args.watch,
                 set_debug_names=args.verbose or args.trace or args.profile,
             )
 
@@ -473,8 +474,10 @@ class Command(object):
             self.exit_code = code or self.exit_code
 
     @contextmanager
-    def handling_exceptions(self):
+    def handling_exceptions(self, exit_on_error=None):
         """Perform proper exception handling."""
+        if exit_on_error is None:
+            exit_on_error = self.fail_fast
         try:
             if self.using_jobs:
                 with handling_broken_process_pool():
@@ -492,6 +495,8 @@ class Command(object):
                 logger.print_exc()
                 logger.printerr(report_this_text)
             self.register_exit_code(err=err)
+        if exit_on_error:
+            self.exit_on_error()
 
     def compile_path(self, path, write=True, package=True, **kwargs):
         """Compile a path and return paths to compiled files."""
@@ -713,7 +718,7 @@ class Command(object):
     @contextmanager
     def running_jobs(self, exit_on_error=True):
         """Initialize multiprocessing."""
-        with self.handling_exceptions():
+        with self.handling_exceptions(exit_on_error=exit_on_error):
             if self.using_jobs:
                 from concurrent.futures import ProcessPoolExecutor
                 try:
@@ -723,8 +728,6 @@ class Command(object):
                     self.executor = None
             else:
                 yield
-        if exit_on_error:
-            self.exit_on_error()
 
     def has_hash_of(self, destpath, code, package_level):
         """Determine if a file has the hash of the code."""

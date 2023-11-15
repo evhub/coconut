@@ -119,18 +119,22 @@ use_computation_graph_env_var = "COCONUT_USE_COMPUTATION_GRAPH"
 
 num_displayed_timing_items = 100
 
+save_new_cache_items = get_bool_env_var("COCONUT_ALLOW_SAVE_TO_CACHE", True)
+
+cache_validation_info = DEVELOP
+
 # below constants are experimentally determined to maximize performance
 
 use_packrat_parser = True  # True also gives us better error messages
 packrat_cache_size = None  # only works because final() clears the cache
 
-streamline_grammar_for_len = 4096
+streamline_grammar_for_len = 1536
 
 # Current problems with this:
-# - only actually helpful for tiny files (< streamline_grammar_for_len)
+# - only actually helpful for tiny files (< ~4096)
 # - sets incremental mode for the whole process, which can really slow down later compilations in that process
-# - recompilation for suite and util is currently broken for some reason
-disable_incremental_for_len = streamline_grammar_for_len
+# - currently breaks recompilation for suite and util for some reason
+disable_incremental_for_len = 0
 
 use_cache_file = True
 use_adaptive_any_of = True

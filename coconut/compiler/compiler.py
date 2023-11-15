@@ -456,7 +456,7 @@ def call_decorators(decorators, func_name):
 class Compiler(Grammar, pickleable_obj):
     """The Coconut compiler."""
     lock = Lock()
-    current_compiler = [None]  # list for mutability
+    current_compiler = None
 
     preprocs = [
         lambda self: self.prepare,
@@ -692,7 +692,7 @@ class Compiler(Grammar, pickleable_obj):
 
         @wraps(cls_method)
         def method(original, loc, tokens):
-            self_method = getattr(cls.current_compiler[0], method_name)
+            self_method = getattr(cls.current_compiler, method_name)
             if kwargs:
                 self_method = partial(self_method, **kwargs)
             if trim_arity:
@@ -1270,7 +1270,7 @@ class Compiler(Grammar, pickleable_obj):
         """Acquire the lock and reset the parser."""
         with self.lock:
             self.reset(keep_state, filename)
-            self.current_compiler[0] = self
+            Compiler.current_compiler = self
             yield
 
     def streamline(self, grammar, inputstring="", force=False, inner=False):
