@@ -130,7 +130,7 @@ def get_req_str(req):
             max_ver = get_next_version(min_versions[req])
         if None in max_ver:
             assert all(v is None for v in max_ver), "invalid max version " + repr(max_ver)
-            max_ver = get_next_version(min_versions[req], len(max_ver) - 1)
+            max_ver = get_next_version(min_versions[req], point_to_increment=len(max_ver) - 1)
         req_str += ",<" + ver_tuple_to_str(max_ver)
     return req_str
 

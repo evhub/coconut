@@ -164,7 +164,7 @@ def py36_spec_test(tco: bool) -> bool:
 
 def py37_spec_test() -> bool:
     """Tests for any py37+ version."""
-    import asyncio, typing
+    import asyncio, typing, typing_extensions
     assert py_breakpoint  # type: ignore
     ns: typing.Dict[str, typing.Any] = {}
     exec("""async def toa(it):
@@ -180,7 +180,7 @@ def py37_spec_test() -> bool:
     assert l == list(range(10))
     class HasVarGen[*Ts]  # type: ignore
     assert HasVarGen `issubclass` object
-    assert typing.Protocol.__module__ == "typing_extensions"
+    assert typing.Protocol is typing_extensions.Protocol
     assert_raises((def -> raise ExceptionGroup("derp", [Exception("herp")])), ExceptionGroup)
     assert_raises((def -> raise BaseExceptionGroup("derp", [BaseException("herp")])), BaseExceptionGroup)
     return True

@@ -134,7 +134,7 @@ packrat_cache_size = None  # only works because final() clears the cache
 streamline_grammar_for_len = 1536
 
 use_cache_file = True
-disable_incremental_for_len = 45875
+disable_incremental_for_len = 46080
 # this is disabled by default for now because it doesn't improve performance
 #  by very much but is very hard to test, so it's hard to be confident in it
 use_adaptive_any_of = get_bool_env_var("COCONUT_ADAPTIVE_ANY_OF", False)
@@ -154,7 +154,7 @@ never_clear_incremental_cache = False
 incremental_mode_cache_size = None
 incremental_cache_limit = 2097152  # clear cache when it gets this large
 incremental_mode_cache_successes = False
-require_cache_clear_frac = 0.25  # require that at least this much of the cache must be cleared on each cache clear
+require_cache_clear_frac = 0.3125  # require that at least this much of the cache must be cleared on each cache clear
 
 use_left_recursion_if_available = False
 
@@ -483,8 +483,7 @@ py3_to_py2_stdlib = {
     "itertools.zip_longest": ("itertools./izip_longest", (3,)),
     "math.gcd": ("fractions./gcd", (3, 5)),
     "time.process_time": ("time./clock", (3, 3)),
-    # # _dummy_thread was removed in Python 3.9, so this no longer works
-    # "_dummy_thread": ("dummy_thread", (3,)),
+    "_dummy_thread": ("dummy_thread", (3,)),
 
     # third-party backports
     "asyncio": ("trollius", (3, 4)),
@@ -1125,6 +1124,7 @@ classifiers = (
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Programming Language :: Other",
     "Programming Language :: Other Scripting Engines",
     "Programming Language :: Python :: Implementation :: CPython",

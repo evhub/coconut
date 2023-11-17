@@ -885,11 +885,17 @@ def pickle_cache(original, cache_path, include_incremental=True, protocol=pickle
         "pickleable_cache_items": pickleable_cache_items,
         "all_adaptive_stats": all_adaptive_stats,
     }
-    with univ_open(cache_path, "wb") as pickle_file:
-        pickle.dump(pickle_info_obj, pickle_file, protocol=protocol)
-
-    # clear the packrat cache when we're done so we don't interfere with anything else happening in this process
-    clear_packrat_cache(force=True)
+    try:
+        with univ_open(cache_path, "wb") as pickle_file:
+            pickle.dump(pickle_info_obj, pickle_file, protocol=protocol)
+    except Exception:
+        logger.log_exc()
+        return False
+    else:
+        return True
+    finally:
+        # clear the packrat cache when we're done so we don't interfere with anything else happening in this process
+        clear_packrat_cache(force=True)
 
 
 def unpickle_cache(cache_path):
@@ -979,6 +985,7 @@ def load_cache_for(inputstring, codepath):
         )
 
     if (
+        # only load the cache if we're using anything that makes use of it
         incremental_enabled
         or use_adaptive_any_of
         or use_adaptive_if_available

@@ -37,6 +37,7 @@ from coconut.constants import (
     default_whitespace_chars,
     varchars,
     min_versions,
+    max_versions,
     pure_python_env_var,
     enable_pyparsing_warnings,
     use_left_recursion_if_available,
@@ -92,32 +93,48 @@ except ImportError:
 
 PYPARSING_PACKAGE = "cPyparsing" if CPYPARSING else "pyparsing"
 
-min_ver = min(min_versions["pyparsing"], min_versions["cPyparsing"][:3])  # inclusive
-max_ver = get_next_version(max(min_versions["pyparsing"], min_versions["cPyparsing"][:3]))  # exclusive
-cur_ver = None if __version__ is None else ver_str_to_tuple(__version__)
+if CPYPARSING:
+    min_ver = min_versions["cPyparsing"]  # inclusive
+    max_ver = get_next_version(min_versions["cPyparsing"], point_to_increment=len(max_versions["cPyparsing"]) - 1)  # exclusive
+else:
+    min_ver = min_versions["pyparsing"]  # inclusive
+    max_ver = get_next_version(min_versions["pyparsing"])  # exclusive
 
-min_ver_str = ver_tuple_to_str(min_ver)
-max_ver_str = ver_tuple_to_str(max_ver)
+cur_ver = None if __version__ is None else ver_str_to_tuple(__version__)
 
 if cur_ver is None or cur_ver < min_ver:
     raise ImportError(
-        "This version of Coconut requires pyparsing/cPyparsing version >= " + min_ver_str
-        + ("; got " + PYPARSING_INFO if PYPARSING_INFO is not None else "")
-        + " (run '{python} -m pip install --upgrade {package}' to fix)".format(python=sys.executable, package=PYPARSING_PACKAGE),
+        (
+            "This version of Coconut requires {package} version >= {min_ver}"
+            + ("; got " + PYPARSING_INFO if PYPARSING_INFO is not None else "")
+            + " (run '{python} -m pip install --upgrade {package}' to fix)"
+        ).format(
+            python=sys.executable,
+            package=PYPARSING_PACKAGE,
+            min_ver=ver_tuple_to_str(min_ver),
+        )
     )
 elif cur_ver >= max_ver:
     warn(
-        "This version of Coconut was built for pyparsing/cPyparsing versions < " + max_ver_str
-        + ("; got " + PYPARSING_INFO if PYPARSING_INFO is not None else "")
-        + " (run '{python} -m pip install {package}<{max_ver}' to fix)".format(python=sys.executable, package=PYPARSING_PACKAGE, max_ver=max_ver_str),
+        (
+            "This version of Coconut was built for {package} versions < {max_ver}"
+            + ("; got " + PYPARSING_INFO if PYPARSING_INFO is not None else "")
+            + " (run '{python} -m pip install {package}<{max_ver}' to fix)"
+        ).format(
+            python=sys.executable,
+            package=PYPARSING_PACKAGE,
+            max_ver=ver_tuple_to_str(max_ver),
+        )
     )
 
 MODERN_PYPARSING = cur_ver >= (3,)
 
 if MODERN_PYPARSING:
     warn(
-        "This version of Coconut is not built for pyparsing v3; some syntax features WILL NOT WORK"
-        + " (run either '{python} -m pip install cPyparsing<{max_ver}' or '{python} -m pip install pyparsing<{max_ver}' to fix)".format(python=sys.executable, max_ver=max_ver_str),
+        "This version of Coconut is not built for pyparsing v3; some syntax features WILL NOT WORK (run either '{python} -m pip install cPyparsing<{max_ver}' or '{python} -m pip install pyparsing<{max_ver}' to fix)".format(
+            python=sys.executable,
+            max_ver=ver_tuple_to_str(max_ver),
+        )
     )
 
 
@@ -164,7 +181,6 @@ else:
                     raise value
                 return value[0], value[1].copy()
 
-    ParserElement.packrat_context = frozenset()
     ParserElement._parseCache = _parseCache
 
     # [CPYPARSING] fix append
@@ -196,6 +212,9 @@ else:
             self.saveAsList |= other.saveAsList
         return self
     ParseExpression.append = append
+
+if SUPPORTS_PACKRAT_CONTEXT:
+    ParserElement.packrat_context = frozenset()
 
 if hasattr(ParserElement, "enableIncremental"):
     SUPPORTS_INCREMENTAL = sys.version_info >= (3, 8)  # avoids stack overflows on py<=37

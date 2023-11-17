@@ -31,6 +31,7 @@ from coconut import constants
 from coconut.constants import (
     WINDOWS,
     PYPY,
+    PY39,
     fixpath,
 )
 
@@ -100,6 +101,8 @@ class TestConstants(unittest.TestCase):
                 or PYPY and old_imp in ("trollius", "aenum")
                 # don't test typing_extensions, async_generator
                 or old_imp.startswith(("typing_extensions", "async_generator"))
+                # don't test _dummy_thread on Py3.9
+                or PY39 and new_imp == "_dummy_thread"
             ):
                 pass
             elif sys.version_info >= ver_cutoff:

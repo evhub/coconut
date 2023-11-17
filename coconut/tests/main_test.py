@@ -31,7 +31,6 @@ else:
     import imp
 
 import pytest
-import pexpect
 
 from coconut.util import noop_ctx, get_target_info
 from coconut.terminal import (
@@ -64,6 +63,8 @@ from coconut.constants import (
     get_bool_env_var,
     coconut_cache_dir,
     default_use_cache_dir,
+    base_dir,
+    fixpath,
 )
 
 from coconut.api import (
@@ -412,6 +413,8 @@ def comp(path=None, folder=None, file=None, args=[], **kwargs):
 
 def rm_path(path, allow_keep=False):
     """Delete a path."""
+    path = os.path.abspath(fixpath(path))
+    assert not base_dir.startswith(path), "refusing to delete Coconut itself: " + repr(path)
     if allow_keep and get_bool_env_var("COCONUT_KEEP_TEST_FILES"):
         return
     if os.path.isdir(path):
@@ -536,6 +539,7 @@ def add_test_func_names(cls):
 
 def spawn_cmd(cmd):
     """Version of pexpect.spawn that prints the command being run."""
+    import pexpect  # hide import since not always available
     print("\n>", cmd)
     return pexpect.spawn(cmd)
 
