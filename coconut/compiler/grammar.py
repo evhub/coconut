@@ -1773,14 +1773,6 @@ class Grammar(object):
         continue_stmt = keyword("continue")
         simple_raise_stmt = addspace(keyword("raise") + Optional(test)) + ~keyword("from")
         complex_raise_stmt_ref = keyword("raise").suppress() + test + keyword("from").suppress() - test
-        flow_stmt = any_of(
-            return_stmt,
-            simple_raise_stmt,
-            break_stmt,
-            continue_stmt,
-            yield_expr,
-            complex_raise_stmt,
-        )
 
         imp_name = (
             # maybeparens allows for using custom operator names here
@@ -2068,6 +2060,11 @@ class Grammar(object):
             - suite_with_else_tokens
         )
         match_for_stmt = Optional(keyword("match").suppress()) + base_match_for_stmt
+        any_for_stmt = (
+            # match must come after
+            for_stmt
+            | match_for_stmt
+        )
 
         except_item = (
             testlist_has_comma("list")
@@ -2222,7 +2219,7 @@ class Grammar(object):
             )
         )
         async_stmt_ref = addspace(
-            keyword("async") + (with_stmt | for_stmt | match_for_stmt)  # handles async [match] for
+            keyword("async") + (with_stmt | any_for_stmt)  # handles async [match] for
             | keyword("match").suppress() + keyword("async") + base_match_for_stmt  # handles match async for
             | async_with_for_stmt
         )
@@ -2361,12 +2358,6 @@ class Grammar(object):
             | match_datadef
         )
 
-        any_for_stmt = (
-            # match must come after
-            for_stmt
-            | match_for_stmt
-        )
-
         passthrough_stmt = condense(passthrough_block - (base_suite | newline))
 
         compound_stmt = any_of(
@@ -2384,8 +2375,15 @@ class Grammar(object):
             passthrough_stmt,
             where_stmt,
         )
-        endline_semicolon = Forward()
-        endline_semicolon_ref = semicolon.suppress() + newline
+
+        flow_stmt = any_of(
+            return_stmt,
+            simple_raise_stmt,
+            break_stmt,
+            continue_stmt,
+            yield_expr,
+            complex_raise_stmt,
+        )
         keyword_stmt = any_of(
             flow_stmt,
             import_stmt,
@@ -2408,24 +2406,29 @@ class Grammar(object):
             | basic_stmt + end_simple_stmt_item
             | destructuring_stmt + end_simple_stmt_item
         )
+        endline_semicolon = Forward()
+        endline_semicolon_ref = semicolon.suppress() + newline
         simple_stmt <<= condense(
             simple_stmt_item
             + ZeroOrMore(fixto(semicolon, "\n") + simple_stmt_item)
             + (newline | endline_semicolon)
         )
+
         anything_stmt = Forward()
         stmt <<= final(
             compound_stmt
-            | simple_stmt
+            | simple_stmt  # includes destructuring
             # must be after destructuring due to ambiguity
             | cases_stmt
             # at the very end as a fallback case for the anything parser
             | anything_stmt
         )
+
         base_suite <<= condense(newline + indent - OneOrMore(stmt) - dedent)
         simple_suite = attach(stmt, make_suite_handle)
         nocolon_suite <<= base_suite | simple_suite
         suite <<= condense(colon + nocolon_suite)
+
         line = newline | stmt
 
         single_input = condense(Optional(line) - ZeroOrMore(newline))

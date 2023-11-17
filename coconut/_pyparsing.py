@@ -23,7 +23,6 @@ import os
 import re
 import sys
 import traceback
-import functools
 from warnings import warn
 from collections import defaultdict
 from itertools import permutations
@@ -284,10 +283,14 @@ if python_quoted_string is None:
 # FAST REPRS:
 # -----------------------------------------------------------------------------------------------------------------------
 
-if PY2:
-    def fast_repr(cls):
+if DEVELOP:
+    def fast_repr(self):
         """A very simple, fast __repr__/__str__ implementation."""
-        return "<" + cls.__name__ + ">"
+        return getattr(self, "name", self.__class__.__name__)
+elif PY2:
+    def fast_repr(self):
+        """A very simple, fast __repr__/__str__ implementation."""
+        return "<" + self.__class__.__name__ + ">"
 else:
     fast_repr = object.__repr__
 
@@ -301,8 +304,8 @@ def set_fast_pyparsing_reprs():
         try:
             if issubclass(obj, ParserElement):
                 _old_pyparsing_reprs.append((obj, (obj.__repr__, obj.__str__)))
-                obj.__repr__ = functools.partial(fast_repr, obj)
-                obj.__str__ = functools.partial(fast_repr, obj)
+                obj.__repr__ = fast_repr
+                obj.__str__ = fast_repr
         except TypeError:
             pass
 

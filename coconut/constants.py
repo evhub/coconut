@@ -105,7 +105,7 @@ py_version_str = sys.version.split()[0]
 # -----------------------------------------------------------------------------------------------------------------------
 
 # set this to False only ever temporarily for ease of debugging
-use_fast_pyparsing_reprs = False
+use_fast_pyparsing_reprs = True
 assert use_fast_pyparsing_reprs or DEVELOP, "use_fast_pyparsing_reprs should never be disabled on non-develop build"
 
 enable_pyparsing_warnings = DEVELOP
@@ -130,10 +130,11 @@ packrat_cache_size = None  # only works because final() clears the cache
 
 streamline_grammar_for_len = 1536
 
-disable_incremental_for_len = float("inf")  # always use
-
 use_cache_file = True
-use_adaptive_any_of = get_bool_env_var("COCONUT_ADAPTIVE_ANY_OF", True)
+disable_incremental_for_len = 45875
+# this is disabled by default for now because it doesn't improve performance
+#  by very much but is very hard to test, so it's hard to be confident in it
+use_adaptive_any_of = get_bool_env_var("COCONUT_ADAPTIVE_ANY_OF", False)
 
 # note that _parseIncremental produces much smaller caches
 use_incremental_if_available = False
@@ -150,6 +151,7 @@ never_clear_incremental_cache = False
 incremental_mode_cache_size = None
 incremental_cache_limit = 2097152  # clear cache when it gets this large
 incremental_mode_cache_successes = False
+require_cache_clear_frac = 0.25  # require that at least this much of the cache must be cleared on each cache clear
 
 use_left_recursion_if_available = False
 

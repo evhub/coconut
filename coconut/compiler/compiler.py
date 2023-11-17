@@ -176,7 +176,6 @@ from coconut.compiler.util import (
     pickle_cache,
     handle_and_manage,
     sub_all,
-    get_cache_path,
 )
 from coconut.compiler.header import (
     minify_header,
@@ -1266,8 +1265,9 @@ class Compiler(Grammar, pickleable_obj):
             return self.post(parsed, **postargs)
 
     @contextmanager
-    def parsing(self, keep_state=False, filename=None):
+    def parsing(self, keep_state=False, codepath=None):
         """Acquire the lock and reset the parser."""
+        filename = None if codepath is None else os.path.basename(codepath)
         with self.lock:
             self.reset(keep_state, filename)
             Compiler.current_compiler = self
@@ -1320,21 +1320,17 @@ class Compiler(Grammar, pickleable_obj):
     ):
         """Use the parser to parse the inputstring with appropriate setup and teardown."""
         if use_cache is None:
-            use_cache = codepath is not None and USE_CACHE
-        if use_cache:
-            cache_path = get_cache_path(codepath)
-        filename = os.path.basename(codepath) if codepath is not None else None
-        with self.parsing(keep_state, filename):
+            use_cache = USE_CACHE
+        use_cache = use_cache and codepath is not None
+        with self.parsing(keep_state, codepath):
             if streamline:
                 self.streamline(parser, inputstring)
             # unpickling must happen after streamlining and must occur in the
             #  compiler so that it happens in the same process as compilation
             if use_cache:
-                incremental_enabled = load_cache_for(
-                    inputstring=inputstring,
-                    filename=filename,
-                    cache_path=cache_path,
-                )
+                cache_path, incremental_enabled = load_cache_for(inputstring, codepath)
+            else:
+                cache_path = None
             pre_procd = parsed = None
             try:
                 with logger.gather_parsing_stats():
@@ -1354,7 +1350,7 @@ class Compiler(Grammar, pickleable_obj):
                             + str(sys.getrecursionlimit()) + " (you may also need to increase --stack-size)",
                         )
             finally:
-                if use_cache and pre_procd is not None:
+                if cache_path is not None and pre_procd is not None:
                     pickle_cache(pre_procd, cache_path, include_incremental=incremental_enabled)
             self.run_final_checks(pre_procd, keep_state)
         return out
