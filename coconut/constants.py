@@ -105,7 +105,7 @@ py_version_str = sys.version.split()[0]
 # -----------------------------------------------------------------------------------------------------------------------
 
 # set this to False only ever temporarily for ease of debugging
-use_fast_pyparsing_reprs = True
+use_fast_pyparsing_reprs = False
 assert use_fast_pyparsing_reprs or DEVELOP, "use_fast_pyparsing_reprs should never be disabled on non-develop build"
 
 enable_pyparsing_warnings = DEVELOP
@@ -130,14 +130,10 @@ packrat_cache_size = None  # only works because final() clears the cache
 
 streamline_grammar_for_len = 1536
 
-# Current problems with this:
-# - only actually helpful for tiny files (< ~4096)
-# - sets incremental mode for the whole process, which can really slow down later compilations in that process
-# - currently breaks recompilation for suite and util for some reason
-disable_incremental_for_len = 0
+disable_incremental_for_len = float("inf")  # always use
 
 use_cache_file = True
-use_adaptive_any_of = True
+use_adaptive_any_of = get_bool_env_var("COCONUT_ADAPTIVE_ANY_OF", True)
 
 # note that _parseIncremental produces much smaller caches
 use_incremental_if_available = False
@@ -999,7 +995,7 @@ all_reqs = {
 
 # min versions are inclusive
 unpinned_min_versions = {
-    "cPyparsing": (2, 4, 7, 2, 2, 7),
+    "cPyparsing": (2, 4, 7, 2, 2, 8),
     ("pre-commit", "py3"): (3,),
     ("psutil", "py>=27"): (5,),
     "jupyter": (1, 0),

@@ -483,6 +483,18 @@ def proc_run_args(args=()):
     return args
 
 
+def get_python_lib():
+    """Get current Python lib location."""
+    # these are expensive, so should only be imported here
+    if PY32:
+        from sysconfig import get_path
+        python_lib = get_path("purelib")
+    else:
+        from distutils import sysconfig
+        python_lib = sysconfig.get_python_lib()
+    return fixpath(python_lib)
+
+
 # -----------------------------------------------------------------------------------------------------------------------
 # CLASSES:
 # -----------------------------------------------------------------------------------------------------------------------

@@ -876,6 +876,7 @@ class Grammar(object):
             combine(back_none_pipe + equals),
             combine(back_none_star_pipe + equals),
             combine(back_none_dubstar_pipe + equals),
+            use_adaptive=False,
         )
         augassign = any_of(
             combine(plus + equals),
@@ -907,19 +908,21 @@ class Grammar(object):
             combine(unsafe_dubcolon + equals),
             combine(dotdot + equals),
             pipe_augassign,
+            use_adaptive=False,
         )
 
-        comp_op = any_of(
-            eq,
-            ne,
-            keyword("in"),
-            lt,
-            gt,
-            le,
-            ge,
-            addspace(keyword("not") + keyword("in")),
-            keyword("is") + ~keyword("not"),
-            addspace(keyword("is") + keyword("not")),
+        comp_op = (
+            eq
+            | ne
+            | keyword("in")
+            | lt
+            | gt
+            | le
+            | ge
+            | addspace(keyword("not") + keyword("in"))
+            # is not must come before is
+            | addspace(keyword("is") + keyword("not"))
+            | keyword("is")
         )
 
         atom_item = Forward()
@@ -1839,7 +1842,7 @@ class Grammar(object):
         augassign_stmt_ref = simple_assign + augassign_rhs
 
         simple_kwd_assign = attach(
-            maybeparens(lparen, itemlist(setname, comma), rparen) + Optional(equals.suppress() - test_expr),
+            maybeparens(lparen, itemlist(setname, comma), rparen) + Optional(equals.suppress() + test_expr),
             simple_kwd_assign_handle,
         )
         kwd_augassign = Forward()
@@ -1848,9 +1851,9 @@ class Grammar(object):
             kwd_augassign
             | simple_kwd_assign
         )
-        global_stmt = addspace(keyword("global") - kwd_assign)
+        global_stmt = addspace(keyword("global") + kwd_assign)
         nonlocal_stmt = Forward()
-        nonlocal_stmt_ref = addspace(keyword("nonlocal") - kwd_assign)
+        nonlocal_stmt_ref = addspace(keyword("nonlocal") + kwd_assign)
 
         del_stmt = addspace(keyword("del") - simple_assignlist)
 
@@ -2002,7 +2005,7 @@ class Grammar(object):
             + match_guard
             # avoid match match-case blocks
             + ~FollowedBy(colon + newline + indent + keyword("case"))
-            - full_suite
+            + full_suite
         )
         match_stmt = condense(full_match - Optional(else_stmt))
 
@@ -2183,13 +2186,14 @@ class Grammar(object):
             + attach(
                 base_match_funcdef
                 + end_func_equals
-                + (
+                - (
                     attach(implicit_return_stmt, make_suite_handle)
                     | (
-                        newline.suppress() - indent.suppress()
-                        + Optional(docstring)
-                        + attach(math_funcdef_body, make_suite_handle)
-                        + dedent.suppress()
+                        newline.suppress()
+                        - indent.suppress()
+                        - Optional(docstring)
+                        - attach(math_funcdef_body, make_suite_handle)
+                        - dedent.suppress()
                     )
                 ),
                 join_match_funcdef,
@@ -2282,8 +2286,8 @@ class Grammar(object):
             # match funcdefs must come after normal
             funcdef
             | math_funcdef
-            | math_match_funcdef
             | match_funcdef
+            | math_match_funcdef
             | keyword_funcdef
         )
 
@@ -2335,7 +2339,7 @@ class Grammar(object):
         complex_decorator = condense(namedexpr_test + newline)("complex")
         decorators_ref = OneOrMore(
             at.suppress()
-            - Group(
+            + Group(
                 simple_decorator
                 | complex_decorator
             )
@@ -2347,28 +2351,37 @@ class Grammar(object):
         decoratable_async_funcdef_stmt = Forward()
         decoratable_async_funcdef_stmt_ref = Optional(decorators) + async_funcdef_stmt
 
-        decoratable_func_stmt = decoratable_normal_funcdef_stmt | decoratable_async_funcdef_stmt
+        decoratable_func_stmt = any_of(
+            decoratable_normal_funcdef_stmt,
+            decoratable_async_funcdef_stmt,
+        )
+        decoratable_data_stmt = (
+            # match must come after
+            datadef
+            | match_datadef
+        )
 
-        # decorators are integrated into the definitions of each item here
-        decoratable_class_stmt = classdef | datadef | match_datadef
+        any_for_stmt = (
+            # match must come after
+            for_stmt
+            | match_for_stmt
+        )
 
         passthrough_stmt = condense(passthrough_block - (base_suite | newline))
 
-        simple_compound_stmt = any_of(
+        compound_stmt = any_of(
+            # decorators should be integrated into the definitions of any items that need them
             if_stmt,
+            decoratable_func_stmt,
+            classdef,
+            while_stmt,
             try_stmt,
+            with_stmt,
+            any_for_stmt,
+            async_stmt,
+            decoratable_data_stmt,
             match_stmt,
             passthrough_stmt,
-        )
-        compound_stmt = any_of(
-            decoratable_class_stmt,
-            decoratable_func_stmt,
-            while_stmt,
-            for_stmt,
-            with_stmt,
-            async_stmt,
-            match_for_stmt,
-            simple_compound_stmt,
             where_stmt,
         )
         endline_semicolon = Forward()
@@ -2563,7 +2576,9 @@ class Grammar(object):
             - keyword("def").suppress()
             - unsafe_dotted_name
             - Optional(brackets).suppress()
-            - lparen.suppress() - parameters_tokens - rparen.suppress()
+            - lparen.suppress()
+            - parameters_tokens
+            - rparen.suppress()
         )
 
         stores_scope = boundary + (

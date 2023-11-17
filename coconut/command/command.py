@@ -45,7 +45,6 @@ from coconut.terminal import (
     internal_assert,
 )
 from coconut.constants import (
-    PY32,
     PY35,
     fixpath,
     code_exts,
@@ -104,6 +103,7 @@ from coconut.command.util import (
     invert_mypy_arg,
     run_with_stack_size,
     proc_run_args,
+    get_python_lib,
 )
 from coconut.compiler.util import (
     should_indent,
@@ -315,9 +315,19 @@ class Command(object):
                 no_wrap=args.no_wrap_types,
             )
             self.comp.warm_up(
-                streamline=args.watch or args.profile,
-                enable_incremental_mode=self.use_cache and args.watch,
-                set_debug_names=args.verbose or args.trace or args.profile,
+                streamline=(
+                    not self.using_jobs
+                    and (args.watch or args.profile)
+                ),
+                enable_incremental_mode=(
+                    not self.using_jobs
+                    and args.watch
+                ),
+                set_debug_names=(
+                    args.verbose
+                    or args.trace
+                    or args.profile
+                ),
             )
 
             # process mypy args and print timing info (must come after compiler setup)
@@ -474,7 +484,7 @@ class Command(object):
             self.exit_code = code or self.exit_code
 
     @contextmanager
-    def handling_exceptions(self, exit_on_error=None):
+    def handling_exceptions(self, exit_on_error=None, on_keyboard_interrupt=None):
         """Perform proper exception handling."""
         if exit_on_error is None:
             exit_on_error = self.fail_fast
@@ -486,19 +496,23 @@ class Command(object):
                 yield
         except SystemExit as err:
             self.register_exit_code(err.code)
+        # make sure we don't catch GeneratorExit below
+        except GeneratorExit:
+            raise
         except BaseException as err:
-            if isinstance(err, GeneratorExit):
-                raise
-            elif isinstance(err, CoconutException):
+            if isinstance(err, CoconutException):
                 logger.print_exc()
-            elif not isinstance(err, KeyboardInterrupt):
+            elif isinstance(err, KeyboardInterrupt):
+                if on_keyboard_interrupt is not None:
+                    on_keyboard_interrupt()
+            else:
                 logger.print_exc()
                 logger.printerr(report_this_text)
             self.register_exit_code(err=err)
         if exit_on_error:
             self.exit_on_error()
 
-    def compile_path(self, path, write=True, package=True, **kwargs):
+    def compile_path(self, path, write=True, package=True, handling_exceptions_kwargs={}, **kwargs):
         """Compile a path and return paths to compiled files."""
         if not isinstance(write, bool):
             write = fixpath(write)
@@ -506,11 +520,11 @@ class Command(object):
             destpath = self.compile_file(path, write, package, **kwargs)
             return [destpath] if destpath is not None else []
         elif os.path.isdir(path):
-            return self.compile_folder(path, write, package, **kwargs)
+            return self.compile_folder(path, write, package, handling_exceptions_kwargs=handling_exceptions_kwargs, **kwargs)
         else:
             raise CoconutException("could not find source path", path)
 
-    def compile_folder(self, directory, write=True, package=True, **kwargs):
+    def compile_folder(self, directory, write=True, package=True, handling_exceptions_kwargs={}, **kwargs):
         """Compile a directory and return paths to compiled files."""
         if not isinstance(write, bool) and os.path.isfile(write):
             raise CoconutException("destination path cannot point to a file when compiling a directory")
@@ -522,7 +536,7 @@ class Command(object):
                 writedir = os.path.join(write, os.path.relpath(dirpath, directory))
             for filename in filenames:
                 if os.path.splitext(filename)[1] in code_exts:
-                    with self.handling_exceptions():
+                    with self.handling_exceptions(**handling_exceptions_kwargs):
                         destpath = self.compile_file(os.path.join(dirpath, filename), writedir, package, **kwargs)
                         if destpath is not None:
                             filepaths.append(destpath)
@@ -642,7 +656,6 @@ class Command(object):
                 logger.warn("missing __init__" + code_exts[0] + " in package", check_dir, extra="remove --strict to dismiss")
             package_level = 0
         return package_level
-        return 0
 
     def create_package(self, dirpath, retries_left=create_package_retries):
         """Set up a package directory."""
@@ -1078,17 +1091,30 @@ class Command(object):
             logger.show()
             logger.show_tabulated("Watching", showpath(src), "(press Ctrl-C to end)...")
 
+        interrupted = [False]  # in list to allow modification
+
+        def interrupt():
+            interrupted[0] = True
+
         def recompile(path, src, dest, package):
             path = fixpath(path)
             if os.path.isfile(path) and os.path.splitext(path)[1] in code_exts:
-                with self.handling_exceptions():
+                with self.handling_exceptions(on_keyboard_interrupt=interrupt):
                     if dest is True or dest is None:
                         writedir = dest
                     else:
                         # correct the compilation path based on the relative position of path to src
                         dirpath = os.path.dirname(path)
                         writedir = os.path.join(dest, os.path.relpath(dirpath, src))
-                    filepaths = self.compile_path(path, writedir, package, run=run, force=force, show_unchanged=False)
+                    filepaths = self.compile_path(
+                        path,
+                        writedir,
+                        package,
+                        run=run,
+                        force=force,
+                        show_unchanged=False,
+                        handling_exceptions_kwargs=dict(on_keyboard_interrupt=interrupt),
+                    )
                     self.run_mypy(filepaths)
 
         observer = Observer()
@@ -1101,37 +1127,28 @@ class Command(object):
         with self.running_jobs():
             observer.start()
             try:
-                while True:
+                while not interrupted[0]:
                     time.sleep(watch_interval)
                     for wcher in watchers:
                         wcher.keep_watching()
             except KeyboardInterrupt:
-                logger.show_sig("Got KeyboardInterrupt; stopping watcher.")
+                interrupt()
             finally:
+                if interrupted[0]:
+                    logger.show_sig("Got KeyboardInterrupt; stopping watcher.")
                 observer.stop()
                 observer.join()
 
-    def get_python_lib(self):
-        """Get current Python lib location."""
-        # these are expensive, so should only be imported here
-        if PY32:
-            from sysconfig import get_path
-            python_lib = get_path("purelib")
-        else:
-            from distutils import sysconfig
-            python_lib = sysconfig.get_python_lib()
-        return fixpath(python_lib)
-
     def site_install(self):
         """Add Coconut's pth file to site-packages."""
-        python_lib = self.get_python_lib()
+        python_lib = get_python_lib()
 
         shutil.copy(coconut_pth_file, python_lib)
         logger.show_sig("Added %s to %s" % (os.path.basename(coconut_pth_file), python_lib))
 
     def site_uninstall(self):
         """Remove Coconut's pth file from site-packages."""
-        python_lib = self.get_python_lib()
+        python_lib = get_python_lib()
         pth_file = os.path.join(python_lib, os.path.basename(coconut_pth_file))
 
         if os.path.isfile(pth_file):

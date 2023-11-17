@@ -730,7 +730,7 @@ def suite_test() -> bool:
     only_match_if(1) -> _ = 1
     match only_match_if(1) -> _ in 2:
         assert False
-    only_match_int -> _ = 1
+    only_match_int -> _ = 10
     match only_match_int -> _ in "abc":
         assert False
     only_match_abc -> _ = "abc"

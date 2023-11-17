@@ -156,7 +156,7 @@ test-mypy-tests: clean-no-tests
 	python ./coconut/tests/dest/extras.py
 
 # same as test-univ but includes verbose output for better debugging
-#  regex for getting non-timing lines: ^(?!\s*(Time|Packrat|Loaded|Saving|Adaptive|Errorless|Grammar|Failed|Incremental)\s)[^\n]*\n*
+#  regex for getting non-timing lines: ^(?!\s*(Time|Packrat|Loaded|Saving|Adaptive|Errorless|Grammar|Failed|Incremental|Pruned)\s)[^\n]*\n*
 .PHONY: test-verbose
 test-verbose: export COCONUT_USE_COLOR=TRUE
 test-verbose: clean
@@ -235,22 +235,36 @@ test-no-wrap: clean
 test-watch: export COCONUT_USE_COLOR=TRUE
 test-watch: clean
 	python ./coconut/tests --strict --keep-lines --force
-	coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --watch --strict --keep-lines --stack-size 4096 --recursion-limit 4096
+	make just-watch
 	python ./coconut/tests/dest/runner.py
 	python ./coconut/tests/dest/extras.py
 
+# just watches tests
+.PHONY: just-watch
+just-watch: export COCONUT_USE_COLOR=TRUE
+just-watch:
+	coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --watch --strict --keep-lines --stack-size 4096 --recursion-limit 4096
+
+# same as just-watch but uses verbose output and is fully sychronous and doesn't use the cache
+.PHONY: just-watch-verbose
+just-watch-verbose: export COCONUT_USE_COLOR=TRUE
+just-watch-verbose:
+	coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --watch --strict --keep-lines --stack-size 4096 --recursion-limit 4096 --verbose --jobs 0 --no-cache
+
 # mini test that just compiles agnostic tests with verbose output
 .PHONY: test-mini
+test-mini: export COCONUT_USE_COLOR=TRUE
 test-mini:
 	coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --force --verbose --stack-size 4096 --recursion-limit 4096
 
 # same as test-mini but doesn't overwrite the cache
-.PHONY: test-cache-mini
-test-cache-mini: export COCONUT_ALLOW_SAVE_TO_CACHE=FALSE
-test-cache-mini: test-mini
+.PHONY: test-mini-cache
+test-mini-cache: export COCONUT_ALLOW_SAVE_TO_CACHE=FALSE
+test-mini-cache: test-mini
 
 # same as test-mini but with fully synchronous output and fast failing
 .PHONY: test-mini-sync
+test-mini-sync: export COCONUT_USE_COLOR=TRUE
 test-mini-sync:
 	coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --force --verbose --jobs 0 --fail-fast --stack-size 4096 --recursion-limit 4096
 

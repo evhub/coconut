@@ -1273,20 +1273,23 @@ class Compiler(Grammar, pickleable_obj):
             Compiler.current_compiler = self
             yield
 
-    def streamline(self, grammar, inputstring="", force=False, inner=False):
+    def streamline(self, grammar, inputstring=None, force=False, inner=False):
         """Streamline the given grammar for the given inputstring."""
-        if force or (streamline_grammar_for_len is not None and len(inputstring) > streamline_grammar_for_len):
+        input_len = 0 if inputstring is None else len(inputstring)
+        if force or (streamline_grammar_for_len is not None and input_len > streamline_grammar_for_len):
             start_time = get_clock_time()
             prep_grammar(grammar, streamline=True)
             logger.log_lambda(
-                lambda: "Streamlined {grammar} in {time} seconds (streamlined due to receiving input of length {length}).".format(
+                lambda: "Streamlined {grammar} in {time} seconds{info}.".format(
                     grammar=get_name(grammar),
                     time=get_clock_time() - start_time,
-                    length=len(inputstring),
+                    info="" if inputstring is None else " (streamlined due to receiving input of length {length})".format(
+                        length=input_len,
+                    ),
                 ),
             )
-        elif not inner:
-            logger.log("No streamlining done for input of length {length}.".format(length=len(inputstring)))
+        elif inputstring is not None and not inner:
+            logger.log("No streamlining done for input of length {length}.".format(length=input_len))
 
     def run_final_checks(self, original, keep_state=False):
         """Run post-parsing checks to raise any necessary errors/warnings."""

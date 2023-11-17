@@ -128,6 +128,7 @@ if MODERN_PYPARSING:
 
 if MODERN_PYPARSING:
     SUPPORTS_PACKRAT_CONTEXT = False
+
 elif CPYPARSING:
     assert hasattr(ParserElement, "packrat_context"), (
         "This version of Coconut requires cPyparsing>=" + ver_tuple_to_str(min_versions["cPyparsing"])
@@ -135,14 +136,15 @@ elif CPYPARSING:
         + " (run '{python} -m pip install --upgrade cPyparsing' to fix)".format(python=sys.executable),
     )
     SUPPORTS_PACKRAT_CONTEXT = True
+
 else:
     SUPPORTS_PACKRAT_CONTEXT = True
-
     HIT, MISS = 0, 1
 
     def _parseCache(self, instring, loc, doActions=True, callPreParse=True):
-        # [CPYPARSING] include packrat_context
-        lookup = (self, instring, loc, callPreParse, doActions, tuple(self.packrat_context))
+        # [CPYPARSING] HIT, MISS are constants
+        # [CPYPARSING] include packrat_context, merge callPreParse and doActions
+        lookup = (self, instring, loc, callPreParse | doActions << 1, ParserElement.packrat_context)
         with ParserElement.packrat_cache_lock:
             cache = ParserElement.packrat_cache
             value = cache.get(lookup)
@@ -163,7 +165,7 @@ else:
                     raise value
                 return value[0], value[1].copy()
 
-    ParserElement.packrat_context = []
+    ParserElement.packrat_context = frozenset()
     ParserElement._parseCache = _parseCache
 
     # [CPYPARSING] fix append

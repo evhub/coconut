@@ -131,6 +131,8 @@ def internal_assert(condition, message=None, item=None, extra=None, exc_maker=No
                 item = condition
         elif callable(message):
             message = message()
+        # ensure the item is pickleable so that the exception can be transferred back across processes
+        item = str(item)
         if callable(extra):
             extra = extra()
         if exc_maker is None:
@@ -473,17 +475,17 @@ class Logger(object):
         trace = " ".join(str(arg) for arg in args)
         self.printlog(_indent(trace, self.trace_ind))
 
-    def log_tag(self, tag, code, multiline=False, force=False):
+    def log_tag(self, tag, block, multiline=False, force=False):
         """Logs a tagged message if tracing."""
         if self.tracing or force:
             assert not (not DEVELOP and force), tag
-            if callable(code):
-                code = code()
+            if callable(block):
+                block = block()
             tagstr = "[" + str(tag) + "]"
             if multiline:
-                self.print_trace(tagstr + "\n" + displayable(code))
+                self.print_trace(tagstr + "\n" + displayable(block))
             else:
-                self.print_trace(tagstr, ascii(code))
+                self.print_trace(tagstr, ascii(block))
 
     def log_trace(self, expr, original, loc, item=None, extra=None):
         """Formats and displays a trace if tracing."""

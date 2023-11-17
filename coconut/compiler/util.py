@@ -827,8 +827,8 @@ def enable_incremental_parsing():
     return True
 
 
-def pickle_cache(original, filename, include_incremental=True, protocol=pickle.HIGHEST_PROTOCOL):
-    """Pickle the pyparsing cache for original to filename."""
+def pickle_cache(original, cache_path, include_incremental=True, protocol=pickle.HIGHEST_PROTOCOL):
+    """Pickle the pyparsing cache for original to cache_path."""
     internal_assert(all_parse_elements is not None, "pickle_cache requires cPyparsing")
     if not save_new_cache_items:
         logger.log("Skipping saving cache items due to environment variable.")
@@ -854,23 +854,28 @@ def pickle_cache(original, filename, include_incremental=True, protocol=pickle.H
             #  are the only ones that parseIncremental will reuse
             if 0 < loc < len(original) - 1:
                 elem = lookup[0]
+                identifier = elem.parse_element_index
+                internal_assert(lambda: elem == all_parse_elements[identifier](), "failed to look up parse element by identifier", (elem, all_parse_elements[identifier]()))
                 if validation_dict is not None:
-                    validation_dict[elem.parse_element_index] = elem.__class__.__name__
-                pickleable_lookup = (elem.parse_element_index,) + lookup[1:]
+                    validation_dict[identifier] = elem.__class__.__name__
+                pickleable_lookup = (identifier,) + lookup[1:]
                 pickleable_cache_items.append((pickleable_lookup, value))
 
     all_adaptive_stats = {}
     for wkref in MatchAny.all_match_anys:
         match_any = wkref()
         if match_any is not None:
+            identifier = match_any.parse_element_index
+            internal_assert(lambda: match_any == all_parse_elements[identifier](), "failed to look up match_any by identifier", (match_any, all_parse_elements[identifier]()))
             if validation_dict is not None:
-                validation_dict[match_any.parse_element_index] = match_any.__class__.__name__
-            all_adaptive_stats[match_any.parse_element_index] = (match_any.adaptive_usage, match_any.expr_order)
+                validation_dict[identifier] = match_any.__class__.__name__
+            all_adaptive_stats[identifier] = (match_any.adaptive_usage, match_any.expr_order)
+            logger.log("Caching adaptive item:", match_any, "<-", all_adaptive_stats[identifier])
 
-    logger.log("Saving {num_inc} incremental and {num_adapt} adaptive cache items to {filename!r}.".format(
+    logger.log("Saving {num_inc} incremental and {num_adapt} adaptive cache items to {cache_path!r}.".format(
         num_inc=len(pickleable_cache_items),
         num_adapt=len(all_adaptive_stats),
-        filename=filename,
+        cache_path=cache_path,
     ))
     pickle_info_obj = {
         "VERSION": VERSION,
@@ -879,21 +884,21 @@ def pickle_cache(original, filename, include_incremental=True, protocol=pickle.H
         "pickleable_cache_items": pickleable_cache_items,
         "all_adaptive_stats": all_adaptive_stats,
     }
-    with univ_open(filename, "wb") as pickle_file:
+    with univ_open(cache_path, "wb") as pickle_file:
         pickle.dump(pickle_info_obj, pickle_file, protocol=protocol)
 
     # clear the packrat cache when we're done so we don't interfere with anything else happening in this process
     clear_packrat_cache(force=True)
 
 
-def unpickle_cache(filename):
+def unpickle_cache(cache_path):
     """Unpickle and load the given incremental cache file."""
     internal_assert(all_parse_elements is not None, "unpickle_cache requires cPyparsing")
 
-    if not os.path.exists(filename):
+    if not os.path.exists(cache_path):
         return False
     try:
-        with univ_open(filename, "rb") as pickle_file:
+        with univ_open(cache_path, "rb") as pickle_file:
             pickle_info_obj = pickle.load(pickle_file)
     except Exception:
         logger.log_exc()
@@ -1036,7 +1041,7 @@ def any_of(*exprs, **kwargs):
 
     flat_exprs = []
     for e in exprs:
-        if e.__class__ is AnyOf and not hasaction(e):
+        if e.__class__ == AnyOf and not hasaction(e):
             flat_exprs.extend(e.exprs)
         else:
             flat_exprs.append(e)
@@ -1069,7 +1074,7 @@ class Wrap(ParseElementEnhance):
         was_inside, self.inside = self.inside, True
         if self.include_in_packrat_context:
             old_packrat_context = ParserElement.packrat_context
-            new_packrat_context = old_packrat_context + (self.identifier,)
+            new_packrat_context = old_packrat_context | frozenset((self.identifier,))
             ParserElement.packrat_context = new_packrat_context
         try:
             yield
