@@ -81,6 +81,7 @@ PY38 = sys.version_info >= (3, 8)
 PY39 = sys.version_info >= (3, 9)
 PY310 = sys.version_info >= (3, 10)
 PY311 = sys.version_info >= (3, 11)
+PY312 = sys.version_info >= (3, 12)
 IPY = (
     PY35
     and (PY37 or not PYPY)
@@ -91,6 +92,8 @@ MYPY = (
     PY38
     and not WINDOWS
     and not PYPY
+    # disabled until MyPy supports PEP 695
+    and not PY312
 )
 XONSH = (
     PY35
@@ -997,7 +1000,7 @@ all_reqs = {
 
 # min versions are inclusive
 unpinned_min_versions = {
-    "cPyparsing": (2, 4, 7, 2, 2, 8),
+    "cPyparsing": (2, 4, 7, 2, 2, 9),
     ("pre-commit", "py3"): (3,),
     ("psutil", "py>=27"): (5,),
     "jupyter": (1, 0),
@@ -1014,7 +1017,7 @@ unpinned_min_versions = {
     "pydata-sphinx-theme": (0, 14),
     "myst-parser": (2,),
     "sphinx": (7,),
-    "mypy[python2]": (1, 6),
+    "mypy[python2]": (1, 7),
     ("jupyter-console", "py37"): (6, 6),
     ("typing", "py<35"): (3, 10),
     ("typing_extensions", "py>=38"): (4, 8),
@@ -1025,9 +1028,8 @@ unpinned_min_versions = {
     ("pytest", "py36"): (7,),
     ("async_generator", "py35"): (1, 10),
     ("exceptiongroup", "py37;py<311"): (1,),
-    ("ipython", "py>=39"): (8, 16),
+    ("ipython", "py>=39"): (8, 17),
     "py-spy": (0, 3),
-    ("anyio", "py36"): (3,),
 }
 
 pinned_min_versions = {
@@ -1039,6 +1041,7 @@ pinned_min_versions = {
     ("ipython", "py==37"): (7, 34),
     ("typing_extensions", "py==37"): (4, 7),
     # don't upgrade these; they break on Python 3.6
+    ("anyio", "py36"): (3,),
     ("xonsh", "py>=36;py<38"): (0, 11),
     ("pandas", "py36"): (1,),
     ("jupyter-client", "py36"): (7, 1, 2),
@@ -1088,7 +1091,7 @@ _ = None
 max_versions = {
     ("jupyter-client", "py==35"): _,
     "pyparsing": _,
-    "cPyparsing": (_, _, _),
+    "cPyparsing": (_, _, _, _, _,),
     ("prompt_toolkit", "py<3"): _,
     ("jedi", "py<39"): _,
     ("pywinpty", "py<3;windows"): _,
