@@ -95,7 +95,10 @@ PYPARSING_PACKAGE = "cPyparsing" if CPYPARSING else "pyparsing"
 
 if CPYPARSING:
     min_ver = min_versions["cPyparsing"]  # inclusive
-    max_ver = get_next_version(min_versions["cPyparsing"], point_to_increment=len(max_versions["cPyparsing"]) - 1)  # exclusive
+    max_ver = get_next_version(
+        min_versions["cPyparsing"],
+        point_to_increment=len(max_versions["cPyparsing"]) - 1,
+    )  # exclusive
 else:
     min_ver = min_versions["pyparsing"]  # inclusive
     max_ver = get_next_version(min_versions["pyparsing"])  # exclusive

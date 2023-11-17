@@ -889,7 +889,7 @@ def pickle_cache(original, cache_path, include_incremental=True, protocol=pickle
         with univ_open(cache_path, "wb") as pickle_file:
             pickle.dump(pickle_info_obj, pickle_file, protocol=protocol)
     except Exception:
-        logger.log_exc()
+        logger.warn_exc()
         return False
     else:
         return True
