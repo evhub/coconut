@@ -41,6 +41,12 @@ def py3_spec_test() -> bool:
     assert Outer.Inner.f(2) == 2
     assert Outer.Inner.f.__name__ == "f"
     assert Outer.Inner.f.__qualname__.endswith("Outer.Inner.f"), Outer.Inner.f.__qualname__
+    for xs in [
+        py_zip((x for x in range(5)), (x for x in range(10))),
+        py_map((,), (x for x in range(5)), (x for x in range(10))),
+    ]:  # type: ignore
+        assert list(xs) == list(zip(range(5), range(5)))
+        assert list(xs) == [] if sys.version_info >= (3,) else list(zip(range(5), range(5)))
     return True
 
 
