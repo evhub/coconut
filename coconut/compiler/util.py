@@ -1006,6 +1006,8 @@ def load_cache_for(inputstring, codepath):
                 cache_path=cache_path,
                 incremental_info=incremental_info,
             ))
+            if incremental_enabled:
+                logger.warn("Populating initial parsing cache (compilation may take longer than usual)...")
     else:
         cache_path = None
         logger.log("Declined to load cache for {filename!r} ({incremental_info}).".format(

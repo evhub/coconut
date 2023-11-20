@@ -251,18 +251,24 @@ just-watch-verbose: export COCONUT_USE_COLOR=TRUE
 just-watch-verbose:
 	coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --watch --strict --keep-lines --stack-size 4096 --recursion-limit 4096 --verbose --jobs 0 --no-cache
 
-# mini test that just compiles agnostic tests with verbose output
+# mini test that just compiles agnostic tests
 .PHONY: test-mini
 test-mini: export COCONUT_USE_COLOR=TRUE
 test-mini:
+	coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --force --stack-size 4096 --recursion-limit 4096
+
+# same as test-mini but with verbose output
+.PHONY: test-mini-verbose
+test-mini-verbose: export COCONUT_USE_COLOR=TRUE
+test-mini-verbose:
 	coconut ./coconut/tests/src/cocotest/agnostic ./coconut/tests/dest/cocotest --force --verbose --stack-size 4096 --recursion-limit 4096
 
-# same as test-mini but doesn't overwrite the cache
+# same as test-mini-verbose but doesn't overwrite the cache
 .PHONY: test-mini-cache
 test-mini-cache: export COCONUT_ALLOW_SAVE_TO_CACHE=FALSE
-test-mini-cache: test-mini
+test-mini-cache: test-mini-verbose
 
-# same as test-mini but with fully synchronous output and fast failing
+# same as test-mini-verbose but with fully synchronous output and fast failing
 .PHONY: test-mini-sync
 test-mini-sync: export COCONUT_USE_COLOR=TRUE
 test-mini-sync:
