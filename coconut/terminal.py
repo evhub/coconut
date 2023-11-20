@@ -255,10 +255,12 @@ class Logger(object):
             file = file or sys.stdout
         elif level == "logging":
             file = file or sys.stderr
-            color = color or log_color_code
+            if color is None:
+                color = log_color_code
         elif level == "error":
             file = file or sys.stderr
-            color = color or error_color_code
+            if color is None:
+                color = error_color_code
         else:
             raise CoconutInternalException("invalid logging level", level)
 
@@ -316,15 +318,15 @@ class Logger(object):
         if not self.quiet:
             self.display(messages, main_sig, level="error", **kwargs)
 
-    def log(self, *messages):
+    def log(self, *messages, **kwargs):
         """Logs debug messages if --verbose."""
         if self.verbose:
-            self.printlog(*messages)
+            self.printlog(*messages, **kwargs)
 
-    def log_stdout(self, *messages):
+    def log_stdout(self, *messages, **kwargs):
         """Logs debug messages to stdout if --verbose."""
         if self.verbose:
-            self.print(*messages)
+            self.print(*messages, **kwargs)
 
     def log_lambda(self, *msg_funcs):
         if self.verbose:

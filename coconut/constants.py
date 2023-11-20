@@ -126,6 +126,8 @@ save_new_cache_items = get_bool_env_var("COCONUT_ALLOW_SAVE_TO_CACHE", True)
 
 cache_validation_info = DEVELOP
 
+reverse_any_of = get_bool_env_var("COCONUT_REVERSE_ANY_OF", False)
+
 # below constants are experimentally determined to maximize performance
 
 use_packrat_parser = True  # True also gives us better error messages
@@ -135,8 +137,7 @@ streamline_grammar_for_len = 1536
 
 use_cache_file = True
 disable_incremental_for_len = 46080
-# this is disabled by default for now because it doesn't improve performance
-#  by very much but is very hard to test, so it's hard to be confident in it
+# TODO: this is disabled by default until we get test-any-of to pass
 use_adaptive_any_of = get_bool_env_var("COCONUT_ADAPTIVE_ANY_OF", False)
 
 # note that _parseIncremental produces much smaller caches
@@ -739,6 +740,8 @@ interpreter_compiler_var = "__coconut_compiler__"
 jupyter_console_commands = ("console", "qtconsole")
 
 create_package_retries = 1
+
+call_timeout = 0.01
 
 max_orig_lines_in_log_loc = 2
 

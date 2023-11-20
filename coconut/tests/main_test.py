@@ -282,7 +282,7 @@ def call(
             with using_sys_path(module_dir):
                 stdout, stderr, retcode = call_with_import(module_name, extra_argv)
     else:
-        stdout, stderr, retcode = call_output(raw_cmd, **kwargs)
+        stdout, stderr, retcode = call_output(raw_cmd, color=False, **kwargs)
 
     if expect_retcode is not None:
         assert retcode == expect_retcode, "Return code not as expected ({retcode} != {expect_retcode}) in: {cmd!r}".format(
@@ -294,7 +294,6 @@ def call(
         out = stderr + stdout
     else:
         out = stdout + stderr
-    out = "".join(out)
 
     raw_lines = out.splitlines()
     lines = []
@@ -897,7 +896,6 @@ class TestShell(unittest.TestCase):
         def test_kernel_installation(self):
             call(["coconut", "--jupyter"], assert_output=kernel_installation_msg)
             stdout, stderr, retcode = call_output(["jupyter", "kernelspec", "list"])
-            stdout, stderr = "".join(stdout), "".join(stderr)
             if not stdout:
                 stdout, stderr = stderr, ""
             assert not retcode and not stderr, stderr

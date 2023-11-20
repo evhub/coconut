@@ -132,6 +132,7 @@ from coconut.constants import (
     save_new_cache_items,
     cache_validation_info,
     require_cache_clear_frac,
+    reverse_any_of,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -1076,6 +1077,10 @@ def any_of(*exprs, **kwargs):
             flat_exprs.extend(e.exprs)
         else:
             flat_exprs.append(e)
+
+    if reverse_any_of:
+        flat_exprs.reverse()
+
     return AnyOf(flat_exprs)
 
 

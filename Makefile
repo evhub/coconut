@@ -131,6 +131,11 @@ test-pypy3: clean
 	pypy3 ./coconut/tests/dest/runner.py
 	pypy3 ./coconut/tests/dest/extras.py
 
+# same as test-univ but reverses any ofs
+.PHONY: test-any-of
+test-any-of: export COCONUT_REVERSE_ANY_OF=TRUE
+test-any-of: test-univ
+
 # same as test-univ but also runs mypy
 .PHONY: test-mypy-univ
 test-mypy-univ: export COCONUT_USE_COLOR=TRUE

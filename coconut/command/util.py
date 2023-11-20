@@ -24,6 +24,7 @@ import os
 import subprocess
 import shutil
 import threading
+import queue
 from select import select
 from contextlib import contextmanager
 from functools import partial
@@ -82,6 +83,7 @@ from coconut.constants import (
     min_stack_size_kbs,
     coconut_base_run_args,
     high_proc_prio,
+    call_timeout,
 )
 
 if PY26:
@@ -265,28 +267,58 @@ def run_file(path):
         return runpy.run_path(path, run_name="__main__")
 
 
-def call_output(cmd, stdin=None, encoding_errors="replace", **kwargs):
+def readline_to_queue(file_obj, q):
+    """Read a line from file_obj and put it in the queue."""
+    q.put(file_obj.readline())
+
+
+def call_output(cmd, stdin=None, encoding_errors="replace", color=None, **kwargs):
     """Run command and read output."""
-    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs)
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE, **kwargs)
+
+    if stdin is not None:
+        logger.log_prefix("STDIN < ", stdin.rstrip())
+        p.stdin.write(stdin)
+
+    stdout_q = queue.Queue()
+    stderr_q = queue.Queue()
+
+    stdout_t = stderr_t = None
+
     stdout, stderr, retcode = [], [], None
     while retcode is None:
-        if stdin is not None:
-            logger.log_prefix("STDIN < ", stdin.rstrip())
-        raw_out, raw_err = p.communicate(stdin)
-        stdin = None
+        if stdout_t is None or not stdout_t.is_alive():
+            stdout_t = threading.Thread(target=readline_to_queue, args=(p.stdout, stdout_q))
+            stdout_t.start()
+        if stderr_t is None or not stderr_t.is_alive():
+            stderr_t = threading.Thread(target=readline_to_queue, args=(p.stderr, stderr_q))
+            stderr_t.start()
+
+        stdout_t.join(timeout=call_timeout)
+        stderr_t.join(timeout=call_timeout)
+
+        try:
+            raw_out = stdout_q.get(block=False)
+        except queue.Empty:
+            raw_out = None
+        try:
+            raw_err = stderr_q.get(block=False)
+        except queue.Empty:
+            raw_err = None
 
         out = raw_out.decode(get_encoding(sys.stdout), encoding_errors) if raw_out else ""
-        if out:
-            logger.log_stdout(out.rstrip())
-        stdout.append(out)
-
         err = raw_err.decode(get_encoding(sys.stderr), encoding_errors) if raw_err else ""
+
+        if out:
+            logger.log_stdout(out, color=color, end="")
+            stdout.append(out)
         if err:
-            logger.log(err.rstrip())
-        stderr.append(err)
+            logger.log(err, color=color, end="")
+            stderr.append(err)
 
         retcode = p.poll()
-    return stdout, stderr, retcode
+
+    return "".join(stdout), "".join(stderr), retcode
 
 
 def run_cmd(cmd, show_output=True, raise_errs=True, **kwargs):
@@ -306,7 +338,7 @@ def run_cmd(cmd, show_output=True, raise_errs=True, **kwargs):
             return subprocess.call(cmd, **kwargs)
         else:
             stdout, stderr, retcode = call_output(cmd, **kwargs)
-            output = "".join(stdout + stderr)
+            output = stdout + stderr
             if retcode and raise_errs:
                 raise subprocess.CalledProcessError(retcode, cmd, output=output)
             return output
