@@ -1073,13 +1073,18 @@ def any_of(*exprs, **kwargs):
 
     flat_exprs = []
     for e in exprs:
-        if e.__class__ == AnyOf and not hasaction(e):
+        if (
+            # don't merge MatchFirsts when we're reversing
+            not (reverse_any_of and not use_adaptive)
+            and e.__class__ == AnyOf
+            and not hasaction(e)
+        ):
             flat_exprs.extend(e.exprs)
         else:
             flat_exprs.append(e)
 
     if reverse_any_of:
-        flat_exprs.reverse()
+        flat_exprs = reversed([trace(e) for e in exprs])
 
     return AnyOf(flat_exprs)
 
@@ -1724,14 +1729,6 @@ def split_leading_trailing_indent(line, max_indents=None):
     leading_indent, line = split_leading_indent(line, max_indents)
     line, trailing_indent = split_trailing_indent(line, max_indents)
     return leading_indent, line, trailing_indent
-
-
-def split_leading_whitespace(inputstr):
-    """Split leading whitespace."""
-    basestr = inputstr.lstrip()
-    whitespace = inputstr[:len(inputstr) - len(basestr)]
-    internal_assert(whitespace + basestr == inputstr, "invalid whitespace split", inputstr)
-    return whitespace, basestr
 
 
 def rem_and_count_indents(inputstr):

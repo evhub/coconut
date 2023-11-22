@@ -269,7 +269,8 @@ def run_file(path):
 
 def readline_to_queue(file_obj, q):
     """Read a line from file_obj and put it in the queue."""
-    q.put(file_obj.readline())
+    if not is_empty_pipe(file_obj):
+        q.put(file_obj.readline())
 
 
 def call_output(cmd, stdin=None, encoding_errors="replace", color=None, **kwargs):
@@ -283,40 +284,48 @@ def call_output(cmd, stdin=None, encoding_errors="replace", color=None, **kwargs
     stdout_q = queue.Queue()
     stderr_q = queue.Queue()
 
-    stdout_t = stderr_t = None
+    # list for mutability
+    stdout_t_obj = [None]
+    stderr_t_obj = [None]
 
     stdout, stderr, retcode = [], [], None
+    checking_stdout = True  # alternate between stdout and stderr
     while retcode is None:
-        if stdout_t is None or not stdout_t.is_alive():
-            stdout_t = threading.Thread(target=readline_to_queue, args=(p.stdout, stdout_q))
-            stdout_t.start()
-        if stderr_t is None or not stderr_t.is_alive():
-            stderr_t = threading.Thread(target=readline_to_queue, args=(p.stderr, stderr_q))
-            stderr_t.start()
+        if checking_stdout:
+            proc_pipe = p.stdout
+            sys_pipe = sys.stdout
+            q = stdout_q
+            t_obj = stdout_t_obj
+            log_func = logger.log_stdout
+            out_list = stdout
+        else:
+            proc_pipe = p.stderr
+            sys_pipe = sys.stderr
+            q = stderr_q
+            t_obj = stderr_t_obj
+            log_func = logger.log
+            out_list = stderr
 
-        stdout_t.join(timeout=call_timeout)
-        stderr_t.join(timeout=call_timeout)
+        if t_obj[0] is None or not t_obj[0].is_alive():
+            t_obj[0] = threading.Thread(target=readline_to_queue, args=(proc_pipe, q))
+            t_obj[0].daemon = True
+            t_obj[0].start()
+
+        t_obj[0].join(timeout=call_timeout)
 
         try:
-            raw_out = stdout_q.get(block=False)
+            raw_out = q.get(block=False)
         except queue.Empty:
             raw_out = None
-        try:
-            raw_err = stderr_q.get(block=False)
-        except queue.Empty:
-            raw_err = None
 
-        out = raw_out.decode(get_encoding(sys.stdout), encoding_errors) if raw_out else ""
-        err = raw_err.decode(get_encoding(sys.stderr), encoding_errors) if raw_err else ""
+        out = raw_out.decode(get_encoding(sys_pipe), encoding_errors) if raw_out else ""
 
         if out:
-            logger.log_stdout(out, color=color, end="")
-            stdout.append(out)
-        if err:
-            logger.log(err, color=color, end="")
-            stderr.append(err)
+            log_func(out, color=color, end="")
+            out_list.append(out)
 
         retcode = p.poll()
+        checking_stdout = not checking_stdout
 
     return "".join(stdout), "".join(stderr), retcode
 
@@ -431,15 +440,23 @@ def set_mypy_path():
     return install_dir
 
 
-def stdin_readable():
-    """Determine whether stdin has any data to read."""
+def is_empty_pipe(pipe):
+    """Determine if the given pipe file object is empty."""
     if not WINDOWS:
         try:
-            return bool(select([sys.stdin], [], [], 0)[0])
+            return not select.select([pipe], [], [], 0)[0]
         except Exception:
             logger.log_exc()
-    # by default assume not readable
-    return not isatty(sys.stdin, default=True)
+    return None
+
+
+def stdin_readable():
+    """Determine whether stdin has any data to read."""
+    return (
+        is_empty_pipe(sys.stdin) is False
+        # by default assume not readable
+        or not isatty(sys.stdin, default=True)
+    )
 
 
 def set_recursion_limit(limit):

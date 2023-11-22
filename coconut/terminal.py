@@ -60,6 +60,7 @@ from coconut.util import (
     displayable,
     first_import_time,
     assert_remove_prefix,
+    split_trailing_whitespace,
 )
 from coconut.exceptions import (
     CoconutWarning,
@@ -276,14 +277,16 @@ class Logger(object):
             raw_message = "\n"
 
         components = []
-        if color:
-            components.append(ansii_escape + "[" + color + "m")
         for line in raw_message.splitlines(True):
+            line, endline = split_trailing_whitespace(line)
+            if color:
+                components.append(ansii_escape + "[" + color + "m")
             if sig:
-                line = sig + line
+                components.append(sig)
             components.append(line)
-        if color:
-            components.append(ansii_reset)
+            if color:
+                components.append(ansii_reset)
+            components.append(endline)
         components.append(end)
         full_message = "".join(components)
 

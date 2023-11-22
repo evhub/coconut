@@ -298,6 +298,22 @@ def without_keys(inputdict, rem_keys):
     return {k: v for k, v in inputdict.items() if k not in rem_keys}
 
 
+def split_leading_whitespace(inputstr):
+    """Split leading whitespace."""
+    basestr = inputstr.lstrip()
+    whitespace = inputstr[:len(inputstr) - len(basestr)]
+    assert whitespace + basestr == inputstr, "invalid whitespace split: " + repr(inputstr)
+    return whitespace, basestr
+
+
+def split_trailing_whitespace(inputstr):
+    """Split trailing whitespace."""
+    basestr = inputstr.rstrip()
+    whitespace = inputstr[len(basestr):]
+    assert basestr + whitespace == inputstr, "invalid whitespace split: " + repr(inputstr)
+    return basestr, whitespace
+
+
 # -----------------------------------------------------------------------------------------------------------------------
 # VERSIONING:
 # -----------------------------------------------------------------------------------------------------------------------

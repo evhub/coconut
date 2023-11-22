@@ -234,22 +234,10 @@ else:
             + " (run '{python} -m pip install --upgrade cPyparsing' to fix)".format(python=sys.executable)
         )
 
-SUPPORTS_ADAPTIVE = hasattr(MatchFirst, "setAdaptiveMode")
-USE_CACHE = SUPPORTS_INCREMENTAL and use_cache_file
-
-maybe_make_safe = getattr(_pyparsing, "maybe_make_safe", None)
-
 
 # -----------------------------------------------------------------------------------------------------------------------
 # SETUP:
 # -----------------------------------------------------------------------------------------------------------------------
-
-if MODERN_PYPARSING:
-    _trim_arity = _pyparsing.core._trim_arity
-    _ParseResultsWithOffset = _pyparsing.core._ParseResultsWithOffset
-else:
-    _trim_arity = _pyparsing._trim_arity
-    _ParseResultsWithOffset = _pyparsing._ParseResultsWithOffset
 
 USE_COMPUTATION_GRAPH = get_bool_env_var(
     use_computation_graph_env_var,
@@ -259,6 +247,22 @@ USE_COMPUTATION_GRAPH = get_bool_env_var(
         # and not PYPY  # experimentally determined
     ),
 )
+
+SUPPORTS_ADAPTIVE = (
+    hasattr(MatchFirst, "setAdaptiveMode")
+    and USE_COMPUTATION_GRAPH
+)
+
+USE_CACHE = SUPPORTS_INCREMENTAL and use_cache_file
+
+if MODERN_PYPARSING:
+    _trim_arity = _pyparsing.core._trim_arity
+    _ParseResultsWithOffset = _pyparsing.core._ParseResultsWithOffset
+else:
+    _trim_arity = _pyparsing._trim_arity
+    _ParseResultsWithOffset = _pyparsing._ParseResultsWithOffset
+
+maybe_make_safe = getattr(_pyparsing, "maybe_make_safe", None)
 
 if enable_pyparsing_warnings:
     if MODERN_PYPARSING:

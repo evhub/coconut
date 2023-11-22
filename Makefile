@@ -133,6 +133,7 @@ test-pypy3: clean
 
 # same as test-univ but reverses any ofs
 .PHONY: test-any-of
+test-any-of: export COCONUT_ADAPTIVE_ANY_OF=TRUE
 test-any-of: export COCONUT_REVERSE_ANY_OF=TRUE
 test-any-of: test-univ
 

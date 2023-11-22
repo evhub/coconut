@@ -138,6 +138,7 @@ streamline_grammar_for_len = 1536
 use_cache_file = True
 disable_incremental_for_len = 46080
 # TODO: this is disabled by default until we get test-any-of to pass
+#  (and then test-any-of should be added to main_test)
 use_adaptive_any_of = get_bool_env_var("COCONUT_ADAPTIVE_ANY_OF", False)
 
 # note that _parseIncremental produces much smaller caches

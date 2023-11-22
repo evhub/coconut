@@ -88,6 +88,8 @@ from coconut.constants import (
     in_place_op_funcs,
     match_first_arg_var,
     import_existing,
+    use_adaptive_any_of,
+    reverse_any_of,
 )
 from coconut.util import (
     pickleable_obj,
@@ -1085,10 +1087,14 @@ class Compiler(Grammar, pickleable_obj):
 
     def raise_or_wrap_error(self, error):
         """Raise if USE_COMPUTATION_GRAPH else wrap."""
-        if USE_COMPUTATION_GRAPH:
-            raise error
-        else:
+        if (
+            not USE_COMPUTATION_GRAPH
+            or use_adaptive_any_of
+            or reverse_any_of
+        ):
             return self.wrap_error(error)
+        else:
+            raise error
 
     def type_ignore_comment(self):
         """Get a "type: ignore" comment."""
@@ -4545,7 +4551,7 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
             else:
                 if always_warn:
                     kwargs["extra"] = "remove --strict to downgrade to a warning"
-                raise self.make_err(CoconutStyleError, message, original, loc, **kwargs)
+                return self.raise_or_wrap_error(self.make_err(CoconutStyleError, message, original, loc, **kwargs))
         elif always_warn:
             self.syntax_warning(message, original, loc)
         return tokens[0]
@@ -4586,7 +4592,13 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
         self.internal_assert(len(tokens) == 1, original, loc, "invalid " + name + " tokens", tokens)
         version_info = get_target_info(version)
         if self.target_info < version_info:
-            raise self.make_err(CoconutTargetError, "found Python " + ".".join(str(v) for v in version_info) + " " + name, original, loc, target=version)
+            return self.raise_or_wrap_error(self.make_err(
+                CoconutTargetError,
+                "found Python " + ".".join(str(v) for v in version_info) + " " + name,
+                original,
+                loc,
+                target=version,
+            ))
         else:
             return tokens[0]
 
