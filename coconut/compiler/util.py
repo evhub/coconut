@@ -147,17 +147,17 @@ from coconut.exceptions import (
 indexable_evaluated_tokens_types = (ParseResults, list, tuple)
 
 
-def evaluate_all_tokens(all_tokens, is_final, **kwargs):
+def evaluate_all_tokens(all_tokens, **kwargs):
     """Recursively evaluate all the tokens in all_tokens."""
     all_evaluated_toks = []
     for toks in all_tokens:
-        evaluated_toks = evaluate_tokens(toks, is_final=is_final, **kwargs)
+        evaluated_toks = evaluate_tokens(toks, **kwargs)
         # if we're a final parse, ExceptionNodes will just be raised, but otherwise, if we see any, we need to
         #  short-circuit the computation and return them, since they imply this parse contains invalid syntax
-        if not is_final and isinstance(toks, ExceptionNode):
-            return toks
+        if isinstance(evaluated_toks, ExceptionNode):
+            return None, evaluated_toks
         all_evaluated_toks.append(evaluated_toks)
-    return all_evaluated_toks
+    return all_evaluated_toks, None
 
 
 def evaluate_tokens(tokens, **kwargs):
@@ -182,7 +182,9 @@ def evaluate_tokens(tokens, **kwargs):
                 new_toklist = eval_new_toklist
                 break
         if new_toklist is None:
-            new_toklist = evaluate_all_tokens(old_toklist, is_final=is_final, evaluated_toklists=evaluated_toklists)
+            new_toklist, exc_node = evaluate_all_tokens(old_toklist, is_final=is_final, evaluated_toklists=evaluated_toklists)
+            if exc_node is not None:
+                return exc_node
             # overwrite evaluated toklists rather than appending, since this
             #  should be all the information we need for evaluating the dictionary
             evaluated_toklists = ((old_toklist, new_toklist),)
@@ -198,7 +200,7 @@ def evaluate_tokens(tokens, **kwargs):
             new_occurrences = []
             for value, position in occurrences:
                 new_value = evaluate_tokens(value, is_final=is_final, evaluated_toklists=evaluated_toklists)
-                if not is_final and isinstance(new_value, ExceptionNode):
+                if isinstance(new_value, ExceptionNode):
                     return new_value
                 new_occurrences.append(_ParseResultsWithOffset(new_value, position))
             new_tokdict[name] = new_occurrences
@@ -239,13 +241,12 @@ def evaluate_tokens(tokens, **kwargs):
             return result
 
         elif isinstance(tokens, list):
-            return evaluate_all_tokens(tokens, is_final=is_final, evaluated_toklists=evaluated_toklists)
+            result, exc_node = evaluate_all_tokens(tokens, is_final=is_final, evaluated_toklists=evaluated_toklists)
+            return result if exc_node is None else exc_node
 
         elif isinstance(tokens, tuple):
-            result = evaluate_all_tokens(tokens, is_final=is_final, evaluated_toklists=evaluated_toklists)
-            if isinstance(result, ExceptionNode):
-                return result
-            return tuple(result)
+            result, exc_node = evaluate_all_tokens(tokens, is_final=is_final, evaluated_toklists=evaluated_toklists)
+            return tuple(result) if exc_node is None else exc_node
 
         elif isinstance(tokens, ExceptionNode):
             if is_final:

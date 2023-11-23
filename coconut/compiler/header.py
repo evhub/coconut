@@ -1012,20 +1012,15 @@ _coconut_cached__coconut__ = _coconut_sys.modules.get({_coconut_cached__coconut_
         newline=True,
     ).format(**format_dict)
 
-    if target_info >= (3, 11):
-        header += _get_root_header("311")
-    elif target_info >= (3, 9):
-        header += _get_root_header("39")
-    if target_info >= (3, 7):
-        header += _get_root_header("37")
-    elif target.startswith("3"):
-        header += _get_root_header("3")
-    elif target_info >= (2, 7):
-        header += _get_root_header("27")
-    elif target.startswith("2"):
-        header += _get_root_header("2")
-    else:
-        header += _get_root_header("universal")
+    header += _get_root_header(
+        "311" if target_info >= (3, 11)
+        else "39" if target_info >= (3, 9)
+        else "37" if target_info >= (3, 7)
+        else "3" if target.startswith("3")
+        else "27" if target_info >= (2, 7)
+        else "2" if target.startswith("2")
+        else "universal"
+    )
 
     header += get_template("header").format(**format_dict)
 
