@@ -358,8 +358,6 @@ if DEVELOP:
 VERSION_STR = VERSION + (" [" + VERSION_NAME + "]" if VERSION_NAME else "")
 
 PY2 = _coconut_sys.version_info < (3,)
-PY26 = _coconut_sys.version_info < (2, 7)
-PY37 = _coconut_sys.version_info >= (3, 7)
 
 # -----------------------------------------------------------------------------------------------------------------------
 # SETUP:

@@ -71,6 +71,7 @@ version_tuple = tuple(VERSION.split("."))
 WINDOWS = os.name == "nt"
 PYPY = platform.python_implementation() == "PyPy"
 CPYTHON = platform.python_implementation() == "CPython"
+PY26 = sys.version_info < (2, 7)
 PY32 = sys.version_info >= (3, 2)
 PY33 = sys.version_info >= (3, 3)
 PY34 = sys.version_info >= (3, 4)
@@ -126,7 +127,8 @@ save_new_cache_items = get_bool_env_var("COCONUT_ALLOW_SAVE_TO_CACHE", True)
 
 cache_validation_info = DEVELOP
 
-reverse_any_of = get_bool_env_var("COCONUT_REVERSE_ANY_OF", False)
+reverse_any_of_env_var = "COCONUT_REVERSE_ANY_OF"
+reverse_any_of = get_bool_env_var(reverse_any_of_env_var, False)
 
 # below constants are experimentally determined to maximize performance
 
@@ -136,10 +138,11 @@ packrat_cache_size = None  # only works because final() clears the cache
 streamline_grammar_for_len = 1536
 
 use_cache_file = True
+
 disable_incremental_for_len = 46080
-# TODO: this is disabled by default until we get test-any-of to pass
-#  (and then test-any-of should be added to main_test)
-use_adaptive_any_of = get_bool_env_var("COCONUT_ADAPTIVE_ANY_OF", False)
+
+adaptive_any_of_env_var = "COCONUT_ADAPTIVE_ANY_OF"
+use_adaptive_any_of = get_bool_env_var(adaptive_any_of_env_var, True)
 
 # note that _parseIncremental produces much smaller caches
 use_incremental_if_available = False
@@ -477,6 +480,7 @@ py3_to_py2_stdlib = {
     "urllib.parse": ("urllib", (3,)),
     "pickle": ("cPickle", (3,)),
     "collections.abc": ("collections", (3, 3)),
+    "_dummy_thread": ("dummy_thread", (3,)),
     # ./ in old_name denotes from ... import ...
     "io.StringIO": ("StringIO./StringIO", (2, 7)),
     "io.BytesIO": ("cStringIO./StringIO", (2, 7)),
@@ -485,7 +489,7 @@ py3_to_py2_stdlib = {
     "itertools.zip_longest": ("itertools./izip_longest", (3,)),
     "math.gcd": ("fractions./gcd", (3, 5)),
     "time.process_time": ("time./clock", (3, 3)),
-    "_dummy_thread": ("dummy_thread", (3,)),
+    "shlex.quote": ("pipes./quote", (3, 3)),
 
     # third-party backports
     "asyncio": ("trollius", (3, 4)),
@@ -742,9 +746,10 @@ jupyter_console_commands = ("console", "qtconsole")
 
 create_package_retries = 1
 
-call_timeout = 0.01
+call_timeout = 0.001
 
 max_orig_lines_in_log_loc = 2
+
 
 # -----------------------------------------------------------------------------------------------------------------------
 # HIGHLIGHTER CONSTANTS:

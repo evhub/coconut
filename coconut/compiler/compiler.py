@@ -132,6 +132,7 @@ from coconut.compiler.grammar import (
     partial_op_item_handle,
 )
 from coconut.compiler.util import (
+    ExceptionNode,
     sys_target,
     getline,
     addskip,
@@ -888,11 +889,17 @@ class Compiler(Grammar, pickleable_obj):
         """Do post-processing that comes after deferred_code_proc."""
         return self.apply_procs(self.reformatprocs[1:], snip, reformatting=True, log=False)
 
-    def reformat(self, snip, **kwargs):
+    def reformat(self, snip, ignore_errors, **kwargs):
         """Post process a preprocessed snippet."""
-        internal_assert("ignore_errors" in kwargs, "reformat() missing required keyword argument: 'ignore_errors'")
-        with self.complain_on_err():
-            return self.apply_procs(self.reformatprocs, snip, reformatting=True, log=False, **kwargs)
+        with noop_ctx() if ignore_errors else self.complain_on_err():
+            return self.apply_procs(
+                self.reformatprocs,
+                snip,
+                reformatting=True,
+                log=False,
+                ignore_errors=ignore_errors,
+                **kwargs,
+            )
         return snip
 
     def reformat_locs(self, snip, loc, endpt=None, **kwargs):
@@ -1087,12 +1094,10 @@ class Compiler(Grammar, pickleable_obj):
 
     def raise_or_wrap_error(self, error):
         """Raise if USE_COMPUTATION_GRAPH else wrap."""
-        if (
-            not USE_COMPUTATION_GRAPH
-            or use_adaptive_any_of
-            or reverse_any_of
-        ):
+        if not USE_COMPUTATION_GRAPH:
             return self.wrap_error(error)
+        elif use_adaptive_any_of or reverse_any_of:
+            return ExceptionNode(error)
         else:
             raise error
 

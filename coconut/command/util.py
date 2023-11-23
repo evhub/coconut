@@ -52,8 +52,10 @@ from coconut.util import (
 )
 from coconut.constants import (
     WINDOWS,
-    PY34,
+    CPYTHON,
+    PY26,
     PY32,
+    PY34,
     fixpath,
     base_dir,
     main_prompt,
@@ -90,15 +92,15 @@ if PY26:
     import imp
 else:
     import runpy
+if PY34:
+    from importlib import reload
+else:
+    from imp import reload
 try:
     # just importing readline improves built-in input()
     import readline  # NOQA
 except ImportError:
     pass
-if PY34:
-    from importlib import reload
-else:
-    from imp import reload
 
 try:
     import prompt_toolkit
@@ -267,22 +269,52 @@ def run_file(path):
         return runpy.run_path(path, run_name="__main__")
 
 
+def interrupt_thread(thread, exctype=OSError):
+    """Attempt to interrupt the given thread."""
+    if not CPYTHON:
+        return False
+    if thread is None or not thread.is_alive():
+        return True
+    import ctypes
+    tid = ctypes.c_long(thread.ident)
+    res = ctypes.pythonapi.PyThreadState_SetAsyncExc(
+        tid,
+        ctypes.py_object(exctype),
+    )
+    if res == 0:
+        return False
+    elif res == 1:
+        return True
+    else:
+        ctypes.pythonapi.PyThreadState_SetAsyncExc(tid, None)
+        return False
+
+
 def readline_to_queue(file_obj, q):
     """Read a line from file_obj and put it in the queue."""
     if not is_empty_pipe(file_obj):
-        q.put(file_obj.readline())
+        try:
+            q.put(file_obj.readline())
+        except OSError:
+            pass
 
 
 def call_output(cmd, stdin=None, encoding_errors="replace", color=None, **kwargs):
     """Run command and read output."""
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE, **kwargs)
 
+    stdout_q = queue.Queue()
+    stderr_q = queue.Queue()
+
+    if WINDOWS or not logger.verbose:
+        raw_stdout, raw_stderr = p.communicate(stdin)
+        stdout_q.put(raw_stdout)
+        stderr_q.put(raw_stderr)
+        stdin = None
+
     if stdin is not None:
         logger.log_prefix("STDIN < ", stdin.rstrip())
         p.stdin.write(stdin)
-
-    stdout_q = queue.Queue()
-    stderr_q = queue.Queue()
 
     # list for mutability
     stdout_t_obj = [None]
@@ -290,42 +322,48 @@ def call_output(cmd, stdin=None, encoding_errors="replace", color=None, **kwargs
 
     stdout, stderr, retcode = [], [], None
     checking_stdout = True  # alternate between stdout and stderr
-    while retcode is None:
-        if checking_stdout:
-            proc_pipe = p.stdout
-            sys_pipe = sys.stdout
-            q = stdout_q
-            t_obj = stdout_t_obj
-            log_func = logger.log_stdout
-            out_list = stdout
-        else:
-            proc_pipe = p.stderr
-            sys_pipe = sys.stderr
-            q = stderr_q
-            t_obj = stderr_t_obj
-            log_func = logger.log
-            out_list = stderr
+    try:
+        while retcode is None or not stdout_q.empty() or not stderr_q.empty():
+            if checking_stdout:
+                proc_pipe = p.stdout
+                sys_pipe = sys.stdout
+                q = stdout_q
+                t_obj = stdout_t_obj
+                log_func = logger.log_stdout
+                out_list = stdout
+            else:
+                proc_pipe = p.stderr
+                sys_pipe = sys.stderr
+                q = stderr_q
+                t_obj = stderr_t_obj
+                log_func = logger.log
+                out_list = stderr
 
-        if t_obj[0] is None or not t_obj[0].is_alive():
-            t_obj[0] = threading.Thread(target=readline_to_queue, args=(proc_pipe, q))
-            t_obj[0].daemon = True
-            t_obj[0].start()
+            retcode = p.poll()
 
-        t_obj[0].join(timeout=call_timeout)
+            if retcode is None and t_obj[0] is not False:
+                if t_obj[0] is None or not t_obj[0].is_alive():
+                    t_obj[0] = threading.Thread(target=readline_to_queue, args=(proc_pipe, q))
+                    t_obj[0].daemon = True
+                    t_obj[0].start()
 
-        try:
-            raw_out = q.get(block=False)
-        except queue.Empty:
-            raw_out = None
+                t_obj[0].join(timeout=call_timeout)
 
-        out = raw_out.decode(get_encoding(sys_pipe), encoding_errors) if raw_out else ""
+            try:
+                raw_out = q.get(block=False)
+            except queue.Empty:
+                raw_out = None
 
-        if out:
-            log_func(out, color=color, end="")
-            out_list.append(out)
+            out = raw_out.decode(get_encoding(sys_pipe), encoding_errors) if raw_out else ""
 
-        retcode = p.poll()
-        checking_stdout = not checking_stdout
+            if out:
+                log_func(out, color=color, end="")
+                out_list.append(out)
+
+            checking_stdout = not checking_stdout
+    finally:
+        interrupt_thread(stdout_t_obj[0])
+        interrupt_thread(stderr_t_obj[0])
 
     return "".join(stdout), "".join(stderr), retcode
 
@@ -544,6 +582,21 @@ def get_python_lib():
     return fixpath(python_lib)
 
 
+def import_coconut_header():
+    """Import the coconut.__coconut__ header.
+    This is expensive, so only do it here."""
+    try:
+        from coconut import __coconut__
+        return __coconut__
+    except ImportError:
+        # fixes an issue where, when running from the base coconut directory,
+        #  the base coconut directory is treated as a namespace package
+        if os.path.basename(os.getcwd()) == "coconut":
+            from coconut.coconut import __coconut__
+            return __coconut__
+        raise
+
+
 # -----------------------------------------------------------------------------------------------------------------------
 # CLASSES:
 # -----------------------------------------------------------------------------------------------------------------------
@@ -695,7 +748,7 @@ class Runner(object):
 
     def fix_pickle(self):
         """Fix pickling of Coconut header objects."""
-        from coconut import __coconut__  # this is expensive, so only do it here
+        __coconut__ = import_coconut_header()
         for var in self.vars:
             if not var.startswith("__") and var in dir(__coconut__) and var not in must_use_specific_target_builtins:
                 cur_val = self.vars[var]

@@ -40,6 +40,7 @@ from coconut.terminal import (
 from coconut.command.util import (
     call_output,
     reload,
+    run_cmd,
 )
 from coconut.compiler.util import (
     get_psf_target,
@@ -50,11 +51,15 @@ from coconut.constants import (
     IPY,
     XONSH,
     MYPY,
+    PY26,
     PY35,
     PY36,
     PY38,
     PY39,
     PY310,
+    CPYTHON,
+    adaptive_any_of_env_var,
+    reverse_any_of_env_var,
     supported_py2_vers,
     supported_py3_vers,
     icoconut_default_kernel_names,
@@ -235,6 +240,7 @@ def call(
     expect_retcode=0,
     convert_to_import=False,
     assert_output_only_at_end=None,
+    ignore_output=False,
     **kwargs
 ):
     """Execute a shell command and assert that no errors were encountered."""
@@ -281,6 +287,9 @@ def call(
                 module_name += ".__main__"
             with using_sys_path(module_dir):
                 stdout, stderr, retcode = call_with_import(module_name, extra_argv)
+    elif ignore_output:
+        retcode = run_cmd(raw_cmd, raise_errs=False, **kwargs)
+        stdout = stderr = ""
     else:
         stdout, stderr, retcode = call_output(raw_cmd, color=False, **kwargs)
 
@@ -541,6 +550,19 @@ def spawn_cmd(cmd):
     import pexpect  # hide import since not always available
     print("\n>", cmd)
     return pexpect.spawn(cmd)
+
+
+@contextmanager
+def using_env_vars(env_vars):
+    """Run using the given environment variables."""
+    old_env = os.environ.copy()
+    os.environ.update(env_vars)
+    try:
+        yield
+    finally:
+        for k in env_vars:
+            del os.environ[k]
+        os.environ.update(old_env)
 
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -963,6 +985,14 @@ class TestCompilation(unittest.TestCase):
 
     # run fewer tests on Windows so appveyor doesn't time out
     if not WINDOWS:
+        if CPYTHON:
+            def test_any_of(self):
+                with using_env_vars({
+                    adaptive_any_of_env_var: "True",
+                    reverse_any_of_env_var: "True",
+                }):
+                    run()
+
         def test_keep_lines(self):
             run(["--keep-lines"])
 

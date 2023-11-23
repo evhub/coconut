@@ -22,18 +22,20 @@ from coconut.root import *  # NOQA
 import sys
 import os
 import unittest
-if PY26:
-    import_module = __import__
-else:
-    from importlib import import_module
 
 from coconut import constants
 from coconut.constants import (
     WINDOWS,
     PYPY,
+    PY26,
     PY39,
     fixpath,
 )
+
+if PY26:
+    import_module = __import__
+else:
+    from importlib import import_module
 
 # -----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:

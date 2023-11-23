@@ -49,18 +49,19 @@ def embed(kernel=False, depth=0, **kwargs):
 
 def load_ipython_extension(ipython):
     """Loads Coconut as an IPython extension."""
+    # import here to avoid circular dependencies
+    from coconut import api
+    from coconut.exceptions import CoconutException
+    from coconut.terminal import logger
+    from coconut.command.util import import_coconut_header
+
     # add Coconut built-ins
-    from coconut import __coconut__
+    __coconut__ = import_coconut_header()
     newvars = {}
     for var, val in vars(__coconut__).items():
         if not var.startswith("__"):
             newvars[var] = val
     ipython.push(newvars)
-
-    # import here to avoid circular dependencies
-    from coconut import api
-    from coconut.exceptions import CoconutException
-    from coconut.terminal import logger
 
     magic_state = api.get_state()
     api.setup(state=magic_state, **coconut_kernel_kwargs)

@@ -147,10 +147,24 @@ from coconut.exceptions import (
 indexable_evaluated_tokens_types = (ParseResults, list, tuple)
 
 
+def evaluate_all_tokens(all_tokens, is_final, **kwargs):
+    """Recursively evaluate all the tokens in all_tokens."""
+    all_evaluated_toks = []
+    for toks in all_tokens:
+        evaluated_toks = evaluate_tokens(toks, is_final=is_final, **kwargs)
+        # if we're a final parse, ExceptionNodes will just be raised, but otherwise, if we see any, we need to
+        #  short-circuit the computation and return them, since they imply this parse contains invalid syntax
+        if not is_final and isinstance(toks, ExceptionNode):
+            return toks
+        all_evaluated_toks.append(evaluated_toks)
+    return all_evaluated_toks
+
+
 def evaluate_tokens(tokens, **kwargs):
     """Evaluate the given tokens in the computation graph.
     Very performance sensitive."""
-    # can't have this be a normal kwarg to make evaluate_tokens a valid parse action
+    # can't have these be normal kwargs to make evaluate_tokens a valid parse action
+    is_final = kwargs.pop("is_final", False)
     evaluated_toklists = kwargs.pop("evaluated_toklists", ())
     if DEVELOP:  # avoid the overhead of the call if not develop
         internal_assert(not kwargs, "invalid keyword arguments to evaluate_tokens", kwargs)
@@ -168,7 +182,7 @@ def evaluate_tokens(tokens, **kwargs):
                 new_toklist = eval_new_toklist
                 break
         if new_toklist is None:
-            new_toklist = [evaluate_tokens(toks, evaluated_toklists=evaluated_toklists) for toks in old_toklist]
+            new_toklist = evaluate_all_tokens(old_toklist, is_final=is_final, evaluated_toklists=evaluated_toklists)
             # overwrite evaluated toklists rather than appending, since this
             #  should be all the information we need for evaluating the dictionary
             evaluated_toklists = ((old_toklist, new_toklist),)
@@ -183,7 +197,9 @@ def evaluate_tokens(tokens, **kwargs):
         for name, occurrences in tokens._ParseResults__tokdict.items():
             new_occurrences = []
             for value, position in occurrences:
-                new_value = evaluate_tokens(value, evaluated_toklists=evaluated_toklists)
+                new_value = evaluate_tokens(value, is_final=is_final, evaluated_toklists=evaluated_toklists)
+                if not is_final and isinstance(new_value, ExceptionNode):
+                    return new_value
                 new_occurrences.append(_ParseResultsWithOffset(new_value, position))
             new_tokdict[name] = new_occurrences
         new_tokens._ParseResults__tokdict.update(new_tokdict)
@@ -217,13 +233,24 @@ def evaluate_tokens(tokens, **kwargs):
             return tokens
 
         elif isinstance(tokens, ComputationNode):
-            return tokens.evaluate()
+            result = tokens.evaluate()
+            if is_final and isinstance(result, ExceptionNode):
+                raise result.exception
+            return result
 
         elif isinstance(tokens, list):
-            return [evaluate_tokens(inner_toks, evaluated_toklists=evaluated_toklists) for inner_toks in tokens]
+            return evaluate_all_tokens(tokens, is_final=is_final, evaluated_toklists=evaluated_toklists)
 
         elif isinstance(tokens, tuple):
-            return tuple(evaluate_tokens(inner_toks, evaluated_toklists=evaluated_toklists) for inner_toks in tokens)
+            result = evaluate_all_tokens(tokens, is_final=is_final, evaluated_toklists=evaluated_toklists)
+            if isinstance(result, ExceptionNode):
+                return result
+            return tuple(result)
+
+        elif isinstance(tokens, ExceptionNode):
+            if is_final:
+                raise tokens.exception
+            return tokens
 
         elif isinstance(tokens, DeferredNode):
             return tokens
@@ -277,6 +304,8 @@ class ComputationNode(object):
         evaluated_toks = evaluate_tokens(self.tokens)
         if logger.tracing:  # avoid the overhead of the call if not tracing
             logger.log_trace(self.name, self.original, self.loc, evaluated_toks, self.tokens)
+        if isinstance(evaluated_toks, ExceptionNode):
+            return evaluated_toks  # short-circuit if we got an ExceptionNode
         try:
             return self.action(
                 self.original,
@@ -307,6 +336,7 @@ class ComputationNode(object):
 
 class DeferredNode(object):
     """A node in the computation graph that has had its evaluation explicitly deferred."""
+    __slots__ = ("original", "loc", "tokens")
 
     def __init__(self, original, loc, tokens):
         self.original = original
@@ -316,6 +346,16 @@ class DeferredNode(object):
     def evaluate(self):
         """Evaluate the deferred computation."""
         return unpack(self.tokens)
+
+
+class ExceptionNode(object):
+    """A node in the computation graph that stores an exception that will be raised upon final evaluation."""
+    __slots__ = ("exception",)
+
+    def __init__(self, exception):
+        if not USE_COMPUTATION_GRAPH:
+            raise exception
+        self.exception = exception
 
 
 class CombineToNode(Combine):
@@ -377,7 +417,7 @@ def attach(item, action, ignore_no_tokens=None, ignore_one_token=None, ignore_to
 def final_evaluate_tokens(tokens):
     """Same as evaluate_tokens but should only be used once a parse is assured."""
     clear_packrat_cache()
-    return evaluate_tokens(tokens)
+    return evaluate_tokens(tokens, is_final=True)
 
 
 @contextmanager
@@ -426,7 +466,7 @@ def defer(item):
 def unpack(tokens):
     """Evaluate and unpack the given computation graph."""
     logger.log_tag("unpack", tokens)
-    tokens = evaluate_tokens(tokens)
+    tokens = final_evaluate_tokens(tokens)
     if isinstance(tokens, ParseResults) and len(tokens) == 1:
         tokens = tokens[0]
     return tokens
