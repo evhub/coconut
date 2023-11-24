@@ -89,6 +89,9 @@ logger.verbose = property(lambda self: True, lambda self, value: print("WARNING:
 
 os.environ["PYDEVD_DISABLE_FILE_VALIDATION"] = "1"
 
+# run fewer tests on Windows so appveyor doesn't time out
+TEST_ALL = get_bool_env_var("COCONUT_TEST_ALL", not WINDOWS)
+
 
 # -----------------------------------------------------------------------------------------------------------------------
 # CONSTANTS:
@@ -984,8 +987,7 @@ class TestCompilation(unittest.TestCase):
         def test_no_wrap(self):
             run(["--no-wrap"])
 
-    # run fewer tests on Windows so appveyor doesn't time out
-    if not WINDOWS:
+    if TEST_ALL:
         if CPYTHON:
             def test_any_of(self):
                 with using_env_vars({
@@ -1024,8 +1026,7 @@ class TestCompilation(unittest.TestCase):
             run(["--jobs", "0", "--trace"], check_errors=False)
 
 
-# more appveyor timeout prevention
-if not WINDOWS:
+if TEST_ALL:
     @add_test_func_names
     class TestExternal(unittest.TestCase):
 
