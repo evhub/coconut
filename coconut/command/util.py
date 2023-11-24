@@ -482,7 +482,7 @@ def is_empty_pipe(pipe):
     """Determine if the given pipe file object is empty."""
     if not WINDOWS:
         try:
-            return not select.select([pipe], [], [], 0)[0]
+            return not select([pipe], [], [], 0)[0]
         except Exception:
             logger.log_exc()
     return None
@@ -490,11 +490,11 @@ def is_empty_pipe(pipe):
 
 def stdin_readable():
     """Determine whether stdin has any data to read."""
-    return (
-        is_empty_pipe(sys.stdin) is False
-        # by default assume not readable
-        or not isatty(sys.stdin, default=True)
-    )
+    stdin_is_empty = is_empty_pipe(sys.stdin)
+    if stdin_is_empty is not None:
+        return stdin_is_empty
+    # by default assume not readable
+    return not isatty(sys.stdin, default=True)
 
 
 def set_recursion_limit(limit):

@@ -397,8 +397,10 @@ class Command(object):
                 self.start_jupyter(args.jupyter)
             elif stdin_readable():
                 logger.log("Reading piped input from stdin...")
-                self.execute(self.parse_block(sys.stdin.read()))
-                got_stdin = True
+                read_stdin = sys.stdin.read()
+                if read_stdin:
+                    self.execute(self.parse_block(read_stdin))
+                    got_stdin = True
             if args.interact or (
                 interact and not (
                     got_stdin
