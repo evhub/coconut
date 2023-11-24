@@ -898,7 +898,7 @@ class Compiler(Grammar, pickleable_obj):
                 reformatting=True,
                 log=False,
                 ignore_errors=ignore_errors,
-                **kwargs,
+                **kwargs  # no comma for py2
             )
         return snip
 
