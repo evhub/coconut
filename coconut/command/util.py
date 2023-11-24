@@ -492,7 +492,7 @@ def stdin_readable():
     """Determine whether stdin has any data to read."""
     stdin_is_empty = is_empty_pipe(sys.stdin)
     if stdin_is_empty is not None:
-        return stdin_is_empty
+        return not stdin_is_empty
     # by default assume not readable
     return not isatty(sys.stdin, default=True)
 
