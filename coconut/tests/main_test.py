@@ -847,7 +847,8 @@ class TestShell(unittest.TestCase):
     def test_find_packages(self):
         with using_pys_in(agnostic_dir):
             with using_coconut():
-                from coconut.api import find_and_compile_packages
+                from coconut.api import find_packages, find_and_compile_packages
+                assert find_packages(cocotest_dir) == ["agnostic"]
                 assert find_and_compile_packages(cocotest_dir) == ["agnostic"]
 
     def test_runnable(self):

@@ -4708,13 +4708,15 @@ If _use\_cache\_dir_ is passed, it will turn on or off the usage of a `__coconut
 
 Switches the [`breakpoint` built-in](https://www.python.org/dev/peps/pep-0553/) which Coconut makes universally available to use [`coconut.embed`](#coconut-embed) instead of [`pdb.set_trace`](https://docs.python.org/3/library/pdb.html#pdb.set_trace) (or undoes that switch if `on=False`). This function is called automatically when `coconut.api` is imported.
 
-#### `find_and_compile_packages`
+#### `find_packages` and `find_and_compile_packages`
+
+**coconut.api.find_packages**(_where_=`"."`, _exclude_=`()`, _include_=`("*",)`)
 
 **coconut.api.find_and_compile_packages**(_where_=`"."`, _exclude_=`()`, _include_=`("*",)`)
 
-Behaves similarly to [`setuptools.find_packages`](https://setuptools.pypa.io/en/latest/userguide/quickstart.html#package-discovery) except that it finds Coconut packages rather than Python packages, and compiles any Coconut packages that it finds in-place.
+Both functions behave identically to [`setuptools.find_packages`](https://setuptools.pypa.io/en/latest/userguide/quickstart.html#package-discovery), except that they find Coconut packages rather than Python packages. `find_and_compile_packages` additionally compiles any Coconut packages that it finds in-place.
 
-Note that if you want to use `find_and_compile_packages` in your `setup.py`, you'll need to include `coconut` as a [build-time dependency in your `pyproject.toml`](https://pip.pypa.io/en/stable/reference/build-system/pyproject-toml/#build-time-dependencies).
+Note that if you want to use either of these functions in your `setup.py`, you'll need to include `coconut` as a [build-time dependency in your `pyproject.toml`](https://pip.pypa.io/en/stable/reference/build-system/pyproject-toml/#build-time-dependencies).
 
 ##### Example
 

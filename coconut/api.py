@@ -363,7 +363,24 @@ codecs.register(get_coconut_encoding)
 # -----------------------------------------------------------------------------------------------------------------------
 
 class CoconutPackageFinder(PackageFinder, object):
+    _coconut_compile = None
 
+    @override
+    @classmethod
+    def _looks_like_package(cls, path, _package_name=None):
+        is_coconut_package = any(
+            os.path.isfile(os.path.join(path, "__init__" + ext))
+            for ext in code_exts
+        )
+        if is_coconut_package and cls._coconut_compile is not None:
+            cls._coconut_compile(path)
+        return is_coconut_package
+
+
+find_packages = CoconutPackageFinder.find
+
+
+class CoconutPackageCompiler(CoconutPackageFinder):
     _coconut_command = None
 
     @classmethod
@@ -373,16 +390,5 @@ class CoconutPackageFinder(PackageFinder, object):
             cls._coconut_command = Command()
         return cls._coconut_command.cmd_sys([path], interact=False)
 
-    @override
-    @classmethod
-    def _looks_like_package(cls, path, _package_name=None):
-        is_coconut_package = any(
-            os.path.isfile(os.path.join(path, "__init__" + ext))
-            for ext in code_exts
-        )
-        if is_coconut_package:
-            cls._coconut_compile(path)
-        return is_coconut_package
 
-
-find_and_compile_packages = CoconutPackageFinder.find
+find_and_compile_packages = CoconutPackageCompiler.find

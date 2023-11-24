@@ -157,4 +157,4 @@ def get_coconut_encoding(encoding: Text = ...) -> Any:
     ...
 
 
-find_and_compile_packages = _find_packages
+find_and_compile_packages = find_packages = _find_packages

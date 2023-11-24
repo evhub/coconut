@@ -1031,7 +1031,7 @@ unpinned_min_versions = {
     ("typing_extensions", "py>=38"): (4, 8),
     ("ipykernel", "py38"): (6,),
     ("jedi", "py39"): (0, 19),
-    ("pygments", "py>=39"): (2, 16),
+    ("pygments", "py>=39"): (2, 17),
     ("xonsh", "py38"): (0, 14),
     ("pytest", "py36"): (7,),
     ("async_generator", "py35"): (1, 10),
