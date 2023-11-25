@@ -308,7 +308,7 @@ def call_output(cmd, stdin=None, encoding_errors="replace", color=None, **kwargs
     stdout_q = queue.Queue()
     stderr_q = queue.Queue()
 
-    if use_fancy_call_output:
+    if not use_fancy_call_output:
         raw_stdout, raw_stderr = p.communicate(stdin)
         stdout_q.put(raw_stdout)
         stderr_q.put(raw_stderr)

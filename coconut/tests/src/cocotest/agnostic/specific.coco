@@ -48,6 +48,9 @@ def py3_spec_test() -> bool:
     ]:  # type: ignore
         assert list(xs) == list(zip(range(5), range(5)))
         assert list(xs) == [] if sys.version_info >= (3,) else list(zip(range(5), range(5)))
+    py_xs = py_map((.+1), range(5))
+    assert list(py_xs) == list(range(1, 6))
+    assert list(py_xs) == []
     return True
 
 
