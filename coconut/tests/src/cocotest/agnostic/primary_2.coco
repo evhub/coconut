@@ -9,6 +9,9 @@ from importlib import reload  # NOQA
 
 from .util import assert_raises, typed_eq
 
+operator !
+from math import factorial as (!)
+
 
 def primary_test_2() -> bool:
     """Basic no-dependency tests (2/2)."""
@@ -403,6 +406,7 @@ def primary_test_2() -> bool:
     assert ident$(x=?).__name__ == "ident" == ident$(1).__name__  # type: ignore
     assert collectby(.[0], [(0, 1), (0, 2)], value_func=.[1], reduce_func=(+), reduce_func_init=1) == {0: 4}
     assert ident$(1, ?) |> type == ident$(1) |> type
+    assert 10! == 3628800
 
     with process_map.multiple_sequential_calls():  # type: ignore
         assert map((+), range(3), range(4)$[:-1], strict=True) |> list == [0, 2, 4] == process_map((+), range(3), range(4)$[:-1], strict=True) |> list  # type: ignore
