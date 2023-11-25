@@ -314,6 +314,13 @@ def split_trailing_whitespace(inputstr):
     return basestr, whitespace
 
 
+def replace_all(inputstr, all_to_replace, replace_to):
+    """Replace everything in all_to_replace with replace_to in inputstr."""
+    for to_replace in all_to_replace:
+        inputstr = inputstr.replace(to_replace, replace_to)
+    return inputstr
+
+
 # -----------------------------------------------------------------------------------------------------------------------
 # VERSIONING:
 # -----------------------------------------------------------------------------------------------------------------------

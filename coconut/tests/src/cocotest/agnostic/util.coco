@@ -766,6 +766,14 @@ def depth_2(t):
     match tree(l=l, r=r) in t:
         return 1 + max([depth_2(l), depth_2(r)])
 
+class Tree
+data Node(*children) from Tree
+data Leaf(elem) from Tree
+
+def tree_depth(Leaf(_)) = 0
+addpattern def tree_depth(Node(*children)) =  # type: ignore
+    children |> map$(tree_depth) |> max |> (.+1)
+
 # Monads:
 def base_maybe(x, f) = f(x) if x is not None else None
 def maybes(*fs) = reduce(base_maybe, fs)

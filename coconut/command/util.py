@@ -591,10 +591,14 @@ def import_coconut_header():
     except ImportError:
         # fixes an issue where, when running from the base coconut directory,
         #  the base coconut directory is treated as a namespace package
-        if os.path.basename(os.getcwd()) == "coconut":
+        try:
             from coconut.coconut import __coconut__
+        except ImportError:
+            __coconut__ = None
+        if __coconut__ is not None:
             return __coconut__
-        raise
+        else:
+            raise  # the original ImportError, since that's the normal one
 
 
 # -----------------------------------------------------------------------------------------------------------------------

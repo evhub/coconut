@@ -1068,6 +1068,8 @@ forward 2""") == 900
     assert x_or_y(x=1) == (1, 1) == x_or_y(y=1)
     assert DerivedWithMeths().cls_meth()
     assert DerivedWithMeths().static_meth()
+    assert Fibs()[100] == 354224848179261915075
+    assert tree_depth(Node(Leaf 5, Node(Node(Leaf 10)))) == 3
 
     with process_map.multiple_sequential_calls():  # type: ignore
         assert process_map(tuple <.. (|>)$(to_sort), qsorts) |> list == [to_sort |> sorted |> tuple] * len(qsorts)

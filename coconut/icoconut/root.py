@@ -42,9 +42,10 @@ from coconut.constants import (
     code_exts,
     conda_build_env_var,
     coconut_kernel_kwargs,
+    default_whitespace_chars,
 )
 from coconut.terminal import logger
-from coconut.util import override, memoize_with_exceptions
+from coconut.util import override, memoize_with_exceptions, replace_all
 from coconut.compiler import Compiler
 from coconut.compiler.util import should_indent
 from coconut.command.util import Runner
@@ -160,7 +161,7 @@ if LOAD_MODULE:
             """Version of _compile that checks Coconut code.
             None means that the code should not be run as is.
             Any other value means that it can."""
-            if source.replace(" ", "").endswith("\n\n"):
+            if replace_all(source, default_whitespace_chars, "").endswith("\n\n"):
                 return True
             elif should_indent(source):
                 return None
@@ -247,7 +248,7 @@ def user_expressions(self, expressions):
             "version": VERSION,
             "mimetype": mimetype,
             "codemirror_mode": {
-                "name": "python",
+                "name": "ipython",
                 "version": py_syntax_version,
             },
             "pygments_lexer": "coconut",
