@@ -24,14 +24,15 @@ import os
 import subprocess
 import shutil
 import threading
-import queue
 from select import select
 from contextlib import contextmanager
 from functools import partial
 if PY2:
     import __builtin__ as builtins
+    import Queue as queue
 else:
     import builtins
+    import queue
 
 from coconut.root import _coconut_exec
 from coconut.terminal import (
