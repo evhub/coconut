@@ -87,6 +87,7 @@ from coconut.constants import (
     coconut_base_run_args,
     high_proc_prio,
     call_timeout,
+    use_fancy_call_output,
 )
 
 if PY26:
@@ -293,7 +294,7 @@ def interrupt_thread(thread, exctype=OSError):
 
 def readline_to_queue(file_obj, q):
     """Read a line from file_obj and put it in the queue."""
-    if not is_empty_pipe(file_obj):
+    if not is_empty_pipe(file_obj, False):
         try:
             q.put(file_obj.readline())
         except OSError:
@@ -307,7 +308,7 @@ def call_output(cmd, stdin=None, encoding_errors="replace", color=None, **kwargs
     stdout_q = queue.Queue()
     stderr_q = queue.Queue()
 
-    if WINDOWS or not logger.verbose:
+    if use_fancy_call_output:
         raw_stdout, raw_stderr = p.communicate(stdin)
         stdout_q.put(raw_stdout)
         stderr_q.put(raw_stderr)
@@ -324,7 +325,13 @@ def call_output(cmd, stdin=None, encoding_errors="replace", color=None, **kwargs
     stdout, stderr, retcode = [], [], None
     checking_stdout = True  # alternate between stdout and stderr
     try:
-        while retcode is None or not stdout_q.empty() or not stderr_q.empty():
+        while (
+            retcode is None
+            or not stdout_q.empty()
+            or not stderr_q.empty()
+            or not is_empty_pipe(p.stdout, True)
+            or not is_empty_pipe(p.stderr, True)
+        ):
             if checking_stdout:
                 proc_pipe = p.stdout
                 sys_pipe = sys.stdout
@@ -342,7 +349,10 @@ def call_output(cmd, stdin=None, encoding_errors="replace", color=None, **kwargs
 
             retcode = p.poll()
 
-            if retcode is None and t_obj[0] is not False:
+            if (
+                retcode is None
+                or not is_empty_pipe(proc_pipe, True)
+            ):
                 if t_obj[0] is None or not t_obj[0].is_alive():
                     t_obj[0] = threading.Thread(target=readline_to_queue, args=(proc_pipe, q))
                     t_obj[0].daemon = True
@@ -479,14 +489,14 @@ def set_mypy_path():
     return install_dir
 
 
-def is_empty_pipe(pipe):
+def is_empty_pipe(pipe, default=None):
     """Determine if the given pipe file object is empty."""
     if not WINDOWS:
         try:
             return not select([pipe], [], [], 0)[0]
         except Exception:
             logger.log_exc()
-    return None
+    return default
 
 
 def stdin_readable():

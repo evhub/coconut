@@ -746,7 +746,8 @@ jupyter_console_commands = ("console", "qtconsole")
 
 create_package_retries = 1
 
-call_timeout = 0.001
+use_fancy_call_output = get_bool_env_var("COCONUT_FANCY_CALL_OUTPUT", not WINDOWS)
+call_timeout = 0.01
 
 max_orig_lines_in_log_loc = 2
 
