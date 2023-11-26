@@ -218,7 +218,10 @@ cannot reassign type variable 'T' (use explicit '\T' syntax if intended) (line 1
 
     assert_raises(-> parse("$"), CoconutParseError)
     assert_raises(-> parse("@"), CoconutParseError)
-    assert_raises(-> parse("range(1,10) |> reduce$(*, initializer = 1000) |> print"), CoconutParseError, err_has=" \\~~~~~~~~~~~~~~~~~~~~~~~^")
+    assert_raises(-> parse("range(1,10) |> reduce$(*, initializer = 1000) |> print"), CoconutParseError, err_has=(
+        " \\~~~~~~~~~~~~~~~~~~~~~~~^",
+        " \\~~~~~~~~~~~~^",
+    ))
     assert_raises(-> parse("a := b"), CoconutParseError, err_has=" \\~^")
     assert_raises(-> parse("1 + return"), CoconutParseError, err_has=" \\~~~~^")
     assert_raises(-> parse("""
