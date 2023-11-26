@@ -807,11 +807,15 @@ class Grammar(object):
         bin_num = combine(caseless_literal("0b") + Optional(underscore.suppress()) + binint)
         oct_num = combine(caseless_literal("0o") + Optional(underscore.suppress()) + octint)
         hex_num = combine(caseless_literal("0x") + Optional(underscore.suppress()) + hexint)
+        non_decimal_num = any_of(
+            hex_num,
+            bin_num,
+            oct_num,
+            use_adaptive=False,
+        )
         number = (
-            hex_num
-            | bin_num
-            | oct_num
-            # must come last to avoid matching "0" in "0b"
+            non_decimal_num
+            # must come last
             | maybe_imag_num
         )
         # make sure that this gets addspaced not condensed so it doesn't produce a SyntaxError
@@ -1404,6 +1408,7 @@ class Grammar(object):
         impl_call_item = condense(
             disallow_keywords(reserved_vars)
             + ~any_string
+            + ~non_decimal_num
             + atom_item
             + Optional(power_in_impl_call)
         )

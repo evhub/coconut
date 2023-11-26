@@ -912,8 +912,9 @@ def pickle_cache(original, cache_path, include_incremental=True, protocol=pickle
             internal_assert(lambda: match_any == all_parse_elements[identifier](), "failed to look up match_any by identifier", (match_any, all_parse_elements[identifier]()))
             if validation_dict is not None:
                 validation_dict[identifier] = match_any.__class__.__name__
+            match_any.expr_order.sort(key=lambda i: (-match_any.adaptive_usage[i], i))
             all_adaptive_stats[identifier] = (match_any.adaptive_usage, match_any.expr_order)
-            logger.log("Caching adaptive item:", match_any, "<-", all_adaptive_stats[identifier])
+            logger.log("Caching adaptive item:", match_any, all_adaptive_stats[identifier])
 
     logger.log("Saving {num_inc} incremental and {num_adapt} adaptive cache items to {cache_path!r}.".format(
         num_inc=len(pickleable_cache_items),

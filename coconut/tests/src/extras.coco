@@ -223,7 +223,10 @@ cannot reassign type variable 'T' (use explicit '\T' syntax if intended) (line 1
         " \\~~~~~~~~~~~~^",
     ))
     assert_raises(-> parse("a := b"), CoconutParseError, err_has=" \\~^")
-    assert_raises(-> parse("1 + return"), CoconutParseError, err_has=" \\~~~~^")
+    assert_raises(-> parse("1 + return"), CoconutParseError, err_has=(
+        " \\~~~^",
+        " \\~~~~^",
+    ))
     assert_raises(-> parse("""
 def f() =
     assert 1

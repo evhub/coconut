@@ -2139,7 +2139,7 @@ Additionally, if the first argument is not callable, and is instead an `int`, `f
 Though the first item may be any atom, following arguments are highly restricted, and must be:
 - variables/attributes (e.g. `a.b`),
 - literal constants (e.g. `True`),
-- number literals (e.g. `1.5`), or
+- number literals (e.g. `1.5`) (and no binary, hex, or octal), or
 - one of the above followed by an exponent (e.g. `a**-5`).
 
 For example, `(f .. g) x 1` will work, but `f x [1]`, `f x (1+2)`, and `f "abc"` will not.

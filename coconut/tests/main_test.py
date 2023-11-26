@@ -108,10 +108,10 @@ default_jobs = (
 
 jupyter_timeout = 120
 
-base = os.path.dirname(os.path.relpath(__file__))
-src = os.path.join(base, "src")
-dest = os.path.join(base, "dest")
-additional_dest = os.path.join(base, "dest", "additional_dest")
+tests_dir = os.path.dirname(os.path.relpath(__file__))
+src = os.path.join(tests_dir, "src")
+dest = os.path.join(tests_dir, "dest")
+additional_dest = os.path.join(tests_dir, "dest", "additional_dest")
 
 src_cache_dir = os.path.join(src, coconut_cache_dir)
 cocotest_dir = os.path.join(src, "cocotest")
@@ -428,29 +428,25 @@ def rm_path(path, allow_keep=False):
     assert not base_dir.startswith(path), "refusing to delete Coconut itself: " + repr(path)
     if allow_keep and get_bool_env_var("COCONUT_KEEP_TEST_FILES"):
         return
-    if os.path.isdir(path):
-        try:
+    try:
+        if os.path.isdir(path):
             shutil.rmtree(path)
-        except OSError:
-            logger.print_exc()
-    elif os.path.isfile(path):
-        os.remove(path)
+        elif os.path.isfile(path):
+            os.remove(path)
+    except OSError:
+        logger.print_exc()
 
 
 @contextmanager
 def using_paths(*paths):
     """Removes paths at the beginning and end."""
     for path in paths:
-        if os.path.exists(path):
-            rm_path(path)
+        rm_path(path)
     try:
         yield
     finally:
         for path in paths:
-            try:
-                rm_path(path, allow_keep=True)
-            except OSError:
-                logger.print_exc()
+            rm_path(path, allow_keep=True)
 
 
 @contextmanager
@@ -465,10 +461,25 @@ def using_dest(dest=dest, allow_existing=False):
     try:
         yield
     finally:
-        try:
-            rm_path(dest, allow_keep=True)
-        except OSError:
-            logger.print_exc()
+        rm_path(dest, allow_keep=True)
+
+
+def clean_caches():
+    """Clean out all __coconut_cache__ dirs."""
+    for dirpath, dirnames, filenames in os.walk(tests_dir):
+        for name in dirnames:
+            if name == coconut_cache_dir:
+                rm_path(os.path.join(dirpath, name))
+
+
+@contextmanager
+def using_caches():
+    """Cleans caches at start and end."""
+    clean_caches()
+    try:
+        yield
+    finally:
+        clean_caches()
 
 
 @contextmanager
@@ -990,11 +1001,12 @@ class TestCompilation(unittest.TestCase):
     if TEST_ALL:
         if CPYTHON:
             def test_any_of(self):
-                with using_env_vars({
-                    adaptive_any_of_env_var: "True",
-                    reverse_any_of_env_var: "True",
-                }):
-                    run()
+                with using_caches():
+                    with using_env_vars({
+                        adaptive_any_of_env_var: "True",
+                        reverse_any_of_env_var: "True",
+                    }):
+                        run()
 
         def test_keep_lines(self):
             run(["--keep-lines"])
