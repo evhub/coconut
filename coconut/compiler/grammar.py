@@ -801,21 +801,18 @@ class Grammar(object):
             | integer + Optional(dot + Optional(integer))
         )
         sci_e = combine((caseless_literal("e") | fixto(Literal("\u23e8"), "e")) + Optional(plus | neg_minus))
-        numitem = combine(
-            # don't match 0_, 0b_, 0o_, or 0x_
-            regex_item(r"(?!0([0-9_]|[box][0-9_]))").suppress()
-            + basenum + Optional(sci_e + integer)
-        )
+        numitem = combine(basenum + Optional(sci_e + integer))
         imag_num = combine(numitem + imag_j)
         maybe_imag_num = combine(numitem + Optional(imag_j))
         bin_num = combine(caseless_literal("0b") + Optional(underscore.suppress()) + binint)
         oct_num = combine(caseless_literal("0o") + Optional(underscore.suppress()) + octint)
         hex_num = combine(caseless_literal("0x") + Optional(underscore.suppress()) + hexint)
-        number = any_of(
-            maybe_imag_num,
-            hex_num,
-            bin_num,
-            oct_num,
+        number = (
+            hex_num
+            | bin_num
+            | oct_num
+            # must come last to avoid matching "0" in "0b"
+            | maybe_imag_num
         )
         # make sure that this gets addspaced not condensed so it doesn't produce a SyntaxError
         num_atom = addspace(number + Optional(condense(dot + unsafe_name)))
