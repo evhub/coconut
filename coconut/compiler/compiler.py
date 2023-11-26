@@ -1210,9 +1210,11 @@ class Compiler(Grammar, pickleable_obj):
             self.internal_assert(extra is None, original, loc, "make_err cannot include causes with extra")
             causes = dictset()
             for cause, _, _ in all_matches(self.parse_err_msg, snippet[loc_in_snip:]):
-                causes.add(cause)
+                if cause:
+                    causes.add(cause)
             for cause, _, _ in all_matches(self.parse_err_msg, snippet[endpt_in_snip:]):
-                causes.add(cause)
+                if cause:
+                    causes.add(cause)
             if causes:
                 extra = "possible cause{s}: {causes}".format(
                     s="s" if len(causes) > 1 else "",

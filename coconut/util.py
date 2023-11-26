@@ -265,6 +265,9 @@ class keydefaultdict(defaultdict, object):
 class dictset(dict, object):
     """A set implemented using a dictionary to get ordering benefits."""
 
+    def __bool__(self):
+        return len(self) > 0  # fixes py2 issue
+
     def add(self, item):
         self[item] = True
 

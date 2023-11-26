@@ -52,9 +52,11 @@ def run_main(outer_MatchError, test_easter_eggs=False) -> bool:
 
     print_dot()  # ..
     assert primary_test_1() is True
-    assert primary_test_2() is True
 
     print_dot()  # ...
+    assert primary_test_2() is True
+
+    print_dot()  # ....
     from .specific import (
         non_py26_test,
         non_py32_test,
@@ -79,11 +81,11 @@ def run_main(outer_MatchError, test_easter_eggs=False) -> bool:
     if sys.version_info >= (3, 8):
         assert py38_spec_test() is True
 
-    print_dot()  # ....
+    print_dot()  # .....
     from .suite import suite_test, tco_test
     assert suite_test() is True
 
-    print_dot()  # .....
+    print_dot()  # ......
     assert mypy_test() is True
     if using_tco:
         assert hasattr(tco_func, "_coconut_tco_func")
@@ -91,7 +93,7 @@ def run_main(outer_MatchError, test_easter_eggs=False) -> bool:
     if outer_MatchError.__module__ != "__main__":
         assert package_test(outer_MatchError) is True
 
-    print_dot()  # ......
+    print_dot()  # .......
     if sys.version_info < (3,):
         from .py2_test import py2_test
         assert py2_test() is True
@@ -111,21 +113,21 @@ def run_main(outer_MatchError, test_easter_eggs=False) -> bool:
             from .py311_test import py311_test
             assert py311_test() is True
 
-    print_dot()  # .......
+    print_dot()  # ........
     from .target_sys_test import TEST_ASYNCIO, target_sys_test
     if TEST_ASYNCIO:
         assert test_asyncio() is True
     assert target_sys_test() is True
 
-    print_dot()  # ........
+    print_dot()  # .........
     from .non_strict_test import non_strict_test
     assert non_strict_test() is True
 
-    print_dot()  # .........
+    print_dot()  # ..........
     from . import tutorial  # noQA
 
     if test_easter_eggs:
-        print(".", end="")  # ..........
+        print_dot()  # ...........
         assert easter_egg_test() is True
 
     print("\n<success>")

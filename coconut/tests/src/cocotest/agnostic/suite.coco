@@ -1070,6 +1070,11 @@ forward 2""") == 900
     assert DerivedWithMeths().static_meth()
     assert Fibs()[100] == 354224848179261915075
     assert tree_depth(Node(Leaf 5, Node(Node(Leaf 10)))) == 3
+    assert pickle_round_trip(.name) <| (name=10) == 10
+    assert pickle_round_trip(.[0])([10]) == 10
+    assert pickle_round_trip(.loc[0]) <| (loc=[10]) == 10
+    assert pickle_round_trip(.method(0)) <| (method=const 10) == 10
+    assert pickle_round_trip(.method(x=10)) <| (method=x -> x) == 10
 
     with process_map.multiple_sequential_calls():  # type: ignore
         assert process_map(tuple <.. (|>)$(to_sort), qsorts) |> list == [to_sort |> sorted |> tuple] * len(qsorts)

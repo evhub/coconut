@@ -491,6 +491,8 @@ def set_mypy_path():
 
 def is_empty_pipe(pipe, default=None):
     """Determine if the given pipe file object is empty."""
+    if pipe.closed:
+        return True
     if not WINDOWS:
         try:
             return not select([pipe], [], [], 0)[0]

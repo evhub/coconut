@@ -26,8 +26,8 @@ import sys as _coconut_sys
 VERSION = "3.0.4"
 VERSION_NAME = None
 # False for release, int >= 1 for develop
-DEVELOP = False
-ALPHA = False  # for pre releases rather than post releases
+DEVELOP = 1
+ALPHA = True  # for pre releases rather than post releases
 
 assert DEVELOP is False or DEVELOP >= 1, "DEVELOP must be False or an int >= 1"
 assert DEVELOP or not ALPHA, "alpha releases are only for develop"
@@ -208,6 +208,54 @@ def _coconut_exec(obj, globals=None, locals=None):
     if globals is None:
         globals = _coconut_sys._getframe(1).f_globals
     exec(obj, globals, locals)
+import operator as _coconut_operator
+class _coconut_attrgetter(object):
+    __slots__ = ("attrs",)
+    def __init__(self, *attrs):
+        self.attrs = attrs
+    def __reduce_ex__(self, _):
+        return self.__reduce__()
+    def __reduce__(self):
+        return (self.__class__, self.attrs)
+    @staticmethod
+    def _getattr(obj, attr):
+        for name in attr.split("."):
+            obj = _coconut.getattr(obj, name)
+        return obj
+    def __call__(self, obj):
+        if len(self.attrs) == 1:
+            return self._getattr(obj, self.attrs[0])
+        return _coconut.tuple(self._getattr(obj, attr) for attr in self.attrs)
+_coconut_operator.attrgetter = _coconut_attrgetter
+class _coconut_itemgetter(object):
+    __slots__ = ("items",)
+    def __init__(self, *items):
+        self.items = items
+    def __reduce_ex__(self, _):
+        return self.__reduce__()
+    def __reduce__(self):
+        return (self.__class__, self.items)
+    def __call__(self, obj):
+        if len(self.items) == 1:
+            return obj[self.items[0]]
+        return _coconut.tuple(obj[item] for item in self.items)
+_coconut_operator.itemgetter = _coconut_itemgetter
+class _coconut_methodcaller(object):
+    __slots__ = ("name", "args", "kwargs")
+    def __init__(self, name, *args, **kwargs):
+        self.name = name
+        self.args = args
+        self.kwargs = kwargs
+    def __reduce_ex__(self, _):
+        return self.__reduce__()
+    def __reduce__(self):
+        return (self.__class__, (self.name,) + self.args, {"kwargs": self.kwargs})
+    def __setstate__(self, setvars):
+        for k, v in setvars.items():
+            _coconut.setattr(self, k, v)
+    def __call__(self, obj):
+        return _coconut.getattr(obj, self.name)(*self.args, **self.kwargs)
+_coconut_operator.methodcaller = _coconut_methodcaller
 '''
 
 _non_py37_extras = r'''def _coconut_default_breakpointhook(*args, **kwargs):
