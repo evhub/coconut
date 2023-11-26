@@ -1108,6 +1108,9 @@ if SUPPORTS_ADAPTIVE:
 def any_of(*exprs, **kwargs):
     """Build a MatchAny of the given MatchFirst."""
     use_adaptive = kwargs.pop("use_adaptive", use_adaptive_any_of) and SUPPORTS_ADAPTIVE
+    reverse = reverse_any_of
+    if DEVELOP:
+        reverse = kwargs.pop("reverse", reverse)
     internal_assert(not kwargs, "excess keyword arguments passed to any_of", kwargs)
 
     AnyOf = MatchAny if use_adaptive else MatchFirst
@@ -1116,7 +1119,7 @@ def any_of(*exprs, **kwargs):
     for e in exprs:
         if (
             # don't merge MatchFirsts when we're reversing
-            not (reverse_any_of and not use_adaptive)
+            not (reverse and not use_adaptive)
             and e.__class__ == AnyOf
             and not hasaction(e)
         ):
@@ -1124,7 +1127,7 @@ def any_of(*exprs, **kwargs):
         else:
             flat_exprs.append(e)
 
-    if reverse_any_of:
+    if reverse:
         flat_exprs = reversed([trace(e) for e in exprs])
 
     return AnyOf(flat_exprs)
@@ -1228,7 +1231,7 @@ def disable_inside(item, *elems, **kwargs):
             raise ParseException(original, loc, self.errmsg, self)
 
     for elem in elems:
-        yield Wrap(elem, manage_elem, include_in_packrat_context=True)
+        yield Wrap(elem, manage_elem)
 
 
 def disable_outside(item, *elems):

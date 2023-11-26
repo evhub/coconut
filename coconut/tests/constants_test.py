@@ -78,6 +78,10 @@ def is_importable(name):
 
 class TestConstants(unittest.TestCase):
 
+    def test_defaults(self):
+        assert constants.use_fast_pyparsing_reprs
+        assert not constants.embed_on_internal_exc
+
     def test_fixpath(self):
         assert os.path.basename(fixpath("CamelCase.py")) == "CamelCase.py"
 

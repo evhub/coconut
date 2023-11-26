@@ -109,8 +109,7 @@ py_version_str = sys.version.split()[0]
 # -----------------------------------------------------------------------------------------------------------------------
 
 # set this to False only ever temporarily for ease of debugging
-use_fast_pyparsing_reprs = True
-assert use_fast_pyparsing_reprs or DEVELOP, "use_fast_pyparsing_reprs should never be disabled on non-develop build"
+use_fast_pyparsing_reprs = get_bool_env_var("COCONUT_FAST_PYPARSING_REPRS", True)
 
 enable_pyparsing_warnings = DEVELOP
 warn_on_multiline_regex = False
@@ -168,8 +167,7 @@ use_left_recursion_if_available = False
 # -----------------------------------------------------------------------------------------------------------------------
 
 # set this to True only ever temporarily for ease of debugging
-embed_on_internal_exc = False
-assert not embed_on_internal_exc or DEVELOP, "embed_on_internal_exc should never be enabled on non-develop build"
+embed_on_internal_exc = get_bool_env_var("COCONUT_EMBED_ON_INTERNAL_EXC", False)
 
 # should be the minimal ref count observed by maybe_copy_elem
 temp_grammar_item_ref_count = 4 if PY311 else 5
@@ -1009,7 +1007,7 @@ all_reqs = {
 
 # min versions are inclusive
 unpinned_min_versions = {
-    "cPyparsing": (2, 4, 7, 2, 3, 1),
+    "cPyparsing": (2, 4, 7, 2, 3, 2),
     ("pre-commit", "py3"): (3,),
     ("psutil", "py>=27"): (5,),
     "jupyter": (1, 0),
