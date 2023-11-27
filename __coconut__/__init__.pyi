@@ -1641,7 +1641,7 @@ def lift(func: _t.Callable[..., _W]) -> _t.Callable[..., _t.Callable[..., _W]]:
     For a binary function f(x, y) and two unary functions g(z) and h(z), lift works as the S' combinator:
         lift(f)(g, h)(z) == f(g(z), h(z))
 
-    In general, lift is requivalent to:
+    In general, lift is equivalent to:
         def lift(f) = ((*func_args, **func_kwargs) -> (*args, **kwargs) ->
             f(*(g(*args, **kwargs) for g in func_args), **{lbrace}k: h(*args, **kwargs) for k, h in func_kwargs.items(){rbrace}))
 
