@@ -1035,7 +1035,7 @@ unpinned_min_versions = {
     ("pytest", "py36"): (7,),
     ("async_generator", "py35"): (1, 10),
     ("exceptiongroup", "py37;py<311"): (1,),
-    ("ipython", "py>=39"): (8, 17),
+    ("ipython", "py>=39"): (8, 18),
     "py-spy": (0, 3),
 }
 
