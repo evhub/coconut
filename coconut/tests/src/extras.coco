@@ -27,15 +27,6 @@ from coconut.convenience import (
     warm_up,
 )
 
-if IPY:
-    if PY35:
-        import asyncio
-    from coconut.icoconut import CoconutKernel  # type: ignore
-    from jupyter_client.session import Session
-else:
-    CoconutKernel = None  # type: ignore
-    Session = object  # type: ignore
-
 
 def assert_raises(c, Exc, not_Exc=None, err_has=None):
     """Test whether callable c raises an exception of type Exc."""
@@ -81,15 +72,6 @@ def unwrap_future(event_loop, maybe_future):
         return event_loop.run_until_complete(maybe_future)
     else:
         return maybe_future
-
-
-class FakeSession(Session):
-    if TYPE_CHECKING:
-        captured_messages: list[tuple] = []
-    else:
-        captured_messages: list = []
-    def send(self, stream, msg_or_type, content, *args, **kwargs):
-        self.captured_messages.append((msg_or_type, content))
 
 
 def test_setup_none() -> bool:
@@ -468,6 +450,20 @@ class F:
 
 
 def test_kernel() -> bool:
+    # hide imports so as to not enable incremental parsing until we want to
+    if PY35:
+        import asyncio
+    from coconut.icoconut import CoconutKernel  # type: ignore
+    from jupyter_client.session import Session
+
+    class FakeSession(Session):
+        if TYPE_CHECKING:
+            captured_messages: list[tuple] = []
+        else:
+            captured_messages: list = []
+        def send(self, stream, msg_or_type, content, *args, **kwargs):
+            self.captured_messages.append((msg_or_type, content))
+
     if PY35:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
@@ -640,15 +636,16 @@ def test_extras() -> bool:
     print(".", end="")
     if not PYPY and PY36:
         assert test_pandas() is True  # .
-    print(".", end="")
-    if CoconutKernel is not None:
-        assert test_kernel() is True  # ..
     print(".")  # newline bc we print stuff after this
-    assert test_setup_none() is True
+    assert test_setup_none() is True  # ..
     print(".")  # ditto
-    assert test_convenience() is True
+    assert test_convenience() is True  # ...
+    # everything after here uses incremental parsing, so it must come last
     print(".", end="")
-    assert test_incremental() is True  # must come last
+    assert test_incremental() is True  # ....
+    if IPY:
+        print(".", end="")
+        assert test_kernel() is True  # .....
     return True
 
 
