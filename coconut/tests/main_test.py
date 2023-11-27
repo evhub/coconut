@@ -656,53 +656,54 @@ def run_extras(**kwargs):
     call_python([os.path.join(dest, "extras.py")], assert_output=True, check_errors=False, stderr_first=True, **kwargs)
 
 
-def run(args=[], agnostic_target=None, use_run_arg=False, convert_to_import=False, always_sys=False, **kwargs):
+def run(args=[], agnostic_target=None, use_run_arg=False, convert_to_import=False, always_sys=False, manage_cache=True, **kwargs):
     """Compiles and runs tests."""
     if agnostic_target is None:
         agnostic_args = args
     else:
         agnostic_args = ["--target", str(agnostic_target)] + args
 
-    with using_dest():
-        with (using_dest(additional_dest) if "--and" in args else noop_ctx()):
+    with (using_caches() if manage_cache else noop_ctx()):
+        with using_dest():
+            with (using_dest(additional_dest) if "--and" in args else noop_ctx()):
 
-            spec_kwargs = kwargs.copy()
-            spec_kwargs["always_sys"] = always_sys
-            if PY2:
-                comp_2(args, **spec_kwargs)
-            else:
-                comp_3(args, **spec_kwargs)
-                if sys.version_info >= (3, 5):
-                    comp_35(args, **spec_kwargs)
-                if sys.version_info >= (3, 6):
-                    comp_36(args, **spec_kwargs)
-                if sys.version_info >= (3, 8):
-                    comp_38(args, **spec_kwargs)
-                if sys.version_info >= (3, 11):
-                    comp_311(args, **spec_kwargs)
+                spec_kwargs = kwargs.copy()
+                spec_kwargs["always_sys"] = always_sys
+                if PY2:
+                    comp_2(args, **spec_kwargs)
+                else:
+                    comp_3(args, **spec_kwargs)
+                    if sys.version_info >= (3, 5):
+                        comp_35(args, **spec_kwargs)
+                    if sys.version_info >= (3, 6):
+                        comp_36(args, **spec_kwargs)
+                    if sys.version_info >= (3, 8):
+                        comp_38(args, **spec_kwargs)
+                    if sys.version_info >= (3, 11):
+                        comp_311(args, **spec_kwargs)
 
-            comp_agnostic(agnostic_args, **kwargs)
-            comp_sys(args, **kwargs)
-            # do non-strict at the end so we get the non-strict header
-            comp_non_strict(args, **kwargs)
+                comp_agnostic(agnostic_args, **kwargs)
+                comp_sys(args, **kwargs)
+                # do non-strict at the end so we get the non-strict header
+                comp_non_strict(args, **kwargs)
 
-            if use_run_arg:
-                _kwargs = kwargs.copy()
-                _kwargs["assert_output"] = True
-                comp_runner(["--run"] + agnostic_args, **_kwargs)
-            else:
-                comp_runner(agnostic_args, **kwargs)
-                run_src(convert_to_import=convert_to_import)  # **kwargs are for comp, not run
+                if use_run_arg:
+                    _kwargs = kwargs.copy()
+                    _kwargs["assert_output"] = True
+                    comp_runner(["--run"] + agnostic_args, **_kwargs)
+                else:
+                    comp_runner(agnostic_args, **kwargs)
+                    run_src(convert_to_import=convert_to_import)  # **kwargs are for comp, not run
 
-            if use_run_arg:
-                _kwargs = kwargs.copy()
-                _kwargs["assert_output"] = True
-                _kwargs["check_errors"] = False
-                _kwargs["stderr_first"] = True
-                comp_extras(["--run"] + agnostic_args, **_kwargs)
-            else:
-                comp_extras(agnostic_args, **kwargs)
-                run_extras(convert_to_import=convert_to_import)  # **kwargs are for comp, not run
+                if use_run_arg:
+                    _kwargs = kwargs.copy()
+                    _kwargs["assert_output"] = True
+                    _kwargs["check_errors"] = False
+                    _kwargs["stderr_first"] = True
+                    comp_extras(["--run"] + agnostic_args, **_kwargs)
+                else:
+                    comp_extras(agnostic_args, **kwargs)
+                    run_extras(convert_to_import=convert_to_import)  # **kwargs are for comp, not run
 
 
 def comp_all(args=[], agnostic_target=None, **kwargs):
@@ -1001,12 +1002,11 @@ class TestCompilation(unittest.TestCase):
     if TEST_ALL:
         if CPYTHON:
             def test_any_of(self):
-                with using_caches():
-                    with using_env_vars({
-                        adaptive_any_of_env_var: "True",
-                        reverse_any_of_env_var: "True",
-                    }):
-                        run()
+                with using_env_vars({
+                    adaptive_any_of_env_var: "True",
+                    reverse_any_of_env_var: "True",
+                }):
+                    run()
 
         def test_keep_lines(self):
             run(["--keep-lines"])
@@ -1026,8 +1026,9 @@ class TestCompilation(unittest.TestCase):
 
         if not PYPY:
             def test_incremental(self):
-                run()
-                run(["--force"])
+                with using_caches():
+                    run(manage_cache=False)
+                    run(["--force"], manage_cache=False)
 
     if get_bool_env_var("COCONUT_TEST_VERBOSE"):
         def test_verbose(self):
