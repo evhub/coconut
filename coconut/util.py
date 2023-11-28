@@ -369,12 +369,10 @@ def get_displayable_target(target):
 
 def get_kernel_data_files(argv):
     """Given sys.argv, write the custom kernel file and return data_files."""
-    if any(arg.startswith("bdist") for arg in argv):
+    if any(arg.startswith("bdist") or arg.startswith("sdist") for arg in argv):
         executable = "python"
-    elif any(arg.startswith("install") for arg in argv):
-        executable = sys.executable
     else:
-        executable = "python"
+        executable = sys.executable
     install_custom_kernel(executable)
     return [
         (
