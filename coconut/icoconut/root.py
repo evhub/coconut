@@ -43,15 +43,17 @@ from coconut.constants import (
     conda_build_env_var,
     coconut_kernel_kwargs,
     default_whitespace_chars,
+    num_assemble_logical_lines_tries,
 )
 from coconut.terminal import logger
 from coconut.util import override, memoize_with_exceptions, replace_all
 from coconut.compiler import Compiler
-from coconut.compiler.util import should_indent
+from coconut.compiler.util import should_indent, paren_change
 from coconut.command.util import Runner
 
 try:
     from IPython.core.inputsplitter import IPythonInputSplitter
+    from IPython.core.inputtransformer import CoroutineInputTransformer
     from IPython.core.interactiveshell import InteractiveShellABC
     from IPython.core.compilerop import CachingCompiler
     from IPython.terminal.embed import InteractiveShellEmbed
@@ -154,8 +156,8 @@ if LOAD_MODULE:
         def __init__(self, *args, **kwargs):
             """Version of __init__ that sets up Coconut code compilation."""
             super(CoconutSplitter, self).__init__(*args, **kwargs)
-            self._original_compile = self._compile
-            self._compile = self._coconut_compile
+            self._original_compile, self._compile = self._compile, self._coconut_compile
+            self.assemble_logical_lines = self._coconut_assemble_logical_lines()
 
         def _coconut_compile(self, source, *args, **kwargs):
             """Version of _compile that checks Coconut code.
@@ -169,6 +171,60 @@ if LOAD_MODULE:
                 return None
             else:
                 return True
+
+        @staticmethod
+        @CoroutineInputTransformer.wrap
+        def _coconut_assemble_logical_lines():
+            """Version of assemble_logical_lines() that respects strings/parentheses/brackets/braces."""
+            line = ""
+            while True:
+                line = (yield line)
+                if not line or line.isspace():
+                    continue
+
+                parts = []
+                level = 0
+                while line is not None:
+
+                    # get no_strs_line
+                    no_strs_line = None
+                    while no_strs_line is None:
+                        no_strs_line = line.strip()
+                        if no_strs_line:
+                            no_strs_line = COMPILER.remove_strs(no_strs_line)
+                            if no_strs_line is None:
+                                # if we're in the middle of a string, fetch a new line
+                                for _ in range(num_assemble_logical_lines_tries):
+                                    new_line = (yield None)
+                                    if new_line is not None:
+                                        break
+                                if new_line is None:
+                                    # if we're not able to build a no_strs_line, we should stop doing line joining
+                                    level = 0
+                                    no_strs_line = ""
+                                    break
+                                else:
+                                    line += new_line
+
+                    # update paren level
+                    level += paren_change(no_strs_line)
+
+                    # put line in parts and break if done
+                    if level < 0:
+                        parts.append(line)
+                    elif no_strs_line.endswith("\\"):
+                        parts.append(line[:-1])
+                    else:
+                        parts.append(line)
+                        break
+
+                    # if we're not done, fetch a new line
+                    for _ in range(num_assemble_logical_lines_tries):
+                        line = (yield None)
+                        if line is not None:
+                            break
+
+                line = ''.join(parts)
 
     INTERACTIVE_SHELL_CODE = '''
 input_splitter = CoconutSplitter(line_input_checker=True)

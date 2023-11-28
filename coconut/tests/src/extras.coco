@@ -462,7 +462,7 @@ def test_kernel() -> bool:
             captured_messages: list[tuple] = []
         else:
             captured_messages: list = []
-        def send(self, stream, msg_or_type, content, *args, **kwargs):
+        def send(self, stream, msg_or_type, content=None, *args, **kwargs):
             self.captured_messages.append((msg_or_type, content))
 
     if PY35:
@@ -514,6 +514,16 @@ def test_kernel() -> bool:
     assert "map" in keyword_complete_result["matches"]
     assert keyword_complete_result["cursor_start"] == 0
     assert keyword_complete_result["cursor_end"] == 1
+
+    assert k.do_execute("ident$(\n?,\n)(99)", False, True, {}, True) |> unwrap_future$(loop) |> .["status"] == "ok"
+    captured_msg_type, captured_msg_content = fake_session.captured_messages[-1]
+    assert captured_msg_content is None
+    assert captured_msg_type["content"]["data"]["text/plain"] == "99"
+
+    assert k.do_execute('"""\n(\n)\n"""', False, True, {}, True) |> unwrap_future$(loop) |> .["status"] == "ok"
+    captured_msg_type, captured_msg_content = fake_session.captured_messages[-1]
+    assert captured_msg_content is None
+    assert captured_msg_type["content"]["data"]["text/plain"] == "'()'"
 
     return True
 

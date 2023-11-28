@@ -1806,7 +1806,7 @@ def collapse_indents(indentation):
 def is_blank(line):
     """Determine whether a line is blank."""
     line, _ = rem_and_count_indents(rem_comment(line))
-    return line.strip() == ""
+    return not line or line.isspace()
 
 
 def final_indentation_level(code):

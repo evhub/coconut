@@ -485,6 +485,7 @@ class Compiler(Grammar, pickleable_obj):
     def __init__(self, *args, **kwargs):
         """Creates a new compiler with the given parsing parameters."""
         self.setup(*args, **kwargs)
+        self.reset()
 
     # changes here should be reflected in __reduce__, get_cli_args, and in the stub for coconut.api.setup
     def setup(self, target=None, strict=False, minify=False, line_numbers=True, keep_lines=False, no_tco=False, no_wrap=False):
@@ -998,7 +999,7 @@ class Compiler(Grammar, pickleable_obj):
         try:
             with (self.inner_environment() if inner_environment else noop_ctx()):
                 return self.str_proc(inputstring, **kwargs)
-        except Exception:
+        except CoconutSyntaxError:
             logger.log_exc()
         return None
 

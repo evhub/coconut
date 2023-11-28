@@ -1276,6 +1276,9 @@ conda_build_env_var = "CONDA_BUILD"
 
 enabled_xonsh_modes = ("single",)
 
+# 1 is safe, 2 seems to work okay, and 3 breaks stuff like '"""\n(\n)\n"""'
+num_assemble_logical_lines_tries = 1
+
 # -----------------------------------------------------------------------------------------------------------------------
 # DOCUMENTATION CONSTANTS:
 # -----------------------------------------------------------------------------------------------------------------------
