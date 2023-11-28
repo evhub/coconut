@@ -174,6 +174,7 @@ ignore_last_lines_with = (
     "from distutils.version import LooseVersion",
     ": SyntaxWarning: 'int' object is not ",
     " assert_raises(",
+    "Populating initial parsing cache",
 )
 
 kernel_installation_msg = (
