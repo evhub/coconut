@@ -81,6 +81,7 @@ class TestConstants(unittest.TestCase):
     def test_defaults(self):
         assert constants.use_fast_pyparsing_reprs
         assert not constants.embed_on_internal_exc
+        assert constants.num_assemble_logical_lines_tries >= 1
 
     def test_fixpath(self):
         assert os.path.basename(fixpath("CamelCase.py")) == "CamelCase.py"
@@ -133,6 +134,7 @@ class TestConstants(unittest.TestCase):
     def test_tuples(self):
         assert isinstance(constants.indchars, tuple)
         assert isinstance(constants.comment_chars, tuple)
+        assert isinstance(constants.setuptools_distribution_names, tuple)
 
 
 # -----------------------------------------------------------------------------------------------------------------------

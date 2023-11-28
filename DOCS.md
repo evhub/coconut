@@ -4716,7 +4716,7 @@ Switches the [`breakpoint` built-in](https://www.python.org/dev/peps/pep-0553/) 
 
 Both functions behave identically to [`setuptools.find_packages`](https://setuptools.pypa.io/en/latest/userguide/quickstart.html#package-discovery), except that they find Coconut packages rather than Python packages. `find_and_compile_packages` additionally compiles any Coconut packages that it finds in-place.
 
-Note that if you want to use either of these functions in your `setup.py`, you'll need to include `coconut` as a [build-time dependency in your `pyproject.toml`](https://pip.pypa.io/en/stable/reference/build-system/pyproject-toml/#build-time-dependencies). If you want `setuptools` to package your Coconut files, you'll also need to add `global-include *.coco` to your [`MANIFEST.in`](https://setuptools.pypa.io/en/latest/userguide/miscellaneous.html).
+Note that if you want to use either of these functions in your `setup.py`, you'll need to include `coconut` as a [build-time dependency in your `pyproject.toml`](https://pip.pypa.io/en/stable/reference/build-system/pyproject-toml/#build-time-dependencies). If you want `setuptools` to package your Coconut files, you'll also need to add `global-include *.coco` to your [`MANIFEST.in`](https://setuptools.pypa.io/en/latest/userguide/miscellaneous.html) and [pass `include_package_data=True` to `setuptools.setup`](https://setuptools.pypa.io/en/latest/userguide/datafiles.html).
 
 ##### Example
 

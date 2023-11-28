@@ -580,6 +580,15 @@ def using_env_vars(env_vars):
         os.environ.update(old_env)
 
 
+def list_kernel_names():
+    """Get a list of installed jupyter kernels."""
+    stdout, stderr, retcode = call_output(["jupyter", "kernelspec", "list"])
+    if not stdout:
+        stdout, stderr = stderr, ""
+    assert not retcode and not stderr, stderr
+    return stdout
+
+
 # -----------------------------------------------------------------------------------------------------------------------
 # RUNNERS:
 # -----------------------------------------------------------------------------------------------------------------------
@@ -933,13 +942,11 @@ class TestShell(unittest.TestCase):
             )
 
         def test_kernel_installation(self):
+            assert icoconut_custom_kernel_name in list_kernel_names()
             call(["coconut", "--jupyter"], assert_output=kernel_installation_msg)
-            stdout, stderr, retcode = call_output(["jupyter", "kernelspec", "list"])
-            if not stdout:
-                stdout, stderr = stderr, ""
-            assert not retcode and not stderr, stderr
+            kernels = list_kernel_names()
             for kernel in (icoconut_custom_kernel_name,) + icoconut_default_kernel_names:
-                assert kernel in stdout
+                assert kernel in kernels
 
         if not WINDOWS and not PYPY:
             def test_jupyter_console(self):

@@ -110,6 +110,10 @@ def syntaxerr_memoized_parse_block(code):
 # KERNEL:
 # -----------------------------------------------------------------------------------------------------------------------
 
+if papermill_translators is not None:
+    papermill_translators.register("coconut", PythonTranslator)
+
+
 if LOAD_MODULE:
 
     COMPILER.warm_up(enable_incremental_mode=True)
@@ -349,6 +353,3 @@ def user_expressions(self, expressions):
         classes = IPKernelApp.classes + [CoconutKernel, CoconutShell]
         kernel_class = CoconutKernel
         subcommands = {}
-
-    if papermill_translators is not None:
-        papermill_translators.register("coconut", PythonTranslator)

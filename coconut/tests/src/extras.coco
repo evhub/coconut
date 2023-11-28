@@ -235,7 +235,7 @@ def f() =
     assert_raises(-> parse("return = 1"), CoconutParseError, err_has='invalid use of the keyword "return"')
     assert_raises(-> parse("if a = b: pass"), CoconutParseError, err_has="misplaced assignment")
     assert_raises(-> parse("while a == b"), CoconutParseError, err_has="misplaced newline")
-    assert_raises(-> parse("0xfgf"), CoconutParseError, err_has=" \~~^")
+    assert_raises(-> parse("0xfgf"), CoconutParseError, err_has=r" \~~^")
 
     try:
         parse("""
@@ -257,7 +257,7 @@ def gam_eps_rate(bitarr) = (
         err_str = str(err)
         assert "misplaced '?'" in err_str
         if not PYPY:
-            assert """
+            assert r"""
   |> map$(int(?, 2))
          \~~~~^""" in err_str or """
       |> map$(int(?, 2))

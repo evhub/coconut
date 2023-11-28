@@ -1235,6 +1235,8 @@ pygments_lexers = (
     "coconut_pycon = coconut.highlighter:CoconutPythonConsoleLexer",
 )
 
+setuptools_distribution_names = ("bdist", "sdist")
+
 requests_sleep_times = (0, 0.1, 0.2, 0.3, 0.4, 1)
 
 # -----------------------------------------------------------------------------------------------------------------------

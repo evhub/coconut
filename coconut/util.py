@@ -49,6 +49,7 @@ from coconut.constants import (
     icoconut_custom_kernel_file_loc,
     WINDOWS,
     non_syntactic_newline,
+    setuptools_distribution_names,
 )
 
 
@@ -369,7 +370,7 @@ def get_displayable_target(target):
 
 def get_kernel_data_files(argv):
     """Given sys.argv, write the custom kernel file and return data_files."""
-    if any(arg.startswith("bdist") or arg.startswith("sdist") for arg in argv):
+    if any(arg.startswith(setuptools_distribution_names) for arg in argv):
         executable = "python"
     else:
         executable = sys.executable
