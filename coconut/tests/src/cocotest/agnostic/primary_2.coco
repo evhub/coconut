@@ -1,0 +1,422 @@
+import collections
+import collections.abc
+import weakref
+import sys
+
+if TYPE_CHECKING or sys.version_info >= (3, 5):
+    from typing import Any, Iterable
+from importlib import reload  # NOQA
+
+from .util import assert_raises, typed_eq
+
+operator !
+from math import factorial as (!)
+
+
+def primary_test_2() -> bool:
+    """Basic no-dependency tests (2/2)."""
+    recit: Iterable[int] = ([1,2,3] :: recit) |> map$(.+1)
+    assert tee(recit)
+    rawit = (_ for _ in (0, 1))
+    t1, t2 = tee(rawit)
+    t1a, t1b = tee(t1)
+    assert (list(t1a), list(t1b), list(t2)) == ([0, 1], [0, 1], [0, 1])
+    assert m{1, 3, 1}[1] == 2
+    assert m{1, 2} |> repr in ("multiset({1: 1, 2: 1})", "multiset({2: 1, 1: 1})")
+    m: multiset = m{}
+    m.add(1)
+    m.add(1)
+    m.add(2)
+    assert m == m{1, 1, 2}
+    assert m != m{1, 2}
+    m.discard(2)
+    m.discard(2)
+    assert m == m{1, 1}
+    assert m != m{1}
+    m.remove(1)
+    assert m == m{1}
+    m.remove(1)
+    assert m == m{}
+    assert_raises(-> m.remove(1), KeyError)
+    assert 1 not in m
+    assert 2 not in m
+    assert m{1, 2}.isdisjoint(m{3, 4})
+    assert not m{1, 2}.isdisjoint(m{2, 3})
+    assert m{1, 2} ^ m{2, 3} `typed_eq` m{1, 3}
+    m = m{1, 2}
+    m ^= m{2, 3}
+    assert m `typed_eq` m{1, 3}
+    assert m{1, 1} ^ m{1} `typed_eq` m{1}
+    assert multiset((1, 2)) == m{1, 2} == multiset(m{1, 2})
+    assert multiset({1: 2, 2: 1}) == m{1, 1, 2}
+    assert m{} `isinstance` multiset
+    assert m{} `isinstance` collections.abc.Set
+    assert m{} `isinstance` collections.abc.MutableSet
+    assert True `isinstance` bool
+    class HasBool:
+        def __bool__(self) = False
+    assert not HasBool()
+    assert m{1}.count(2) == 0
+    assert m{1, 1}.count(1) == 2
+    bad_m: multiset = m{}
+    bad_m[1] = -1
+    assert_raises(-> bad_m.count(1), ValueError)
+    assert len(m{1, 1}) == 1
+    assert m{1, 1}.total() == 2 == m{1, 2}.total()
+    weird_m = m{1, 2}
+    weird_m[3] = 0
+    assert weird_m == m{1, 2}
+    assert not (weird_m != m{1, 2})
+    assert m{} <= m{} < m{1, 2} < m{1, 1, 2} <= m{1, 1, 2}
+    assert m{1, 1, 2} >= m{1, 1, 2} > m{1, 2} > m{} >= m{}
+    assert m{1} != {1:1, 2:0}
+    assert not (m{1} == {1:1, 2:0})
+    assert s{1, 2, *(2, 3, 4), *(4, 5)} == s{1, 2, 3, 4, 5}
+    assert m{1, 2, *(2, 3, 4), *(4, 5)} == m{1, 2, 2, 3, 4, 4, 5}
+    assert {*(1, 2)} == {1, 2}
+    assert cycle(range(3))[:5] |> list == [0, 1, 2, 0, 1] == cycle(range(3)) |> iter |> .$[:5] |> list
+    assert cycle(range(2), 2)[:5] |> list == [0, 1, 0, 1] == cycle(range(2), 2) |> iter |> .$[:5] |> list
+    assert 2 in cycle(range(3))
+    assert reversed(cycle(range(2), 2)) |> list == [1, 0, 1, 0]
+    assert cycle((_ for _ in range(2)), 2) |> list == [0, 1, 0, 1]
+    assert cycle(range(3)).count(0) == float("inf")
+    assert cycle(range(3), 3).index(2) == 2
+    assert zip(range(2), range(2))[0] == (0, 0) == enumerate(range(2))[0]  # type: ignore
+    assert reversed([0,1,3])[0] == 3  # type: ignore
+    assert cycle((), 0) |> list == []
+    assert "1234" |> windowsof$(2) |> map$("".join) |> list == ["12", "23", "34"]
+    assert len(windowsof(2, "1234")) == 3
+    assert windowsof(3, "12345", None) |> map$("".join) |> list == ["123", "234", "345"]  # type: ignore
+    assert len(windowsof(3, "12345", None)) == 3
+    assert windowsof(3, "1") |> list == [] == windowsof(2, "1", step=2) |> list
+    assert len(windowsof(2, "1")) == 0 == len(windowsof(2, "1", step=2))
+    assert windowsof(2, "1", None) |> list == [("1", None)] == windowsof(2, "1", None, 2) |> list
+    assert len(windowsof(2, "1", None)) == 1 == len(windowsof(2, "1", None, 2))
+    assert windowsof(2, "1234", step=2) |> map$("".join) |> list == ["12", "34"] == windowsof(2, "1234", fillvalue=None, step=2) |> map$("".join) |> list  # type: ignore
+    assert len(windowsof(2, "1234", step=2)) == 2 == len(windowsof(2, "1234", fillvalue=None, step=2))
+    assert repr(windowsof(2, "1234", None, 3)) == "windowsof(2, '1234', fillvalue=None, step=3)"
+    assert lift(,)((+), (*))(2, 3) == (5, 6)
+    assert "abac" |> windowsof$(2) |> filter$(addpattern(
+        (def (("a", b) if b != "b") -> True),
+        (def ((_, _)) -> False),
+    )) |> list == [("a", "c")]
+    assert "[A], [B]" |> windowsof$(3) |> map$(addpattern(
+        (def (("[","A","]")) -> "A"),
+        (def (("[","B","]")) -> "B"),
+        (def ((_,_,_)) -> None),
+    )) |> filter$((.is None) ..> (not)) |> list == ["A", "B"]
+    assert windowsof(3, "abcdefg", step=3) |> map$("".join) |> list == ["abc", "def"]
+    assert windowsof(3, "abcdefg", step=3) |> len == 2
+    assert windowsof(3, "abcdefg", step=3, fillvalue="") |> map$("".join) |> list == ["abc", "def", "g"]
+    assert windowsof(3, "abcdefg", step=3, fillvalue="") |> len == 3
+    assert windowsof(3, "abcdefg", step=2, fillvalue="") |> map$("".join) |> list == ["abc", "cde", "efg", "g"]
+    assert windowsof(3, "abcdefg", step=2, fillvalue="") |> len == 4
+    assert windowsof(5, "abc", step=2, fillvalue="") |> map$("".join) |> list == ["abc"]
+    assert windowsof(5, "abc", step=2, fillvalue="") |> len == 1
+    assert groupsof(2, "123", fillvalue="") |> map$("".join) |> list == ["12", "3"]
+    assert groupsof(2, "123", fillvalue="") |> len == 2
+    assert groupsof(2, "123", fillvalue="") |> repr == "groupsof(2, '123', fillvalue='')"
+    assert flip((,), 0)(1, 2) == (1, 2)
+    assert flatten([1, 2, [3, 4]], 0) == [1, 2, [3, 4]]  # type: ignore
+    assert flatten([1, 2, [3, 4]], None) |> list == [1, 2, 3, 4]  # type: ignore
+    assert flatten([1, 2, [3, 4]], None) |> reversed |> list == [4, 3, 2, 1]  # type: ignore
+    assert_raises(-> flatten([1, 2, [3, 4]]) |> list, TypeError)  # type: ignore
+    assert flatten([[[1,2]], [[3], [4]]], 2) |> list == [1, 2, 3, 4]
+    assert flatten([[[1,2]], [[3], [4]]], 2) |> reversed |> list == [4, 3, 2, 1]
+    assert_raises(-> map((+), range(3), range(4), strict=True) |> list, ValueError)  # type: ignore
+    assert cartesian_product((1, 2), (3, 4), repeat=0) |> list == [()]
+    assert (a=1, b=2)[1] == 2
+    obj = object()
+    assert_raises((def -> obj.abc = 123), AttributeError)  # type: ignore
+    hardref = map((.+1), [1,2,3])
+    assert weakref.ref(hardref)() |> list == [2, 3, 4]  # type: ignore
+    match data tuple(1, 2) in (1, 2, 3):
+        assert False
+    data TestDefaultMatching(x="x default", y="y default")
+    TestDefaultMatching(got_x) = TestDefaultMatching(1)
+    assert got_x == 1
+    TestDefaultMatching(y=got_y) = TestDefaultMatching(y=10)
+    assert got_y == 10
+    TestDefaultMatching() = TestDefaultMatching()
+    data HasStar(x, y, *zs)
+    HasStar(x, *ys) = HasStar(1, 2, 3, 4)
+    assert x == 1
+    assert ys == (2, 3, 4)
+    HasStar(x, y, z) = HasStar(1, 2, 3)
+    assert (x, y, z) == (1, 2, 3)
+    HasStar(5, y=10) = HasStar(5, 10)
+    HasStar(1, 2, 3, zs=(3,)) = HasStar(1, 2, 3)
+    HasStar(x=1, y=2) = HasStar(1, 2)
+    match HasStar(x) in HasStar(1, 2):
+        assert False
+    match HasStar(x, y) in HasStar(1, 2, 3):
+        assert False
+    data HasStarAndDef(x, y="y", *zs)
+    HasStarAndDef(1, "y") = HasStarAndDef(1)
+    HasStarAndDef(1) = HasStarAndDef(1)
+    HasStarAndDef(x=1) = HasStarAndDef(1)
+    HasStarAndDef(1, 2, 3, zs=(3,)) = HasStarAndDef(1, 2, 3)
+    HasStarAndDef(1, y=2) = HasStarAndDef(1, 2)
+    match HasStarAndDef(x, y) in HasStarAndDef(1, 2, 3):
+        assert False
+
+    assert (.+1) <?| None is None
+    assert (.+1) <?| 5 == 6
+    assert (<?|)((.+1), None) is None
+    assert (<?|)((.+1), 5) == 6
+    optx: Any = (.+1)
+    optx <?|= None
+    assert optx is None
+    optx = (.+1)
+    optx <?|= 5
+    assert optx == 6
+    assert (+) <*?| None is None  # type: ignore
+    assert (+) <*?| (3, 4) == 7
+    assert (<*?|)((+), None) is None
+    assert (<*?|)((+), (3, 4)) == 7
+    optx = (+)
+    optx <*?|= None
+    assert optx is None
+    optx = (+)
+    optx <*?|= (3, 4)
+    assert optx == 7
+    assert ((**kwargs) -> kwargs) <**?| None is None  # type: ignore
+    assert ((**kwargs) -> kwargs) <**?| {"a": 1, "b": 2} == {"a": 1, "b": 2}  # type: ignore
+    assert (<**?|)((**kwargs) -> kwargs, None) is None  # type: ignore
+    assert (<**?|)((**kwargs) -> kwargs, {"a": 1, "b": 2}) == {"a": 1, "b": 2}  # type: ignore
+    optx = (**kwargs) -> kwargs
+    optx <**?|= None
+    assert optx is None
+    optx = (**kwargs) -> kwargs
+    optx <**?|= {"a": 1, "b": 2}
+    assert optx == {"a": 1, "b": 2}
+
+    assert `const None ..?> (.+1)` is None is (..?>)(const None, (.+1))()  # type: ignore
+    assert `(.+1) <?.. const None` is None is (<?..)((.+1), const None)()  # type: ignore
+    assert `const 5 ..?> (.+1)` == 6 == (..?>)(const 5, (.+1))()  # type: ignore
+    assert `(.+1) <?.. const 5` == 6 == (<?..)((.+1), const 5)()  # type: ignore
+    assert `const None ..?*> (+)` is None is (..?*>)(const None, (+))()  # type: ignore
+    assert `(+) <*?.. const None` is None is (<*?..)((+), const None)()  # type: ignore
+    assert `const((5, 2)) ..?*> (+)` == 7 == (..?*>)(const((5, 2)), (+))()  # type: ignore
+    assert `(+) <*?.. const((5, 2))` == 7 == (<*?..)((+), const((5, 2)))()  # type: ignore
+    assert `const None ..?**> (**kwargs) -> kwargs` is None is (..?**>)(const None, (**kwargs) -> kwargs)()  # type: ignore
+    assert `((**kwargs) -> kwargs) <**?.. const None` is None is (<**?..)((**kwargs) -> kwargs, const None)()  # type: ignore
+    assert `const({"a": 1}) ..?**> (**kwargs) -> kwargs` == {"a": 1} == (..?**>)(const({"a": 1}), (**kwargs) -> kwargs)()  # type: ignore
+    assert `((**kwargs) -> kwargs) <**?.. const({"a": 1})` == {"a": 1} == (<**?..)((**kwargs) -> kwargs, const({"a": 1}))()  # type: ignore
+    optx = const None
+    optx ..?>= (.+1)
+    optx ..?*>= (+)
+    optx ..?**>= (,)
+    assert optx() is None
+    optx = (.+1)
+    optx <?..= (+)
+    optx <*?..= (,)
+    optx <**?..= const None
+    assert optx() is None
+
+    s{} = s{1, 2}
+    s{*_} = s{1, 2}
+    s{*()} = s{}  # type: ignore
+    s{*[]} = s{}  # type: ignore
+    s{*s{}} = s{}  # type: ignore
+    s{*f{}} = s{}  # type: ignore
+    s{*m{}} = s{}  # type: ignore
+    match s{*()} in s{1, 2}:
+        assert False
+    s{} = f{1, 2}
+    f{1} = f{1, 2}
+    f{1, *_} = f{1, 2}
+    f{1, 2, *()} = f{1, 2}
+    match f{} in s{}:  # type: ignore
+        assert False
+    s{} = m{1, 1}
+    s{1} = m{1}
+    m{1, 1} = m{1, 1}
+    m{1} = m{1, 1}
+    match m{1, 1} in m{1}:
+        assert False
+    m{1, *_} = m{1, 1}
+    match m{1, *()} in m{1, 1}:
+        assert False
+    s{*(),} = s{}  # type: ignore
+    s{1, *_,} = s{1, 2}
+    {**{},} = {}  # type: ignore
+    m{} = collections.Counter()  # type: ignore
+    match m{1, 1} in collections.Counter((1,)):
+        assert False
+
+    assert_raises(() :: 1 .. 2, TypeError)  # type: ignore
+    two = 2
+    three = 3
+    five = 5
+    assert 1.0 two three ** -4 five == 2*5/3**4
+    x = 10
+    assert 2 x == 20
+    assert 2 x**2 + 3 x == 230
+    match 1 in (1,):
+        case True:
+            pass
+        case _:
+            assert False
+    assert two**2 three**2 == 2**2 * 3**2
+    assert_raises(-> five (two + three), TypeError)  # type: ignore
+    assert_raises(-> 5 (10), TypeError)  # type: ignore
+    assert_raises(-> 5 [0], TypeError)  # type: ignore
+    assert five ** 2 two == 50
+    assert 2i x == 20i
+    some_str = "some"
+    assert_raises(-> some_str five, TypeError)
+    assert (not in)("a", "bcd")
+    assert not (not in)("a", "abc")
+    assert ("a" not in .)("bcd")
+    assert (. not in "abc")("d")
+    assert (is not)(1, True)
+    assert not (is not)(False, False)
+    assert (True is not .)(1)
+    assert (. is not True)(1)
+    a_dict = {}
+    a_dict[1] = 1
+    a_dict[3] = 2
+    a_dict[2] = 3
+    assert a_dict |> str == "{1: 1, 3: 2, 2: 3}" == a_dict |> repr, a_dict
+    assert a_dict.keys() |> tuple == (1, 3, 2)
+    assert not a_dict.keys() `isinstance` list
+    assert not a_dict.values() `isinstance` list
+    assert not a_dict.items() `isinstance` list
+    assert len(a_dict.keys()) == len(a_dict.values()) == len(a_dict.items()) == 3
+    assert {1: 1, 3: 2, 2: 3}.keys() |> tuple == (1, 3, 2)
+    assert {**{1: 0, 3: 0}, 2: 0}.keys() |> tuple == (1, 3, 2) == {**dict([(1, 1), (3, 2), (2, 3)])}.keys() |> tuple
+    assert a_dict == {1: 1, 2: 3, 3: 2}
+    assert {1: 1} |> str == "{1: 1}" == {1: 1} |> repr
+    assert py_dict `issubclass` dict
+    assert py_dict() `isinstance` dict
+    assert {5:0, 3:0, **{2:0, 6:0}, 8:0}.keys() |> tuple == (5, 3, 2, 6, 8)
+    a_multiset = m{1,1,2}
+    assert not a_multiset.keys() `isinstance` list
+    assert not a_multiset.values() `isinstance` list
+    assert not a_multiset.items() `isinstance` list
+    assert len(a_multiset.keys()) == len(a_multiset.values()) == len(a_multiset.items()) == 2
+    assert (in)(1, [1, 2])
+    assert not (1 not in .)([1, 2])
+    assert not (in)([[]], [])
+    assert ("{a}" . .)("format")(a=1) == "1"
+    a_dict = {"a": 1, "b": 2}
+    a_dict |= {"a": 10, "c": 20}
+    assert a_dict == {"a": 10, "b": 2, "c": 20} == {"a": 1, "b": 2} | {"a": 10, "c": 20}
+    assert ["abc" ; "def"] == ['abc', 'def']
+    assert ["abc" ;; "def"] == [['abc'], ['def']]
+    assert {"a":0, "b":1}$[0] == "a"
+    assert (|0, NotImplemented, 2|)$[1] is NotImplemented
+    assert m{1, 1, 2} |> fmap$(.+1) == m{2, 2, 3}
+    assert (+) ..> ((*) ..> (/)) == (+) ..> (*) ..> (/) == ((+) ..> (*)) ..> (/)  # type: ignore
+    def f(x, y=1) = x, y  # type: ignore
+    f.is_f = True  # type: ignore
+    assert (f ..*> (+)).is_f  # type: ignore
+    really_long_var = 10
+    assert (...=really_long_var) == (10,)
+    assert (...=really_long_var, abc="abc") == (10, "abc")
+    assert (abc="abc", ...=really_long_var) == ("abc", 10)
+    assert (...=really_long_var).really_long_var == 10  # type: ignore
+    n = [0]
+    assert n[0] == 0
+    assert_raises(-> m{{1:2,2:3}}, TypeError)
+    assert_raises((def -> from typing import blah), ImportError)  # NOQA
+    assert type(m{1, 2}) is multiset
+    assert multiset(collections.Counter({1: 1, 2: 1})) `typed_eq` m{1, 2}
+    assert +m{-1, 1} `typed_eq` m{-1, 1}
+    assert -m{-1, 1} `typed_eq` m{}
+    assert m{1, 1, 2} + m{1, 3} `typed_eq` m{1, 1, 1, 2, 3}
+    assert m{1, 1, 2} | m{1, 3} `typed_eq` m{1, 1, 2, 3}
+    assert m{1, 1, 2} & m{1, 3} `typed_eq` m{1}
+    assert m{1, 1, 2} - m{1, 3} `typed_eq` m{1, 2}
+    assert (.+1) `and_then` (.*2) `and_then_await` (./3) |> repr == "<built-in function add>$(?, 1) `and_then` <built-in function mul>$(?, 2) `and_then_await` <built-in function truediv>$(?, 3)"
+    assert 5.5⏨3 == 5.5 * 10**3
+    assert (x => x)(5) == 5 == (def x => x)(5)
+    assert (=> _)(5) == 5 == (def => _)(5)  # type: ignore
+    assert ((x, y) => (x, y))(1, 2) == (1, 2) == (def (x, y) => (x, y))(1, 2)
+    assert (def (int(x)) => x)(5) == 5 == (def (int -> x) => x)("5")
+    assert (def (x: int) -> int => x)(5) == 5 == (def (int(x)) -> int => x)(5)
+    assert (x ⇒ x)(5) == 5 == (def x ⇒ x)(5)
+    assert f"a: { "abc" }" == "a: abc" == f'a: { 'abc' }'
+    assert f"1 + {"a" + "b"} + 2 + {"c" + "d"}" == "1 + ab + 2 + cd" == f'1 + {'a' + 'b'} + 2 + {'c' + 'd'}'
+    assert f"{"a" + "b"} + c + {"d" + "e"}" == "ab + c + de" == f'{'a' + 'b'} + c + {'d' + 'e'}'
+    assert f"""{"""
+"""}""" == """
+""" == f"""{'''
+'''}"""
+    assert f"""{(
+    )}""" == "()" == f'''{(
+    )}'''
+    assert f"{'\n'.join(["", ""])}" == "\n"
+    assert f"""{f'''{f'{f"{1+1}"}'}'''}""" == "2" == f"{f"{f"{f"{f"{f"{1+1}"}"}"}"}"}"
+    assert f"___{
+    1
+}___" == '___1___' == f"___{(
+    1
+)}___"
+    x = 10
+    assert x == 5 where:
+        x = 5
+    assert x == 10, x
+    def nested() = f where:
+        f = def -> g where:
+            def g() = x where:
+                x = 5
+    assert nested()()() == 5
+    class HasPartial:
+        def f(self, x) = (self, x)
+        g = f$(?, 1)
+    has_partial = HasPartial()
+    assert has_partial.g() == (has_partial, 1)
+    xs = zip([1, 2], [3, 4])
+    py_xs = py_zip([1, 2], [3, 4])
+    assert list(xs) == [(1, 3), (2, 4)] == list(xs)
+    assert list(py_xs) == [(1, 3), (2, 4)]
+    assert list(py_xs) == [] if sys.version_info >= (3,) else [(1, 3), (2, 4)]
+    xs = map((+), [1, 2], [3, 4])
+    py_xs = py_map((+), [1, 2], [3, 4])
+    assert list(xs) == [4, 6] == list(xs)
+    assert list(py_xs) == [4, 6]
+    assert list(py_xs) == [] if sys.version_info >= (3,) else [4, 6]
+    for xs in [
+        zip((x for x in range(5)), (x for x in range(10))),
+        map((,), (x for x in range(5)), (x for x in range(10))),
+    ]:  # type: ignore
+        assert list(xs) == list(zip(range(5), range(5)))
+        assert list(xs) == []
+    xs = map((.+1), range(5))
+    assert list(xs) == list(range(1, 6)) == list(xs)
+    assert count()[:10:2] == range(0, 10, 2)
+    assert count()[10:2] == range(10, 2)
+    some_data = [
+        (name="a", val="123"),
+        (name="b", val="567"),
+    ]
+    for mapreducer in (
+        mapreduce.using_processes$(lift(,)(.name, .val)),  # type: ignore
+        mapreduce.using_threads$(lift(,)(.name, .val)),  # type: ignore
+        collectby.using_processes$(.name, value_func=.val),  # type: ignore
+        collectby.using_threads$(.name, value_func=.val),  # type: ignore
+    ):
+        assert some_data |> mapreducer == {"a": ["123"], "b": ["567"]}
+    assert_raises(-> collectby(.[0], [(0, 1), (0, 2)], reduce_func=False), ValueError)  # type: ignore
+    assert ident$(x=?).__name__ == "ident" == ident$(1).__name__  # type: ignore
+    assert collectby(.[0], [(0, 1), (0, 2)], value_func=.[1], reduce_func=(+), reduce_func_init=1) == {0: 4}
+    assert ident$(1, ?) |> type == ident$(1) |> type
+    assert 10! == 3628800
+    assert 0x100 == 256 == 0o400
+    assert 0x0 == 0 == 0b0
+    x = 10
+    assert 0x == 0 == 0 x
+    assert 0xff == 255 == 0x100-1
+    assert 11259375 == 0xabcdef
+
+    with process_map.multiple_sequential_calls():  # type: ignore
+        assert map((+), range(3), range(4)$[:-1], strict=True) |> list == [0, 2, 4] == process_map((+), range(3), range(4)$[:-1], strict=True) |> list  # type: ignore
+        assert range(3) |> map$((.+1), strict=True) |> list == [1, 2, 3] == range(3) |> process_map$((.+1), strict=True) |> list  # type: ignore
+        my_match_err = MatchError("my match error", 123)
+        assert process_map(ident, [my_match_err]) |> list |> str == str([my_match_err])  # type: ignore
+        # repeat the same thing again now that my_match_err.str has been called
+        assert process_map(ident, [my_match_err]) |> list |> str == str([my_match_err])  # type: ignore
+
+    return True

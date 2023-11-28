@@ -22,17 +22,20 @@ from coconut.root import *  # NOQA
 import sys
 import os
 import unittest
-if PY26:
-    import_module = __import__
-else:
-    from importlib import import_module
 
 from coconut import constants
 from coconut.constants import (
     WINDOWS,
     PYPY,
+    PY26,
+    PY39,
     fixpath,
 )
+
+if PY26:
+    import_module = __import__
+else:
+    from importlib import import_module
 
 # -----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
@@ -75,6 +78,10 @@ def is_importable(name):
 
 class TestConstants(unittest.TestCase):
 
+    def test_defaults(self):
+        assert constants.use_fast_pyparsing_reprs
+        assert not constants.embed_on_internal_exc
+
     def test_fixpath(self):
         assert os.path.basename(fixpath("CamelCase.py")) == "CamelCase.py"
 
@@ -100,6 +107,8 @@ class TestConstants(unittest.TestCase):
                 or PYPY and old_imp in ("trollius", "aenum")
                 # don't test typing_extensions, async_generator
                 or old_imp.startswith(("typing_extensions", "async_generator"))
+                # don't test _dummy_thread on Py3.9
+                or PY39 and new_imp == "_dummy_thread"
             ):
                 pass
             elif sys.version_info >= ver_cutoff:
@@ -108,8 +117,8 @@ class TestConstants(unittest.TestCase):
                 assert is_importable(old_imp), "Failed to import " + old_imp
 
     def test_reqs(self):
-        assert set(constants.pinned_reqs) <= set(constants.min_versions), "found old pinned requirement"
-        assert set(constants.max_versions) <= set(constants.pinned_reqs) | set(("cPyparsing",)), "found unlisted constrained but unpinned requirements"
+        assert not set(constants.unpinned_min_versions) & set(constants.pinned_min_versions), "found pinned and unpinned requirements"
+        assert set(constants.max_versions) <= set(constants.pinned_min_versions) | set(("cPyparsing",)), "found unlisted constrained but unpinned requirements"
         for maxed_ver in constants.max_versions:
             assert isinstance(maxed_ver, tuple) or maxed_ver in ("pyparsing", "cPyparsing"), "maxed versions must be tagged to a specific Python version"
 

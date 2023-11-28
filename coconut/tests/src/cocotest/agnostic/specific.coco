@@ -1,8 +1,9 @@
+import sys
 from io import StringIO
 if TYPE_CHECKING:
     from typing import Any
 
-from .util import mod  # NOQA
+from .util import mod, assert_raises  # NOQA
 
 
 def non_py26_test() -> bool:
@@ -41,6 +42,15 @@ def py3_spec_test() -> bool:
     assert Outer.Inner.f(2) == 2
     assert Outer.Inner.f.__name__ == "f"
     assert Outer.Inner.f.__qualname__.endswith("Outer.Inner.f"), Outer.Inner.f.__qualname__
+    for xs in [
+        py_zip((x for x in range(5)), (x for x in range(10))),
+        py_map((,), (x for x in range(5)), (x for x in range(10))),
+    ]:  # type: ignore
+        assert list(xs) == list(zip(range(5), range(5)))
+        assert list(xs) == [] if sys.version_info >= (3,) else list(zip(range(5), range(5)))
+    py_xs = py_map((.+1), range(5))
+    assert list(py_xs) == list(range(1, 6))
+    assert list(py_xs) == []
     return True
 
 
@@ -164,7 +174,7 @@ def py36_spec_test(tco: bool) -> bool:
 
 def py37_spec_test() -> bool:
     """Tests for any py37+ version."""
-    import asyncio, typing
+    import asyncio, typing, typing_extensions
     assert py_breakpoint  # type: ignore
     ns: typing.Dict[str, typing.Any] = {}
     exec("""async def toa(it):
@@ -180,7 +190,9 @@ def py37_spec_test() -> bool:
     assert l == list(range(10))
     class HasVarGen[*Ts]  # type: ignore
     assert HasVarGen `issubclass` object
-    assert typing.Protocol.__module__ == "typing_extensions"
+    assert typing.Protocol is typing_extensions.Protocol
+    assert_raises((def -> raise ExceptionGroup("derp", [Exception("herp")])), ExceptionGroup)
+    assert_raises((def -> raise BaseExceptionGroup("derp", [BaseException("herp")])), BaseExceptionGroup)
     return True
 
 

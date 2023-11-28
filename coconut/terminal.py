@@ -36,6 +36,7 @@ from coconut._pyparsing import (
     lineno,
     col,
     ParserElement,
+    maybe_make_safe,
 )
 
 from coconut.root import _indent
@@ -51,11 +52,15 @@ from coconut.constants import (
     log_color_code,
     ansii_escape,
     force_verbose_logger,
+    max_orig_lines_in_log_loc,
 )
 from coconut.util import (
     get_clock_time,
     get_name,
     displayable,
+    first_import_time,
+    assert_remove_prefix,
+    split_trailing_whitespace,
 )
 from coconut.exceptions import (
     CoconutWarning,
@@ -96,22 +101,24 @@ def format_error(err_value, err_type=None, err_trace=None):
         return "".join(traceback.format_exception(err_type, err_value, err_trace)).strip()
 
 
-def complain(error):
+def complain(error_or_msg, *args, **kwargs):
     """Raises in develop; warns in release."""
-    if callable(error):
+    if callable(error_or_msg):
         if DEVELOP:
-            error = error()
+            error_or_msg = error_or_msg()
         else:
             return
-    if not isinstance(error, BaseException) or (not isinstance(error, CoconutInternalException) and isinstance(error, CoconutException)):
-        error = CoconutInternalException(str(error))
+    if not isinstance(error_or_msg, BaseException) or (not isinstance(error_or_msg, CoconutInternalException) and isinstance(error_or_msg, CoconutException)):
+        error_or_msg = CoconutInternalException(str(error_or_msg), *args, **kwargs)
+    else:
+        internal_assert(not args and not kwargs, "if error_or_msg is an error, args and kwargs must be empty, not", (args, kwargs))
     if not DEVELOP:
-        logger.warn_err(error)
+        logger.warn_err(error_or_msg)
     elif embed_on_internal_exc:
-        logger.warn_err(error)
+        logger.warn_err(error_or_msg)
         embed(depth=1)
     else:
-        raise error
+        raise error_or_msg
 
 
 def internal_assert(condition, message=None, item=None, extra=None, exc_maker=None):
@@ -125,6 +132,8 @@ def internal_assert(condition, message=None, item=None, extra=None, exc_maker=No
                 item = condition
         elif callable(message):
             message = message()
+        # ensure the item is pickleable so that the exception can be transferred back across processes
+        item = str(item)
         if callable(extra):
             extra = extra()
         if exc_maker is None:
@@ -180,13 +189,16 @@ class LoggingStringIO(StringIO):
 class Logger(object):
     """Container object for various logger functions and variables."""
     force_verbose = force_verbose_logger
+    colors_enabled = False
+
     verbose = force_verbose
     quiet = False
     path = None
     name = None
-    colors_enabled = False
     tracing = False
     trace_ind = 0
+
+    recorded_stats = defaultdict(lambda: [0, 0])
 
     def __init__(self, other=None):
         """Create a logger, optionally from another logger."""
@@ -225,6 +237,7 @@ class Logger(object):
             self.verbose = verbose
         if tracing is not None:
             self.tracing = tracing
+        ParserElement.verbose_stacktrace = self.verbose
 
     def display(
         self,
@@ -243,10 +256,12 @@ class Logger(object):
             file = file or sys.stdout
         elif level == "logging":
             file = file or sys.stderr
-            color = color or log_color_code
+            if color is None:
+                color = log_color_code
         elif level == "error":
             file = file or sys.stderr
-            color = color or error_color_code
+            if color is None:
+                color = error_color_code
         else:
             raise CoconutInternalException("invalid logging level", level)
 
@@ -262,14 +277,16 @@ class Logger(object):
             raw_message = "\n"
 
         components = []
-        if color:
-            components.append(ansii_escape + "[" + color + "m")
         for line in raw_message.splitlines(True):
+            line, endline = split_trailing_whitespace(line)
+            if color:
+                components.append(ansii_escape + "[" + color + "m")
             if sig:
-                line = sig + line
+                components.append(sig)
             components.append(line)
-        if color:
-            components.append(ansii_reset)
+            if color:
+                components.append(ansii_reset)
+            components.append(endline)
         components.append(end)
         full_message = "".join(components)
 
@@ -304,15 +321,15 @@ class Logger(object):
         if not self.quiet:
             self.display(messages, main_sig, level="error", **kwargs)
 
-    def log(self, *messages):
+    def log(self, *messages, **kwargs):
         """Logs debug messages if --verbose."""
         if self.verbose:
-            self.printlog(*messages)
+            self.printlog(*messages, **kwargs)
 
-    def log_stdout(self, *messages):
+    def log_stdout(self, *messages, **kwargs):
         """Logs debug messages to stdout if --verbose."""
         if self.verbose:
-            self.print(*messages)
+            self.print(*messages, **kwargs)
 
     def log_lambda(self, *msg_funcs):
         if self.verbose:
@@ -350,9 +367,18 @@ class Logger(object):
 
     def log_loc(self, name, original, loc):
         """Log a location in source code."""
-        if self.verbose:
+        if self.tracing:
             if isinstance(loc, int):
-                self.printlog("in error construction:", str(name), "=", repr(original[:loc]), "|", repr(original[loc:]))
+                pre_loc_orig, post_loc_orig = original[:loc], original[loc:]
+                if pre_loc_orig.count("\n") > max_orig_lines_in_log_loc:
+                    pre_loc_orig_repr = "... " + repr(pre_loc_orig.rsplit("\n", 1)[-1])
+                else:
+                    pre_loc_orig_repr = repr(pre_loc_orig)
+                if post_loc_orig.count("\n") > max_orig_lines_in_log_loc:
+                    post_loc_orig_repr = repr(post_loc_orig.split("\n", 1)[0]) + " ..."
+                else:
+                    post_loc_orig_repr = repr(post_loc_orig)
+                self.printlog("in error construction:", str(name), "=", pre_loc_orig_repr, "|", post_loc_orig_repr)
             else:
                 self.printlog("in error construction:", str(name), "=", repr(loc))
 
@@ -396,11 +422,20 @@ class Logger(object):
             try:
                 raise warning
             except Exception:
-                self.print_exc(warning=True)
+                self.warn_exc()
+
+    def log_warn(self, *args, **kwargs):
+        """Log a warning."""
+        if self.verbose:
+            return self.warn(*args, **kwargs)
 
     def print_exc(self, err=None, show_tb=None, warning=False):
         """Properly prints an exception."""
         self.print_formatted_error(self.get_error(err, show_tb), warning)
+
+    def warn_exc(self, err=None):
+        """Warn about the current or given exception."""
+        self.print_exc(err, warning=True)
 
     def print_exception(self, err_type, err_value, err_tb):
         """Properly prints the given exception details."""
@@ -449,17 +484,17 @@ class Logger(object):
         trace = " ".join(str(arg) for arg in args)
         self.printlog(_indent(trace, self.trace_ind))
 
-    def log_tag(self, tag, code, multiline=False, force=False):
+    def log_tag(self, tag, block, multiline=False, force=False):
         """Logs a tagged message if tracing."""
         if self.tracing or force:
             assert not (not DEVELOP and force), tag
-            if callable(code):
-                code = code()
+            if callable(block):
+                block = block()
             tagstr = "[" + str(tag) + "]"
             if multiline:
-                self.print_trace(tagstr + "\n" + displayable(code))
+                self.print_trace(tagstr + "\n" + displayable(block))
             else:
-                self.print_trace(tagstr, ascii(code))
+                self.print_trace(tagstr, ascii(block))
 
     def log_trace(self, expr, original, loc, item=None, extra=None):
         """Formats and displays a trace if tracing."""
@@ -510,10 +545,15 @@ class Logger(object):
             item.debug = True
         return item
 
+    def record_stat(self, stat_name, stat_bool):
+        """Record the given boolean statistic for the given stat_name."""
+        self.recorded_stats[stat_name][stat_bool] += 1
+
     @contextmanager
     def gather_parsing_stats(self):
         """Times parsing if --verbose."""
         if self.verbose:
+            self.recorded_stats.pop("adaptive", None)
             start_time = get_clock_time()
             try:
                 yield
@@ -526,8 +566,24 @@ class Logger(object):
                     # reset stats after printing if in incremental mode
                     if ParserElement._incrementalEnabled:
                         ParserElement.packrat_cache_stats[:] = [0] * len(ParserElement.packrat_cache_stats)
+                if "adaptive" in self.recorded_stats:
+                    failures, successes = self.recorded_stats["adaptive"]
+                    self.printlog("\tAdaptive parsing stats:", successes, "successes;", failures, "failures")
+                if maybe_make_safe is not None:
+                    hits, misses = maybe_make_safe.stats
+                    self.printlog("\tErrorless parsing stats:", hits, "errorless;", misses, "with errors")
         else:
             yield
+
+    def log_compiler_stats(self, comp):
+        """Log stats for the given compiler."""
+        if self.verbose:
+            self.log("Grammar init time: " + str(comp.grammar_init_time) + " secs / Total init time: " + str(get_clock_time() - first_import_time) + " secs")
+            for stat_name, (no_copy, yes_copy) in self.recorded_stats.items():
+                if not stat_name.startswith("maybe_copy_"):
+                    continue
+                name = assert_remove_prefix(stat_name, "maybe_copy_")
+                self.printlog("\tGrammar copying stats (" + name + "):", no_copy, "not copied;", yes_copy, "copied")
 
     total_block_time = defaultdict(int)
 

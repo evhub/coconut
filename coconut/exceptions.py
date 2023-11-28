@@ -180,11 +180,14 @@ class CoconutSyntaxError(CoconutException):
                     point_ind = clip(point_ind, 0, len(lines[0]))
                     endpoint_ind = clip(endpoint_ind, 0, len(lines[-1]))
 
+                    max_line_len = max(len(line) for line in lines)
+
                     message += "\n" + " " * (taberrfmt + point_ind)
                     if point_ind >= len(lines[0]):
-                        message += "|\n"
+                        message += "|"
                     else:
-                        message += "/" + "~" * (len(lines[0]) - point_ind - 1) + "\n"
+                        message += "/" + "~" * (len(lines[0]) - point_ind - 1)
+                    message += "~" * (max_line_len - len(lines[0])) + "\n"
                     for line in lines:
                         message += "\n" + " " * taberrfmt + line
                     message += (

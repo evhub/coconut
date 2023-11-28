@@ -1,6 +1,16 @@
 repos:
+-   repo: https://github.com/pre-commit/mirrors-autopep8
+    rev: v2.0.4
+    hooks:
+    -   id: autopep8
+        args:
+        - --in-place
+        - --aggressive
+        - --aggressive
+        - --experimental
+        - --ignore=W503,E501,E722,E402,E721
 -   repo: https://github.com/pre-commit/pre-commit-hooks.git
-    rev: v4.4.0
+    rev: v4.5.0
     hooks:
     -   id: check-added-large-files
     -   id: fix-byte-order-marker
@@ -24,18 +34,8 @@ repos:
         args:
         - --autofix
 -   repo: https://github.com/pycqa/flake8
-    rev: 6.0.0
+    rev: 6.1.0
     hooks:
     -   id: flake8
         args:
         - --ignore=W503,E501,E265,E402,F405,E305,E126
--   repo: https://github.com/pre-commit/mirrors-autopep8
-    rev: v2.0.2
-    hooks:
-    -   id: autopep8
-        args:
-        - --in-place
-        - --aggressive
-        - --aggressive
-        - --experimental
-        - --ignore=W503,E501,E722,E402

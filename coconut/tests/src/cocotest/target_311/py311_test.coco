@@ -1,0 +1,10 @@
+def py311_test() -> bool:
+    """Performs Python-3.11-specific tests."""
+    multi_err = ExceptionGroup("herp", [ValueError("a"), ValueError("b")])
+    got_err = None
+    try:
+        raise multi_err
+    except* ValueError as err:
+        got_err = err
+    assert repr(got_err) == repr(multi_err), (got_err, multi_err)
+    return True

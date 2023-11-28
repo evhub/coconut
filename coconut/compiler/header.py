@@ -44,6 +44,7 @@ from coconut.util import (
     univ_open,
     get_target_info,
     assert_remove_prefix,
+    memoize,
 )
 from coconut.compiler.util import (
     split_comment,
@@ -96,6 +97,7 @@ def minify_header(compiled):
 template_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates")
 
 
+@memoize()
 def get_template(template):
     """Read the given template file."""
     with univ_open(os.path.join(template_dir, template) + template_ext, "r") as template_file:
@@ -123,7 +125,16 @@ def prepare(code, indent=0, **kwargs):
     return _indent(code, by=indent, strip=True, **kwargs)
 
 
-def base_pycondition(target, ver, if_lt=None, if_ge=None, indent=None, newline=False, initial_newline=False, fallback=""):
+def base_pycondition(
+    target,
+    ver,
+    if_lt=None,
+    if_ge=None,
+    indent=None,
+    newline=False,
+    initial_newline=False,
+    fallback="",
+):
     """Produce code that depends on the Python version for the given target."""
     internal_assert(isinstance(ver, tuple), "invalid pycondition version")
     internal_assert(if_lt or if_ge, "either if_lt or if_ge must be specified")
@@ -177,6 +188,52 @@ else:
     return out
 
 
+def def_in_exec(name, code, needs_vars={}, decorator=None):
+    """Get code that runs code in an exec and extracts name."""
+    return '''
+_coconut_{name}_ns = {lbrace}"_coconut": _coconut{needs_vars}{rbrace}
+_coconut_exec({code}, _coconut_{name}_ns)
+{name} = {open_decorator}_coconut_{name}_ns["{name}"]{close_decorator}
+    '''.format(
+        lbrace="{",
+        rbrace="}",
+        name=name,
+        code=repr(code.strip()),
+        needs_vars=(
+            ", " + ", ".join(
+                repr(var_in_def) + ": " + var_out_def
+                for var_in_def, var_out_def in needs_vars.items()
+            )
+            if needs_vars else ""
+        ),
+        open_decorator=decorator + "(" if decorator is not None else "",
+        close_decorator=")" if decorator is not None else "",
+    )
+
+
+def base_async_def(
+    target,
+    func_name,
+    async_def,
+    no_async_def,
+    needs_vars={},
+    decorator=None,
+    **kwargs  # no comma; breaks on <=3.5
+):
+    """Build up a universal async function definition."""
+    target_info = get_target_info(target)
+    if target_info >= (3, 5):
+        out = async_def
+    else:
+        out = base_pycondition(
+            target,
+            (3, 5),
+            if_ge=def_in_exec(func_name, async_def, needs_vars=needs_vars, decorator=decorator),
+            if_lt=no_async_def,
+        )
+    return prepare(out, **kwargs)
+
+
 def make_py_str(str_contents, target, after_py_str_defined=False):
     """Get code that effectively wraps the given code in py_str."""
     return (
@@ -207,6 +264,7 @@ def process_header_args(which, use_hash, target, no_tco, strict, no_wrap):
     """Create the dictionary passed to str.format in the header."""
     target_info = get_target_info(target)
     pycondition = partial(base_pycondition, target)
+    async_def = partial(base_async_def, target)
 
     format_dict = dict(
         COMMENT=COMMENT,
@@ -230,6 +288,9 @@ def process_header_args(which, use_hash, target, no_tco, strict, no_wrap):
         comma_object="" if target.startswith("3") else ", object",
         comma_slash=", /" if target_info >= (3, 8) else "",
         report_this_text=report_this_text,
+        from_None=" from None" if target.startswith("3") else "",
+        process_="process_" if target_info >= (3, 13) else "",
+
         numpy_modules=tuple_str_of(numpy_modules, add_quotes=True),
         pandas_numpy_modules=tuple_str_of(pandas_numpy_modules, add_quotes=True),
         jax_numpy_modules=tuple_str_of(jax_numpy_modules, add_quotes=True),
@@ -300,31 +361,39 @@ for items in _coconut.iter(_coconut.zip_longest(*self.iters, fillvalue=_coconut_
         ),
         # disabled mocks must have different docstrings so the
         #  interpreter can tell them apart from the real thing
-        def_prepattern=(
-            r'''def prepattern(base_func, **kwargs):
+        def_aliases=prepare(
+            r'''
+def prepattern(base_func, **kwargs):
     """DEPRECATED: use addpattern instead."""
     def pattern_prepender(func):
         return addpattern(func, base_func, **kwargs)
-    return pattern_prepender'''
-            if not strict else
-            r'''def prepattern(*args, **kwargs):
-    """Deprecated Coconut built-in 'prepattern' disabled by --strict compilation; use 'addpattern' instead."""
-    raise _coconut.NameError("deprecated Coconut built-in 'prepattern' disabled by --strict compilation; use 'addpattern' instead")'''
-        ),
-        def_datamaker=(
-            r'''def datamaker(data_type):
+    return pattern_prepender
+def datamaker(data_type):
     """DEPRECATED: use makedata instead."""
-    return _coconut.functools.partial(makedata, data_type)'''
+    return _coconut_partial(makedata, data_type)
+of, parallel_map, concurrent_map, recursive_iterator = call, process_map, thread_map, recursive_generator
+            '''
             if not strict else
-            r'''def datamaker(*args, **kwargs):
+            r'''
+def prepattern(*args, **kwargs):
+    """Deprecated Coconut built-in 'prepattern' disabled by --strict compilation; use 'addpattern' instead."""
+    raise _coconut.NameError("deprecated Coconut built-in 'prepattern' disabled by --strict compilation; use 'addpattern' instead")
+def datamaker(*args, **kwargs):
     """Deprecated Coconut built-in 'datamaker' disabled by --strict compilation; use 'makedata' instead."""
-    raise _coconut.NameError("deprecated Coconut built-in 'datamaker' disabled by --strict compilation; use 'makedata' instead")'''
-        ),
-        of_is_call=(
-            "of = call" if not strict else
-            r'''def of(*args, **kwargs):
+    raise _coconut.NameError("deprecated Coconut built-in 'datamaker' disabled by --strict compilation; use 'makedata' instead")
+def of(*args, **kwargs):
     """Deprecated Coconut built-in 'of' disabled by --strict compilation; use 'call' instead."""
-    raise _coconut.NameError("deprecated Coconut built-in 'of' disabled by --strict compilation; use 'call' instead")'''
+    raise _coconut.NameError("deprecated Coconut built-in 'of' disabled by --strict compilation; use 'call' instead")
+def parallel_map(*args, **kwargs):
+    """Deprecated Coconut built-in 'parallel_map' disabled by --strict compilation; use 'process_map' instead."""
+    raise _coconut.NameError("deprecated Coconut built-in 'parallel_map' disabled by --strict compilation; use 'process_map' instead")
+def concurrent_map(*args, **kwargs):
+    """Deprecated Coconut built-in 'concurrent_map' disabled by --strict compilation; use 'thread_map' instead."""
+    raise _coconut.NameError("deprecated Coconut built-in 'concurrent_map' disabled by --strict compilation; use 'thread_map' instead")
+def recursive_iterator(*args, **kwargs):
+    """Deprecated Coconut built-in 'recursive_iterator' disabled by --strict compilation; use 'recursive_generator' instead."""
+    raise _coconut.NameError("deprecated Coconut built-in 'recursive_iterator' disabled by --strict compilation; use 'recursive_generator' instead")
+            '''
         ),
         return_method_of_self=pycondition(
             (3,),
@@ -490,8 +559,9 @@ items = _coconut.collections.Counter.viewitems
             indent=1,
             newline=True,
         ),
-        def_async_compose_call=prepare(
-            r'''
+        def_async_compose_call=async_def(
+            "__call__",
+            async_def=r'''
 async def __call__(self, *args, **kwargs):
     arg = await self._coconut_func(*args, **kwargs)
     for f, await_f in self._coconut_func_infos:
@@ -499,34 +569,23 @@ async def __call__(self, *args, **kwargs):
         if await_f:
             arg = await arg
     return arg
-            ''' if target_info >= (3, 5) else
-            pycondition(
-                (3, 5),
-                if_ge=r'''
-_coconut_call_ns = {"_coconut": _coconut}
-_coconut_exec("""async def __call__(self, *args, **kwargs):
-    arg = await self._coconut_func(*args, **kwargs)
-    for f, await_f in self._coconut_func_infos:
-        arg = f(arg)
-        if await_f:
-            arg = await arg
-    return arg""", _coconut_call_ns)
-__call__ = _coconut_call_ns["__call__"]
-                ''',
-                if_lt=pycondition(
-                    (3, 4),
-                    if_ge=r'''
-_coconut_call_ns = {"_coconut": _coconut}
-_coconut_exec("""def __call__(self, *args, **kwargs):
+            ''',
+            no_async_def=pycondition(
+                (3, 4),
+                if_ge=def_in_exec(
+                    "__call__",
+                    r'''
+def __call__(self, *args, **kwargs):
     arg = yield from self._coconut_func(*args, **kwargs)
     for f, await_f in self._coconut_func_infos:
         arg = f(arg)
         if await_f:
             arg = yield from arg
-    raise _coconut.StopIteration(arg)""", _coconut_call_ns)
-__call__ = _coconut.asyncio.coroutine(_coconut_call_ns["__call__"])
+    raise _coconut.StopIteration(arg)
                     ''',
-                    if_lt='''
+                    decorator="_coconut.asyncio.coroutine",
+                ),
+                if_lt='''
 @_coconut.asyncio.coroutine
 def __call__(self, *args, **kwargs):
     arg = yield _coconut.asyncio.From(self._coconut_func(*args, **kwargs))
@@ -536,7 +595,6 @@ def __call__(self, *args, **kwargs):
             arg = yield _coconut.asyncio.From(arg)
     raise _coconut.asyncio.Return(arg)
                     ''',
-                ),
             ),
             indent=1
         ),
@@ -545,26 +603,20 @@ def __call__(self, *args, **kwargs):
         tco_comma="_coconut_tail_call, _coconut_tco, " if not no_tco else "",
         call_set_names_comma="_coconut_call_set_names, " if target_info < (3, 6) else "",
         handle_cls_args_comma="_coconut_handle_cls_kwargs, _coconut_handle_cls_stargs, " if not target.startswith("3") else "",
-        async_def_anext=prepare(
-            r'''
+        async_def_anext=async_def(
+            "__anext__",
+            async_def=r'''
 async def __anext__(self):
     return self.func(await self.aiter.__anext__())
-            ''' if target_info >= (3, 5) else
-            pycondition(
-                (3, 5),
-                if_ge=r'''
-_coconut_anext_ns = {"_coconut": _coconut}
-_coconut_exec("""async def __anext__(self):
-    return self.func(await self.aiter.__anext__())""", _coconut_anext_ns)
-__anext__ = _coconut_anext_ns["__anext__"]
-                ''',
-                if_lt=r'''
-_coconut_anext_ns = {"_coconut": _coconut}
-_coconut_exec("""def __anext__(self):
+            ''',
+            no_async_def=def_in_exec(
+                "__anext__",
+                r'''
+def __anext__(self):
     result = yield from self.aiter.__anext__()
-    return self.func(result)""", _coconut_anext_ns)
-__anext__ = _coconut.asyncio.coroutine(_coconut_anext_ns["__anext__"])
+    return self.func(result)
                 ''',
+                decorator="_coconut.asyncio.coroutine",
             ),
             indent=1,
         ),
@@ -586,7 +638,7 @@ for _coconut_varname in dir(MatchError):
     #  (extra_format_dict is to keep indentation levels matching)
     extra_format_dict = dict(
         # when anything is added to this list it must also be added to *both* __coconut__ stub files
-        underscore_imports="{tco_comma}{call_set_names_comma}{handle_cls_args_comma}_namedtuple_of, _coconut, _coconut_Expected, _coconut_MatchError, _coconut_SupportsAdd, _coconut_SupportsMinus, _coconut_SupportsMul, _coconut_SupportsPow, _coconut_SupportsTruediv, _coconut_SupportsFloordiv, _coconut_SupportsMod, _coconut_SupportsAnd, _coconut_SupportsXor, _coconut_SupportsOr, _coconut_SupportsLshift, _coconut_SupportsRshift, _coconut_SupportsMatmul, _coconut_SupportsInv, _coconut_iter_getitem, _coconut_base_compose, _coconut_forward_compose, _coconut_back_compose, _coconut_forward_star_compose, _coconut_back_star_compose, _coconut_forward_dubstar_compose, _coconut_back_dubstar_compose, _coconut_pipe, _coconut_star_pipe, _coconut_dubstar_pipe, _coconut_back_pipe, _coconut_back_star_pipe, _coconut_back_dubstar_pipe, _coconut_none_pipe, _coconut_none_star_pipe, _coconut_none_dubstar_pipe, _coconut_bool_and, _coconut_bool_or, _coconut_none_coalesce, _coconut_minus, _coconut_map, _coconut_partial, _coconut_get_function_match_error, _coconut_base_pattern_func, _coconut_addpattern, _coconut_sentinel, _coconut_assert, _coconut_raise, _coconut_mark_as_match, _coconut_reiterable, _coconut_self_match_types, _coconut_dict_merge, _coconut_exec, _coconut_comma_op, _coconut_multi_dim_arr, _coconut_mk_anon_namedtuple, _coconut_matmul, _coconut_py_str, _coconut_flatten, _coconut_multiset, _coconut_back_none_pipe, _coconut_back_none_star_pipe, _coconut_back_none_dubstar_pipe, _coconut_forward_none_compose, _coconut_back_none_compose, _coconut_forward_none_star_compose, _coconut_back_none_star_compose, _coconut_forward_none_dubstar_compose, _coconut_back_none_dubstar_compose, _coconut_call_or_coefficient, _coconut_in, _coconut_not_in".format(**format_dict),
+        underscore_imports="{tco_comma}{call_set_names_comma}{handle_cls_args_comma}_namedtuple_of, _coconut, _coconut_Expected, _coconut_MatchError, _coconut_SupportsAdd, _coconut_SupportsMinus, _coconut_SupportsMul, _coconut_SupportsPow, _coconut_SupportsTruediv, _coconut_SupportsFloordiv, _coconut_SupportsMod, _coconut_SupportsAnd, _coconut_SupportsXor, _coconut_SupportsOr, _coconut_SupportsLshift, _coconut_SupportsRshift, _coconut_SupportsMatmul, _coconut_SupportsInv, _coconut_iter_getitem, _coconut_base_compose, _coconut_forward_compose, _coconut_back_compose, _coconut_forward_star_compose, _coconut_back_star_compose, _coconut_forward_dubstar_compose, _coconut_back_dubstar_compose, _coconut_pipe, _coconut_star_pipe, _coconut_dubstar_pipe, _coconut_back_pipe, _coconut_back_star_pipe, _coconut_back_dubstar_pipe, _coconut_none_pipe, _coconut_none_star_pipe, _coconut_none_dubstar_pipe, _coconut_bool_and, _coconut_bool_or, _coconut_none_coalesce, _coconut_minus, _coconut_map, _coconut_partial, _coconut_complex_partial, _coconut_get_function_match_error, _coconut_base_pattern_func, _coconut_addpattern, _coconut_sentinel, _coconut_assert, _coconut_raise, _coconut_mark_as_match, _coconut_reiterable, _coconut_self_match_types, _coconut_dict_merge, _coconut_exec, _coconut_comma_op, _coconut_multi_dim_arr, _coconut_mk_anon_namedtuple, _coconut_matmul, _coconut_py_str, _coconut_flatten, _coconut_multiset, _coconut_back_none_pipe, _coconut_back_none_star_pipe, _coconut_back_none_dubstar_pipe, _coconut_forward_none_compose, _coconut_back_none_compose, _coconut_forward_none_star_compose, _coconut_back_none_star_compose, _coconut_forward_none_dubstar_compose, _coconut_back_none_dubstar_compose, _coconut_call_or_coefficient, _coconut_in, _coconut_not_in, _coconut_attritemgetter".format(**format_dict),
         import_typing=pycondition(
             (3, 5),
             if_ge='''
@@ -705,10 +757,10 @@ asyncio_Return = StopIteration
         ),
         class_amap=pycondition(
             (3, 3),
-            if_lt=r'''
+            if_lt='''
 _coconut_amap = None
             ''',
-            if_ge=r'''
+            if_ge='''
 class _coconut_amap(_coconut_baseclass):
     __slots__ = ("func", "aiter")
     def __init__(self, func, aiter):
@@ -776,6 +828,31 @@ def __neg__(self):
             '''.format(**format_dict),
             indent=1,
         ),
+        def_async_map=async_def(
+            "async_map",
+            async_def='''
+async def async_map(async_func, *iters, strict=False):
+    """Map async_func over iters asynchronously using anyio."""
+    import anyio
+    results = []
+    async def store_func_in_of(i, args):
+        got = await async_func(*args)
+        results.extend([None] * (1 + i - _coconut.len(results)))
+        results[i] = got
+    async with anyio.create_task_group() as nursery:
+        for i, args in _coconut.enumerate({_coconut_}zip(*iters, strict=strict)):
+            nursery.start_soon(store_func_in_of, i, args)
+    return results
+            '''.format(**format_dict),
+            no_async_def='''
+def async_map(*args, **kwargs):
+    """async_map not available on Python < 3.5"""
+    raise _coconut.NameError("async_map not available on Python < 3.5")
+            ''',
+            needs_vars={
+                "{_coconut_}zip".format(**format_dict): "zip",
+            },
+        ),
     )
     format_dict.update(extra_format_dict)
 
@@ -787,6 +864,7 @@ def __neg__(self):
 # -----------------------------------------------------------------------------------------------------------------------
 
 
+@memoize()
 def getheader(which, use_hash, target, no_tco, strict, no_wrap):
     """Generate the specified header.
 
@@ -934,18 +1012,15 @@ _coconut_cached__coconut__ = _coconut_sys.modules.get({_coconut_cached__coconut_
         newline=True,
     ).format(**format_dict)
 
-    if target_info >= (3, 9):
-        header += _get_root_header("39")
-    if target_info >= (3, 7):
-        header += _get_root_header("37")
-    elif target.startswith("3"):
-        header += _get_root_header("3")
-    elif target_info >= (2, 7):
-        header += _get_root_header("27")
-    elif target.startswith("2"):
-        header += _get_root_header("2")
-    else:
-        header += _get_root_header("universal")
+    header += _get_root_header(
+        "311" if target_info >= (3, 11)
+        else "39" if target_info >= (3, 9)
+        else "37" if target_info >= (3, 7)
+        else "3" if target.startswith("3")
+        else "27" if target_info >= (2, 7)
+        else "2" if target.startswith("2")
+        else "universal"
+    )
 
     header += get_template("header").format(**format_dict)
 

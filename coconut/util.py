@@ -30,6 +30,7 @@ from warnings import warn
 from types import MethodType
 from contextlib import contextmanager
 from collections import defaultdict
+from functools import partial
 
 if sys.version_info >= (3, 2):
     from functools import lru_cache
@@ -39,6 +40,7 @@ else:
     except ImportError:
         lru_cache = None
 
+from coconut.root import _get_target_info
 from coconut.constants import (
     fixpath,
     default_encoding,
@@ -90,6 +92,20 @@ class pickleable_obj(object):
         return self.__reduce__()
 
 
+class const(pickleable_obj):
+    """Implementaiton of Coconut's const for use within Coconut."""
+    __slots__ = ("value",)
+
+    def __init__(self, value):
+        self.value = value
+
+    def __reduce__(self):
+        return (self.__class__, (self.value,))
+
+    def __call__(self, *args, **kwargs):
+        return self.value
+
+
 class override(pickleable_obj):
     """Implementation of Coconut's @override for use within Coconut."""
     __slots__ = ("func",)
@@ -105,6 +121,11 @@ class override(pickleable_obj):
         self.func = func
 
     def __get__(self, obj, objtype=None):
+        if hasattr(self.func, "__get__"):
+            if objtype is None:
+                return self.func.__get__(obj)
+            else:
+                return self.func.__get__(obj, objtype)
         if obj is None:
             return self.func
         if PY2:
@@ -244,19 +265,71 @@ class keydefaultdict(defaultdict, object):
 class dictset(dict, object):
     """A set implemented using a dictionary to get ordering benefits."""
 
+    def __bool__(self):
+        return len(self) > 0  # fixes py2 issue
+
     def add(self, item):
         self[item] = True
 
 
-def assert_remove_prefix(inputstr, prefix):
+def assert_remove_prefix(inputstr, prefix, allow_no_prefix=False):
     """Remove prefix asserting that inputstr starts with it."""
-    assert inputstr.startswith(prefix), inputstr
+    if not allow_no_prefix:
+        assert inputstr.startswith(prefix), inputstr
+    elif not inputstr.startswith(prefix):
+        return inputstr
     return inputstr[len(prefix):]
+
+
+remove_prefix = partial(assert_remove_prefix, allow_no_prefix=True)
+
+
+def ensure_dir(dirpath, logger=None):
+    """Ensure that a directory exists."""
+    if not os.path.exists(dirpath):
+        try:
+            os.makedirs(dirpath)
+        except OSError:
+            if logger is not None:
+                logger.log_exc()
+            return False
+    return True
+
+
+def without_keys(inputdict, rem_keys):
+    """Get a copy of inputdict without rem_keys."""
+    return {k: v for k, v in inputdict.items() if k not in rem_keys}
+
+
+def split_leading_whitespace(inputstr):
+    """Split leading whitespace."""
+    basestr = inputstr.lstrip()
+    whitespace = inputstr[:len(inputstr) - len(basestr)]
+    assert whitespace + basestr == inputstr, "invalid whitespace split: " + repr(inputstr)
+    return whitespace, basestr
+
+
+def split_trailing_whitespace(inputstr):
+    """Split trailing whitespace."""
+    basestr = inputstr.rstrip()
+    whitespace = inputstr[len(basestr):]
+    assert basestr + whitespace == inputstr, "invalid whitespace split: " + repr(inputstr)
+    return basestr, whitespace
+
+
+def replace_all(inputstr, all_to_replace, replace_to):
+    """Replace everything in all_to_replace with replace_to in inputstr."""
+    for to_replace in all_to_replace:
+        inputstr = inputstr.replace(to_replace, replace_to)
+    return inputstr
 
 
 # -----------------------------------------------------------------------------------------------------------------------
 # VERSIONING:
 # -----------------------------------------------------------------------------------------------------------------------
+
+
+get_target_info = _get_target_info
 
 
 def ver_tuple_to_str(req_ver):
@@ -279,16 +352,6 @@ def ver_str_to_tuple(ver_str):
 def get_next_version(req_ver, point_to_increment=-1):
     """Get the next version after the given version."""
     return req_ver[:point_to_increment] + (req_ver[point_to_increment] + 1,)
-
-
-def get_target_info(target):
-    """Return target information as a version tuple."""
-    if not target:
-        return ()
-    elif len(target) == 1:
-        return (int(target),)
-    else:
-        return (int(target[0]), int(target[1:]))
 
 
 def get_displayable_target(target):
@@ -327,8 +390,7 @@ def install_custom_kernel(executable=None, logger=None):
     kernel_dest = fixpath(os.path.join(sys.exec_prefix, icoconut_custom_kernel_install_loc))
     try:
         make_custom_kernel(executable)
-        if not os.path.exists(kernel_dest):
-            os.makedirs(kernel_dest)
+        ensure_dir(kernel_dest)
         shutil.copy(kernel_source, kernel_dest)
     except OSError:
         existing_kernel = os.path.join(kernel_dest, "kernel.json")

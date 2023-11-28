@@ -33,7 +33,7 @@ from coconut.constants import (
     all_reqs,
     min_versions,
     max_versions,
-    pinned_reqs,
+    pinned_min_versions,
     requests_sleep_times,
     embed_on_internal_exc,
 )
@@ -130,7 +130,10 @@ def get_req_str(req):
             max_ver = get_next_version(min_versions[req])
         if None in max_ver:
             assert all(v is None for v in max_ver), "invalid max version " + repr(max_ver)
-            max_ver = get_next_version(min_versions[req], len(max_ver) - 1)
+            max_ver = get_next_version(
+                min_versions[req],
+                point_to_increment=len(max_ver) - 1,
+            )
         req_str += ",<" + ver_tuple_to_str(max_ver)
     return req_str
 
@@ -220,13 +223,22 @@ extras = {
     "kernel": get_reqs("kernel"),
     "watch": get_reqs("watch"),
     "mypy": get_reqs("mypy"),
-    "backports": get_reqs("backports"),
     "xonsh": get_reqs("xonsh"),
+    "numpy": get_reqs("numpy"),
 }
 
 extras["jupyter"] = uniqueify_all(
     extras["kernel"],
     get_reqs("jupyter"),
+)
+
+extras["jupyterlab"] = uniqueify_all(
+    extras["jupyter"],
+    get_reqs("jupyterlab"),
+)
+extras["jupytext"] = uniqueify_all(
+    extras["jupyter"],
+    get_reqs("jupytext"),
 )
 
 extras["all"] = everything_in(extras)
@@ -236,7 +248,7 @@ extras.update({
     "docs": unique_wrt(get_reqs("docs"), requirements),
     "tests": uniqueify_all(
         get_reqs("tests"),
-        extras["backports"],
+        extras["numpy"],
         extras["jupyter"] if IPY else [],
         extras["mypy"] if MYPY else [],
         extras["xonsh"] if XONSH else [],
@@ -245,6 +257,7 @@ extras.update({
 
 extras["dev"] = uniqueify_all(
     everything_in(extras),
+    get_reqs("purepython"),
     get_reqs("dev"),
 )
 
@@ -340,7 +353,7 @@ def print_new_versions(strict=False):
             + " = " + ver_tuple_to_str(min_versions[req])
             + " -> " + ", ".join(new_versions + ["(" + v + ")" for v in same_versions])
         )
-        if req in pinned_reqs:
+        if req in pinned_min_versions:
             pinned_updates.append(update_str)
         elif new_versions:
             new_updates.append(update_str)

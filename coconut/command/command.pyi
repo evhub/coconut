@@ -15,7 +15,10 @@ Description: MyPy stub file for command.py.
 # MAIN:
 # -----------------------------------------------------------------------------------------------------------------------
 
+from typing import Callable
+
 
 class Command:
     """Coconut command-line interface."""
-    ...
+    cmd: Callable
+    cmd_sys: Callable

@@ -29,8 +29,10 @@ from contextlib import contextmanager
 from functools import partial
 if PY2:
     import __builtin__ as builtins
+    import Queue as queue
 else:
     import builtins
+    import queue
 
 from coconut.root import _coconut_exec
 from coconut.terminal import (
@@ -51,8 +53,10 @@ from coconut.util import (
 )
 from coconut.constants import (
     WINDOWS,
-    PY34,
+    CPYTHON,
+    PY26,
     PY32,
+    PY34,
     fixpath,
     base_dir,
     main_prompt,
@@ -81,21 +85,24 @@ from coconut.constants import (
     kilobyte,
     min_stack_size_kbs,
     coconut_base_run_args,
+    high_proc_prio,
+    call_timeout,
+    use_fancy_call_output,
 )
 
 if PY26:
     import imp
 else:
     import runpy
+if PY34:
+    from importlib import reload
+else:
+    from imp import reload
 try:
     # just importing readline improves built-in input()
     import readline  # NOQA
 except ImportError:
     pass
-if PY34:
-    from importlib import reload
-else:
-    from imp import reload
 
 try:
     import prompt_toolkit
@@ -130,6 +137,11 @@ except KeyError:
         ),
     )
     prompt_toolkit = None
+try:
+    import psutil
+except ImportError:
+    psutil = None
+
 
 # -----------------------------------------------------------------------------------------------------------------------
 # UTILITIES:
@@ -222,9 +234,7 @@ def handling_broken_process_pool():
 
 def kill_children():
     """Terminate all child processes."""
-    try:
-        import psutil
-    except ImportError:
+    if psutil is None:
         logger.warn(
             "missing psutil; --jobs may not properly terminate",
             extra="run '{python} -m pip install psutil' to fix".format(python=sys.executable),
@@ -261,28 +271,112 @@ def run_file(path):
         return runpy.run_path(path, run_name="__main__")
 
 
-def call_output(cmd, stdin=None, encoding_errors="replace", **kwargs):
+def interrupt_thread(thread, exctype=OSError):
+    """Attempt to interrupt the given thread."""
+    if not CPYTHON:
+        return False
+    if thread is None or not thread.is_alive():
+        return True
+    import ctypes
+    tid = ctypes.c_long(thread.ident)
+    res = ctypes.pythonapi.PyThreadState_SetAsyncExc(
+        tid,
+        ctypes.py_object(exctype),
+    )
+    if res == 0:
+        return False
+    elif res == 1:
+        return True
+    else:
+        ctypes.pythonapi.PyThreadState_SetAsyncExc(tid, None)
+        return False
+
+
+def readline_to_queue(file_obj, q):
+    """Read a line from file_obj and put it in the queue."""
+    if not is_empty_pipe(file_obj, False):
+        try:
+            q.put(file_obj.readline())
+        except OSError:
+            pass
+
+
+def call_output(cmd, stdin=None, encoding_errors="replace", color=None, **kwargs):
     """Run command and read output."""
-    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs)
-    stdout, stderr, retcode = [], [], None
-    while retcode is None:
-        if stdin is not None:
-            logger.log_prefix("STDIN < ", stdin.rstrip())
-        raw_out, raw_err = p.communicate(stdin)
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE, **kwargs)
+
+    stdout_q = queue.Queue()
+    stderr_q = queue.Queue()
+
+    if not use_fancy_call_output:
+        raw_stdout, raw_stderr = p.communicate(stdin)
+        stdout_q.put(raw_stdout)
+        stderr_q.put(raw_stderr)
         stdin = None
 
-        out = raw_out.decode(get_encoding(sys.stdout), encoding_errors) if raw_out else ""
-        if out:
-            logger.log_stdout(out.rstrip())
-        stdout.append(out)
+    if stdin is not None:
+        logger.log_prefix("STDIN < ", stdin.rstrip())
+        p.stdin.write(stdin)
 
-        err = raw_err.decode(get_encoding(sys.stderr), encoding_errors) if raw_err else ""
-        if err:
-            logger.log(err.rstrip())
-        stderr.append(err)
+    # list for mutability
+    stdout_t_obj = [None]
+    stderr_t_obj = [None]
 
-        retcode = p.poll()
-    return stdout, stderr, retcode
+    stdout, stderr, retcode = [], [], None
+    checking_stdout = True  # alternate between stdout and stderr
+    try:
+        while (
+            retcode is None
+            or not stdout_q.empty()
+            or not stderr_q.empty()
+            or not is_empty_pipe(p.stdout, True)
+            or not is_empty_pipe(p.stderr, True)
+        ):
+            if checking_stdout:
+                proc_pipe = p.stdout
+                sys_pipe = sys.stdout
+                q = stdout_q
+                t_obj = stdout_t_obj
+                log_func = logger.log_stdout
+                out_list = stdout
+            else:
+                proc_pipe = p.stderr
+                sys_pipe = sys.stderr
+                q = stderr_q
+                t_obj = stderr_t_obj
+                log_func = logger.log
+                out_list = stderr
+
+            retcode = p.poll()
+
+            if (
+                retcode is None
+                or not is_empty_pipe(proc_pipe, True)
+            ):
+                if t_obj[0] is None or not t_obj[0].is_alive():
+                    t_obj[0] = threading.Thread(target=readline_to_queue, args=(proc_pipe, q))
+                    t_obj[0].daemon = True
+                    t_obj[0].start()
+
+                t_obj[0].join(timeout=call_timeout)
+
+            try:
+                raw_out = q.get(block=False)
+            except queue.Empty:
+                raw_out = None
+
+            out = raw_out.decode(get_encoding(sys_pipe), encoding_errors) if raw_out else ""
+
+            if out:
+                log_func(out, color=color, end="")
+                out_list.append(out)
+
+            checking_stdout = not checking_stdout
+    finally:
+        interrupt_thread(stdout_t_obj[0])
+        interrupt_thread(stderr_t_obj[0])
+
+    return "".join(stdout), "".join(stderr), retcode
 
 
 def run_cmd(cmd, show_output=True, raise_errs=True, **kwargs):
@@ -302,7 +396,7 @@ def run_cmd(cmd, show_output=True, raise_errs=True, **kwargs):
             return subprocess.call(cmd, **kwargs)
         else:
             stdout, stderr, retcode = call_output(cmd, **kwargs)
-            output = "".join(stdout + stderr)
+            output = stdout + stderr
             if retcode and raise_errs:
                 raise subprocess.CalledProcessError(retcode, cmd, output=output)
             return output
@@ -395,13 +489,23 @@ def set_mypy_path():
     return install_dir
 
 
-def stdin_readable():
-    """Determine whether stdin has any data to read."""
+def is_empty_pipe(pipe, default=None):
+    """Determine if the given pipe file object is empty."""
+    if pipe.closed:
+        return True
     if not WINDOWS:
         try:
-            return bool(select([sys.stdin], [], [], 0)[0])
+            return not select([pipe], [], [], 0)[0]
         except Exception:
             logger.log_exc()
+    return default
+
+
+def stdin_readable():
+    """Determine whether stdin has any data to read."""
+    stdin_is_empty = is_empty_pipe(sys.stdin)
+    if stdin_is_empty is not None:
+        return not stdin_is_empty
     # by default assume not readable
     return not isatty(sys.stdin, default=True)
 
@@ -479,6 +583,37 @@ def proc_run_args(args=()):
     return args
 
 
+def get_python_lib():
+    """Get current Python lib location."""
+    # these are expensive, so should only be imported here
+    if PY32:
+        from sysconfig import get_path
+        python_lib = get_path("purelib")
+    else:
+        from distutils import sysconfig
+        python_lib = sysconfig.get_python_lib()
+    return fixpath(python_lib)
+
+
+def import_coconut_header():
+    """Import the coconut.__coconut__ header.
+    This is expensive, so only do it here."""
+    try:
+        from coconut import __coconut__
+        return __coconut__
+    except ImportError:
+        # fixes an issue where, when running from the base coconut directory,
+        #  the base coconut directory is treated as a namespace package
+        try:
+            from coconut.coconut import __coconut__
+        except ImportError:
+            __coconut__ = None
+        if __coconut__ is not None:
+            return __coconut__
+        else:
+            raise  # the original ImportError, since that's the normal one
+
+
 # -----------------------------------------------------------------------------------------------------------------------
 # CLASSES:
 # -----------------------------------------------------------------------------------------------------------------------
@@ -495,14 +630,24 @@ class Prompt(object):
     session = None
     style = None
     runner = None
+    lexer = None
+    suggester = None if prompt_use_suggester else False
 
-    def __init__(self, use_suggester=prompt_use_suggester):
+    def __init__(self, setup_now=False):
         """Set up the prompt."""
         if prompt_toolkit is not None:
             self.set_style(os.getenv(style_env_var, default_style))
             self.set_history_file(prompt_histfile)
+            if setup_now:
+                self.setup()
+
+    def setup(self):
+        """Actually initialize the underlying Prompt.
+        We do this lazily since it's expensive."""
+        if self.lexer is None:
             self.lexer = PygmentsLexer(CoconutLexer)
-            self.suggester = AutoSuggestFromHistory() if use_suggester else None
+        if self.suggester is None:
+            self.suggester = AutoSuggestFromHistory()
 
     def set_style(self, style):
         """Set pygments syntax highlighting style."""
@@ -555,6 +700,7 @@ class Prompt(object):
 
     def prompt(self, msg):
         """Get input using prompt_toolkit."""
+        self.setup()
         try:
             # prompt_toolkit v2
             if self.session is None:
@@ -619,7 +765,7 @@ class Runner(object):
 
     def fix_pickle(self):
         """Fix pickling of Coconut header objects."""
-        from coconut import __coconut__  # this is expensive, so only do it here
+        __coconut__ = import_coconut_header()
         for var in self.vars:
             if not var.startswith("__") and var in dir(__coconut__) and var not in must_use_specific_target_builtins:
                 cur_val = self.vars[var]
@@ -698,6 +844,19 @@ class Runner(object):
             return self.stored[-1]
 
 
+def highten_process():
+    """Set the current process to high priority."""
+    if high_proc_prio and psutil is not None:
+        try:
+            p = psutil.Process()
+            if WINDOWS:
+                p.nice(psutil.HIGH_PRIORITY_CLASS)
+            else:
+                p.nice(-10)
+        except Exception:
+            logger.log_exc()
+
+
 class multiprocess_wrapper(pickleable_obj):
     """Wrapper for a method that needs to be multiprocessed."""
     __slots__ = ("base", "method", "stack_size", "rec_limit", "logger", "argv")
@@ -717,6 +876,7 @@ class multiprocess_wrapper(pickleable_obj):
 
     def __call__(self, *args, **kwargs):
         """Call the method."""
+        highten_process()
         sys.setrecursionlimit(self.rec_limit)
         logger.copy_from(self.logger)
         sys.argv = self.argv

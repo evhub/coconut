@@ -47,14 +47,14 @@ def asyncio_test() -> bool:
     def toa(f) = async def (*args, **kwargs) -> f(*args, **kwargs)
 
     async def async_map_0(args):
-        return parallel_map(args[0], *args[1:])
-    async def async_map_1(args) = parallel_map(args[0], *args[1:])
-    async def async_map_2([func] + iters) = parallel_map(func, *iters)
-    async match def async_map_3([func] + iters) = parallel_map(func, *iters)
-    match async def async_map_4([func] + iters) = parallel_map(func, *iters)
+        return thread_map(args[0], *args[1:])
+    async def async_map_1(args) = thread_map(args[0], *args[1:])
+    async def async_map_2([func] + iters) = thread_map(func, *iters)
+    async match def async_map_3([func] + iters) = thread_map(func, *iters)
+    match async def async_map_4([func] + iters) = thread_map(func, *iters)
     async def async_map_test() =
-        for async_map in (async_map_0, async_map_1, async_map_2, async_map_3, async_map_4):
-            assert (await ((pow$(2), range(5)) |> async_map)) |> tuple == (1, 2, 4, 8, 16)
+        for async_map_ in (async_map_0, async_map_1, async_map_2, async_map_3, async_map_4):
+            assert (await ((pow$(2), range(5)) |> async_map_)) |> tuple == (1, 2, 4, 8, 16)
         True
 
     async def aplus(x) = y -> x + y

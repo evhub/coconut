@@ -1,6 +1,7 @@
 # Imports:
 import sys
 import random
+import pickle
 import operator  # NOQA
 from contextlib import contextmanager
 from functools import wraps
@@ -44,6 +45,12 @@ except NameError, TypeError:
         return pattern_prepender
 
 def x `typed_eq` y = (type(x), x) == (type(y), y)
+
+def pickle_round_trip(obj) = (
+    obj
+    |> pickle.dumps
+    |> pickle.loads
+)
 
 
 # Old functions:
@@ -127,7 +134,7 @@ product = reduce$((*), ?, 1)
 product_ = reduce$(*)
 def zipwith(f, *args) = map((items) -> f(*items), zip(*args))
 def zipwith_(f, *args) = starmap$(f)..zip <*| args
-zipsum = zip ..> map$(sum)
+zipsum = zip ..> map$(sum)  # type: ignore
 ident_ = (x) -> x
 @ ident .. ident  # type: ignore
 def plus1_(x: int) -> int = x + 1
@@ -207,10 +214,12 @@ operator !!  # bool
 
 operator lol
 lols = [-1]
-match def lol = "lol" where:
+match def lol =
     lols[0] += 1
-addpattern def (s) lol = s + "ol" where:  # type: ignore
+    "lol"
+addpattern def (s) lol =  # type: ignore
     lols[0] += 1
+    s + "ol"
 lol
 
 operator ***
@@ -415,7 +424,7 @@ def partition(items, pivot, lprefix=[], rprefix=[]):
                 return partition(tail, pivot, lprefix, [head]::rprefix)
         match []::_:
             return lprefix, rprefix
-partition_ = recursive_iterator(partition)
+partition_ = recursive_generator(partition)
 
 def myreduce(func, items):
     match [first]::tail1 in items:
@@ -757,6 +766,14 @@ def depth_2(t):
     match tree(l=l, r=r) in t:
         return 1 + max([depth_2(l), depth_2(r)])
 
+class Tree
+data Node(*children) from Tree
+data Leaf(elem) from Tree
+
+def tree_depth(Leaf(_)) = 0
+addpattern def tree_depth(Node(*children)) =  # type: ignore
+    children |> map$(tree_depth) |> max |> (.+1)
+
 # Monads:
 def base_maybe(x, f) = f(x) if x is not None else None
 def maybes(*fs) = reduce(base_maybe, fs)
@@ -872,6 +889,20 @@ class inh_inh_A(inh_A):
     @override
     def true(self) = False
 
+class BaseWithMeths:
+    @classmethod
+    def cls_meth(cls) = False
+    @staticmethod
+    def static_meth() = False
+
+class DerivedWithMeths(BaseWithMeths):
+    @override
+    @classmethod
+    def cls_meth(cls) = True
+    @override
+    @staticmethod
+    def static_meth() = True
+
 class MyExc(Exception):
     def __init__(self, m):
         super().__init__(m)
@@ -922,7 +953,7 @@ def grid_map(func, gridsample):
 
 def parallel_grid_map(func, gridsample):
     """Map a function over every point in a grid in parallel."""
-    return gridsample |> parallel_map$(parallel_map$(func))
+    return gridsample |> process_map$(process_map$(func))
 
 def grid_trim(gridsample, xmax, ymax):
     """Convert a grid to a list of lists up to xmax and ymax."""
@@ -953,7 +984,7 @@ def still_ident(x) =
 @prepattern(ident, allow_any_func=True)
 def not_ident(x) = "bar"
 
-# Pattern-matching functions with guards
+# Pattern-matching functions
 
 def pattern_abs(x if x < 0) = -x
 addpattern def pattern_abs(x) = x  # type: ignore
@@ -961,23 +992,25 @@ addpattern def pattern_abs(x) = x  # type: ignore
 def `pattern_abs_` (x) if x < 0 = -x
 addpattern def `pattern_abs_` (x) = x  # type: ignore
 
+def x_or_y(x and y) = (x, y)
+
 # Recursive iterator
 
-@recursive_iterator
+@recursive_generator
 def fibs() =
     fibs_calls[0] += 1
     (1, 1) :: map((+), fibs(), fibs()$[1:])
 
 fibs_calls = [0]
 
-@recursive_iterator
+@recursive_generator
 def fibs_() = map((+), (1, 1) :: fibs_(), (0, 0) :: fibs_()$[1:])
 
 # use separate name for base func for pickle
 def _loop(it) = it :: loop(it)
-loop = recursive_iterator(_loop)
+loop = recursive_generator(_loop)
 
-@recursive_iterator
+@recursive_generator
 def nest(x) = (|x, nest(x)|)
 
 # Sieve Example
@@ -1011,6 +1044,10 @@ def minus(a, b) = b - a
 
 def raise_exc():
     raise Exception("raise_exc")
+
+@safe_call$
+def safe_raise_exc(exc_cls = Exception):
+    raise exc_cls()
 
 def does_raise_exc(func):
     try:
@@ -1056,6 +1093,25 @@ class unrepresentable:
     class Fail(Exception)
     def __repr__(self):
         raise Fail("unrepresentable")
+
+class hasloc:
+    def __init__(self, arr):
+        self.arr = arr
+    class Loc:
+        def __init__(inner, outer):
+            inner.outer = outer
+        def __getitem__(inner, item) =
+            inner.outer.arr[item]
+    @property
+    def loc(self) = self.Loc(self)
+    class ILoc:
+        def __init__(inner, outer):
+            inner.outer = outer
+        def __iter_getitem__(inner, item) =
+            inner.outer.arr$[item]
+    @property
+    def iloc(self) = self.ILoc(self)
+
 
 # Typing
 if TYPE_CHECKING or sys.version_info >= (3, 5):
@@ -1273,7 +1329,7 @@ def fib(n if n < 2) = n
 @memoize()  # type: ignore
 addpattern def fib(n) = fib(n-1) + fib(n-2)  # type: ignore
 
-@recursive_iterator
+@recursive_generator
 def Fibs() = (0, 1) :: map((+), Fibs(), Fibs()$[1:])
 
 fib_ = reiterable(Fibs())$[]
@@ -1332,11 +1388,11 @@ class descriptor_test:
     lam = self -> self
     comp = tuplify .. ident
 
-    @recursive_iterator
+    @recursive_generator
     def N(self, i=0) =
         [(self, i)] :: self.N(i+1)
 
-    @recursive_iterator
+    @recursive_generator
     match def N_(self, *, i=0) =
         [(self, i)] :: self.N_(i=i+1)
 

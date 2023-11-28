@@ -44,12 +44,12 @@ def suite_test() -> bool:
     def test_sqplus1_plus1sq(sqplus1, plus1sq, parallel=True):
         assert sqplus1(3) == 10 == (plus1..square)(3), sqplus1
         if parallel:
-            assert parallel_map(sqplus1, range(3)) |> tuple == (1, 2, 5), sqplus1  # type: ignore
+            assert process_map(sqplus1, range(3)) |> tuple == (1, 2, 5), sqplus1  # type: ignore
         assert 3 `plus1sq` == 16, plus1sq
         assert 3 `sqplus1` == 10, sqplus1
     test_sqplus1_plus1sq(sqplus1_1, plus1sq_1)
     test_sqplus1_plus1sq(sqplus1_2, plus1sq_2, parallel=False)
-    with parallel_map.multiple_sequential_calls(max_workers=2):  # type: ignore
+    with process_map.multiple_sequential_calls(max_workers=2):  # type: ignore
         test_sqplus1_plus1sq(sqplus1_3, plus1sq_3)
         test_sqplus1_plus1sq(sqplus1_4, plus1sq_4)
         test_sqplus1_plus1sq(sqplus1_5, plus1sq_5)
@@ -67,7 +67,6 @@ def suite_test() -> bool:
         to_sort = rand_list(10)
         assert to_sort |> qsort |> tuple == to_sort |> sorted |> tuple, qsort  # type: ignore
     to_sort = rand_list(10)
-    assert parallel_map(tuple <.. (|>)$(to_sort), qsorts) |> list == [to_sort |> sorted |> tuple] * len(qsorts)
     assert repeat(3)$[2] == 3 == repeat_(3)$[2]
     assert sum_(repeat(1)$[:5]) == 5 == sum_(repeat_(1)$[:5])
     assert (sum_(takewhile((x)-> x<5, N()))
@@ -279,7 +278,6 @@ def suite_test() -> bool:
     assert fibs()$[:10] |> list == [1,1,2,3,5,8,13,21,34,55] == fibs_()$[:10] |> list
     assert fibs() |> takewhile$((i) -> i < 4000000 ) |> filter$((i) -> i % 2 == 0 ) |> sum == 4613732 == fibs_() |> takewhile$((i) -> i < 4000000 ) |> filter$((i) -> i % 2 == 0 ) |> sum  # type: ignore
     assert loop([1,2])$[:4] |> list == [1, 2] * 2
-    assert parallel_map(list .. .$[:2] .. loop, ([1], [2]))$[:2] |> tuple == ([1, 1], [2, 2])
     assert nest("a") |> .$[1] |> .$[1] |> .$[0] == "a"
     assert (def -> mod)()(5, 3) == 2
     assert sieve((2, 3, 4, 5)) |> list == [2, 3, 5]
@@ -732,7 +730,7 @@ def suite_test() -> bool:
     only_match_if(1) -> _ = 1
     match only_match_if(1) -> _ in 2:
         assert False
-    only_match_int -> _ = 1
+    only_match_int -> _ = 10
     match only_match_int -> _ in "abc":
         assert False
     only_match_abc -> _ = "abc"
@@ -748,7 +746,6 @@ def suite_test() -> bool:
     class inh_A() `isinstance` clsA `isinstance` object = inh_A()
     for maxdiff in (maxdiff1, maxdiff2, maxdiff3, maxdiff_):
         assert maxdiff([7,1,4,5]) == 4, "failed for " + repr(maxdiff)
-    assert all(r == 4 for r in parallel_map(call$(?, [7,1,4,5]), [maxdiff1, maxdiff2, maxdiff3]))
     assert ret_ret_func(1) == ((), {"func": 1}) == ret_args_kwargs$(func=1)()  # type: ignore
     assert ret_args_kwargs$(?, func=2)(1) == ((1,), {"func": 2})
     assert lift(ret_args_kwargs)(ident, plus1, times2, sq=square)(3) == ((3, 4, 6), {"sq": 9})
@@ -1053,6 +1050,36 @@ forward 2""") == 900
     assert ret_args_kwargs(123, ...=really_long_var, abc="abc") == ((123,), {"really_long_var": 10, "abc": "abc"}) == ret_args_kwargs$(123, ...=really_long_var, abc="abc")()
     assert "Coconut version of typing" in typing.__doc__
     numlist: NumList = [1, 2.3, 5]
+    assert hasloc([[1, 2]]).loc[0][1] == 2 == hasloc([[1, 2]]) |> .loc[0][1]
+    locgetter = .loc[0][1]
+    assert hasloc([[1, 2]]) |> locgetter == 2 == (hasloc([[1, 2]]) |> .loc[0])[1]
+    haslocobj = hasloc([[1, 2]])
+    haslocobj |>= .loc[0][1]
+    assert haslocobj == 2
+    assert hasloc([[1, 2]]).iloc$[0]$[1] == 2 == hasloc([[1, 2]]) |> .iloc$[0]$[1]
+    locgetter = .iloc$[0]$[1]
+    assert hasloc([[1, 2]]) |> locgetter == 2 == (hasloc([[1, 2]]) |> .iloc$[0])$[1]
+    haslocobj = hasloc([[1, 2]])
+    haslocobj |>= .iloc$[0]$[1]
+    assert haslocobj == 2
+    assert safe_raise_exc(IOError).error `isinstance` IOError
+    assert safe_raise_exc(IOError).handle(IOError, const 10).unwrap() == 10 == safe_raise_exc(IOError).expect_error(IOError).result_or(10)
+    assert pickle_round_trip(ident$(1))() == 1 == pickle_round_trip(ident$(x=?))(1)
+    assert x_or_y(x=1) == (1, 1) == x_or_y(y=1)
+    assert DerivedWithMeths().cls_meth()
+    assert DerivedWithMeths().static_meth()
+    assert Fibs()[100] == 354224848179261915075
+    assert tree_depth(Node(Leaf 5, Node(Node(Leaf 10)))) == 3
+    assert pickle_round_trip(.name) <| (name=10) == 10
+    assert pickle_round_trip(.[0])([10]) == 10
+    assert pickle_round_trip(.loc[0]) <| (loc=[10]) == 10
+    assert pickle_round_trip(.method(0)) <| (method=const 10) == 10
+    assert pickle_round_trip(.method(x=10)) <| (method=x -> x) == 10
+
+    with process_map.multiple_sequential_calls():  # type: ignore
+        assert process_map(tuple <.. (|>)$(to_sort), qsorts) |> list == [to_sort |> sorted |> tuple] * len(qsorts)
+        assert process_map(list .. .$[:2] .. loop, ([1], [2]))$[:2] |> tuple == ([1, 1], [2, 2])
+        assert all(r == 4 for r in process_map(call$(?, [7,1,4,5]), [maxdiff1, maxdiff2, maxdiff3]))
 
     # must come at end
     assert fibs_calls[0] == 1

@@ -50,6 +50,11 @@ def get_bool_env_var(env_var, default=False):
         return default
 
 
+def get_path_env_var(env_var, default):
+    """Get a path from an environment variable."""
+    return fixpath(os.getenv(env_var, default))
+
+
 # -----------------------------------------------------------------------------------------------------------------------
 # VERSION CONSTANTS:
 # -----------------------------------------------------------------------------------------------------------------------
@@ -66,6 +71,7 @@ version_tuple = tuple(VERSION.split("."))
 WINDOWS = os.name == "nt"
 PYPY = platform.python_implementation() == "PyPy"
 CPYTHON = platform.python_implementation() == "CPython"
+PY26 = sys.version_info < (2, 7)
 PY32 = sys.version_info >= (3, 2)
 PY33 = sys.version_info >= (3, 3)
 PY34 = sys.version_info >= (3, 4)
@@ -76,17 +82,19 @@ PY38 = sys.version_info >= (3, 8)
 PY39 = sys.version_info >= (3, 9)
 PY310 = sys.version_info >= (3, 10)
 PY311 = sys.version_info >= (3, 11)
+PY312 = sys.version_info >= (3, 12)
 IPY = (
-    ((PY2 and not PY26) or PY35)
+    PY35
     and (PY37 or not PYPY)
     and not (PYPY and WINDOWS)
-    and not (PY2 and WINDOWS)
     and sys.version_info[:2] != (3, 7)
 )
 MYPY = (
-    PY37
+    PY38
     and not WINDOWS
     and not PYPY
+    # disabled until MyPy supports PEP 695
+    and not PY312
 )
 XONSH = (
     PY35
@@ -101,8 +109,7 @@ py_version_str = sys.version.split()[0]
 # -----------------------------------------------------------------------------------------------------------------------
 
 # set this to False only ever temporarily for ease of debugging
-use_fast_pyparsing_reprs = True
-assert use_fast_pyparsing_reprs or DEVELOP, "use_fast_pyparsing_reprs should never be disabled on non-develop build"
+use_fast_pyparsing_reprs = get_bool_env_var("COCONUT_FAST_PYPARSING_REPRS", True)
 
 enable_pyparsing_warnings = DEVELOP
 warn_on_multiline_regex = False
@@ -113,19 +120,45 @@ varchars = string.ascii_letters + string.digits + "_"
 
 use_computation_graph_env_var = "COCONUT_USE_COMPUTATION_GRAPH"
 
-# below constants are experimentally determined to maximize performance
+num_displayed_timing_items = 100
 
-streamline_grammar_for_len = 4000
+save_new_cache_items = get_bool_env_var("COCONUT_ALLOW_SAVE_TO_CACHE", True)
+
+cache_validation_info = DEVELOP
+
+reverse_any_of_env_var = "COCONUT_REVERSE_ANY_OF"
+reverse_any_of = get_bool_env_var(reverse_any_of_env_var, False)
+
+# below constants are experimentally determined to maximize performance
 
 use_packrat_parser = True  # True also gives us better error messages
 packrat_cache_size = None  # only works because final() clears the cache
 
+streamline_grammar_for_len = 1536
+
+use_cache_file = True
+
+disable_incremental_for_len = 46080
+
+adaptive_any_of_env_var = "COCONUT_ADAPTIVE_ANY_OF"
+use_adaptive_any_of = get_bool_env_var(adaptive_any_of_env_var, True)
+
 # note that _parseIncremental produces much smaller caches
-use_incremental_if_available = True
-incremental_cache_size = None
+use_incremental_if_available = False
+
+use_adaptive_if_available = False  # currently broken
+adaptive_reparse_usage_weight = 10
+
 # these only apply to use_incremental_if_available, not compiler.util.enable_incremental_parsing()
+default_incremental_cache_size = None
 repeatedly_clear_incremental_cache = True
 never_clear_incremental_cache = False
+
+# this is what gets used in compiler.util.enable_incremental_parsing()
+incremental_mode_cache_size = None
+incremental_cache_limit = 2097152  # clear cache when it gets this large
+incremental_mode_cache_successes = False
+require_cache_clear_frac = 0.3125  # require that at least this much of the cache must be cleared on each cache clear
 
 use_left_recursion_if_available = False
 
@@ -134,11 +167,10 @@ use_left_recursion_if_available = False
 # -----------------------------------------------------------------------------------------------------------------------
 
 # set this to True only ever temporarily for ease of debugging
-embed_on_internal_exc = False
-assert not embed_on_internal_exc or DEVELOP, "embed_on_internal_exc should never be enabled on non-develop build"
+embed_on_internal_exc = get_bool_env_var("COCONUT_EMBED_ON_INTERNAL_EXC", False)
 
-# should be the minimal ref count observed by attach
-temp_grammar_item_ref_count = 3 if PY311 else 5
+# should be the minimal ref count observed by maybe_copy_elem
+temp_grammar_item_ref_count = 4 if PY311 else 5
 
 minimum_recursion_limit = 128
 # shouldn't be raised any higher to avoid stack overflows
@@ -446,6 +478,7 @@ py3_to_py2_stdlib = {
     "urllib.parse": ("urllib", (3,)),
     "pickle": ("cPickle", (3,)),
     "collections.abc": ("collections", (3, 3)),
+    "_dummy_thread": ("dummy_thread", (3,)),
     # ./ in old_name denotes from ... import ...
     "io.StringIO": ("StringIO./StringIO", (2, 7)),
     "io.BytesIO": ("cStringIO./StringIO", (2, 7)),
@@ -454,8 +487,7 @@ py3_to_py2_stdlib = {
     "itertools.zip_longest": ("itertools./izip_longest", (3,)),
     "math.gcd": ("fractions./gcd", (3, 5)),
     "time.process_time": ("time./clock", (3, 3)),
-    # # _dummy_thread was removed in Python 3.9, so this no longer works
-    # "_dummy_thread": ("dummy_thread", (3,)),
+    "shlex.quote": ("pipes./quote", (3, 3)),
 
     # third-party backports
     "asyncio": ("trollius", (3, 4)),
@@ -571,7 +603,9 @@ python_builtins = (
     '__file__',
     '__annotations__',
     '__debug__',
-    # # don't include builtins that aren't always made available by Coconut:
+    # we treat these as coconut_exceptions so the highlighter will always know about them:
+    # 'ExceptionGroup', 'BaseExceptionGroup',
+    # don't include builtins that aren't always made available by Coconut:
     # 'BlockingIOError', 'ChildProcessError', 'ConnectionError',
     # 'BrokenPipeError', 'ConnectionAbortedError', 'ConnectionRefusedError',
     # 'ConnectionResetError', 'FileExistsError', 'FileNotFoundError',
@@ -604,14 +638,17 @@ home_env_var = "COCONUT_HOME"
 
 force_verbose_logger = get_bool_env_var("COCONUT_FORCE_VERBOSE", False)
 
-coconut_home = fixpath(os.getenv(home_env_var, "~"))
+coconut_home = get_path_env_var(home_env_var, "~")
 
 use_color = get_bool_env_var("COCONUT_USE_COLOR", None)
 error_color_code = "31"
 log_color_code = "93"
 
 default_style = "default"
-prompt_histfile = os.path.join(coconut_home, ".coconut_history")
+prompt_histfile = get_path_env_var(
+    "COCONUT_HISTORY_FILE",
+    os.path.join(coconut_home, ".coconut_history"),
+)
 prompt_multiline = False
 prompt_vi_mode = get_bool_env_var(vi_mode_env_var, False)
 prompt_wrap_lines = True
@@ -653,7 +690,7 @@ reserved_command_symbols = exit_chars + (
 # always use atomic --xxx=yyy rather than --xxx yyy
 #  and don't include --run, --quiet, or --target as they're added separately
 coconut_base_run_args = ("--keep-lines",)
-coconut_run_kwargs = dict(default_target="sys")  # passed to Command.cmd
+coconut_sys_kwargs = dict(default_target="sys", default_jobs="0")  # passed to Command.cmd
 
 default_mypy_args = (
     "--pretty",
@@ -685,7 +722,9 @@ oserror_retcode = 127
 kilobyte = 1024
 min_stack_size_kbs = 160
 
-default_jobs = "sys" if not PY26 else 0
+base_default_jobs = "sys" if not PY26 else 0
+
+high_proc_prio = True
 
 mypy_install_arg = "install"
 jupyter_install_arg = "install"
@@ -704,6 +743,12 @@ interpreter_compiler_var = "__coconut_compiler__"
 jupyter_console_commands = ("console", "qtconsole")
 
 create_package_retries = 1
+
+use_fancy_call_output = get_bool_env_var("COCONUT_FANCY_CALL_OUTPUT", False)
+call_timeout = 0.01
+
+max_orig_lines_in_log_loc = 2
+
 
 # -----------------------------------------------------------------------------------------------------------------------
 # HIGHLIGHTER CONSTANTS:
@@ -729,10 +774,10 @@ coconut_specific_builtins = (
     "count",
     "makedata",
     "consume",
-    "parallel_map",
+    "process_map",
+    "thread_map",
     "addpattern",
-    "recursive_iterator",
-    "concurrent_map",
+    "recursive_generator",
     "fmap",
     "starmap",
     "reiterable",
@@ -750,6 +795,7 @@ coconut_specific_builtins = (
     "lift",
     "all_equal",
     "collectby",
+    "mapreduce",
     "multi_enumerate",
     "cartesian_product",
     "multiset",
@@ -757,6 +803,7 @@ coconut_specific_builtins = (
     "windowsof",
     "and_then",
     "and_then_await",
+    "async_map",
     "py_chr",
     "py_dict",
     "py_hex",
@@ -790,8 +837,11 @@ must_use_specific_target_builtins = (
 
 coconut_exceptions = (
     "MatchError",
+    "ExceptionGroup",
+    "BaseExceptionGroup",
 )
 
+highlight_builtins = coconut_specific_builtins + interp_only_builtins
 all_builtins = frozenset(python_builtins + coconut_specific_builtins + coconut_exceptions)
 
 magic_methods = (
@@ -870,7 +920,16 @@ all_reqs = {
         ("pygments", "py>=39"),
         ("typing_extensions", "py<36"),
         ("typing_extensions", "py==36"),
-        ("typing_extensions", "py>=37"),
+        ("typing_extensions", "py==37"),
+        ("typing_extensions", "py>=38"),
+        ("trollius", "py<3;cpy"),
+        ("aenum", "py<34"),
+        ("dataclasses", "py==36"),
+        ("typing", "py<35"),
+        ("async_generator", "py35"),
+        ("exceptiongroup", "py37;py<311"),
+        ("anyio", "py36"),
+        "setuptools",
     ),
     "cpython": (
         "cPyparsing",
@@ -882,7 +941,8 @@ all_reqs = {
         ("ipython", "py<3"),
         ("ipython", "py3;py<37"),
         ("ipython", "py==37"),
-        ("ipython", "py38"),
+        ("ipython", "py==38"),
+        ("ipython", "py>=39"),
         ("ipykernel", "py<3"),
         ("ipykernel", "py3;py<38"),
         ("ipykernel", "py38"),
@@ -898,9 +958,13 @@ all_reqs = {
         ("jupyter-console", "py<35"),
         ("jupyter-console", "py>=35;py<37"),
         ("jupyter-console", "py37"),
-        ("jupyterlab", "py35"),
-        ("jupytext", "py3"),
         "papermill",
+    ),
+    "jupyterlab": (
+        ("jupyterlab", "py35"),
+    ),
+    "jupytext": (
+        ("jupytext", "py3"),
     ),
     "mypy": (
         "mypy[python2]",
@@ -915,17 +979,11 @@ all_reqs = {
         ("xonsh", "py>=36;py<38"),
         ("xonsh", "py38"),
     ),
-    "backports": (
-        ("trollius", "py<3;cpy"),
-        ("aenum", "py<34"),
-        ("dataclasses", "py==36"),
-        ("typing", "py<35"),
-        ("async_generator", "py35"),
-    ),
     "dev": (
         ("pre-commit", "py3"),
         "requests",
         "vprof",
+        "py-spy",
     ),
     "docs": (
         "sphinx",
@@ -934,19 +992,22 @@ all_reqs = {
         "myst-parser",
         "pydata-sphinx-theme",
     ),
+    "numpy": (
+        ("numpy", "py<3;cpy"),
+        ("numpy", "py34;py<39"),
+        ("numpy", "py39"),
+        ("pandas", "py36"),
+    ),
     "tests": (
         ("pytest", "py<36"),
         ("pytest", "py36"),
         "pexpect",
-        ("numpy", "py34"),
-        ("numpy", "py<3;cpy"),
-        ("pandas", "py36"),
     ),
 }
 
 # min versions are inclusive
-min_versions = {
-    "cPyparsing": (2, 4, 7, 2, 2, 1),
+unpinned_min_versions = {
+    "cPyparsing": (2, 4, 7, 2, 3, 2),
     ("pre-commit", "py3"): (3,),
     ("psutil", "py>=27"): (5,),
     "jupyter": (1, 0),
@@ -957,30 +1018,37 @@ min_versions = {
     "pexpect": (4,),
     ("trollius", "py<3;cpy"): (2, 2),
     "requests": (2, 31),
-    ("numpy", "py34"): (1,),
-    ("numpy", "py<3;cpy"): (1,),
+    ("numpy", "py39"): (1, 26),
     ("dataclasses", "py==36"): (0, 8),
     ("aenum", "py<34"): (3, 1, 15),
-    "pydata-sphinx-theme": (0, 13),
+    "pydata-sphinx-theme": (0, 14),
     "myst-parser": (2,),
     "sphinx": (7,),
-    "mypy[python2]": (1, 4),
+    "mypy[python2]": (1, 7),
     ("jupyter-console", "py37"): (6, 6),
     ("typing", "py<35"): (3, 10),
-    ("typing_extensions", "py>=37"): (4, 7),
-    ("ipython", "py38"): (8,),
+    ("typing_extensions", "py>=38"): (4, 8),
     ("ipykernel", "py38"): (6,),
     ("jedi", "py39"): (0, 19),
-    ("pygments", "py>=39"): (2, 15),
+    ("pygments", "py>=39"): (2, 17),
     ("xonsh", "py38"): (0, 14),
     ("pytest", "py36"): (7,),
     ("async_generator", "py35"): (1, 10),
+    ("exceptiongroup", "py37;py<311"): (1,),
+    ("ipython", "py>=39"): (8, 18),
+    "py-spy": (0, 3),
+}
 
-    # pinned reqs: (must be added to pinned_reqs below)
-
-    # don't upgrade these; they breaks on Python 3.7
+pinned_min_versions = {
+    # don't upgrade these; they break on Python 3.9
+    ("numpy", "py34;py<39"): (1, 18),
+    # don't upgrade these; they break on Python 3.8
+    ("ipython", "py==38"): (8, 12),
+    # don't upgrade these; they break on Python 3.7
     ("ipython", "py==37"): (7, 34),
-    # don't upgrade these; they breaks on Python 3.6
+    ("typing_extensions", "py==37"): (4, 7),
+    # don't upgrade these; they break on Python 3.6
+    ("anyio", "py36"): (3,),
     ("xonsh", "py>=36;py<38"): (0, 11),
     ("pandas", "py36"): (1,),
     ("jupyter-client", "py36"): (7, 1, 2),
@@ -1003,6 +1071,7 @@ min_versions = {
     # don't upgrade this; it breaks on Python 3.4
     ("pygments", "py<39"): (2, 3),
     # don't upgrade these; they break on Python 2
+    "setuptools": (44,),
     ("jupyter-client", "py<35"): (5, 3),
     ("pywinpty", "py<3;windows"): (0, 5),
     ("jupyter-console", "py<35"): (5, 2),
@@ -1011,42 +1080,16 @@ min_versions = {
     ("prompt_toolkit", "py<3"): (1,),
     "watchdog": (0, 10),
     "papermill": (1, 2),
+    ("numpy", "py<3;cpy"): (1, 16),
     # don't upgrade this; it breaks with old IPython versions
     ("jedi", "py<39"): (0, 17),
     # Coconut requires pyparsing 2
     "pyparsing": (2, 4, 7),
 }
 
-# should match the reqs with comments above
-pinned_reqs = (
-    ("ipython", "py==37"),
-    ("xonsh", "py>=36;py<38"),
-    ("pandas", "py36"),
-    ("jupyter-client", "py36"),
-    ("typing_extensions", "py==36"),
-    ("jupyter-client", "py<35"),
-    ("ipykernel", "py3;py<38"),
-    ("ipython", "py3;py<37"),
-    ("jupyter-console", "py>=35;py<37"),
-    ("jupyter-client", "py==35"),
-    ("jupytext", "py3"),
-    ("jupyterlab", "py35"),
-    ("xonsh", "py<36"),
-    ("typing_extensions", "py<36"),
-    ("prompt_toolkit", "py>=3"),
-    ("pytest", "py<36"),
-    "vprof",
-    ("pygments", "py<39"),
-    ("pywinpty", "py<3;windows"),
-    ("jupyter-console", "py<35"),
-    ("ipython", "py<3"),
-    ("ipykernel", "py<3"),
-    ("prompt_toolkit", "py<3"),
-    "watchdog",
-    "papermill",
-    ("jedi", "py<39"),
-    "pyparsing",
-)
+min_versions = {}
+min_versions.update(pinned_min_versions)
+min_versions.update(unpinned_min_versions)
 
 # max versions are exclusive; None implies that the max version should
 #  be generated by incrementing the min version; multiple Nones implies
@@ -1055,7 +1098,7 @@ _ = None
 max_versions = {
     ("jupyter-client", "py==35"): _,
     "pyparsing": _,
-    "cPyparsing": (_, _, _),
+    "cPyparsing": (_, _, _, _, _,),
     ("prompt_toolkit", "py<3"): _,
     ("jedi", "py<39"): _,
     ("pywinpty", "py<3;windows"): _,
@@ -1089,6 +1132,7 @@ classifiers = (
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Programming Language :: Other",
     "Programming Language :: Other Scripting Engines",
     "Programming Language :: Python :: Implementation :: CPython",
@@ -1118,6 +1162,7 @@ search_terms = (
     "recursion",
     "call",
     "recursive",
+    "recursive_iterator",
     "infix",
     "function",
     "composition",
@@ -1140,6 +1185,7 @@ search_terms = (
     "datamaker",
     "prepattern",
     "iterator",
+    "generator",
     "none",
     "coalesce",
     "coalescing",

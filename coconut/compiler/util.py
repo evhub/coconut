@@ -28,20 +28,31 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 from coconut.root import *  # NOQA
 
 import sys
+import os
 import re
 import ast
 import inspect
 import __future__
 import itertools
+import weakref
 import datetime as dt
 from functools import partial, reduce
 from collections import defaultdict
 from contextlib import contextmanager
 from pprint import pformat, pprint
 
+if sys.version_info >= (3,):
+    import pickle
+else:
+    import cPickle as pickle
+
 from coconut._pyparsing import (
+    CPYPARSING,
+    MODERN_PYPARSING,
     USE_COMPUTATION_GRAPH,
     SUPPORTS_INCREMENTAL,
+    SUPPORTS_ADAPTIVE,
+    SUPPORTS_PACKRAT_CONTEXT,
     replaceWith,
     ZeroOrMore,
     OneOrMore,
@@ -59,9 +70,13 @@ from coconut._pyparsing import (
     CaselessLiteral,
     Group,
     ParserElement,
+    MatchFirst,
+    And,
     _trim_arity,
     _ParseResultsWithOffset,
+    all_parse_elements,
     line as _line,
+    __version__ as pyparsing_version,
 )
 
 from coconut.integrations import embed
@@ -70,6 +85,9 @@ from coconut.util import (
     get_name,
     get_target_info,
     memoize,
+    univ_open,
+    ensure_dir,
+    get_clock_time,
 )
 from coconut.terminal import (
     logger,
@@ -91,7 +109,6 @@ from coconut.constants import (
     specific_targets,
     pseudo_targets,
     reserved_vars,
-    use_packrat_parser,
     packrat_cache_size,
     temp_grammar_item_ref_count,
     indchars,
@@ -99,9 +116,23 @@ from coconut.constants import (
     non_syntactic_newline,
     allow_explicit_keyword_vars,
     reserved_prefix,
-    incremental_cache_size,
+    incremental_mode_cache_size,
+    default_incremental_cache_size,
     repeatedly_clear_incremental_cache,
     py_vers_with_eols,
+    unwrapper,
+    incremental_cache_limit,
+    incremental_mode_cache_successes,
+    adaptive_reparse_usage_weight,
+    use_adaptive_any_of,
+    disable_incremental_for_len,
+    coconut_cache_dir,
+    use_adaptive_if_available,
+    use_fast_pyparsing_reprs,
+    save_new_cache_items,
+    cache_validation_info,
+    require_cache_clear_frac,
+    reverse_any_of,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -116,10 +147,24 @@ from coconut.exceptions import (
 indexable_evaluated_tokens_types = (ParseResults, list, tuple)
 
 
+def evaluate_all_tokens(all_tokens, **kwargs):
+    """Recursively evaluate all the tokens in all_tokens."""
+    all_evaluated_toks = []
+    for toks in all_tokens:
+        evaluated_toks = evaluate_tokens(toks, **kwargs)
+        # if we're a final parse, ExceptionNodes will just be raised, but otherwise, if we see any, we need to
+        #  short-circuit the computation and return them, since they imply this parse contains invalid syntax
+        if isinstance(evaluated_toks, ExceptionNode):
+            return None, evaluated_toks
+        all_evaluated_toks.append(evaluated_toks)
+    return all_evaluated_toks, None
+
+
 def evaluate_tokens(tokens, **kwargs):
     """Evaluate the given tokens in the computation graph.
     Very performance sensitive."""
-    # can't have this be a normal kwarg to make evaluate_tokens a valid parse action
+    # can't have these be normal kwargs to make evaluate_tokens a valid parse action
+    is_final = kwargs.pop("is_final", False)
     evaluated_toklists = kwargs.pop("evaluated_toklists", ())
     if DEVELOP:  # avoid the overhead of the call if not develop
         internal_assert(not kwargs, "invalid keyword arguments to evaluate_tokens", kwargs)
@@ -137,7 +182,9 @@ def evaluate_tokens(tokens, **kwargs):
                 new_toklist = eval_new_toklist
                 break
         if new_toklist is None:
-            new_toklist = [evaluate_tokens(toks, evaluated_toklists=evaluated_toklists) for toks in old_toklist]
+            new_toklist, exc_node = evaluate_all_tokens(old_toklist, is_final=is_final, evaluated_toklists=evaluated_toklists)
+            if exc_node is not None:
+                return exc_node
             # overwrite evaluated toklists rather than appending, since this
             #  should be all the information we need for evaluating the dictionary
             evaluated_toklists = ((old_toklist, new_toklist),)
@@ -152,7 +199,9 @@ def evaluate_tokens(tokens, **kwargs):
         for name, occurrences in tokens._ParseResults__tokdict.items():
             new_occurrences = []
             for value, position in occurrences:
-                new_value = evaluate_tokens(value, evaluated_toklists=evaluated_toklists)
+                new_value = evaluate_tokens(value, is_final=is_final, evaluated_toklists=evaluated_toklists)
+                if isinstance(new_value, ExceptionNode):
+                    return new_value
                 new_occurrences.append(_ParseResultsWithOffset(new_value, position))
             new_tokdict[name] = new_occurrences
         new_tokens._ParseResults__tokdict.update(new_tokdict)
@@ -186,13 +235,23 @@ def evaluate_tokens(tokens, **kwargs):
             return tokens
 
         elif isinstance(tokens, ComputationNode):
-            return tokens.evaluate()
+            result = tokens.evaluate()
+            if is_final and isinstance(result, ExceptionNode):
+                raise result.exception
+            return result
 
         elif isinstance(tokens, list):
-            return [evaluate_tokens(inner_toks, evaluated_toklists=evaluated_toklists) for inner_toks in tokens]
+            result, exc_node = evaluate_all_tokens(tokens, is_final=is_final, evaluated_toklists=evaluated_toklists)
+            return result if exc_node is None else exc_node
 
         elif isinstance(tokens, tuple):
-            return tuple(evaluate_tokens(inner_toks, evaluated_toklists=evaluated_toklists) for inner_toks in tokens)
+            result, exc_node = evaluate_all_tokens(tokens, is_final=is_final, evaluated_toklists=evaluated_toklists)
+            return tuple(result) if exc_node is None else exc_node
+
+        elif isinstance(tokens, ExceptionNode):
+            if is_final:
+                raise tokens.exception
+            return tokens
 
         elif isinstance(tokens, DeferredNode):
             return tokens
@@ -203,7 +262,7 @@ def evaluate_tokens(tokens, **kwargs):
 
 class ComputationNode(object):
     """A single node in the computation graph."""
-    __slots__ = ("action", "original", "loc", "tokens") + (("been_called",) if DEVELOP else ())
+    __slots__ = ("action", "original", "loc", "tokens")
     pprinting = False
 
     def __new__(cls, action, original, loc, tokens, ignore_no_tokens=False, ignore_one_token=False, greedy=False, trim_arity=True):
@@ -225,8 +284,6 @@ class ComputationNode(object):
             self.original = original
             self.loc = loc
             self.tokens = tokens
-            if DEVELOP:
-                self.been_called = False
             if greedy:
                 return self.evaluate()
             else:
@@ -242,12 +299,14 @@ class ComputationNode(object):
     def evaluate(self):
         """Get the result of evaluating the computation graph at this node.
         Very performance sensitive."""
-        if DEVELOP:  # avoid the overhead of the call if not develop
-            internal_assert(not self.been_called, "inefficient reevaluation of action " + self.name + " with tokens", self.tokens)
-            self.been_called = True
+        # note that this should never cache, since if a greedy Wrap that doesn't add to the packrat context
+        #  hits the cache, it'll get the same ComputationNode object, but since it's greedy that object needs
+        #  to actually be reevaluated
         evaluated_toks = evaluate_tokens(self.tokens)
         if logger.tracing:  # avoid the overhead of the call if not tracing
             logger.log_trace(self.name, self.original, self.loc, evaluated_toks, self.tokens)
+        if isinstance(evaluated_toks, ExceptionNode):
+            return evaluated_toks  # short-circuit if we got an ExceptionNode
         try:
             return self.action(
                 self.original,
@@ -278,6 +337,7 @@ class ComputationNode(object):
 
 class DeferredNode(object):
     """A node in the computation graph that has had its evaluation explicitly deferred."""
+    __slots__ = ("original", "loc", "tokens")
 
     def __init__(self, original, loc, tokens):
         self.original = original
@@ -287,6 +347,16 @@ class DeferredNode(object):
     def evaluate(self):
         """Evaluate the deferred computation."""
         return unpack(self.tokens)
+
+
+class ExceptionNode(object):
+    """A node in the computation graph that stores an exception that will be raised upon final evaluation."""
+    __slots__ = ("exception",)
+
+    def __init__(self, exception):
+        if not USE_COMPUTATION_GRAPH:
+            raise exception
+        self.exception = exception
 
 
 class CombineToNode(Combine):
@@ -315,10 +385,8 @@ else:
 def add_action(item, action, make_copy=None):
     """Add a parse action to the given item."""
     if make_copy is None:
-        item_ref_count = sys.getrefcount(item) if CPYTHON and not on_new_python else float("inf")
-        internal_assert(lambda: item_ref_count >= temp_grammar_item_ref_count, "add_action got item with too low ref count", (item, type(item), item_ref_count))
-        make_copy = item_ref_count > temp_grammar_item_ref_count
-    if make_copy:
+        item = maybe_copy_elem(item, "attach")
+    elif make_copy:
         item = item.copy()
     return item.addParseAction(action)
 
@@ -347,31 +415,45 @@ def attach(item, action, ignore_no_tokens=None, ignore_one_token=None, ignore_to
     return add_action(item, action, make_copy)
 
 
-def should_clear_cache():
-    """Determine if we should be clearing the packrat cache."""
-    return (
-        use_packrat_parser
-        and (
-            not ParserElement._incrementalEnabled
-            or (
-                ParserElement._incrementalWithResets
-                and repeatedly_clear_incremental_cache
-            )
-        )
-    )
-
-
 def final_evaluate_tokens(tokens):
     """Same as evaluate_tokens but should only be used once a parse is assured."""
-    # don't clear the cache in incremental mode
-    if should_clear_cache():
-        # clear cache without resetting stats
-        ParserElement.packrat_cache.clear()
-    return evaluate_tokens(tokens)
+    clear_packrat_cache()
+    return evaluate_tokens(tokens, is_final=True)
+
+
+@contextmanager
+def adaptive_manager(item, original, loc, reparse=False):
+    """Manage the use of MatchFirst.setAdaptiveMode."""
+    if reparse:
+        cleared_cache = clear_packrat_cache()
+        if cleared_cache is not True:
+            item.include_in_packrat_context = True
+        MatchFirst.setAdaptiveMode(False, usage_weight=adaptive_reparse_usage_weight)
+        try:
+            yield
+        finally:
+            MatchFirst.setAdaptiveMode(False, usage_weight=1)
+            if cleared_cache is not True:
+                item.include_in_packrat_context = False
+    else:
+        MatchFirst.setAdaptiveMode(True)
+        try:
+            yield
+        except Exception as exc:
+            if DEVELOP:
+                logger.log("reparsing due to:", exc)
+                logger.record_stat("adaptive", False)
+        else:
+            if DEVELOP:
+                logger.record_stat("adaptive", True)
+        finally:
+            MatchFirst.setAdaptiveMode(False)
 
 
 def final(item):
     """Collapse the computation graph upon parsing the given item."""
+    if SUPPORTS_ADAPTIVE and use_adaptive_if_available:
+        item = Wrap(item, adaptive_manager, greedy=True)
     # evaluate_tokens expects a computation graph, so we just call add_action directly
     return add_action(trace(item), final_evaluate_tokens)
 
@@ -385,17 +467,22 @@ def defer(item):
 def unpack(tokens):
     """Evaluate and unpack the given computation graph."""
     logger.log_tag("unpack", tokens)
-    tokens = evaluate_tokens(tokens)
+    tokens = final_evaluate_tokens(tokens)
     if isinstance(tokens, ParseResults) and len(tokens) == 1:
         tokens = tokens[0]
     return tokens
+
+
+def in_incremental_mode():
+    """Determine if we are using incremental parsing mode."""
+    return ParserElement._incrementalEnabled and not ParserElement._incrementalWithResets
 
 
 def force_reset_packrat_cache():
     """Forcibly reset the packrat cache and all packrat stats."""
     if ParserElement._incrementalEnabled:
         ParserElement._incrementalEnabled = False
-        ParserElement.enableIncremental(incremental_cache_size, still_reset_cache=ParserElement._incrementalWithResets)
+        ParserElement.enableIncremental(incremental_mode_cache_size if in_incremental_mode() else default_incremental_cache_size, still_reset_cache=False)
     else:
         ParserElement._packratEnabled = False
         ParserElement.enablePackrat(packrat_cache_size)
@@ -404,7 +491,9 @@ def force_reset_packrat_cache():
 @contextmanager
 def parsing_context(inner_parse=True):
     """Context to manage the packrat cache across parse calls."""
-    if inner_parse and should_clear_cache():
+    if not inner_parse:
+        yield
+    elif should_clear_cache():
         # store old packrat cache
         old_cache = ParserElement.packrat_cache
         old_cache_stats = ParserElement.packrat_cache_stats[:]
@@ -418,7 +507,8 @@ def parsing_context(inner_parse=True):
             if logger.verbose:
                 ParserElement.packrat_cache_stats[0] += old_cache_stats[0]
                 ParserElement.packrat_cache_stats[1] += old_cache_stats[1]
-    elif inner_parse and ParserElement._incrementalWithResets:
+    # if we shouldn't clear the cache, but we're using incrementalWithResets, then do this to avoid clearing it
+    elif ParserElement._incrementalWithResets:
         incrementalWithResets, ParserElement._incrementalWithResets = ParserElement._incrementalWithResets, False
         try:
             yield
@@ -494,78 +584,9 @@ def transform(grammar, text, inner=True):
 
 
 # -----------------------------------------------------------------------------------------------------------------------
-# PARSING INTROSPECTION:
-# -----------------------------------------------------------------------------------------------------------------------
-
-
-def get_func_closure(func):
-    """Get variables in func's closure."""
-    if PY2:
-        varnames = func.func_code.co_freevars
-        cells = func.func_closure
-    else:
-        varnames = func.__code__.co_freevars
-        cells = func.__closure__
-    return {v: c.cell_contents for v, c in zip(varnames, cells)}
-
-
-def get_pyparsing_cache():
-    """Extract the underlying pyparsing packrat cache."""
-    packrat_cache = ParserElement.packrat_cache
-    if isinstance(packrat_cache, dict):  # if enablePackrat is never called
-        return packrat_cache
-    elif hasattr(packrat_cache, "cache"):  # cPyparsing adds this
-        return packrat_cache.cache
-    else:  # on pyparsing we have to do this
-        try:
-            # this is sketchy, so errors should only be complained
-            return get_func_closure(packrat_cache.get.__func__)["cache"]
-        except Exception as err:
-            complain(err)
-            return {}
-
-
-def add_to_cache(new_cache_items):
-    """Add the given items directly to the pyparsing packrat cache."""
-    packrat_cache = ParserElement.packrat_cache
-    for lookup, value in new_cache_items:
-        packrat_cache.set(lookup, value)
-
-
-def get_cache_items_for(original):
-    """Get items from the pyparsing cache filtered to only from parsing original."""
-    cache = get_pyparsing_cache()
-    for lookup, value in cache.items():
-        got_orig = lookup[1]
-        if got_orig == original:
-            yield lookup, value
-
-
-def get_highest_parse_loc(original):
-    """Get the highest observed parse location."""
-    # find the highest observed parse location
-    highest_loc = 0
-    for item, _ in get_cache_items_for(original):
-        loc = item[2]
-        if loc > highest_loc:
-            highest_loc = loc
-    return highest_loc
-
-
-def enable_incremental_parsing(force=False):
-    """Enable incremental parsing mode where prefix parses are reused."""
-    if SUPPORTS_INCREMENTAL or force:
-        try:
-            ParserElement.enableIncremental(incremental_cache_size, still_reset_cache=False)
-        except ImportError as err:
-            raise CoconutException(str(err))
-        else:
-            logger.log("Incremental parsing mode enabled.")
-
-
-# -----------------------------------------------------------------------------------------------------------------------
 # TARGETS:
 # -----------------------------------------------------------------------------------------------------------------------
+
 on_new_python = False
 
 raw_sys_target = str(sys.version_info[0]) + str(sys.version_info[1])
@@ -641,18 +662,490 @@ def get_target_info_smart(target, mode="lowest"):
 
 
 # -----------------------------------------------------------------------------------------------------------------------
+# PARSING INTROSPECTION:
+# -----------------------------------------------------------------------------------------------------------------------
+
+def maybe_copy_elem(item, name):
+    """Copy the given grammar element if it's referenced somewhere else."""
+    item_ref_count = sys.getrefcount(item) if CPYTHON and not on_new_python else float("inf")
+    internal_assert(lambda: item_ref_count >= temp_grammar_item_ref_count, "add_action got item with too low ref count", (item, type(item), item_ref_count))
+    if item_ref_count <= temp_grammar_item_ref_count:
+        if DEVELOP:
+            logger.record_stat("maybe_copy_" + name, False)
+        return item
+    else:
+        if DEVELOP:
+            logger.record_stat("maybe_copy_" + name, True)
+        return item.copy()
+
+
+def hasaction(elem):
+    """Determine if the given grammar element has any actions associated with it."""
+    return (
+        MODERN_PYPARSING
+        or elem.parseAction
+        or elem.resultsName is not None
+        or elem.debug
+    )
+
+
+@contextmanager
+def using_fast_grammar_methods():
+    """Enables grammar methods that modify their operands when they aren't referenced elsewhere."""
+    if MODERN_PYPARSING:
+        yield
+        return
+
+    def fast_add(self, other):
+        if hasaction(self):
+            return old_add(self, other)
+        self = maybe_copy_elem(self, "add")
+        self += other
+        return self
+    old_add, And.__add__ = And.__add__, fast_add
+
+    def fast_or(self, other):
+        if hasaction(self):
+            return old_or(self, other)
+        self = maybe_copy_elem(self, "or")
+        self |= other
+        return self
+    old_or, MatchFirst.__or__ = MatchFirst.__or__, fast_or
+
+    try:
+        yield
+    finally:
+        And.__add__ = old_add
+        MatchFirst.__or__ = old_or
+
+
+def get_func_closure(func):
+    """Get variables in func's closure."""
+    if PY2:
+        varnames = func.func_code.co_freevars
+        cells = func.func_closure
+    else:
+        varnames = func.__code__.co_freevars
+        cells = func.__closure__
+    return {v: c.cell_contents for v, c in zip(varnames, cells)}
+
+
+def get_pyparsing_cache():
+    """Extract the underlying pyparsing packrat cache."""
+    packrat_cache = ParserElement.packrat_cache
+    if isinstance(packrat_cache, dict):  # if enablePackrat is never called
+        return packrat_cache
+    elif CPYPARSING:
+        return packrat_cache.cache  # cPyparsing adds this
+    else:  # on pyparsing we have to do this
+        try:
+            # this is sketchy, so errors should only be complained
+            #  use .set instead of .get for the sake of MODERN_PYPARSING
+            return get_func_closure(packrat_cache.set.__func__)["cache"]
+        except Exception as err:
+            complain(err)
+            return {}
+
+
+def should_clear_cache(force=False):
+    """Determine if we should be clearing the packrat cache."""
+    if force:
+        return True
+    elif not ParserElement._packratEnabled:
+        return False
+    elif SUPPORTS_INCREMENTAL and ParserElement._incrementalEnabled:
+        if not in_incremental_mode():
+            return repeatedly_clear_incremental_cache
+        if (
+            incremental_cache_limit is not None
+            and len(ParserElement.packrat_cache) > incremental_cache_limit
+        ):
+            return "smart"
+        return False
+    else:
+        return True
+
+
+def add_packrat_cache_items(new_items, clear_first=False):
+    """Add the given items to the packrat cache."""
+    if clear_first:
+        ParserElement.packrat_cache.clear()
+    if new_items:
+        if PY2 or not CPYPARSING:
+            for lookup, value in new_items:
+                ParserElement.packrat_cache.set(lookup, value)
+        else:
+            ParserElement.packrat_cache.update(new_items)
+
+
+def execute_clear_strat(clear_cache):
+    """Clear PyParsing cache using clear_cache."""
+    orig_cache_len = None
+    if clear_cache is True:
+        # clear cache without resetting stats
+        ParserElement.packrat_cache.clear()
+    elif clear_cache == "smart":
+        orig_cache_len = execute_clear_strat("useless")
+        cleared_frac = (orig_cache_len - len(get_pyparsing_cache())) / orig_cache_len
+        if cleared_frac < require_cache_clear_frac:
+            logger.log("Packrat cache pruning using 'useless' strat failed; falling back to 'second half' strat.")
+            execute_clear_strat("second half")
+    else:
+        internal_assert(CPYPARSING, "unsupported clear_cache strategy", clear_cache)
+        cache = get_pyparsing_cache()
+        orig_cache_len = len(cache)
+        if clear_cache == "useless":
+            keys_to_del = []
+            for lookup, value in cache.items():
+                if not value[-1][0]:
+                    keys_to_del.append(lookup)
+            for del_key in keys_to_del:
+                del cache[del_key]
+        elif clear_cache == "second half":
+            all_keys = tuple(cache.keys())
+            for del_key in all_keys[len(all_keys) // 2: len(all_keys)]:
+                del cache[del_key]
+        else:
+            raise CoconutInternalException("invalid clear_cache strategy", clear_cache)
+    return orig_cache_len
+
+
+def clear_packrat_cache(force=False):
+    """Clear the packrat cache if applicable.
+    Very performance-sensitive for incremental parsing mode."""
+    clear_cache = should_clear_cache(force=force)
+    if clear_cache:
+        if DEVELOP:
+            start_time = get_clock_time()
+        orig_cache_len = execute_clear_strat(clear_cache)
+        if DEVELOP and orig_cache_len is not None:
+            logger.log("Pruned packrat cache from {orig_len} items to {new_len} items using {strat!r} strategy ({time} secs).".format(
+                orig_len=orig_cache_len,
+                new_len=len(get_pyparsing_cache()),
+                strat=clear_cache,
+                time=get_clock_time() - start_time,
+            ))
+    return clear_cache
+
+
+def get_cache_items_for(original, only_useful=False, exclude_stale=True):
+    """Get items from the pyparsing cache filtered to only be from parsing original."""
+    cache = get_pyparsing_cache()
+    for lookup, value in cache.items():
+        got_orig = lookup[1]
+        internal_assert(lambda: isinstance(got_orig, (bytes, str)), "failed to look up original in pyparsing cache item", (lookup, value))
+        if ParserElement._incrementalEnabled:
+            (is_useful,) = value[-1]
+            if only_useful and not is_useful:
+                continue
+            if exclude_stale and is_useful >= 2:
+                continue
+        if got_orig == original:
+            yield lookup, value
+
+
+def get_highest_parse_loc(original):
+    """Get the highest observed parse location."""
+    # find the highest observed parse location
+    highest_loc = 0
+    for lookup, _ in get_cache_items_for(original):
+        loc = lookup[2]
+        if loc > highest_loc:
+            highest_loc = loc
+    return highest_loc
+
+
+def enable_incremental_parsing():
+    """Enable incremental parsing mode where prefix/suffix parses are reused."""
+    if not SUPPORTS_INCREMENTAL:
+        return False
+    if in_incremental_mode():  # incremental mode is already enabled
+        return True
+    ParserElement._incrementalEnabled = False
+    try:
+        ParserElement.enableIncremental(incremental_mode_cache_size, still_reset_cache=False, cache_successes=incremental_mode_cache_successes)
+    except ImportError as err:
+        raise CoconutException(str(err))
+    logger.log("Incremental parsing mode enabled.")
+    return True
+
+
+def pickle_cache(original, cache_path, include_incremental=True, protocol=pickle.HIGHEST_PROTOCOL):
+    """Pickle the pyparsing cache for original to cache_path."""
+    internal_assert(all_parse_elements is not None, "pickle_cache requires cPyparsing")
+    if not save_new_cache_items:
+        logger.log("Skipping saving cache items due to environment variable.")
+        return
+
+    validation_dict = {} if cache_validation_info else None
+
+    pickleable_cache_items = []
+    if ParserElement._incrementalEnabled and include_incremental:
+        # note that exclude_stale is fine here because that means it was never used,
+        #  since _parseIncremental sets usefullness to True when a cache item is used
+        for lookup, value in get_cache_items_for(original, only_useful=True):
+            if incremental_mode_cache_size is not None and len(pickleable_cache_items) > incremental_mode_cache_size:
+                logger.log(
+                    "Got too large incremental cache: "
+                    + str(len(get_pyparsing_cache())) + " > " + str(incremental_mode_cache_size)
+                )
+                break
+            if len(pickleable_cache_items) >= incremental_cache_limit:
+                break
+            loc = lookup[2]
+            # only include cache items that aren't at the start or end, since those
+            #  are the only ones that parseIncremental will reuse
+            if 0 < loc < len(original) - 1:
+                elem = lookup[0]
+                identifier = elem.parse_element_index
+                internal_assert(lambda: elem == all_parse_elements[identifier](), "failed to look up parse element by identifier", (elem, all_parse_elements[identifier]()))
+                if validation_dict is not None:
+                    validation_dict[identifier] = elem.__class__.__name__
+                pickleable_lookup = (identifier,) + lookup[1:]
+                pickleable_cache_items.append((pickleable_lookup, value))
+
+    all_adaptive_stats = {}
+    for wkref in MatchAny.all_match_anys:
+        match_any = wkref()
+        if match_any is not None and match_any.adaptive_usage is not None:
+            identifier = match_any.parse_element_index
+            internal_assert(lambda: match_any == all_parse_elements[identifier](), "failed to look up match_any by identifier", (match_any, all_parse_elements[identifier]()))
+            if validation_dict is not None:
+                validation_dict[identifier] = match_any.__class__.__name__
+            match_any.expr_order.sort(key=lambda i: (-match_any.adaptive_usage[i], i))
+            all_adaptive_stats[identifier] = (match_any.adaptive_usage, match_any.expr_order)
+            logger.log("Caching adaptive item:", match_any, all_adaptive_stats[identifier])
+
+    logger.log("Saving {num_inc} incremental and {num_adapt} adaptive cache items to {cache_path!r}.".format(
+        num_inc=len(pickleable_cache_items),
+        num_adapt=len(all_adaptive_stats),
+        cache_path=cache_path,
+    ))
+    pickle_info_obj = {
+        "VERSION": VERSION,
+        "pyparsing_version": pyparsing_version,
+        "validation_dict": validation_dict,
+        "pickleable_cache_items": pickleable_cache_items,
+        "all_adaptive_stats": all_adaptive_stats,
+    }
+    try:
+        with univ_open(cache_path, "wb") as pickle_file:
+            pickle.dump(pickle_info_obj, pickle_file, protocol=protocol)
+    except Exception:
+        logger.warn_exc()
+        return False
+    else:
+        return True
+    finally:
+        # clear the packrat cache when we're done so we don't interfere with anything else happening in this process
+        clear_packrat_cache(force=True)
+
+
+def unpickle_cache(cache_path):
+    """Unpickle and load the given incremental cache file."""
+    internal_assert(all_parse_elements is not None, "unpickle_cache requires cPyparsing")
+
+    if not os.path.exists(cache_path):
+        return False
+    try:
+        with univ_open(cache_path, "rb") as pickle_file:
+            pickle_info_obj = pickle.load(pickle_file)
+    except Exception:
+        logger.log_exc()
+        return False
+    if (
+        pickle_info_obj["VERSION"] != VERSION
+        or pickle_info_obj["pyparsing_version"] != pyparsing_version
+    ):
+        return False
+
+    validation_dict = pickle_info_obj["validation_dict"]
+    if ParserElement._incrementalEnabled:
+        pickleable_cache_items = pickle_info_obj["pickleable_cache_items"]
+    else:
+        pickleable_cache_items = []
+    all_adaptive_stats = pickle_info_obj["all_adaptive_stats"]
+
+    for identifier, (adaptive_usage, expr_order) in all_adaptive_stats.items():
+        if identifier < len(all_parse_elements):
+            maybe_elem = all_parse_elements[identifier]()
+            if maybe_elem is not None:
+                if validation_dict is not None:
+                    internal_assert(maybe_elem.__class__.__name__ == validation_dict[identifier], "adaptive cache pickle-unpickle inconsistency", (maybe_elem, validation_dict[identifier]))
+                maybe_elem.adaptive_usage = adaptive_usage
+                maybe_elem.expr_order = expr_order
+
+    max_cache_size = min(
+        incremental_mode_cache_size or float("inf"),
+        incremental_cache_limit or float("inf"),
+    )
+    if max_cache_size != float("inf"):
+        pickleable_cache_items = pickleable_cache_items[-max_cache_size:]
+
+    new_cache_items = []
+    for pickleable_lookup, value in pickleable_cache_items:
+        identifier = pickleable_lookup[0]
+        if identifier < len(all_parse_elements):
+            maybe_elem = all_parse_elements[identifier]()
+            if maybe_elem is not None:
+                if validation_dict is not None:
+                    internal_assert(maybe_elem.__class__.__name__ == validation_dict[identifier], "incremental cache pickle-unpickle inconsistency", (maybe_elem, validation_dict[identifier]))
+                lookup = (maybe_elem,) + pickleable_lookup[1:]
+                usefullness = value[-1][0]
+                internal_assert(usefullness, "loaded useless cache item", (lookup, value))
+                stale_value = value[:-1] + ([usefullness + 1],)
+                new_cache_items.append((lookup, stale_value))
+    add_packrat_cache_items(new_cache_items)
+
+    num_inc = len(pickleable_cache_items)
+    num_adapt = len(all_adaptive_stats)
+    return num_inc, num_adapt
+
+
+def load_cache_for(inputstring, codepath):
+    """Load cache_path (for the given inputstring and filename)."""
+    if not SUPPORTS_INCREMENTAL:
+        raise CoconutException("the parsing cache requires cPyparsing (run '{python} -m pip install --upgrade cPyparsing' to fix)".format(python=sys.executable))
+    filename = os.path.basename(codepath)
+
+    if in_incremental_mode():
+        incremental_enabled = True
+        incremental_info = "using incremental parsing mode since it was already enabled"
+    elif len(inputstring) < disable_incremental_for_len:
+        incremental_enabled = enable_incremental_parsing()
+        if incremental_enabled:
+            incremental_info = "incremental parsing mode enabled due to len == {input_len} < {max_len}".format(
+                input_len=len(inputstring),
+                max_len=disable_incremental_for_len,
+            )
+        else:
+            incremental_info = "failed to enable incremental parsing mode"
+    else:
+        incremental_enabled = False
+        incremental_info = "not using incremental parsing mode due to len == {input_len} >= {max_len}".format(
+            input_len=len(inputstring),
+            max_len=disable_incremental_for_len,
+        )
+
+    if (
+        # only load the cache if we're using anything that makes use of it
+        incremental_enabled
+        or use_adaptive_any_of
+        or use_adaptive_if_available
+    ):
+        cache_path = get_cache_path(codepath)
+        did_load_cache = unpickle_cache(cache_path)
+        if did_load_cache:
+            num_inc, num_adapt = did_load_cache
+            logger.log("Loaded {num_inc} incremental and {num_adapt} adaptive cache items for {filename!r} ({incremental_info}).".format(
+                num_inc=num_inc,
+                num_adapt=num_adapt,
+                filename=filename,
+                incremental_info=incremental_info,
+            ))
+        else:
+            logger.log("Failed to load cache for {filename!r} from {cache_path!r} ({incremental_info}).".format(
+                filename=filename,
+                cache_path=cache_path,
+                incremental_info=incremental_info,
+            ))
+            if incremental_enabled:
+                logger.warn("Populating initial parsing cache (compilation may take longer than usual)...")
+    else:
+        cache_path = None
+        logger.log("Declined to load cache for {filename!r} ({incremental_info}).".format(
+            filename=filename,
+            incremental_info=incremental_info,
+        ))
+
+    return cache_path, incremental_enabled
+
+
+def get_cache_path(codepath):
+    """Get the cache filename to use for the given codepath."""
+    code_dir, code_fname = os.path.split(codepath)
+
+    cache_dir = os.path.join(code_dir, coconut_cache_dir)
+    ensure_dir(cache_dir, logger=logger)
+
+    pickle_fname = code_fname + ".pkl"
+    return os.path.join(cache_dir, pickle_fname)
+
+
+# -----------------------------------------------------------------------------------------------------------------------
 # PARSE ELEMENTS:
 # -----------------------------------------------------------------------------------------------------------------------
 
+class MatchAny(MatchFirst):
+    """Version of MatchFirst that always uses adaptive parsing."""
+    all_match_anys = []
+
+    def __init__(self, *args, **kwargs):
+        super(MatchAny, self).__init__(*args, **kwargs)
+        self.all_match_anys.append(weakref.ref(self))
+
+    def __or__(self, other):
+        if isinstance(other, MatchAny):
+            self = maybe_copy_elem(self, "any_or")
+            return self.append(other)
+        else:
+            return MatchFirst([self, other])
+
+    @override
+    def copy(self):
+        self = super(MatchAny, self).copy()
+        self.all_match_anys.append(weakref.ref(self))
+        return self
+
+    if not use_fast_pyparsing_reprs:
+        def __str__(self):
+            return self.__class__.__name__ + ":" + super(MatchAny, self).__str__()
+
+
+if SUPPORTS_ADAPTIVE:
+    MatchAny.setAdaptiveMode(True)
+
+
+def any_of(*exprs, **kwargs):
+    """Build a MatchAny of the given MatchFirst."""
+    use_adaptive = kwargs.pop("use_adaptive", use_adaptive_any_of) and SUPPORTS_ADAPTIVE
+    reverse = reverse_any_of
+    if DEVELOP:
+        reverse = kwargs.pop("reverse", reverse)
+    internal_assert(not kwargs, "excess keyword arguments passed to any_of", kwargs)
+
+    AnyOf = MatchAny if use_adaptive else MatchFirst
+
+    flat_exprs = []
+    for e in exprs:
+        if (
+            # don't merge MatchFirsts when we're reversing
+            not (reverse and not use_adaptive)
+            and e.__class__ == AnyOf
+            and not hasaction(e)
+        ):
+            flat_exprs.extend(e.exprs)
+        else:
+            flat_exprs.append(e)
+
+    if reverse:
+        flat_exprs = reversed([trace(e) for e in exprs])
+
+    return AnyOf(flat_exprs)
+
+
 class Wrap(ParseElementEnhance):
     """PyParsing token that wraps the given item in the given context manager."""
+    global_instance_counter = 0
     inside = False
 
     def __init__(self, item, wrapper, greedy=False, include_in_packrat_context=False):
         super(Wrap, self).__init__(item)
         self.wrapper = wrapper
         self.greedy = greedy
-        self.include_in_packrat_context = include_in_packrat_context and hasattr(ParserElement, "packrat_context")
+        self.include_in_packrat_context = SUPPORTS_PACKRAT_CONTEXT and include_in_packrat_context
+        self.identifier = Wrap.global_instance_counter
+        Wrap.global_instance_counter += 1
 
     @property
     def wrapped_name(self):
@@ -666,12 +1159,15 @@ class Wrap(ParseElementEnhance):
         and unwrapped parses. Only supported natively on cPyparsing."""
         was_inside, self.inside = self.inside, True
         if self.include_in_packrat_context:
-            ParserElement.packrat_context.append(self.wrapper)
+            old_packrat_context = ParserElement.packrat_context
+            new_packrat_context = old_packrat_context | frozenset((self.identifier,))
+            ParserElement.packrat_context = new_packrat_context
         try:
             yield
         finally:
             if self.include_in_packrat_context:
-                ParserElement.packrat_context.pop()
+                internal_assert(ParserElement.packrat_context == new_packrat_context, "invalid popped Wrap identifier", self.identifier)
+                ParserElement.packrat_context = old_packrat_context
             self.inside = was_inside
 
     @override
@@ -680,11 +1176,17 @@ class Wrap(ParseElementEnhance):
         if logger.tracing:  # avoid the overhead of the call if not tracing
             logger.log_trace(self.wrapped_name, original, loc)
         with logger.indent_tracing():
-            with self.wrapper(self, original, loc):
-                with self.wrapped_context():
-                    parse_loc, tokens = super(Wrap, self).parseImpl(original, loc, *args, **kwargs)
-                    if self.greedy:
-                        tokens = evaluate_tokens(tokens)
+            reparse = False
+            parse_loc = None
+            while parse_loc is None:  # lets wrapper catch errors to trigger a reparse
+                with self.wrapper(self, original, loc, **(dict(reparse=True) if reparse else {})):
+                    with self.wrapped_context():
+                        parse_loc, tokens = super(Wrap, self).parseImpl(original, loc, *args, **kwargs)
+                        if self.greedy:
+                            tokens = evaluate_tokens(tokens)
+                if reparse and parse_loc is None:
+                    raise CoconutInternalException("illegal double reparse in", self)
+                reparse = True
         if logger.tracing:  # avoid the overhead of the call if not tracing
             logger.log_trace(self.wrapped_name, original, loc, tokens)
         return parse_loc, tokens
@@ -694,6 +1196,12 @@ class Wrap(ParseElementEnhance):
 
     def __repr__(self):
         return self.wrapped_name
+
+
+def handle_and_manage(item, handler, manager):
+    """Attach a handler and a manager to the given parse item."""
+    new_item = attach(item, handler)
+    return Wrap(new_item, manager, greedy=True)
 
 
 def disable_inside(item, *elems, **kwargs):
@@ -724,7 +1232,7 @@ def disable_inside(item, *elems, **kwargs):
             raise ParseException(original, loc, self.errmsg, self)
 
     for elem in elems:
-        yield Wrap(elem, manage_elem, include_in_packrat_context=True)
+        yield Wrap(elem, manage_elem)
 
 
 def disable_outside(item, *elems):
@@ -771,6 +1279,7 @@ def longest(*args):
     return matcher
 
 
+@memoize(64)
 def compile_regex(regex, options=None):
     """Compiles the given regex to support unicode."""
     if options is None:
@@ -778,9 +1287,6 @@ def compile_regex(regex, options=None):
     else:
         options |= re.U
     return re.compile(regex, options)
-
-
-memoized_compile_regex = memoize(64)(compile_regex)
 
 
 def regex_item(regex, options=None):
@@ -922,6 +1428,14 @@ def disallow_keywords(kwds, with_suffix=""):
         for k in kwds
     )
     return regex_item(r"(?!" + "|".join(to_disallow) + r")").suppress()
+
+
+def disambiguate_literal(literal, not_literals):
+    """Get an item that matchesl literal and not any of not_literals."""
+    return regex_item(
+        r"(?!" + "|".join(re.escape(s) for s in not_literals) + ")"
+        + re.escape(literal)
+    )
 
 
 def any_keyword_in(kwds):
@@ -1262,14 +1776,6 @@ def split_leading_trailing_indent(line, max_indents=None):
     return leading_indent, line, trailing_indent
 
 
-def split_leading_whitespace(inputstr):
-    """Split leading whitespace."""
-    basestr = inputstr.lstrip()
-    whitespace = inputstr[:len(inputstr) - len(basestr)]
-    internal_assert(whitespace + basestr == inputstr, "invalid whitespace split", inputstr)
-    return whitespace, basestr
-
-
 def rem_and_count_indents(inputstr):
     """Removes and counts the ind_change (opens - closes)."""
     no_opens = inputstr.replace(openindent, "")
@@ -1476,9 +1982,9 @@ def move_loc_to_non_whitespace(original, loc, backwards=False):
         original,
         loc,
         chars_to_move_forwards={
-            default_whitespace_chars: not backwards,
             # for loc, move backwards on newlines/indents, which we can do safely without removing anything from the error
             indchars: False,
+            default_whitespace_chars: not backwards,
         },
     )
 
@@ -1489,10 +1995,19 @@ def move_endpt_to_non_whitespace(original, loc, backwards=False):
         original,
         loc,
         chars_to_move_forwards={
-            default_whitespace_chars: not backwards,
             # for endpt, ignore newlines/indents to avoid introducing unnecessary lines into the error
+            default_whitespace_chars: not backwards,
+            # always move forwards on unwrapper to ensure we don't cut wrapped objects in the middle
+            unwrapper: True,
         },
     )
+
+
+def sub_all(inputstr, regexes, replacements):
+    """Sub all regexes for replacements in inputstr."""
+    for key, regex in regexes.items():
+        inputstr = regex.sub(lambda match: replacements[key], inputstr)
+    return inputstr
 
 
 # -----------------------------------------------------------------------------------------------------------------------

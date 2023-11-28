@@ -27,15 +27,6 @@ from coconut.convenience import (
     warm_up,
 )
 
-if IPY:
-    if PY35:
-        import asyncio
-    from coconut.icoconut import CoconutKernel  # type: ignore
-    from jupyter_client.session import Session
-else:
-    CoconutKernel = None  # type: ignore
-    Session = object  # type: ignore
-
 
 def assert_raises(c, Exc, not_Exc=None, err_has=None):
     """Test whether callable c raises an exception of type Exc."""
@@ -81,15 +72,6 @@ def unwrap_future(event_loop, maybe_future):
         return event_loop.run_until_complete(maybe_future)
     else:
         return maybe_future
-
-
-class FakeSession(Session):
-    if TYPE_CHECKING:
-        captured_messages: list[tuple] = []
-    else:
-        captured_messages: list = []
-    def send(self, stream, msg_or_type, content, *args, **kwargs):
-        self.captured_messages.append((msg_or_type, content))
 
 
 def test_setup_none() -> bool:
@@ -217,10 +199,16 @@ cannot reassign type variable 'T' (use explicit '\T' syntax if intended) (line 1
     )
 
     assert_raises(-> parse("$"), CoconutParseError)
-    assert_raises(-> parse("@"), CoconutParseError, err_has=("\n  ~^", "\n   ^"))
-    assert_raises(-> parse("range(1,10) |> reduce$(*, initializer = 1000) |> print"), CoconutParseError, err_has=" \\~~~~~~~~~~~~~~~~~~~~~~~^")
+    assert_raises(-> parse("@"), CoconutParseError)
+    assert_raises(-> parse("range(1,10) |> reduce$(*, initializer = 1000) |> print"), CoconutParseError, err_has=(
+        " \\~~~~~~~~~~~~~~~~~~~~~~~^",
+        " \\~~~~~~~~~~~~^",
+    ))
     assert_raises(-> parse("a := b"), CoconutParseError, err_has=" \\~^")
-    assert_raises(-> parse("1 + return"), CoconutParseError, err_has=" \\~~~~^")
+    assert_raises(-> parse("1 + return"), CoconutParseError, err_has=(
+        " \\~~~^",
+        " \\~~~~^",
+    ))
     assert_raises(-> parse("""
 def f() =
     assert 1
@@ -241,12 +229,13 @@ def f() =
     assert_raises(-> parse('"a" 10'), CoconutParseError, err_has=" \\~~~^")
     assert_raises(-> parse("A. ."), CoconutParseError, err_has=" \\~~^")
     assert_raises(-> parse('''f"""{
-}"""'''), CoconutSyntaxError, err_has=(" ~~~~|", "\n  ^~~/"))
+}"""'''), CoconutSyntaxError, err_has="parsing failed for format string expression")
     assert_raises(-> parse("f([] {})"), CoconutParseError, err_has=" \\~~~~^")
 
     assert_raises(-> parse("return = 1"), CoconutParseError, err_has='invalid use of the keyword "return"')
     assert_raises(-> parse("if a = b: pass"), CoconutParseError, err_has="misplaced assignment")
     assert_raises(-> parse("while a == b"), CoconutParseError, err_has="misplaced newline")
+    assert_raises(-> parse("0xfgf"), CoconutParseError, err_has=" \~~^")
 
     try:
         parse("""
@@ -274,6 +263,21 @@ def gam_eps_rate(bitarr) = (
       |> map$(int(?, 2))
 
   ~~~~~~~~~~~~~~~~^""" in err_str, err_str
+    else:
+        assert False
+
+    try:
+        parse("""
+def f(x=1, y) = x, y
+
+class A
+
+def g(x) = x
+        """.strip())
+    except CoconutSyntaxError as err:
+        err_str = str(err)
+        assert "non-default arguments must come first" in err_str, err_str
+        assert "class A" not in err_str, err_str
     else:
         assert False
 
@@ -325,7 +329,10 @@ line 6''')
     assert_raises(-> parse("a=1;"), CoconutStyleError, err_has="\n     ^")
     assert_raises(-> parse("class derp(object)"), CoconutStyleError)
     assert_raises(-> parse("def f(a.b) = True"), CoconutStyleError, err_has="\n        ^")
-    assert_raises(-> parse("match def kwd_only_x_is_int_def_0(*, x is int = 0) = x"), CoconutStyleError, err_has="\n        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|")
+    assert_raises(-> parse("match def kwd_only_x_is_int_def_0(*, x is int = 0) = x"), CoconutStyleError, err_has=(
+        "\n        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|",
+        "\n        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/",
+    ))
     try:
         parse("""
 try:
@@ -344,6 +351,17 @@ else:
     assert_raises(-> parse("obj."), CoconutStyleError, err_has="getattr")
     assert_raises(-> parse("def x -> pass, 1"), CoconutStyleError, err_has="statement lambda")
     assert_raises(-> parse("abc = f'abc'"), CoconutStyleError, err_has="\n        ^")
+    assert_raises(-> parse('f"{f"{f"infinite"}"}"'), CoconutStyleError, err_has="f-string with no expressions")
+    try:
+        parse("""
+import abc
+1
+2
+3
+        """.strip())
+    except CoconutStyleError as err:
+        assert str(err) == """found unused import 'abc' (add '# NOQA' to suppress) (remove --strict to downgrade to a warning) (line 1)
+  import abc"""
 
     setup(line_numbers=False, strict=True, target="sys")
     assert_raises(-> parse("await f x"), CoconutParseError, err_has='invalid use of the keyword "await"')
@@ -433,6 +451,20 @@ class F:
 
 
 def test_kernel() -> bool:
+    # hide imports so as to not enable incremental parsing until we want to
+    if PY35:
+        import asyncio
+    from coconut.icoconut import CoconutKernel  # type: ignore
+    from jupyter_client.session import Session
+
+    class FakeSession(Session):
+        if TYPE_CHECKING:
+            captured_messages: list[tuple] = []
+        else:
+            captured_messages: list = []
+        def send(self, stream, msg_or_type, content, *args, **kwargs):
+            self.captured_messages.append((msg_or_type, content))
+
     if PY35:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
@@ -441,11 +473,12 @@ def test_kernel() -> bool:
 
     k = CoconutKernel()
     fake_session = FakeSession()
+    assert k.shell is not None
     k.shell.displayhook.session = fake_session
 
     exec_result = k.do_execute("derp = pow$(?, 2)", False, True, {"two": "(+)(1, 1)"}, True) |> unwrap_future$(loop)
-    assert exec_result["status"] == "ok"
-    assert exec_result["user_expressions"]["two"]["data"]["text/plain"] == "2"
+    assert exec_result["status"] == "ok", exec_result
+    assert exec_result["user_expressions"]["two"]["data"]["text/plain"] == "2", exec_result
 
     assert k.do_execute("operator ++", False, True, {}, True) |> unwrap_future$(loop) |> .["status"] == "ok"
     assert k.do_execute("(++) = 1", False, True, {}, True) |> unwrap_future$(loop) |> .["status"] == "ok"
@@ -590,6 +623,11 @@ def test_pandas() -> bool:
     ], dtype=object)  # type: ignore
     d4 = d1 |> fmap$(def r -> r["nums2"] = r["nums"]*2; r)
     assert (d4["nums"] * 2 == d4["nums2"]).all()
+    df = pd.DataFrame({"123": [1, 2, 3]})
+    mapreduce(ident, [("456", [4, 5, 6])], collect_in=df)
+    assert df["456"] |> list == [4, 5, 6]
+    mapreduce(ident, [("789", [7, 8, 9])], collect_in=df, reduce_func=False)
+    assert df["789"] |> list == [7, 8, 9]
     return True
 
 
@@ -599,15 +637,16 @@ def test_extras() -> bool:
     print(".", end="")
     if not PYPY and PY36:
         assert test_pandas() is True  # .
-    print(".", end="")
-    if CoconutKernel is not None:
-        assert test_kernel() is True  # ..
     print(".")  # newline bc we print stuff after this
-    assert test_setup_none() is True
+    assert test_setup_none() is True  # ..
     print(".")  # ditto
-    assert test_convenience() is True
+    assert test_convenience() is True  # ...
+    # everything after here uses incremental parsing, so it must come last
     print(".", end="")
-    assert test_incremental() is True  # must come last
+    assert test_incremental() is True  # ....
+    if IPY:
+        print(".", end="")
+        assert test_kernel() is True  # .....
     return True
 
 

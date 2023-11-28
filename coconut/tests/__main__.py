@@ -21,6 +21,7 @@ from coconut.root import *  # NOQA
 
 import sys
 
+from coconut.constants import WINDOWS
 from coconut.tests.main_test import comp_all
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -48,6 +49,7 @@ def main(args=None):
         agnostic_target=agnostic_target,
         expect_retcode=0 if "--mypy" not in args else None,
         check_errors="--verbose" not in args,
+        ignore_output=WINDOWS and "--mypy" not in args,
     )
 
 

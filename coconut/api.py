@@ -23,15 +23,17 @@ import sys
 import os.path
 import codecs
 from functools import partial
+from setuptools import PackageFinder
 try:
     from encodings import utf_8
 except ImportError:
     utf_8 = None
 
 from coconut.root import _coconut_exec
+from coconut.util import override
 from coconut.integrations import embed
 from coconut.exceptions import CoconutException
-from coconut.command import Command
+from coconut.command.command import Command
 from coconut.command.cli import cli_version
 from coconut.command.util import proc_run_args
 from coconut.compiler import Compiler
@@ -42,7 +44,6 @@ from coconut.constants import (
     coconut_kernel_kwargs,
     default_use_cache_dir,
     coconut_cache_dir,
-    coconut_run_kwargs,
 )
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -68,9 +69,16 @@ def get_state(state=None):
 def cmd(cmd_args, **kwargs):
     """Process command-line arguments."""
     state = kwargs.pop("state", False)
+    cmd_func = kwargs.pop("_cmd_func", "cmd")
     if isinstance(cmd_args, (str, bytes)):
         cmd_args = cmd_args.split()
-    return get_state(state).cmd(cmd_args, **kwargs)
+    return getattr(get_state(state), cmd_func)(cmd_args, **kwargs)
+
+
+def cmd_sys(*args, **kwargs):
+    """Same as api.cmd() but defaults to --target sys."""
+    kwargs["_cmd_func"] = "cmd_sys"
+    return cmd(*args, **kwargs)
 
 
 VERSIONS = {
@@ -214,7 +222,7 @@ class CoconutImporter(object):
         """Run the Coconut compiler with the given args."""
         if self.command is None:
             self.command = Command()
-        return self.command.cmd(list(args) + self.args, interact=False, **coconut_run_kwargs)
+        return self.command.cmd_sys(list(args) + self.args, interact=False)
 
     def compile(self, path, package):
         """Compile a path to a file or package."""
@@ -315,6 +323,7 @@ if utf_8 is not None:
                 cls.coconut_compiler = Compiler(**coconut_kernel_kwargs)
             return cls.coconut_compiler.parse_sys(source)
 
+        @override
         @classmethod
         def decode(cls, input_bytes, errors="strict"):
             """Decode and compile the given Coconut source bytes."""
@@ -347,3 +356,39 @@ def get_coconut_encoding(encoding="coconut"):
 
 
 codecs.register(get_coconut_encoding)
+
+
+# -----------------------------------------------------------------------------------------------------------------------
+# SETUPTOOLS:
+# -----------------------------------------------------------------------------------------------------------------------
+
+class CoconutPackageFinder(PackageFinder, object):
+    _coconut_compile = None
+
+    @override
+    @classmethod
+    def _looks_like_package(cls, path, _package_name=None):
+        is_coconut_package = any(
+            os.path.isfile(os.path.join(path, "__init__" + ext))
+            for ext in code_exts
+        )
+        if is_coconut_package and cls._coconut_compile is not None:
+            cls._coconut_compile(path)
+        return is_coconut_package
+
+
+find_packages = CoconutPackageFinder.find
+
+
+class CoconutPackageCompiler(CoconutPackageFinder):
+    _coconut_command = None
+
+    @classmethod
+    def _coconut_compile(cls, path):
+        """Run the Coconut compiler with the given args."""
+        if cls._coconut_command is None:
+            cls._coconut_command = Command()
+        return cls._coconut_command.cmd_sys([path], interact=False)
+
+
+find_and_compile_packages = CoconutPackageCompiler.find

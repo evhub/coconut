@@ -21,6 +21,8 @@ from typing import (
     Text,
 )
 
+from setuptools import find_packages as _find_packages
+
 from coconut.command.command import Command
 
 class CoconutException(Exception):
@@ -46,9 +48,12 @@ def cmd(
     argv: Iterable[Text] | None = None,
     interact: bool = False,
     default_target: Text | None = None,
+    default_jobs: Text | None = None,
 ) -> None:
     """Process command-line arguments."""
     ...
+
+cmd_sys = cmd
 
 
 VERSIONS: Dict[Text, Text] = ...
@@ -80,7 +85,7 @@ def setup(
 
 
 def warm_up(
-    force: bool = False,
+    streamline: bool = False,
     enable_incremental_mode: bool = False,
     *,
     state: Optional[Command] = ...,
@@ -150,3 +155,6 @@ def auto_compilation(
 def get_coconut_encoding(encoding: Text = ...) -> Any:
     """Get a CodecInfo for the given Coconut encoding."""
     ...
+
+
+find_and_compile_packages = find_packages = _find_packages

@@ -31,10 +31,8 @@ from coconut.constants import (
     default_style,
     vi_mode_env_var,
     prompt_vi_mode,
-    prompt_histfile,
-    home_env_var,
     py_version_str,
-    default_jobs,
+    base_default_jobs,
 )
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -189,7 +187,7 @@ arguments.add_argument(
     "-j", "--jobs",
     metavar="processes",
     type=str,
-    help="number of additional processes to use (defaults to " + ascii(default_jobs) + ") (0 is no additional processes; 'sys' uses machine default)",
+    help="number of additional processes to use (defaults to " + ascii(base_default_jobs) + ") (0 is no additional processes; 'sys' uses machine default)",
 )
 
 arguments.add_argument(
@@ -246,13 +244,6 @@ arguments.add_argument(
 )
 
 arguments.add_argument(
-    "--history-file",
-    metavar="path",
-    type=str,
-    help="set history file (or '' for no file) (currently set to " + ascii(prompt_histfile) + ") (can be modified by setting " + home_env_var + " environment variable)",
-)
-
-arguments.add_argument(
     "--vi-mode", "--vimode",
     action="store_true",
     help="enable vi mode in the interpreter (currently set to " + ascii(prompt_vi_mode) + ") (can be modified by setting " + vi_mode_env_var + " environment variable)",
@@ -270,6 +261,18 @@ arguments.add_argument(
     metavar="kbs",
     type=int,
     help="run the compiler in a separate thread with the given stack size in kilobytes",
+)
+
+arguments.add_argument(
+    "--fail-fast",
+    action="store_true",
+    help="causes the compiler to fail immediately upon encountering a compilation error rather than attempting to continue compiling other files",
+)
+
+arguments.add_argument(
+    "--no-cache",
+    action="store_true",
+    help="disables use of Coconut's incremental parsing cache (caches previous parses to improve recompilation performance for slightly modified files)",
 )
 
 arguments.add_argument(

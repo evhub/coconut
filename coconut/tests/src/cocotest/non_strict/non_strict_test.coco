@@ -89,6 +89,10 @@ def non_strict_test() -> bool:
     assert f"a" r"b" fr"c" rf"d" == "abcd"
     assert "a" fr"b" == "ab" == "a" rf"b"
     assert f"{f"{f"infinite"}"}" + " " + f"{f"nesting!!!"}" == "infinite nesting!!!"
+    assert range(100) |> parallel_map$(.**2) |> list |> .$[-1] == 9801
+    @recursive_iterator
+    def fib() = (1, 1) :: map((+), fib(), fib()$[1:])
+    assert fib()$[:5] |> list == [1, 1, 2, 3, 5]
     return True
 
 if __name__ == "__main__":

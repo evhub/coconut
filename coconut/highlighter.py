@@ -25,8 +25,7 @@ from pygments.lexer import words, bygroups
 from pygments.util import shebang_matches
 
 from coconut.constants import (
-    coconut_specific_builtins,
-    interp_only_builtins,
+    highlight_builtins,
     new_operators,
     tabideal,
     default_encoding,
@@ -94,7 +93,7 @@ class CoconutLexer(Python3Lexer):
         (words(reserved_vars, prefix=r"(?<!\\):?", suffix=r"\b"), Keyword),
     ]
     tokens["builtins"] += [
-        (words(coconut_specific_builtins + interp_only_builtins, suffix=r"\b"), Name.Builtin),
+        (words(highlight_builtins, suffix=r"\b"), Name.Builtin),
         (words(coconut_exceptions, suffix=r"\b"), Name.Exception),
     ]
     tokens["numbers"] = [

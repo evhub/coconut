@@ -28,9 +28,10 @@ from contextlib import contextmanager
 from subprocess import CalledProcessError
 
 from coconut._pyparsing import (
+    USE_CACHE,
     unset_fast_pyparsing_reprs,
-    collect_timing_info,
-    print_timing_info,
+    start_profiling,
+    print_profiling_results,
 )
 
 from coconut.compiler import Compiler
@@ -44,7 +45,6 @@ from coconut.terminal import (
     internal_assert,
 )
 from coconut.constants import (
-    PY32,
     PY35,
     fixpath,
     code_exts,
@@ -67,11 +67,11 @@ from coconut.constants import (
     coconut_pth_file,
     error_color_code,
     jupyter_console_commands,
-    default_jobs,
+    base_default_jobs,
     create_package_retries,
     default_use_cache_dir,
     coconut_cache_dir,
-    coconut_run_kwargs,
+    coconut_sys_kwargs,
     interpreter_uses_incremental,
 )
 from coconut.util import (
@@ -79,6 +79,7 @@ from coconut.util import (
     ver_tuple_to_str,
     install_custom_kernel,
     get_clock_time,
+    ensure_dir,
     first_import_time,
 )
 from coconut.command.util import (
@@ -102,13 +103,13 @@ from coconut.command.util import (
     invert_mypy_arg,
     run_with_stack_size,
     proc_run_args,
+    get_python_lib,
 )
 from coconut.compiler.util import (
     should_indent,
     get_target_info_smart,
 )
 from coconut.compiler.header import gethash
-from coconut.compiler.grammar import set_grammar_names
 from coconut.command.cli import arguments, cli_version
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -129,15 +130,10 @@ class Command(object):
     mypy_args = None  # corresponds to --mypy flag
     argv_args = None  # corresponds to --argv flag
     stack_size = 0  # corresponds to --stack-size flag
+    use_cache = USE_CACHE  # corresponds to --no-cache flag
+    fail_fast = False  # corresponds to --fail-fast flag
 
-    _prompt = None
-
-    @property
-    def prompt(self):
-        """Delay creation of a Prompt() until it's needed."""
-        if self._prompt is None:
-            self._prompt = Prompt()
-        return self._prompt
+    prompt = Prompt()
 
     def start(self, run=False):
         """Endpoint for coconut and coconut-run."""
@@ -168,15 +164,21 @@ class Command(object):
                         dest = os.path.join(os.path.dirname(source), coconut_cache_dir)
                     else:
                         dest = os.path.join(source, coconut_cache_dir)
-            self.cmd(args, argv=argv, use_dest=dest, **coconut_run_kwargs)
+            self.cmd_sys(args, argv=argv, use_dest=dest)
         else:
             self.cmd()
 
+    def cmd_sys(self, *args, **in_kwargs):
+        """Same as .cmd(), but uses defaults from coconut_sys_kwargs."""
+        out_kwargs = coconut_sys_kwargs.copy()
+        out_kwargs.update(in_kwargs)
+        return self.cmd(*args, **out_kwargs)
+
     # new external parameters should be updated in api.pyi and DOCS
-    def cmd(self, args=None, argv=None, interact=True, default_target=None, use_dest=None):
+    def cmd(self, args=None, argv=None, interact=True, default_target=None, default_jobs=None, use_dest=None):
         """Process command-line arguments."""
         result = None
-        with self.handling_exceptions():
+        with self.handling_exceptions(exit_on_error=True):
             if args is None:
                 parsed_args = arguments.parse_args()
             else:
@@ -187,13 +189,14 @@ class Command(object):
                 parsed_args.argv = argv
             if parsed_args.target is None:
                 parsed_args.target = default_target
+            if parsed_args.jobs is None:
+                parsed_args.jobs = default_jobs
             if use_dest is not None and not parsed_args.no_write:
                 internal_assert(parsed_args.dest is None, "coconut-run got passed a dest", parsed_args)
                 parsed_args.dest = use_dest
             self.exit_code = 0
             self.stack_size = parsed_args.stack_size
             result = self.run_with_stack_size(self.execute_args, parsed_args, interact, original_args=args)
-        self.exit_on_error()
         return result
 
     def run_with_stack_size(self, func, *args, **kwargs):
@@ -239,12 +242,10 @@ class Command(object):
                 verbose=args.verbose,
                 tracing=args.trace,
             )
-            if args.verbose or args.trace or args.profile:
-                set_grammar_names()
             if args.trace or args.profile:
                 unset_fast_pyparsing_reprs()
             if args.profile:
-                collect_timing_info()
+                start_profiling()
             logger.enable_colors()
 
             logger.log(cli_version)
@@ -274,14 +275,15 @@ class Command(object):
             self.set_jobs(args.jobs, args.profile)
             if args.recursion_limit is not None:
                 set_recursion_limit(args.recursion_limit)
+            self.fail_fast = args.fail_fast
             self.display = args.display
             self.prompt.vi_mode = args.vi_mode
             if args.style is not None:
                 self.prompt.set_style(args.style)
-            if args.history_file is not None:
-                self.prompt.set_history_file(args.history_file)
             if args.argv is not None:
                 self.argv_args = list(args.argv)
+            if args.no_cache:
+                self.use_cache = False
 
             # execute non-compilation tasks
             if args.docs:
@@ -312,13 +314,26 @@ class Command(object):
                 no_tco=args.no_tco,
                 no_wrap=args.no_wrap_types,
             )
-            if args.watch:
-                self.comp.warm_up(enable_incremental_mode=True)
+            self.comp.warm_up(
+                streamline=(
+                    not self.using_jobs
+                    and (args.watch or args.profile)
+                ),
+                enable_incremental_mode=(
+                    not self.using_jobs
+                    and args.watch
+                ),
+                set_debug_names=(
+                    args.verbose
+                    or args.trace
+                    or args.profile
+                ),
+            )
 
             # process mypy args and print timing info (must come after compiler setup)
             if args.mypy is not None:
                 self.set_mypy_args(args.mypy)
-            logger.log("Grammar init time: " + str(self.comp.grammar_init_time) + " secs / Total init time: " + str(get_clock_time() - first_import_time) + " secs")
+            logger.log_compiler_stats(self.comp)
 
             # do compilation, keeping track of compiled filepaths
             filepaths = []
@@ -352,7 +367,10 @@ class Command(object):
                     self.disable_jobs()
 
                 # do compilation
-                with self.running_jobs(exit_on_error=not args.watch):
+                with self.running_jobs(exit_on_error=not (
+                    args.watch
+                    or args.profile
+                )):
                     for source, dest, package in src_dest_package_triples:
                         filepaths += self.compile_path(source, dest, package, run=args.run or args.interact, force=args.force)
                 self.run_mypy(filepaths)
@@ -379,8 +397,10 @@ class Command(object):
                 self.start_jupyter(args.jupyter)
             elif stdin_readable():
                 logger.log("Reading piped input from stdin...")
-                self.execute(self.parse_block(sys.stdin.read()))
-                got_stdin = True
+                read_stdin = sys.stdin.read()
+                if read_stdin:
+                    self.execute(self.parse_block(read_stdin))
+                    got_stdin = True
             if args.interact or (
                 interact and not (
                     got_stdin
@@ -400,7 +420,7 @@ class Command(object):
                 # src_dest_package_triples is always available here
                 self.watch(src_dest_package_triples, args.run, args.force)
             if args.profile:
-                print_timing_info()
+                print_profiling_results()
 
             # make sure to return inside handling_exceptions to ensure filepaths is available
             return filepaths
@@ -466,8 +486,10 @@ class Command(object):
             self.exit_code = code or self.exit_code
 
     @contextmanager
-    def handling_exceptions(self):
+    def handling_exceptions(self, exit_on_error=None, on_keyboard_interrupt=None):
         """Perform proper exception handling."""
+        if exit_on_error is None:
+            exit_on_error = self.fail_fast
         try:
             if self.using_jobs:
                 with handling_broken_process_pool():
@@ -476,17 +498,23 @@ class Command(object):
                 yield
         except SystemExit as err:
             self.register_exit_code(err.code)
+        # make sure we don't catch GeneratorExit below
+        except GeneratorExit:
+            raise
         except BaseException as err:
-            if isinstance(err, GeneratorExit):
-                raise
-            elif isinstance(err, CoconutException):
+            if isinstance(err, CoconutException):
                 logger.print_exc()
-            elif not isinstance(err, KeyboardInterrupt):
+            elif isinstance(err, KeyboardInterrupt):
+                if on_keyboard_interrupt is not None:
+                    on_keyboard_interrupt()
+            else:
                 logger.print_exc()
                 logger.printerr(report_this_text)
             self.register_exit_code(err=err)
+        if exit_on_error:
+            self.exit_on_error()
 
-    def compile_path(self, path, write=True, package=True, **kwargs):
+    def compile_path(self, path, write=True, package=True, handling_exceptions_kwargs={}, **kwargs):
         """Compile a path and return paths to compiled files."""
         if not isinstance(write, bool):
             write = fixpath(write)
@@ -494,11 +522,11 @@ class Command(object):
             destpath = self.compile_file(path, write, package, **kwargs)
             return [destpath] if destpath is not None else []
         elif os.path.isdir(path):
-            return self.compile_folder(path, write, package, **kwargs)
+            return self.compile_folder(path, write, package, handling_exceptions_kwargs=handling_exceptions_kwargs, **kwargs)
         else:
             raise CoconutException("could not find source path", path)
 
-    def compile_folder(self, directory, write=True, package=True, **kwargs):
+    def compile_folder(self, directory, write=True, package=True, handling_exceptions_kwargs={}, **kwargs):
         """Compile a directory and return paths to compiled files."""
         if not isinstance(write, bool) and os.path.isfile(write):
             raise CoconutException("destination path cannot point to a file when compiling a directory")
@@ -510,7 +538,7 @@ class Command(object):
                 writedir = os.path.join(write, os.path.relpath(dirpath, directory))
             for filename in filenames:
                 if os.path.splitext(filename)[1] in code_exts:
-                    with self.handling_exceptions():
+                    with self.handling_exceptions(**handling_exceptions_kwargs):
                         destpath = self.compile_file(os.path.join(dirpath, filename), writedir, package, **kwargs)
                         if destpath is not None:
                             filepaths.append(destpath)
@@ -565,8 +593,7 @@ class Command(object):
         if destpath is not None:
             destpath = fixpath(destpath)
             destdir = os.path.dirname(destpath)
-            if not os.path.exists(destdir):
-                os.makedirs(destdir)
+            ensure_dir(destdir, logger=logger)
             if package is True:
                 package_level = self.get_package_level(codepath)
                 if package_level == 0:
@@ -599,10 +626,14 @@ class Command(object):
                     else:
                         self.execute_file(destpath, argv_source_path=codepath)
 
+            parse_kwargs = dict(
+                codepath=codepath,
+                use_cache=self.use_cache,
+            )
             if package is True:
-                self.submit_comp_job(codepath, callback, "parse_package", code, package_level=package_level, filename=os.path.basename(codepath))
+                self.submit_comp_job(codepath, callback, "parse_package", code, package_level=package_level, **parse_kwargs)
             elif package is False:
-                self.submit_comp_job(codepath, callback, "parse_file", code, filename=os.path.basename(codepath))
+                self.submit_comp_job(codepath, callback, "parse_file", code, **parse_kwargs)
             else:
                 raise CoconutInternalException("invalid value for package", package)
 
@@ -627,7 +658,6 @@ class Command(object):
                 logger.warn("missing __init__" + code_exts[0] + " in package", check_dir, extra="remove --strict to dismiss")
             package_level = 0
         return package_level
-        return 0
 
     def create_package(self, dirpath, retries_left=create_package_retries):
         """Set up a package directory."""
@@ -688,7 +718,7 @@ class Command(object):
 
     def get_max_workers(self):
         """Get the max_workers to use for creating ProcessPoolExecutor."""
-        jobs = self.jobs if self.jobs is not None else default_jobs
+        jobs = self.jobs if self.jobs is not None else base_default_jobs
         if jobs == "sys":
             return None
         else:
@@ -703,7 +733,7 @@ class Command(object):
     @contextmanager
     def running_jobs(self, exit_on_error=True):
         """Initialize multiprocessing."""
-        with self.handling_exceptions():
+        with self.handling_exceptions(exit_on_error=exit_on_error):
             if self.using_jobs:
                 from concurrent.futures import ProcessPoolExecutor
                 try:
@@ -713,8 +743,6 @@ class Command(object):
                     self.executor = None
             else:
                 yield
-        if exit_on_error:
-            self.exit_on_error()
 
     def has_hash_of(self, destpath, code, package_level):
         """Determine if a file has the hash of the code."""
@@ -810,9 +838,10 @@ class Command(object):
             if path is None:  # header is not included
                 if not self.mypy:
                     no_str_code = self.comp.remove_strs(compiled)
-                    result = mypy_builtin_regex.search(no_str_code)
-                    if result:
-                        logger.warn("found mypy-only built-in " + repr(result.group(0)) + "; pass --mypy to use mypy-only built-ins at the interpreter")
+                    if no_str_code is not None:
+                        result = mypy_builtin_regex.search(no_str_code)
+                        if result:
+                            logger.warn("found mypy-only built-in " + repr(result.group(0)) + "; pass --mypy to use mypy-only built-ins at the interpreter")
 
             else:  # header is included
                 compiled = rem_encoding(compiled)
@@ -1064,17 +1093,30 @@ class Command(object):
             logger.show()
             logger.show_tabulated("Watching", showpath(src), "(press Ctrl-C to end)...")
 
+        interrupted = [False]  # in list to allow modification
+
+        def interrupt():
+            interrupted[0] = True
+
         def recompile(path, src, dest, package):
             path = fixpath(path)
             if os.path.isfile(path) and os.path.splitext(path)[1] in code_exts:
-                with self.handling_exceptions():
+                with self.handling_exceptions(on_keyboard_interrupt=interrupt):
                     if dest is True or dest is None:
                         writedir = dest
                     else:
                         # correct the compilation path based on the relative position of path to src
                         dirpath = os.path.dirname(path)
                         writedir = os.path.join(dest, os.path.relpath(dirpath, src))
-                    filepaths = self.compile_path(path, writedir, package, run=run, force=force, show_unchanged=False)
+                    filepaths = self.compile_path(
+                        path,
+                        writedir,
+                        package,
+                        run=run,
+                        force=force,
+                        show_unchanged=False,
+                        handling_exceptions_kwargs=dict(on_keyboard_interrupt=interrupt),
+                    )
                     self.run_mypy(filepaths)
 
         observer = Observer()
@@ -1087,37 +1129,28 @@ class Command(object):
         with self.running_jobs():
             observer.start()
             try:
-                while True:
+                while not interrupted[0]:
                     time.sleep(watch_interval)
                     for wcher in watchers:
                         wcher.keep_watching()
             except KeyboardInterrupt:
-                logger.show_sig("Got KeyboardInterrupt; stopping watcher.")
+                interrupt()
             finally:
+                if interrupted[0]:
+                    logger.show_sig("Got KeyboardInterrupt; stopping watcher.")
                 observer.stop()
                 observer.join()
 
-    def get_python_lib(self):
-        """Get current Python lib location."""
-        # these are expensive, so should only be imported here
-        if PY32:
-            from sysconfig import get_path
-            python_lib = get_path("purelib")
-        else:
-            from distutils import sysconfig
-            python_lib = sysconfig.get_python_lib()
-        return fixpath(python_lib)
-
     def site_install(self):
         """Add Coconut's pth file to site-packages."""
-        python_lib = self.get_python_lib()
+        python_lib = get_python_lib()
 
         shutil.copy(coconut_pth_file, python_lib)
         logger.show_sig("Added %s to %s" % (os.path.basename(coconut_pth_file), python_lib))
 
     def site_uninstall(self):
         """Remove Coconut's pth file from site-packages."""
-        python_lib = self.get_python_lib()
+        python_lib = get_python_lib()
         pth_file = os.path.join(python_lib, os.path.basename(coconut_pth_file))
 
         if os.path.isfile(pth_file):

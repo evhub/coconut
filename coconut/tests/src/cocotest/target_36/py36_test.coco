@@ -14,6 +14,14 @@ def py36_test() -> bool:
             funcs.append(async copyclosure def -> x)
         return funcs
     async def await_all(xs) = [await x for x in xs]
+    async def aplus1(x) = x + 1
+    async def async_mapreduce(func, iterable, **kwargs) = (
+        iterable
+        |> async_map$(func)
+        |> await
+        |> mapreduce$(ident, **kwargs)
+    )
+
     async def atest():
         assert (
             outer_func()
@@ -21,7 +29,51 @@ def py36_test() -> bool:
             |> map$(call)
             |> await_all
             |> await
+        ) == range(5) |> list == (
+            outer_func()
+            |> await
+            |> async_map$(call)
+            |> await
+        )
+        assert (
+            range(5)
+            |> map$(./10)
+            |> reversed
+            |> async_map$(lift(asyncio.sleep)(ident, result=ident))
+            |> await
+            |> reversed
+            |> map$(.*10)
+            |> list
         ) == range(5) |> list
+        assert (
+            {"a": 0, "b": 1}
+            |> .items()
+            |> async_mapreduce$(
+                (async def ((k, v)) =>
+                    (key=k, value=await aplus1(v))),
+                collect_in={"c": 0},
+            )
+            |> await
+        ) == {"a": 1, "b": 2, "c": 0}
+        assert (
+            [0, 2, 0]
+            |> async_mapreduce$(
+                (async def x =>
+                    (key=x, value=await aplus1(x))),
+                reduce_func=(+),
+            )
+            |> await
+        ) == {0: 2, 2: 3}
+        assert (
+            [0, 2, 0]
+            |> async_mapreduce$(
+                (async def x =>
+                    (key=x, value=await aplus1(x))),
+                reduce_func=(+),
+                reduce_func_init=10,
+            )
+            |> await
+        ) == {0: 12, 2: 13}
     loop.run_until_complete(atest())
 
     loop.close()

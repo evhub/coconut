@@ -23,7 +23,7 @@ import sys as _coconut_sys
 # VERSION:
 # -----------------------------------------------------------------------------------------------------------------------
 
-VERSION = "3.0.3"
+VERSION = "3.0.4"
 VERSION_NAME = None
 # False for release, int >= 1 for develop
 DEVELOP = False
@@ -43,6 +43,16 @@ def _indent(code, by=1, tabsize=4, strip=False, newline=False, initial_newline=F
         (" " * (tabsize * by) if line.strip() else "") + line
         for line in (code.strip() if strip else code).splitlines(True)
     ) + ("\n" if newline else "")
+
+
+def _get_target_info(target):
+    """Return target information as a version tuple."""
+    if not target or target == "universal":
+        return ()
+    elif len(target) == 1:
+        return (int(target),)
+    else:
+        return (int(target[0]), int(target[1:]))
 
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -198,6 +208,54 @@ def _coconut_exec(obj, globals=None, locals=None):
     if globals is None:
         globals = _coconut_sys._getframe(1).f_globals
     exec(obj, globals, locals)
+import operator as _coconut_operator
+class _coconut_attrgetter(object):
+    __slots__ = ("attrs",)
+    def __init__(self, *attrs):
+        self.attrs = attrs
+    def __reduce_ex__(self, _):
+        return self.__reduce__()
+    def __reduce__(self):
+        return (self.__class__, self.attrs)
+    @staticmethod
+    def _getattr(obj, attr):
+        for name in attr.split("."):
+            obj = _coconut.getattr(obj, name)
+        return obj
+    def __call__(self, obj):
+        if len(self.attrs) == 1:
+            return self._getattr(obj, self.attrs[0])
+        return _coconut.tuple(self._getattr(obj, attr) for attr in self.attrs)
+_coconut_operator.attrgetter = _coconut_attrgetter
+class _coconut_itemgetter(object):
+    __slots__ = ("items",)
+    def __init__(self, *items):
+        self.items = items
+    def __reduce_ex__(self, _):
+        return self.__reduce__()
+    def __reduce__(self):
+        return (self.__class__, self.items)
+    def __call__(self, obj):
+        if len(self.items) == 1:
+            return obj[self.items[0]]
+        return _coconut.tuple(obj[item] for item in self.items)
+_coconut_operator.itemgetter = _coconut_itemgetter
+class _coconut_methodcaller(object):
+    __slots__ = ("name", "args", "kwargs")
+    def __init__(self, name, *args, **kwargs):
+        self.name = name
+        self.args = args
+        self.kwargs = kwargs
+    def __reduce_ex__(self, _):
+        return self.__reduce__()
+    def __reduce__(self):
+        return (self.__class__, (self.name,) + self.args, {"kwargs": self.kwargs})
+    def __setstate__(self, setvars):
+        for k, v in setvars.items():
+            _coconut.setattr(self, k, v)
+    def __call__(self, obj):
+        return _coconut.getattr(obj, self.name)(*self.args, **self.kwargs)
+_coconut_operator.methodcaller = _coconut_methodcaller
 '''
 
 _non_py37_extras = r'''def _coconut_default_breakpointhook(*args, **kwargs):
@@ -264,15 +322,24 @@ _py26_extras = '''if _coconut_sys.version_info < (2, 7):
     _coconut_copy_reg.pickle(_coconut_functools.partial, _coconut_reduce_partial)
 '''
 
+_py3_before_py311_extras = '''try:
+    from exceptiongroup import ExceptionGroup, BaseExceptionGroup
+except ImportError:
+    class you_need_to_install_exceptiongroup(object):
+        __slots__ = ()
+    ExceptionGroup = BaseExceptionGroup = you_need_to_install_exceptiongroup()
+'''
+
 
 # whenever new versions are added here, header.py must be updated to use them
 ROOT_HEADER_VERSIONS = (
     "universal",
     "2",
-    "3",
     "27",
+    "3",
     "37",
     "39",
+    "311",
 )
 
 
@@ -284,6 +351,7 @@ def _get_root_header(version="universal"):
 ''' + _indent(_get_root_header("2")) + '''else:
 ''' + _indent(_get_root_header("3"))
 
+    version_info = _get_target_info(version)
     header = ""
 
     if version.startswith("3"):
@@ -293,7 +361,7 @@ def _get_root_header(version="universal"):
         # if a new assignment is added below, a new builtins import should be added alongside it
         header += _base_py2_header
 
-    if version in ("37", "39"):
+    if version_info >= (3, 7):
         header += r'''py_breakpoint = breakpoint
 '''
     elif version == "3":
@@ -311,7 +379,7 @@ def _get_root_header(version="universal"):
         header += r'''if _coconut_sys.version_info < (3, 7):
 ''' + _indent(_below_py37_extras) + r'''elif _coconut_sys.version_info < (3, 9):
 ''' + _indent(_py37_py38_extras)
-    elif version == "37":
+    elif (3, 7) <= version_info < (3, 9):
         header += r'''if _coconut_sys.version_info < (3, 9):
 ''' + _indent(_py37_py38_extras)
     elif version.startswith("2"):
@@ -320,7 +388,11 @@ dict.values = _coconut_OrderedDict.viewvalues
 dict.items = _coconut_OrderedDict.viewitems
 '''
     else:
-        assert version == "39", version
+        assert version_info >= (3, 9), version
+
+    if (3,) <= version_info < (3, 11):
+        header += r'''if _coconut_sys.version_info < (3, 11):
+''' + _indent(_py3_before_py311_extras)
 
     return header
 
@@ -334,8 +406,6 @@ if DEVELOP:
 VERSION_STR = VERSION + (" [" + VERSION_NAME + "]" if VERSION_NAME else "")
 
 PY2 = _coconut_sys.version_info < (3,)
-PY26 = _coconut_sys.version_info < (2, 7)
-PY37 = _coconut_sys.version_info >= (3, 7)
 
 # -----------------------------------------------------------------------------------------------------------------------
 # SETUP:

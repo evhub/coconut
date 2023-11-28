@@ -23,7 +23,6 @@ from types import MethodType
 
 from coconut.constants import (
     coconut_kernel_kwargs,
-    coconut_run_kwargs,
     enabled_xonsh_modes,
     interpreter_uses_incremental,
 )
@@ -50,18 +49,19 @@ def embed(kernel=False, depth=0, **kwargs):
 
 def load_ipython_extension(ipython):
     """Loads Coconut as an IPython extension."""
+    # import here to avoid circular dependencies
+    from coconut import api
+    from coconut.exceptions import CoconutException
+    from coconut.terminal import logger
+    from coconut.command.util import import_coconut_header
+
     # add Coconut built-ins
-    from coconut import __coconut__
+    __coconut__ = import_coconut_header()
     newvars = {}
     for var, val in vars(__coconut__).items():
         if not var.startswith("__"):
             newvars[var] = val
     ipython.push(newvars)
-
-    # import here to avoid circular dependencies
-    from coconut import api
-    from coconut.exceptions import CoconutException
-    from coconut.terminal import logger
 
     magic_state = api.get_state()
     api.setup(state=magic_state, **coconut_kernel_kwargs)
@@ -77,7 +77,7 @@ def load_ipython_extension(ipython):
                 # first line in block is cmd, rest is code
                 line = line.strip()
                 if line:
-                    api.cmd(line, state=magic_state, **coconut_run_kwargs)
+                    api.cmd_sys(line, state=magic_state)
                 code = cell
             compiled = api.parse(code, state=magic_state)
         except CoconutException:
@@ -173,7 +173,7 @@ class CoconutXontribLoader(object):
                         # we handle our own inner_environment rather than have remove_strs do it so that we can reformat
                         with self.compiler.inner_environment():
                             line_no_strs = self.compiler.remove_strs(line, inner_environment=False)
-                            if ";" in line_no_strs:
+                            if line_no_strs is not None and ";" in line_no_strs:
                                 remaining_pieces = [
                                     self.compiler.reformat(piece, ignore_errors=True)
                                     for piece in line_no_strs.split(";")

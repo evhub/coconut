@@ -30,6 +30,7 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 from coconut.root import *  # NOQA
 
 import sys
+import os
 import re
 from contextlib import contextmanager
 from functools import partial, wraps
@@ -38,6 +39,7 @@ from threading import Lock
 
 from coconut._pyparsing import (
     USE_COMPUTATION_GRAPH,
+    USE_CACHE,
     ParseBaseException,
     ParseResults,
     col as getcol,
@@ -86,6 +88,8 @@ from coconut.constants import (
     in_place_op_funcs,
     match_first_arg_var,
     import_existing,
+    use_adaptive_any_of,
+    reverse_any_of,
 )
 from coconut.util import (
     pickleable_obj,
@@ -128,6 +132,7 @@ from coconut.compiler.grammar import (
     partial_op_item_handle,
 )
 from coconut.compiler.util import (
+    ExceptionNode,
     sys_target,
     getline,
     addskip,
@@ -150,7 +155,6 @@ from coconut.compiler.util import (
     append_it,
     interleaved_join,
     handle_indentation,
-    Wrap,
     tuple_str_of,
     join_args,
     parse_where,
@@ -171,6 +175,10 @@ from coconut.compiler.util import (
     get_psf_target,
     move_loc_to_non_whitespace,
     move_endpt_to_non_whitespace,
+    load_cache_for,
+    pickle_cache,
+    handle_and_manage,
+    sub_all,
 )
 from coconut.compiler.header import (
     minify_header,
@@ -450,7 +458,7 @@ def call_decorators(decorators, func_name):
 class Compiler(Grammar, pickleable_obj):
     """The Coconut compiler."""
     lock = Lock()
-    current_compiler = [None]  # list for mutability
+    current_compiler = None
 
     preprocs = [
         lambda self: self.prepare,
@@ -463,6 +471,7 @@ class Compiler(Grammar, pickleable_obj):
     reformatprocs = [
         # deferred_code_proc must come first
         lambda self: self.deferred_code_proc,
+        lambda self: partial(self.base_passthrough_repl, wrap_char=early_passthrough_wrapper),
         lambda self: self.reind_proc,
         lambda self: self.endline_repl,
         lambda self: partial(self.base_passthrough_repl, wrap_char="\\"),
@@ -594,6 +603,8 @@ class Compiler(Grammar, pickleable_obj):
     @contextmanager
     def inner_environment(self, ln=None):
         """Set up compiler to evaluate inner expressions."""
+        if ln is None:
+            ln = self.outer_ln
         outer_ln, self.outer_ln = self.outer_ln, ln
         line_numbers, self.line_numbers = self.line_numbers, False
         keep_lines, self.keep_lines = self.keep_lines, False
@@ -627,6 +638,15 @@ class Compiler(Grammar, pickleable_obj):
             return default
 
     @contextmanager
+    def add_to_parsing_context(self, name, obj):
+        """Add the given object to the parsing context for the given name."""
+        self.parsing_context[name].append(obj)
+        try:
+            yield
+        finally:
+            self.parsing_context[name].pop()
+
+    @contextmanager
     def disable_checks(self):
         """Run the block without checking names or strict errors."""
         disable_name_check, self.disable_name_check = self.disable_name_check, True
@@ -646,6 +666,8 @@ class Compiler(Grammar, pickleable_obj):
 
     def get_temp_var(self, base_name="temp", loc=None):
         """Get a unique temporary variable name."""
+        if isinstance(base_name, tuple):
+            base_name = "_".join(base_name)
         if loc is None:
             key = None
         else:
@@ -672,7 +694,7 @@ class Compiler(Grammar, pickleable_obj):
 
         @wraps(cls_method)
         def method(original, loc, tokens):
-            self_method = getattr(cls.current_compiler[0], method_name)
+            self_method = getattr(cls.current_compiler, method_name)
             if kwargs:
                 self_method = partial(self_method, **kwargs)
             if trim_arity:
@@ -692,38 +714,63 @@ class Compiler(Grammar, pickleable_obj):
     def bind(cls):
         """Binds reference objects to the proper parse actions."""
         # handle parsing_context for class definitions
-        new_classdef = attach(cls.classdef_ref, cls.method("classdef_handle"))
-        cls.classdef <<= Wrap(new_classdef, cls.method("class_manage"), greedy=True)
-
-        new_datadef = attach(cls.datadef_ref, cls.method("datadef_handle"))
-        cls.datadef <<= Wrap(new_datadef, cls.method("class_manage"), greedy=True)
-
-        new_match_datadef = attach(cls.match_datadef_ref, cls.method("match_datadef_handle"))
-        cls.match_datadef <<= Wrap(new_match_datadef, cls.method("class_manage"), greedy=True)
+        cls.classdef <<= handle_and_manage(
+            cls.classdef_ref,
+            cls.method("classdef_handle"),
+            cls.method("class_manage"),
+        )
+        cls.datadef <<= handle_and_manage(
+            cls.datadef_ref,
+            cls.method("datadef_handle"),
+            cls.method("class_manage"),
+        )
+        cls.match_datadef <<= handle_and_manage(
+            cls.match_datadef_ref,
+            cls.method("match_datadef_handle"),
+            cls.method("class_manage"),
+        )
 
         # handle parsing_context for function definitions
-        new_stmt_lambdef = attach(cls.stmt_lambdef_ref, cls.method("stmt_lambdef_handle"))
-        cls.stmt_lambdef <<= Wrap(new_stmt_lambdef, cls.method("func_manage"), greedy=True)
-
-        new_decoratable_normal_funcdef_stmt = attach(
+        cls.stmt_lambdef <<= handle_and_manage(
+            cls.stmt_lambdef_ref,
+            cls.method("stmt_lambdef_handle"),
+            cls.method("func_manage"),
+        )
+        cls.decoratable_normal_funcdef_stmt <<= handle_and_manage(
             cls.decoratable_normal_funcdef_stmt_ref,
             cls.method("decoratable_funcdef_stmt_handle"),
+            cls.method("func_manage"),
         )
-        cls.decoratable_normal_funcdef_stmt <<= Wrap(new_decoratable_normal_funcdef_stmt, cls.method("func_manage"), greedy=True)
-
-        new_decoratable_async_funcdef_stmt = attach(
+        cls.decoratable_async_funcdef_stmt <<= handle_and_manage(
             cls.decoratable_async_funcdef_stmt_ref,
             cls.method("decoratable_funcdef_stmt_handle", is_async=True),
+            cls.method("func_manage"),
         )
-        cls.decoratable_async_funcdef_stmt <<= Wrap(new_decoratable_async_funcdef_stmt, cls.method("func_manage"), greedy=True)
 
         # handle parsing_context for type aliases
-        new_type_alias_stmt = attach(cls.type_alias_stmt_ref, cls.method("type_alias_stmt_handle"))
-        cls.type_alias_stmt <<= Wrap(new_type_alias_stmt, cls.method("type_alias_stmt_manage"), greedy=True)
+        cls.type_alias_stmt <<= handle_and_manage(
+            cls.type_alias_stmt_ref,
+            cls.method("type_alias_stmt_handle"),
+            cls.method("type_alias_stmt_manage"),
+        )
+
+        # handle parsing_context for where statements
+        cls.where_stmt <<= handle_and_manage(
+            cls.where_stmt_ref,
+            cls.method("where_stmt_handle"),
+            cls.method("where_stmt_manage"),
+        )
+        cls.implicit_return_where <<= handle_and_manage(
+            cls.implicit_return_where_ref,
+            cls.method("where_stmt_handle"),
+            cls.method("where_stmt_manage"),
+        )
 
         # greedy handlers (we need to know about them even if suppressed and/or they use the parsing_context)
         cls.comment <<= attach(cls.comment_tokens, cls.method("comment_handle"), greedy=True)
         cls.type_param <<= attach(cls.type_param_ref, cls.method("type_param_handle"), greedy=True)
+        cls.where_item <<= attach(cls.where_item_ref, cls.method("where_item_handle"), greedy=True)
+        cls.implicit_return_where_item <<= attach(cls.implicit_return_where_item_ref, cls.method("where_item_handle"), greedy=True)
 
         # name handlers
         cls.refname <<= attach(cls.name_ref, cls.method("name_handle"))
@@ -842,11 +889,17 @@ class Compiler(Grammar, pickleable_obj):
         """Do post-processing that comes after deferred_code_proc."""
         return self.apply_procs(self.reformatprocs[1:], snip, reformatting=True, log=False)
 
-    def reformat(self, snip, **kwargs):
+    def reformat(self, snip, ignore_errors, **kwargs):
         """Post process a preprocessed snippet."""
-        internal_assert("ignore_errors" in kwargs, "reformat() missing required keyword argument: 'ignore_errors'")
-        with self.complain_on_err():
-            return self.apply_procs(self.reformatprocs, snip, reformatting=True, log=False, **kwargs)
+        with noop_ctx() if ignore_errors else self.complain_on_err():
+            return self.apply_procs(
+                self.reformatprocs,
+                snip,
+                reformatting=True,
+                log=False,
+                ignore_errors=ignore_errors,
+                **kwargs  # no comma for py2
+            )
         return snip
 
     def reformat_locs(self, snip, loc, endpt=None, **kwargs):
@@ -862,10 +915,14 @@ class Compiler(Grammar, pickleable_obj):
         if endpt is None:
             return new_snip, new_loc
 
-        new_endpt = move_endpt_to_non_whitespace(
-            new_snip,
-            len(self.reformat(snip[:endpt], **kwargs)),
+        new_endpt = clip(
+            move_endpt_to_non_whitespace(
+                new_snip,
+                len(self.reformat(snip[:endpt], **kwargs)),
+            ),
+            min=new_loc,
         )
+
         return new_snip, new_loc, new_endpt
 
     def reformat_without_adding_code_before(self, code, **kwargs):
@@ -873,6 +930,14 @@ class Compiler(Grammar, pickleable_obj):
         got_code_to_add_before = {}
         reformatted_code = self.reformat(code, put_code_to_add_before_in=got_code_to_add_before, **kwargs)
         return reformatted_code, tuple(got_code_to_add_before.keys()), got_code_to_add_before.values()
+
+    def extract_deferred_code(self, code):
+        """Extract the code to be added before in code."""
+        got_code_to_add_before = {}
+        procd_out = self.deferred_code_proc(code, put_code_to_add_before_in=got_code_to_add_before)
+        added_names = tuple(got_code_to_add_before.keys())
+        add_code_before = "\n".join(got_code_to_add_before.values())
+        return procd_out, added_names, add_code_before
 
     def literal_eval(self, code):
         """Version of ast.literal_eval that reformats first."""
@@ -928,12 +993,14 @@ class Compiler(Grammar, pickleable_obj):
         except CoconutException as err:
             complain(err)
 
-    def remove_strs(self, inputstring, inner_environment=True):
-        """Remove strings/comments from the given input."""
-        with self.complain_on_err():
+    def remove_strs(self, inputstring, inner_environment=True, **kwargs):
+        """Remove strings/comments from the given input if possible."""
+        try:
             with (self.inner_environment() if inner_environment else noop_ctx()):
-                return self.str_proc(inputstring)
-        return inputstring
+                return self.str_proc(inputstring, **kwargs)
+        except Exception:
+            logger.log_exc()
+        return None
 
     def get_matcher(self, original, loc, check_var, name_list=None):
         """Get a Matcher object."""
@@ -1004,6 +1071,9 @@ class Compiler(Grammar, pickleable_obj):
         if not multiline:
             text = text.lstrip()
         if early:
+            # early passthroughs can be nested, so un-nest them
+            while early_passthrough_wrapper in text:
+                text = self.base_passthrough_repl(text, wrap_char=early_passthrough_wrapper)
             out = early_passthrough_wrapper
         elif multiline:
             out = "\\"
@@ -1024,10 +1094,12 @@ class Compiler(Grammar, pickleable_obj):
 
     def raise_or_wrap_error(self, error):
         """Raise if USE_COMPUTATION_GRAPH else wrap."""
-        if USE_COMPUTATION_GRAPH:
-            raise error
-        else:
+        if not USE_COMPUTATION_GRAPH:
             return self.wrap_error(error)
+        elif use_adaptive_any_of or reverse_any_of:
+            return ExceptionNode(error)
+        else:
+            raise error
 
     def type_ignore_comment(self):
         """Get a "type: ignore" comment."""
@@ -1114,7 +1186,10 @@ class Compiler(Grammar, pickleable_obj):
 
         # get line number
         if ln is None:
-            ln = self.outer_ln or self.adjust(lineno(loc, original))
+            if self.outer_ln is None:
+                ln = self.adjust(lineno(loc, original))
+            else:
+                ln = self.outer_ln
 
         # get line indices for the error locs
         original_lines = tuple(logical_lines(original, True))
@@ -1135,9 +1210,11 @@ class Compiler(Grammar, pickleable_obj):
             self.internal_assert(extra is None, original, loc, "make_err cannot include causes with extra")
             causes = dictset()
             for cause, _, _ in all_matches(self.parse_err_msg, snippet[loc_in_snip:]):
-                causes.add(cause)
+                if cause:
+                    causes.add(cause)
             for cause, _, _ in all_matches(self.parse_err_msg, snippet[endpt_in_snip:]):
-                causes.add(cause)
+                if cause:
+                    causes.add(cause)
             if causes:
                 extra = "possible cause{s}: {causes}".format(
                     s="s" if len(causes) > 1 else "",
@@ -1156,10 +1233,10 @@ class Compiler(Grammar, pickleable_obj):
             kwargs["extra"] = extra
         return errtype(message, snippet, loc_in_snip, ln, endpoint=endpt_in_snip, filename=self.filename, **kwargs)
 
-    def make_syntax_err(self, err, original):
+    def make_syntax_err(self, err, original, after_parsing=False):
         """Make a CoconutSyntaxError from a CoconutDeferredSyntaxError."""
         msg, loc = err.args
-        return self.make_err(CoconutSyntaxError, msg, original, loc)
+        return self.make_err(CoconutSyntaxError, msg, original, loc, endpoint=not after_parsing)
 
     def make_parse_err(self, err, msg=None, include_ln=True, **kwargs):
         """Make a CoconutParseError from a ParseBaseException."""
@@ -1191,34 +1268,41 @@ class Compiler(Grammar, pickleable_obj):
         """Parse eval code in an inner environment."""
         if parser is None:
             parser = self.eval_parser
-        with self.inner_environment(ln=self.adjust(lineno(loc, original))):
-            self.streamline(parser, inputstring)
+        outer_ln = self.outer_ln
+        if outer_ln is None:
+            outer_ln = self.adjust(lineno(loc, original))
+        with self.inner_environment(ln=outer_ln):
+            self.streamline(parser, inputstring, inner=True)
             pre_procd = self.pre(inputstring, **preargs)
             parsed = parse(parser, pre_procd)
             return self.post(parsed, **postargs)
 
     @contextmanager
-    def parsing(self, keep_state=False, filename=None):
+    def parsing(self, keep_state=False, codepath=None):
         """Acquire the lock and reset the parser."""
+        filename = None if codepath is None else os.path.basename(codepath)
         with self.lock:
             self.reset(keep_state, filename)
-            self.current_compiler[0] = self
+            Compiler.current_compiler = self
             yield
 
-    def streamline(self, grammar, inputstring="", force=False):
+    def streamline(self, grammar, inputstring=None, force=False, inner=False):
         """Streamline the given grammar for the given inputstring."""
-        if force or (streamline_grammar_for_len is not None and len(inputstring) >= streamline_grammar_for_len):
+        input_len = 0 if inputstring is None else len(inputstring)
+        if force or (streamline_grammar_for_len is not None and input_len > streamline_grammar_for_len):
             start_time = get_clock_time()
             prep_grammar(grammar, streamline=True)
             logger.log_lambda(
-                lambda: "Streamlined {grammar} in {time} seconds (streamlined due to receiving input of length {length}).".format(
+                lambda: "Streamlined {grammar} in {time} seconds{info}.".format(
                     grammar=get_name(grammar),
                     time=get_clock_time() - start_time,
-                    length=len(inputstring),
+                    info="" if inputstring is None else " (streamlined due to receiving input of length {length})".format(
+                        length=input_len,
+                    ),
                 ),
             )
-        else:
-            logger.log("No streamlining done for input of length {length}.".format(length=len(inputstring)))
+        elif inputstring is not None and not inner:
+            logger.log("No streamlining done for input of length {length}.".format(length=input_len))
 
     def run_final_checks(self, original, keep_state=False):
         """Run post-parsing checks to raise any necessary errors/warnings."""
@@ -1233,30 +1317,54 @@ class Compiler(Grammar, pickleable_obj):
                             "found unused import " + repr(self.reformat(name, ignore_errors=True)) + " (add '# NOQA' to suppress)",
                             original,
                             loc,
+                            endpoint=False,
                         )
 
-    def parse(self, inputstring, parser, preargs, postargs, streamline=True, keep_state=False, filename=None):
+    def parse(
+        self,
+        inputstring,
+        parser,
+        preargs,
+        postargs,
+        streamline=True,
+        keep_state=False,
+        codepath=None,
+        use_cache=None,
+    ):
         """Use the parser to parse the inputstring with appropriate setup and teardown."""
-        with self.parsing(keep_state, filename):
+        if use_cache is None:
+            use_cache = USE_CACHE
+        use_cache = use_cache and codepath is not None
+        with self.parsing(keep_state, codepath):
             if streamline:
                 self.streamline(parser, inputstring)
-            with logger.gather_parsing_stats():
-                pre_procd = None
-                try:
-                    pre_procd = self.pre(inputstring, keep_state=keep_state, **preargs)
-                    parsed = parse(parser, pre_procd, inner=False)
-                    out = self.post(parsed, keep_state=keep_state, **postargs)
-                except ParseBaseException as err:
-                    raise self.make_parse_err(err)
-                except CoconutDeferredSyntaxError as err:
-                    internal_assert(pre_procd is not None, "invalid deferred syntax error in pre-processing", err)
-                    raise self.make_syntax_err(err, pre_procd)
-                # RuntimeError, not RecursionError, for Python < 3.5
-                except RuntimeError as err:
-                    raise CoconutException(
-                        str(err), extra="try again with --recursion-limit greater than the current "
-                        + str(sys.getrecursionlimit()) + " (you may also need to increase --stack-size)",
-                    )
+            # unpickling must happen after streamlining and must occur in the
+            #  compiler so that it happens in the same process as compilation
+            if use_cache:
+                cache_path, incremental_enabled = load_cache_for(inputstring, codepath)
+            else:
+                cache_path = None
+            pre_procd = parsed = None
+            try:
+                with logger.gather_parsing_stats():
+                    try:
+                        pre_procd = self.pre(inputstring, keep_state=keep_state, **preargs)
+                        parsed = parse(parser, pre_procd, inner=False)
+                        out = self.post(parsed, keep_state=keep_state, **postargs)
+                    except ParseBaseException as err:
+                        raise self.make_parse_err(err)
+                    except CoconutDeferredSyntaxError as err:
+                        internal_assert(pre_procd is not None, "invalid deferred syntax error in pre-processing", err)
+                        raise self.make_syntax_err(err, pre_procd, after_parsing=parsed is not None)
+                    # RuntimeError, not RecursionError, for Python < 3.5
+                    except RuntimeError as err:
+                        raise CoconutException(
+                            str(err), extra="try again with --recursion-limit greater than the current "
+                            + str(sys.getrecursionlimit()) + " (you may also need to increase --stack-size)",
+                        )
+            finally:
+                if cache_path is not None and pre_procd is not None:
+                    pickle_cache(pre_procd, cache_path, include_incremental=incremental_enabled)
             self.run_final_checks(pre_procd, keep_state)
         return out
 
@@ -2233,7 +2341,7 @@ else:
         undotted_name = None
         if func_name is not None and "." in func_name:
             undotted_name = func_name.rsplit(".", 1)[-1]
-            def_name = self.get_temp_var("dotted_" + undotted_name, loc)
+            def_name = self.get_temp_var(("dotted", undotted_name), loc)
 
         # detect pattern-matching functions
         is_match_func = func_paramdef == match_func_paramdef
@@ -2263,10 +2371,7 @@ except _coconut.NameError:
 
         # modify function definition to use def_name
         if def_name != func_name:
-            def_stmt_pre_lparen, def_stmt_post_lparen = def_stmt.split("(", 1)
-            def_stmt_def, def_stmt_name = def_stmt_pre_lparen.rsplit(" ", 1)
-            def_stmt_name = def_stmt_name.replace(func_name, def_name)
-            def_stmt = def_stmt_def + " " + def_stmt_name + "(" + def_stmt_post_lparen
+            def_stmt = compile_regex(r"\b" + re.escape(func_name) + r"\b").sub(def_name, def_stmt)
 
         # detect generators
         is_gen = self.detect_is_gen(raw_lines)
@@ -2481,6 +2586,14 @@ else:
         internal_assert(not decorators, "unhandled decorators", decorators)
         return "".join(out)
 
+    def modify_add_code_before(self, add_code_before_names, code_modifier):
+        """Apply code_modifier to all the code corresponding to add_code_before_names."""
+        for name in add_code_before_names:
+            self.add_code_before[name] = code_modifier(self.add_code_before[name])
+            replacement = self.add_code_before_replacements.get(name)
+            if replacement is not None:
+                self.add_code_before_replacements[name] = code_modifier(replacement)
+
     def add_code_before_marker_with_replacement(self, replacement, add_code_before, add_spaces=True, ignore_names=None):
         """Add code before a marker that will later be replaced."""
         # temp_marker will be set back later, but needs to be a unique name until then for add_code_before
@@ -2510,9 +2623,6 @@ else:
         out = []
         for raw_line in inputstring.splitlines(True):
             bef_ind, line, aft_ind = split_leading_trailing_indent(raw_line)
-
-            # handle early passthroughs
-            line = self.base_passthrough_repl(line, wrap_char=early_passthrough_wrapper, **kwargs)
 
             # look for deferred errors
             while errwrapper in raw_line:
@@ -2650,7 +2760,7 @@ else:
             - (expr,) for expression
             - (func, pos_args, kwd_args) for partial
             - (name, args) for attr/method
-            - (op, args)+ for itemgetter
+            - (attr, [(op, args)]) for itemgetter
             - (op, arg) for right op partial
         """
         # list implies artificial tokens, which must be expr
@@ -2665,8 +2775,12 @@ else:
             name, args = attrgetter_atom_split(tokens)
             return "attrgetter", (name, args)
         elif "itemgetter" in tokens:
-            internal_assert(len(tokens) >= 2, "invalid itemgetter pipe item tokens", tokens)
-            return "itemgetter", tokens
+            if len(tokens) == 1:
+                attr = None
+                ops_and_args, = tokens
+            else:
+                attr, ops_and_args = tokens
+            return "itemgetter", (attr, ops_and_args)
         elif "op partial" in tokens:
             inner_toks, = tokens
             if "left partial" in inner_toks:
@@ -2699,7 +2813,7 @@ else:
                 return expr
             elif name == "partial":
                 self.internal_assert(len(split_item) == 3, original, loc)
-                return "_coconut.functools.partial(" + join_args(split_item) + ")"
+                return "_coconut_partial(" + join_args(split_item) + ")"
             elif name == "attrgetter":
                 return attrgetter_atom_handle(loc, item)
             elif name == "itemgetter":
@@ -2756,12 +2870,13 @@ else:
                 elif name == "itemgetter":
                     if stars:
                         raise CoconutDeferredSyntaxError("cannot star pipe into item getting", loc)
-                    self.internal_assert(len(split_item) % 2 == 0, original, loc, "invalid itemgetter pipe tokens", split_item)
-                    out = subexpr
-                    for i in range(0, len(split_item), 2):
-                        op, args = split_item[i:i + 2]
+                    attr, ops_and_args = split_item
+                    out = "(" + subexpr + ")"
+                    if attr is not None:
+                        out += "." + attr
+                    for op, args in ops_and_args:
                         if op == "[":
-                            fmtstr = "({x})[{args}]"
+                            fmtstr = "{x}[{args}]"
                         elif op == "$[":
                             fmtstr = "_coconut_iter_getitem({x}, ({args}))"
                         else:
@@ -2792,14 +2907,14 @@ else:
                 out += trailer
             elif len(trailer) == 1:
                 if trailer[0] == "$[]":
-                    out = "_coconut.functools.partial(_coconut_iter_getitem, " + out + ")"
+                    out = "_coconut_partial(_coconut_iter_getitem, " + out + ")"
                 elif trailer[0] == "$":
-                    out = "_coconut.functools.partial(_coconut.functools.partial, " + out + ")"
+                    out = "_coconut_partial(_coconut_partial, " + out + ")"
                 elif trailer[0] == "[]":
-                    out = "_coconut.functools.partial(_coconut.operator.getitem, " + out + ")"
+                    out = "_coconut_partial(_coconut.operator.getitem, " + out + ")"
                 elif trailer[0] == ".":
                     self.strict_err_or_warn("'obj.' as a shorthand for 'getattr$(obj)' is deprecated (just use the getattr partial)", original, loc)
-                    out = "_coconut.functools.partial(_coconut.getattr, " + out + ")"
+                    out = "_coconut_partial(_coconut.getattr, " + out + ")"
                 elif trailer[0] == "type:[]":
                     out = "_coconut.typing.Sequence[" + out + "]"
                 elif trailer[0] == "type:$[]":
@@ -2832,18 +2947,23 @@ else:
                     args = trailer[1][1:-1]
                     if not args:
                         raise CoconutDeferredSyntaxError("a partial application argument is required", loc)
-                    out = "_coconut.functools.partial(" + out + ", " + args + ")"
+                    out = "_coconut_partial(" + out + ", " + args + ")"
                 elif trailer[0] == "$[":
                     out = "_coconut_iter_getitem(" + out + ", " + trailer[1] + ")"
                 elif trailer[0] == "$(?":
                     pos_args, star_args, base_kwd_args, dubstar_args = self.split_function_call(trailer[1], loc)
+
                     has_question_mark = False
+                    needs_complex_partial = False
 
                     argdict_pairs = []
+                    last_pos_i = -1
                     for i, arg in enumerate(pos_args):
                         if arg == "?":
                             has_question_mark = True
                         else:
+                            if last_pos_i != i - 1:
+                                needs_complex_partial = True
                             argdict_pairs.append(str(i) + ": " + arg)
 
                     pos_kwargs = []
@@ -2851,25 +2971,36 @@ else:
                     for i, arg in enumerate(base_kwd_args):
                         if arg.endswith("=?"):
                             has_question_mark = True
+                            needs_complex_partial = True
                             pos_kwargs.append(arg[:-2])
                         else:
                             kwd_args.append(arg)
 
-                    extra_args_str = join_args(star_args, kwd_args, dubstar_args)
                     if not has_question_mark:
                         raise CoconutInternalException("no question mark in question mark partial", trailer[1])
-                    elif argdict_pairs or pos_kwargs or extra_args_str:
+
+                    if needs_complex_partial:
+                        extra_args_str = join_args(star_args, kwd_args, dubstar_args)
+                        if argdict_pairs or pos_kwargs or extra_args_str:
+                            out = (
+                                "_coconut_complex_partial("
+                                + out
+                                + ", {" + ", ".join(argdict_pairs) + "}"
+                                + ", " + str(len(pos_args))
+                                + ", " + tuple_str_of(pos_kwargs, add_quotes=True)
+                                + (", " if extra_args_str else "") + extra_args_str
+                                + ")"
+                            )
+                        else:
+                            raise CoconutDeferredSyntaxError("a non-? partial application argument is required", loc)
+                    else:
                         out = (
                             "_coconut_partial("
                             + out
-                            + ", {" + ", ".join(argdict_pairs) + "}"
-                            + ", " + str(len(pos_args))
-                            + ", " + tuple_str_of(pos_kwargs, add_quotes=True)
-                            + (", " if extra_args_str else "") + extra_args_str
+                            + ", "
+                            + join_args([arg for arg in pos_args if arg != "?"], star_args, kwd_args, dubstar_args)
                             + ")"
                         )
-                    else:
-                        raise CoconutDeferredSyntaxError("a non-? partial application argument is required", loc)
 
                 else:
                     raise CoconutInternalException("invalid special trailer", trailer[0])
@@ -3883,8 +4014,8 @@ __annotations__["{name}"] = {annotation}
         kwargs = ""
         if bound_op is not None:
             self.internal_assert(bound_op_type in ("bound", "constraint"), original, loc, "invalid type_param bound_op", bound_op)
-            # # uncomment this line whenever mypy adds support for infer_variance in TypeVar
-            # #  (and remove the warning about it in the DOCS)
+            # uncomment this line whenever mypy adds support for infer_variance in TypeVar
+            #  (and remove the warning about it in the DOCS)
             # kwargs = ", infer_variance=True"
             if bound_op == "<=":
                 self.strict_err_or_warn(
@@ -3912,7 +4043,7 @@ __annotations__["{name}"] = {annotation}
             else:
                 if name in typevar_info["all_typevars"]:
                     raise CoconutDeferredSyntaxError("type variable {name!r} already defined".format(name=name), loc)
-                temp_name = self.get_temp_var("typevar_" + name, name_loc)
+                temp_name = self.get_temp_var(("typevar", name), name_loc)
                 typevar_info["all_typevars"][name] = temp_name
                 typevar_info["new_typevars"].append((TypeVarFunc, temp_name))
                 typevar_info["typevar_locs"][name] = name_loc
@@ -3945,17 +4076,13 @@ __annotations__["{name}"] = {annotation}
     @contextmanager
     def type_alias_stmt_manage(self, item=None, original=None, loc=None):
         """Manage the typevars parsing context."""
-        typevars_stack = self.parsing_context["typevars"]
         prev_typevar_info = self.current_parsing_context("typevars")
-        typevars_stack.append({
+        with self.add_to_parsing_context("typevars", {
             "all_typevars": {} if prev_typevar_info is None else prev_typevar_info["all_typevars"].copy(),
             "new_typevars": [],
             "typevar_locs": {},
-        })
-        try:
+        }):
             yield
-        finally:
-            typevars_stack.pop()
 
     def type_alias_stmt_handle(self, tokens):
         """Handle type alias statements."""
@@ -3972,6 +4099,51 @@ __annotations__["{name}"] = {annotation}
                 "_coconut.typing.TypeAlias",
                 self.wrap_typedef(typedef, for_py_typedef=False),
             ])
+
+    def where_item_handle(self, tokens):
+        """Manage where items."""
+        where_context = self.current_parsing_context("where")
+        internal_assert(not where_context["assigns"], "invalid where_context", where_context)
+        where_context["assigns"] = set()
+        return tokens
+
+    @contextmanager
+    def where_stmt_manage(self, item, original, loc):
+        """Manage where statements."""
+        with self.add_to_parsing_context("where", {
+            "assigns": None,
+        }):
+            yield
+
+    def where_stmt_handle(self, loc, tokens):
+        """Process where statements."""
+        main_stmt, body_stmts = tokens
+
+        where_assigns = self.current_parsing_context("where")["assigns"]
+        internal_assert(lambda: where_assigns is not None, "missing where_assigns")
+
+        where_init = "".join(body_stmts)
+        where_final = main_stmt + "\n"
+        out = where_init + where_final
+        if not where_assigns:
+            return out
+
+        name_regexes = {
+            name: compile_regex(r"\b" + name + r"\b")
+            for name in where_assigns
+        }
+        name_replacements = {
+            name: self.get_temp_var(("where", name), loc)
+            for name in where_assigns
+        }
+
+        where_init = self.deferred_code_proc(where_init)
+        where_final = self.deferred_code_proc(where_final)
+        out = where_init + where_final
+
+        out = sub_all(out, name_regexes, name_replacements)
+
+        return self.wrap_passthrough(out, early=True)
 
     def with_stmt_handle(self, tokens):
         """Process with statements."""
@@ -4386,7 +4558,7 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
             else:
                 if always_warn:
                     kwargs["extra"] = "remove --strict to downgrade to a warning"
-                raise self.make_err(CoconutStyleError, message, original, loc, **kwargs)
+                return self.raise_or_wrap_error(self.make_err(CoconutStyleError, message, original, loc, **kwargs))
         elif always_warn:
             self.syntax_warning(message, original, loc)
         return tokens[0]
@@ -4427,7 +4599,13 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
         self.internal_assert(len(tokens) == 1, original, loc, "invalid " + name + " tokens", tokens)
         version_info = get_target_info(version)
         if self.target_info < version_info:
-            raise self.make_err(CoconutTargetError, "found Python " + ".".join(str(v) for v in version_info) + " " + name, original, loc, target=version)
+            return self.raise_or_wrap_error(self.make_err(
+                CoconutTargetError,
+                "found Python " + ".".join(str(v) for v in version_info) + " " + name,
+                original,
+                loc,
+                target=version,
+            ))
         else:
             return tokens[0]
 
@@ -4486,13 +4664,20 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
         else:
             escaped = False
 
+        if self.disable_name_check:
+            return name
+
+        if assign:
+            where_context = self.current_parsing_context("where")
+            if where_context is not None:
+                where_assigns = where_context["assigns"]
+                if where_assigns is not None:
+                    where_assigns.add(name)
+
         if classname:
             cls_context = self.current_parsing_context("class")
             self.internal_assert(cls_context is not None, original, loc, "found classname outside of class", tokens)
             cls_context["name"] = name
-
-        if self.disable_name_check:
-            return name
 
         # raise_or_wrap_error for all errors here to make sure we don't
         #  raise spurious errors if not using the computation graph
@@ -4662,10 +4847,12 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
         """Parse xonsh code."""
         return self.parse(inputstring, self.xonsh_parser, {"strip": True}, {"header": "none", "initial": "none"}, streamline=False, **kwargs)
 
-    def warm_up(self, force=False, enable_incremental_mode=False):
+    def warm_up(self, streamline=False, enable_incremental_mode=False, set_debug_names=False):
         """Warm up the compiler by streamlining the file_parser."""
-        self.streamline(self.file_parser, force=force)
-        self.streamline(self.eval_parser, force=force)
+        if set_debug_names:
+            self.set_grammar_names()
+        self.streamline(self.file_parser, force=streamline)
+        self.streamline(self.eval_parser, force=streamline)
         if enable_incremental_mode:
             enable_incremental_parsing()
 

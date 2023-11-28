@@ -207,15 +207,14 @@ dropwhile = _coconut.itertools.dropwhile
 tee = _coconut.itertools.tee
 starmap = _coconut.itertools.starmap
 cartesian_product = _coconut.itertools.product
-multiset = _coconut.collections.Counter
 
+_coconut_partial = _coconut.functools.partial
 _coconut_tee = tee
 _coconut_starmap = starmap
 _coconut_cartesian_product = cartesian_product
-_coconut_multiset = multiset
 
 
-parallel_map = concurrent_map = _coconut_map = map
+process_map = thread_map = parallel_map = concurrent_map = _coconut_map = map
 
 
 TYPE_CHECKING = _t.TYPE_CHECKING
@@ -255,6 +254,10 @@ def _coconut_tco(func: _Tfunc) -> _Tfunc:
 # any changes here should also be made to safe_call and call_or_coefficient below
 @_t.overload
 def call(
+    _func: _t.Callable[[], _U],
+) -> _U: ...
+@_t.overload
+def call(
     _func: _t.Callable[[_T], _U],
     _x: _T,
 ) -> _U: ...
@@ -271,30 +274,30 @@ def call(
     _y: _U,
     _z: _V,
 ) -> _W: ...
-@_t.overload
-def call(
-    _func: _t.Callable[_t.Concatenate[_T, _P], _U],
-    _x: _T,
-    *args: _t.Any,
-    **kwargs: _t.Any,
-) -> _U: ...
-@_t.overload
-def call(
-    _func: _t.Callable[_t.Concatenate[_T, _U, _P], _V],
-    _x: _T,
-    _y: _U,
-    *args: _t.Any,
-    **kwargs: _t.Any,
-) -> _V: ...
-@_t.overload
-def call(
-    _func: _t.Callable[_t.Concatenate[_T, _U, _V, _P], _W],
-    _x: _T,
-    _y: _U,
-    _z: _V,
-    *args: _t.Any,
-    **kwargs: _t.Any,
-) -> _W: ...
+# @_t.overload
+# def call(
+#     _func: _t.Callable[_t.Concatenate[_T, _P], _U],
+#     _x: _T,
+#     *args: _t.Any,
+#     **kwargs: _t.Any,
+# ) -> _U: ...
+# @_t.overload
+# def call(
+#     _func: _t.Callable[_t.Concatenate[_T, _U, _P], _V],
+#     _x: _T,
+#     _y: _U,
+#     *args: _t.Any,
+#     **kwargs: _t.Any,
+# ) -> _V: ...
+# @_t.overload
+# def call(
+#     _func: _t.Callable[_t.Concatenate[_T, _U, _V, _P], _W],
+#     _x: _T,
+#     _y: _U,
+#     _z: _V,
+#     *args: _t.Any,
+#     **kwargs: _t.Any,
+# ) -> _W: ...
 @_t.overload
 def call(
     _func: _t.Callable[..., _T],
@@ -325,6 +328,10 @@ class Expected(_BaseExpected[_T]):
             def __bool__(self) -> bool:
                 return self.error is None
             def __fmap__[U](self, func: T -> U) -> Expected[U]:
+                """Maps func over the result if it exists.
+
+                __fmap__ should be used directly only when fmap is not available (e.g. when consuming an Expected in vanilla Python).
+                """
                 return self.__class__(func(self.result)) if self else self
             def and_then[U](self, func: T -> Expected[U]) -> Expected[U]:
                 """Maps a T -> Expected[U] over an Expected[T] to produce an Expected[U].
@@ -340,20 +347,34 @@ class Expected(_BaseExpected[_T]):
             def map_error(self, func: BaseException -> BaseException) -> Expected[T]:
                 """Maps func over the error if it exists."""
                 return self if self else self.__class__(error=func(self.error))
-            def or_else[U](self, func: BaseException -> Expected[U]) -> Expected[T | U]:
-                """Return self if no error, otherwise return the result of evaluating func on the error."""
-                return self if self else func(self.error)
-            def result_or[U](self, default: U) -> T | U:
-                """Return the result if it exists, otherwise return the default."""
-                return self.result if self else default
-            def result_or_else[U](self, func: BaseException -> U) -> T | U:
-                """Return the result if it exists, otherwise return the result of evaluating func on the error."""
-                return self.result if self else func(self.error)
+            def handle(self, err_type, handler: BaseException -> T) -> Expected[T]:
+                """Recover from the given err_type by calling handler on the error to determine the result."""
+                if not self and isinstance(self.error, err_type):
+                    return self.__class__(handler(self.error))
+                return self
+            def expect_error(self, *err_types: BaseException) -> Expected[T]:
+                """Raise any errors that do not match the given error types."""
+                if not self and not isinstance(self.error, err_types):
+                    raise self.error
+                return self
             def unwrap(self) -> T:
                 """Unwrap the result or raise the error."""
                 if not self:
                     raise self.error
                 return self.result
+            def or_else[U](self, func: BaseException -> Expected[U]) -> Expected[T | U]:
+                """Return self if no error, otherwise return the result of evaluating func on the error."""
+                return self if self else func(self.error)
+            def result_or_else[U](self, func: BaseException -> U) -> T | U:
+                """Return the result if it exists, otherwise return the result of evaluating func on the error."""
+                return self.result if self else func(self.error)
+            def result_or[U](self, default: U) -> T | U:
+                """Return the result if it exists, otherwise return the default.
+
+                Since .result_or() completely silences errors, it is highly recommended that you
+                call .expect_error() first to explicitly declare what errors you are okay silencing.
+                """
+                return self.result if self else default
     '''
     __slots__ = ()
     _coconut_is_data = True
@@ -404,23 +425,37 @@ class Expected(_BaseExpected[_T]):
     def map_error(self, func: _t.Callable[[BaseException], BaseException]) -> Expected[_T]:
         """Maps func over the error if it exists."""
         ...
+    def handle(self, err_type: _t.Type[BaseException], handler: _t.Callable[[BaseException], _T]) -> Expected[_T]:
+        """Recover from the given err_type by calling handler on the error to determine the result."""
+        ...
+    def expect_error(self, *err_types: BaseException) -> Expected[_T]:
+        """Raise any errors that do not match the given error types."""
+        ...
+    def unwrap(self) -> _T:
+        """Unwrap the result or raise the error."""
+        ...
     def or_else(self, func: _t.Callable[[BaseException], Expected[_U]]) -> Expected[_T | _U]:
         """Return self if no error, otherwise return the result of evaluating func on the error."""
-        ...
-    def result_or(self, default: _U) -> _T | _U:
-        """Return the result if it exists, otherwise return the default."""
         ...
     def result_or_else(self, func: _t.Callable[[BaseException], _U]) -> _T | _U:
         """Return the result if it exists, otherwise return the result of evaluating func on the error."""
         ...
-    def unwrap(self) -> _T:
-        """Unwrap the result or raise the error."""
+    def result_or(self, default: _U) -> _T | _U:
+        """Return the result if it exists, otherwise return the default.
+
+        Since .result_or() completely silences errors, it is highly recommended that you
+        call .expect_error() first to explicitly declare what errors you are okay silencing.
+        """
         ...
 
 _coconut_Expected = Expected
 
 
 # should match call above but with Expected
+@_t.overload
+def safe_call(
+    _func: _t.Callable[[], _U],
+) -> Expected[_U]: ...
 @_t.overload
 def safe_call(
     _func: _t.Callable[[_T], _U],
@@ -439,30 +474,30 @@ def safe_call(
     _y: _U,
     _z: _V,
 ) -> Expected[_W]: ...
-@_t.overload
-def safe_call(
-    _func: _t.Callable[_t.Concatenate[_T, _P], _U],
-    _x: _T,
-    *args: _t.Any,
-    **kwargs: _t.Any,
-) -> Expected[_U]: ...
-@_t.overload
-def safe_call(
-    _func: _t.Callable[_t.Concatenate[_T, _U, _P], _V],
-    _x: _T,
-    _y: _U,
-    *args: _t.Any,
-    **kwargs: _t.Any,
-) -> Expected[_V]: ...
-@_t.overload
-def safe_call(
-    _func: _t.Callable[_t.Concatenate[_T, _U, _V, _P], _W],
-    _x: _T,
-    _y: _U,
-    _z: _V,
-    *args: _t.Any,
-    **kwargs: _t.Any,
-) -> Expected[_W]: ...
+# @_t.overload
+# def safe_call(
+#     _func: _t.Callable[_t.Concatenate[_T, _P], _U],
+#     _x: _T,
+#     *args: _t.Any,
+#     **kwargs: _t.Any,
+# ) -> Expected[_U]: ...
+# @_t.overload
+# def safe_call(
+#     _func: _t.Callable[_t.Concatenate[_T, _U, _P], _V],
+#     _x: _T,
+#     _y: _U,
+#     *args: _t.Any,
+#     **kwargs: _t.Any,
+# ) -> Expected[_V]: ...
+# @_t.overload
+# def safe_call(
+#     _func: _t.Callable[_t.Concatenate[_T, _U, _V, _P], _W],
+#     _x: _T,
+#     _y: _U,
+#     _z: _V,
+#     *args: _t.Any,
+#     **kwargs: _t.Any,
+# ) -> Expected[_W]: ...
 @_t.overload
 def safe_call(
     _func: _t.Callable[..., _T],
@@ -482,7 +517,11 @@ def safe_call(
     ...
 
 
-# based on call above
+# based on call above@_t.overload
+@_t.overload
+def _coconut_call_or_coefficient(
+    _func: _t.Callable[[], _U],
+) -> _U: ...
 @_t.overload
 def _coconut_call_or_coefficient(
     _func: _t.Callable[[_T], _U],
@@ -501,27 +540,27 @@ def _coconut_call_or_coefficient(
     _y: _U,
     _z: _V,
 ) -> _W: ...
-@_t.overload
-def _coconut_call_or_coefficient(
-    _func: _t.Callable[_t.Concatenate[_T, _P], _U],
-    _x: _T,
-    *args: _t.Any,
-) -> _U: ...
-@_t.overload
-def _coconut_call_or_coefficient(
-    _func: _t.Callable[_t.Concatenate[_T, _U, _P], _V],
-    _x: _T,
-    _y: _U,
-    *args: _t.Any,
-) -> _V: ...
-@_t.overload
-def _coconut_call_or_coefficient(
-    _func: _t.Callable[_t.Concatenate[_T, _U, _V, _P], _W],
-    _x: _T,
-    _y: _U,
-    _z: _V,
-    *args: _t.Any,
-) -> _W: ...
+# @_t.overload
+# def _coconut_call_or_coefficient(
+#     _func: _t.Callable[_t.Concatenate[_T, _P], _U],
+#     _x: _T,
+#     *args: _t.Any,
+# ) -> _U: ...
+# @_t.overload
+# def _coconut_call_or_coefficient(
+#     _func: _t.Callable[_t.Concatenate[_T, _U, _P], _V],
+#     _x: _T,
+#     _y: _U,
+#     *args: _t.Any,
+# ) -> _V: ...
+# @_t.overload
+# def _coconut_call_or_coefficient(
+#     _func: _t.Callable[_t.Concatenate[_T, _U, _V, _P], _W],
+#     _x: _T,
+#     _y: _U,
+#     _z: _V,
+#     *args: _t.Any,
+# ) -> _W: ...
 @_t.overload
 def _coconut_call_or_coefficient(
     _func: _t.Callable[..., _T],
@@ -534,9 +573,10 @@ def _coconut_call_or_coefficient(
 ) -> _T: ...
 
 
-def recursive_iterator(func: _T_iter_func) -> _T_iter_func:
+def recursive_generator(func: _T_iter_func) -> _T_iter_func:
     """Decorator that memoizes a recursive function that returns an iterator (e.g. a recursive generator)."""
     return func
+recursive_iterator = recursive_generator
 
 
 # if sys.version_info >= (3, 12):
@@ -590,7 +630,7 @@ def addpattern(
     *add_funcs: _Callable,
     allow_any_func: bool=False,
 ) -> _t.Callable[..., _t.Any]:
-    """Decorator to add a new case to a pattern-matching function (where the new case is checked last).
+    """Decorator to add new cases to a pattern-matching function (where the new case is checked last).
 
     Pass allow_any_func=True to allow any object as the base_func rather than just pattern-matching functions.
     If add_funcs are passed, addpattern(base_func, add_func) is equivalent to addpattern(base_func)(add_func).
@@ -605,7 +645,8 @@ def _coconut_mark_as_match(func: _Tfunc) -> _Tfunc:
     return func
 
 
-class _coconut_partial(_t.Generic[_T]):
+class _coconut_complex_partial(_t.Generic[_T]):
+    func: _t.Callable[..., _T] = ...
     args: _Tuple = ...
     required_nargs: int = ...
     keywords: _t.Dict[_t.Text, _t.Any] = ...
@@ -619,6 +660,7 @@ class _coconut_partial(_t.Generic[_T]):
         **kwargs: _t.Any,
         ) -> None: ...
     def __call__(self, *args: _t.Any, **kwargs: _t.Any) -> _T: ...
+    __name__: str | None = ...
 
 
 @_t.overload
@@ -640,10 +682,16 @@ def _coconut_iter_getitem(
     ...
 
 
+def _coconut_attritemgetter(
+    attr: _t.Optional[_t.Text],
+    *is_iter_and_items: _t.Tuple[_t.Tuple[bool, _t.Any], ...],
+) -> _t.Callable[[_t.Any], _t.Any]: ...
+
+
 def _coconut_base_compose(
     func: _t.Callable[[_T], _t.Any],
     *func_infos: _t.Tuple[_Callable, int, bool],
-    ) -> _t.Callable[[_T], _t.Any]: ...
+) -> _t.Callable[[_T], _t.Any]: ...
 
 
 def and_then(
@@ -1185,6 +1233,22 @@ def reiterable(iterable: _t.Iterable[_T]) -> _t.Iterable[_T]:
 _coconut_reiterable = reiterable
 
 
+@_t.overload
+def async_map(
+    async_func: _t.Callable[[_T], _t.Awaitable[_U]],
+    iter: _t.Iterable[_T],
+    strict: bool = False,
+) -> _t.Awaitable[_t.List[_U]]: ...
+@_t.overload
+def async_map(
+    async_func: _t.Callable[..., _t.Awaitable[_U]],
+    *iters: _t.Iterable,
+    strict: bool = False,
+) -> _t.Awaitable[_t.List[_U]]:
+    """Map async_func over iters asynchronously using anyio."""
+    ...
+
+
 def multi_enumerate(iterable: _Iterable) -> _t.Iterable[_t.Tuple[_t.Tuple[int, ...], _t.Any]]:
     """Enumerate an iterable of iterables. Works like enumerate, but indexes
     through inner iterables and produces a tuple index representing the index
@@ -1268,6 +1332,7 @@ class groupsof(_t.Generic[_T]):
         cls,
         n: _SupportsIndex,
         iterable: _t.Iterable[_T],
+        fillvalue: _T = ...,
     ) -> groupsof[_T]: ...
     def __iter__(self) -> _t.Iterator[_t.Tuple[_T, ...]]: ...
     def __hash__(self) -> int: ...
@@ -1287,8 +1352,8 @@ class windowsof(_t.Generic[_T]):
         cls,
         size: _SupportsIndex,
         iterable: _t.Iterable[_T],
-        fillvalue: _T=...,
-        step: _SupportsIndex=1,
+        fillvalue: _T = ...,
+        step: _SupportsIndex = 1,
     ) -> windowsof[_T]: ...
     def __iter__(self) -> _t.Iterator[_t.Tuple[_T, ...]]: ...
     def __hash__(self) -> int: ...
@@ -1304,7 +1369,7 @@ class flatten(_t.Iterable[_T]):
     def __new__(
         cls,
         iterable: _t.Iterable[_t.Iterable[_T]],
-        levels: _t.Optional[_SupportsIndex]=1,
+        levels: _t.Optional[_SupportsIndex] = 1,
     ) -> flatten[_T]: ...
 
     def __iter__(self) -> _t.Iterator[_T]: ...
@@ -1343,6 +1408,17 @@ def consume(
     ) -> _t.Sequence[_T]:
     """consume(iterable, keep_last) fully exhausts iterable and returns the last keep_last elements."""
     ...
+
+
+class multiset(_t.Generic[_T], _coconut.collections.Counter[_T]):
+    def add(self, item: _T) -> None: ...
+    def discard(self, item: _T) -> None: ...
+    def remove(self, item: _T) -> None: ...
+    def isdisjoint(self, other: _coconut.collections.Counter[_T]) -> bool: ...
+    def __xor__(self, other: _coconut.collections.Counter[_T]) -> multiset[_T]: ...
+    def count(self, item: _T) -> int: ...
+    def __fmap__(self, func: _t.Callable[[_T], _U]) -> multiset[_U]: ...
+_coconut_multiset = multiset
 
 
 class _FMappable(_t.Protocol[_Tfunc_contra, _Tco]):
@@ -1560,12 +1636,12 @@ def lift(func: _t.Callable[[_T, _U], _W]) -> _coconut_lifted_2[_T, _U, _W]: ...
 def lift(func: _t.Callable[[_T, _U, _V], _W]) -> _coconut_lifted_3[_T, _U, _V, _W]: ...
 @_t.overload
 def lift(func: _t.Callable[..., _W]) -> _t.Callable[..., _t.Callable[..., _W]]:
-    """Lifts a function up so that all of its arguments are functions.
+    """Lift a function up so that all of its arguments are functions.
 
     For a binary function f(x, y) and two unary functions g(z) and h(z), lift works as the S' combinator:
         lift(f)(g, h)(z) == f(g(z), h(z))
 
-    In general, lift is requivalent to:
+    In general, lift is equivalent to:
         def lift(f) = ((*func_args, **func_kwargs) -> (*args, **kwargs) ->
             f(*(g(*args, **kwargs) for g in func_args), **{lbrace}k: h(*args, **kwargs) for k, h in func_kwargs.items(){rbrace}))
 
@@ -1587,21 +1663,118 @@ def all_equal(iterable: _Iterable) -> bool:
 def collectby(
     key_func: _t.Callable[[_T], _U],
     iterable: _t.Iterable[_T],
+    *,
+    map_using: _t.Callable | None = None,
 ) -> _t.DefaultDict[_U, _t.List[_T]]: ...
 @_t.overload
 def collectby(
     key_func: _t.Callable[[_T], _U],
     iterable: _t.Iterable[_T],
+    *,
     reduce_func: _t.Callable[[_T, _T], _V],
-) -> _t.DefaultDict[_U, _V]:
+    reduce_func_init: _T = ...,
+    map_using: _t.Callable | None = None,
+) -> _t.Dict[_U, _V]: ...
+@_t.overload
+def collectby(
+    key_func: _t.Callable[[_T], _U],
+    iterable: _t.Iterable[_T],
+    value_func: _t.Callable[[_T], _W],
+    *,
+    map_using: _t.Callable | None = None,
+) -> _t.DefaultDict[_U, _t.List[_W]]: ...
+@_t.overload
+def collectby(
+    key_func: _t.Callable[[_T], _U],
+    iterable: _t.Iterable[_T],
+    value_func: _t.Callable[[_T], _W],
+    *,
+    reduce_func: _t.Callable[[_W, _W], _V],
+    reduce_func_init: _W = ...,
+    map_using: _t.Callable | None = None,
+) -> _t.Dict[_U, _V]: ...
+@_t.overload
+def collectby(
+    key_func: _t.Callable[[_T], _U],
+    iterable: _t.Iterable[_T],
+    *,
+    reduce_func: _t.Callable[[_T, _T], _V],
+    reduce_func_init: _T = ...,
+    map_using: _t.Callable | None = None,
+) -> _t.Dict[_U, _V]: ...
+@_t.overload
+def collectby(
+    key_func: _t.Callable[[_U], _t.Any],
+    iterable: _t.Iterable[_U],
+    value_func: _t.Callable[[_U], _t.Any] | None = None,
+    *,
+    collect_in: _T,
+    reduce_func: _t.Callable | None | _t.Literal[False] = None,
+    reduce_func_init: _t.Any = ...,
+    map_using: _t.Callable | None = None,
+) -> _T:
     """Collect the items in iterable into a dictionary of lists keyed by key_func(item).
 
-    if value_func is passed, collect value_func(item) into each list instead of item.
+    If value_func is passed, collect value_func(item) into each list instead of item.
 
     If reduce_func is passed, instead of collecting the items into lists, reduce over
-    the items of each key with reduce_func, effectively implementing a MapReduce operation.
+    the items for each key with reduce_func, effectively implementing a MapReduce operation.
+
+    If map_using is passed, calculate key_func and value_func by mapping them over
+    the iterable using map_using as map. Useful with process_map/thread_map.
     """
     ...
+
+collectby.using_processes = collectby.using_threads = collectby  # type: ignore
+
+
+@_t.overload
+def mapreduce(
+    key_value_func: _t.Callable[[_T], _t.Tuple[_U, _W]],
+    iterable: _t.Iterable[_T],
+    *,
+    map_using: _t.Callable | None = None,
+) -> _t.DefaultDict[_U, _t.List[_W]]: ...
+@_t.overload
+def mapreduce(
+    key_value_func: _t.Callable[[_T], _t.Tuple[_U, _W]],
+    iterable: _t.Iterable[_T],
+    *,
+    reduce_func: _t.Callable[[_W, _W], _V],
+    reduce_func_init: _W = ...,
+    map_using: _t.Callable | None = None,
+) -> _t.Dict[_U, _V]: ...
+@_t.overload
+def mapreduce(
+    key_value_func: _t.Callable[[_T], _t.Tuple[_U, _W]],
+    iterable: _t.Iterable[_T],
+    *,
+    reduce_func: _t.Callable[[_X, _W], _V],
+    reduce_func_init: _X = ...,
+    map_using: _t.Callable | None = None,
+) -> _t.Dict[_U, _V]: ...
+@_t.overload
+def mapreduce(
+    key_value_func: _t.Callable[[_U], _t.Tuple[_t.Any, _t.Any]],
+    iterable: _t.Iterable[_U],
+    *,
+    collect_in: _T,
+    reduce_func: _t.Callable | None | _t.Literal[False] = None,
+    reduce_func_init: _t.Any = ...,
+    map_using: _t.Callable | None = None,
+) -> _T:
+    """Map key_value_func over iterable, then collect the values into a dictionary of lists keyed by the keys.
+
+    If reduce_func is passed, instead of collecting the values into lists, reduce over
+    the values for each key with reduce_func, effectively implementing a MapReduce operation.
+
+    If map_using is passed, calculate key_value_func by mapping them over
+    the iterable using map_using as map. Useful with process_map/thread_map.
+    """
+    ...
+
+mapreduce.using_processes = mapreduce.using_threads = mapreduce  # type: ignore
+_coconut_mapreduce = mapreduce
 
 
 @_t.overload
