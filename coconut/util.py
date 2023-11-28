@@ -374,7 +374,7 @@ def get_kernel_data_files(argv):
     elif any(arg.startswith("install") for arg in argv):
         executable = sys.executable
     else:
-        return []
+        executable = "python"
     install_custom_kernel(executable)
     return [
         (
