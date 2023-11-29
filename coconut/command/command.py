@@ -1156,7 +1156,7 @@ class Command(object):
                         writedir,
                         show_unchanged=False,
                         handling_exceptions_kwargs=dict(on_keyboard_interrupt=interrupt),
-                        **kwargs,
+                        **kwargs  # no comma for py2
                     )
                     self.run_mypy(filepaths)
 
