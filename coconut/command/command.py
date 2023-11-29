@@ -253,15 +253,27 @@ class Command(object):
                 logger.log("Directly passed args:", original_args)
             logger.log("Parsed args:", args)
 
-            # validate general command args
+            # validate args and show warnings
             if args.stack_size and args.stack_size % 4 != 0:
                 logger.warn("--stack-size should generally be a multiple of 4, not {stack_size} (to support 4 KB pages)".format(stack_size=args.stack_size))
             if args.mypy is not None and args.no_line_numbers:
                 logger.warn("using --mypy running with --no-line-numbers is not recommended; mypy error messages won't include Coconut line numbers")
+            if args.interact and args.run:
+                logger.warn("extraneous --run argument passed; --interact implies --run")
+            if args.package and self.mypy:
+                logger.warn("extraneous --package argument passed; --mypy implies --package")
+
+            # validate args and raise errors
             if args.line_numbers and args.no_line_numbers:
                 raise CoconutException("cannot compile with both --line-numbers and --no-line-numbers")
             if args.site_install and args.site_uninstall:
                 raise CoconutException("cannot --site-install and --site-uninstall simultaneously")
+            if args.standalone and args.package:
+                raise CoconutException("cannot compile as both --package and --standalone")
+            if args.standalone and self.mypy:
+                raise CoconutException("cannot compile as both --package (implied by --mypy) and --standalone")
+            if args.no_write and self.mypy:
+                raise CoconutException("cannot compile with --no-write when using --mypy")
             for and_args in getattr(args, "and") or []:
                 if len(and_args) > 2:
                     raise CoconutException(
@@ -270,6 +282,9 @@ class Command(object):
                             args=and_args,
                         ),
                     )
+
+            # modify args
+            args.run = args.run or args.interact
 
             # process general command args
             self.set_jobs(args.jobs, args.profile)
@@ -338,44 +353,45 @@ class Command(object):
             # do compilation, keeping track of compiled filepaths
             filepaths = []
             if args.source is not None:
-                # warnings if source is given
-                if args.interact and args.run:
-                    logger.warn("extraneous --run argument passed; --interact implies --run")
-                if args.package and self.mypy:
-                    logger.warn("extraneous --package argument passed; --mypy implies --package")
-
-                # errors if source is given
-                if args.standalone and args.package:
-                    raise CoconutException("cannot compile as both --package and --standalone")
-                if args.standalone and self.mypy:
-                    raise CoconutException("cannot compile as both --package (implied by --mypy) and --standalone")
-                if args.no_write and self.mypy:
-                    raise CoconutException("cannot compile with --no-write when using --mypy")
-
                 # process all source, dest pairs
-                src_dest_package_triples = []
+                all_compile_path_kwargs = []
+                extra_compile_path_kwargs = []
                 for and_args in [(args.source, args.dest)] + (getattr(args, "and") or []):
                     if len(and_args) == 1:
                         src, = and_args
                         dest = None
                     else:
                         src, dest = and_args
-                    src_dest_package_triples.append(self.process_source_dest(src, dest, args))
+                    all_new_main_kwargs, all_new_extra_kwargs = self.process_source_dest(src, dest, args)
+                    all_compile_path_kwargs += all_new_main_kwargs
+                    extra_compile_path_kwargs += all_new_extra_kwargs
 
                 # disable jobs if we know we're only compiling one file
-                if len(src_dest_package_triples) <= 1 and not any(os.path.isdir(source) for source, dest, package in src_dest_package_triples):
+                if len(all_compile_path_kwargs) <= 1 and not any(os.path.isdir(kwargs["source"]) for kwargs in all_compile_path_kwargs):
                     self.disable_jobs()
 
-                # do compilation
-                with self.running_jobs(exit_on_error=not (
+                # do main compilation
+                exit_on_error = extra_compile_path_kwargs or not (
                     args.watch
                     or args.profile
-                )):
-                    for source, dest, package in src_dest_package_triples:
-                        filepaths += self.compile_path(source, dest, package, run=args.run or args.interact, force=args.force)
+                )
+                with self.running_jobs(exit_on_error=exit_on_error):
+                    for kwargs in all_compile_path_kwargs:
+                        filepaths += self.compile_path(**kwargs)
+
+                # run mypy on compiled files
                 self.run_mypy(filepaths)
 
+                # do extra compilation if there is any
+                if extra_compile_path_kwargs:
+                    with self.running_jobs(exit_on_error=exit_on_error):
+                        for kwargs in extra_compile_path_kwargs:
+                            extra_filepaths = self.compile_path(**kwargs)
+                            internal_assert(lambda: set(extra_filepaths) <= set(filepaths), "new file paths from extra compilation", (extra_filepaths, filepaths))
+
             # validate args if no source is given
+            elif getattr(args, "and"):
+                raise CoconutException("--and should only be used for extra source/dest pairs, not the first source/dest pair")
             elif (
                 args.run
                 or args.no_write
@@ -386,8 +402,6 @@ class Command(object):
                 or args.jobs
             ):
                 raise CoconutException("a source file/folder must be specified when options that depend on the source are enabled")
-            elif getattr(args, "and"):
-                raise CoconutException("--and should only be used for extra source/dest pairs, not the first source/dest pair")
 
             # handle extra cli tasks
             if args.code is not None:
@@ -417,8 +431,8 @@ class Command(object):
             ):
                 self.start_prompt()
             if args.watch:
-                # src_dest_package_triples is always available here
-                self.watch(src_dest_package_triples, args.run, args.force)
+                # all_compile_path_kwargs is always available here
+                self.watch(all_compile_path_kwargs)
             if args.profile:
                 print_profiling_results()
 
@@ -426,16 +440,11 @@ class Command(object):
             return filepaths
 
     def process_source_dest(self, source, dest, args):
-        """Determine the correct source, dest, package mode to use for the given source, dest, and args."""
+        """Get all the compile_path kwargs to use for the given source, dest, and args."""
         # determine source
         processed_source = fixpath(source)
 
         # validate args
-        if (args.run or args.interact) and os.path.isdir(processed_source):
-            if args.run:
-                raise CoconutException("source path %r must point to file not directory when --run is enabled" % (source,))
-            if args.interact:
-                raise CoconutException("source path %r must point to file not directory when --run (implied by --interact) is enabled" % (source,))
         if args.watch and os.path.isfile(processed_source):
             raise CoconutException("source path %r must point to directory not file when --watch is enabled" % (source,))
 
@@ -464,67 +473,51 @@ class Command(object):
             else:
                 raise CoconutException("could not find source path", source)
 
-        return processed_source, processed_dest, package
+        # handle running directories
+        run = args.run
+        extra_compilation_tasks = []
+        if run and os.path.isdir(processed_source):
+            main_source = os.path.join(processed_source, "__main__" + code_exts[0])
+            if not os.path.isfile(main_source):
+                raise CoconutException("source directory {source} must contain a __main__{ext} when --run{implied} is enabled".format(
+                    source=source,
+                    ext=code_exts[0],
+                    implied=" (implied by --interact)" if args.interact else "",
+                ))
+            # first compile the directory without --run
+            run = False
+            # then compile just __main__ with --run
+            extra_compilation_tasks.append(dict(
+                source=main_source,
+                dest=processed_dest,
+                package=package,
+                run=True,
+                force=args.force,
+            ))
 
-    def register_exit_code(self, code=1, errmsg=None, err=None):
-        """Update the exit code and errmsg."""
-        if err is not None:
-            internal_assert(errmsg is None, "register_exit_code accepts only one of errmsg or err")
-            if logger.verbose:
-                errmsg = format_error(err)
-            else:
-                errmsg = err.__class__.__name__
-        if errmsg is not None:
-            if self.errmsg is None:
-                self.errmsg = errmsg
-            elif errmsg not in self.errmsg:
-                if logger.verbose:
-                    self.errmsg += "\nAnd error: " + errmsg
-                else:
-                    self.errmsg += "; " + errmsg
-        if code is not None:
-            self.exit_code = code or self.exit_code
+        # compile_path kwargs
+        main_compilation_tasks = [
+            dict(
+                source=processed_source,
+                dest=processed_dest,
+                package=package,
+                run=run,
+                force=args.force,
+            ),
+        ]
+        return main_compilation_tasks, extra_compilation_tasks
 
-    @contextmanager
-    def handling_exceptions(self, exit_on_error=None, on_keyboard_interrupt=None):
-        """Perform proper exception handling."""
-        if exit_on_error is None:
-            exit_on_error = self.fail_fast
-        try:
-            if self.using_jobs:
-                with handling_broken_process_pool():
-                    yield
-            else:
-                yield
-        except SystemExit as err:
-            self.register_exit_code(err.code)
-        # make sure we don't catch GeneratorExit below
-        except GeneratorExit:
-            raise
-        except BaseException as err:
-            if isinstance(err, CoconutException):
-                logger.print_exc()
-            elif isinstance(err, KeyboardInterrupt):
-                if on_keyboard_interrupt is not None:
-                    on_keyboard_interrupt()
-            else:
-                logger.print_exc()
-                logger.printerr(report_this_text)
-            self.register_exit_code(err=err)
-        if exit_on_error:
-            self.exit_on_error()
-
-    def compile_path(self, path, write=True, package=True, handling_exceptions_kwargs={}, **kwargs):
+    def compile_path(self, source, dest=True, package=True, handling_exceptions_kwargs={}, **kwargs):
         """Compile a path and return paths to compiled files."""
-        if not isinstance(write, bool):
-            write = fixpath(write)
-        if os.path.isfile(path):
-            destpath = self.compile_file(path, write, package, **kwargs)
+        if not isinstance(dest, bool):
+            dest = fixpath(dest)
+        if os.path.isfile(source):
+            destpath = self.compile_file(source, dest, package, **kwargs)
             return [destpath] if destpath is not None else []
-        elif os.path.isdir(path):
-            return self.compile_folder(path, write, package, handling_exceptions_kwargs=handling_exceptions_kwargs, **kwargs)
+        elif os.path.isdir(source):
+            return self.compile_folder(source, dest, package, handling_exceptions_kwargs=handling_exceptions_kwargs, **kwargs)
         else:
-            raise CoconutException("could not find source path", path)
+            raise CoconutException("could not find source path", source)
 
     def compile_folder(self, directory, write=True, package=True, handling_exceptions_kwargs={}, **kwargs):
         """Compile a directory and return paths to compiled files."""
@@ -692,6 +685,54 @@ class Command(object):
                             result = completed_future.result()
                             callback(result)
                 future.add_done_callback(callback_wrapper)
+
+    def register_exit_code(self, code=1, errmsg=None, err=None):
+        """Update the exit code and errmsg."""
+        if err is not None:
+            internal_assert(errmsg is None, "register_exit_code accepts only one of errmsg or err")
+            if logger.verbose:
+                errmsg = format_error(err)
+            else:
+                errmsg = err.__class__.__name__
+        if errmsg is not None:
+            if self.errmsg is None:
+                self.errmsg = errmsg
+            elif errmsg not in self.errmsg:
+                if logger.verbose:
+                    self.errmsg += "\nAnd error: " + errmsg
+                else:
+                    self.errmsg += "; " + errmsg
+        if code is not None:
+            self.exit_code = code or self.exit_code
+
+    @contextmanager
+    def handling_exceptions(self, exit_on_error=None, on_keyboard_interrupt=None):
+        """Perform proper exception handling."""
+        if exit_on_error is None:
+            exit_on_error = self.fail_fast
+        try:
+            if self.using_jobs:
+                with handling_broken_process_pool():
+                    yield
+            else:
+                yield
+        except SystemExit as err:
+            self.register_exit_code(err.code)
+        # make sure we don't catch GeneratorExit below
+        except GeneratorExit:
+            raise
+        except BaseException as err:
+            if isinstance(err, CoconutException):
+                logger.print_exc()
+            elif isinstance(err, KeyboardInterrupt):
+                if on_keyboard_interrupt is not None:
+                    on_keyboard_interrupt()
+            else:
+                logger.print_exc()
+                logger.printerr(report_this_text)
+            self.register_exit_code(err=err)
+        if exit_on_error:
+            self.exit_on_error()
 
     def set_jobs(self, jobs, profile=False):
         """Set --jobs."""
@@ -1085,21 +1126,23 @@ class Command(object):
         if run_args is not None:
             self.register_exit_code(run_cmd(run_args, raise_errs=False), errmsg="Jupyter error")
 
-    def watch(self, src_dest_package_triples, run=False, force=False):
+    def watch(self, all_compile_path_kwargs):
         """Watch a source and recompile on change."""
         from coconut.command.watch import Observer, RecompilationWatcher
 
-        for src, _, _ in src_dest_package_triples:
+        for kwargs in all_compile_path_kwargs:
             logger.show()
-            logger.show_tabulated("Watching", showpath(src), "(press Ctrl-C to end)...")
+            logger.show_tabulated("Watching", showpath(kwargs["source"]), "(press Ctrl-C to end)...")
 
         interrupted = [False]  # in list to allow modification
 
         def interrupt():
             interrupted[0] = True
 
-        def recompile(path, src, dest, package):
+        def recompile(path, **kwargs):
             path = fixpath(path)
+            src = kwargs.pop("source")
+            dest = kwargs.pop("dest")
             if os.path.isfile(path) and os.path.splitext(path)[1] in code_exts:
                 with self.handling_exceptions(on_keyboard_interrupt=interrupt):
                     if dest is True or dest is None:
@@ -1111,19 +1154,17 @@ class Command(object):
                     filepaths = self.compile_path(
                         path,
                         writedir,
-                        package,
-                        run=run,
-                        force=force,
                         show_unchanged=False,
                         handling_exceptions_kwargs=dict(on_keyboard_interrupt=interrupt),
+                        **kwargs,
                     )
                     self.run_mypy(filepaths)
 
         observer = Observer()
         watchers = []
-        for src, dest, package in src_dest_package_triples:
-            watcher = RecompilationWatcher(recompile, src, dest, package)
-            observer.schedule(watcher, src, recursive=True)
+        for kwargs in all_compile_path_kwargs:
+            watcher = RecompilationWatcher(recompile, **kwargs)
+            observer.schedule(watcher, kwargs["source"], recursive=True)
             watchers.append(watcher)
 
         with self.running_jobs():

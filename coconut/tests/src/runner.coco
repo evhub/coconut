@@ -5,18 +5,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 import pytest
 pytest.register_assert_rewrite(py_str("cocotest"))
 
-import cocotest
-from cocotest.main import run_main
-
-
-def main() -> bool:
-    print(".", end="", flush=True)  # .
-    assert cocotest.__doc__
-    assert run_main(
-        outer_MatchError=MatchError,
-        test_easter_eggs="--test-easter-eggs" in sys.argv,
-    ) is True
-    return True
+from cocotest.__main__ import main
 
 
 if __name__ == "__main__":

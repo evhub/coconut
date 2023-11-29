@@ -666,8 +666,19 @@ def run_extras(**kwargs):
     call_python([os.path.join(dest, "extras.py")], assert_output=True, check_errors=False, stderr_first=True, **kwargs)
 
 
-def run(args=[], agnostic_target=None, use_run_arg=False, convert_to_import=False, always_sys=False, manage_cache=True, **kwargs):
+def run(
+    args=[],
+    agnostic_target=None,
+    use_run_arg=False,
+    run_directory=False,
+    convert_to_import=False,
+    always_sys=False,
+    manage_cache=True,
+    **kwargs  # no comma for compat
+):
     """Compiles and runs tests."""
+    assert use_run_arg + run_directory < 2
+
     if agnostic_target is None:
         agnostic_args = args
     else:
@@ -692,12 +703,22 @@ def run(args=[], agnostic_target=None, use_run_arg=False, convert_to_import=Fals
                     if sys.version_info >= (3, 11):
                         comp_311(args, **spec_kwargs)
 
-                comp_agnostic(agnostic_args, **kwargs)
+                if not run_directory:
+                    comp_agnostic(agnostic_args, **kwargs)
                 comp_sys(args, **kwargs)
                 # do non-strict at the end so we get the non-strict header
                 comp_non_strict(args, **kwargs)
 
-                if use_run_arg:
+                if run_directory:
+                    _kwargs = kwargs.copy()
+                    _kwargs["assert_output"] = True
+                    _kwargs["stderr_first"] = True
+                    comp_agnostic(
+                        # remove --strict so that we run with the non-strict header
+                        ["--run"] + [arg for arg in agnostic_args if arg != "--strict"],
+                        **_kwargs
+                    )
+                elif use_run_arg:
                     _kwargs = kwargs.copy()
                     _kwargs["assert_output"] = True
                     comp_runner(["--run"] + agnostic_args, **_kwargs)
@@ -1027,6 +1048,9 @@ class TestCompilation(unittest.TestCase):
 
         def test_run_arg(self):
             run(use_run_arg=True)
+
+        def test_run_dir(self):
+            run(run_directory=True)
 
         if not PYPY and not PY26:
             def test_jobs_zero(self):

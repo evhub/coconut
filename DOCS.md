@@ -225,14 +225,14 @@ as an alias for
 ```
 coconut --quiet --target sys --keep-lines --run <source> --argv <args>
 ```
-which will quietly compile and run `<source>`, passing any additional arguments to the script, mimicking how the `python` command works.
+which will quietly compile and run `<source>`, passing any additional arguments to the script, mimicking how the `python` command works. To instead pass additional compilation arguments to Coconut itself (e.g. `--no-tco`), put them before the `<source>` file.
+
+`coconut-run` can be used to compile and run directories rather than files, again mimicking how the `python` command works. Specifically, Coconut will compile the directory and then run the `__main__.coco` in that directory, which must exist.
 
 `coconut-run` can be used in a Unix shebang line to create a Coconut script by adding the following line to the start of your script:
 ```bash
 #!/usr/bin/env coconut-run
 ```
-
-To pass additional compilation arguments to `coconut-run` (e.g. `--no-tco`), put them before the `<source>` file.
 
 `coconut-run` will always enable [automatic compilation](#automatic-compilation), such that Coconut source files can be directly imported from any Coconut files run via `coconut-run`. Additionally, compilation parameters (e.g. `--no-tco`) used in `coconut-run` will be passed along and used for any auto compilation.
 
@@ -240,7 +240,7 @@ On Python 3.4+, `coconut-run` will use a `__coconut_cache__` directory to cache 
 
 #### Naming Source Files
 
-Coconut source files should, so the compiler can recognize them, use the extension `.coco` (preferred), `.coc`, or `.coconut`.
+Coconut source files should, so the compiler can recognize them, use the extension `.coco`.
 
 When Coconut compiles a `.coco` file, it will compile to another file with the same name, except with `.py` instead of `.coco`, which will hold the compiled code.
 
@@ -248,7 +248,7 @@ If an extension other than `.py` is desired for the compiled files, then that ex
 
 #### Compilation Modes
 
-Files compiled by the `coconut` command-line utility will vary based on compilation parameters. If an entire directory of files is compiled (which the compiler will search recursively for any folders containing `.coco`, `.coc`, or `.coconut` files), a `__coconut__.py` file will be created to house necessary functions (package mode), whereas if only a single file is compiled, that information will be stored within a header inside the file (standalone mode). Standalone mode is better for single files because it gets rid of the overhead involved in importing `__coconut__.py`, but package mode is better for large packages because it gets rid of the need to run the same Coconut header code again in every file, since it can just be imported from `__coconut__.py`.
+Files compiled by the `coconut` command-line utility will vary based on compilation parameters. If an entire directory of files is compiled (which the compiler will search recursively for any folders containing `.coco` files), a `__coconut__.py` file will be created to house necessary functions (package mode), whereas if only a single file is compiled, that information will be stored within a header inside the file (standalone mode). Standalone mode is better for single files because it gets rid of the overhead involved in importing `__coconut__.py`, but package mode is better for large packages because it gets rid of the need to run the same Coconut header code again in every file, since it can just be imported from `__coconut__.py`.
 
 By default, if the `source` argument to the command-line utility is a file, it will perform standalone compilation on it, whereas if it is a directory, it will recursively search for all `.coco` files and perform package compilation on them. Thus, in most cases, the mode chosen by Coconut automatically will be the right one. But if it is very important that no additional files like `__coconut__.py` be created, for example, then the command-line utility can also be forced to use a specific mode with the `--package` (`-p`) and `--standalone` (`-a`) flags.
 
