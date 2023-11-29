@@ -90,7 +90,7 @@ def run_main(outer_MatchError, test_easter_eggs=False) -> bool:
     if using_tco:
         assert hasattr(tco_func, "_coconut_tco_func")
         assert tco_test() is True
-    if outer_MatchError.__module__ != "__main__":
+    if not outer_MatchError.__module__.endswith("__main__"):
         assert package_test(outer_MatchError) is True
 
     print_dot()  # .......
