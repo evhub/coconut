@@ -109,7 +109,6 @@ from coconut.compiler.util import (
     labeled_group,
     any_keyword_in,
     any_char,
-    tuple_str_of,
     any_len_perm,
     any_len_perm_at_least_one,
     boundary,
@@ -576,20 +575,27 @@ def array_literal_handle(loc, tokens):
     array_elems = []
     for p in pieces:
         if p:
-            if len(p) > 1:
+            if p[0].lstrip(";") == "":
+                raise CoconutDeferredSyntaxError("invalid initial multidimensional array separator or broken-up multidimensional array concatenation operator function", loc)
+            elif len(p) > 1:
                 internal_assert(sep_level > 1, "failed to handle array literal tokens", tokens)
                 subarr_item = array_literal_handle(loc, p)
-            elif p[0].lstrip(";") == "":
-                raise CoconutDeferredSyntaxError("naked multidimensional array separators are not allowed", loc)
             else:
                 subarr_item = p[0]
             array_elems.append(subarr_item)
 
+    # if multidimensional array literal is only separators, compile to implicit partial
     if not array_elems:
-        raise CoconutDeferredSyntaxError("multidimensional array literal cannot be only separators", loc)
+        if len(pieces) > 2:
+            raise CoconutDeferredSyntaxError("invalid empty multidimensional array literal or broken-up multidimensional array concatenation operator function", loc)
+        return "_coconut_partial(_coconut_arr_concat_op, " + str(sep_level) + ")"
+
+    # check for initial top-level separators
+    if not pieces[0]:
+        raise CoconutDeferredSyntaxError("invalid initial multidimensional array separator", loc)
 
     # build multidimensional array
-    return "_coconut_multi_dim_arr(" + tuple_str_of(array_elems) + ", " + str(sep_level) + ")"
+    return "_coconut_arr_concat_op(" + str(sep_level) + ", " + ", ".join(array_elems) + ")"
 
 
 def typedef_op_item_handle(loc, tokens):

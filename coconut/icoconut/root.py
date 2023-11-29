@@ -34,7 +34,7 @@ from coconut.exceptions import (
 )
 from coconut.constants import (
     PY311,
-    py_syntax_version,
+    codemirror_mode,
     mimetype,
     version_banner,
     tutorial_url,
@@ -307,10 +307,7 @@ def user_expressions(self, expressions):
             "name": "coconut",
             "version": VERSION,
             "mimetype": mimetype,
-            "codemirror_mode": {
-                "name": "ipython",
-                "version": py_syntax_version,
-            },
+            "codemirror_mode": codemirror_mode,
             "pygments_lexer": "coconut",
             "file_extension": code_exts[0],
         }

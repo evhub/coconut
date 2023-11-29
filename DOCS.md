@@ -480,7 +480,7 @@ To allow for better use of [`numpy`](https://numpy.org/) objects in Coconut, all
 - Coconut's [multidimensional array literal and array concatenation syntax](#multidimensional-array-literalconcatenation-syntax) supports `numpy` objects, including using fast `numpy` concatenation methods if given `numpy` arrays rather than Coconut's default much slower implementation built for Python lists of lists.
 - Many of Coconut's built-ins include special `numpy` support, specifically:
   * [`fmap`](#fmap) will use [`numpy.vectorize`](https://numpy.org/doc/stable/reference/generated/numpy.vectorize.html) to map over `numpy` arrays.
-  * [`multi_enumerate`](#multi_enumerate) allows for easily looping over all the multi-dimensional indices in a `numpy` array.
+  * [`multi_enumerate`](#multi_enumerate) allows for easily looping over all the multidimensional indices in a `numpy` array.
   * [`cartesian_product`](#cartesian_product) can compute the Cartesian product of given `numpy` arrays as a `numpy` array.
   * [`all_equal`](#all_equal) allows for easily checking if all the elements in a `numpy` array are the same.
 - [`numpy.ndarray`](https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html) is registered as a [`collections.abc.Sequence`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence), enabling it to be used in [sequence patterns](#semantics-specification).
@@ -1822,6 +1822,10 @@ A very common thing to do in functional programming is to make use of function v
 (not in)    => # negative containment
 (assert)    => def (cond, msg=None) => assert cond, msg  # (but a better msg if msg is None)
 (raise)     => def (exc=None, from_exc=None) => raise exc from from_exc  # or just raise if exc is None
+# operator functions for multidimensional array concatenation use brackets:
+[;]         => def (x, y) => [x; y]
+[;;]        => def (x, y) => [x;; y]
+...  # and so on for any number of semicolons
 # there are two operator functions that don't require parentheses:
 .[]         => (operator.getitem)
 .$[]        => # iterator slicing operator
@@ -2066,6 +2070,8 @@ If multiple different concatenation operators are used, the operators with the l
 
 [[[1, 2], [3, 4]], [[5, 6], [7, 8]]]
 ```
+
+_Note: the [operator functions](#operator-functions) for multidimensional array concatenation are spelled `[;]`, `[;;]`, etc. (for any number of parentheses)._
 
 ##### Comparison to Julia
 

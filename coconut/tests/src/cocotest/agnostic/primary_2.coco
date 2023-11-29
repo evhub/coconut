@@ -303,8 +303,8 @@ def primary_test_2() -> bool:
     a_dict = {"a": 1, "b": 2}
     a_dict |= {"a": 10, "c": 20}
     assert a_dict == {"a": 10, "b": 2, "c": 20} == {"a": 1, "b": 2} | {"a": 10, "c": 20}
-    assert ["abc" ; "def"] == ['abc', 'def']
-    assert ["abc" ;; "def"] == [['abc'], ['def']]
+    assert ["abc" ; "def"] == ['abc', 'def'] == [;] <*| ("abc", "def")
+    assert ["abc" ;; "def"] == [['abc'], ['def']] == [;;] <*| ("abc", "def")
     assert {"a":0, "b":1}$[0] == "a"
     assert (|0, NotImplemented, 2|)$[1] is NotImplemented
     assert m{1, 1, 2} |> fmap$(.+1) == m{2, 2, 3}
@@ -410,6 +410,7 @@ def primary_test_2() -> bool:
     assert 0x == 0 == 0 x
     assert 0xff == 255 == 0x100-1
     assert 11259375 == 0xabcdef
+    assert [[] ;; [] ;;;] == [[[], []]]
 
     with process_map.multiple_sequential_calls():  # type: ignore
         assert map((+), range(3), range(4)$[:-1], strict=True) |> list == [0, 2, 4] == process_map((+), range(3), range(4)$[:-1], strict=True) |> list  # type: ignore

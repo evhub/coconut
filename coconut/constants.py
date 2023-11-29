@@ -1269,8 +1269,11 @@ icoconut_old_kernel_names = (
     "coconut3",
 )
 
-py_syntax_version = 3
 mimetype = "text/x-python3"
+codemirror_mode = {
+    "name": "ipython",
+    "version": 3,
+}
 
 all_keywords = keyword_vars + const_vars + reserved_vars
 

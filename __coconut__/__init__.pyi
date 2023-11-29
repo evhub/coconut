@@ -1828,45 +1828,44 @@ def _coconut_mk_anon_namedtuple(
 
 
 # @_t.overload
-# def _coconut_multi_dim_arr(
-#     arrs: _t.Tuple[_coconut.npt.NDArray[_DType], ...],
+# def _coconut_arr_concat_op(
 #     dim: int,
+#     *arrs: _coconut.npt.NDArray[_DType],
 # ) -> _coconut.npt.NDArray[_DType]: ...
 # @_t.overload
-# def _coconut_multi_dim_arr(
-#     arrs: _t.Tuple[_DType, ...],
+# def _coconut_arr_concat_op(
 #     dim: int,
+#     *arrs: _DType,
 # ) -> _coconut.npt.NDArray[_DType]: ...
-
 @_t.overload
-def _coconut_multi_dim_arr(
-    arrs: _t.Tuple[_t.Sequence[_T], ...],
+def _coconut_arr_concat_op(
     dim: _t.Literal[1],
+    *arrs: _t.Sequence[_T],
 ) -> _t.Sequence[_T]: ...
 @_t.overload
-def _coconut_multi_dim_arr(
-    arrs: _t.Tuple[_T, ...],
+def _coconut_arr_concat_op(
     dim: _t.Literal[1],
+    *arrs: _T,
 ) -> _t.Sequence[_T]: ...
 
 @_t.overload
-def _coconut_multi_dim_arr(
-    arrs: _t.Tuple[_t.Sequence[_t.Sequence[_T]], ...],
+def _coconut_arr_concat_op(
     dim: _t.Literal[2],
+    *arrs: _t.Sequence[_t.Sequence[_T]],
 ) -> _t.Sequence[_t.Sequence[_T]]: ...
 @_t.overload
-def _coconut_multi_dim_arr(
-    arrs: _t.Tuple[_t.Sequence[_T], ...],
+def _coconut_arr_concat_op(
     dim: _t.Literal[2],
+    *arrs: _t.Sequence[_T],
 ) -> _t.Sequence[_t.Sequence[_T]]: ...
 @_t.overload
-def _coconut_multi_dim_arr(
-    arrs: _t.Tuple[_T, ...],
+def _coconut_arr_concat_op(
     dim: _t.Literal[2],
+    *arrs: _T,
 ) -> _t.Sequence[_t.Sequence[_T]]: ...
 
 @_t.overload
-def _coconut_multi_dim_arr(arrs: _Tuple, dim: int) -> _Sequence: ...
+def _coconut_arr_concat_op(dim: int, *arrs: _t.Any) -> _Sequence: ...
 
 
 class _coconut_SupportsAdd(_t.Protocol, _t.Generic[_Tco, _Ucontra, _Vco]):

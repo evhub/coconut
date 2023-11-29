@@ -2036,7 +2036,8 @@ def _coconut_concatenate(arrs, axis):
     if not axis:
         return _coconut.list(_coconut.itertools.chain.from_iterable(arrs))
     return [_coconut_concatenate(rows, axis - 1) for rows in _coconut.zip(*arrs)]
-def _coconut_multi_dim_arr(arrs, dim):
+def _coconut_arr_concat_op(dim, *arrs):
+    """Coconut multi-dimensional array concatenation operator."""
     arr_dims = [_coconut_ndim(a) for a in arrs]
     arrs = [_coconut_expand_arr(a, dim - d) if d < dim else a for a, d in _coconut.zip(arrs, arr_dims)]
     arr_dims.append(dim)
