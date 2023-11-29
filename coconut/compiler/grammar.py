@@ -550,6 +550,21 @@ def partial_op_item_handle(tokens):
         raise CoconutInternalException("invalid operator function implicit partial token group", tok_grp)
 
 
+def partial_arr_concat_handle(tokens):
+    """Handle array concatenation operator function implicit partials."""
+    tok_grp, = tokens
+    if "left arr concat partial" in tok_grp:
+        arg, op = tok_grp
+        internal_assert(op.lstrip(";") == "", "invalid arr concat op", op)
+        return "_coconut_partial(_coconut_arr_concat_op, " + str(len(op)) + ", " + arg + ")"
+    elif "right arr concat partial" in tok_grp:
+        op, arg = tok_grp
+        internal_assert(op.lstrip(";") == "", "invalid arr concat op", op)
+        return "_coconut_complex_partial(_coconut_arr_concat_op, {{0: {dim}, 2: {arg}}}, 3, ())".format(dim=len(op), arg=arg)
+    else:
+        raise CoconutInternalException("invalid array concatenation operator function implicit partial token group", tok_grp)
+
+
 def array_literal_handle(loc, tokens):
     """Handle multidimensional array literals."""
     internal_assert(len(tokens) >= 1, "invalid array literal tokens", tokens)
@@ -1071,13 +1086,19 @@ class Grammar(object):
         )
         partial_op_item = attach(partial_op_item_tokens, partial_op_item_handle)
         op_item = (
-            # partial_op_item must come first, then typedef_op_item must come after base_op_item
+            # must stay in exactly this order
             partial_op_item
             | typedef_op_item
             | base_op_item
         )
 
         partial_op_atom_tokens = lparen.suppress() + partial_op_item_tokens + rparen.suppress()
+
+        partial_arr_concat_tokens = lbrack.suppress() + (
+            labeled_group(dot.suppress() + multisemicolon + test_no_infix + rbrack.suppress(), "right arr concat partial")
+            | labeled_group(test_no_infix + multisemicolon + dot.suppress() + rbrack.suppress(), "left arr concat partial")
+        )
+        partial_arr_concat = attach(partial_arr_concat_tokens, partial_arr_concat_handle)
 
         # we include (var)arg_comma to ensure the pattern matches the whole arg
         arg_comma = comma | fixto(FollowedBy(rparen), "")
@@ -1234,7 +1255,8 @@ class Grammar(object):
         list_item = (
             lbrack.suppress() + list_expr + rbrack.suppress()
             | condense(lbrack + Optional(comprehension_expr) + rbrack)
-            # array_literal must come last
+            # partial_arr_concat and array_literal must come last
+            | partial_arr_concat
             | array_literal
         )
 
@@ -1544,6 +1566,7 @@ class Grammar(object):
             | labeled_group(itemgetter_atom_tokens, "itemgetter") + pipe_op
             | labeled_group(attrgetter_atom_tokens, "attrgetter") + pipe_op
             | labeled_group(partial_op_atom_tokens, "op partial") + pipe_op
+            | labeled_group(partial_arr_concat_tokens, "arr concat partial") + pipe_op
             # expr must come at end
             | labeled_group(comp_pipe_expr, "expr") + pipe_op
         )
@@ -1554,6 +1577,7 @@ class Grammar(object):
             | labeled_group(itemgetter_atom_tokens, "itemgetter") + end_simple_stmt_item
             | labeled_group(attrgetter_atom_tokens, "attrgetter") + end_simple_stmt_item
             | labeled_group(partial_op_atom_tokens, "op partial") + end_simple_stmt_item
+            | labeled_group(partial_arr_concat_tokens, "arr concat partial") + end_simple_stmt_item
         )
         last_pipe_item = Group(
             lambdef("expr")
@@ -1564,6 +1588,7 @@ class Grammar(object):
                 attrgetter_atom_tokens("attrgetter"),
                 partial_atom_tokens("partial"),
                 partial_op_atom_tokens("op partial"),
+                partial_arr_concat_tokens("arr concat partial"),
                 comp_pipe_expr("expr"),
             )
         )

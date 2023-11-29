@@ -1853,25 +1853,34 @@ print(list(map(operator.add, range(0, 5), range(5, 10))))
 
 Coconut supports a number of different syntactical aliases for common partial application use cases. These are:
 ```coconut
-.attr           =>      operator.attrgetter("attr")
-.method(args)   =>      operator.methodcaller("method", args)
-func$           =>      ($)$(func)
-seq[]           =>      operator.getitem$(seq)
-iter$[]         =>      # the equivalent of seq[] for iterators
-.[a:b:c]        =>      operator.itemgetter(slice(a, b, c))
-.$[a:b:c]       =>      # the equivalent of .[a:b:c] for iterators
-```
+# attribute access and method calling
+.attr1.attr2        =>  operator.attrgetter("attr1.attr2")
+.method(args)       =>  operator.methodcaller("method", args)
+.attr.method(args)  =>  .attr ..> .method(args)
 
-Additionally, `.attr.method(args)`, `.[x][y]`, `.$[x]$[y]`, and `.method[x]` are also supported.
+# indexing
+.[a:b:c]            =>  operator.itemgetter(slice(a, b, c))
+.[x][y]             => .[x] ..> .[y]
+.method[x]          => .method ..> .[x]
+seq[]               =>  operator.getitem$(seq)
+
+# iterator indexing
+.$[a:b:c]           =>  # the equivalent of .[a:b:c] for iterators
+.$[x]$[y]           => .$[x] ..> .$[y]
+iter$[]             =>  # the equivalent of seq[] for iterators
+
+# currying
+func$               =>  ($)$(func)
+```
 
 In addition, for every Coconut [operator function](#operator-functions), Coconut supports syntax for implicitly partially applying that operator function as
 ```
 (. <op> <arg>)
 (<arg> <op> .)
 ```
-where `<op>` is the operator function and `<arg>` is any expression. Note that, as with operator functions themselves, the parentheses are necessary for this type of implicit partial application.
+where `<op>` is the operator function and `<arg>` is any expression. Note that, as with operator functions themselves, the parentheses are necessary for this type of implicit partial application. This syntax is slightly different for multidimensional array concatenation operator functions, which use brackets instead of parentheses.
 
-Additionally, Coconut also supports implicit operator function partials for arbitrary functions as
+Furthermore, Coconut also supports implicit operator function partials for arbitrary functions as
 ```
 (. `<name>` <arg>)
 (<arg> `<name>` .)
@@ -2071,7 +2080,7 @@ If multiple different concatenation operators are used, the operators with the l
 [[[1, 2], [3, 4]], [[5, 6], [7, 8]]]
 ```
 
-_Note: the [operator functions](#operator-functions) for multidimensional array concatenation are spelled `[;]`, `[;;]`, etc. (for any number of parentheses)._
+_Note: the [operator functions](#operator-functions) for multidimensional array concatenation are spelled `[;]`, `[;;]`, etc. (with any number of parentheses). The [implicit partials](#implicit-partial-application) are similarly spelled `[. ; x]`, `[x ; .]`, etc._
 
 ##### Comparison to Julia
 

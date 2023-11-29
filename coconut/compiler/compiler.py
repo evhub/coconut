@@ -130,6 +130,7 @@ from coconut.compiler.grammar import (
     attrgetter_atom_handle,
     itemgetter_handle,
     partial_op_item_handle,
+    partial_arr_concat_handle,
 )
 from coconut.compiler.util import (
     ExceptionNode,
@@ -2763,6 +2764,7 @@ else:
             - (name, args) for attr/method
             - (attr, [(op, args)]) for itemgetter
             - (op, arg) for right op partial
+            - (op, arg) for right arr concat partial
         """
         # list implies artificial tokens, which must be expr
         if isinstance(tokens, list) or "expr" in tokens:
@@ -2792,6 +2794,18 @@ else:
                 return "right op partial", (op, arg)
             else:
                 raise CoconutInternalException("invalid op partial tokens in pipe_item", inner_toks)
+        elif "arr concat partial" in tokens:
+            inner_toks, = tokens
+            if "left arr concat partial" in inner_toks:
+                arg, op = inner_toks
+                internal_assert(op.lstrip(";") == "", "invalid arr concat op", op)
+                return "partial", ("_coconut_arr_concat_op", str(len(op)) + ", " + arg, "")
+            elif "right arr concat partial" in inner_toks:
+                op, arg = inner_toks
+                internal_assert(op.lstrip(";") == "", "invalid arr concat op", op)
+                return "right arr concat partial", (op, arg)
+            else:
+                raise CoconutInternalException("invalid arr concat partial tokens in pipe_item", inner_toks)
         elif "await" in tokens:
             internal_assert(len(tokens) == 1 and tokens[0] == "await", "invalid await pipe item tokens", tokens)
             return "await", []
@@ -2821,6 +2835,8 @@ else:
                 return itemgetter_handle(item)
             elif name == "right op partial":
                 return partial_op_item_handle(item)
+            elif name == "right arr concat partial":
+                return partial_arr_concat_handle(item)
             elif name == "await":
                 raise CoconutDeferredSyntaxError("await in pipe must have something piped into it", loc)
             else:
@@ -2889,6 +2905,12 @@ else:
                         raise CoconutDeferredSyntaxError("cannot star pipe into operator partial", loc)
                     op, arg = split_item
                     return "({op})({x}, {arg})".format(op=op, x=subexpr, arg=arg)
+                elif name == "right arr concat partial":
+                    if stars:
+                        raise CoconutDeferredSyntaxError("cannot star pipe into array concatenation operator partial", loc)
+                    op, arg = split_item
+                    internal_assert(op.lstrip(";") == "", "invalid arr concat op", op)
+                    return "_coconut_arr_concat_op({dim}, {x}, {arg})".format(dim=len(op), x=subexpr, arg=arg)
                 elif name == "await":
                     internal_assert(not split_item, "invalid split await pipe item tokens", split_item)
                     if stars:
