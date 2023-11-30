@@ -332,7 +332,7 @@ def highlight(code):
         try:
             from coconut.highlighter import highlight_coconut_for_terminal
         except ImportError:
-            pass
+            logger.log_exc()
         else:
             return highlight_coconut_for_terminal(code)
     return code

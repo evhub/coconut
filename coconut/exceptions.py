@@ -104,19 +104,18 @@ class CoconutSyntaxError(CoconutException):
 
     def message(self, message, source, point, ln, extra=None, endpoint=None, filename=None):
         """Creates a SyntaxError-like message."""
-        if message is None:
-            message = "parsing failed"
+        message_parts = ["parsing failed" if message is None else message]
         if extra is not None:
-            message += " (" + str(extra) + ")"
+            message_parts += [" (", str(extra), ")"]
         if ln is not None:
-            message += " (line " + str(ln)
+            message_parts += [" (line ", str(ln)]
             if filename is not None:
-                message += " in " + repr(filename)
-            message += ")"
+                message_parts += [" in ", repr(filename)]
+            message_parts += [")"]
         if source:
             if point is None:
                 for line in source.splitlines():
-                    message += "\n" + " " * taberrfmt + clean(line)
+                    message_parts += ["\n", " " * taberrfmt, clean(line)]
             else:
                 source = normalize_newlines(source)
                 point = clip(point, 0, len(source))
@@ -155,25 +154,25 @@ class CoconutSyntaxError(CoconutException):
                     point_ind = clip(point_ind, 0, len(part))
                     endpoint_ind = clip(endpoint_ind, point_ind, len(part))
 
-                    # add code to message
-                    message += "\n" + " " * taberrfmt + highlight(part)
+                    # add code to message, highlighting part only at end so as not to change len(part)
+                    message_parts += ["\n", " " * taberrfmt, highlight(part)]
 
                     # add squiggles to message
                     if point_ind > 0 or endpoint_ind > 0:
                         err_len = endpoint_ind - point_ind
-                        message += "\n" + " " * (taberrfmt + point_ind)
+                        message_parts += ["\n", " " * (taberrfmt + point_ind)]
                         if err_len <= min_squiggles_in_err_msg:
                             if not self.point_to_endpoint:
-                                message += "^"
-                            message += "~" * err_len  # err_len ~'s when there's only an extra char in one spot
+                                message_parts += ["^"]
+                            message_parts += ["~" * err_len]  # err_len ~'s when there's only an extra char in one spot
                             if self.point_to_endpoint:
-                                message += "^"
+                                message_parts += ["^"]
                         else:
-                            message += (
-                                ("^" if not self.point_to_endpoint else "\\")
-                                + "~" * (err_len - 1)  # err_len-1 ~'s when there's an extra char at the start and end
-                                + ("^" if self.point_to_endpoint else "/" if endpoint_ind < len(part) else "|")
-                            )
+                            message_parts += [
+                                ("^" if not self.point_to_endpoint else "\\"),
+                                "~" * (err_len - 1),  # err_len-1 ~'s when there's an extra char at the start and end
+                                ("^" if self.point_to_endpoint else "/" if endpoint_ind < len(part) else "|"),
+                            ]
 
                 # multi-line error message
                 else:
@@ -187,31 +186,34 @@ class CoconutSyntaxError(CoconutException):
                     max_line_len = max(len(line) for line in lines)
 
                     # add top squiggles
-                    message += "\n" + " " * (taberrfmt + point_ind)
+                    message_parts += ["\n", " " * (taberrfmt + point_ind)]
                     if point_ind >= len(lines[0]):
-                        message += "|"
+                        message_parts += ["|"]
                     else:
-                        message += "/" + "~" * (len(lines[0]) - point_ind - 1)
-                    message += "~" * (max_line_len - len(lines[0])) + "\n"
+                        message_parts += ["/", "~" * (len(lines[0]) - point_ind - 1)]
+                    message_parts += ["~" * (max_line_len - len(lines[0])), "\n"]
 
-                    # add code
+                    # add code, highlighting all of it together
+                    code_parts = []
                     if len(lines) > max_err_msg_lines:
                         for i in range(max_err_msg_lines // 2):
-                            message += "\n" + " " * taberrfmt + highlight(lines[i])
-                        message += "\n" + " " * (taberrfmt // 2) + "..."
+                            code_parts += ["\n", " " * taberrfmt, lines[i]]
+                        code_parts += ["\n", " " * (taberrfmt // 2), "..."]
                         for i in range(len(lines) - max_err_msg_lines // 2, len(lines)):
-                            message += "\n" + " " * taberrfmt + highlight(lines[i])
+                            code_parts += ["\n", " " * taberrfmt, lines[i]]
                     else:
                         for line in lines:
-                            message += "\n" + " " * taberrfmt + highlight(line)
+                            code_parts += ["\n", " " * taberrfmt, line]
+                    message_parts += highlight("".join(code_parts))
 
                     # add bottom squiggles
-                    message += (
-                        "\n\n" + " " * taberrfmt + "~" * endpoint_ind
-                        + ("^" if self.point_to_endpoint else "/" if 0 < endpoint_ind < len(lines[-1]) else "|")
-                    )
+                    message_parts += [
+                        "\n\n",
+                        " " * taberrfmt + "~" * endpoint_ind,
+                        ("^" if self.point_to_endpoint else "/" if 0 < endpoint_ind < len(lines[-1]) else "|"),
+                    ]
 
-        return message
+        return "".join(message_parts)
 
     def syntax_err(self):
         """Creates a SyntaxError."""

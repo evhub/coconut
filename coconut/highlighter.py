@@ -42,6 +42,7 @@ from coconut.constants import (
     default_style,
     fake_styles,
 )
+from coconut.terminal import logger
 
 # -----------------------------------------------------------------------------------------------------------------------
 # LEXERS:
@@ -127,5 +128,5 @@ def highlight_coconut_for_terminal(code):
         try:
             return highlight(code, CoconutLexer(), Terminal256Formatter(style=style))
         except Exception:
-            pass
+            logger.log_exc()
     return code
