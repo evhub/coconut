@@ -57,6 +57,7 @@ from coconut.constants import (
     PY38,
     PY39,
     PY310,
+    PY312,
     CPYTHON,
     adaptive_any_of_env_var,
     reverse_any_of_env_var,
