@@ -30,6 +30,7 @@ from coconut.constants import (
     taberrfmt,
     report_this_text,
     min_squiggles_in_err_msg,
+    max_err_msg_lines,
 )
 from coconut.util import (
     pickleable_obj,
@@ -38,6 +39,7 @@ from coconut.util import (
     clean,
     get_displayable_target,
     normalize_newlines,
+    highlight,
 )
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -153,8 +155,10 @@ class CoconutSyntaxError(CoconutException):
                     point_ind = clip(point_ind, 0, len(part))
                     endpoint_ind = clip(endpoint_ind, point_ind, len(part))
 
-                    message += "\n" + " " * taberrfmt + part
+                    # add code to message
+                    message += "\n" + " " * taberrfmt + highlight(part)
 
+                    # add squiggles to message
                     if point_ind > 0 or endpoint_ind > 0:
                         err_len = endpoint_ind - point_ind
                         message += "\n" + " " * (taberrfmt + point_ind)
@@ -182,14 +186,26 @@ class CoconutSyntaxError(CoconutException):
 
                     max_line_len = max(len(line) for line in lines)
 
+                    # add top squiggles
                     message += "\n" + " " * (taberrfmt + point_ind)
                     if point_ind >= len(lines[0]):
                         message += "|"
                     else:
                         message += "/" + "~" * (len(lines[0]) - point_ind - 1)
                     message += "~" * (max_line_len - len(lines[0])) + "\n"
-                    for line in lines:
-                        message += "\n" + " " * taberrfmt + line
+
+                    # add code
+                    if len(lines) > max_err_msg_lines:
+                        for i in range(max_err_msg_lines // 2):
+                            message += "\n" + " " * taberrfmt + highlight(lines[i])
+                        message += "\n" + " " * (taberrfmt // 2) + "..."
+                        for i in range(len(lines) - max_err_msg_lines // 2, len(lines)):
+                            message += "\n" + " " * taberrfmt + highlight(lines[i])
+                    else:
+                        for line in lines:
+                            message += "\n" + " " * taberrfmt + highlight(line)
+
+                    # add bottom squiggles
                     message += (
                         "\n\n" + " " * taberrfmt + "~" * endpoint_ind
                         + ("^" if self.point_to_endpoint else "/" if 0 < endpoint_ind < len(lines[-1]) else "|")

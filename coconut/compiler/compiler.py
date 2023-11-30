@@ -49,6 +49,7 @@ from coconut._pyparsing import (
 )
 
 from coconut.constants import (
+    PY35,
     specific_targets,
     targets,
     pseudo_targets,
@@ -1359,7 +1360,7 @@ class Compiler(Grammar, pickleable_obj):
                         internal_assert(pre_procd is not None, "invalid deferred syntax error in pre-processing", err)
                         raise self.make_syntax_err(err, pre_procd, after_parsing=parsed is not None)
                     # RuntimeError, not RecursionError, for Python < 3.5
-                    except RuntimeError as err:
+                    except (RecursionError if PY35 else RuntimeError) as err:
                         raise CoconutException(
                             str(err), extra="try again with --recursion-limit greater than the current "
                             + str(sys.getrecursionlimit()) + " (you may also need to increase --stack-size)",

@@ -325,6 +325,19 @@ def replace_all(inputstr, all_to_replace, replace_to):
     return inputstr
 
 
+def highlight(code):
+    """Attempt to highlight Coconut code for the terminal."""
+    from coconut.terminal import logger  # hide to remove circular deps
+    if logger.enable_colors(sys.stdout) and logger.enable_colors(sys.stderr):
+        try:
+            from coconut.highlighter import highlight_coconut_for_terminal
+        except ImportError:
+            pass
+        else:
+            return highlight_coconut_for_terminal(code)
+    return code
+
+
 # -----------------------------------------------------------------------------------------------------------------------
 # VERSIONING:
 # -----------------------------------------------------------------------------------------------------------------------

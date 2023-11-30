@@ -315,12 +315,11 @@ reserved_compiler_symbols = delimiter_symbols + (
 )
 
 tabideal = 4  # spaces to indent code for displaying
-
-taberrfmt = 2  # spaces to indent exceptions
-
 justify_len = 79  # ideal line length
 
+taberrfmt = 2  # spaces to indent exceptions
 min_squiggles_in_err_msg = 1
+max_err_msg_lines = 10
 
 # for pattern-matching
 default_matcher_style = "python warn"
@@ -645,6 +644,8 @@ error_color_code = "31"
 log_color_code = "93"
 
 default_style = "default"
+fake_styles = ("none", "list")
+
 prompt_histfile = get_path_env_var(
     "COCONUT_HISTORY_FILE",
     os.path.join(coconut_home, ".coconut_history"),

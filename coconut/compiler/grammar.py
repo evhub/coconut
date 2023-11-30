@@ -2192,7 +2192,7 @@ class Grammar(object):
         where_stmt_ref = where_item + where_suite
 
         implicit_return = (
-            invalid_syntax(return_stmt, "expected expression but got return statement")
+            invalid_syntax(return_stmt, "assignment function expected expression as last statement but got return instead")
             | attach(new_testlist_star_expr, implicit_return_handle)
         )
         implicit_return_where = Forward()
