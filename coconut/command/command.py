@@ -246,7 +246,6 @@ class Command(object):
                 unset_fast_pyparsing_reprs()
             if args.profile:
                 start_profiling()
-            logger.enable_colors()
 
             logger.log(cli_version)
             if original_args is not None:
