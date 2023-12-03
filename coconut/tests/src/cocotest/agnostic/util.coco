@@ -1544,6 +1544,24 @@ def BE(f, g, x, y, h, z) = lift(f)(const(g x y), h$(z))
 
 def on(b, u) = (,) ..> map$(u) ..*> b
 
+def D2_(f, g, h) = lift_apart(f)(g, h)
+
+
+# branching
+branch = lift(,)
+branched = lift_apart(,)
+
+sq_and_t2p1 = (
+    branch(ident, (.*2))
+    ..*> branched((.**2), (.+1))  # type: ignore
+)
+
+first_false_and_last_true = (
+    lift(,)(ident, reversed)
+    ..*> lift_apart(,)(dropwhile$(bool), dropwhile$(not))  # type: ignore
+    ..*> lift_apart(,)(.$[0], .$[0])  # type: ignore
+)
+
 
 # maximum difference
 def maxdiff1(ns) = (

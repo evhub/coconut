@@ -432,7 +432,7 @@ def and_then(first_async_func, second_func):
             first_async_func: async (**T) -> U,
             second_func: U -> V,
         ) -> async (**T) -> V =
-            async def (*args, **kwargs) -> (
+            async def (*args, **kwargs) => (
                 first_async_func(*args, **kwargs)
                 |> await
                 |> second_func
@@ -447,7 +447,7 @@ def and_then_await(first_async_func, second_async_func):
             first_async_func: async (**T) -> U,
             second_async_func: async U -> V,
         ) -> async (**T) -> V =
-            async def (*args, **kwargs) -> (
+            async def (*args, **kwargs) => (
                 first_async_func(*args, **kwargs)
                 |> await
                 |> second_async_func
@@ -458,98 +458,98 @@ def and_then_await(first_async_func, second_async_func):
 def _coconut_forward_compose(func, *funcs):
     """Forward composition operator (..>).
 
-    (..>)(f, g) is effectively equivalent to (*args, **kwargs) -> g(f(*args, **kwargs))."""
+    (..>)(f, g) is effectively equivalent to (*args, **kwargs) => g(f(*args, **kwargs))."""
     return _coconut_base_compose(func, *((f, 0, False) for f in funcs))
 def _coconut_back_compose(*funcs):
     """Backward composition operator (<..).
 
-    (<..)(f, g) is effectively equivalent to (*args, **kwargs) -> f(g(*args, **kwargs))."""
+    (<..)(f, g) is effectively equivalent to (*args, **kwargs) => f(g(*args, **kwargs))."""
     return _coconut_forward_compose(*_coconut.reversed(funcs))
 def _coconut_forward_none_compose(func, *funcs):
     """Forward none-aware composition operator (..?>).
 
-    (..?>)(f, g) is effectively equivalent to (*args, **kwargs) -> g?(f(*args, **kwargs))."""
+    (..?>)(f, g) is effectively equivalent to (*args, **kwargs) => g?(f(*args, **kwargs))."""
     return _coconut_base_compose(func, *((f, 0, True) for f in funcs))
 def _coconut_back_none_compose(*funcs):
     """Backward none-aware composition operator (<..?).
 
-    (<..?)(f, g) is effectively equivalent to (*args, **kwargs) -> f?(g(*args, **kwargs))."""
+    (<..?)(f, g) is effectively equivalent to (*args, **kwargs) => f?(g(*args, **kwargs))."""
     return _coconut_forward_none_compose(*_coconut.reversed(funcs))
 def _coconut_forward_star_compose(func, *funcs):
     """Forward star composition operator (..*>).
 
-    (..*>)(f, g) is effectively equivalent to (*args, **kwargs) -> g(*f(*args, **kwargs))."""
+    (..*>)(f, g) is effectively equivalent to (*args, **kwargs) => g(*f(*args, **kwargs))."""
     return _coconut_base_compose(func, *((f, 1, False) for f in funcs))
 def _coconut_back_star_compose(*funcs):
     """Backward star composition operator (<*..).
 
-    (<*..)(f, g) is effectively equivalent to (*args, **kwargs) -> f(*g(*args, **kwargs))."""
+    (<*..)(f, g) is effectively equivalent to (*args, **kwargs) => f(*g(*args, **kwargs))."""
     return _coconut_forward_star_compose(*_coconut.reversed(funcs))
 def _coconut_forward_none_star_compose(func, *funcs):
     """Forward none-aware star composition operator (..?*>).
 
-    (..?*>)(f, g) is effectively equivalent to (*args, **kwargs) -> g?(*f(*args, **kwargs))."""
+    (..?*>)(f, g) is effectively equivalent to (*args, **kwargs) => g?(*f(*args, **kwargs))."""
     return _coconut_base_compose(func, *((f, 1, True) for f in funcs))
 def _coconut_back_none_star_compose(*funcs):
     """Backward none-aware star composition operator (<*?..).
 
-    (<*?..)(f, g) is effectively equivalent to (*args, **kwargs) -> f?(*g(*args, **kwargs))."""
+    (<*?..)(f, g) is effectively equivalent to (*args, **kwargs) => f?(*g(*args, **kwargs))."""
     return _coconut_forward_none_star_compose(*_coconut.reversed(funcs))
 def _coconut_forward_dubstar_compose(func, *funcs):
     """Forward double star composition operator (..**>).
 
-    (..**>)(f, g) is effectively equivalent to (*args, **kwargs) -> g(**f(*args, **kwargs))."""
+    (..**>)(f, g) is effectively equivalent to (*args, **kwargs) => g(**f(*args, **kwargs))."""
     return _coconut_base_compose(func, *((f, 2, False) for f in funcs))
 def _coconut_back_dubstar_compose(*funcs):
     """Backward double star composition operator (<**..).
 
-    (<**..)(f, g) is effectively equivalent to (*args, **kwargs) -> f(**g(*args, **kwargs))."""
+    (<**..)(f, g) is effectively equivalent to (*args, **kwargs) => f(**g(*args, **kwargs))."""
     return _coconut_forward_dubstar_compose(*_coconut.reversed(funcs))
 def _coconut_forward_none_dubstar_compose(func, *funcs):
     """Forward none-aware double star composition operator (..?**>).
 
-    (..?**>)(f, g) is effectively equivalent to (*args, **kwargs) -> g?(**f(*args, **kwargs))."""
+    (..?**>)(f, g) is effectively equivalent to (*args, **kwargs) => g?(**f(*args, **kwargs))."""
     return _coconut_base_compose(func, *((f, 2, True) for f in funcs))
 def _coconut_back_none_dubstar_compose(*funcs):
     """Backward none-aware double star composition operator (<**?..).
 
-    (<**?..)(f, g) is effectively equivalent to (*args, **kwargs) -> f?(**g(*args, **kwargs))."""
+    (<**?..)(f, g) is effectively equivalent to (*args, **kwargs) => f?(**g(*args, **kwargs))."""
     return _coconut_forward_none_dubstar_compose(*_coconut.reversed(funcs))
 def _coconut_pipe(x, f):
-    """Pipe operator (|>). Equivalent to (x, f) -> f(x)."""
+    """Pipe operator (|>). Equivalent to (x, f) => f(x)."""
     return f(x)
 def _coconut_star_pipe(xs, f):
-    """Star pipe operator (*|>). Equivalent to (xs, f) -> f(*xs)."""
+    """Star pipe operator (*|>). Equivalent to (xs, f) => f(*xs)."""
     return f(*xs)
 def _coconut_dubstar_pipe(kws, f):
-    """Double star pipe operator (**|>). Equivalent to (kws, f) -> f(**kws)."""
+    """Double star pipe operator (**|>). Equivalent to (kws, f) => f(**kws)."""
     return f(**kws)
 def _coconut_back_pipe(f, x):
-    """Backward pipe operator (<|). Equivalent to (f, x) -> f(x)."""
+    """Backward pipe operator (<|). Equivalent to (f, x) => f(x)."""
     return f(x)
 def _coconut_back_star_pipe(f, xs):
-    """Backward star pipe operator (<*|). Equivalent to (f, xs) -> f(*xs)."""
+    """Backward star pipe operator (<*|). Equivalent to (f, xs) => f(*xs)."""
     return f(*xs)
 def _coconut_back_dubstar_pipe(f, kws):
-    """Backward double star pipe operator (<**|). Equivalent to (f, kws) -> f(**kws)."""
+    """Backward double star pipe operator (<**|). Equivalent to (f, kws) => f(**kws)."""
     return f(**kws)
 def _coconut_none_pipe(x, f):
-    """Nullable pipe operator (|?>). Equivalent to (x, f) -> f(x) if x is not None else None."""
+    """Nullable pipe operator (|?>). Equivalent to (x, f) => f(x) if x is not None else None."""
     return None if x is None else f(x)
 def _coconut_none_star_pipe(xs, f):
-    """Nullable star pipe operator (|?*>). Equivalent to (xs, f) -> f(*xs) if xs is not None else None."""
+    """Nullable star pipe operator (|?*>). Equivalent to (xs, f) => f(*xs) if xs is not None else None."""
     return None if xs is None else f(*xs)
 def _coconut_none_dubstar_pipe(kws, f):
-    """Nullable double star pipe operator (|?**>). Equivalent to (kws, f) -> f(**kws) if kws is not None else None."""
+    """Nullable double star pipe operator (|?**>). Equivalent to (kws, f) => f(**kws) if kws is not None else None."""
     return None if kws is None else f(**kws)
 def _coconut_back_none_pipe(f, x):
-    """Nullable backward pipe operator (<?|). Equivalent to (f, x) -> f(x) if x is not None else None."""
+    """Nullable backward pipe operator (<?|). Equivalent to (f, x) => f(x) if x is not None else None."""
     return None if x is None else f(x)
 def _coconut_back_none_star_pipe(f, xs):
-    """Nullable backward star pipe operator (<*?|). Equivalent to (f, xs) -> f(*xs) if xs is not None else None."""
+    """Nullable backward star pipe operator (<*?|). Equivalent to (f, xs) => f(*xs) if xs is not None else None."""
     return None if xs is None else f(*xs)
 def _coconut_back_none_dubstar_pipe(f, kws):
-    """Nullable backward double star pipe operator (<**?|). Equivalent to (kws, f) -> f(**kws) if kws is not None else None."""
+    """Nullable backward double star pipe operator (<**?|). Equivalent to (kws, f) => f(**kws) if kws is not None else None."""
     return None if kws is None else f(**kws)
 def _coconut_assert(cond, msg=None):
     """Assert operator (assert). Asserts condition with optional message."""
@@ -563,27 +563,27 @@ def _coconut_raise(exc=None, from_exc=None):
         exc.__cause__ = from_exc
     raise exc
 def _coconut_bool_and(a, b):
-    """Boolean and operator (and). Equivalent to (a, b) -> a and b."""
+    """Boolean and operator (and). Equivalent to (a, b) => a and b."""
     return a and b
 def _coconut_bool_or(a, b):
-    """Boolean or operator (or). Equivalent to (a, b) -> a or b."""
+    """Boolean or operator (or). Equivalent to (a, b) => a or b."""
     return a or b
 def _coconut_in(a, b):
-    """Containment operator (in). Equivalent to (a, b) -> a in b."""
+    """Containment operator (in). Equivalent to (a, b) => a in b."""
     return a in b
 def _coconut_not_in(a, b):
-    """Negative containment operator (not in). Equivalent to (a, b) -> a not in b."""
+    """Negative containment operator (not in). Equivalent to (a, b) => a not in b."""
     return a not in b
 def _coconut_none_coalesce(a, b):
-    """None coalescing operator (??). Equivalent to (a, b) -> a if a is not None else b."""
+    """None coalescing operator (??). Equivalent to (a, b) => a if a is not None else b."""
     return b if a is None else a
 def _coconut_minus(a, b=_coconut_sentinel):
-    """Minus operator (-). Effectively equivalent to (a, b=None) -> a - b if b is not None else -a."""
+    """Minus operator (-). Effectively equivalent to (a, b=None) => a - b if b is not None else -a."""
     if b is _coconut_sentinel:
         return -a
     return a - b
 def _coconut_comma_op(*args):
-    """Comma operator (,). Equivalent to (*args) -> args."""
+    """Comma operator (,). Equivalent to (*args) => args."""
     return args
 {def_coconut_matmul}
 class scan(_coconut_has_iter):
@@ -1678,7 +1678,7 @@ def _coconut_dict_merge(*dicts, **kwargs):
             prevlen = _coconut.len(newdict)
     return newdict
 def ident(x, **kwargs):
-    """The identity function. Generally equivalent to x -> x. Useful in point-free programming.
+    """The identity function. Generally equivalent to x => x. Useful in point-free programming.
     Accepts one keyword-only argument, side_effect, which specifies a function to call on the argument before it is returned."""
     side_effect = kwargs.pop("side_effect", None)
     if kwargs:
@@ -1874,30 +1874,36 @@ class const(_coconut_base_callable):
     def __repr__(self):
         return "const(%s)" % (_coconut.repr(self.value),)
 class _coconut_lifted(_coconut_base_callable):
-    __slots__ = ("func", "func_args", "func_kwargs")
-    def __init__(self, _coconut_func, *func_args, **func_kwargs):
-        self.func = _coconut_func
+    __slots__ = ("apart", "func", "func_args", "func_kwargs")
+    def __init__(self, apart, func, func_args, func_kwargs):
+        self.apart = apart
+        self.func = func
         self.func_args = func_args
         self.func_kwargs = func_kwargs
     def __reduce__(self):
-        return (self.__class__, (self.func,) + self.func_args, {lbrace}"func_kwargs": self.func_kwargs{rbrace})
+        return (self.__class__, (self.apart, self.func, self.func_args, self.func_kwargs))
     def __call__(self, *args, **kwargs):
-        return self.func(*(g(*args, **kwargs) for g in self.func_args), **_coconut_py_dict((k, h(*args, **kwargs)) for k, h in self.func_kwargs.items()))
+        if self.apart:
+            return self.func(*(f(x) for f, x in {_coconut_}zip(self.func_args, args, strict=True)), **_coconut_py_dict((k, self.func_kwargs[k](kwargs[k])) for k in {all_keys}))
+        else:
+            return self.func(*(g(*args, **kwargs) for g in self.func_args), **_coconut_py_dict((k, h(*args, **kwargs)) for k, h in self.func_kwargs.items()))
     def __repr__(self):
-        return "lift(%r)(%s%s)" % (self.func, ", ".join(_coconut.repr(g) for g in self.func_args), ", ".join(k + "=" + _coconut.repr(h) for k, h in self.func_kwargs.items()))
+        return "lift%s(%r)(%s%s)" % (self.func, ("_apart" if self.apart else ""), ", ".join(_coconut.repr(g) for g in self.func_args), ", ".join(k + "=" + _coconut.repr(h) for k, h in self.func_kwargs.items()))
 class lift(_coconut_base_callable):
-    """Lift a function up so that all of its arguments are functions.
+    """Lift a function up so that all of its arguments are functions that all take the same arguments.
 
     For a binary function f(x, y) and two unary functions g(z) and h(z), lift works as the S' combinator:
         lift(f)(g, h)(z) == f(g(z), h(z))
 
     In general, lift is equivalent to:
-        def lift(f) = ((*func_args, **func_kwargs) -> (*args, **kwargs) ->
+        def lift(f) = ((*func_args, **func_kwargs) => (*args, **kwargs) => (
             f(*(g(*args, **kwargs) for g in func_args), **{lbrace}k: h(*args, **kwargs) for k, h in func_kwargs.items(){rbrace}))
+        )
 
     lift also supports a shortcut form such that lift(f, *func_args, **func_kwargs) is equivalent to lift(f)(*func_args, **func_kwargs).
     """
     __slots__ = ("func",)
+    _apart = False
     def __new__(cls, func, *func_args, **func_kwargs):
         self = _coconut.super({_coconut_}lift, cls).__new__(cls)
         self.func = func
@@ -1907,9 +1913,24 @@ class lift(_coconut_base_callable):
     def __reduce__(self):
         return (self.__class__, (self.func,))
     def __repr__(self):
-        return "lift(%r)" % (self.func,)
+        return "lift%s(%r)" % (("_apart" if self._apart else ""), self.func)
     def __call__(self, *func_args, **func_kwargs):
-        return _coconut_lifted(self.func, *func_args, **func_kwargs)
+        return _coconut_lifted(self._apart, self.func, func_args, func_kwargs)
+class lift_apart(lift):
+    """Lift a function up so that all of its arguments are functions that each take separate arguments.
+
+    For a binary function f(x, y) and two unary functions g(z) and h(z), lift_apart works as the D2 combinator:
+        lift_apart(f)(g, h)(z, w) == f(g(z), h(w))
+
+    In general, lift_apart is equivalent to:
+        def lift_apart(func) = (*func_args, **func_kwargs) => (*args, **kwargs) => func(
+            *(f(x) for f, x in zip(func_args, args, strict=True)),
+            **{lbrace}k: func_kwargs[k](kwargs[k]) for k in func_kwargs.keys() | kwargs.keys(){rbrace},
+        )
+
+    lift_apart also supports a shortcut form such that lift_apart(f, *func_args, **func_kwargs) is equivalent to lift_apart(f)(*func_args, **func_kwargs).
+    """
+    _apart = True
 def all_equal(iterable):
     """For a given iterable, check whether all elements in that iterable are equal to each other.
 
@@ -1974,7 +1995,7 @@ def collectby(key_func, iterable, value_func=None, **kwargs):
     If map_using is passed, calculate key_func and value_func by mapping them over
     the iterable using map_using as map. Useful with process_map/thread_map.
     """
-    return {_coconut_}mapreduce(_coconut_lifted(_coconut_comma_op, key_func, {_coconut_}ident if value_func is None else value_func), iterable, **kwargs)
+    return {_coconut_}mapreduce(_coconut_lifted(False, _coconut_comma_op, (key_func, {_coconut_}ident if value_func is None else value_func), {empty_dict}), iterable, **kwargs)
 collectby.using_processes = _coconut_partial(_coconut_parallel_mapreduce, collectby, process_map)
 collectby.using_threads = _coconut_partial(_coconut_parallel_mapreduce, collectby, thread_map)
 def _namedtuple_of(**kwargs):

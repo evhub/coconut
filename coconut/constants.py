@@ -639,7 +639,7 @@ force_verbose_logger = get_bool_env_var("COCONUT_FORCE_VERBOSE", False)
 
 coconut_home = get_path_env_var(home_env_var, "~")
 
-use_color = get_bool_env_var("COCONUT_USE_COLOR", None)
+use_color_env_var = "COCONUT_USE_COLOR"
 error_color_code = "31"
 log_color_code = "93"
 
@@ -794,6 +794,7 @@ coconut_specific_builtins = (
     "flip",
     "const",
     "lift",
+    "lift_apart",
     "all_equal",
     "collectby",
     "mapreduce",

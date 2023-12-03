@@ -1636,19 +1636,41 @@ def lift(func: _t.Callable[[_T, _U], _W]) -> _coconut_lifted_2[_T, _U, _W]: ...
 def lift(func: _t.Callable[[_T, _U, _V], _W]) -> _coconut_lifted_3[_T, _U, _V, _W]: ...
 @_t.overload
 def lift(func: _t.Callable[..., _W]) -> _t.Callable[..., _t.Callable[..., _W]]:
-    """Lift a function up so that all of its arguments are functions.
+    """Lift a function up so that all of its arguments are functions that all take the same arguments.
 
     For a binary function f(x, y) and two unary functions g(z) and h(z), lift works as the S' combinator:
         lift(f)(g, h)(z) == f(g(z), h(z))
 
     In general, lift is equivalent to:
-        def lift(f) = ((*func_args, **func_kwargs) -> (*args, **kwargs) ->
-            f(*(g(*args, **kwargs) for g in func_args), **{lbrace}k: h(*args, **kwargs) for k, h in func_kwargs.items(){rbrace}))
+        def lift(f) = ((*func_args, **func_kwargs) => (*args, **kwargs) => (
+            f(*(g(*args, **kwargs) for g in func_args), **{k: h(*args, **kwargs) for k, h in func_kwargs.items()}))
+        )
 
     lift also supports a shortcut form such that lift(f, *func_args, **func_kwargs) is equivalent to lift(f)(*func_args, **func_kwargs).
     """
     ...
 _coconut_lift = lift
+
+@_t.overload
+def lift_apart(func: _t.Callable[[_T], _W]) -> _t.Callable[[_t.Callable[[_U], _T]], _t.Callable[[_U], _W]]: ...
+@_t.overload
+def lift_apart(func: _t.Callable[[_T, _X], _W]) -> _t.Callable[[_t.Callable[[_U], _T], _t.Callable[[_Y], _X]], _t.Callable[[_U, _Y], _W]]: ...
+@_t.overload
+def lift_apart(func: _t.Callable[..., _W]) -> _t.Callable[..., _t.Callable[..., _W]]:
+    """Lift a function up so that all of its arguments are functions that each take separate arguments.
+
+    For a binary function f(x, y) and two unary functions g(z) and h(z), lift_apart works as the D2 combinator:
+        lift_apart(f)(g, h)(z, w) == f(g(z), h(w))
+
+    In general, lift_apart is equivalent to:
+        def lift_apart(func) = (*func_args, **func_kwargs) => (*args, **kwargs) => func(
+            *map(call, func_args, args, strict=True),
+            **{k: func_kwargs[k](kwargs[k]) for k in func_kwargs.keys() | kwargs.keys()},
+        )
+
+    lift_apart also supports a shortcut form such that lift_apart(f, *func_args, **func_kwargs) is equivalent to lift_apart(f)(*func_args, **func_kwargs).
+    """
+    ...
 
 
 def all_equal(iterable: _Iterable) -> bool:

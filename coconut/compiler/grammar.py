@@ -1381,9 +1381,13 @@ class Grammar(object):
         simple_assign = Forward()
         simple_assign_ref = maybeparens(
             lparen,
-            (setname | passthrough_atom)
-            + ZeroOrMore(ZeroOrMore(complex_trailer) + OneOrMore(simple_trailer)),
-            rparen,
+            (
+                # refname if there's a trailer, setname if not
+                (refname | passthrough_atom) + OneOrMore(ZeroOrMore(complex_trailer) + OneOrMore(simple_trailer))
+                | setname
+                | passthrough_atom
+            ),
+            rparen
         )
         simple_assignlist = maybeparens(lparen, itemlist(simple_assign, comma, suppress_trailing=False), rparen)
 

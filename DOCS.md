@@ -3505,11 +3505,11 @@ def flip(f, nargs=None) =
     )
 ```
 
-#### `lift`
+#### `lift` and `lift_apart`
 
-**lift**(_func_)
+##### **lift**(_func_)
 
-**lift**(_func_, *_func\_args_, **_func\_kwargs_)
+##### **lift**(_func_, *_func\_args_, **_func\_kwargs_)
 
 Coconut's `lift` built-in is a higher-order function that takes in a function and “lifts” it up so that all of its arguments are functions.
 
@@ -3533,7 +3533,33 @@ def lift(f) = (
 
 `lift` also supports a shortcut form such that `lift(f, *func_args, **func_kwargs)` is equivalent to `lift(f)(*func_args, **func_kwargs)`.
 
-##### Example
+##### **lift\_apart**(_func_)
+
+##### **lift\_apart**(_func_, *_func\_args_, **_func\_kwargs_)
+
+Coconut's `lift_apart` built-in is very similar to `lift`, except instead of duplicating the final arguments to each function, it separates them out.
+
+For a binary function `f(x, y)` and two unary functions `g(z)` and `h(z)`, `lift_apart` works as
+```coconut
+lift_apart(f)(g, h)(z, w) == f(g(z), h(w))
+```
+such that in this case `lift_apart` implements the `D2` combinator.
+
+In the general case, `lift_apart` is equivalent to a pickleable version of
+```coconut
+def lift_apart(f) = (
+    (*func_args, **func_kwargs) =>
+        (*args, **kwargs) =>
+            f(
+                *(f(x) for f, x in zip(func_args, args, strict=True)),
+                **{k: func_kwargs[k](kwargs[k]) for k in func_kwargs.keys() | kwargs.keys()},
+            )
+)
+```
+
+`lift_apart` supports the same shortcut form as `lift`.
+
+##### Examples
 
 **Coconut:**
 ```coconut
@@ -3552,7 +3578,32 @@ def plus_and_times(x, y):
     return x + y, x * y
 ```
 
+**Coconut:**
+```coconut
+first_false_and_last_true = (
+    lift(,)(ident, reversed)
+    ..*> lift_apart(,)(dropwhile$(bool), dropwhile$(not))
+    ..*> lift_apart(,)(.$[0], .$[0])
+)
+```
+
+**Python:**
+```coconut_python
+from itertools import dropwhile
+
+def first_false_and_last_true(xs):
+    rev_xs = reversed(xs)
+    return (
+        next(dropwhile(bool, xs)),
+        next(dropwhile(lambda x: not x, rev_xs)),
+    )
+```
+
 #### `and_then` and `and_then_await`
+
+**and\_then**(_first\_async\_func_, _second\_func_)
+
+**and\_then\_await**(_first\_async\_func_, _second\_async\_func_)
 
 Coconut provides the `and_then` and `and_then_await` built-ins for composing `async` functions. Specifically:
 * To forwards compose an async function `async_f` with a normal function `g` (such that `g` is called on the result of `await`ing `async_f`), write ``async_f `and_then` g``.

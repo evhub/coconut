@@ -290,11 +290,15 @@ def process_header_args(which, use_hash, target, no_tco, strict, no_wrap):
         report_this_text=report_this_text,
         from_None=" from None" if target.startswith("3") else "",
         process_="process_" if target_info >= (3, 13) else "",
-
         numpy_modules=tuple_str_of(numpy_modules, add_quotes=True),
         pandas_numpy_modules=tuple_str_of(pandas_numpy_modules, add_quotes=True),
         jax_numpy_modules=tuple_str_of(jax_numpy_modules, add_quotes=True),
         self_match_types=tuple_str_of(self_match_types),
+        comma_bytearray=", bytearray" if not target.startswith("3") else "",
+        lstatic="staticmethod(" if not target.startswith("3") else "",
+        rstatic=")" if not target.startswith("3") else "",
+        all_keys="self.func_kwargs.keys() | kwargs.keys()" if target_info >= (3,) else "_coconut.set(self.func_kwargs.keys()) | _coconut.set(kwargs.keys())",
+
         set_super=(
             # we have to use _coconut_super even on the universal target, since once we set __class__ it becomes a local variable
             "super = py_super" if target.startswith("3") else "super = _coconut_super"
@@ -335,9 +339,6 @@ zip_longest = itertools.zip_longest if _coconut_sys.version_info >= (3,) else it
             else "zip_longest = itertools.izip_longest",
             indent=1,
         ),
-        comma_bytearray=", bytearray" if not target.startswith("3") else "",
-        lstatic="staticmethod(" if not target.startswith("3") else "",
-        rstatic=")" if not target.startswith("3") else "",
         zip_iter=prepare(
             r'''
 for items in _coconut.iter(_coconut.zip(*self.iters, strict=self.strict) if _coconut_sys.version_info >= (3, 10) else _coconut.zip_longest(*self.iters, fillvalue=_coconut_sentinel) if self.strict else _coconut.zip(*self.iters)):

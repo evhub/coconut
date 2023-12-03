@@ -47,7 +47,8 @@ from coconut.constants import (
     taberrfmt,
     use_packrat_parser,
     embed_on_internal_exc,
-    use_color,
+    use_color_env_var,
+    get_bool_env_var,
     error_color_code,
     log_color_code,
     ansii_escape,
@@ -209,6 +210,7 @@ class Logger(object):
     @classmethod
     def enable_colors(cls, file=None):
         """Attempt to enable CLI colors."""
+        use_color = get_bool_env_var(use_color_env_var)
         if (
             use_color is False
             or use_color is None and file is not None and not isatty(file)

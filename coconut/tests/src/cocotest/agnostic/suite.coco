@@ -1029,7 +1029,7 @@ forward 2""") == 900
     assert Phi((,), (.+1), (.-1)) <| 5 == (6, 4)
     assert Psi((,), (.+1), 3) <| 4 == (4, 5)
     assert D1((,), 0, 1, (.+1)) <| 1 == (0, 1, 2)
-    assert D2((+), (.*2), 3, (.+1)) <| 4 == 11
+    assert D2((+), (.*2), 3, (.+1)) <| 4 == 11 == D2_((+), (.*2), (.+1))(3, 4)
     assert E((+), 10, (*), 2) <| 3 == 16
     assert Phi1((,), (+), (*), 2) <| 3 == (5, 6)
     assert BE((,), (+), 10, 2, (*), 2) <| 3 == (12, 6)
@@ -1075,6 +1075,8 @@ forward 2""") == 900
     assert pickle_round_trip(.loc[0]) <| (loc=[10]) == 10
     assert pickle_round_trip(.method(0)) <| (method=const 10) == 10
     assert pickle_round_trip(.method(x=10)) <| (method=x -> x) == 10
+    assert sq_and_t2p1(10) == (100, 21)
+    assert first_false_and_last_true([3, 2, 1, 0, "11", "1", ""]) == (0, "1")
 
     with process_map.multiple_sequential_calls():  # type: ignore
         assert process_map(tuple <.. (|>)$(to_sort), qsorts) |> list == [to_sort |> sorted |> tuple] * len(qsorts)
