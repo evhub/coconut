@@ -1067,6 +1067,7 @@ class Grammar(object):
             | fixto(dollar, "_coconut_partial")
             | fixto(keyword("assert"), "_coconut_assert")
             | fixto(keyword("raise"), "_coconut_raise")
+            | fixto(keyword("if"), "_coconut_if_op")
             | fixto(keyword("is") + keyword("not"), "_coconut.operator.is_not")
             | fixto(keyword("not") + keyword("in"), "_coconut_not_in")
 

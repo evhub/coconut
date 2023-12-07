@@ -585,6 +585,9 @@ def _coconut_minus(a, b=_coconut_sentinel):
 def _coconut_comma_op(*args):
     """Comma operator (,). Equivalent to (*args) => args."""
     return args
+def _coconut_if_op(cond, if_true, if_false):
+    """If operator (if). Equivalent to (cond, if_true, if_false) => if_true if cond else if_false."""
+    return if_true if cond else if_false
 {def_coconut_matmul}
 class scan(_coconut_has_iter):
     """Reduce func over iterable, yielding intermediate results,

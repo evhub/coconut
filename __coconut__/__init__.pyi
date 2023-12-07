@@ -1216,6 +1216,11 @@ def _coconut_comma_op(*args: _t.Any) -> _Tuple:
     ...
 
 
+def _coconut_if_op(cond: _t.Any, if_true: _T, if_false: _U) -> _t.Union[_T, _U]:
+    """If operator (if). Equivalent to (cond, if_true, if_false) => if_true if cond else if_false."""
+    ...
+
+
 if sys.version_info < (3, 5):
     @_t.overload
     def _coconut_matmul(a: _T, b: _T) -> _T: ...
