@@ -242,6 +242,7 @@ def f() =
     assert_raises(-> parse("if a = b: pass"), CoconutParseError, err_has="misplaced assignment")
     assert_raises(-> parse("while a == b"), CoconutParseError, err_has="misplaced newline")
     assert_raises(-> parse("0xfgf"), CoconutParseError, err_has=r" \~~^")
+    assert_raises(-> parse("(. if 1)"), CoconutParseError, err_has=r" \~~^")
 
     try:
         parse("""

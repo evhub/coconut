@@ -1080,7 +1080,7 @@ class Grammar(object):
             | fixto(keyword("is"), "_coconut.operator.is_")
             | fixto(keyword("in"), "_coconut_in")
         )
-        partialable_op = base_op_item | infix_op
+        partialable_op = ~keyword("if") + (base_op_item | infix_op)
         partial_op_item_tokens = (
             labeled_group(dot.suppress() + partialable_op + test_no_infix, "right partial")
             | labeled_group(test_no_infix + partialable_op + dot.suppress(), "left partial")
