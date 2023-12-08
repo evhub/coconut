@@ -1726,6 +1726,8 @@ If the last `statement` (not followed by a semicolon) in a statement lambda is a
 
 Statement lambdas also support implicit lambda syntax such that `def => _` is equivalent to `def (_=None) => _` as well as explicitly marking them as pattern-matching such that `match def (x) => x` will be a pattern-matching function.
 
+Importantly, statement lambdas do not capture variables introduced only in the surrounding expression, e.g. inside of a list comprehension or normal lambda. To avoid such situations, only nest statement lambdas inside other statement lambdas, and explicitly partially apply a statement lambda to pass in a value from a list comprehension.
+
 Note that statement lambdas have a lower precedence than normal lambdas and thus capture things like trailing commas. To avoid confusion, statement lambdas should always be wrapped in their own set of parentheses.
 
 _Deprecated: Statement lambdas also support `->` instead of `=>`. Note that when using `->`, any lambdas in the body of the statement lambda must also use `->` rather than `=>`._
