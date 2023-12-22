@@ -54,7 +54,8 @@ class _coconut{object}:{COMMENT.EVERYTHING_HERE_MUST_BE_COPIED_TO_STUB_FILE}
     else:
         abc.Sequence.register(numpy.ndarray)
     numpy_modules = {numpy_modules}
-    pandas_numpy_modules = {pandas_numpy_modules}
+    xarray_modules = {xarray_modules}
+    pandas_modules = {pandas_modules}
     jax_numpy_modules = {jax_numpy_modules}
     tee_type = type(itertools.tee((), 1)[0])
     reiterables = abc.Sequence, abc.Mapping, abc.Set
@@ -121,6 +122,20 @@ class _coconut_Sentinel(_coconut_baseclass):
 _coconut_sentinel = _coconut_Sentinel()
 def _coconut_get_base_module(obj):
     return obj.__class__.__module__.split(".", 1)[0]
+def _coconut_xarray_to_pandas(obj):
+    import xarray
+    if isinstance(obj, xarray.Dataset):
+        return obj.to_dataframe()
+    elif isinstance(obj, xarray.DataArray):
+        return obj.to_series()
+    else:
+        return obj.to_pandas()
+def _coconut_xarray_to_numpy(obj):
+    import xarray
+    if isinstance(obj, xarray.Dataset):
+        return obj.to_dataframe().to_numpy()
+    else:
+        return obj.to_numpy()
 class MatchError(_coconut_baseclass, Exception):
     """Pattern-matching error. Has attributes .pattern, .value, and .message."""{COMMENT.no_slots_to_allow_setattr_below}
     max_val_repr_len = 500
@@ -752,8 +767,10 @@ Additionally supports Cartesian products of numpy arrays."""
         if iterables:
             it_modules = [_coconut_get_base_module(it) for it in iterables]
             if _coconut.all(mod in _coconut.numpy_modules for mod in it_modules):
-                if _coconut.any(mod in _coconut.pandas_numpy_modules for mod in it_modules):
-                    iterables = tuple((it.to_numpy() if _coconut_get_base_module(it) in _coconut.pandas_numpy_modules else it) for it in iterables)
+                if _coconut.any(mod in _coconut.xarray_modules for mod in it_modules):
+                    iterables = tuple((_coconut_xarray_to_numpy(it) if mod in _coconut.xarray_modules else it) for it, mod in _coconut.zip(iterables, it_modules))
+                if _coconut.any(mod in _coconut.pandas_modules for mod in it_modules):
+                    iterables = tuple((it.to_numpy() if mod in _coconut.pandas_modules else it) for it, mod in _coconut.zip(iterables, it_modules))
                 if _coconut.any(mod in _coconut.jax_numpy_modules for mod in it_modules):
                     from jax import numpy
                 else:
@@ -1605,7 +1622,9 @@ def fmap(func, obj, **kwargs):
             if result is not _coconut.NotImplemented:
                 return result
     obj_module = _coconut_get_base_module(obj)
-    if obj_module in _coconut.pandas_numpy_modules:
+    if obj_module in _coconut.xarray_modules:
+        return {_coconut_}fmap(func, _coconut_xarray_to_pandas(obj)).to_xarray()
+    if obj_module in _coconut.pandas_modules:
         if obj.ndim <= 1:
             return obj.apply(func)
         return obj.apply(func, axis=obj.ndim-1)
@@ -1941,7 +1960,9 @@ def all_equal(iterable):
     """
     iterable_module = _coconut_get_base_module(iterable)
     if iterable_module in _coconut.numpy_modules:
-        if iterable_module in _coconut.pandas_numpy_modules:
+        if iterable_module in _coconut.xarray_modules:
+            iterable = _coconut_xarray_to_numpy(iterable)
+        elif iterable_module in _coconut.pandas_modules:
             iterable = iterable.to_numpy()
         return not _coconut.len(iterable) or (iterable == iterable[0]).all()
     first_item = _coconut_sentinel
@@ -2014,8 +2035,11 @@ def _coconut_mk_anon_namedtuple(fields, types=None, of_kwargs=None):
         return NT
     return NT(**of_kwargs)
 def _coconut_ndim(arr):
-    if (_coconut_get_base_module(arr) in _coconut.numpy_modules or _coconut.hasattr(arr.__class__, "__matconcat__")) and _coconut.hasattr(arr, "ndim"):
+    arr_mod = _coconut_get_base_module(arr)
+    if (arr_mod in _coconut.numpy_modules or _coconut.hasattr(arr.__class__, "__matconcat__")) and _coconut.hasattr(arr, "ndim"):
         return arr.ndim
+    if arr_mod in _coconut.xarray_modules:{COMMENT.if_we_got_here_its_a_Dataset_not_a_DataArray}
+        return 2
     if not _coconut.isinstance(arr, _coconut.abc.Sequence) or _coconut.isinstance(arr, (_coconut.str, _coconut.bytes)):
         return 0
     if _coconut.len(arr) == 0:
@@ -2040,23 +2064,20 @@ def _coconut_expand_arr(arr, new_dims):
         arr = [arr]
     return arr
 def _coconut_concatenate(arrs, axis):
-    matconcat = None
     for a in arrs:
         if _coconut.hasattr(a.__class__, "__matconcat__"):
-            matconcat = a.__class__.__matconcat__
-            break
-        a_module = _coconut_get_base_module(a)
-        if a_module in _coconut.pandas_numpy_modules:
-            from pandas import concat as matconcat
-            break
-        if a_module in _coconut.jax_numpy_modules:
-            from jax.numpy import concatenate as matconcat
-            break
-        if a_module in _coconut.numpy_modules:
-            matconcat = _coconut.numpy.concatenate
-            break
-    if matconcat is not None:
-        return matconcat(arrs, axis=axis)
+            return a.__class__.__matconcat__(arrs, axis=axis)
+    arr_modules = [_coconut_get_base_module(a) for a in arrs]
+    if any(mod in _coconut.xarray_modules for mod in arr_modules):
+        return _coconut_concatenate([(_coconut_xarray_to_pandas(a) if mod in _coconut.xarray_modules else a) for a, mod in _coconut.zip(arrs, arr_modules)], axis).to_xarray()
+    if any(mod in _coconut.pandas_modules for mod in arr_modules):
+        import pandas
+        return pandas.concat(arrs, axis=axis)
+    if any(mod in _coconut.jax_numpy_modules for mod in arr_modules):
+        import jax.numpy
+        return jax.numpy.concatenate(arrs, axis=axis)
+    if any(mod in _coconut.numpy_modules for mod in arr_modules):
+        return _coconut.numpy.concatenate(arrs, axis=axis)
     if not axis:
         return _coconut.list(_coconut.itertools.chain.from_iterable(arrs))
     return [_coconut_concatenate(rows, axis - 1) for rows in _coconut.zip(*arrs)]
@@ -2209,4 +2230,4 @@ class _coconut_SupportsInv(_coconut.typing.Protocol):
 {def_async_map}
 {def_aliases}
 _coconut_self_match_types = {self_match_types}
-_coconut_Expected, _coconut_MatchError, _coconut_cartesian_product, _coconut_count, _coconut_cycle, _coconut_enumerate, _coconut_flatten, _coconut_filter, _coconut_groupsof, _coconut_ident, _coconut_lift, _coconut_map, _coconut_mapreduce, _coconut_multiset, _coconut_range, _coconut_reiterable, _coconut_reversed, _coconut_scan, _coconut_starmap, _coconut_tee, _coconut_windowsof, _coconut_zip, _coconut_zip_longest, TYPE_CHECKING, reduce, takewhile, dropwhile = Expected, MatchError, cartesian_product, count, cycle, enumerate, flatten, filter, groupsof, ident, lift, map, mapreduce, multiset, range, reiterable, reversed, scan, starmap, tee, windowsof, zip, zip_longest, False, _coconut.functools.reduce, _coconut.itertools.takewhile, _coconut.itertools.dropwhile{COMMENT.anything_added_here_should_be_copied_to_stub_file}
+_coconut_Expected, _coconut_MatchError, _coconut_cartesian_product, _coconut_count, _coconut_cycle, _coconut_enumerate, _coconut_flatten, _coconut_fmap, _coconut_filter, _coconut_groupsof, _coconut_ident, _coconut_lift, _coconut_map, _coconut_mapreduce, _coconut_multiset, _coconut_range, _coconut_reiterable, _coconut_reversed, _coconut_scan, _coconut_starmap, _coconut_tee, _coconut_windowsof, _coconut_zip, _coconut_zip_longest, TYPE_CHECKING, reduce, takewhile, dropwhile = Expected, MatchError, cartesian_product, count, cycle, enumerate, flatten, fmap, filter, groupsof, ident, lift, map, mapreduce, multiset, range, reiterable, reversed, scan, starmap, tee, windowsof, zip, zip_longest, False, _coconut.functools.reduce, _coconut.itertools.takewhile, _coconut.itertools.dropwhile{COMMENT.anything_added_here_should_be_copied_to_stub_file}

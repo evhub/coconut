@@ -10,6 +10,7 @@ from coconut.constants import (
     PY34,
     PY35,
     PY36,
+    PY39,
     PYPY,
 )  # type: ignore
 from coconut._pyparsing import USE_COMPUTATION_GRAPH  # type: ignore
@@ -664,22 +665,46 @@ def test_pandas() -> bool:
     return True
 
 
+def test_xarray() -> bool:
+    import xarray as xr
+    import numpy as np
+    def ds1 `dataset_equal` ds2 = (ds1 == ds2).all().values() |> all
+    da = xr.DataArray([10, 11;; 12, 13], dims=["x", "y"])
+    ds = xr.Dataset({"a": da, "b": da + 10})
+    assert ds$[0] == "a"
+    ds_ = [da; da + 10]
+    assert ds `dataset_equal` ds_  # type: ignore
+    ds__ = [da; da |> fmap$(.+10)]
+    assert ds `dataset_equal` ds__  # type: ignore
+    assert ds `dataset_equal` (ds |> fmap$(ident))
+    assert da.to_numpy() `np.array_equal` (da |> fmap$(ident) |> .to_numpy())
+    assert (ds |> fmap$(r -> r["a"] + r["b"]) |> .to_numpy()) `np.array_equal` np.array([30; 32;; 34; 36])
+    assert not all_equal(da)
+    assert not all_equal(ds)
+    assert multi_enumerate(da) |> list == [((0, 0), 10), ((0, 1), 11), ((1, 0), 12), ((1, 1), 13)]
+    assert cartesian_product(da.sel(x=0), da.sel(x=1)) `np.array_equal` np.array([10; 12;; 10; 13;; 11; 12;; 11; 13])  # type: ignore
+    return True
+
+
 def test_extras() -> bool:
     if not PYPY and (PY2 or PY34):
         assert test_numpy() is True
     print(".", end="")
     if not PYPY and PY36:
         assert test_pandas() is True  # .
+    print(".", end="")
+    if not PYPY and PY39:
+        assert test_xarray() is True # ..
     print(".")  # newline bc we print stuff after this
-    assert test_setup_none() is True  # ..
+    assert test_setup_none() is True  # ...
     print(".")  # ditto
-    assert test_convenience() is True  # ...
+    assert test_convenience() is True  # ....
     # everything after here uses incremental parsing, so it must come last
     print(".", end="")
-    assert test_incremental() is True  # ....
+    assert test_incremental() is True  # .....
     if IPY:
         print(".", end="")
-        assert test_kernel() is True  # .....
+        assert test_kernel() is True  # ......
     return True
 
 

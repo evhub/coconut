@@ -180,7 +180,10 @@ if sys.getrecursionlimit() < default_recursion_limit:
     sys.setrecursionlimit(default_recursion_limit)
 
 # modules that numpy-like arrays can live in
-pandas_numpy_modules = (
+xarray_modules = (
+    "xarray",
+)
+pandas_modules = (
     "pandas",
 )
 jax_numpy_modules = (
@@ -190,7 +193,8 @@ numpy_modules = (
     "numpy",
     "torch",
 ) + (
-    pandas_numpy_modules
+    xarray_modules
+    + pandas_modules
     + jax_numpy_modules
 )
 
@@ -999,6 +1003,7 @@ all_reqs = {
         ("numpy", "py34;py<39"),
         ("numpy", "py39"),
         ("pandas", "py36"),
+        ("xarray", "py39"),
     ),
     "tests": (
         ("pytest", "py<36"),
@@ -1021,6 +1026,7 @@ unpinned_min_versions = {
     ("trollius", "py<3;cpy"): (2, 2),
     "requests": (2, 31),
     ("numpy", "py39"): (1, 26),
+    ("xarray", "py39"): (2023,),
     ("dataclasses", "py==36"): (0, 8),
     ("aenum", "py<34"): (3, 1, 15),
     "pydata-sphinx-theme": (0, 14),
