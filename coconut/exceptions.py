@@ -22,7 +22,6 @@ from coconut.root import *  # NOQA
 import traceback
 
 from coconut._pyparsing import (
-    USE_LINE_BY_LINE,
     lineno,
     col as getcol,
 )
@@ -169,8 +168,8 @@ class CoconutSyntaxError(CoconutException):
                     message_parts += ["\n", " " * taberrfmt, highlight(part)]
 
                     # add squiggles to message
-                    if point_ind > 0 or endpoint_ind > 0:
-                        err_len = endpoint_ind - point_ind
+                    err_len = endpoint_ind - point_ind
+                    if (point_ind > 0 or endpoint_ind > 0) and err_len < len(part):
                         message_parts += ["\n", " " * (taberrfmt + point_ind)]
                         if err_len <= min_squiggles_in_err_msg:
                             if not self.point_to_endpoint:
@@ -274,7 +273,7 @@ class CoconutTargetError(CoconutSyntaxError):
 
 class CoconutParseError(CoconutSyntaxError):
     """Coconut ParseError."""
-    point_to_endpoint = not USE_LINE_BY_LINE
+    point_to_endpoint = True
 
 
 class CoconutWarning(CoconutException):

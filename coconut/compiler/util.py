@@ -454,12 +454,6 @@ def attach(item, action, ignore_no_tokens=None, ignore_one_token=None, ignore_ar
     return add_action(item, action, make_copy)
 
 
-def final_evaluate_tokens(tokens):
-    """Same as evaluate_tokens but should only be used once a parse is assured."""
-    clear_packrat_cache()
-    return evaluate_tokens(tokens, is_final=True)
-
-
 @contextmanager
 def adaptive_manager(original, loc, item, reparse=False):
     """Manage the use of MatchFirst.setAdaptiveMode."""
@@ -487,6 +481,14 @@ def adaptive_manager(original, loc, item, reparse=False):
                 logger.record_stat("adaptive", True)
         finally:
             MatchFirst.setAdaptiveMode(False)
+
+
+def final_evaluate_tokens(tokens):
+    """Same as evaluate_tokens but should only be used once a parse is assured."""
+    result = evaluate_tokens(tokens, is_final=True)
+    # clear packrat cache after evaluating tokens so error creation gets to see the cache
+    clear_packrat_cache()
+    return result
 
 
 def final(item):
@@ -530,9 +532,12 @@ def force_reset_packrat_cache():
 @contextmanager
 def parsing_context(inner_parse=None):
     """Context to manage the packrat cache across parse calls."""
-    current_cache_matters = ParserElement._packratEnabled
+    current_cache_matters = (
+        inner_parse is not False
+        and ParserElement._packratEnabled
+    )
     new_cache_matters = (
-        not inner_parse
+        inner_parse is not True
         and ParserElement._incrementalEnabled
         and not ParserElement._incrementalWithResets
     )
@@ -542,7 +547,17 @@ def parsing_context(inner_parse=None):
     )
     if (
         current_cache_matters
-        and not new_cache_matters
+        and new_cache_matters
+        and ParserElement._incrementalWithResets
+    ):
+        incrementalWithResets, ParserElement._incrementalWithResets = ParserElement._incrementalWithResets, False
+        try:
+            yield
+        finally:
+            ParserElement._incrementalWithResets = incrementalWithResets
+    elif (
+        current_cache_matters
+        and will_clear_cache
     ):
         # store old packrat cache
         old_cache = ParserElement.packrat_cache
@@ -557,16 +572,6 @@ def parsing_context(inner_parse=None):
             if logger.verbose:
                 ParserElement.packrat_cache_stats[0] += old_cache_stats[0]
                 ParserElement.packrat_cache_stats[1] += old_cache_stats[1]
-    elif (
-        current_cache_matters
-        and new_cache_matters
-        and will_clear_cache
-    ):
-        incrementalWithResets, ParserElement._incrementalWithResets = ParserElement._incrementalWithResets, False
-        try:
-            yield
-        finally:
-            ParserElement._incrementalWithResets = incrementalWithResets
     else:
         yield
 
@@ -806,7 +811,7 @@ def should_clear_cache(force=False):
         return True
     elif not ParserElement._packratEnabled:
         return False
-    elif SUPPORTS_INCREMENTAL and ParserElement._incrementalEnabled:
+    elif ParserElement._incrementalEnabled:
         if not in_incremental_mode():
             return repeatedly_clear_incremental_cache
         if (
@@ -897,18 +902,11 @@ def get_cache_items_for(original, only_useful=False, exclude_stale=True):
             yield lookup, value
 
 
-def get_highest_parse_loc(original, only_successes=False):
-    """Get the highest observed parse location."""
+def get_highest_parse_loc(original):
+    """Get the highest observed parse location.
+    Note that there's no point in filtering for successes/failures, since we always see both at the same locations."""
     highest_loc = 0
     for lookup, _ in get_cache_items_for(original):
-        if only_successes:
-            if SUPPORTS_INCREMENTAL and ParserElement._incrementalEnabled:
-                # parseIncremental failure
-                if lookup[1] is True:
-                    continue
-            # parseCache failure
-            elif not isinstance(lookup, tuple):
-                continue
         loc = lookup[2]
         if loc > highest_loc:
             highest_loc = loc

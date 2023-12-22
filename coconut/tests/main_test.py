@@ -148,9 +148,8 @@ always_err_strs = (
     "INTERNAL ERROR",
 )
 ignore_error_lines_with = (
-    # ignore SyntaxWarnings containing assert_raises
-    "assert_raises(",
-    " raise ",
+    # ignore SyntaxWarnings containing assert_raises or raise
+    "raise",
 )
 
 mypy_snip = "a: str = count()[0]"

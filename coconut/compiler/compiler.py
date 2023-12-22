@@ -151,7 +151,6 @@ from coconut.compiler.util import (
     match_in,
     transform,
     parse,
-    all_matches,
     get_target_info_smart,
     split_leading_comments,
     compile_regex,
@@ -1210,9 +1209,9 @@ class Compiler(Grammar, pickleable_obj):
             causes = dictset()
             for check_loc in dictset((loc, endpoint, startpoint)):
                 if check_loc is not None:
-                    for cause, _, _ in all_matches(self.parse_err_msg, original[check_loc:], inner=True):
-                        if cause:
-                            causes.add(cause)
+                    cause = try_parse(self.parse_err_msg, original[check_loc:], inner=True)
+                    if cause:
+                        causes.add(cause)
             if causes:
                 extra = "possible cause{s}: {causes}".format(
                     s="s" if len(causes) > 1 else "",
@@ -1263,10 +1262,18 @@ class Compiler(Grammar, pickleable_obj):
         # build the error
         if extra is not None:
             kwargs["extra"] = extra
-        err = errtype(message, snippet, loc_in_snip, ln, endpoint=endpt_in_snip, filename=self.filename, **kwargs)
-        if use_startpoint:
-            err = err.set_formatting(point_to_endpoint=True, max_err_msg_lines=2)
-        return err
+        return errtype(
+            message,
+            snippet,
+            loc_in_snip,
+            ln,
+            endpoint=endpt_in_snip,
+            filename=self.filename,
+            **kwargs,
+        ).set_formatting(
+            point_to_endpoint=True if use_startpoint else None,
+            max_err_msg_lines=2 if use_startpoint else None,
+        )
 
     def make_syntax_err(self, err, original, after_parsing=False):
         """Make a CoconutSyntaxError from a CoconutDeferredSyntaxError."""
@@ -1375,9 +1382,7 @@ class Compiler(Grammar, pickleable_obj):
                     got, got_loc = results
                     out_parts.append(got)
                 got_loc = int(got_loc)
-                internal_assert(got_loc >= cur_loc, "invalid line by line parse", (cur_loc, results), extra=lambda: "in: " + repr(self.remaining_original.split("\n", 1)[0]))
-                if not init and got_loc == cur_loc:
-                    raise self.make_err(CoconutParseError, "parsing could not continue", original, cur_loc, include_causes=True)
+                internal_assert(got_loc >= cur_loc and (init or got_loc > cur_loc), "invalid line by line parse", (cur_loc, results), extra=lambda: "in: " + repr(self.remaining_original.split("\n", 1)[0]))
                 cur_loc = got_loc
                 init = False
         return "".join(out_parts)

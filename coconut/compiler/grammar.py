@@ -2646,8 +2646,9 @@ class Grammar(object):
 
         parse_err_msg = start_marker + (
             # should be in order of most likely to actually be the source of the error first
-            ZeroOrMore(~questionmark + ~Literal("\n") + any_char) + fixto(
-                questionmark
+            fixto(
+                ZeroOrMore(~questionmark + ~Literal("\n") + any_char)
+                + questionmark
                 + ~dollar
                 + ~lparen
                 + ~lbrack
