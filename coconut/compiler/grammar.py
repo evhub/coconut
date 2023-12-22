@@ -32,6 +32,7 @@ from contextlib import contextmanager
 from functools import partial
 
 from coconut._pyparsing import (
+    USE_LINE_BY_LINE,
     Forward,
     Group,
     Literal,
@@ -2472,12 +2473,18 @@ class Grammar(object):
 
         line = newline | stmt
 
-        single_input = condense(Optional(line) - ZeroOrMore(newline))
         file_input = condense(moduledoc_marker - ZeroOrMore(line))
+        raw_file_parser = start_marker - file_input - end_marker
+        line_by_line_file_parser = (
+            start_marker - moduledoc_marker - stores_loc_item,
+            start_marker - line - stores_loc_item,
+        )
+        file_parser = line_by_line_file_parser if USE_LINE_BY_LINE else raw_file_parser
+
+        single_input = condense(Optional(line) - ZeroOrMore(newline))
         eval_input = condense(testlist - ZeroOrMore(newline))
 
         single_parser = start_marker - single_input - end_marker
-        file_parser = start_marker - file_input - end_marker
         eval_parser = start_marker - eval_input - end_marker
         some_eval_parser = start_marker + eval_input
 
@@ -2637,14 +2644,9 @@ class Grammar(object):
 
         unsafe_equals = Literal("=")
 
-        kwd_err_msg = attach(any_keyword_in(keyword_vars + reserved_vars), kwd_err_msg_handle)
-        parse_err_msg = (
-            start_marker + (
-                fixto(end_of_line, "misplaced newline (maybe missing ':')")
-                | fixto(Optional(keyword("if") + skip_to_in_line(unsafe_equals)) + equals, "misplaced assignment (maybe should be '==')")
-                | kwd_err_msg
-            )
-            | fixto(
+        parse_err_msg = start_marker + (
+            # should be in order of most likely to actually be the source of the error first
+            ZeroOrMore(~questionmark + ~Literal("\n") + any_char) + fixto(
                 questionmark
                 + ~dollar
                 + ~lparen
@@ -2652,6 +2654,9 @@ class Grammar(object):
                 + ~dot,
                 "misplaced '?' (naked '?' is only supported inside partial application arguments)",
             )
+            | fixto(Optional(keyword("if") + skip_to_in_line(unsafe_equals)) + equals, "misplaced assignment (maybe should be '==')")
+            | attach(any_keyword_in(keyword_vars + reserved_vars), kwd_err_msg_handle)
+            | fixto(end_of_line, "misplaced newline (maybe missing ':')")
         )
 
         end_f_str_expr = combine(start_marker + (rbrace | colon | bang))

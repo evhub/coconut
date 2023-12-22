@@ -131,6 +131,8 @@ reverse_any_of = get_bool_env_var(reverse_any_of_env_var, False)
 
 # below constants are experimentally determined to maximize performance
 
+use_line_by_line_parser = True
+
 use_packrat_parser = True  # True also gives us better error messages
 packrat_cache_size = None  # only works because final() clears the cache
 
@@ -323,7 +325,7 @@ justify_len = 79  # ideal line length
 
 taberrfmt = 2  # spaces to indent exceptions
 min_squiggles_in_err_msg = 1
-max_err_msg_lines = 10
+default_max_err_msg_lines = 10
 
 # for pattern-matching
 default_matcher_style = "python warn"

@@ -266,6 +266,9 @@ class keydefaultdict(defaultdict, object):
 class dictset(dict, object):
     """A set implemented using a dictionary to get ordering benefits."""
 
+    def __init__(self, items=()):
+        super(dictset, self).__init__((x, True) for x in items)
+
     def __bool__(self):
         return len(self) > 0  # fixes py2 issue
 

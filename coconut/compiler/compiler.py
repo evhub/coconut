@@ -40,6 +40,7 @@ from threading import Lock
 from coconut._pyparsing import (
     USE_COMPUTATION_GRAPH,
     USE_CACHE,
+    USE_LINE_BY_LINE,
     ParseBaseException,
     ParseResults,
     col as getcol,
@@ -181,6 +182,7 @@ from coconut.compiler.util import (
     pickle_cache,
     handle_and_manage,
     sub_all,
+    ComputationNode,
 )
 from coconut.compiler.header import (
     minify_header,
@@ -602,6 +604,7 @@ class Compiler(Grammar, pickleable_obj):
         self.add_code_before_regexes = {}
         self.add_code_before_replacements = {}
         self.add_code_before_ignore_names = {}
+        self.remaining_original = None
 
     @contextmanager
     def inner_environment(self, ln=None):
@@ -618,8 +621,10 @@ class Compiler(Grammar, pickleable_obj):
         parsing_context, self.parsing_context = self.parsing_context, defaultdict(list)
         kept_lines, self.kept_lines = self.kept_lines, []
         num_lines, self.num_lines = self.num_lines, 0
+        remaining_original, self.remaining_original = self.remaining_original, None
         try:
-            yield
+            with ComputationNode.using_overrides():
+                yield
         finally:
             self.outer_ln = outer_ln
             self.line_numbers = line_numbers
@@ -631,6 +636,7 @@ class Compiler(Grammar, pickleable_obj):
             self.parsing_context = parsing_context
             self.kept_lines = kept_lines
             self.num_lines = num_lines
+            self.remaining_original = remaining_original
 
     def current_parsing_context(self, name, default=None):
         """Get the current parsing context for the given name."""
@@ -696,15 +702,15 @@ class Compiler(Grammar, pickleable_obj):
         trim_arity = should_trim_arity(cls_method) if is_action else False
 
         @wraps(cls_method)
-        def method(original, loc, tokens):
+        def method(original, loc, tokens_or_item):
             self_method = getattr(cls.current_compiler, method_name)
             if kwargs:
                 self_method = partial(self_method, **kwargs)
             if trim_arity:
                 self_method = _trim_arity(self_method)
-            return self_method(original, loc, tokens)
+            return self_method(original, loc, tokens_or_item)
         internal_assert(
-            hasattr(cls_method, "ignore_tokens") is hasattr(method, "ignore_tokens")
+            hasattr(cls_method, "ignore_arguments") is hasattr(method, "ignore_arguments")
             and hasattr(cls_method, "ignore_no_tokens") is hasattr(method, "ignore_no_tokens")
             and hasattr(cls_method, "ignore_one_token") is hasattr(method, "ignore_one_token"),
             "failed to properly wrap method",
@@ -1163,7 +1169,7 @@ class Compiler(Grammar, pickleable_obj):
         """Return information on the current target as a version tuple."""
         return get_target_info(self.target)
 
-    def make_err(self, errtype, message, original, loc=0, ln=None, extra=None, reformat=True, endpoint=None, include_causes=False, **kwargs):
+    def make_err(self, errtype, message, original, loc=0, ln=None, extra=None, reformat=True, endpoint=None, include_causes=False, use_startpoint=False, **kwargs):
         """Generate an error of the specified type."""
         logger.log_loc("raw_loc", original, loc)
         logger.log_loc("raw_endpoint", original, endpoint)
@@ -1173,19 +1179,59 @@ class Compiler(Grammar, pickleable_obj):
         logger.log_loc("loc", original, loc)
 
         # get endpoint
+        startpoint = None
         if endpoint is None:
             endpoint = reformat
         if endpoint is False:
             endpoint = loc
         else:
             if endpoint is True:
-                endpoint = get_highest_parse_loc(original)
+                if self.remaining_original is None:
+                    endpoint = get_highest_parse_loc(original)
+                else:
+                    startpoint = ComputationNode.add_to_loc
+                    raw_endpoint = get_highest_parse_loc(self.remaining_original)
+                    endpoint = startpoint + raw_endpoint
                 logger.log_loc("highest_parse_loc", original, endpoint)
             endpoint = clip(
                 move_endpt_to_non_whitespace(original, endpoint, backwards=True),
                 min=loc,
             )
         logger.log_loc("endpoint", original, endpoint)
+
+        # process startpoint
+        if startpoint is not None:
+            startpoint = move_loc_to_non_whitespace(original, startpoint)
+            logger.log_loc("startpoint", original, startpoint)
+
+        # determine possible causes
+        if include_causes:
+            self.internal_assert(extra is None, original, loc, "make_err cannot include causes with extra")
+            causes = dictset()
+            for check_loc in dictset((loc, endpoint, startpoint)):
+                if check_loc is not None:
+                    for cause, _, _ in all_matches(self.parse_err_msg, original[check_loc:], inner=True):
+                        if cause:
+                            causes.add(cause)
+            if causes:
+                extra = "possible cause{s}: {causes}".format(
+                    s="s" if len(causes) > 1 else "",
+                    causes=", ".join(ordered(causes)),
+                )
+            else:
+                extra = None
+
+        # use startpoint if appropriate
+        if startpoint is None:
+            use_startpoint = False
+        else:
+            if use_startpoint is None:
+                use_startpoint = (
+                    "\n" not in original[loc:endpoint]
+                    and "\n" in original[startpoint:loc]
+                )
+            if use_startpoint:
+                loc = startpoint
 
         # get line number
         if ln is None:
@@ -1208,33 +1254,19 @@ class Compiler(Grammar, pickleable_obj):
         logger.log_loc("loc_in_snip", snippet, loc_in_snip)
         logger.log_loc("endpt_in_snip", snippet, endpt_in_snip)
 
-        # determine possible causes
-        if include_causes:
-            self.internal_assert(extra is None, original, loc, "make_err cannot include causes with extra")
-            causes = dictset()
-            for cause, _, _ in all_matches(self.parse_err_msg, snippet[loc_in_snip:]):
-                if cause:
-                    causes.add(cause)
-            for cause, _, _ in all_matches(self.parse_err_msg, snippet[endpt_in_snip:]):
-                if cause:
-                    causes.add(cause)
-            if causes:
-                extra = "possible cause{s}: {causes}".format(
-                    s="s" if len(causes) > 1 else "",
-                    causes=", ".join(ordered(causes)),
-                )
-            else:
-                extra = None
-
         # reformat the snippet and fix error locations to match
         if reformat:
             snippet, loc_in_snip, endpt_in_snip = self.reformat_locs(snippet, loc_in_snip, endpt_in_snip)
             logger.log_loc("reformatted_loc", snippet, loc_in_snip)
             logger.log_loc("reformatted_endpt", snippet, endpt_in_snip)
 
+        # build the error
         if extra is not None:
             kwargs["extra"] = extra
-        return errtype(message, snippet, loc_in_snip, ln, endpoint=endpt_in_snip, filename=self.filename, **kwargs)
+        err = errtype(message, snippet, loc_in_snip, ln, endpoint=endpt_in_snip, filename=self.filename, **kwargs)
+        if use_startpoint:
+            err = err.set_formatting(point_to_endpoint=True, max_err_msg_lines=2)
+        return err
 
     def make_syntax_err(self, err, original, after_parsing=False):
         """Make a CoconutSyntaxError from a CoconutDeferredSyntaxError."""
@@ -1247,7 +1279,7 @@ class Compiler(Grammar, pickleable_obj):
         loc = err.loc
         ln = self.adjust(err.lineno) if include_ln else None
 
-        return self.make_err(CoconutParseError, msg, original, loc, ln, include_causes=True, **kwargs)
+        return self.make_err(CoconutParseError, msg, original, loc, ln, include_causes=True, use_startpoint=None, **kwargs)
 
     def make_internal_syntax_err(self, original, loc, msg, item, extra):
         """Make a CoconutInternalSyntaxError."""
@@ -1289,23 +1321,24 @@ class Compiler(Grammar, pickleable_obj):
             Compiler.current_compiler = self
             yield
 
-    def streamline(self, grammar, inputstring=None, force=False, inner=False):
-        """Streamline the given grammar for the given inputstring."""
-        input_len = 0 if inputstring is None else len(inputstring)
-        if force or (streamline_grammar_for_len is not None and input_len > streamline_grammar_for_len):
-            start_time = get_clock_time()
-            prep_grammar(grammar, streamline=True)
-            logger.log_lambda(
-                lambda: "Streamlined {grammar} in {time} seconds{info}.".format(
-                    grammar=get_name(grammar),
-                    time=get_clock_time() - start_time,
-                    info="" if inputstring is None else " (streamlined due to receiving input of length {length})".format(
-                        length=input_len,
+    def streamline(self, grammars, inputstring=None, force=False, inner=False):
+        """Streamline the given grammar(s) for the given inputstring."""
+        for grammar in grammars if isinstance(grammars, tuple) else (grammars,):
+            input_len = 0 if inputstring is None else len(inputstring)
+            if force or (streamline_grammar_for_len is not None and input_len > streamline_grammar_for_len):
+                start_time = get_clock_time()
+                prep_grammar(grammar, streamline=True)
+                logger.log_lambda(
+                    lambda: "Streamlined {grammar} in {time} seconds{info}.".format(
+                        grammar=get_name(grammar),
+                        time=get_clock_time() - start_time,
+                        info="" if inputstring is None else " (streamlined due to receiving input of length {length})".format(
+                            length=input_len,
+                        ),
                     ),
-                ),
-            )
-        elif inputstring is not None and not inner:
-            logger.log("No streamlining done for input of length {length}.".format(length=input_len))
+                )
+            elif inputstring is not None and not inner:
+                logger.log("No streamlining done for input of length {length}.".format(length=input_len))
 
     def run_final_checks(self, original, keep_state=False):
         """Run post-parsing checks to raise any necessary errors/warnings."""
@@ -1322,6 +1355,32 @@ class Compiler(Grammar, pickleable_obj):
                             loc,
                             endpoint=False,
                         )
+
+    def parse_line_by_line(self, init_parser, line_parser, original):
+        """Apply init_parser then line_parser repeatedly."""
+        if not USE_LINE_BY_LINE:
+            raise CoconutException("line-by-line parsing not supported", extra="run 'pip install --upgrade cPyparsing' to fix")
+        with ComputationNode.using_overrides():
+            ComputationNode.override_original = original
+            out_parts = []
+            init = True
+            cur_loc = 0
+            while cur_loc < len(original):
+                self.remaining_original = original[cur_loc:]
+                ComputationNode.add_to_loc = cur_loc
+                results = parse(init_parser if init else line_parser, self.remaining_original, inner=False)
+                if len(results) == 1:
+                    got_loc, = results
+                else:
+                    got, got_loc = results
+                    out_parts.append(got)
+                got_loc = int(got_loc)
+                internal_assert(got_loc >= cur_loc, "invalid line by line parse", (cur_loc, results), extra=lambda: "in: " + repr(self.remaining_original.split("\n", 1)[0]))
+                if not init and got_loc == cur_loc:
+                    raise self.make_err(CoconutParseError, "parsing could not continue", original, cur_loc, include_causes=True)
+                cur_loc = got_loc
+                init = False
+        return "".join(out_parts)
 
     def parse(
         self,
@@ -1352,7 +1411,11 @@ class Compiler(Grammar, pickleable_obj):
                 with logger.gather_parsing_stats():
                     try:
                         pre_procd = self.pre(inputstring, keep_state=keep_state, **preargs)
-                        parsed = parse(parser, pre_procd, inner=False)
+                        if isinstance(parser, tuple):
+                            init_parser, line_parser = parser
+                            parsed = self.parse_line_by_line(init_parser, line_parser, pre_procd)
+                        else:
+                            parsed = parse(parser, pre_procd, inner=False)
                         out = self.post(parsed, keep_state=keep_state, **postargs)
                     except ParseBaseException as err:
                         raise self.make_parse_err(err)
@@ -1817,7 +1880,7 @@ class Compiler(Grammar, pickleable_obj):
                             original=line,
                             ln=self.adjust(len(new)),
                             **err_kwargs
-                        ).set_point_to_endpoint(True)
+                        ).set_formatting(point_to_endpoint=True)
 
         self.set_skips(skips)
         if new:
@@ -2053,7 +2116,7 @@ class Compiler(Grammar, pickleable_obj):
             pass
         else:
             raw_first_line = split_leading_trailing_indent(rem_comment(first_line))[1]
-            if match_in(self.just_a_string, raw_first_line):
+            if match_in(self.just_a_string, raw_first_line, inner=True):
                 return first_line, rest_of_lines
         return None, block
 
@@ -4098,7 +4161,7 @@ __annotations__["{name}"] = {annotation}
         return "_coconut.typing.Generic[" + ", ".join(generics) + "]"
 
     @contextmanager
-    def type_alias_stmt_manage(self, item=None, original=None, loc=None):
+    def type_alias_stmt_manage(self, original=None, loc=None, item=None):
         """Manage the typevars parsing context."""
         prev_typevar_info = self.current_parsing_context("typevars")
         with self.add_to_parsing_context("typevars", {
@@ -4132,7 +4195,7 @@ __annotations__["{name}"] = {annotation}
         return tokens
 
     @contextmanager
-    def where_stmt_manage(self, item, original, loc):
+    def where_stmt_manage(self, original, loc, item):
         """Manage where statements."""
         with self.add_to_parsing_context("where", {
             "assigns": None,
@@ -4187,7 +4250,7 @@ __annotations__["{name}"] = {annotation}
         else:
             return "_coconut.Ellipsis"
 
-    ellipsis_handle.ignore_tokens = True
+    ellipsis_handle.ignore_arguments = True
 
     def match_case_tokens(self, match_var, check_var, original, tokens, top):
         """Build code for matching the given case."""
@@ -4634,7 +4697,7 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
             return tokens[0]
 
     @contextmanager
-    def class_manage(self, item, original, loc):
+    def class_manage(self, original, loc, item):
         """Manage the class parsing context."""
         cls_stack = self.parsing_context["class"]
         if cls_stack:
@@ -4660,7 +4723,7 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
             cls_stack.pop()
 
     @contextmanager
-    def func_manage(self, item, original, loc):
+    def func_manage(self, original, loc, item):
         """Manage the function parsing context."""
         cls_context = self.current_parsing_context("class")
         if cls_context is not None:

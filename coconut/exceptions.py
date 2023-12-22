@@ -22,6 +22,7 @@ from coconut.root import *  # NOQA
 import traceback
 
 from coconut._pyparsing import (
+    USE_LINE_BY_LINE,
     lineno,
     col as getcol,
 )
@@ -30,7 +31,7 @@ from coconut.constants import (
     taberrfmt,
     report_this_text,
     min_squiggles_in_err_msg,
-    max_err_msg_lines,
+    default_max_err_msg_lines,
 )
 from coconut.util import (
     pickleable_obj,
@@ -90,7 +91,6 @@ class CoconutException(BaseCoconutException, Exception):
 
 class CoconutSyntaxError(CoconutException):
     """Coconut SyntaxError."""
-    point_to_endpoint = False
     argnames = ("message", "source", "point", "ln", "extra", "endpoint", "filename")
 
     def __init__(self, message, source=None, point=None, ln=None, extra=None, endpoint=None, filename=None):
@@ -101,6 +101,17 @@ class CoconutSyntaxError(CoconutException):
     def kwargs(self):
         """Get the arguments as keyword arguments."""
         return dict(zip(self.argnames, self.args))
+
+    point_to_endpoint = False
+    max_err_msg_lines = default_max_err_msg_lines
+
+    def set_formatting(self, point_to_endpoint=None, max_err_msg_lines=None):
+        """Sets formatting values."""
+        if point_to_endpoint is not None:
+            self.point_to_endpoint = point_to_endpoint
+        if max_err_msg_lines is not None:
+            self.max_err_msg_lines = max_err_msg_lines
+        return self
 
     def message(self, message, source, point, ln, extra=None, endpoint=None, filename=None):
         """Creates a SyntaxError-like message."""
@@ -195,11 +206,11 @@ class CoconutSyntaxError(CoconutException):
 
                     # add code, highlighting all of it together
                     code_parts = []
-                    if len(lines) > max_err_msg_lines:
-                        for i in range(max_err_msg_lines // 2):
+                    if len(lines) > self.max_err_msg_lines:
+                        for i in range(self.max_err_msg_lines // 2):
                             code_parts += ["\n", " " * taberrfmt, lines[i]]
                         code_parts += ["\n", " " * (taberrfmt // 2), "..."]
-                        for i in range(len(lines) - max_err_msg_lines // 2, len(lines)):
+                        for i in range(len(lines) - self.max_err_msg_lines // 2, len(lines)):
                             code_parts += ["\n", " " * taberrfmt, lines[i]]
                     else:
                         for line in lines:
@@ -235,11 +246,6 @@ class CoconutSyntaxError(CoconutException):
             err.filename = filename
         return err
 
-    def set_point_to_endpoint(self, point_to_endpoint):
-        """Sets whether to point to the endpoint."""
-        self.point_to_endpoint = point_to_endpoint
-        return self
-
 
 class CoconutStyleError(CoconutSyntaxError):
     """Coconut --strict error."""
@@ -268,7 +274,7 @@ class CoconutTargetError(CoconutSyntaxError):
 
 class CoconutParseError(CoconutSyntaxError):
     """Coconut ParseError."""
-    point_to_endpoint = True
+    point_to_endpoint = not USE_LINE_BY_LINE
 
 
 class CoconutWarning(CoconutException):
