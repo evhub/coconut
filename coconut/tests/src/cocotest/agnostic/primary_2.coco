@@ -421,6 +421,9 @@ def primary_test_2() -> bool:
     arr |>= [[3; 4] ;; .]
     assert arr == [3; 4;; 1; 2] == [[3; 4] ;; .] |> call$(?, [. ; 2] |> call$(?, 1))
     assert (if)(10, 20, 30) == 20 == (if)(0, 10, 20)
+    assert all_equal([], to=10)
+    assert all_equal([10; 10; 10; 10], to=10)
+    assert not all_equal([1, 1], to=10)
 
     with process_map.multiple_sequential_calls():  # type: ignore
         assert map((+), range(3), range(4)$[:-1], strict=True) |> list == [0, 2, 4] == process_map((+), range(3), range(4)$[:-1], strict=True) |> list  # type: ignore

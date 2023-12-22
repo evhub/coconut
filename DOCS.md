@@ -4210,9 +4210,15 @@ _Can't be done without the definition of `windowsof`; see the compiled header fo
 
 #### `all_equal`
 
-**all\_equal**(_iterable_)
+**all\_equal**(_iterable_, _to_=`...`)
 
-Coconut's `all_equal` built-in takes in an iterable and determines whether all of its elements are equal to each other. `all_equal` assumes transitivity of equality and that `!=` is the negation of `==`. Special support is provided for [`numpy`](#numpy-integration) objects.
+Coconut's `all_equal` built-in takes in an iterable and determines whether all of its elements are equal to each other.
+
+If _to_ is passed, `all_equal` will check that all the elements are specifically equal to that value, rather than just equal to each other.
+
+Note that `all_equal` assumes transitivity of equality, that `!=` is the negation of `==`, and that empty arrays always have all their elements equal.
+
+Special support is provided for [`numpy`](#numpy-integration) objects.
 
 ##### Example
 

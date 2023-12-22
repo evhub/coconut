@@ -1680,7 +1680,7 @@ def lift_apart(func: _t.Callable[..., _W]) -> _t.Callable[..., _t.Callable[..., 
     ...
 
 
-def all_equal(iterable: _Iterable) -> bool:
+def all_equal(iterable: _t.Iterable[_T], to: _T = ...) -> bool:
     """For a given iterable, check whether all elements in that iterable are equal to each other.
 
     Supports numpy arrays. Assumes transitivity and 'x != y' being equivalent to 'not (x == y)'.

@@ -1953,8 +1953,9 @@ class lift_apart(lift):
     lift_apart also supports a shortcut form such that lift_apart(f, *func_args, **func_kwargs) is equivalent to lift_apart(f)(*func_args, **func_kwargs).
     """
     _apart = True
-def all_equal(iterable):
+def all_equal(iterable, to=_coconut_sentinel):
     """For a given iterable, check whether all elements in that iterable are equal to each other.
+    If 'to' is passed, check that all the elements are equal to that value.
 
     Supports numpy arrays. Assumes transitivity and 'x != y' being equivalent to 'not (x == y)'.
     """
@@ -1964,8 +1965,8 @@ def all_equal(iterable):
             iterable = _coconut_xarray_to_numpy(iterable)
         elif iterable_module in _coconut.pandas_modules:
             iterable = iterable.to_numpy()
-        return not _coconut.len(iterable) or (iterable == iterable[0]).all()
-    first_item = _coconut_sentinel
+        return not _coconut.len(iterable) or (iterable == (iterable[0] if to is _coconut_sentinel else to)).all()
+    first_item = to
     for item in iterable:
         if first_item is _coconut_sentinel:
             first_item = item
