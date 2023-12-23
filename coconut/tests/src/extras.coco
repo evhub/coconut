@@ -209,10 +209,15 @@ cannot reassign type variable 'T' (use explicit '\T' syntax if intended) (line 1
     assert_raises(-> parse("@"), CoconutParseError)
     assert_raises(-> parse("range(1,10) |> reduce$(*, initializer = 1000) |> print"), CoconutParseError, err_has=(
         "\n                       \\~~^",
+        "\n  \\~~~~~~~~~~~~~~~~~~~~~~~^",
     ))
-    assert_raises(-> parse("a := b"), CoconutParseError, err_has="\n    ^")
+    assert_raises(-> parse("a := b"), CoconutParseError, err_has=(
+        "\n    ^",
+        "\n  \\~^",
+    ))
     assert_raises(-> parse("1 + return"), CoconutParseError, err_has=(
         "\n    \\~~^",
+        "\n  \\~~~~^",
     ))
     assert_raises(-> parse("""
 def f() =
@@ -229,22 +234,41 @@ def f() =
          ~^
         """.strip(),
     ))
-    assert_raises(-> parse('b"abc" "def"'), CoconutParseError, err_has="\n         ^")
-    assert_raises(-> parse('"abc" b"def"'), CoconutParseError, err_has="\n        ^")
-    assert_raises(-> parse('"a" 10'), CoconutParseError, err_has="\n      ^")
-    assert_raises(-> parse("A. ."), CoconutParseError, err_has="\n   \\~^")
-    assert_raises(-> parse('''f"""{
-}"""'''), CoconutSyntaxError, err_has="parsing failed for format string expression")
-    assert_raises(-> parse("f([] {})"), CoconutParseError, err_has="\n   \\~~~^")
-
-    assert_raises(-> parse("return = 1"), CoconutParseError, err_has='invalid use of the keyword "return"')
-    assert_raises(-> parse("if a = b: pass"), CoconutParseError, err_has="misplaced assignment")
-    assert_raises(-> parse("while a == b"), CoconutParseError, err_has="misplaced newline")
+    assert_raises(-> parse('b"abc" "def"'), CoconutParseError, err_has=(
+        "\n         ^",
+        "\n  \\~~~~~~^",
+    ))
+    assert_raises(-> parse('"abc" b"def"'), CoconutParseError, err_has=(
+        "\n        ^",
+        "\n  \\~~~~~^",
+    ))
+    assert_raises(-> parse('"a" 10'), CoconutParseError, err_has=(
+        "\n      ^",
+        "\n  \\~~~^",
+    ))
+    assert_raises(-> parse("A. ."), CoconutParseError, err_has=(
+        "\n   \\~^",
+        "\n  \\~~^",
+    ))
+    assert_raises(-> parse("f([] {})"), CoconutParseError, err_has=(
+        "\n   \\~~~^",
+        "\n  \\~~~~^",
+    ))
     assert_raises(-> parse("0xfgf"), CoconutParseError, err_has=(
         "\n     ^",
         "\n     \\~^",
+        "\n  \\~~^",
     ))
-    assert_raises(-> parse("(. if 1)"), CoconutParseError, err_has="\n     ^")
+    assert_raises(-> parse("(. if 1)"), CoconutParseError, err_has=(
+        "\n     ^",
+        "\n  \\~~^",
+    ))
+
+    assert_raises(-> parse('''f"""{
+}"""'''), CoconutSyntaxError, err_has="parsing failed for format string expression")
+    assert_raises(-> parse("return = 1"), CoconutParseError, err_has='invalid use of the keyword "return"')
+    assert_raises(-> parse("if a = b: pass"), CoconutParseError, err_has="misplaced assignment")
+    assert_raises(-> parse("while a == b"), CoconutParseError, err_has="misplaced newline")
 
     try:
         parse("""
