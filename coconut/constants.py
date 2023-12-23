@@ -439,11 +439,11 @@ untcoable_funcs = (
     r"locals",
     r"globals",
     r"(py_)?super",
-    r"(typing\.)?cast",
-    r"(sys\.)?exc_info",
-    r"(sys\.)?_getframe",
-    r"(sys\.)?_current_frames",
-    r"(sys\.)?_current_exceptions",
+    r"cast",
+    r"exc_info",
+    r"sys\.[a-zA-Z0-9_.]+",
+    r"traceback\.[a-zA-Z0-9_.]+",
+    r"typing\.[a-zA-Z0-9_.]+",
 )
 
 py3_to_py2_stdlib = {
