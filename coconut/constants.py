@@ -148,9 +148,6 @@ use_incremental_if_available = False
 
 use_line_by_line_parser = False
 
-use_adaptive_if_available = False  # currently broken
-adaptive_reparse_usage_weight = 10
-
 # these only apply to use_incremental_if_available, not compiler.util.enable_incremental_parsing()
 default_incremental_cache_size = None
 repeatedly_clear_incremental_cache = True

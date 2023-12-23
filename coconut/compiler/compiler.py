@@ -1269,7 +1269,7 @@ class Compiler(Grammar, pickleable_obj):
             ln,
             endpoint=endpt_in_snip,
             filename=self.filename,
-            **kwargs,
+            **kwargs  # no comma
         ).set_formatting(
             point_to_endpoint=True if use_startpoint else None,
             max_err_msg_lines=2 if use_startpoint else None,

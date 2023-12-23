@@ -123,11 +123,9 @@ from coconut.constants import (
     unwrapper,
     incremental_cache_limit,
     incremental_mode_cache_successes,
-    adaptive_reparse_usage_weight,
     use_adaptive_any_of,
     disable_incremental_for_len,
     coconut_cache_dir,
-    use_adaptive_if_available,
     use_fast_pyparsing_reprs,
     save_new_cache_items,
     cache_validation_info,
@@ -454,35 +452,6 @@ def attach(item, action, ignore_no_tokens=None, ignore_one_token=None, ignore_ar
     return add_action(item, action, make_copy)
 
 
-@contextmanager
-def adaptive_manager(original, loc, item, reparse=False):
-    """Manage the use of MatchFirst.setAdaptiveMode."""
-    if reparse:
-        cleared_cache = clear_packrat_cache()
-        if cleared_cache is not True:
-            item.include_in_packrat_context = True
-        MatchFirst.setAdaptiveMode(False, usage_weight=adaptive_reparse_usage_weight)
-        try:
-            yield
-        finally:
-            MatchFirst.setAdaptiveMode(False, usage_weight=1)
-            if cleared_cache is not True:
-                item.include_in_packrat_context = False
-    else:
-        MatchFirst.setAdaptiveMode(True)
-        try:
-            yield
-        except Exception as exc:
-            if DEVELOP:
-                logger.log("reparsing due to:", exc)
-                logger.record_stat("adaptive", False)
-        else:
-            if DEVELOP:
-                logger.record_stat("adaptive", True)
-        finally:
-            MatchFirst.setAdaptiveMode(False)
-
-
 def final_evaluate_tokens(tokens):
     """Same as evaluate_tokens but should only be used once a parse is assured."""
     result = evaluate_tokens(tokens, is_final=True)
@@ -493,8 +462,6 @@ def final_evaluate_tokens(tokens):
 
 def final(item):
     """Collapse the computation graph upon parsing the given item."""
-    if SUPPORTS_ADAPTIVE and use_adaptive_if_available:
-        item = Wrap(item, adaptive_manager, greedy=True)
     # evaluate_tokens expects a computation graph, so we just call add_action directly
     return add_action(trace(item), final_evaluate_tokens)
 
@@ -2040,7 +2007,7 @@ def sub_all(inputstr, regexes, replacements):
 
 
 # -----------------------------------------------------------------------------------------------------------------------
-# PYTEST:
+# EXTRAS:
 # -----------------------------------------------------------------------------------------------------------------------
 
 
@@ -2071,3 +2038,32 @@ def pytest_rewrite_asserts(code, module_name=reserved_prefix + "_pytest_module")
     rewrite_asserts(tree, module_name)
     fixed_tree = ast.fix_missing_locations(FixPytestNames().visit(tree))
     return ast.unparse(fixed_tree)
+
+
+@contextmanager
+def adaptive_manager(original, loc, item, reparse=False):
+    """Manage the use of MatchFirst.setAdaptiveMode."""
+    if reparse:
+        cleared_cache = clear_packrat_cache()
+        if cleared_cache is not True:
+            item.include_in_packrat_context = True
+        MatchFirst.setAdaptiveMode(False, usage_weight=10)
+        try:
+            yield
+        finally:
+            MatchFirst.setAdaptiveMode(False, usage_weight=1)
+            if cleared_cache is not True:
+                item.include_in_packrat_context = False
+    else:
+        MatchFirst.setAdaptiveMode(True)
+        try:
+            yield
+        except Exception as exc:
+            if DEVELOP:
+                logger.log("reparsing due to:", exc)
+                logger.record_stat("adaptive", False)
+        else:
+            if DEVELOP:
+                logger.record_stat("adaptive", True)
+        finally:
+            MatchFirst.setAdaptiveMode(False)
