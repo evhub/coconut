@@ -35,7 +35,7 @@ from coconut.constants import (
 from coconut.util import (
     pickleable_obj,
     clip,
-    logical_lines,
+    literal_lines,
     clean,
     get_displayable_target,
     normalize_newlines,
@@ -140,7 +140,7 @@ class CoconutSyntaxError(CoconutException):
                 point_ind = getcol(point, source) - 1
                 endpoint_ind = getcol(endpoint, source) - 1
 
-                source_lines = tuple(logical_lines(source, keep_newlines=True))
+                source_lines = tuple(literal_lines(source, keep_newlines=True))
 
                 # walk the endpoint line back until it points to real text
                 while endpoint_ln > point_ln and not "".join(source_lines[endpoint_ln - 1:endpoint_ln]).strip():

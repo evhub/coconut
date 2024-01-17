@@ -97,7 +97,7 @@ from coconut.util import (
     pickleable_obj,
     checksum,
     clip,
-    logical_lines,
+    literal_lines,
     clean,
     get_target_info,
     get_clock_time,
@@ -1240,7 +1240,7 @@ class Compiler(Grammar, pickleable_obj):
                 ln = self.outer_ln
 
         # get line indices for the error locs
-        original_lines = tuple(logical_lines(original, True))
+        original_lines = tuple(literal_lines(original, True))
         loc_line_ind = clip(lineno(loc, original) - 1, max=len(original_lines) - 1)
 
         # build the source snippet that the error is referring to
@@ -1449,7 +1449,7 @@ class Compiler(Grammar, pickleable_obj):
         if self.strict and nl_at_eof_check and inputstring and not inputstring.endswith("\n"):
             end_index = len(inputstring) - 1 if inputstring else 0
             raise self.make_err(CoconutStyleError, "missing new line at end of file", inputstring, end_index)
-        kept_lines = inputstring.splitlines()
+        kept_lines = tuple(literal_lines(inputstring))
         self.num_lines = len(kept_lines)
         if self.keep_lines:
             self.kept_lines = kept_lines
@@ -1719,7 +1719,7 @@ class Compiler(Grammar, pickleable_obj):
         """Process custom operator definitions."""
         out = []
         skips = self.copy_skips()
-        for i, raw_line in enumerate(logical_lines(inputstring, keep_newlines=True)):
+        for i, raw_line in enumerate(literal_lines(inputstring, keep_newlines=True)):
             ln = i + 1
             base_line = rem_comment(raw_line)
             stripped_line = base_line.lstrip()
@@ -1806,7 +1806,7 @@ class Compiler(Grammar, pickleable_obj):
 
     def ind_proc(self, inputstring, **kwargs):
         """Process indentation and ensure balanced parentheses."""
-        lines = tuple(logical_lines(inputstring))
+        lines = tuple(literal_lines(inputstring))
         new = []  # new lines
         current = None  # indentation level of previous line
         levels = []  # indentation levels of all previous blocks, newest at end
@@ -1899,11 +1899,8 @@ class Compiler(Grammar, pickleable_obj):
         out_lines = []
         level = 0
 
-        next_line_is_fake = False
-        for line in inputstring.splitlines(True):
-            is_fake = next_line_is_fake
-            next_line_is_fake = line.endswith("\f") and line.rstrip("\f") == line.rstrip()
-
+        is_fake = False
+        for next_line_is_real, line in literal_lines(inputstring, True, yield_next_line_is_real=True):
             line, comment = split_comment(line.strip())
 
             indent, line = split_leading_indent(line)
@@ -1931,6 +1928,8 @@ class Compiler(Grammar, pickleable_obj):
 
             line = (line + comment).rstrip()
             out_lines.append(line)
+
+            is_fake = not next_line_is_real
 
         if not ignore_errors and level != 0:
             logger.log_lambda(lambda: "failed to reindent:\n" + inputstring)
@@ -1978,7 +1977,7 @@ class Compiler(Grammar, pickleable_obj):
         """Add end of line comments."""
         out_lines = []
         ln = 1  # line number in pre-processed original
-        for line in logical_lines(inputstring):
+        for line in literal_lines(inputstring):
             add_one_to_ln = False
             try:
 
@@ -2331,7 +2330,7 @@ else:
     def proc_funcdef(self, original, loc, decorators, funcdef, is_async, in_method, is_stmt_lambda):
         """Determines if TCO or TRE can be done and if so does it,
         handles dotted function names, and universalizes async functions."""
-        raw_lines = list(logical_lines(funcdef, True))
+        raw_lines = list(literal_lines(funcdef, True))
         def_stmt = raw_lines.pop(0)
         out = []
 
@@ -2684,7 +2683,7 @@ else:
         self.compile_add_code_before_regexes()
 
         out = []
-        for raw_line in inputstring.splitlines(True):
+        for raw_line in literal_lines(inputstring, True):
             bef_ind, line, aft_ind = split_leading_trailing_indent(raw_line)
 
             # look for deferred errors
@@ -2707,7 +2706,7 @@ else:
                 # handle any non-function code that was added before the funcdef
                 pre_def_lines = []
                 post_def_lines = []
-                funcdef_lines = list(logical_lines(funcdef, True))
+                funcdef_lines = list(literal_lines(funcdef, True))
                 for i, line in enumerate(funcdef_lines):
                     if self.def_regex.match(line):
                         pre_def_lines = funcdef_lines[:i]
@@ -3128,7 +3127,7 @@ while True:
     def endline_handle(self, original, loc, tokens):
         """Add line number information to end of line."""
         endline, = tokens
-        lines = endline.splitlines(True)
+        lines = tuple(literal_lines(endline, True))
         if self.minify:
             lines = lines[0]
         out = []

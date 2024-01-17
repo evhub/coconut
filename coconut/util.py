@@ -151,8 +151,8 @@ def clip(num, min=None, max=None):
     )
 
 
-def logical_lines(text, keep_newlines=False):
-    """Iterate over the logical code lines in text."""
+def literal_lines(text, keep_newlines=False, yield_next_line_is_real=False):
+    """Iterate over the literal code lines in text."""
     prev_content = None
     for line in text.splitlines(True):
         real_line = True
@@ -163,11 +163,14 @@ def logical_lines(text, keep_newlines=False):
             if not keep_newlines:
                 line = line[:-1]
         else:
-            if prev_content is None:
-                prev_content = ""
-            prev_content += line
+            if not yield_next_line_is_real:
+                if prev_content is None:
+                    prev_content = ""
+                prev_content += line
             real_line = False
-        if real_line:
+        if yield_next_line_is_real:
+            yield real_line, line
+        elif real_line:
             if prev_content is not None:
                 line = prev_content + line
                 prev_content = None

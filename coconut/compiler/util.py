@@ -88,6 +88,7 @@ from coconut.util import (
     univ_open,
     ensure_dir,
     get_clock_time,
+    literal_lines,
 )
 from coconut.terminal import (
     logger,
@@ -1839,7 +1840,7 @@ def is_blank(line):
 def final_indentation_level(code):
     """Determine the final indentation level of the given code."""
     level = 0
-    for line in code.splitlines():
+    for line in literal_lines(code):
         leading_indent, _, trailing_indent = split_leading_trailing_indent(line)
         level += ind_change(leading_indent) + ind_change(trailing_indent)
     return level
