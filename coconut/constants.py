@@ -37,7 +37,7 @@ def fixpath(path):
     return os.path.normpath(os.path.realpath(os.path.expanduser(path)))
 
 
-def get_bool_env_var(env_var, default=False):
+def get_bool_env_var(env_var, default=None):
     """Get a boolean from an environment variable."""
     boolstr = os.getenv(env_var, "").lower()
     if boolstr in ("true", "yes", "on", "1", "t"):

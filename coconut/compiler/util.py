@@ -131,6 +131,7 @@ from coconut.constants import (
     cache_validation_info,
     require_cache_clear_frac,
     reverse_any_of,
+    all_keywords,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -1537,12 +1538,16 @@ def any_len_perm_at_least_one(*elems, **kwargs):
     return any_len_perm_with_one_of_each_group(*groups_and_elems)
 
 
-def caseless_literal(literalstr, suppress=False):
+def caseless_literal(literalstr, suppress=False, disambiguate=False):
     """Version of CaselessLiteral that always parses to the given literalstr."""
+    out = CaselessLiteral(literalstr)
     if suppress:
-        return CaselessLiteral(literalstr).suppress()
+        out = out.suppress()
     else:
-        return fixto(CaselessLiteral(literalstr), literalstr)
+        out = fixto(out, literalstr)
+    if disambiguate:
+        out = disallow_keywords(k for k in all_keywords if k.startswith((literalstr[0].lower(), literalstr[0].upper()))) + out
+    return out
 
 
 # -----------------------------------------------------------------------------------------------------------------------

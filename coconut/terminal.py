@@ -210,7 +210,7 @@ class Logger(object):
     @classmethod
     def enable_colors(cls, file=None):
         """Attempt to enable CLI colors."""
-        use_color = get_bool_env_var(use_color_env_var)
+        use_color = get_bool_env_var(use_color_env_var, default=None)
         if (
             use_color is False
             or use_color is None and file is not None and not isatty(file)

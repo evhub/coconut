@@ -1630,16 +1630,8 @@ class Compiler(Grammar, pickleable_obj):
 
                 # start the string hold if we're at the start of a string
                 if hold is not None:
-                    is_f = False
-                    j = i - len(hold["start"])
-                    while j >= 0:
-                        prev_c = inputstring[j]
-                        if prev_c == "f":
-                            is_f = True
-                            break
-                        elif prev_c != "r":
-                            break
-                        j -= 1
+                    is_f_check_str = inputstring[clip(i - len(hold["start"]) + 1 - self.start_f_str_regex_len, min=0): i - len(hold["start"]) + 1]
+                    is_f = self.start_f_str_regex.search(is_f_check_str)
                     if is_f:
                         hold.update({
                             "type": "f string",

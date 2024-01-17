@@ -817,7 +817,7 @@ class Grammar(object):
         octint = combine(Word("01234567") + ZeroOrMore(underscore.suppress() + Word("01234567")))
         hexint = combine(Word(hexnums) + ZeroOrMore(underscore.suppress() + Word(hexnums)))
 
-        imag_j = caseless_literal("j") | fixto(caseless_literal("i", suppress=True), "j")
+        imag_j = caseless_literal("j") | fixto(caseless_literal("i", suppress=True, disambiguate=True), "j")
         basenum = combine(
             Optional(integer) + dot + integer
             | integer + Optional(dot + Optional(integer))
@@ -2659,6 +2659,9 @@ class Grammar(object):
             | attach(any_keyword_in(keyword_vars + reserved_vars), kwd_err_msg_handle)
             | fixto(end_of_line, "misplaced newline (maybe missing ':')")
         )
+
+        start_f_str_regex = compile_regex(r"\br?fr?$")
+        start_f_str_regex_len = 4
 
         end_f_str_expr = combine(start_marker + (rbrace | colon | bang))
 
