@@ -7,4 +7,6 @@ def py311_test() -> bool:
     except* ValueError as err:
         got_err = err
     assert repr(got_err) == repr(multi_err), (got_err, multi_err)
+    assert [1, 2, 3][x := 1] == 2
+    assert x == 1
     return True

@@ -649,8 +649,8 @@ class Grammar(object):
         unsafe_fat_arrow = Literal("=>") | fixto(Literal("\u21d2"), "=>")
         colon_eq = Literal(":=")
         unsafe_dubcolon = Literal("::")
-        unsafe_colon = Literal(":")
         colon = disambiguate_literal(":", ["::", ":="])
+        indexing_colon = disambiguate_literal(":", [":="])  # same as : but :: is allowed
         lt_colon = Literal("<:")
         semicolon = Literal(";") | invalid_syntax("\u037e", "invalid Greek question mark instead of semicolon", greedy=True)
         multisemicolon = combine(OneOrMore(semicolon))
@@ -1199,21 +1199,23 @@ class Grammar(object):
             | op_item
         )
 
+        # for .[]
         subscript_star = Forward()
         subscript_star_ref = star
         slicetest = Optional(test_no_chain)
-        sliceop = condense(unsafe_colon + slicetest)
+        sliceop = condense(indexing_colon + slicetest)
         subscript = condense(
             slicetest + sliceop + Optional(sliceop)
-            | Optional(subscript_star) + test
+            | Optional(subscript_star) + new_namedexpr_test
         )
-        subscriptlist = itemlist(subscript, comma, suppress_trailing=False) | new_namedexpr_test
+        subscriptlist = itemlist(subscript, comma, suppress_trailing=False)
 
+        # for .$[]
         slicetestgroup = Optional(test_no_chain, default="")
-        sliceopgroup = unsafe_colon.suppress() + slicetestgroup
+        sliceopgroup = indexing_colon.suppress() + slicetestgroup
         subscriptgroup = attach(
             slicetestgroup + sliceopgroup + Optional(sliceopgroup)
-            | test,
+            | new_namedexpr_test,
             subscriptgroup_handle,
         )
         subscriptgrouplist = itemlist(subscriptgroup, comma)

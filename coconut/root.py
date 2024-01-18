@@ -26,7 +26,7 @@ import sys as _coconut_sys
 VERSION = "3.0.4"
 VERSION_NAME = None
 # False for release, int >= 1 for develop
-DEVELOP = 14
+DEVELOP = 15
 ALPHA = False  # for pre releases rather than post releases
 
 assert DEVELOP is False or DEVELOP >= 1, "DEVELOP must be False or an int >= 1"
