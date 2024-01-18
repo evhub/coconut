@@ -243,10 +243,6 @@ def f() =
         "\n        ^",
         "\n  \\~~~~~^",
     ))
-    assert_raises(-> parse('"a" 10'), CoconutParseError, err_has=(
-        "\n      ^",
-        "\n  \\~~~^",
-    ))
     assert_raises(-> parse("A. ."), CoconutParseError, err_has=(
         "\n   \\~^",
         "\n  \\~~^",

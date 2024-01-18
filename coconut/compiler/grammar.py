@@ -1443,7 +1443,6 @@ class Grammar(object):
         ) + Optional(power_in_impl_call))
         impl_call_item = condense(
             disallow_keywords(reserved_vars)
-            + ~any_string
             + ~non_decimal_num
             + atom_item
             + Optional(power_in_impl_call)
