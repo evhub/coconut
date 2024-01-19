@@ -673,9 +673,9 @@ class Grammar(object):
         pipe = Literal("|>") | fixto(Literal("\u21a6"), "|>")
         star_pipe = Literal("|*>") | fixto(Literal("*\u21a6"), "|*>")
         dubstar_pipe = Literal("|**>") | fixto(Literal("**\u21a6"), "|**>")
-        back_pipe = Literal("<|") | fixto(Literal("\u21a4"), "<|")
-        back_star_pipe = Literal("<*|") | ~Literal("\u21a4**") + fixto(Literal("\u21a4*"), "<*|")
-        back_dubstar_pipe = Literal("<**|") | fixto(Literal("\u21a4**"), "<**|")
+        back_pipe = Literal("<|") | disambiguate_literal("\u21a4", ["\u21a4*", "\u21a4?"], fixesto="<|")
+        back_star_pipe = Literal("<*|") | disambiguate_literal("\u21a4*", ["\u21a4**", "\u21a4*?"], fixesto="<*|")
+        back_dubstar_pipe = Literal("<**|") | disambiguate_literal("\u21a4**", ["\u21a4**?"], fixesto="<**|")
         none_pipe = Literal("|?>") | fixto(Literal("?\u21a6"), "|?>")
         none_star_pipe = (
             Literal("|?*>")

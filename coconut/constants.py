@@ -576,45 +576,34 @@ self_match_types = (
 )
 
 python_builtins = (
-    '__import__', 'abs', 'all', 'any', 'bin', 'bool', 'bytearray',
-    'breakpoint', 'bytes', 'chr', 'classmethod', 'compile', 'complex',
-    'delattr', 'dict', 'dir', 'divmod', 'enumerate', 'eval', 'filter',
-    'float', 'format', 'frozenset', 'getattr', 'globals', 'hasattr',
-    'hash', 'hex', 'id', 'input', 'int', 'isinstance', 'issubclass',
-    'iter', 'len', 'list', 'locals', 'map', 'max', 'memoryview',
-    'min', 'next', 'object', 'oct', 'open', 'ord', 'pow', 'print',
-    'property', 'range', 'repr', 'reversed', 'round', 'set', 'setattr',
-    'slice', 'sorted', 'staticmethod', 'str', 'sum', 'super', 'tuple',
-    'type', 'vars', 'zip',
-    'Ellipsis', 'NotImplemented',
-    'ArithmeticError', 'AssertionError', 'AttributeError',
-    'BaseException', 'BufferError', 'BytesWarning', 'DeprecationWarning',
-    'EOFError', 'EnvironmentError', 'Exception', 'FloatingPointError',
-    'FutureWarning', 'GeneratorExit', 'IOError', 'ImportError',
-    'ImportWarning', 'IndentationError', 'IndexError', 'KeyError',
-    'KeyboardInterrupt', 'LookupError', 'MemoryError', 'NameError',
-    'NotImplementedError', 'OSError', 'OverflowError',
-    'PendingDeprecationWarning', 'ReferenceError', 'ResourceWarning',
-    'RuntimeError', 'RuntimeWarning', 'StopIteration',
-    'SyntaxError', 'SyntaxWarning', 'SystemError', 'SystemExit',
-    'TabError', 'TypeError', 'UnboundLocalError', 'UnicodeDecodeError',
-    'UnicodeEncodeError', 'UnicodeError', 'UnicodeTranslateError',
-    'UnicodeWarning', 'UserWarning', 'ValueError', 'VMSError',
-    'Warning', 'WindowsError', 'ZeroDivisionError',
+    "abs", "aiter", "all", "anext", "any", "ascii",
+    "bin", "bool", "breakpoint", "bytearray", "bytes",
+    "callable", "chr", "classmethod", "compile", "complex",
+    "delattr", "dict", "dir", "divmod",
+    "enumerate", "eval", "exec",
+    "filter", "float", "format", "frozenset",
+    "getattr", "globals",
+    "hasattr", "hash", "help", "hex",
+    "id", "input", "int", "isinstance", "issubclass", "iter",
+    "len", "list", "locals",
+    "map", "max", "memoryview", "min",
+    "next",
+    "object", "oct", "open", "ord",
+    "pow", "print", "property",
+    "range", "repr", "reversed", "round",
+    "set", "setattr", "slice", "sorted", "staticmethod", "str", "sum", "super",
+    "tuple", "type",
+    "vars",
+    "zip",
+    "__import__",
     '__name__',
     '__file__',
     '__annotations__',
     '__debug__',
-    # we treat these as coconut_exceptions so the highlighter will always know about them:
-    # 'ExceptionGroup', 'BaseExceptionGroup',
-    # don't include builtins that aren't always made available by Coconut:
-    # 'BlockingIOError', 'ChildProcessError', 'ConnectionError',
-    # 'BrokenPipeError', 'ConnectionAbortedError', 'ConnectionRefusedError',
-    # 'ConnectionResetError', 'FileExistsError', 'FileNotFoundError',
-    # 'InterruptedError', 'IsADirectoryError', 'NotADirectoryError',
-    # 'PermissionError', 'ProcessLookupError', 'TimeoutError',
-    # 'StopAsyncIteration', 'ModuleNotFoundError', 'RecursionError',
-    # 'EncodingWarning',
+)
+
+python_exceptions = (
+    "BaseException", "BaseExceptionGroup", "GeneratorExit", "KeyboardInterrupt", "SystemExit", "Exception", "ArithmeticError", "FloatingPointError", "OverflowError", "ZeroDivisionError", "AssertionError", "AttributeError", "BufferError", "EOFError", "ExceptionGroup", "BaseExceptionGroup", "ImportError", "ModuleNotFoundError", "LookupError", "IndexError", "KeyError", "MemoryError", "NameError", "UnboundLocalError", "OSError", "BlockingIOError", "ChildProcessError", "ConnectionError", "BrokenPipeError", "ConnectionAbortedError", "ConnectionRefusedError", "ConnectionResetError", "FileExistsError", "FileNotFoundError", "InterruptedError", "IsADirectoryError", "NotADirectoryError", "PermissionError", "ProcessLookupError", "TimeoutError", "ReferenceError", "RuntimeError", "NotImplementedError", "RecursionError", "StopAsyncIteration", "StopIteration", "SyntaxError", "IndentationError", "TabError", "SystemError", "TypeError", "ValueError", "UnicodeError", "UnicodeDecodeError", "UnicodeEncodeError", "UnicodeTranslateError", "Warning", "BytesWarning", "DeprecationWarning", "EncodingWarning", "FutureWarning", "ImportWarning", "PendingDeprecationWarning", "ResourceWarning", "RuntimeWarning", "SyntaxWarning", "UnicodeWarning", "UserWarning",
 )
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -842,12 +831,16 @@ must_use_specific_target_builtins = (
 
 coconut_exceptions = (
     "MatchError",
-    "ExceptionGroup",
-    "BaseExceptionGroup",
 )
 
-highlight_builtins = coconut_specific_builtins + interp_only_builtins
-all_builtins = frozenset(python_builtins + coconut_specific_builtins + coconut_exceptions)
+highlight_builtins = coconut_specific_builtins + interp_only_builtins + python_builtins
+highlight_exceptions = coconut_exceptions + python_exceptions
+all_builtins = frozenset(
+    python_builtins
+    + python_exceptions
+    + coconut_specific_builtins
+    + coconut_exceptions
+)
 
 magic_methods = (
     "__fmap__",

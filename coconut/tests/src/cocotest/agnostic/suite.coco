@@ -1077,6 +1077,8 @@ forward 2""") == 900
     assert pickle_round_trip(.method(x=10)) <| (method=x -> x) == 10
     assert sq_and_t2p1(10) == (100, 21)
     assert first_false_and_last_true([3, 2, 1, 0, "11", "1", ""]) == (0, "1")
+    assert ret_args_kwargs ↤** dict(a=1) == ((), dict(a=1))
+    assert ret_args_kwargs ↤**? None is None
 
     with process_map.multiple_sequential_calls():  # type: ignore
         assert process_map(tuple <.. (|>)$(to_sort), qsorts) |> list == [to_sort |> sorted |> tuple] * len(qsorts)

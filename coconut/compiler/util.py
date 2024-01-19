@@ -1454,12 +1454,15 @@ def disallow_keywords(kwds, with_suffix=""):
     return regex_item(r"(?!" + "|".join(to_disallow) + r")").suppress()
 
 
-def disambiguate_literal(literal, not_literals):
+def disambiguate_literal(literal, not_literals, fixesto=None):
     """Get an item that matchesl literal and not any of not_literals."""
-    return regex_item(
+    item = regex_item(
         r"(?!" + "|".join(re.escape(s) for s in not_literals) + ")"
         + re.escape(literal)
     )
+    if fixesto is not None:
+        item = fixto(item, fixesto)
+    return item
 
 
 def any_keyword_in(kwds):
