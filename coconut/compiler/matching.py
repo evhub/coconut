@@ -1050,7 +1050,7 @@ if {first_arg} is not _coconut_sentinel:
                     handle_indentation(
                         """
 raise _coconut.TypeError("too many positional args in class match (pattern requires {num_pos_matches}; '{cls_name}' only supports 1)")
-                    """,
+                        """,
                     ).format(
                         num_pos_matches=len(pos_matches),
                         cls_name=cls_name,
@@ -1063,13 +1063,15 @@ raise _coconut.TypeError("too many positional args in class match (pattern requi
         other_cls_matcher.add_check("not _coconut.type(" + item + ") in _coconut_self_match_types")
         match_args_var = other_cls_matcher.get_temp_var()
         other_cls_matcher.add_def(
-            handle_indentation("""
+            handle_indentation(
+                """
 {match_args_var} = _coconut.getattr({cls_name}, '__match_args__', ()) {type_any} {type_ignore}
 if not _coconut.isinstance({match_args_var}, _coconut.tuple):
     raise _coconut.TypeError("{cls_name}.__match_args__ must be a tuple")
 if _coconut.len({match_args_var}) < {num_pos_matches}:
     raise _coconut.TypeError("too many positional args in class match (pattern requires {num_pos_matches}; '{cls_name}' only supports %s)" % (_coconut.len({match_args_var}),))
-        """).format(
+                """,
+            ).format(
                 cls_name=cls_name,
                 match_args_var=match_args_var,
                 num_pos_matches=len(pos_matches),
@@ -1089,7 +1091,7 @@ if _coconut.len({match_args_var}) < {num_pos_matches}:
                     """
 {match_args_var} = _coconut.getattr({cls_name}, '__match_args__', ())
 {star_match_var} = _coconut.tuple(_coconut.getattr({item}, {match_args_var}[i]) for i in _coconut.range({num_pos_matches}, _coconut.len({match_args_var})))
-                """,
+                    """,
                 ).format(
                     match_args_var=self.get_temp_var(),
                     cls_name=cls_name,
@@ -1164,7 +1166,7 @@ if _coconut.len({match_args_var}) < {num_pos_matches}:
             handle_indentation(
                 """
 {is_data_result_var} = _coconut.getattr({cls_name}, "{is_data_var}", False) or _coconut.isinstance({cls_name}, _coconut.tuple) and _coconut.all(_coconut.getattr(_coconut_x, "{is_data_var}", False) for _coconut_x in {cls_name}) {type_ignore}
-            """,
+                """,
             ).format(
                 is_data_result_var=is_data_result_var,
                 is_data_var=is_data_var,
@@ -1241,7 +1243,7 @@ except _coconut.Exception as _coconut_view_func_exc:
         {func_result_var} = _coconut_sentinel
     else:
         raise
-            """,
+                """,
             ).format(
                 func_result_var=func_result_var,
                 view_func=view_func,
