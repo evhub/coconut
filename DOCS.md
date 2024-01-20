@@ -3960,7 +3960,7 @@ flat_it = iter_of_iters |> flatten |> list
 ```coconut_python
 from itertools import chain
 iter_of_iters = [[1, 2], [3, 4]]
-flat_it = iter_of_iters |> chain.from_iterable |> list
+flat_it = list(chain.from_iterable(iter_of_iters))
 ```
 
 #### `scan`
