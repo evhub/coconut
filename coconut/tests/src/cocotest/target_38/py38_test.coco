@@ -7,4 +7,7 @@ def py38_test() -> bool:
     assert a == 3 == b
     def f(x: int, /, y: int) -> int = x + y
     assert f(1, y=2) == 3
+    assert 10 |> (x := .) == 10 == x
+    assert 10 |> (x := .) |> (. + 1) == 11
+    assert x == 10
     return True

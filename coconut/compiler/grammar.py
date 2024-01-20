@@ -1565,6 +1565,9 @@ class Grammar(object):
             back_none_dubstar_pipe,
             use_adaptive=False,
         )
+        pipe_namedexpr_partial = lparen.suppress() + setname + (colon_eq + dot + rparen).suppress()
+
+        # make sure to keep these three definitions in sync
         pipe_item = (
             # we need the pipe_op since any of the atoms could otherwise be the start of an expression
             labeled_group(keyword("await"), "await") + pipe_op
@@ -1574,6 +1577,7 @@ class Grammar(object):
             | labeled_group(attrgetter_atom_tokens, "attrgetter") + pipe_op
             | labeled_group(partial_op_atom_tokens, "op partial") + pipe_op
             | labeled_group(partial_arr_concat_tokens, "arr concat partial") + pipe_op
+            | labeled_group(pipe_namedexpr_partial, "namedexpr") + pipe_op
             # expr must come at end
             | labeled_group(comp_pipe_expr, "expr") + pipe_op
         )
@@ -1585,23 +1589,25 @@ class Grammar(object):
             | labeled_group(attrgetter_atom_tokens, "attrgetter") + end_simple_stmt_item
             | labeled_group(partial_op_atom_tokens, "op partial") + end_simple_stmt_item
             | labeled_group(partial_arr_concat_tokens, "arr concat partial") + end_simple_stmt_item
+            | labeled_group(pipe_namedexpr_partial, "namedexpr") + end_simple_stmt_item
         )
         last_pipe_item = Group(
             lambdef("expr")
             # we need longest here because there's no following pipe_op we can use as above
             | longest(
                 keyword("await")("await"),
+                partial_atom_tokens("partial"),
                 itemgetter_atom_tokens("itemgetter"),
                 attrgetter_atom_tokens("attrgetter"),
-                partial_atom_tokens("partial"),
                 partial_op_atom_tokens("op partial"),
                 partial_arr_concat_tokens("arr concat partial"),
+                pipe_namedexpr_partial("namedexpr"),
                 comp_pipe_expr("expr"),
             )
         )
+
         normal_pipe_expr = Forward()
         normal_pipe_expr_tokens = OneOrMore(pipe_item) + last_pipe_item
-
         pipe_expr = (
             comp_pipe_expr + ~pipe_op
             | normal_pipe_expr

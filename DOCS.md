@@ -688,9 +688,10 @@ Coconut uses pipe operators for pipeline-style function application. All the ope
 
 The None-aware pipe operators here are equivalent to a [monadic bind](https://en.wikipedia.org/wiki/Monad_(functional_programming)) treating the object as a `Maybe` monad composed of either `None` or the given object. Thus, `x |?> f` is equivalent to `None if x is None else f(x)`. Note that only the object being piped, not the function being piped into, may be `None` for `None`-aware pipes.
 
-For working with `async` functions in pipes, all non-starred pipes support piping into `await` to await the awaitable piped into them, such that `x |> await` is equivalent to `await x`.
-
-Additionally, all pipe operators support a lambda as the last argument, despite lambdas having a lower precedence. Thus, `a |> x => b |> c` is equivalent to `a |> (x => b |> c)`, not `a |> (x => b) |> c`.
+Additionally, some special syntax constructs are only available in pipes to enable doing as many operations as possible via pipes if so desired:
+* For working with `async` functions in pipes, all non-starred pipes support piping into `await` to await the awaitable piped into them, such that `x |> await` is equivalent to `await x`.
+* All non-starred pipes support piping into `(<name> := .)` (mirroring the syntax for [operator implicit partials](#implicit-partial-application)) to assign the piped in item to `<name>`.
+* All pipe operators support a lambda as the last argument, despite lambdas having a lower precedence. Thus, `a |> x => b |> c` is equivalent to `a |> (x => b |> c)`, not `a |> (x => b) |> c`.
 
 _Note: To visually spread operations across several lines, just use [parenthetical continuation](#enhanced-parenthetical-continuation)._
 
@@ -1766,6 +1767,8 @@ _Deprecated: if the deprecated `->` is used in place of `=>`, then return type a
 
 Coconut uses a simple operator function short-hand: surround an operator with parentheses to retrieve its function. Similarly to iterator comprehensions, if the operator function is the only argument to a function, the parentheses of the function call can also serve as the parentheses for the operator function.
 
+All operator functions also support [implicit partial application](#implicit-partial-application), e.g. `(. + 1)` is equivalent to `(=> _ + 1)`.
+
 ##### Rationale
 
 A very common thing to do in functional programming is to make use of function versions of built-in operators: currying them, composing them, and piping them. To make this easy, Coconut provides a short-hand syntax to access operator functions.
@@ -2486,7 +2489,7 @@ where `<arg>` is defined as
 ```
 where `<name>` is the name of the function, `<cond>` is an optional additional check, `<body>` is the body of the function, `<pattern>` is defined by Coconut's [`match` statement](#match), `<default>` is the optional default if no argument is passed, and `<return_type>` is the optional return type annotation (note that argument type annotations are not supported for pattern-matching functions). The `match` keyword at the beginning is optional, but is sometimes necessary to disambiguate pattern-matching function definition from normal function definition, since Python function definition will always take precedence. Note that the `async` and `match` keywords can be in any order.
 
-If `<pattern>` has a variable name (via any variable binding that binds the entire pattern), the resulting pattern-matching function will support keyword arguments using that variable name.
+If `<pattern>` has a variable name (via any variable binding that binds the entire pattern, e.g. `x` in `int(x)` or `[a, b] as x`), the resulting pattern-matching function will support keyword arguments using that variable name.
 
 In addition to supporting pattern-matching in their arguments, pattern-matching function definitions also have a couple of notable differences compared to Python functions. Specifically:
 - If pattern-matching function definition fails, it will raise a [`MatchError`](#matcherror) (just like [destructuring assignment](#destructuring-assignment)) instead of a `TypeError`.

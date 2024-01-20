@@ -2445,7 +2445,8 @@ except _coconut.NameError:
                 raise self.make_err(
                     CoconutTargetError,
                     "async function definition requires a specific target",
-                    original, loc,
+                    original,
+                    loc,
                     target="sys",
                 )
             elif self.target_info >= (3, 5):
@@ -2456,7 +2457,8 @@ except _coconut.NameError:
                 raise self.make_err(
                     CoconutTargetError,
                     "found Python 3.6 async generator (Coconut can only backport async generators as far back as 3.5)",
-                    original, loc,
+                    original,
+                    loc,
                     target="35",
                 )
             else:
@@ -2815,16 +2817,18 @@ else:
         """Enforce properly ordered function parameters."""
         return "(" + join_args(*self.split_function_call(tokens, loc)) + ")"
 
-    def pipe_item_split(self, tokens, loc):
+    def pipe_item_split(self, original, loc, tokens):
         """Process a pipe item, which could be a partial, an attribute access, a method call, or an expression.
 
-        Return (type, split) where split is:
-            - (expr,) for expression
-            - (func, pos_args, kwd_args) for partial
-            - (name, args) for attr/method
-            - (attr, [(op, args)]) for itemgetter
-            - (op, arg) for right op partial
-            - (op, arg) for right arr concat partial
+        Return (type, split) where split is, for each type:
+            - expr: (expr,)
+            - partial: (func, pos_args, kwd_args)
+            - attrgetter: (name, args)
+            - itemgetter: (attr, [(op, args)]) for itemgetter
+            - right op partial: (op, arg)
+            - right arr concat partial: (op, arg)
+            - await: ()
+            - namedexpr: (varname,)
         """
         # list implies artificial tokens, which must be expr
         if isinstance(tokens, list) or "expr" in tokens:
@@ -2868,7 +2872,18 @@ else:
                 raise CoconutInternalException("invalid arr concat partial tokens in pipe_item", inner_toks)
         elif "await" in tokens:
             internal_assert(len(tokens) == 1 and tokens[0] == "await", "invalid await pipe item tokens", tokens)
-            return "await", []
+            return "await", ()
+        elif "namedexpr" in tokens:
+            if self.target_info < (3, 8):
+                raise self.make_err(
+                    CoconutTargetError,
+                    "named expression partial in pipe only supported for targets 3.8+",
+                    original,
+                    loc,
+                    target="38",
+                )
+            varname, = tokens
+            return "namedexpr", (varname,)
         else:
             raise CoconutInternalException("invalid pipe item tokens", tokens)
 
@@ -2882,7 +2897,7 @@ else:
                 return item
 
             # we've only been given one operand, so we can't do any optimization, so just produce the standard object
-            name, split_item = self.pipe_item_split(item, loc)
+            name, split_item = self.pipe_item_split(original, loc, item)
             if name == "expr":
                 expr, = split_item
                 return expr
@@ -2899,6 +2914,8 @@ else:
                 return partial_arr_concat_handle(item)
             elif name == "await":
                 raise CoconutDeferredSyntaxError("await in pipe must have something piped into it", loc)
+            elif name == "namedexpr":
+                raise CoconutDeferredSyntaxError("named expression partial in pipe must have something piped into it", loc)
             else:
                 raise CoconutInternalException("invalid split pipe item", split_item)
 
@@ -2929,7 +2946,7 @@ else:
 
             elif direction == "forwards":
                 # if this is an implicit partial, we have something to apply it to, so optimize it
-                name, split_item = self.pipe_item_split(item, loc)
+                name, split_item = self.pipe_item_split(original, loc, item)
                 subexpr = self.pipe_handle(original, loc, tokens)
 
                 if name == "expr":
@@ -2976,6 +2993,11 @@ else:
                     if stars:
                         raise CoconutDeferredSyntaxError("cannot star pipe into await", loc)
                     return self.await_expr_handle(original, loc, [subexpr])
+                elif name == "namedexpr":
+                    if stars:
+                        raise CoconutDeferredSyntaxError("cannot star pipe into named expression partial", loc)
+                    varname, = split_item
+                    return "({varname} := {item})".format(varname=varname, item=subexpr)
                 else:
                     raise CoconutInternalException("invalid split pipe item", split_item)
 
@@ -3952,7 +3974,8 @@ if not {check_var}:
             raise self.make_err(
                 CoconutTargetError,
                 "await requires a specific target",
-                original, loc,
+                original,
+                loc,
                 target="sys",
             )
         elif self.target_info >= (3, 5):
