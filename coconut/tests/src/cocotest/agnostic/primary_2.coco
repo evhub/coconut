@@ -434,6 +434,7 @@ def primary_test_2() -> bool:
     assert (,) ↤* (1, 2, 3) == (1, 2, 3)
     assert (,) ↤? None is None
     assert (,) ↤*? None is None  # type: ignore
+    assert '''\u2029'''!='''\n'''
 
     with process_map.multiple_sequential_calls():  # type: ignore
         assert map((+), range(3), range(4)$[:-1], strict=True) |> list == [0, 2, 4] == process_map((+), range(3), range(4)$[:-1], strict=True) |> list  # type: ignore
