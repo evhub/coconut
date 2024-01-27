@@ -160,6 +160,7 @@ min = _builtins.min
 max = _builtins.max
 next = _builtins.next
 object = _builtins.object
+ord = _builtins.ord
 print = _builtins.print
 property = _builtins.property
 range = _builtins.range

@@ -778,6 +778,15 @@ class _coconut_amap(_coconut_baseclass):
 {async_def_anext}
             '''.format(**format_dict),
         ),
+        handle_bytes=pycondition(
+            (3,),
+            if_lt='''
+if _coconut.isinstance(obj, _coconut.bytes):
+    return _coconut_base_makedata(_coconut.bytes, [func(_coconut.ord(x)) for x in obj], from_fmap=True, fallback_to_init=fallback_to_init)
+            ''',
+            indent=1,
+            newline=True,
+        ),
         maybe_bind_lru_cache=pycondition(
             (3, 2),
             if_lt='''
