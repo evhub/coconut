@@ -61,7 +61,7 @@ def _get_target_info(target):
 
 # if a new assignment is added below, a new builtins import should be added alongside it
 _base_py3_header = r'''from builtins import chr, dict, hex, input, int, map, object, oct, open, print, range, str, super, zip, filter, reversed, enumerate, repr
-py_chr, py_dict, py_hex, py_input, py_int, py_map, py_object, py_oct, py_open, py_print, py_range, py_str, py_super, py_zip, py_filter, py_reversed, py_enumerate, py_repr = chr, dict, hex, input, int, map, object, oct, open, print, range, str, super, zip, filter, reversed, enumerate, repr
+py_bytes, py_chr, py_dict, py_hex, py_input, py_int, py_map, py_object, py_oct, py_open, py_print, py_range, py_str, py_super, py_zip, py_filter, py_reversed, py_enumerate, py_repr = bytes, chr, dict, hex, input, int, map, object, oct, open, print, range, str, super, zip, filter, reversed, enumerate, repr
 _coconut_py_str, _coconut_py_super, _coconut_py_dict = str, super, dict
 from functools import wraps as _coconut_wraps
 exec("_coconut_exec = exec")
@@ -69,8 +69,8 @@ exec("_coconut_exec = exec")
 
 # if a new assignment is added below, a new builtins import should be added alongside it
 _base_py2_header = r'''from __builtin__ import chr, dict, hex, input, int, map, object, oct, open, print, range, str, super, zip, filter, reversed, enumerate, raw_input, xrange, repr, long
-py_chr, py_dict, py_hex, py_input, py_int, py_map, py_object, py_oct, py_open, py_print, py_range, py_str, py_super, py_zip, py_filter, py_reversed, py_enumerate, py_raw_input, py_xrange, py_repr = chr, dict, hex, input, int, map, object, oct, open, print, range, str, super, zip, filter, reversed, enumerate, raw_input, xrange, repr
-_coconut_py_raw_input, _coconut_py_xrange, _coconut_py_int, _coconut_py_long, _coconut_py_print, _coconut_py_str, _coconut_py_super, _coconut_py_unicode, _coconut_py_repr, _coconut_py_dict = raw_input, xrange, int, long, print, str, super, unicode, repr, dict
+py_bytes, py_chr, py_dict, py_hex, py_input, py_int, py_map, py_object, py_oct, py_open, py_print, py_range, py_str, py_super, py_zip, py_filter, py_reversed, py_enumerate, py_raw_input, py_xrange, py_repr = bytes, chr, dict, hex, input, int, map, object, oct, open, print, range, str, super, zip, filter, reversed, enumerate, raw_input, xrange, repr
+_coconut_py_raw_input, _coconut_py_xrange, _coconut_py_int, _coconut_py_long, _coconut_py_print, _coconut_py_str, _coconut_py_super, _coconut_py_unicode, _coconut_py_repr, _coconut_py_dict, _coconut_py_bytes = raw_input, xrange, int, long, print, str, super, unicode, repr, dict, bytes
 from functools import wraps as _coconut_wraps
 from collections import Sequence as _coconut_Sequence
 from future_builtins import *
@@ -96,6 +96,26 @@ class int(_coconut_py_int):
             return _coconut.isinstance(inst, (_coconut_py_int, _coconut_py_long))
         def __subclasscheck__(cls, subcls):
             return _coconut.issubclass(subcls, (_coconut_py_int, _coconut_py_long))
+class bytes(_coconut_py_bytes):
+    __slots__ = ()
+    __doc__ = getattr(_coconut_py_bytes, "__doc__", "<see help(py_bytes)>")
+    class __metaclass__(type):
+        def __instancecheck__(cls, inst):
+            return _coconut.isinstance(inst, _coconut_py_bytes)
+        def __subclasscheck__(cls, subcls):
+            return _coconut.issubclass(subcls, _coconut_py_bytes)
+    def __new__(self, *args):
+        if not args:
+            return b""
+        elif _coconut.len(args) == 1:
+            if _coconut.isinstance(args[0], _coconut.int):
+                return b"\x00" * args[0]
+            elif _coconut.isinstance(args[0], _coconut.bytes):
+                return _coconut_py_bytes(args[0])
+            else:
+                return b"".join(_coconut.chr(x) for x in args[0])
+        else:
+            return args[0].encode(*args[1:])
 class range(object):
     __slots__ = ("_xrange",)
     __doc__ = getattr(_coconut_py_xrange, "__doc__", "<see help(py_xrange)>")

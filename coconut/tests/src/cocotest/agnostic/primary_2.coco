@@ -435,6 +435,12 @@ def primary_test_2() -> bool:
     assert (,) ↤? None is None
     assert (,) ↤*? None is None  # type: ignore
     assert '''\u2029'''!='''\n'''
+    assert b"a" `isinstance` bytes
+    assert b"a" `isinstance` py_bytes
+    assert bytes() == b""
+    assert bytes(10) == b"\x00" * 10
+    assert bytes([35, 40]) == b'#('
+    assert bytes(b"abc") == b"abc" == bytes("abc", "utf-8")
 
     with process_map.multiple_sequential_calls():  # type: ignore
         assert map((+), range(3), range(4)$[:-1], strict=True) |> list == [0, 2, 4] == process_map((+), range(3), range(4)$[:-1], strict=True) |> list  # type: ignore

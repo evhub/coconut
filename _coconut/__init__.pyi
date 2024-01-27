@@ -131,6 +131,7 @@ ValueError = _builtins.ValueError
 StopIteration = _builtins.StopIteration
 RuntimeError = _builtins.RuntimeError
 callable = _builtins.callable
+chr = _builtins.chr
 classmethod = _builtins.classmethod
 complex = _builtins.complex
 all = _builtins.all

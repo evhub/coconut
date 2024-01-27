@@ -155,6 +155,7 @@ if sys.version_info < (3, 7):
         ...
 
 
+py_bytes = bytes
 py_chr = chr
 py_dict = dict
 py_hex = hex
