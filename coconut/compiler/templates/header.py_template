@@ -2094,7 +2094,7 @@ def _coconut_call_or_coefficient(func, *args):
     if _coconut.callable(func):
         return func(*args)
     if not _coconut.isinstance(func, (_coconut.int, _coconut.float, _coconut.complex)) and _coconut_get_base_module(func) not in _coconut.numpy_modules:
-        raise _coconut.TypeError("first argument in implicit function application and coefficient syntax must be Callable, int, float, complex, or numpy object")
+        raise _coconut.TypeError("first object in implicit function application and coefficient syntax must be Callable, int, float, complex, or numpy")
     func = func
     for x in args:
         func = func * x{COMMENT.no_times_equals_to_avoid_modification}
