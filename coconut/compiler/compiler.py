@@ -711,16 +711,19 @@ class Compiler(Grammar, pickleable_obj):
             cls.classdef_ref,
             cls.method("classdef_handle"),
             cls.method("class_manage"),
+            include_in_packrat_context=False,
         )
         cls.datadef <<= handle_and_manage(
             cls.datadef_ref,
             cls.method("datadef_handle"),
             cls.method("class_manage"),
+            include_in_packrat_context=False,
         )
         cls.match_datadef <<= handle_and_manage(
             cls.match_datadef_ref,
             cls.method("match_datadef_handle"),
             cls.method("class_manage"),
+            include_in_packrat_context=False,
         )
 
         # handle parsing_context for function definitions
@@ -728,16 +731,19 @@ class Compiler(Grammar, pickleable_obj):
             cls.stmt_lambdef_ref,
             cls.method("stmt_lambdef_handle"),
             cls.method("func_manage"),
+            include_in_packrat_context=False,
         )
         cls.decoratable_normal_funcdef_stmt <<= handle_and_manage(
             cls.decoratable_normal_funcdef_stmt_ref,
             cls.method("decoratable_funcdef_stmt_handle"),
             cls.method("func_manage"),
+            include_in_packrat_context=False,
         )
         cls.decoratable_async_funcdef_stmt <<= handle_and_manage(
             cls.decoratable_async_funcdef_stmt_ref,
             cls.method("decoratable_funcdef_stmt_handle", is_async=True),
             cls.method("func_manage"),
+            include_in_packrat_context=False,
         )
 
         # handle parsing_context for type aliases
@@ -745,6 +751,7 @@ class Compiler(Grammar, pickleable_obj):
             cls.type_alias_stmt_ref,
             cls.method("type_alias_stmt_handle"),
             cls.method("type_alias_stmt_manage"),
+            include_in_packrat_context=False,
         )
 
         # handle parsing_context for where statements
@@ -752,11 +759,13 @@ class Compiler(Grammar, pickleable_obj):
             cls.where_stmt_ref,
             cls.method("where_stmt_handle"),
             cls.method("where_stmt_manage"),
+            include_in_packrat_context=False,
         )
         cls.implicit_return_where <<= handle_and_manage(
             cls.implicit_return_where_ref,
             cls.method("where_stmt_handle"),
             cls.method("where_stmt_manage"),
+            include_in_packrat_context=False,
         )
 
         # handle parsing_context for expr_setnames

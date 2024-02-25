@@ -1225,9 +1225,9 @@ class Wrap(ParseElementEnhance):
         return self.wrapped_name
 
 
-def manage(item, manager, greedy=True, include_in_packrat_context=False):
+def manage(item, manager, include_in_packrat_context, greedy=True):
     """Attach a manager to the given parse item."""
-    return Wrap(item, manager, greedy=greedy, include_in_packrat_context=include_in_packrat_context)
+    return Wrap(item, manager, include_in_packrat_context=include_in_packrat_context, greedy=greedy)
 
 
 def handle_and_manage(item, handler, manager, **kwargs):
