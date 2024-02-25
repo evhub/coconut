@@ -802,6 +802,7 @@ class Grammar(object):
 
         refname = Forward()
         setname = Forward()
+        expr_setname = Forward()
         classname = Forward()
         name_ref = combine(Optional(backslash) + base_name)
         unsafe_name = combine(Optional(backslash.suppress()) + base_name)
@@ -955,13 +956,13 @@ class Grammar(object):
         expr = Forward()
         star_expr = Forward()
         dubstar_expr = Forward()
-        comp_for = Forward()
         test_no_cond = Forward()
         infix_op = Forward()
         namedexpr_test = Forward()
         # for namedexpr locations only supported in Python 3.10
         new_namedexpr_test = Forward()
-        lambdef = Forward()
+        comp_for = Forward()
+        comprehension_expr = Forward()
 
         typedef = Forward()
         typedef_default = Forward()
@@ -970,6 +971,10 @@ class Grammar(object):
         typedef_tuple = Forward()
         typedef_ellipsis = Forward()
         typedef_op_item = Forward()
+
+        expr_lambdef = Forward()
+        stmt_lambdef = Forward()
+        lambdef = expr_lambdef | stmt_lambdef
 
         negable_atom_item = condense(Optional(neg_minus) + atom_item)
 
@@ -1148,8 +1153,8 @@ class Grammar(object):
                 ZeroOrMore(
                     condense(
                         # everything here must end with setarg_comma
-                        setname + Optional(default) + setarg_comma
-                        | (star | dubstar) + setname + setarg_comma
+                        expr_setname + Optional(default) + setarg_comma
+                        | (star | dubstar) + expr_setname + setarg_comma
                         | star_sep_setarg
                         | slash_sep_setarg
                     )
@@ -1180,7 +1185,7 @@ class Grammar(object):
             # everything here must end with rparen
             rparen.suppress()
             | tokenlist(Group(call_item), comma) + rparen.suppress()
-            | Group(attach(addspace(test + comp_for), add_parens_handle)) + rparen.suppress()
+            | Group(attach(comprehension_expr, add_parens_handle)) + rparen.suppress()
             | Group(op_item) + rparen.suppress()
         )
         function_call = Forward()
@@ -1230,10 +1235,6 @@ class Grammar(object):
             comma,
         )
 
-        comprehension_expr = (
-            addspace(namedexpr_test + comp_for)
-            | invalid_syntax(star_expr + comp_for, "iterable unpacking cannot be used in comprehension")
-        )
         paren_atom = condense(lparen + any_of(
             # everything here must end with rparen
             rparen,
@@ -1282,7 +1283,7 @@ class Grammar(object):
         setmaker = Group(
             (new_namedexpr_test + FollowedBy(rbrace))("test")
             | (new_namedexpr_testlist_has_comma + FollowedBy(rbrace))("list")
-            | addspace(new_namedexpr_test + comp_for + FollowedBy(rbrace))("comp")
+            | (comprehension_expr + FollowedBy(rbrace))("comp")
             | (testlist_star_namedexpr + FollowedBy(rbrace))("testlist_star_expr")
         )
         set_literal_ref = lbrace.suppress() + setmaker + rbrace.suppress()
@@ -1382,6 +1383,9 @@ class Grammar(object):
         no_partial_trailer_atom_ref = atom + ZeroOrMore(no_partial_trailer)
         partial_atom_tokens = no_partial_trailer_atom + partial_trailer_tokens
 
+        # must be kept in sync with expr_assignlist block below
+        assignlist = Forward()
+        star_assign_item = Forward()
         simple_assign = Forward()
         simple_assign_ref = maybeparens(
             lparen,
@@ -1391,12 +1395,8 @@ class Grammar(object):
                 | setname
                 | passthrough_atom
             ),
-            rparen
+            rparen,
         )
-        simple_assignlist = maybeparens(lparen, itemlist(simple_assign, comma, suppress_trailing=False), rparen)
-
-        assignlist = Forward()
-        star_assign_item = Forward()
         base_assign_item = condense(
             simple_assign
             | lparen + assignlist + rparen
@@ -1406,6 +1406,30 @@ class Grammar(object):
         assign_item = base_assign_item | star_assign_item
         assignlist <<= itemlist(assign_item, comma, suppress_trailing=False)
 
+        # must be kept in sync with assignlist block above (but with expr_setname)
+        expr_assignlist = Forward()
+        expr_star_assign_item = Forward()
+        expr_simple_assign = Forward()
+        expr_simple_assign_ref = maybeparens(
+            lparen,
+            (
+                # refname if there's a trailer, expr_setname if not
+                (refname | passthrough_atom) + OneOrMore(ZeroOrMore(complex_trailer) + OneOrMore(simple_trailer))
+                | expr_setname
+                | passthrough_atom
+            ),
+            rparen,
+        )
+        expr_base_assign_item = condense(
+            expr_simple_assign
+            | lparen + expr_assignlist + rparen
+            | lbrack + expr_assignlist + rbrack
+        )
+        expr_star_assign_item_ref = condense(star + expr_base_assign_item)
+        expr_assign_item = expr_base_assign_item | expr_star_assign_item
+        expr_assignlist <<= itemlist(expr_assign_item, comma, suppress_trailing=False)
+
+        simple_assignlist = maybeparens(lparen, itemlist(simple_assign, comma, suppress_trailing=False), rparen)
         typed_assign_stmt = Forward()
         typed_assign_stmt_ref = simple_assign + colon.suppress() + typedef_test + Optional(equals.suppress() + test_expr)
         basic_stmt = addspace(ZeroOrMore(assignlist + equals) + test_expr)
@@ -1639,7 +1663,10 @@ class Grammar(object):
         unsafe_lambda_arrow = any_of(fat_arrow, arrow)
 
         keyword_lambdef_params = maybeparens(lparen, set_args_list, rparen)
-        arrow_lambdef_params = lparen.suppress() + set_args_list + rparen.suppress() | setname
+        arrow_lambdef_params = (
+            lparen.suppress() + set_args_list + rparen.suppress()
+            | expr_setname
+        )
 
         keyword_lambdef = Forward()
         keyword_lambdef_ref = addspace(keyword("lambda") + condense(keyword_lambdef_params + colon))
@@ -1651,7 +1678,6 @@ class Grammar(object):
             keyword_lambdef,
         )
 
-        stmt_lambdef = Forward()
         match_guard = Optional(keyword("if").suppress() + namedexpr_test)
         closing_stmt = longest(new_testlist_star_expr("tests"), unsafe_simple_stmt_item)
         stmt_lambdef_match_params = Group(lparen.suppress() + match_args_list + match_guard + rparen.suppress())
@@ -1698,8 +1724,9 @@ class Grammar(object):
             | fixto(always_match, "")
         )
 
-        lambdef <<= addspace(lambdef_base + test) | stmt_lambdef
-        lambdef_no_cond = addspace(lambdef_base + test_no_cond)
+        expr_lambdef_ref = addspace(lambdef_base + test)
+        lambdef_no_cond = Forward()
+        lambdef_no_cond_ref = addspace(lambdef_base + test_no_cond)
 
         typedef_callable_arg = Group(
             test("arg")
@@ -1808,11 +1835,15 @@ class Grammar(object):
             invalid_syntax(maybeparens(lparen, namedexpr, rparen), "PEP 572 disallows assignment expressions in comprehension iterable expressions")
             | test_item
         )
-        base_comp_for = addspace(keyword("for") + assignlist + keyword("in") + comp_it_item + Optional(comp_iter))
+        base_comp_for = addspace(keyword("for") + expr_assignlist + keyword("in") + comp_it_item + Optional(comp_iter))
         async_comp_for_ref = addspace(keyword("async") + base_comp_for)
         comp_for <<= base_comp_for | async_comp_for
         comp_if = addspace(keyword("if") + test_no_cond + Optional(comp_iter))
         comp_iter <<= any_of(comp_for, comp_if)
+        comprehension_expr_ref = (
+            addspace(namedexpr_test + comp_for)
+            | invalid_syntax(star_expr + comp_for, "iterable unpacking cannot be used in comprehension")
+        )
 
         return_stmt = addspace(keyword("return") - Optional(new_testlist_star_expr))
 
@@ -2547,7 +2578,7 @@ class Grammar(object):
         original_function_call_tokens = (
             lparen.suppress() + rparen.suppress()
             # we need to keep the parens here, since f(x for x in y) is fine but tail_call(f, x for x in y) is not
-            | condense(lparen + originalTextFor(test + comp_for) + rparen)
+            | condense(lparen + originalTextFor(comprehension_expr) + rparen)
             | attach(parens, strip_parens_handle)
         )
 

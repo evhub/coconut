@@ -1166,7 +1166,7 @@ class Wrap(ParseElementEnhance):
     global_instance_counter = 0
     inside = False
 
-    def __init__(self, item, wrapper, greedy=False, include_in_packrat_context=False):
+    def __init__(self, item, wrapper, greedy=False, include_in_packrat_context=True):
         super(Wrap, self).__init__(item)
         self.wrapper = wrapper
         self.greedy = greedy
@@ -1225,10 +1225,14 @@ class Wrap(ParseElementEnhance):
         return self.wrapped_name
 
 
-def handle_and_manage(item, handler, manager):
+def manage(item, manager, greedy=True, include_in_packrat_context=False):
+    """Attach a manager to the given parse item."""
+    return Wrap(item, manager, greedy=greedy, include_in_packrat_context=include_in_packrat_context)
+
+
+def handle_and_manage(item, handler, manager, **kwargs):
     """Attach a handler and a manager to the given parse item."""
-    new_item = attach(item, handler)
-    return Wrap(new_item, manager, greedy=True)
+    return manage(attach(item, handler), manager, **kwargs)
 
 
 def disable_inside(item, *elems, **kwargs):

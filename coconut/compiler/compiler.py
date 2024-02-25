@@ -17,6 +17,7 @@ Description: Compiles Coconut code into Python code.
 #   - Compiler
 #   - Processors
 #   - Handlers
+#   - Managers
 #   - Checking Handlers
 #   - Endpoints
 #   - Binding
@@ -180,6 +181,7 @@ from coconut.compiler.util import (
     load_cache_for,
     pickle_cache,
     handle_and_manage,
+    manage,
     sub_all,
     ComputationNode,
 )
@@ -637,23 +639,6 @@ class Compiler(Grammar, pickleable_obj):
             self.num_lines = num_lines
             self.remaining_original = remaining_original
 
-    def current_parsing_context(self, name, default=None):
-        """Get the current parsing context for the given name."""
-        stack = self.parsing_context[name]
-        if stack:
-            return stack[-1]
-        else:
-            return default
-
-    @contextmanager
-    def add_to_parsing_context(self, name, obj):
-        """Add the given object to the parsing context for the given name."""
-        self.parsing_context[name].append(obj)
-        try:
-            yield
-        finally:
-            self.parsing_context[name].pop()
-
     @contextmanager
     def disable_checks(self):
         """Run the block without checking names or strict errors."""
@@ -774,6 +759,30 @@ class Compiler(Grammar, pickleable_obj):
             cls.method("where_stmt_manage"),
         )
 
+        # handle parsing_context for expr_setnames
+        #  (we need include_in_packrat_context here because some parses will be in an expr_setname context and some won't)
+        cls.expr_lambdef <<= manage(
+            cls.expr_lambdef_ref,
+            cls.method("has_expr_setname_manage"),
+            include_in_packrat_context=True,
+        )
+        cls.lambdef_no_cond <<= manage(
+            cls.lambdef_no_cond_ref,
+            cls.method("has_expr_setname_manage"),
+            include_in_packrat_context=True,
+        )
+        cls.comprehension_expr <<= manage(
+            cls.comprehension_expr_ref,
+            cls.method("has_expr_setname_manage"),
+            include_in_packrat_context=True,
+        )
+        cls.dict_comp <<= handle_and_manage(
+            cls.dict_comp_ref,
+            cls.method("dict_comp_handle"),
+            cls.method("has_expr_setname_manage"),
+            include_in_packrat_context=True,
+        )
+
         # greedy handlers (we need to know about them even if suppressed and/or they use the parsing_context)
         cls.comment <<= attach(cls.comment_tokens, cls.method("comment_handle"), greedy=True)
         cls.type_param <<= attach(cls.type_param_ref, cls.method("type_param_handle"), greedy=True)
@@ -783,7 +792,16 @@ class Compiler(Grammar, pickleable_obj):
         # name handlers
         cls.refname <<= attach(cls.name_ref, cls.method("name_handle"))
         cls.setname <<= attach(cls.name_ref, cls.method("name_handle", assign=True))
-        cls.classname <<= attach(cls.name_ref, cls.method("name_handle", assign=True, classname=True), greedy=True)
+        cls.classname <<= attach(
+            cls.name_ref,
+            cls.method("name_handle", assign=True, classname=True),
+            greedy=True,
+        )
+        cls.expr_setname <<= attach(
+            cls.name_ref,
+            cls.method("name_handle", assign=True, expr_setname=True),
+            greedy=True,
+        )
 
         # abnormally named handlers
         cls.moduledoc_item <<= attach(cls.moduledoc, cls.method("set_moduledoc"))
@@ -796,6 +814,11 @@ class Compiler(Grammar, pickleable_obj):
         cls.trailer_atom <<= attach(cls.trailer_atom_ref, cls.method("item_handle"))
         cls.no_partial_trailer_atom <<= attach(cls.no_partial_trailer_atom_ref, cls.method("item_handle"))
         cls.simple_assign <<= attach(cls.simple_assign_ref, cls.method("item_handle"))
+        cls.expr_simple_assign <<= attach(cls.expr_simple_assign_ref, cls.method("item_handle"))
+
+        # handle all star assignments with star_assign_item_check
+        cls.star_assign_item <<= attach(cls.star_assign_item_ref, cls.method("star_assign_item_check"))
+        cls.expr_star_assign_item <<= attach(cls.expr_star_assign_item_ref, cls.method("star_assign_item_check"))
 
         # handle all string atoms with string_atom_handle
         cls.string_atom <<= attach(cls.string_atom_ref, cls.method("string_atom_handle"))
@@ -819,7 +842,6 @@ class Compiler(Grammar, pickleable_obj):
         cls.complex_raise_stmt <<= attach(cls.complex_raise_stmt_ref, cls.method("complex_raise_stmt_handle"))
         cls.augassign_stmt <<= attach(cls.augassign_stmt_ref, cls.method("augassign_stmt_handle"))
         cls.kwd_augassign <<= attach(cls.kwd_augassign_ref, cls.method("kwd_augassign_handle"))
-        cls.dict_comp <<= attach(cls.dict_comp_ref, cls.method("dict_comp_handle"))
         cls.destructuring_stmt <<= attach(cls.destructuring_stmt_ref, cls.method("destructuring_stmt_handle"))
         cls.full_match <<= attach(cls.full_match_ref, cls.method("full_match_handle"))
         cls.name_match_funcdef <<= attach(cls.name_match_funcdef_ref, cls.method("name_match_funcdef_handle"))
@@ -849,7 +871,6 @@ class Compiler(Grammar, pickleable_obj):
         # these handlers just do strict/target checking
         cls.u_string <<= attach(cls.u_string_ref, cls.method("u_string_check"))
         cls.nonlocal_stmt <<= attach(cls.nonlocal_stmt_ref, cls.method("nonlocal_check"))
-        cls.star_assign_item <<= attach(cls.star_assign_item_ref, cls.method("star_assign_item_check"))
         cls.keyword_lambdef <<= attach(cls.keyword_lambdef_ref, cls.method("lambdef_check"))
         cls.star_sep_arg <<= attach(cls.star_sep_arg_ref, cls.method("star_sep_check"))
         cls.star_sep_setarg <<= attach(cls.star_sep_setarg_ref, cls.method("star_sep_check"))
@@ -3895,69 +3916,104 @@ if not {check_var}:
 
     def stmt_lambdef_handle(self, original, loc, tokens):
         """Process multi-line lambdef statements."""
-        if len(tokens) == 4:
-            got_kwds, params, stmts_toks, followed_by = tokens
-            typedef = None
-        else:
-            got_kwds, params, typedef, stmts_toks, followed_by = tokens
-
-        if followed_by == ",":
-            self.strict_err_or_warn("found statement lambda followed by comma; this isn't recommended as it can be unclear whether the comma is inside or outside the lambda (just wrap the lambda in parentheses)", original, loc)
-        else:
-            internal_assert(followed_by == "", "invalid stmt_lambdef followed_by", followed_by)
-
-        is_async = False
-        add_kwds = []
-        for kwd in got_kwds:
-            if kwd == "async":
-                self.internal_assert(not is_async, original, loc, "duplicate stmt_lambdef async keyword", kwd)
-                is_async = True
-            elif kwd == "copyclosure":
-                add_kwds.append(kwd)
-            else:
-                raise CoconutInternalException("invalid stmt_lambdef keyword", kwd)
-
-        if len(stmts_toks) == 1:
-            stmts, = stmts_toks
-        elif len(stmts_toks) == 2:
-            stmts, last = stmts_toks
-            if "tests" in stmts_toks:
-                stmts = stmts.asList() + ["return " + last]
-            else:
-                stmts = stmts.asList() + [last]
-        else:
-            raise CoconutInternalException("invalid statement lambda body tokens", stmts_toks)
-
         name = self.get_temp_var("lambda", loc)
-        body = openindent + "\n".join(stmts) + closeindent
 
-        if typedef is None:
-            colon = ":"
+        # avoid regenerating the code if we already built it on a previous call
+        if name not in self.add_code_before:
+            if len(tokens) == 4:
+                got_kwds, params, stmts_toks, followed_by = tokens
+                typedef = None
+            else:
+                got_kwds, params, typedef, stmts_toks, followed_by = tokens
+
+            if followed_by == ",":
+                self.strict_err_or_warn("found statement lambda followed by comma; this isn't recommended as it can be unclear whether the comma is inside or outside the lambda (just wrap the lambda in parentheses)", original, loc)
+            else:
+                internal_assert(followed_by == "", "invalid stmt_lambdef followed_by", followed_by)
+
+            is_async = False
+            add_kwds = []
+            for kwd in got_kwds:
+                if kwd == "async":
+                    self.internal_assert(not is_async, original, loc, "duplicate stmt_lambdef async keyword", kwd)
+                    is_async = True
+                elif kwd == "copyclosure":
+                    add_kwds.append(kwd)
+                else:
+                    raise CoconutInternalException("invalid stmt_lambdef keyword", kwd)
+
+            if len(stmts_toks) == 1:
+                stmts, = stmts_toks
+            elif len(stmts_toks) == 2:
+                stmts, last = stmts_toks
+                if "tests" in stmts_toks:
+                    stmts = stmts.asList() + ["return " + last]
+                else:
+                    stmts = stmts.asList() + [last]
+            else:
+                raise CoconutInternalException("invalid statement lambda body tokens", stmts_toks)
+
+            body = openindent + "\n".join(stmts) + closeindent
+
+            if typedef is None:
+                colon = ":"
+            else:
+                colon = self.typedef_handle([typedef])
+            if isinstance(params, str):
+                decorators = ""
+                funcdef = "def " + name + params + colon + "\n" + body
+            else:
+                match_tokens = [name] + list(params)
+                before_colon, after_docstring = self.name_match_funcdef_handle(original, loc, match_tokens)
+                decorators = "@_coconut_mark_as_match\n"
+                funcdef = (
+                    before_colon
+                    + colon
+                    + "\n"
+                    + after_docstring
+                    + body
+                )
+
+            funcdef = " ".join(add_kwds + [funcdef])
+
+            self.add_code_before[name] = self.decoratable_funcdef_stmt_handle(original, loc, [decorators, funcdef], is_async, is_stmt_lambda=True)
+
+        expr_setname_context = self.current_parsing_context("expr_setnames")
+        if expr_setname_context is None:
+            return name
         else:
-            colon = self.typedef_handle([typedef])
-        if isinstance(params, str):
-            decorators = ""
-            funcdef = "def " + name + params + colon + "\n" + body
-        else:
-            match_tokens = [name] + list(params)
-            before_colon, after_docstring = self.name_match_funcdef_handle(original, loc, match_tokens)
-            decorators = "@_coconut_mark_as_match\n"
-            funcdef = (
-                before_colon
-                + colon
-                + "\n"
-                + after_docstring
-                + body
-            )
+            builder_name = self.get_temp_var("lambda_builder", loc)
 
-        funcdef = " ".join(add_kwds + [funcdef])
+            parent_context = expr_setname_context["parent"]
+            parent_setnames = set()
+            while parent_context:
+                parent_setnames |= parent_context["new_names"]
+                parent_context = parent_context["parent"]
 
-        self.add_code_before[name] = self.decoratable_funcdef_stmt_handle(original, loc, [decorators, funcdef], is_async, is_stmt_lambda=True)
+            def stmt_lambdef_callback():
+                expr_setnames = parent_setnames | expr_setname_context["new_names"]
+                expr_setnames_str = ", ".join(sorted(expr_setnames) + ["**_coconut_other_locals"])
+                # the actual code for the function will automatically be added by add_code_before for name
+                builder_code = handle_indentation("""
+def {builder_name}({expr_setnames_str}):
+    del _coconut_other_locals
+    return {name}
+                """).format(
+                    builder_name=builder_name,
+                    expr_setnames_str=expr_setnames_str,
+                    name=name,
+                )
+                self.add_code_before[builder_name] = builder_code
 
-        return name
+            expr_setname_context["callbacks"].append(stmt_lambdef_callback)
+            if parent_setnames:
+                builder_args = "**({" + ", ".join('"' + name + '": ' + name for name in sorted(parent_setnames)) + "} | _coconut.locals())"
+            else:
+                builder_args = "**_coconut.locals()"
+            return builder_name + "(" + builder_args + ")"
 
     def decoratable_funcdef_stmt_handle(self, original, loc, tokens, is_async=False, is_stmt_lambda=False):
-        """Wraps the given function for later processing"""
+        """Wrap the given function for later processing."""
         if len(tokens) == 1:
             funcdef, = tokens
             decorators = ""
@@ -4078,178 +4134,6 @@ __annotations__["{name}"] = {annotation}
                 annotation=self.wrap_typedef(typedef, for_py_typedef=False, duplicate=True),
                 type_ignore=self.type_ignore_comment(),
             )
-
-    def funcname_typeparams_handle(self, tokens):
-        """Handle function names with type parameters."""
-        if len(tokens) == 1:
-            name, = tokens
-            return name
-        else:
-            name, paramdefs = tokens
-            return self.add_code_before_marker_with_replacement(name, "".join(paramdefs), add_spaces=False)
-
-    funcname_typeparams_handle.ignore_one_token = True
-
-    def type_param_handle(self, original, loc, tokens):
-        """Compile a type param into an assignment."""
-        args = ""
-        bound_op = None
-        bound_op_type = ""
-        if "TypeVar" in tokens:
-            TypeVarFunc = "TypeVar"
-            bound_op_type = "bound"
-            if len(tokens) == 2:
-                name_loc, name = tokens
-            else:
-                name_loc, name, bound_op, bound = tokens
-                args = ", bound=" + self.wrap_typedef(bound, for_py_typedef=False)
-        elif "TypeVar constraint" in tokens:
-            TypeVarFunc = "TypeVar"
-            bound_op_type = "constraint"
-            name_loc, name, bound_op, constraints = tokens
-            args = ", " + ", ".join(self.wrap_typedef(c, for_py_typedef=False) for c in constraints)
-        elif "TypeVarTuple" in tokens:
-            TypeVarFunc = "TypeVarTuple"
-            name_loc, name = tokens
-        elif "ParamSpec" in tokens:
-            TypeVarFunc = "ParamSpec"
-            name_loc, name = tokens
-        else:
-            raise CoconutInternalException("invalid type_param tokens", tokens)
-
-        kwargs = ""
-        if bound_op is not None:
-            self.internal_assert(bound_op_type in ("bound", "constraint"), original, loc, "invalid type_param bound_op", bound_op)
-            # uncomment this line whenever mypy adds support for infer_variance in TypeVar
-            #  (and remove the warning about it in the DOCS)
-            # kwargs = ", infer_variance=True"
-            if bound_op == "<=":
-                self.strict_err_or_warn(
-                    "use of " + repr(bound_op) + " as a type parameter " + bound_op_type + " declaration operator is deprecated (Coconut style is to use '<:' for bounds and ':' for constaints)",
-                    original,
-                    loc,
-                )
-            else:
-                self.internal_assert(bound_op in (":", "<:"), original, loc, "invalid type_param bound_op", bound_op)
-                if bound_op_type == "bound" and bound_op != "<:" or bound_op_type == "constraint" and bound_op != ":":
-                    self.strict_err(
-                        "found use of " + repr(bound_op) + " as a type parameter " + bound_op_type + " declaration operator (Coconut style is to use '<:' for bounds and ':' for constaints)",
-                        original,
-                        loc,
-                    )
-
-        name_loc = int(name_loc)
-        internal_assert(name_loc == loc if TypeVarFunc == "TypeVar" else name_loc >= loc, "invalid name location for " + TypeVarFunc, (name_loc, loc, tokens))
-
-        typevar_info = self.current_parsing_context("typevars")
-        if typevar_info is not None:
-            # check to see if we already parsed this exact typevar, in which case just reuse the existing temp_name
-            if typevar_info["typevar_locs"].get(name, None) == name_loc:
-                name = typevar_info["all_typevars"][name]
-            else:
-                if name in typevar_info["all_typevars"]:
-                    raise CoconutDeferredSyntaxError("type variable {name!r} already defined".format(name=name), loc)
-                temp_name = self.get_temp_var(("typevar", name), name_loc)
-                typevar_info["all_typevars"][name] = temp_name
-                typevar_info["new_typevars"].append((TypeVarFunc, temp_name))
-                typevar_info["typevar_locs"][name] = name_loc
-                name = temp_name
-
-        return '{name} = _coconut.typing.{TypeVarFunc}("{name}"{args}{kwargs})\n'.format(
-            name=name,
-            TypeVarFunc=TypeVarFunc,
-            args=args,
-            kwargs=kwargs,
-        )
-
-    def get_generic_for_typevars(self):
-        """Get the Generic instances for the current typevars."""
-        typevar_info = self.current_parsing_context("typevars")
-        internal_assert(typevar_info is not None, "get_generic_for_typevars called with no typevars")
-        generics = []
-        for TypeVarFunc, name in typevar_info["new_typevars"]:
-            if TypeVarFunc in ("TypeVar", "ParamSpec"):
-                generics.append(name)
-            elif TypeVarFunc == "TypeVarTuple":
-                if self.target_info >= (3, 11):
-                    generics.append("*" + name)
-                else:
-                    generics.append("_coconut.typing.Unpack[" + name + "]")
-            else:
-                raise CoconutInternalException("invalid TypeVarFunc", TypeVarFunc, "(", name, ")")
-        return "_coconut.typing.Generic[" + ", ".join(generics) + "]"
-
-    @contextmanager
-    def type_alias_stmt_manage(self, original=None, loc=None, item=None):
-        """Manage the typevars parsing context."""
-        prev_typevar_info = self.current_parsing_context("typevars")
-        with self.add_to_parsing_context("typevars", {
-            "all_typevars": {} if prev_typevar_info is None else prev_typevar_info["all_typevars"].copy(),
-            "new_typevars": [],
-            "typevar_locs": {},
-        }):
-            yield
-
-    def type_alias_stmt_handle(self, tokens):
-        """Handle type alias statements."""
-        if len(tokens) == 2:
-            name, typedef = tokens
-            paramdefs = ()
-        else:
-            name, paramdefs, typedef = tokens
-        if self.target_info >= (3, 12):
-            return "type " + name + " = " + self.wrap_typedef(typedef, for_py_typedef=True)
-        else:
-            return "".join(paramdefs) + self.typed_assign_stmt_handle([
-                name,
-                "_coconut.typing.TypeAlias",
-                self.wrap_typedef(typedef, for_py_typedef=False),
-            ])
-
-    def where_item_handle(self, tokens):
-        """Manage where items."""
-        where_context = self.current_parsing_context("where")
-        internal_assert(not where_context["assigns"], "invalid where_context", where_context)
-        where_context["assigns"] = set()
-        return tokens
-
-    @contextmanager
-    def where_stmt_manage(self, original, loc, item):
-        """Manage where statements."""
-        with self.add_to_parsing_context("where", {
-            "assigns": None,
-        }):
-            yield
-
-    def where_stmt_handle(self, loc, tokens):
-        """Process where statements."""
-        main_stmt, body_stmts = tokens
-
-        where_assigns = self.current_parsing_context("where")["assigns"]
-        internal_assert(lambda: where_assigns is not None, "missing where_assigns")
-
-        where_init = "".join(body_stmts)
-        where_final = main_stmt + "\n"
-        out = where_init + where_final
-        if not where_assigns:
-            return out
-
-        name_regexes = {
-            name: compile_regex(r"\b" + name + r"\b")
-            for name in where_assigns
-        }
-        name_replacements = {
-            name: self.get_temp_var(("where", name), loc)
-            for name in where_assigns
-        }
-
-        where_init = self.deferred_code_proc(where_init)
-        where_final = self.deferred_code_proc(where_final)
-        out = where_init + where_final
-
-        out = sub_all(out, name_regexes, name_replacements)
-
-        return self.wrap_passthrough(out, early=True)
 
     def with_stmt_handle(self, tokens):
         """Process with statements."""
@@ -4648,6 +4532,377 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
 
 # end: HANDLERS
 # -----------------------------------------------------------------------------------------------------------------------
+# MANAGERS:
+# -----------------------------------------------------------------------------------------------------------------------
+
+    def current_parsing_context(self, name, default=None):
+        """Get the current parsing context for the given name."""
+        stack = self.parsing_context[name]
+        if stack:
+            return stack[-1]
+        else:
+            return default
+
+    @contextmanager
+    def add_to_parsing_context(self, name, obj, callbacks_key=None):
+        """Pur the given object on the parsing context stack for the given name."""
+        self.parsing_context[name].append(obj)
+        try:
+            yield
+        finally:
+            popped_ctx = self.parsing_context[name].pop()
+            if callbacks_key is not None:
+                for callback in popped_ctx[callbacks_key]:
+                    callback()
+
+    def funcname_typeparams_handle(self, tokens):
+        """Handle function names with type parameters."""
+        if len(tokens) == 1:
+            name, = tokens
+            return name
+        else:
+            name, paramdefs = tokens
+            return self.add_code_before_marker_with_replacement(name, "".join(paramdefs), add_spaces=False)
+
+    funcname_typeparams_handle.ignore_one_token = True
+
+    def type_param_handle(self, original, loc, tokens):
+        """Compile a type param into an assignment."""
+        args = ""
+        bound_op = None
+        bound_op_type = ""
+        if "TypeVar" in tokens:
+            TypeVarFunc = "TypeVar"
+            bound_op_type = "bound"
+            if len(tokens) == 2:
+                name_loc, name = tokens
+            else:
+                name_loc, name, bound_op, bound = tokens
+                args = ", bound=" + self.wrap_typedef(bound, for_py_typedef=False)
+        elif "TypeVar constraint" in tokens:
+            TypeVarFunc = "TypeVar"
+            bound_op_type = "constraint"
+            name_loc, name, bound_op, constraints = tokens
+            args = ", " + ", ".join(self.wrap_typedef(c, for_py_typedef=False) for c in constraints)
+        elif "TypeVarTuple" in tokens:
+            TypeVarFunc = "TypeVarTuple"
+            name_loc, name = tokens
+        elif "ParamSpec" in tokens:
+            TypeVarFunc = "ParamSpec"
+            name_loc, name = tokens
+        else:
+            raise CoconutInternalException("invalid type_param tokens", tokens)
+
+        if bound_op is not None:
+            self.internal_assert(bound_op_type in ("bound", "constraint"), original, loc, "invalid type_param bound_op", bound_op)
+            if bound_op == "<=":
+                self.strict_err_or_warn(
+                    "use of " + repr(bound_op) + " as a type parameter " + bound_op_type + " declaration operator is deprecated (Coconut style is to use '<:' for bounds and ':' for constaints)",
+                    original,
+                    loc,
+                )
+            else:
+                self.internal_assert(bound_op in (":", "<:"), original, loc, "invalid type_param bound_op", bound_op)
+                if bound_op_type == "bound" and bound_op != "<:" or bound_op_type == "constraint" and bound_op != ":":
+                    self.strict_err(
+                        "found use of " + repr(bound_op) + " as a type parameter " + bound_op_type + " declaration operator (Coconut style is to use '<:' for bounds and ':' for constaints)",
+                        original,
+                        loc,
+                    )
+
+        kwargs = ""
+        # uncomment these lines whenever mypy adds support for infer_variance in TypeVar
+        #  (and remove the warning about it in the DOCS)
+        # if TypeVarFunc == "TypeVar":
+        #     kwargs += ", infer_variance=True"
+
+        name_loc = int(name_loc)
+        internal_assert(name_loc == loc if TypeVarFunc == "TypeVar" else name_loc >= loc, "invalid name location for " + TypeVarFunc, (name_loc, loc, tokens))
+
+        typevar_info = self.current_parsing_context("typevars")
+        if typevar_info is not None:
+            # check to see if we already parsed this exact typevar, in which case just reuse the existing temp_name
+            if typevar_info["typevar_locs"].get(name, None) == name_loc:
+                name = typevar_info["all_typevars"][name]
+            else:
+                if name in typevar_info["all_typevars"]:
+                    raise CoconutDeferredSyntaxError("type variable {name!r} already defined".format(name=name), loc)
+                temp_name = self.get_temp_var(("typevar", name), name_loc)
+                typevar_info["all_typevars"][name] = temp_name
+                typevar_info["new_typevars"].append((TypeVarFunc, temp_name))
+                typevar_info["typevar_locs"][name] = name_loc
+                name = temp_name
+
+        return '{name} = _coconut.typing.{TypeVarFunc}("{name}"{args}{kwargs})\n'.format(
+            name=name,
+            TypeVarFunc=TypeVarFunc,
+            args=args,
+            kwargs=kwargs,
+        )
+
+    def get_generic_for_typevars(self):
+        """Get the Generic instances for the current typevars."""
+        typevar_info = self.current_parsing_context("typevars")
+        internal_assert(typevar_info is not None, "get_generic_for_typevars called with no typevars")
+        generics = []
+        for TypeVarFunc, name in typevar_info["new_typevars"]:
+            if TypeVarFunc in ("TypeVar", "ParamSpec"):
+                generics.append(name)
+            elif TypeVarFunc == "TypeVarTuple":
+                if self.target_info >= (3, 11):
+                    generics.append("*" + name)
+                else:
+                    generics.append("_coconut.typing.Unpack[" + name + "]")
+            else:
+                raise CoconutInternalException("invalid TypeVarFunc", TypeVarFunc, "(", name, ")")
+        return "_coconut.typing.Generic[" + ", ".join(generics) + "]"
+
+    @contextmanager
+    def type_alias_stmt_manage(self, original=None, loc=None, item=None):
+        """Manage the typevars parsing context."""
+        prev_typevar_info = self.current_parsing_context("typevars")
+        with self.add_to_parsing_context("typevars", {
+            "all_typevars": {} if prev_typevar_info is None else prev_typevar_info["all_typevars"].copy(),
+            "new_typevars": [],
+            "typevar_locs": {},
+        }):
+            yield
+
+    def type_alias_stmt_handle(self, tokens):
+        """Handle type alias statements."""
+        if len(tokens) == 2:
+            name, typedef = tokens
+            paramdefs = ()
+        else:
+            name, paramdefs, typedef = tokens
+        out = "".join(paramdefs)
+        if self.target_info >= (3, 12):
+            out += "type " + name + " = " + self.wrap_typedef(typedef, for_py_typedef=True)
+        else:
+            out += self.typed_assign_stmt_handle([
+                name,
+                "_coconut.typing.TypeAlias",
+                self.wrap_typedef(typedef, for_py_typedef=False),
+            ])
+        return out
+
+    def where_item_handle(self, tokens):
+        """Manage where items."""
+        where_context = self.current_parsing_context("where")
+        internal_assert(not where_context["assigns"], "invalid where_context", where_context)
+        where_context["assigns"] = set()
+        return tokens
+
+    @contextmanager
+    def where_stmt_manage(self, original, loc, item):
+        """Manage where statements."""
+        with self.add_to_parsing_context("where", {
+            "assigns": None,
+        }):
+            yield
+
+    def where_stmt_handle(self, loc, tokens):
+        """Process where statements."""
+        main_stmt, body_stmts = tokens
+
+        where_assigns = self.current_parsing_context("where")["assigns"]
+        internal_assert(lambda: where_assigns is not None, "missing where_assigns")
+
+        where_init = "".join(body_stmts)
+        where_final = main_stmt + "\n"
+        out = where_init + where_final
+        if not where_assigns:
+            return out
+
+        name_regexes = {
+            name: compile_regex(r"\b" + name + r"\b")
+            for name in where_assigns
+        }
+        name_replacements = {
+            name: self.get_temp_var(("where", name), loc)
+            for name in where_assigns
+        }
+
+        where_init = self.deferred_code_proc(where_init)
+        where_final = self.deferred_code_proc(where_final)
+        out = where_init + where_final
+
+        out = sub_all(out, name_regexes, name_replacements)
+
+        return self.wrap_passthrough(out, early=True)
+
+    @contextmanager
+    def class_manage(self, original, loc, item):
+        """Manage the class parsing context."""
+        cls_stack = self.parsing_context["class"]
+        if cls_stack:
+            cls_context = cls_stack[-1]
+            if cls_context["name"] is None:  # this should only happen when the managed class item will fail to fully parse
+                name_prefix = cls_context["name_prefix"]
+            elif cls_context["in_method"]:  # if we're in a function, we shouldn't use the prefix to look up the class
+                name_prefix = ""
+            else:
+                name_prefix = cls_context["name_prefix"] + cls_context["name"] + "."
+        else:
+            name_prefix = ""
+        cls_stack.append({
+            "name_prefix": name_prefix,
+            "name": None,
+            "in_method": False,
+        })
+        try:
+            # handles support for class type variables
+            with self.type_alias_stmt_manage():
+                yield
+        finally:
+            cls_stack.pop()
+
+    @contextmanager
+    def func_manage(self, original, loc, item):
+        """Manage the function parsing context."""
+        cls_context = self.current_parsing_context("class")
+        if cls_context is not None:
+            in_method, cls_context["in_method"] = cls_context["in_method"], True
+        try:
+            # handles support for function type variables
+            with self.type_alias_stmt_manage():
+                yield
+        finally:
+            if cls_context is not None:
+                cls_context["in_method"] = in_method
+
+    @property
+    def in_method(self):
+        """Determine if currently in a method."""
+        cls_context = self.current_parsing_context("class")
+        return cls_context is not None and cls_context["name"] is not None and cls_context["in_method"]
+
+    @contextmanager
+    def has_expr_setname_manage(self, original, loc, item):
+        """Handle parses that can assign expr_setname."""
+        with self.add_to_parsing_context(
+            "expr_setnames",
+            {
+                "parent": self.current_parsing_context("expr_setnames"),
+                "new_names": set(),
+                "callbacks": [],
+                "loc": loc,
+            },
+            callbacks_key="callbacks",
+        ):
+            yield
+
+    def name_handle(self, original, loc, tokens, assign=False, classname=False, expr_setname=False):
+        """Handle the given base name."""
+        internal_assert(assign if expr_setname else True, "expr_setname should always imply assign", (expr_setname, assign))
+
+        name, = tokens
+        if name.startswith("\\"):
+            name = name[1:]
+            escaped = True
+        else:
+            escaped = False
+
+        if self.disable_name_check:
+            return name
+
+        if assign:
+            where_context = self.current_parsing_context("where")
+            if where_context is not None:
+                where_assigns = where_context["assigns"]
+                if where_assigns is not None:
+                    where_assigns.add(name)
+
+        if classname:
+            cls_context = self.current_parsing_context("class")
+            self.internal_assert(cls_context is not None, original, loc, "found classname outside of class", tokens)
+            cls_context["name"] = name
+
+        if expr_setname:
+            expr_setnames_context = self.current_parsing_context("expr_setnames")
+            self.internal_assert(expr_setnames_context is not None, original, loc, "found expr_setname outside of has_expr_setname_manage", tokens)
+            expr_setnames_context["new_names"].add(name)
+
+        # raise_or_wrap_error for all errors here to make sure we don't
+        #  raise spurious errors if not using the computation graph
+
+        if not escaped:
+            typevar_info = self.current_parsing_context("typevars")
+            if typevar_info is not None:
+                typevars = typevar_info["all_typevars"]
+                if name in typevars:
+                    # if we're looking at the same position where the typevar was defined,
+                    #  then we shouldn't treat this as a typevar, since then it's either
+                    #  a reparse of a setname in a typevar, or not a typevar at all
+                    if typevar_info["typevar_locs"].get(name, None) != loc:
+                        if assign:
+                            return self.raise_or_wrap_error(
+                                self.make_err(
+                                    CoconutSyntaxError,
+                                    "cannot reassign type variable '{name}'".format(name=name),
+                                    original,
+                                    loc,
+                                    extra="use explicit '\\{name}' syntax if intended".format(name=name),
+                                ),
+                            )
+                        return typevars[name]
+
+        if not assign:
+            self.unused_imports.pop(name, None)
+
+        if (
+            assign
+            and not escaped
+            # if we're not using the computation graph, then name is handled
+            #  greedily, which means this might be an invalid parse, in which
+            #  case we can't be sure this is actually shadowing a builtin
+            and USE_COMPUTATION_GRAPH
+            # classnames and expr_setnames are handled greedily, so ditto the above
+            and not (classname or expr_setname)
+            and name in all_builtins
+        ):
+            self.strict_err_or_warn(
+                "assignment shadows builtin '{name}' (use explicit '\\{name}' syntax when purposefully assigning to builtin names)".format(name=name),
+                original,
+                loc,
+            )
+
+        if name == "exec":
+            if self.target.startswith("3"):
+                return name
+            elif assign:
+                return self.raise_or_wrap_error(
+                    self.make_err(
+                        CoconutTargetError,
+                        "found Python-3-only assignment to 'exec' as a variable name",
+                        original,
+                        loc,
+                        target="3",
+                    ),
+                )
+            else:
+                return "_coconut_exec"
+        elif not assign and name in super_names and not self.target.startswith("3"):
+            if self.in_method:
+                cls_context = self.current_parsing_context("class")
+                enclosing_cls = cls_context["name_prefix"] + cls_context["name"]
+                return self.add_code_before_marker_with_replacement(name, "__class__ = " + enclosing_cls + "\n", add_spaces=False)
+            else:
+                return name
+        elif not escaped and name.startswith(reserved_prefix) and name not in self.operators:
+            return self.raise_or_wrap_error(
+                self.make_err(
+                    CoconutSyntaxError,
+                    "variable names cannot start with reserved prefix '{prefix}' (use explicit '\\{name}' syntax if intending to access Coconut internals)".format(prefix=reserved_prefix, name=name),
+                    original,
+                    loc,
+                ),
+            )
+        else:
+            return name
+
+# end: MANAGERS
+# -----------------------------------------------------------------------------------------------------------------------
 # CHECKING HANDLERS:
 # -----------------------------------------------------------------------------------------------------------------------
 
@@ -4715,154 +4970,6 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
         else:
             return tokens[0]
 
-    @contextmanager
-    def class_manage(self, original, loc, item):
-        """Manage the class parsing context."""
-        cls_stack = self.parsing_context["class"]
-        if cls_stack:
-            cls_context = cls_stack[-1]
-            if cls_context["name"] is None:  # this should only happen when the managed class item will fail to fully parse
-                name_prefix = cls_context["name_prefix"]
-            elif cls_context["in_method"]:  # if we're in a function, we shouldn't use the prefix to look up the class
-                name_prefix = ""
-            else:
-                name_prefix = cls_context["name_prefix"] + cls_context["name"] + "."
-        else:
-            name_prefix = ""
-        cls_stack.append({
-            "name_prefix": name_prefix,
-            "name": None,
-            "in_method": False,
-        })
-        try:
-            # handles support for class type variables
-            with self.type_alias_stmt_manage():
-                yield
-        finally:
-            cls_stack.pop()
-
-    @contextmanager
-    def func_manage(self, original, loc, item):
-        """Manage the function parsing context."""
-        cls_context = self.current_parsing_context("class")
-        if cls_context is not None:
-            in_method, cls_context["in_method"] = cls_context["in_method"], True
-        try:
-            # handles support for function type variables
-            with self.type_alias_stmt_manage():
-                yield
-        finally:
-            if cls_context is not None:
-                cls_context["in_method"] = in_method
-
-    @property
-    def in_method(self):
-        """Determine if currently in a method."""
-        cls_context = self.current_parsing_context("class")
-        return cls_context is not None and cls_context["name"] is not None and cls_context["in_method"]
-
-    def name_handle(self, original, loc, tokens, assign=False, classname=False):
-        """Handle the given base name."""
-        name, = tokens
-        if name.startswith("\\"):
-            name = name[1:]
-            escaped = True
-        else:
-            escaped = False
-
-        if self.disable_name_check:
-            return name
-
-        if assign:
-            where_context = self.current_parsing_context("where")
-            if where_context is not None:
-                where_assigns = where_context["assigns"]
-                if where_assigns is not None:
-                    where_assigns.add(name)
-
-        if classname:
-            cls_context = self.current_parsing_context("class")
-            self.internal_assert(cls_context is not None, original, loc, "found classname outside of class", tokens)
-            cls_context["name"] = name
-
-        # raise_or_wrap_error for all errors here to make sure we don't
-        #  raise spurious errors if not using the computation graph
-
-        if not escaped:
-            typevar_info = self.current_parsing_context("typevars")
-            if typevar_info is not None:
-                typevars = typevar_info["all_typevars"]
-                if name in typevars:
-                    # if we're looking at the same position where the typevar was defined,
-                    #  then we shouldn't treat this as a typevar, since then it's either
-                    #  a reparse of a setname in a typevar, or not a typevar at all
-                    if typevar_info["typevar_locs"].get(name, None) != loc:
-                        if assign:
-                            return self.raise_or_wrap_error(
-                                self.make_err(
-                                    CoconutSyntaxError,
-                                    "cannot reassign type variable '{name}'".format(name=name),
-                                    original,
-                                    loc,
-                                    extra="use explicit '\\{name}' syntax if intended".format(name=name),
-                                ),
-                            )
-                        return typevars[name]
-
-        if not assign:
-            self.unused_imports.pop(name, None)
-
-        if (
-            assign
-            and not escaped
-            # if we're not using the computation graph, then name is handled
-            #  greedily, which means this might be an invalid parse, in which
-            #  case we can't be sure this is actually shadowing a builtin
-            and USE_COMPUTATION_GRAPH
-            # classnames are handled greedily, so ditto the above
-            and not classname
-            and name in all_builtins
-        ):
-            self.strict_err_or_warn(
-                "assignment shadows builtin '{name}' (use explicit '\\{name}' syntax when purposefully assigning to builtin names)".format(name=name),
-                original,
-                loc,
-            )
-
-        if name == "exec":
-            if self.target.startswith("3"):
-                return name
-            elif assign:
-                return self.raise_or_wrap_error(
-                    self.make_err(
-                        CoconutTargetError,
-                        "found Python-3-only assignment to 'exec' as a variable name",
-                        original,
-                        loc,
-                        target="3",
-                    ),
-                )
-            else:
-                return "_coconut_exec"
-        elif not assign and name in super_names and not self.target.startswith("3"):
-            if self.in_method:
-                cls_context = self.current_parsing_context("class")
-                enclosing_cls = cls_context["name_prefix"] + cls_context["name"]
-                return self.add_code_before_marker_with_replacement(name, "__class__ = " + enclosing_cls + "\n", add_spaces=False)
-            else:
-                return name
-        elif not escaped and name.startswith(reserved_prefix) and name not in self.operators:
-            return self.raise_or_wrap_error(
-                self.make_err(
-                    CoconutSyntaxError,
-                    "variable names cannot start with reserved prefix '{prefix}' (use explicit '\\{name}' syntax if intending to access Coconut internals)".format(prefix=reserved_prefix, name=name),
-                    original,
-                    loc,
-                ),
-            )
-        else:
-            return name
-
     def nonlocal_check(self, original, loc, tokens):
         """Check for Python 3 nonlocal statement."""
         return self.check_py("3", "nonlocal statement", original, loc, tokens)
@@ -4893,7 +5000,7 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
 
     def new_namedexpr_check(self, original, loc, tokens):
         """Check for Python 3.10 assignment expressions."""
-        return self.check_py("310", "assignment expression in set literal or indexing", original, loc, tokens)
+        return self.check_py("310", "assignment expression in syntactic location only supported for 3.10+", original, loc, tokens)
 
     def except_star_clause_check(self, original, loc, tokens):
         """Check for Python 3.11 except* statements."""

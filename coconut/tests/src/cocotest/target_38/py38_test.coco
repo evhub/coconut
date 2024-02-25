@@ -10,4 +10,6 @@ def py38_test() -> bool:
     assert 10 |> (x := .) == 10 == x
     assert 10 |> (x := .) |> (. + 1) == 11
     assert x == 10
+    assert not consume(y := i for i in range(10))
+    assert y == 9
     return True

@@ -34,6 +34,14 @@ def assert_raises(c, exc):
     else:
         raise AssertionError(f"{c} failed to raise exception {exc}")
 
+def x `typed_eq` y = (type(x), x) == (type(y), y)
+
+def pickle_round_trip(obj) = (
+    obj
+    |> pickle.dumps
+    |> pickle.loads
+)
+
 try:
     prepattern()  # type: ignore
 except NameError, TypeError:
@@ -43,14 +51,6 @@ except NameError, TypeError:
         def pattern_prepender(func):
             return addpattern(func, base_func, **kwargs)
         return pattern_prepender
-
-def x `typed_eq` y = (type(x), x) == (type(y), y)
-
-def pickle_round_trip(obj) = (
-    obj
-    |> pickle.dumps
-    |> pickle.loads
-)
 
 
 # Old functions:

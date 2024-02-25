@@ -313,8 +313,14 @@ def g(x) = x
 
     assert parse("def f(x):\n ${var}", "xonsh") == "def f(x):\n    ${var}\n"
     assert "data ABC" not in parse("data ABC:\n ${var}", "xonsh")
-
     assert parse('"abc" "xyz"', "lenient") == "'abcxyz'"
+    assert "builder" not in parse("def x -> x", "lenient")
+    assert parse("def x -> x", "lenient").count("def") == 1
+    assert "builder" in parse("x -> def y -> (x, y)", "lenient")
+    assert parse("x -> def y -> (x, y)", "lenient").count("def") == 2
+    assert "builder" in parse("[def x -> (x, y) for y in range(10)]", "lenient")
+    assert parse("[def x -> (x, y) for y in range(10)]", "lenient").count("def") == 2
+    assert parse("123  # derp", "lenient") == "123  # derp"
 
     return True
 
@@ -465,6 +471,11 @@ async def async_map_test() =
 # Compiled Coconut: -----------------------------------------------------------
 
 type Num = int | float""".strip())
+    assert parse("type L[T] = list[T]").strip().endswith("""
+# Compiled Coconut: -----------------------------------------------------------
+
+_coconut_typevar_T_0 = _coconut.typing.TypeVar("_coconut_typevar_T_0")
+type L = list[_coconut_typevar_T_0]""".strip())
 
     setup(line_numbers=False, minify=True)
     assert parse("123  # derp", "lenient") == "123# derp"

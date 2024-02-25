@@ -444,6 +444,14 @@ def primary_test_2() -> bool:
     assert b"Abc" |> fmap$(.|32) == b"abc"
     assert bytearray(b"Abc") |> fmap$(.|32) == bytearray(b"abc")
     assert (bytearray(b"Abc") |> fmap$(.|32)) `isinstance` bytearray
+    assert 10 |> lift(+)((x -> x), (def y -> y)) == 20
+    assert (x -> def y -> (x, y))(1)(2) == (1, 2) == (x -> copyclosure def y -> (x, y))(1)(2)  # type: ignore
+    assert ((x, y) -> def z -> (x, y, z))(1, 2)(3) == (1, 2, 3) == (x -> y -> def z -> (x, y, z))(1)(2)(3)  # type: ignore
+    assert [def x -> (x, y) for y in range(10)] |> map$(call$(?, 10)) |> list == [(10, y) for y in range(10)]
+    assert [x -> (x, y) for y in range(10)] |> map$(call$(?, 10)) |> list == [(10, 9) for y in range(10)]
+    assert [=> y for y in range(2)] |> map$(call) |> list == [1, 1]
+    assert [def => y for y in range(2)] |> map$(call) |> list == [0, 1]
+    assert (x -> x -> def y -> (x, y))(1)(2)(3) == (2, 3)
 
     with process_map.multiple_sequential_calls():  # type: ignore
         assert map((+), range(3), range(4)$[:-1], strict=True) |> list == [0, 2, 4] == process_map((+), range(3), range(4)$[:-1], strict=True) |> list  # type: ignore

@@ -1728,7 +1728,7 @@ If the last `statement` (not followed by a semicolon) in a statement lambda is a
 
 Statement lambdas also support implicit lambda syntax such that `def => _` is equivalent to `def (_=None) => _` as well as explicitly marking them as pattern-matching such that `match def (x) => x` will be a pattern-matching function.
 
-Importantly, statement lambdas do not capture variables introduced only in the surrounding expression, e.g. inside of a list comprehension or normal lambda. To avoid such situations, only nest statement lambdas inside other statement lambdas, and explicitly partially apply a statement lambda to pass in a value from a list comprehension.
+Additionally, statement lambdas have slightly different scoping rules than normal lambdas. When a statement lambda is inside of an expression with an expression-local variable, such as a normal lambda or comprehension, the statement lambda will capture the value of the variable at the time that the statement lambda is defined (rather than a reference to the overall namespace as with normal lambdas). As a result, while `[=> y for y in range(2)] |> map$(call) |> list` is `[1, 1]`, `[def => y for y in range(2)] |> map$(call) |> list` is `[0, 1]`. Note that this only works for expression-local variables: to copy the entire namespace at the time of function definition, use [`copyclosure`](#copyclosure-functions) (which can be used with statement lambdas).
 
 Note that statement lambdas have a lower precedence than normal lambdas and thus capture things like trailing commas. To avoid confusion, statement lambdas should always be wrapped in their own set of parentheses.
 
