@@ -307,6 +307,39 @@ class Matcher(object):
         """Gets the var for checking whether a name should be set."""
         return match_set_name_var + "_" + name
 
+    def add_default_expr(self, assign_to, default_expr):
+        """Add code that evaluates expr in the context of any names that have been matched so far
+        and assigns the result to assign_to if assign_to is currently _coconut_sentinel."""
+        vars_var = self.get_temp_var()
+        add_names_code = []
+        for name in self.names:
+            add_names_code.append(
+                handle_indentation(
+                    """
+if {set_name_var} is not _coconut_sentinel:
+    {vars_var}["{name}"] = {set_name_var}
+                    """,
+                    add_newline=True,
+                ).format(
+                    set_name_var=self.get_set_name_var(name),
+                    vars_var=vars_var,
+                    name=name,
+                )
+            )
+        code = self.comp.reformat_post_deferred_code_proc(assign_to + " = " + default_expr)
+        self.add_def(handle_indentation("""
+if {assign_to} is _coconut_sentinel:
+    {vars_var} = _coconut.globals().copy()
+    {vars_var}.update(_coconut.locals().copy())
+    {add_names_code}_coconut_exec({code_str}, {vars_var})
+    {assign_to} = {vars_var}["{assign_to}"]
+        """).format(
+            vars_var=vars_var,
+            add_names_code="".join(add_names_code),
+            assign_to=assign_to,
+            code_str=self.comp.wrap_str_of(code),
+        ))
+
     def register_name(self, name):
         """Register a new name at the current position."""
         internal_assert(lambda: name not in self.parent_names and name not in self.names, "attempt to register duplicate name", name)
@@ -373,7 +406,7 @@ if {first_arg} is not _coconut_sentinel:
             ).format(
                 first_arg=first_arg,
                 args=args,
-            ),
+            )
         )
 
         with self.down_a_level():
@@ -418,7 +451,7 @@ if {first_arg} is not _coconut_sentinel:
                             # if i >= req_len
                             "_coconut.sum((_coconut.len(" + args + ") > " + str(i) + ", "
                             + ", ".join('"' + name + '" in ' + kwargs for name in names)
-                            + ")) == 1",
+                            + ")) == 1"
                         )
                         tempvar = self.get_temp_var()
                         self.add_def(
@@ -428,16 +461,19 @@ if {first_arg} is not _coconut_sentinel:
                                 kwargs + '.pop("' + name + '") if "' + name + '" in ' + kwargs + " else "
                                 for name in names[:-1]
                             )
-                            + kwargs + '.pop("' + names[-1] + '")',
+                            + kwargs + '.pop("' + names[-1] + '")'
                         )
                         with self.down_a_level():
                             self.match(match, tempvar)
                 else:
                     if not names:
                         tempvar = self.get_temp_var()
-                        self.add_def(tempvar + " = " + args + "[" + str(i) + "] if _coconut.len(" + args + ") > " + str(i) + " else " + default)
-                        with self.down_a_level():
-                            self.match(match, tempvar)
+                        self.add_def(tempvar + " = " + args + "[" + str(i) + "] if _coconut.len(" + args + ") > " + str(i) + " else _coconut_sentinel")
+                        # go down to end to ensure we've matched as much as possible before evaluating the default
+                        with self.down_to_end():
+                            self.add_default_expr(tempvar, default)
+                            with self.down_a_level():
+                                self.match(match, tempvar)
                     else:
                         arg_checks[i] = (
                             # if i < req_len
@@ -445,7 +481,7 @@ if {first_arg} is not _coconut_sentinel:
                             # if i >= req_len
                             "_coconut.sum((_coconut.len(" + args + ") > " + str(i) + ", "
                             + ", ".join('"' + name + '" in ' + kwargs for name in names)
-                            + ")) <= 1",
+                            + ")) <= 1"
                         )
                         tempvar = self.get_temp_var()
                         self.add_def(
@@ -455,10 +491,13 @@ if {first_arg} is not _coconut_sentinel:
                                 kwargs + '.pop("' + name + '") if "' + name + '" in ' + kwargs + " else "
                                 for name in names
                             )
-                            + default,
+                            + "_coconut_sentinel"
                         )
-                        with self.down_a_level():
-                            self.match(match, tempvar)
+                        # go down to end to ensure we've matched as much as possible before evaluating the default
+                        with self.down_to_end():
+                            self.add_default_expr(tempvar, default)
+                            with self.down_a_level():
+                                self.match(match, tempvar)
 
         # length checking
         max_len = None if allow_star_args else len(pos_only_match_args) + len(match_args)
@@ -484,12 +523,18 @@ if {first_arg} is not _coconut_sentinel:
                     kwargs + '.pop("' + name + '") if "' + name + '" in ' + kwargs + " else "
                     for name in names
                 )
-                + (default if default is not None else "_coconut_sentinel"),
+                + "_coconut_sentinel"
             )
-            with self.down_a_level():
-                if default is None:
+            if default is None:
+                with self.down_a_level():
                     self.add_check(tempvar + " is not _coconut_sentinel")
-                self.match(match, tempvar)
+                    self.match(match, tempvar)
+            else:
+                # go down to end to ensure we've matched as much as possible before evaluating the default
+                with self.down_to_end():
+                    self.add_default_expr(tempvar, default)
+                    with self.down_a_level():
+                        self.match(match, tempvar)
 
     def match_dict(self, tokens, item):
         """Matches a dictionary."""
@@ -1054,7 +1099,7 @@ raise _coconut.TypeError("too many positional args in class match (pattern requi
                     ).format(
                         num_pos_matches=len(pos_matches),
                         cls_name=cls_name,
-                    ),
+                    )
                 )
             else:
                 self_match_matcher.match(pos_matches[0], item)
@@ -1077,7 +1122,7 @@ if _coconut.len({match_args_var}) < {num_pos_matches}:
                 num_pos_matches=len(pos_matches),
                 type_any=self.comp.wrap_comment(" type: _coconut.typing.Any"),
                 type_ignore=self.comp.type_ignore_comment(),
-            ),
+            )
         )
         with other_cls_matcher.down_a_level():
             for i, match in enumerate(pos_matches):
@@ -1098,7 +1143,7 @@ if _coconut.len({match_args_var}) < {num_pos_matches}:
                     star_match_var=star_match_var,
                     item=item,
                     num_pos_matches=len(pos_matches),
-                ),
+                )
             )
             with self.down_a_level():
                 self.match(star_match, star_match_var)
@@ -1118,7 +1163,7 @@ if _coconut.len({match_args_var}) < {num_pos_matches}:
                 "_coconut.len({item}) >= {min_len}".format(
                     item=item,
                     min_len=len(pos_matches),
-                ),
+                )
             )
 
         self.match_all_in(pos_matches, item)
@@ -1152,7 +1197,7 @@ if _coconut.len({match_args_var}) < {num_pos_matches}:
                     min_len=len(pos_matches),
                     name_matches=tuple_str_of(name_matches, add_quotes=True),
                     type_ignore=self.comp.type_ignore_comment(),
-                ),
+                )
             )
             with self.down_a_level():
                 self.add_check(temp_var)
@@ -1172,7 +1217,7 @@ if _coconut.len({match_args_var}) < {num_pos_matches}:
                 is_data_var=is_data_var,
                 cls_name=cls_name,
                 type_ignore=self.comp.type_ignore_comment(),
-            ),
+            )
         )
 
         if_data, if_class = self.branches(2)
@@ -1248,7 +1293,7 @@ except _coconut.Exception as _coconut_view_func_exc:
                 func_result_var=func_result_var,
                 view_func=view_func,
                 item=item,
-            ),
+            )
         )
 
         with self.down_a_level():
@@ -1325,7 +1370,7 @@ if {check_var}:
                         check_var=self.check_var,
                         parameterization=parameterization,
                         child_checks=child.out().rstrip(),
-                    ),
+                    )
                 )
 
             # handle normal child groups
@@ -1353,7 +1398,7 @@ if {check_var}:
                     ).format(
                         check_var=self.check_var,
                         children_checks=children_checks,
-                    ),
+                    )
                 )
 
         # commit variable definitions
@@ -1369,7 +1414,7 @@ if {set_name_var} is not _coconut_sentinel:
                 ).format(
                     set_name_var=self.get_set_name_var(name),
                     name=name,
-                ),
+                )
             )
         if name_set_code:
             out.append(
@@ -1381,7 +1426,7 @@ if {check_var}:
                 ).format(
                     check_var=self.check_var,
                     name_set_code="".join(name_set_code),
-                ),
+                )
             )
 
         # handle guards
@@ -1396,7 +1441,7 @@ if {check_var} and not ({guards}):
                 ).format(
                     check_var=self.check_var,
                     guards=paren_join(self.guards, "and"),
-                ),
+                )
             )
 
         return "".join(out)

@@ -1149,11 +1149,17 @@ depth: 1
 
 ### `match`
 
-Coconut provides fully-featured, functional pattern-matching through its `match` statements.
+Coconut provides fully-featured, functional pattern-matching through its `match` statements. Coconut `match` syntax is a strict superset of [Python's `match` syntax](https://peps.python.org/pep-0636/).
+
+_Note: In describing Coconut's pattern-matching syntax, this section focuses on `match` statements, but Coconut's pattern-matching can also be used in many other places, such as [pattern-matching function definition](#pattern-matching-functions), [`case` statements](#case), [destructuring assignment](#destructuring-assignment), [`match data`](#match-data), and [`match for`](#match-for)._
 
 ##### Overview
 
-Match statements follow the basic syntax `match <pattern> in <value>`. The match statement will attempt to match the value against the pattern, and if successful, bind any variables in the pattern to whatever is in the same position in the value, and execute the code below the match statement. Match statements also support, in their basic syntax, an `if <cond>` that will check the condition after executing the match before executing the code below, and an `else` statement afterwards that will only be executed if the `match` statement is not. What is allowed in the match statement's pattern has no equivalent in Python, and thus the specifications below are provided to explain it.
+Match statements follow the basic syntax `match <pattern> in <value>`. The match statement will attempt to match the value against the pattern, and if successful, bind any variables in the pattern to whatever is in the same position in the value, and execute the code below the match statement.
+
+Match statements also support, in their basic syntax, an `if <cond>` that will check the condition after executing the match before executing the code below, and an `else` statement afterwards that will only be executed if the `match` statement is not.
+
+All pattern-matching in Coconut is atomic, such that no assignments will be executed unless the whole match succeeds.
 
 ##### Syntax Specification
 
@@ -2494,7 +2500,7 @@ If `<pattern>` has a variable name (via any variable binding that binds the enti
 
 In addition to supporting pattern-matching in their arguments, pattern-matching function definitions also have a couple of notable differences compared to Python functions. Specifically:
 - If pattern-matching function definition fails, it will raise a [`MatchError`](#matcherror) (just like [destructuring assignment](#destructuring-assignment)) instead of a `TypeError`.
-- All defaults in pattern-matching function definition are late-bound rather than early-bound. Thus, `match def f(xs=[]) = xs` will instantiate a new list for each call where `xs` is not given, unlike `def f(xs=[]) = xs`, which will use the same list for all calls where `xs` is unspecified.
+- All defaults in pattern-matching function definition are late-bound rather than early-bound. Thus, `match def f(xs=[]) = xs` will instantiate a new list for each call where `xs` is not given, unlike `def f(xs=[]) = xs`, which will use the same list for all calls where `xs` is unspecified. This also allows defaults for later arguments to be specified in terms of matched values from earlier arguments, as in `match def f(x, y=x) = (x, y)`.
 
 Pattern-matching function definition can also be combined with `async` functions, [`copyclosure` functions](#copyclosure-functions), [`yield` functions](#explicit-generators), [infix function definition](#infix-functions), and [assignment function syntax](#assignment-functions). The various keywords in front of the `def` can be put in any order.
 
