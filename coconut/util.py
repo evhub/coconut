@@ -8,7 +8,7 @@
 """
 Author: Evan Hubinger
 License: Apache 2.0
-Description: Installer for the Coconut Jupyter kernel.
+Description: Base Coconut utilities.
 """
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -331,10 +331,10 @@ def replace_all(inputstr, all_to_replace, replace_to):
     return inputstr
 
 
-def highlight(code):
+def highlight(code, force=False):
     """Attempt to highlight Coconut code for the terminal."""
     from coconut.terminal import logger  # hide to remove circular deps
-    if logger.enable_colors(sys.stdout) and logger.enable_colors(sys.stderr):
+    if force or logger.enable_colors(sys.stdout) and logger.enable_colors(sys.stderr):
         try:
             from coconut.highlighter import highlight_coconut_for_terminal
         except ImportError:

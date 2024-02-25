@@ -183,6 +183,16 @@ class LoggingStringIO(StringIO):
                 sys.stdout = old_stdout
 
 
+def should_use_color(file=None):
+    """Determine if colors should be used for the given file object."""
+    use_color = get_bool_env_var(use_color_env_var, default=None)
+    if use_color is not None:
+        return use_color
+    if get_bool_env_var("CLICOLOR_FORCE") or get_bool_env_var("FORCE_COLOR"):
+        return True
+    return file is not None and not isatty(file)
+
+
 # -----------------------------------------------------------------------------------------------------------------------
 # LOGGER:
 # -----------------------------------------------------------------------------------------------------------------------
@@ -210,11 +220,7 @@ class Logger(object):
     @classmethod
     def enable_colors(cls, file=None):
         """Attempt to enable CLI colors."""
-        use_color = get_bool_env_var(use_color_env_var, default=None)
-        if (
-            use_color is False
-            or use_color is None and file is not None and not isatty(file)
-        ):
+        if not should_use_color(file):
             return False
         if not cls.colors_enabled:
             # necessary to resolve https://bugs.python.org/issue40134
