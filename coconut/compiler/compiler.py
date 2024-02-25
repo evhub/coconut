@@ -2662,7 +2662,7 @@ if _coconut.typing.TYPE_CHECKING:
     {vars_var} = {{"{def_name}": {def_name}}}
 else:
     {vars_var} = _coconut.globals().copy()
-    {vars_var}.update(_coconut.locals().copy())
+    {vars_var}.update(_coconut.locals())
     _coconut_exec({code_str}, {vars_var})
 {func_name} = {func_from_vars}
                 ''',

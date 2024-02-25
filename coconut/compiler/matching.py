@@ -330,7 +330,7 @@ if {set_name_var} is not _coconut_sentinel:
         self.add_def(handle_indentation("""
 if {assign_to} is _coconut_sentinel:
     {vars_var} = _coconut.globals().copy()
-    {vars_var}.update(_coconut.locals().copy())
+    {vars_var}.update(_coconut.locals())
     {add_names_code}_coconut_exec({code_str}, {vars_var})
     {assign_to} = {vars_var}["{assign_to}"]
         """).format(
