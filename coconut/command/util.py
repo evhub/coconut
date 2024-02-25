@@ -420,6 +420,7 @@ def unlink(link_path):
 
 def rm_dir_or_link(dir_to_rm):
     """Safely delete a directory without deleting the contents of symlinks."""
+    print("rm_dir_or_link", dir_to_rm)
     if not unlink(dir_to_rm) and os.path.exists(dir_to_rm):
         if WINDOWS:
             try:
