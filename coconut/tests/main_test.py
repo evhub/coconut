@@ -426,7 +426,6 @@ def comp(path=None, folder=None, file=None, args=[], **kwargs):
 
 def rm_path(path, allow_keep=False):
     """Delete a path."""
-    print("rm_path", path)
     path = os.path.abspath(fixpath(path))
     assert not base_dir.startswith(path), "refusing to delete Coconut itself: " + repr(path)
     if allow_keep and get_bool_env_var("COCONUT_KEEP_TEST_FILES"):
