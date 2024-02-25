@@ -340,7 +340,8 @@ def highlight(code, force=False):
         except ImportError:
             logger.log_exc()
         else:
-            return highlight_coconut_for_terminal(code)
+            code_base, code_white = split_trailing_whitespace(code)
+            return highlight_coconut_for_terminal(code_base).rstrip() + code_white
     return code
 
 
