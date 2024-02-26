@@ -940,7 +940,8 @@ all_reqs = {
         ("ipython", "py3;py<37"),
         ("ipython", "py==37"),
         ("ipython", "py==38"),
-        ("ipython", "py>=39"),
+        ("ipython", "py==39"),
+        ("ipython", "py>=310"),
         ("ipykernel", "py<3"),
         ("ipykernel", "py3;py<38"),
         ("ipykernel", "py38"),
@@ -974,8 +975,8 @@ all_reqs = {
     ),
     "xonsh": (
         ("xonsh", "py<36"),
-        ("xonsh", "py>=36;py<38"),
-        ("xonsh", "py38"),
+        ("xonsh", "py>=36;py<39"),
+        ("xonsh", "py39"),
     ),
     "dev": (
         ("pre-commit", "py3"),
@@ -1032,17 +1033,18 @@ unpinned_min_versions = {
     ("ipykernel", "py38"): (6,),
     ("jedi", "py39"): (0, 19),
     ("pygments", "py>=39"): (2, 17),
-    ("xonsh", "py38"): (0, 15),
+    ("xonsh", "py39"): (0, 15),
     ("pytest", "py38"): (8,),
     ("async_generator", "py35"): (1, 10),
     ("exceptiongroup", "py37;py<311"): (1,),
-    ("ipython", "py>=39"): (8, 22),
+    ("ipython", "py>=310"): (8, 22),
     "py-spy": (0, 3),
 }
 
 pinned_min_versions = {
     # don't upgrade these; they break on Python 3.9
     ("numpy", "py34;py<39"): (1, 18),
+    ("ipython", "py==39"): (8, 18),
     # don't upgrade these; they break on Python 3.8
     ("ipython", "py==38"): (8, 12),
     # don't upgrade these; they break on Python 3.7
@@ -1050,7 +1052,7 @@ pinned_min_versions = {
     ("typing_extensions", "py==37"): (4, 7),
     # don't upgrade these; they break on Python 3.6
     ("anyio", "py36"): (3,),
-    ("xonsh", "py>=36;py<38"): (0, 11),
+    ("xonsh", "py>=36;py<39"): (0, 11),
     ("pandas", "py36"): (1,),
     ("jupyter-client", "py36"): (7, 1, 2),
     ("typing_extensions", "py==36"): (4, 1),

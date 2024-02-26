@@ -4016,7 +4016,8 @@ def {builder_name}({expr_setnames_str}):
 
             expr_setname_context["callbacks"].append(stmt_lambdef_callback)
             if parent_setnames:
-                builder_args = "**({" + ", ".join('"' + name + '": ' + name for name in sorted(parent_setnames)) + "} | _coconut.locals())"
+                # use _coconut.dict to ensure it supports |
+                builder_args = "**(_coconut.dict(" + ", ".join(name + '=' + name for name in sorted(parent_setnames)) + ") | _coconut.locals())"
             else:
                 builder_args = "**_coconut.locals()"
             return builder_name + "(" + builder_args + ")"
