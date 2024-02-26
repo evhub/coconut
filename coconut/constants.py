@@ -1014,7 +1014,6 @@ unpinned_min_versions = {
     "jupyter": (1, 0),
     "types-backports": (0, 1),
     ("futures", "py<3"): (3, 4),
-    ("backports.functools-lru-cache", "py<3"): (2,),
     ("argparse", "py<27"): (1, 4),
     "pexpect": (4,),
     ("trollius", "py<3;cpy"): (2, 2),
@@ -1085,6 +1084,7 @@ pinned_min_versions = {
     "watchdog": (0, 10),
     "papermill": (1, 2),
     ("numpy", "py<3;cpy"): (1, 16),
+    ("backports.functools-lru-cache", "py<3"): (1, 6),
     # don't upgrade this; it breaks with old IPython versions
     ("jedi", "py<39"): (0, 17),
     # Coconut requires pyparsing 2
