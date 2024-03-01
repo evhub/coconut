@@ -953,6 +953,7 @@ class Grammar(object):
         )
 
         atom_item = Forward()
+        const_atom = Forward()
         expr = Forward()
         star_expr = Forward()
         dubstar_expr = Forward()
@@ -1161,13 +1162,17 @@ class Grammar(object):
                 )
             )
         )
+        match_arg_default = Group(
+            const_atom("const")
+            | test("expr")
+        )
         match_args_list = Group(Optional(
             tokenlist(
                 Group(
                     (star | dubstar) + match
                     | star  # not star_sep because pattern-matching can handle star separators on any Python version
                     | slash  # not slash_sep as above
-                    | match + Optional(equals.suppress() + test)
+                    | match + Optional(equals.suppress() + match_arg_default)
                 ),
                 comma,
             )
@@ -1292,19 +1297,24 @@ class Grammar(object):
         lazy_items = Optional(tokenlist(test, comma))
         lazy_list = attach(lbanana.suppress() + lazy_items + rbanana.suppress(), lazy_list_handle)
 
-        known_atom = (
+        # for const_atom, value should be known at compile time
+        const_atom <<= (
             keyword_atom
-            | string_atom
             | num_atom
+            # typedef ellipsis must come before ellipsis
+            | typedef_ellipsis
+            | ellipsis
+        )
+        # for known_atom, type should be known at compile time
+        known_atom = (
+            const_atom
+            | string_atom
             | list_item
             | dict_literal
             | dict_comp
             | set_literal
             | set_letter_literal
             | lazy_list
-            # typedef ellipsis must come before ellipsis
-            | typedef_ellipsis
-            | ellipsis
         )
         atom = (
             # known_atom must come before name to properly parse string prefixes
@@ -2197,7 +2207,7 @@ class Grammar(object):
                 (
                     lparen.suppress()
                     + match
-                    + Optional(equals.suppress() + test)
+                    + Optional(equals.suppress() + match_arg_default)
                     + rparen.suppress()
                 ) | interior_name_match
             )

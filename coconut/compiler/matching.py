@@ -307,38 +307,49 @@ class Matcher(object):
         """Gets the var for checking whether a name should be set."""
         return match_set_name_var + "_" + name
 
-    def add_default_expr(self, assign_to, default_expr):
+    def add_default_expr(self, assign_to, default):
         """Add code that evaluates expr in the context of any names that have been matched so far
         and assigns the result to assign_to if assign_to is currently _coconut_sentinel."""
-        vars_var = self.get_temp_var()
-        add_names_code = []
-        for name in self.names:
-            add_names_code.append(
-                handle_indentation(
-                    """
+        default_expr, = default
+        if "const" in default:
+            self.add_def(handle_indentation("""
+if {assign_to} is _coconut_sentinel:
+    {assign_to} = {default_expr}
+            """.format(
+                assign_to=assign_to,
+                default_expr=default_expr,
+            )))
+        else:
+            internal_assert("expr" in default, "invalid match default tokens", default)
+            vars_var = self.get_temp_var()
+            add_names_code = []
+            for name in self.names:
+                add_names_code.append(
+                    handle_indentation(
+                        """
 if {set_name_var} is not _coconut_sentinel:
     {vars_var}["{name}"] = {set_name_var}
-                    """,
-                    add_newline=True,
-                ).format(
-                    set_name_var=self.get_set_name_var(name),
-                    vars_var=vars_var,
-                    name=name,
+                        """,
+                        add_newline=True,
+                    ).format(
+                        set_name_var=self.get_set_name_var(name),
+                        vars_var=vars_var,
+                        name=name,
+                    )
                 )
-            )
-        code = self.comp.reformat_post_deferred_code_proc(assign_to + " = " + default_expr)
-        self.add_def(handle_indentation("""
+            code = self.comp.reformat_post_deferred_code_proc(assign_to + " = " + default_expr)
+            self.add_def(handle_indentation("""
 if {assign_to} is _coconut_sentinel:
     {vars_var} = _coconut.globals().copy()
     {vars_var}.update(_coconut.locals())
     {add_names_code}_coconut_exec({code_str}, {vars_var})
     {assign_to} = {vars_var}["{assign_to}"]
-        """).format(
-            vars_var=vars_var,
-            add_names_code="".join(add_names_code),
-            assign_to=assign_to,
-            code_str=self.comp.wrap_str_of(code),
-        ))
+            """).format(
+                vars_var=vars_var,
+                add_names_code="".join(add_names_code),
+                assign_to=assign_to,
+                code_str=self.comp.wrap_str_of(code),
+            ))
 
     def register_name(self, name):
         """Register a new name at the current position."""
