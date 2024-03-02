@@ -225,14 +225,14 @@ as an alias for
 ```
 coconut --quiet --target sys --keep-lines --run <source> --argv <args>
 ```
-which will quietly compile and run `<source>`, passing any additional arguments to the script, mimicking how the `python` command works.
+which will quietly compile and run `<source>`, passing any additional arguments to the script, mimicking how the `python` command works. To instead pass additional compilation arguments to Coconut itself (e.g. `--no-tco`), put them before the `<source>` file.
+
+`coconut-run` can be used to compile and run directories rather than files, again mimicking how the `python` command works. Specifically, Coconut will compile the directory and then run the `__main__.coco` in that directory, which must exist.
 
 `coconut-run` can be used in a Unix shebang line to create a Coconut script by adding the following line to the start of your script:
 ```bash
 #!/usr/bin/env coconut-run
 ```
-
-To pass additional compilation arguments to `coconut-run` (e.g. `--no-tco`), put them before the `<source>` file.
 
 `coconut-run` will always enable [automatic compilation](#automatic-compilation), such that Coconut source files can be directly imported from any Coconut files run via `coconut-run`. Additionally, compilation parameters (e.g. `--no-tco`) used in `coconut-run` will be passed along and used for any auto compilation.
 
@@ -240,7 +240,7 @@ On Python 3.4+, `coconut-run` will use a `__coconut_cache__` directory to cache 
 
 #### Naming Source Files
 
-Coconut source files should, so the compiler can recognize them, use the extension `.coco` (preferred), `.coc`, or `.coconut`.
+Coconut source files should, so the compiler can recognize them, use the extension `.coco`.
 
 When Coconut compiles a `.coco` file, it will compile to another file with the same name, except with `.py` instead of `.coco`, which will hold the compiled code.
 
@@ -248,7 +248,7 @@ If an extension other than `.py` is desired for the compiled files, then that ex
 
 #### Compilation Modes
 
-Files compiled by the `coconut` command-line utility will vary based on compilation parameters. If an entire directory of files is compiled (which the compiler will search recursively for any folders containing `.coco`, `.coc`, or `.coconut` files), a `__coconut__.py` file will be created to house necessary functions (package mode), whereas if only a single file is compiled, that information will be stored within a header inside the file (standalone mode). Standalone mode is better for single files because it gets rid of the overhead involved in importing `__coconut__.py`, but package mode is better for large packages because it gets rid of the need to run the same Coconut header code again in every file, since it can just be imported from `__coconut__.py`.
+Files compiled by the `coconut` command-line utility will vary based on compilation parameters. If an entire directory of files is compiled (which the compiler will search recursively for any folders containing `.coco` files), a `__coconut__.py` file will be created to house necessary functions (package mode), whereas if only a single file is compiled, that information will be stored within a header inside the file (standalone mode). Standalone mode is better for single files because it gets rid of the overhead involved in importing `__coconut__.py`, but package mode is better for large packages because it gets rid of the need to run the same Coconut header code again in every file, since it can just be imported from `__coconut__.py`.
 
 By default, if the `source` argument to the command-line utility is a file, it will perform standalone compilation on it, whereas if it is a directory, it will recursively search for all `.coco` files and perform package compilation on them. Thus, in most cases, the mode chosen by Coconut automatically will be the right one. But if it is very important that no additional files like `__coconut__.py` be created, for example, then the command-line utility can also be forced to use a specific mode with the `--package` (`-p`) and `--standalone` (`-a`) flags.
 
@@ -258,6 +258,7 @@ While Coconut syntax is based off of the latest Python 3, Coconut code compiled 
 
 To make Coconut built-ins universal across Python versions, Coconut makes available on any Python version built-ins that only exist in later versions, including **automatically overwriting Python 2 built-ins with their Python 3 counterparts.** Additionally, Coconut also [overwrites some Python 3 built-ins for optimization and enhancement purposes](#enhanced-built-ins). If access to the original Python versions of any overwritten built-ins is desired, the old built-ins can be retrieved by prefixing them with `py_`. Specifically, the overwritten built-ins are:
 
+- `py_bytes`
 - `py_chr`
 - `py_dict`
 - `py_hex`
@@ -480,14 +481,14 @@ To allow for better use of [`numpy`](https://numpy.org/) objects in Coconut, all
 - Coconut's [multidimensional array literal and array concatenation syntax](#multidimensional-array-literalconcatenation-syntax) supports `numpy` objects, including using fast `numpy` concatenation methods if given `numpy` arrays rather than Coconut's default much slower implementation built for Python lists of lists.
 - Many of Coconut's built-ins include special `numpy` support, specifically:
   * [`fmap`](#fmap) will use [`numpy.vectorize`](https://numpy.org/doc/stable/reference/generated/numpy.vectorize.html) to map over `numpy` arrays.
-  * [`multi_enumerate`](#multi_enumerate) allows for easily looping over all the multi-dimensional indices in a `numpy` array.
+  * [`multi_enumerate`](#multi_enumerate) allows for easily looping over all the multidimensional indices in a `numpy` array.
   * [`cartesian_product`](#cartesian_product) can compute the Cartesian product of given `numpy` arrays as a `numpy` array.
   * [`all_equal`](#all_equal) allows for easily checking if all the elements in a `numpy` array are the same.
 - [`numpy.ndarray`](https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html) is registered as a [`collections.abc.Sequence`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence), enabling it to be used in [sequence patterns](#semantics-specification).
 - `numpy` objects are allowed seamlessly in Coconut's [implicit coefficient syntax](#implicit-function-application-and-coefficients), allowing the use of e.g. `A B**2` shorthand for `A * B**2` when `A` and `B` are `numpy` arrays (note: **not** `A @ B**2`).
 - Coconut supports `@` for matrix multiplication of `numpy` arrays on all Python versions, as well as supplying the `(@)` [operator function](#operator-functions).
 
-Additionally, Coconut provides the exact same support for [`pandas`](https://pandas.pydata.org/), [`pytorch`](https://pytorch.org/), and [`jax.numpy`](https://jax.readthedocs.io/en/latest/jax.numpy.html), including using `pandas`/`jax`-specific methods over `numpy` methods when given `pandas`/`jax` objects.
+Additionally, Coconut provides the exact same support for [`pandas`](https://pandas.pydata.org/), [`xarray`](https://docs.xarray.dev/en/stable/), [`pytorch`](https://pytorch.org/), and [`jax.numpy`](https://jax.readthedocs.io/en/latest/jax.numpy.html) objects.
 
 #### `xonsh` Support
 
@@ -688,9 +689,10 @@ Coconut uses pipe operators for pipeline-style function application. All the ope
 
 The None-aware pipe operators here are equivalent to a [monadic bind](https://en.wikipedia.org/wiki/Monad_(functional_programming)) treating the object as a `Maybe` monad composed of either `None` or the given object. Thus, `x |?> f` is equivalent to `None if x is None else f(x)`. Note that only the object being piped, not the function being piped into, may be `None` for `None`-aware pipes.
 
-For working with `async` functions in pipes, all non-starred pipes support piping into `await` to await the awaitable piped into them, such that `x |> await` is equivalent to `await x`.
-
-Additionally, all pipe operators support a lambda as the last argument, despite lambdas having a lower precedence. Thus, `a |> x => b |> c` is equivalent to `a |> (x => b |> c)`, not `a |> (x => b) |> c`.
+Additionally, some special syntax constructs are only available in pipes to enable doing as many operations as possible via pipes if so desired:
+* For working with `async` functions in pipes, all non-starred pipes support piping into `await` to await the awaitable piped into them, such that `x |> await` is equivalent to `await x`.
+* All non-starred pipes support piping into `(<name> := .)` (mirroring the syntax for [operator implicit partials](#implicit-partial-application)) to assign the piped in item to `<name>`.
+* All pipe operators support a lambda as the last argument, despite lambdas having a lower precedence. Thus, `a |> x => b |> c` is equivalent to `a |> (x => b |> c)`, not `a |> (x => b) |> c`.
 
 _Note: To visually spread operations across several lines, just use [parenthetical continuation](#enhanced-parenthetical-continuation)._
 
@@ -1147,11 +1149,17 @@ depth: 1
 
 ### `match`
 
-Coconut provides fully-featured, functional pattern-matching through its `match` statements.
+Coconut provides fully-featured, functional pattern-matching through its `match` statements. Coconut `match` syntax is a strict superset of [Python's `match` syntax](https://peps.python.org/pep-0636/).
+
+_Note: In describing Coconut's pattern-matching syntax, this section focuses on `match` statements, but Coconut's pattern-matching can also be used in many other places, such as [pattern-matching function definition](#pattern-matching-functions), [`case` statements](#case), [destructuring assignment](#destructuring-assignment), [`match data`](#match-data), and [`match for`](#match-for)._
 
 ##### Overview
 
-Match statements follow the basic syntax `match <pattern> in <value>`. The match statement will attempt to match the value against the pattern, and if successful, bind any variables in the pattern to whatever is in the same position in the value, and execute the code below the match statement. Match statements also support, in their basic syntax, an `if <cond>` that will check the condition after executing the match before executing the code below, and an `else` statement afterwards that will only be executed if the `match` statement is not. What is allowed in the match statement's pattern has no equivalent in Python, and thus the specifications below are provided to explain it.
+Match statements follow the basic syntax `match <pattern> in <value>`. The match statement will attempt to match the value against the pattern, and if successful, bind any variables in the pattern to whatever is in the same position in the value, and execute the code below the match statement.
+
+Match statements also support, in their basic syntax, an `if <cond>` that will check the condition after executing the match before executing the code below, and an `else` statement afterwards that will only be executed if the `match` statement is not.
+
+All pattern-matching in Coconut is atomic, such that no assignments will be executed unless the whole match succeeds.
 
 ##### Syntax Specification
 
@@ -1726,6 +1734,8 @@ If the last `statement` (not followed by a semicolon) in a statement lambda is a
 
 Statement lambdas also support implicit lambda syntax such that `def => _` is equivalent to `def (_=None) => _` as well as explicitly marking them as pattern-matching such that `match def (x) => x` will be a pattern-matching function.
 
+Additionally, statement lambdas have slightly different scoping rules than normal lambdas. When a statement lambda is inside of an expression with an expression-local variable, such as a normal lambda or comprehension, the statement lambda will capture the value of the variable at the time that the statement lambda is defined (rather than a reference to the overall namespace as with normal lambdas). As a result, while `[=> y for y in range(2)] |> map$(call) |> list` is `[1, 1]`, `[def => y for y in range(2)] |> map$(call) |> list` is `[0, 1]`. Note that this only works for expression-local variables: to copy the entire namespace at the time of function definition, use [`copyclosure`](#copyclosure-functions) (which can be used with statement lambdas).
+
 Note that statement lambdas have a lower precedence than normal lambdas and thus capture things like trailing commas. To avoid confusion, statement lambdas should always be wrapped in their own set of parentheses.
 
 _Deprecated: Statement lambdas also support `->` instead of `=>`. Note that when using `->`, any lambdas in the body of the statement lambda must also use `->` rather than `=>`._
@@ -1763,6 +1773,8 @@ _Deprecated: if the deprecated `->` is used in place of `=>`, then return type a
 ### Operator Functions
 
 Coconut uses a simple operator function short-hand: surround an operator with parentheses to retrieve its function. Similarly to iterator comprehensions, if the operator function is the only argument to a function, the parentheses of the function call can also serve as the parentheses for the operator function.
+
+All operator functions also support [implicit partial application](#implicit-partial-application), e.g. `(. + 1)` is equivalent to `(=> _ + 1)`.
 
 ##### Rationale
 
@@ -1822,6 +1834,10 @@ A very common thing to do in functional programming is to make use of function v
 (not in)    => # negative containment
 (assert)    => def (cond, msg=None) => assert cond, msg  # (but a better msg if msg is None)
 (raise)     => def (exc=None, from_exc=None) => raise exc from from_exc  # or just raise if exc is None
+# operator functions for multidimensional array concatenation use brackets:
+[;]         => def (x, y) => [x; y]
+[;;]        => def (x, y) => [x;; y]
+...  # and so on for any number of semicolons
 # there are two operator functions that don't require parentheses:
 .[]         => (operator.getitem)
 .$[]        => # iterator slicing operator
@@ -1849,25 +1865,34 @@ print(list(map(operator.add, range(0, 5), range(5, 10))))
 
 Coconut supports a number of different syntactical aliases for common partial application use cases. These are:
 ```coconut
-.attr           =>      operator.attrgetter("attr")
-.method(args)   =>      operator.methodcaller("method", args)
-func$           =>      ($)$(func)
-seq[]           =>      operator.getitem$(seq)
-iter$[]         =>      # the equivalent of seq[] for iterators
-.[a:b:c]        =>      operator.itemgetter(slice(a, b, c))
-.$[a:b:c]       =>      # the equivalent of .[a:b:c] for iterators
-```
+# attribute access and method calling
+.attr1.attr2        =>  operator.attrgetter("attr1.attr2")
+.method(args)       =>  operator.methodcaller("method", args)
+.attr.method(args)  =>  .attr ..> .method(args)
 
-Additionally, `.attr.method(args)`, `.[x][y]`, `.$[x]$[y]`, and `.method[x]` are also supported.
+# indexing
+.[a:b:c]            =>  operator.itemgetter(slice(a, b, c))
+.[x][y]             => .[x] ..> .[y]
+.method[x]          => .method ..> .[x]
+seq[]               =>  operator.getitem$(seq)
+
+# iterator indexing
+.$[a:b:c]           =>  # the equivalent of .[a:b:c] for iterators
+.$[x]$[y]           => .$[x] ..> .$[y]
+iter$[]             =>  # the equivalent of seq[] for iterators
+
+# currying
+func$               =>  ($)$(func)
+```
 
 In addition, for every Coconut [operator function](#operator-functions), Coconut supports syntax for implicitly partially applying that operator function as
 ```
 (. <op> <arg>)
 (<arg> <op> .)
 ```
-where `<op>` is the operator function and `<arg>` is any expression. Note that, as with operator functions themselves, the parentheses are necessary for this type of implicit partial application.
+where `<op>` is the operator function and `<arg>` is any expression. Note that, as with operator functions themselves, the parentheses are necessary for this type of implicit partial application. This syntax is slightly different for multidimensional array concatenation operator functions, which use brackets instead of parentheses.
 
-Additionally, Coconut also supports implicit operator function partials for arbitrary functions as
+Furthermore, Coconut also supports implicit operator function partials for arbitrary functions as
 ```
 (. `<name>` <arg>)
 (<arg> `<name>` .)
@@ -2066,6 +2091,8 @@ If multiple different concatenation operators are used, the operators with the l
 
 [[[1, 2], [3, 4]], [[5, 6], [7, 8]]]
 ```
+
+_Note: the [operator functions](#operator-functions) for multidimensional array concatenation are spelled `[;]`, `[;;]`, etc. (with any number of parentheses). The [implicit partials](#implicit-partial-application) are similarly spelled `[. ; x]`, `[x ; .]`, etc._
 
 ##### Comparison to Julia
 
@@ -2469,11 +2496,11 @@ where `<arg>` is defined as
 ```
 where `<name>` is the name of the function, `<cond>` is an optional additional check, `<body>` is the body of the function, `<pattern>` is defined by Coconut's [`match` statement](#match), `<default>` is the optional default if no argument is passed, and `<return_type>` is the optional return type annotation (note that argument type annotations are not supported for pattern-matching functions). The `match` keyword at the beginning is optional, but is sometimes necessary to disambiguate pattern-matching function definition from normal function definition, since Python function definition will always take precedence. Note that the `async` and `match` keywords can be in any order.
 
-If `<pattern>` has a variable name (either directly or with `as`), the resulting pattern-matching function will support keyword arguments using that variable name.
+If `<pattern>` has a variable name (via any variable binding that binds the entire pattern, e.g. `x` in `int(x)` or `[a, b] as x`), the resulting pattern-matching function will support keyword arguments using that variable name.
 
 In addition to supporting pattern-matching in their arguments, pattern-matching function definitions also have a couple of notable differences compared to Python functions. Specifically:
 - If pattern-matching function definition fails, it will raise a [`MatchError`](#matcherror) (just like [destructuring assignment](#destructuring-assignment)) instead of a `TypeError`.
-- All defaults in pattern-matching function definition are late-bound rather than early-bound. Thus, `match def f(xs=[]) = xs` will instantiate a new list for each call where `xs` is not given, unlike `def f(xs=[]) = xs`, which will use the same list for all calls where `xs` is unspecified.
+- All defaults in pattern-matching function definition are late-bound rather than early-bound. Thus, `match def f(xs=[]) = xs` will instantiate a new list for each call where `xs` is not given, unlike `def f(xs=[]) = xs`, which will use the same list for all calls where `xs` is unspecified. This also allows defaults for later arguments to be specified in terms of matched values from earlier arguments, as in `match def f(x, y=x) = (x, y)`.
 
 Pattern-matching function definition can also be combined with `async` functions, [`copyclosure` functions](#copyclosure-functions), [`yield` functions](#explicit-generators), [infix function definition](#infix-functions), and [assignment function syntax](#assignment-functions). The various keywords in front of the `def` can be put in any order.
 
@@ -3364,15 +3391,9 @@ _Can't be done without a series of method definitions for each data type. See th
 
 In Haskell, `fmap(func, obj)` takes a data type `obj` and returns a new data type with `func` mapped over the contents. Coconut's `fmap` function does the exact same thing for Coconut's [data types](#data).
 
-`fmap` can also be used on the built-in objects `str`, `dict`, `list`, `tuple`, `set`, `frozenset`, and `dict` as a variant of `map` that returns back an object of the same type.
-
-The behavior of `fmap` for a given object can be overridden by defining an `__fmap__(self, func)` magic method that will be called whenever `fmap` is invoked on that object. Note that `__fmap__` implementations should always satisfy the [Functor Laws](https://wiki.haskell.org/Functor).
+`fmap` can also be used on the built-in objects `str`, `dict`, `list`, `tuple`, `set`, `frozenset`, `bytes`, `bytearray`, and `dict` as a variant of `map` that returns back an object of the same type.
 
 For `dict`, or any other `collections.abc.Mapping`, `fmap` will map over the mapping's `.items()` instead of the default iteration through its `.keys()`, with the new mapping reconstructed from the mapped over items. _Deprecated: `fmap$(starmap_over_mappings=True)` will `starmap` over the `.items()` instead of `map` over them._
-
-For [`numpy`](#numpy-integration) objects, `fmap` will use [`np.vectorize`](https://docs.scipy.org/doc/numpy/reference/generated/numpy.vectorize.html) to produce the result.
-
-For [`pandas`](https://pandas.pydata.org/) objects, `fmap` will use [`.apply`](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.apply.html) along the last axis (so row-wise for `DataFrame`'s, element-wise for `Series`'s).
 
 For asynchronous iterables, `fmap` will map asynchronously, making `fmap` equivalent in that case to
 ```coconut_python
@@ -3381,6 +3402,13 @@ async def fmap_over_async_iters(func, async_iter):
         yield func(item)
 ```
 such that `fmap` can effectively be used as an async map.
+
+Some objects from external libraries are also given special support:
+* For [`numpy`](#numpy-integration) objects, `fmap` will use [`np.vectorize`](https://docs.scipy.org/doc/numpy/reference/generated/numpy.vectorize.html) to produce the result.
+* For [`pandas`](https://pandas.pydata.org/) objects, `fmap` will use [`.apply`](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.apply.html) along the last axis (so row-wise for `DataFrame`'s, element-wise for `Series`'s).
+* For [`xarray`](https://docs.xarray.dev/en/stable/) objects, `fmap` will first convert them into `pandas` objects, apply `fmap`, then convert them back.
+
+The behavior of `fmap` for a given object can be overridden by defining an `__fmap__(self, func)` magic method that will be called whenever `fmap` is invoked on that object. Note that `__fmap__` implementations should always satisfy the [Functor Laws](https://wiki.haskell.org/Functor).
 
 _Deprecated: `fmap(func, obj, fallback_to_init=True)` will fall back to `obj.__class__(map(func, obj))` if no `fmap` implementation is available rather than raise `TypeError`._
 
@@ -3490,11 +3518,11 @@ def flip(f, nargs=None) =
     )
 ```
 
-#### `lift`
+#### `lift` and `lift_apart`
 
-**lift**(_func_)
+##### **lift**(_func_)
 
-**lift**(_func_, *_func\_args_, **_func\_kwargs_)
+##### **lift**(_func_, *_func\_args_, **_func\_kwargs_)
 
 Coconut's `lift` built-in is a higher-order function that takes in a function and “lifts” it up so that all of its arguments are functions.
 
@@ -3518,7 +3546,33 @@ def lift(f) = (
 
 `lift` also supports a shortcut form such that `lift(f, *func_args, **func_kwargs)` is equivalent to `lift(f)(*func_args, **func_kwargs)`.
 
-##### Example
+##### **lift\_apart**(_func_)
+
+##### **lift\_apart**(_func_, *_func\_args_, **_func\_kwargs_)
+
+Coconut's `lift_apart` built-in is very similar to `lift`, except instead of duplicating the final arguments to each function, it separates them out.
+
+For a binary function `f(x, y)` and two unary functions `g(z)` and `h(z)`, `lift_apart` works as
+```coconut
+lift_apart(f)(g, h)(z, w) == f(g(z), h(w))
+```
+such that in this case `lift_apart` implements the `D2` combinator.
+
+In the general case, `lift_apart` is equivalent to a pickleable version of
+```coconut
+def lift_apart(f) = (
+    (*func_args, **func_kwargs) =>
+        (*args, **kwargs) =>
+            f(
+                *(f(x) for f, x in zip(func_args, args, strict=True)),
+                **{k: func_kwargs[k](kwargs[k]) for k in func_kwargs.keys() | kwargs.keys()},
+            )
+)
+```
+
+`lift_apart` supports the same shortcut form as `lift`.
+
+##### Examples
 
 **Coconut:**
 ```coconut
@@ -3537,7 +3591,32 @@ def plus_and_times(x, y):
     return x + y, x * y
 ```
 
+**Coconut:**
+```coconut
+first_false_and_last_true = (
+    lift(,)(ident, reversed)
+    ..*> lift_apart(,)(dropwhile$(bool), dropwhile$(not))
+    ..*> lift_apart(,)(.$[0], .$[0])
+)
+```
+
+**Python:**
+```coconut_python
+from itertools import dropwhile
+
+def first_false_and_last_true(xs):
+    rev_xs = reversed(xs)
+    return (
+        next(dropwhile(bool, xs)),
+        next(dropwhile(lambda x: not x, rev_xs)),
+    )
+```
+
 #### `and_then` and `and_then_await`
+
+**and\_then**(_first\_async\_func_, _second\_func_)
+
+**and\_then\_await**(_first\_async\_func_, _second\_async\_func_)
 
 Coconut provides the `and_then` and `and_then_await` built-ins for composing `async` functions. Specifically:
 * To forwards compose an async function `async_f` with a normal function `g` (such that `g` is called on the result of `await`ing `async_f`), write ``async_f `and_then` g``.
@@ -3891,7 +3970,7 @@ flat_it = iter_of_iters |> flatten |> list
 ```coconut_python
 from itertools import chain
 iter_of_iters = [[1, 2], [3, 4]]
-flat_it = iter_of_iters |> chain.from_iterable |> list
+flat_it = list(chain.from_iterable(iter_of_iters))
 ```
 
 #### `scan`
@@ -4141,9 +4220,15 @@ _Can't be done without the definition of `windowsof`; see the compiled header fo
 
 #### `all_equal`
 
-**all\_equal**(_iterable_)
+**all\_equal**(_iterable_, _to_=`...`)
 
-Coconut's `all_equal` built-in takes in an iterable and determines whether all of its elements are equal to each other. `all_equal` assumes transitivity of equality and that `!=` is the negation of `==`. Special support is provided for [`numpy`](#numpy-integration) objects.
+Coconut's `all_equal` built-in takes in an iterable and determines whether all of its elements are equal to each other.
+
+If _to_ is passed, `all_equal` will check that all the elements are specifically equal to that value, rather than just equal to each other.
+
+Note that `all_equal` assumes transitivity of equality, that `!=` is the negation of `==`, and that empty arrays always have all their elements equal.
+
+Special support is provided for [`numpy`](#numpy-integration) objects.
 
 ##### Example
 
@@ -4716,7 +4801,7 @@ Switches the [`breakpoint` built-in](https://www.python.org/dev/peps/pep-0553/) 
 
 Both functions behave identically to [`setuptools.find_packages`](https://setuptools.pypa.io/en/latest/userguide/quickstart.html#package-discovery), except that they find Coconut packages rather than Python packages. `find_and_compile_packages` additionally compiles any Coconut packages that it finds in-place.
 
-Note that if you want to use either of these functions in your `setup.py`, you'll need to include `coconut` as a [build-time dependency in your `pyproject.toml`](https://pip.pypa.io/en/stable/reference/build-system/pyproject-toml/#build-time-dependencies). If you want `setuptools` to package your Coconut files, you'll also need to add `global-include *.coco` to your [`MANIFEST.in`](https://setuptools.pypa.io/en/latest/userguide/miscellaneous.html).
+Note that if you want to use either of these functions in your `setup.py`, you'll need to include `coconut` as a [build-time dependency in your `pyproject.toml`](https://pip.pypa.io/en/stable/reference/build-system/pyproject-toml/#build-time-dependencies). If you want `setuptools` to package your Coconut files, you'll also need to add `global-include *.coco` to your [`MANIFEST.in`](https://setuptools.pypa.io/en/latest/userguide/miscellaneous.html) and [pass `include_package_data=True` to `setuptools.setup`](https://setuptools.pypa.io/en/latest/userguide/datafiles.html).
 
 ##### Example
 

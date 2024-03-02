@@ -421,7 +421,12 @@ def unlink(link_path):
 def rm_dir_or_link(dir_to_rm):
     """Safely delete a directory without deleting the contents of symlinks."""
     if not unlink(dir_to_rm) and os.path.exists(dir_to_rm):
-        if WINDOWS:
+        if PY2:  # shutil.rmtree doesn't seem to be fully safe on Python 2
+            try:
+                os.rmdir(dir_to_rm)
+            except OSError:
+                logger.warn_exc()
+        elif WINDOWS:
             try:
                 os.rmdir(dir_to_rm)
             except OSError:

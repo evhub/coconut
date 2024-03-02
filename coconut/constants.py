@@ -37,7 +37,7 @@ def fixpath(path):
     return os.path.normpath(os.path.realpath(os.path.expanduser(path)))
 
 
-def get_bool_env_var(env_var, default=False):
+def get_bool_env_var(env_var, default=None):
     """Get a boolean from an environment variable."""
     boolstr = os.getenv(env_var, "").lower()
     if boolstr in ("true", "yes", "on", "1", "t"):
@@ -84,7 +84,7 @@ PY310 = sys.version_info >= (3, 10)
 PY311 = sys.version_info >= (3, 11)
 PY312 = sys.version_info >= (3, 12)
 IPY = (
-    PY35
+    PY36
     and (PY37 or not PYPY)
     and not (PYPY and WINDOWS)
     and sys.version_info[:2] != (3, 7)
@@ -146,8 +146,7 @@ use_adaptive_any_of = get_bool_env_var(adaptive_any_of_env_var, True)
 # note that _parseIncremental produces much smaller caches
 use_incremental_if_available = False
 
-use_adaptive_if_available = False  # currently broken
-adaptive_reparse_usage_weight = 10
+use_line_by_line_parser = False
 
 # these only apply to use_incremental_if_available, not compiler.util.enable_incremental_parsing()
 default_incremental_cache_size = None
@@ -180,7 +179,10 @@ if sys.getrecursionlimit() < default_recursion_limit:
     sys.setrecursionlimit(default_recursion_limit)
 
 # modules that numpy-like arrays can live in
-pandas_numpy_modules = (
+xarray_modules = (
+    "xarray",
+)
+pandas_modules = (
     "pandas",
 )
 jax_numpy_modules = (
@@ -190,7 +192,8 @@ numpy_modules = (
     "numpy",
     "torch",
 ) + (
-    pandas_numpy_modules
+    xarray_modules
+    + pandas_modules
     + jax_numpy_modules
 )
 
@@ -315,12 +318,11 @@ reserved_compiler_symbols = delimiter_symbols + (
 )
 
 tabideal = 4  # spaces to indent code for displaying
-
-taberrfmt = 2  # spaces to indent exceptions
-
 justify_len = 79  # ideal line length
 
+taberrfmt = 2  # spaces to indent exceptions
 min_squiggles_in_err_msg = 1
+default_max_err_msg_lines = 10
 
 # for pattern-matching
 default_matcher_style = "python warn"
@@ -437,11 +439,11 @@ untcoable_funcs = (
     r"locals",
     r"globals",
     r"(py_)?super",
-    r"(typing\.)?cast",
-    r"(sys\.)?exc_info",
-    r"(sys\.)?_getframe",
-    r"(sys\.)?_current_frames",
-    r"(sys\.)?_current_exceptions",
+    r"cast",
+    r"exc_info",
+    r"sys\.[a-zA-Z0-9_.]+",
+    r"traceback\.[a-zA-Z0-9_.]+",
+    r"typing\.[a-zA-Z0-9_.]+",
 )
 
 py3_to_py2_stdlib = {
@@ -574,45 +576,34 @@ self_match_types = (
 )
 
 python_builtins = (
-    '__import__', 'abs', 'all', 'any', 'bin', 'bool', 'bytearray',
-    'breakpoint', 'bytes', 'chr', 'classmethod', 'compile', 'complex',
-    'delattr', 'dict', 'dir', 'divmod', 'enumerate', 'eval', 'filter',
-    'float', 'format', 'frozenset', 'getattr', 'globals', 'hasattr',
-    'hash', 'hex', 'id', 'input', 'int', 'isinstance', 'issubclass',
-    'iter', 'len', 'list', 'locals', 'map', 'max', 'memoryview',
-    'min', 'next', 'object', 'oct', 'open', 'ord', 'pow', 'print',
-    'property', 'range', 'repr', 'reversed', 'round', 'set', 'setattr',
-    'slice', 'sorted', 'staticmethod', 'str', 'sum', 'super', 'tuple',
-    'type', 'vars', 'zip',
-    'Ellipsis', 'NotImplemented',
-    'ArithmeticError', 'AssertionError', 'AttributeError',
-    'BaseException', 'BufferError', 'BytesWarning', 'DeprecationWarning',
-    'EOFError', 'EnvironmentError', 'Exception', 'FloatingPointError',
-    'FutureWarning', 'GeneratorExit', 'IOError', 'ImportError',
-    'ImportWarning', 'IndentationError', 'IndexError', 'KeyError',
-    'KeyboardInterrupt', 'LookupError', 'MemoryError', 'NameError',
-    'NotImplementedError', 'OSError', 'OverflowError',
-    'PendingDeprecationWarning', 'ReferenceError', 'ResourceWarning',
-    'RuntimeError', 'RuntimeWarning', 'StopIteration',
-    'SyntaxError', 'SyntaxWarning', 'SystemError', 'SystemExit',
-    'TabError', 'TypeError', 'UnboundLocalError', 'UnicodeDecodeError',
-    'UnicodeEncodeError', 'UnicodeError', 'UnicodeTranslateError',
-    'UnicodeWarning', 'UserWarning', 'ValueError', 'VMSError',
-    'Warning', 'WindowsError', 'ZeroDivisionError',
+    "abs", "aiter", "all", "anext", "any", "ascii",
+    "bin", "bool", "breakpoint", "bytearray", "bytes",
+    "callable", "chr", "classmethod", "compile", "complex",
+    "delattr", "dict", "dir", "divmod",
+    "enumerate", "eval", "exec",
+    "filter", "float", "format", "frozenset",
+    "getattr", "globals",
+    "hasattr", "hash", "help", "hex",
+    "id", "input", "int", "isinstance", "issubclass", "iter",
+    "len", "list", "locals",
+    "map", "max", "memoryview", "min",
+    "next",
+    "object", "oct", "open", "ord",
+    "pow", "print", "property",
+    "range", "repr", "reversed", "round",
+    "set", "setattr", "slice", "sorted", "staticmethod", "str", "sum", "super",
+    "tuple", "type",
+    "vars",
+    "zip",
+    "__import__",
     '__name__',
     '__file__',
     '__annotations__',
     '__debug__',
-    # we treat these as coconut_exceptions so the highlighter will always know about them:
-    # 'ExceptionGroup', 'BaseExceptionGroup',
-    # don't include builtins that aren't always made available by Coconut:
-    # 'BlockingIOError', 'ChildProcessError', 'ConnectionError',
-    # 'BrokenPipeError', 'ConnectionAbortedError', 'ConnectionRefusedError',
-    # 'ConnectionResetError', 'FileExistsError', 'FileNotFoundError',
-    # 'InterruptedError', 'IsADirectoryError', 'NotADirectoryError',
-    # 'PermissionError', 'ProcessLookupError', 'TimeoutError',
-    # 'StopAsyncIteration', 'ModuleNotFoundError', 'RecursionError',
-    # 'EncodingWarning',
+)
+
+python_exceptions = (
+    "BaseException", "BaseExceptionGroup", "GeneratorExit", "KeyboardInterrupt", "SystemExit", "Exception", "ArithmeticError", "FloatingPointError", "OverflowError", "ZeroDivisionError", "AssertionError", "AttributeError", "BufferError", "EOFError", "ExceptionGroup", "BaseExceptionGroup", "ImportError", "ModuleNotFoundError", "LookupError", "IndexError", "KeyError", "MemoryError", "NameError", "UnboundLocalError", "OSError", "BlockingIOError", "ChildProcessError", "ConnectionError", "BrokenPipeError", "ConnectionAbortedError", "ConnectionRefusedError", "ConnectionResetError", "FileExistsError", "FileNotFoundError", "InterruptedError", "IsADirectoryError", "NotADirectoryError", "PermissionError", "ProcessLookupError", "TimeoutError", "ReferenceError", "RuntimeError", "NotImplementedError", "RecursionError", "StopAsyncIteration", "StopIteration", "SyntaxError", "IndentationError", "TabError", "SystemError", "TypeError", "ValueError", "UnicodeError", "UnicodeDecodeError", "UnicodeEncodeError", "UnicodeTranslateError", "Warning", "BytesWarning", "DeprecationWarning", "EncodingWarning", "FutureWarning", "ImportWarning", "PendingDeprecationWarning", "ResourceWarning", "RuntimeWarning", "SyntaxWarning", "UnicodeWarning", "UserWarning",
 )
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -640,11 +631,13 @@ force_verbose_logger = get_bool_env_var("COCONUT_FORCE_VERBOSE", False)
 
 coconut_home = get_path_env_var(home_env_var, "~")
 
-use_color = get_bool_env_var("COCONUT_USE_COLOR", None)
+use_color_env_var = "COCONUT_USE_COLOR"
 error_color_code = "31"
 log_color_code = "93"
 
 default_style = "default"
+fake_styles = ("none", "list")
+
 prompt_histfile = get_path_env_var(
     "COCONUT_HISTORY_FILE",
     os.path.join(coconut_home, ".coconut_history"),
@@ -793,6 +786,7 @@ coconut_specific_builtins = (
     "flip",
     "const",
     "lift",
+    "lift_apart",
     "all_equal",
     "collectby",
     "mapreduce",
@@ -837,12 +831,16 @@ must_use_specific_target_builtins = (
 
 coconut_exceptions = (
     "MatchError",
-    "ExceptionGroup",
-    "BaseExceptionGroup",
 )
 
-highlight_builtins = coconut_specific_builtins + interp_only_builtins
-all_builtins = frozenset(python_builtins + coconut_specific_builtins + coconut_exceptions)
+highlight_builtins = coconut_specific_builtins + interp_only_builtins + python_builtins
+highlight_exceptions = coconut_exceptions + python_exceptions
+all_builtins = frozenset(
+    python_builtins
+    + python_exceptions
+    + coconut_specific_builtins
+    + coconut_exceptions
+)
 
 magic_methods = (
     "__fmap__",
@@ -942,7 +940,8 @@ all_reqs = {
         ("ipython", "py3;py<37"),
         ("ipython", "py==37"),
         ("ipython", "py==38"),
-        ("ipython", "py>=39"),
+        ("ipython", "py==39"),
+        ("ipython", "py>=310"),
         ("ipykernel", "py<3"),
         ("ipykernel", "py3;py<38"),
         ("ipykernel", "py38"),
@@ -976,8 +975,8 @@ all_reqs = {
     ),
     "xonsh": (
         ("xonsh", "py<36"),
-        ("xonsh", "py>=36;py<38"),
-        ("xonsh", "py38"),
+        ("xonsh", "py>=36;py<39"),
+        ("xonsh", "py39"),
     ),
     "dev": (
         ("pre-commit", "py3"),
@@ -997,10 +996,12 @@ all_reqs = {
         ("numpy", "py34;py<39"),
         ("numpy", "py39"),
         ("pandas", "py36"),
+        ("xarray", "py39"),
     ),
     "tests": (
         ("pytest", "py<36"),
-        ("pytest", "py36"),
+        ("pytest", "py>=36;py<38"),
+        ("pytest", "py38"),
         "pexpect",
     ),
 }
@@ -1013,35 +1014,36 @@ unpinned_min_versions = {
     "jupyter": (1, 0),
     "types-backports": (0, 1),
     ("futures", "py<3"): (3, 4),
-    ("backports.functools-lru-cache", "py<3"): (1, 6),
     ("argparse", "py<27"): (1, 4),
     "pexpect": (4,),
     ("trollius", "py<3;cpy"): (2, 2),
     "requests": (2, 31),
     ("numpy", "py39"): (1, 26),
+    ("xarray", "py39"): (2024,),
     ("dataclasses", "py==36"): (0, 8),
     ("aenum", "py<34"): (3, 1, 15),
-    "pydata-sphinx-theme": (0, 14),
+    "pydata-sphinx-theme": (0, 15),
     "myst-parser": (2,),
     "sphinx": (7,),
-    "mypy[python2]": (1, 7),
+    "mypy[python2]": (1, 8),
     ("jupyter-console", "py37"): (6, 6),
     ("typing", "py<35"): (3, 10),
-    ("typing_extensions", "py>=38"): (4, 8),
+    ("typing_extensions", "py>=38"): (4, 9),
     ("ipykernel", "py38"): (6,),
     ("jedi", "py39"): (0, 19),
     ("pygments", "py>=39"): (2, 17),
-    ("xonsh", "py38"): (0, 14),
-    ("pytest", "py36"): (7,),
+    ("xonsh", "py39"): (0, 15),
+    ("pytest", "py38"): (8,),
     ("async_generator", "py35"): (1, 10),
     ("exceptiongroup", "py37;py<311"): (1,),
-    ("ipython", "py>=39"): (8, 18),
+    ("ipython", "py>=310"): (8, 22),
     "py-spy": (0, 3),
 }
 
 pinned_min_versions = {
     # don't upgrade these; they break on Python 3.9
     ("numpy", "py34;py<39"): (1, 18),
+    ("ipython", "py==39"): (8, 18),
     # don't upgrade these; they break on Python 3.8
     ("ipython", "py==38"): (8, 12),
     # don't upgrade these; they break on Python 3.7
@@ -1049,10 +1051,11 @@ pinned_min_versions = {
     ("typing_extensions", "py==37"): (4, 7),
     # don't upgrade these; they break on Python 3.6
     ("anyio", "py36"): (3,),
-    ("xonsh", "py>=36;py<38"): (0, 11),
+    ("xonsh", "py>=36;py<39"): (0, 11),
     ("pandas", "py36"): (1,),
     ("jupyter-client", "py36"): (7, 1, 2),
     ("typing_extensions", "py==36"): (4, 1),
+    ("pytest", "py>=36;py<38"): (7,),
     # don't upgrade these; they break on Python 3.5
     ("ipykernel", "py3;py<38"): (5, 5),
     ("ipython", "py3;py<37"): (7, 9),
@@ -1081,6 +1084,7 @@ pinned_min_versions = {
     "watchdog": (0, 10),
     "papermill": (1, 2),
     ("numpy", "py<3;cpy"): (1, 16),
+    ("backports.functools-lru-cache", "py<3"): (1, 6),
     # don't upgrade this; it breaks with old IPython versions
     ("jedi", "py<39"): (0, 17),
     # Coconut requires pyparsing 2
@@ -1235,6 +1239,8 @@ pygments_lexers = (
     "coconut_pycon = coconut.highlighter:CoconutPythonConsoleLexer",
 )
 
+setuptools_distribution_names = ("bdist", "sdist")
+
 requests_sleep_times = (0, 0.1, 0.2, 0.3, 0.4, 1)
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -1267,14 +1273,20 @@ icoconut_old_kernel_names = (
     "coconut3",
 )
 
-py_syntax_version = 3
 mimetype = "text/x-python3"
+codemirror_mode = {
+    "name": "ipython",
+    "version": 3,
+}
 
 all_keywords = keyword_vars + const_vars + reserved_vars
 
 conda_build_env_var = "CONDA_BUILD"
 
 enabled_xonsh_modes = ("single",)
+
+# 1 is safe, 2 seems to work okay, and 3 breaks stuff like '"""\n(\n)\n"""'
+num_assemble_logical_lines_tries = 1
 
 # -----------------------------------------------------------------------------------------------------------------------
 # DOCUMENTATION CONSTANTS:

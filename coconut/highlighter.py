@@ -19,10 +19,12 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 from coconut.root import *  # NOQA
 
+from pygments import highlight
 from pygments.lexers import Python3Lexer, PythonConsoleLexer
 from pygments.token import Text, Operator, Keyword, Name, Number
 from pygments.lexer import words, bygroups
 from pygments.util import shebang_matches
+from pygments.formatters import Terminal256Formatter
 
 from coconut.constants import (
     highlight_builtins,
@@ -34,9 +36,13 @@ from coconut.constants import (
     shebang_regex,
     magic_methods,
     template_ext,
-    coconut_exceptions,
+    highlight_exceptions,
     main_prompt,
+    style_env_var,
+    default_style,
+    fake_styles,
 )
+from coconut.terminal import logger
 
 # -----------------------------------------------------------------------------------------------------------------------
 # LEXERS:
@@ -94,7 +100,7 @@ class CoconutLexer(Python3Lexer):
     ]
     tokens["builtins"] += [
         (words(highlight_builtins, suffix=r"\b"), Name.Builtin),
-        (words(coconut_exceptions, suffix=r"\b"), Name.Exception),
+        (words(highlight_exceptions, suffix=r"\b"), Name.Exception),
     ]
     tokens["numbers"] = [
         (r"0b[01_]+", Number.Integer),
@@ -113,3 +119,14 @@ class CoconutLexer(Python3Lexer):
 
     def analyse_text(text):
         return shebang_matches(text, shebang_regex)
+
+
+def highlight_coconut_for_terminal(code):
+    """Highlight Coconut code for the terminal."""
+    style = os.getenv(style_env_var, default_style)
+    if style not in fake_styles:
+        try:
+            return highlight(code, CoconutLexer(), Terminal256Formatter(style=style))
+        except Exception:
+            logger.log_exc()
+    return code

@@ -30,14 +30,16 @@ from coconut.constants import (
     taberrfmt,
     report_this_text,
     min_squiggles_in_err_msg,
+    default_max_err_msg_lines,
 )
 from coconut.util import (
     pickleable_obj,
     clip,
-    logical_lines,
+    literal_lines,
     clean,
     get_displayable_target,
     normalize_newlines,
+    highlight,
 )
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -88,7 +90,6 @@ class CoconutException(BaseCoconutException, Exception):
 
 class CoconutSyntaxError(CoconutException):
     """Coconut SyntaxError."""
-    point_to_endpoint = False
     argnames = ("message", "source", "point", "ln", "extra", "endpoint", "filename")
 
     def __init__(self, message, source=None, point=None, ln=None, extra=None, endpoint=None, filename=None):
@@ -100,21 +101,31 @@ class CoconutSyntaxError(CoconutException):
         """Get the arguments as keyword arguments."""
         return dict(zip(self.argnames, self.args))
 
+    point_to_endpoint = False
+    max_err_msg_lines = default_max_err_msg_lines
+
+    def set_formatting(self, point_to_endpoint=None, max_err_msg_lines=None):
+        """Sets formatting values."""
+        if point_to_endpoint is not None:
+            self.point_to_endpoint = point_to_endpoint
+        if max_err_msg_lines is not None:
+            self.max_err_msg_lines = max_err_msg_lines
+        return self
+
     def message(self, message, source, point, ln, extra=None, endpoint=None, filename=None):
         """Creates a SyntaxError-like message."""
-        if message is None:
-            message = "parsing failed"
+        message_parts = ["parsing failed" if message is None else message]
         if extra is not None:
-            message += " (" + str(extra) + ")"
+            message_parts += [" (", str(extra), ")"]
         if ln is not None:
-            message += " (line " + str(ln)
+            message_parts += [" (line ", str(ln)]
             if filename is not None:
-                message += " in " + repr(filename)
-            message += ")"
+                message_parts += [" in ", repr(filename)]
+            message_parts += [")"]
         if source:
             if point is None:
                 for line in source.splitlines():
-                    message += "\n" + " " * taberrfmt + clean(line)
+                    message_parts += ["\n", " " * taberrfmt, clean(line)]
             else:
                 source = normalize_newlines(source)
                 point = clip(point, 0, len(source))
@@ -129,7 +140,7 @@ class CoconutSyntaxError(CoconutException):
                 point_ind = getcol(point, source) - 1
                 endpoint_ind = getcol(endpoint, source) - 1
 
-                source_lines = tuple(logical_lines(source, keep_newlines=True))
+                source_lines = tuple(literal_lines(source, keep_newlines=True))
 
                 # walk the endpoint line back until it points to real text
                 while endpoint_ln > point_ln and not "".join(source_lines[endpoint_ln - 1:endpoint_ln]).strip():
@@ -153,23 +164,25 @@ class CoconutSyntaxError(CoconutException):
                     point_ind = clip(point_ind, 0, len(part))
                     endpoint_ind = clip(endpoint_ind, point_ind, len(part))
 
-                    message += "\n" + " " * taberrfmt + part
+                    # add code to message, highlighting part only at end so as not to change len(part)
+                    message_parts += ["\n", " " * taberrfmt, highlight(part)]
 
-                    if point_ind > 0 or endpoint_ind > 0:
-                        err_len = endpoint_ind - point_ind
-                        message += "\n" + " " * (taberrfmt + point_ind)
+                    # add squiggles to message
+                    err_len = endpoint_ind - point_ind
+                    if (point_ind > 0 or endpoint_ind > 0) and err_len < len(part):
+                        message_parts += ["\n", " " * (taberrfmt + point_ind)]
                         if err_len <= min_squiggles_in_err_msg:
                             if not self.point_to_endpoint:
-                                message += "^"
-                            message += "~" * err_len  # err_len ~'s when there's only an extra char in one spot
+                                message_parts += ["^"]
+                            message_parts += ["~" * err_len]  # err_len ~'s when there's only an extra char in one spot
                             if self.point_to_endpoint:
-                                message += "^"
+                                message_parts += ["^"]
                         else:
-                            message += (
-                                ("^" if not self.point_to_endpoint else "\\")
-                                + "~" * (err_len - 1)  # err_len-1 ~'s when there's an extra char at the start and end
-                                + ("^" if self.point_to_endpoint else "/" if endpoint_ind < len(part) else "|")
-                            )
+                            message_parts += [
+                                ("^" if not self.point_to_endpoint else "\\"),
+                                "~" * (err_len - 1),  # err_len-1 ~'s when there's an extra char at the start and end
+                                ("^" if self.point_to_endpoint else "/" if endpoint_ind < len(part) else "|"),
+                            ]
 
                 # multi-line error message
                 else:
@@ -182,20 +195,35 @@ class CoconutSyntaxError(CoconutException):
 
                     max_line_len = max(len(line) for line in lines)
 
-                    message += "\n" + " " * (taberrfmt + point_ind)
+                    # add top squiggles
+                    message_parts += ["\n", " " * (taberrfmt + point_ind)]
                     if point_ind >= len(lines[0]):
-                        message += "|"
+                        message_parts += ["|"]
                     else:
-                        message += "/" + "~" * (len(lines[0]) - point_ind - 1)
-                    message += "~" * (max_line_len - len(lines[0])) + "\n"
-                    for line in lines:
-                        message += "\n" + " " * taberrfmt + line
-                    message += (
-                        "\n\n" + " " * taberrfmt + "~" * endpoint_ind
-                        + ("^" if self.point_to_endpoint else "/" if 0 < endpoint_ind < len(lines[-1]) else "|")
-                    )
+                        message_parts += ["/", "~" * (len(lines[0]) - point_ind - 1)]
+                    message_parts += ["~" * (max_line_len - len(lines[0])), "\n"]
 
-        return message
+                    # add code, highlighting all of it together
+                    code_parts = []
+                    if len(lines) > self.max_err_msg_lines:
+                        for i in range(self.max_err_msg_lines // 2):
+                            code_parts += ["\n", " " * taberrfmt, lines[i]]
+                        code_parts += ["\n", " " * (taberrfmt // 2), "..."]
+                        for i in range(len(lines) - self.max_err_msg_lines // 2, len(lines)):
+                            code_parts += ["\n", " " * taberrfmt, lines[i]]
+                    else:
+                        for line in lines:
+                            code_parts += ["\n", " " * taberrfmt, line]
+                    message_parts += highlight("".join(code_parts))
+
+                    # add bottom squiggles
+                    message_parts += [
+                        "\n\n",
+                        " " * taberrfmt + "~" * endpoint_ind,
+                        ("^" if self.point_to_endpoint else "/" if 0 < endpoint_ind < len(lines[-1]) else "|"),
+                    ]
+
+        return "".join(message_parts)
 
     def syntax_err(self):
         """Creates a SyntaxError."""
@@ -216,11 +244,6 @@ class CoconutSyntaxError(CoconutException):
         if filename is not None:
             err.filename = filename
         return err
-
-    def set_point_to_endpoint(self, point_to_endpoint):
-        """Sets whether to point to the endpoint."""
-        self.point_to_endpoint = point_to_endpoint
-        return self
 
 
 class CoconutStyleError(CoconutSyntaxError):

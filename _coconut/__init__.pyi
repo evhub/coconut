@@ -109,8 +109,10 @@ npt = _npt  # Fake, like typing
 zip_longest = _zip_longest
 
 numpy_modules: _t.Any = ...
-pandas_numpy_modules: _t.Any = ...
+xarray_modules: _t.Any = ...
+pandas_modules: _t.Any = ...
 jax_numpy_modules: _t.Any = ...
+
 tee_type: _t.Any = ...
 reiterables: _t.Any = ...
 fmappables: _t.Any = ...
@@ -129,6 +131,7 @@ ValueError = _builtins.ValueError
 StopIteration = _builtins.StopIteration
 RuntimeError = _builtins.RuntimeError
 callable = _builtins.callable
+chr = _builtins.chr
 classmethod = _builtins.classmethod
 complex = _builtins.complex
 all = _builtins.all
@@ -157,6 +160,7 @@ min = _builtins.min
 max = _builtins.max
 next = _builtins.next
 object = _builtins.object
+ord = _builtins.ord
 print = _builtins.print
 property = _builtins.property
 range = _builtins.range

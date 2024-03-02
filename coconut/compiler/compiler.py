@@ -17,6 +17,7 @@ Description: Compiles Coconut code into Python code.
 #   - Compiler
 #   - Processors
 #   - Handlers
+#   - Managers
 #   - Checking Handlers
 #   - Endpoints
 #   - Binding
@@ -40,6 +41,7 @@ from threading import Lock
 from coconut._pyparsing import (
     USE_COMPUTATION_GRAPH,
     USE_CACHE,
+    USE_LINE_BY_LINE,
     ParseBaseException,
     ParseResults,
     col as getcol,
@@ -49,6 +51,7 @@ from coconut._pyparsing import (
 )
 
 from coconut.constants import (
+    PY35,
     specific_targets,
     targets,
     pseudo_targets,
@@ -95,7 +98,7 @@ from coconut.util import (
     pickleable_obj,
     checksum,
     clip,
-    logical_lines,
+    literal_lines,
     clean,
     get_target_info,
     get_clock_time,
@@ -130,6 +133,7 @@ from coconut.compiler.grammar import (
     attrgetter_atom_handle,
     itemgetter_handle,
     partial_op_item_handle,
+    partial_arr_concat_handle,
 )
 from coconut.compiler.util import (
     ExceptionNode,
@@ -148,7 +152,6 @@ from coconut.compiler.util import (
     match_in,
     transform,
     parse,
-    all_matches,
     get_target_info_smart,
     split_leading_comments,
     compile_regex,
@@ -178,7 +181,9 @@ from coconut.compiler.util import (
     load_cache_for,
     pickle_cache,
     handle_and_manage,
+    manage,
     sub_all,
+    ComputationNode,
 )
 from coconut.compiler.header import (
     minify_header,
@@ -485,6 +490,7 @@ class Compiler(Grammar, pickleable_obj):
     def __init__(self, *args, **kwargs):
         """Creates a new compiler with the given parsing parameters."""
         self.setup(*args, **kwargs)
+        self.reset()
 
     # changes here should be reflected in __reduce__, get_cli_args, and in the stub for coconut.api.setup
     def setup(self, target=None, strict=False, minify=False, line_numbers=True, keep_lines=False, no_tco=False, no_wrap=False):
@@ -599,6 +605,7 @@ class Compiler(Grammar, pickleable_obj):
         self.add_code_before_regexes = {}
         self.add_code_before_replacements = {}
         self.add_code_before_ignore_names = {}
+        self.remaining_original = None
 
     @contextmanager
     def inner_environment(self, ln=None):
@@ -615,8 +622,10 @@ class Compiler(Grammar, pickleable_obj):
         parsing_context, self.parsing_context = self.parsing_context, defaultdict(list)
         kept_lines, self.kept_lines = self.kept_lines, []
         num_lines, self.num_lines = self.num_lines, 0
+        remaining_original, self.remaining_original = self.remaining_original, None
         try:
-            yield
+            with ComputationNode.using_overrides():
+                yield
         finally:
             self.outer_ln = outer_ln
             self.line_numbers = line_numbers
@@ -628,23 +637,7 @@ class Compiler(Grammar, pickleable_obj):
             self.parsing_context = parsing_context
             self.kept_lines = kept_lines
             self.num_lines = num_lines
-
-    def current_parsing_context(self, name, default=None):
-        """Get the current parsing context for the given name."""
-        stack = self.parsing_context[name]
-        if stack:
-            return stack[-1]
-        else:
-            return default
-
-    @contextmanager
-    def add_to_parsing_context(self, name, obj):
-        """Add the given object to the parsing context for the given name."""
-        self.parsing_context[name].append(obj)
-        try:
-            yield
-        finally:
-            self.parsing_context[name].pop()
+            self.remaining_original = remaining_original
 
     @contextmanager
     def disable_checks(self):
@@ -693,15 +686,15 @@ class Compiler(Grammar, pickleable_obj):
         trim_arity = should_trim_arity(cls_method) if is_action else False
 
         @wraps(cls_method)
-        def method(original, loc, tokens):
+        def method(original, loc, tokens_or_item):
             self_method = getattr(cls.current_compiler, method_name)
             if kwargs:
                 self_method = partial(self_method, **kwargs)
             if trim_arity:
                 self_method = _trim_arity(self_method)
-            return self_method(original, loc, tokens)
+            return self_method(original, loc, tokens_or_item)
         internal_assert(
-            hasattr(cls_method, "ignore_tokens") is hasattr(method, "ignore_tokens")
+            hasattr(cls_method, "ignore_arguments") is hasattr(method, "ignore_arguments")
             and hasattr(cls_method, "ignore_no_tokens") is hasattr(method, "ignore_no_tokens")
             and hasattr(cls_method, "ignore_one_token") is hasattr(method, "ignore_one_token"),
             "failed to properly wrap method",
@@ -718,16 +711,19 @@ class Compiler(Grammar, pickleable_obj):
             cls.classdef_ref,
             cls.method("classdef_handle"),
             cls.method("class_manage"),
+            include_in_packrat_context=False,
         )
         cls.datadef <<= handle_and_manage(
             cls.datadef_ref,
             cls.method("datadef_handle"),
             cls.method("class_manage"),
+            include_in_packrat_context=False,
         )
         cls.match_datadef <<= handle_and_manage(
             cls.match_datadef_ref,
             cls.method("match_datadef_handle"),
             cls.method("class_manage"),
+            include_in_packrat_context=False,
         )
 
         # handle parsing_context for function definitions
@@ -735,16 +731,19 @@ class Compiler(Grammar, pickleable_obj):
             cls.stmt_lambdef_ref,
             cls.method("stmt_lambdef_handle"),
             cls.method("func_manage"),
+            include_in_packrat_context=False,
         )
         cls.decoratable_normal_funcdef_stmt <<= handle_and_manage(
             cls.decoratable_normal_funcdef_stmt_ref,
             cls.method("decoratable_funcdef_stmt_handle"),
             cls.method("func_manage"),
+            include_in_packrat_context=False,
         )
         cls.decoratable_async_funcdef_stmt <<= handle_and_manage(
             cls.decoratable_async_funcdef_stmt_ref,
             cls.method("decoratable_funcdef_stmt_handle", is_async=True),
             cls.method("func_manage"),
+            include_in_packrat_context=False,
         )
 
         # handle parsing_context for type aliases
@@ -752,6 +751,7 @@ class Compiler(Grammar, pickleable_obj):
             cls.type_alias_stmt_ref,
             cls.method("type_alias_stmt_handle"),
             cls.method("type_alias_stmt_manage"),
+            include_in_packrat_context=False,
         )
 
         # handle parsing_context for where statements
@@ -759,11 +759,37 @@ class Compiler(Grammar, pickleable_obj):
             cls.where_stmt_ref,
             cls.method("where_stmt_handle"),
             cls.method("where_stmt_manage"),
+            include_in_packrat_context=False,
         )
         cls.implicit_return_where <<= handle_and_manage(
             cls.implicit_return_where_ref,
             cls.method("where_stmt_handle"),
             cls.method("where_stmt_manage"),
+            include_in_packrat_context=False,
+        )
+
+        # handle parsing_context for expr_setnames
+        #  (we need include_in_packrat_context here because some parses will be in an expr_setname context and some won't)
+        cls.expr_lambdef <<= manage(
+            cls.expr_lambdef_ref,
+            cls.method("has_expr_setname_manage"),
+            include_in_packrat_context=True,
+        )
+        cls.lambdef_no_cond <<= manage(
+            cls.lambdef_no_cond_ref,
+            cls.method("has_expr_setname_manage"),
+            include_in_packrat_context=True,
+        )
+        cls.comprehension_expr <<= manage(
+            cls.comprehension_expr_ref,
+            cls.method("has_expr_setname_manage"),
+            include_in_packrat_context=True,
+        )
+        cls.dict_comp <<= handle_and_manage(
+            cls.dict_comp_ref,
+            cls.method("dict_comp_handle"),
+            cls.method("has_expr_setname_manage"),
+            include_in_packrat_context=True,
         )
 
         # greedy handlers (we need to know about them even if suppressed and/or they use the parsing_context)
@@ -775,7 +801,16 @@ class Compiler(Grammar, pickleable_obj):
         # name handlers
         cls.refname <<= attach(cls.name_ref, cls.method("name_handle"))
         cls.setname <<= attach(cls.name_ref, cls.method("name_handle", assign=True))
-        cls.classname <<= attach(cls.name_ref, cls.method("name_handle", assign=True, classname=True), greedy=True)
+        cls.classname <<= attach(
+            cls.name_ref,
+            cls.method("name_handle", assign=True, classname=True),
+            greedy=True,
+        )
+        cls.expr_setname <<= attach(
+            cls.name_ref,
+            cls.method("name_handle", assign=True, expr_setname=True),
+            greedy=True,
+        )
 
         # abnormally named handlers
         cls.moduledoc_item <<= attach(cls.moduledoc, cls.method("set_moduledoc"))
@@ -788,6 +823,11 @@ class Compiler(Grammar, pickleable_obj):
         cls.trailer_atom <<= attach(cls.trailer_atom_ref, cls.method("item_handle"))
         cls.no_partial_trailer_atom <<= attach(cls.no_partial_trailer_atom_ref, cls.method("item_handle"))
         cls.simple_assign <<= attach(cls.simple_assign_ref, cls.method("item_handle"))
+        cls.expr_simple_assign <<= attach(cls.expr_simple_assign_ref, cls.method("item_handle"))
+
+        # handle all star assignments with star_assign_item_check
+        cls.star_assign_item <<= attach(cls.star_assign_item_ref, cls.method("star_assign_item_check"))
+        cls.expr_star_assign_item <<= attach(cls.expr_star_assign_item_ref, cls.method("star_assign_item_check"))
 
         # handle all string atoms with string_atom_handle
         cls.string_atom <<= attach(cls.string_atom_ref, cls.method("string_atom_handle"))
@@ -811,7 +851,6 @@ class Compiler(Grammar, pickleable_obj):
         cls.complex_raise_stmt <<= attach(cls.complex_raise_stmt_ref, cls.method("complex_raise_stmt_handle"))
         cls.augassign_stmt <<= attach(cls.augassign_stmt_ref, cls.method("augassign_stmt_handle"))
         cls.kwd_augassign <<= attach(cls.kwd_augassign_ref, cls.method("kwd_augassign_handle"))
-        cls.dict_comp <<= attach(cls.dict_comp_ref, cls.method("dict_comp_handle"))
         cls.destructuring_stmt <<= attach(cls.destructuring_stmt_ref, cls.method("destructuring_stmt_handle"))
         cls.full_match <<= attach(cls.full_match_ref, cls.method("full_match_handle"))
         cls.name_match_funcdef <<= attach(cls.name_match_funcdef_ref, cls.method("name_match_funcdef_handle"))
@@ -841,7 +880,6 @@ class Compiler(Grammar, pickleable_obj):
         # these handlers just do strict/target checking
         cls.u_string <<= attach(cls.u_string_ref, cls.method("u_string_check"))
         cls.nonlocal_stmt <<= attach(cls.nonlocal_stmt_ref, cls.method("nonlocal_check"))
-        cls.star_assign_item <<= attach(cls.star_assign_item_ref, cls.method("star_assign_item_check"))
         cls.keyword_lambdef <<= attach(cls.keyword_lambdef_ref, cls.method("lambdef_check"))
         cls.star_sep_arg <<= attach(cls.star_sep_arg_ref, cls.method("star_sep_check"))
         cls.star_sep_setarg <<= attach(cls.star_sep_setarg_ref, cls.method("star_sep_check"))
@@ -998,7 +1036,7 @@ class Compiler(Grammar, pickleable_obj):
         try:
             with (self.inner_environment() if inner_environment else noop_ctx()):
                 return self.str_proc(inputstring, **kwargs)
-        except Exception:
+        except CoconutSyntaxError:
             logger.log_exc()
         return None
 
@@ -1160,7 +1198,7 @@ class Compiler(Grammar, pickleable_obj):
         """Return information on the current target as a version tuple."""
         return get_target_info(self.target)
 
-    def make_err(self, errtype, message, original, loc=0, ln=None, extra=None, reformat=True, endpoint=None, include_causes=False, **kwargs):
+    def make_err(self, errtype, message, original, loc=0, ln=None, extra=None, reformat=True, endpoint=None, include_causes=False, use_startpoint=False, **kwargs):
         """Generate an error of the specified type."""
         logger.log_loc("raw_loc", original, loc)
         logger.log_loc("raw_endpoint", original, endpoint)
@@ -1170,19 +1208,59 @@ class Compiler(Grammar, pickleable_obj):
         logger.log_loc("loc", original, loc)
 
         # get endpoint
+        startpoint = None
         if endpoint is None:
             endpoint = reformat
         if endpoint is False:
             endpoint = loc
         else:
             if endpoint is True:
-                endpoint = get_highest_parse_loc(original)
+                if self.remaining_original is None:
+                    endpoint = get_highest_parse_loc(original)
+                else:
+                    startpoint = ComputationNode.add_to_loc
+                    raw_endpoint = get_highest_parse_loc(self.remaining_original)
+                    endpoint = startpoint + raw_endpoint
                 logger.log_loc("highest_parse_loc", original, endpoint)
             endpoint = clip(
                 move_endpt_to_non_whitespace(original, endpoint, backwards=True),
                 min=loc,
             )
         logger.log_loc("endpoint", original, endpoint)
+
+        # process startpoint
+        if startpoint is not None:
+            startpoint = move_loc_to_non_whitespace(original, startpoint)
+            logger.log_loc("startpoint", original, startpoint)
+
+        # determine possible causes
+        if include_causes:
+            self.internal_assert(extra is None, original, loc, "make_err cannot include causes with extra")
+            causes = dictset()
+            for check_loc in dictset((loc, endpoint, startpoint)):
+                if check_loc is not None:
+                    cause = try_parse(self.parse_err_msg, original[check_loc:], inner=True)
+                    if cause:
+                        causes.add(cause)
+            if causes:
+                extra = "possible cause{s}: {causes}".format(
+                    s="s" if len(causes) > 1 else "",
+                    causes=", ".join(ordered(causes)),
+                )
+            else:
+                extra = None
+
+        # use startpoint if appropriate
+        if startpoint is None:
+            use_startpoint = False
+        else:
+            if use_startpoint is None:
+                use_startpoint = (
+                    "\n" not in original[loc:endpoint]
+                    and "\n" in original[startpoint:loc]
+                )
+            if use_startpoint:
+                loc = startpoint
 
         # get line number
         if ln is None:
@@ -1192,7 +1270,7 @@ class Compiler(Grammar, pickleable_obj):
                 ln = self.outer_ln
 
         # get line indices for the error locs
-        original_lines = tuple(logical_lines(original, True))
+        original_lines = tuple(literal_lines(original, True))
         loc_line_ind = clip(lineno(loc, original) - 1, max=len(original_lines) - 1)
 
         # build the source snippet that the error is referring to
@@ -1205,33 +1283,27 @@ class Compiler(Grammar, pickleable_obj):
         logger.log_loc("loc_in_snip", snippet, loc_in_snip)
         logger.log_loc("endpt_in_snip", snippet, endpt_in_snip)
 
-        # determine possible causes
-        if include_causes:
-            self.internal_assert(extra is None, original, loc, "make_err cannot include causes with extra")
-            causes = dictset()
-            for cause, _, _ in all_matches(self.parse_err_msg, snippet[loc_in_snip:]):
-                if cause:
-                    causes.add(cause)
-            for cause, _, _ in all_matches(self.parse_err_msg, snippet[endpt_in_snip:]):
-                if cause:
-                    causes.add(cause)
-            if causes:
-                extra = "possible cause{s}: {causes}".format(
-                    s="s" if len(causes) > 1 else "",
-                    causes=", ".join(ordered(causes)),
-                )
-            else:
-                extra = None
-
         # reformat the snippet and fix error locations to match
         if reformat:
             snippet, loc_in_snip, endpt_in_snip = self.reformat_locs(snippet, loc_in_snip, endpt_in_snip)
             logger.log_loc("reformatted_loc", snippet, loc_in_snip)
             logger.log_loc("reformatted_endpt", snippet, endpt_in_snip)
 
+        # build the error
         if extra is not None:
             kwargs["extra"] = extra
-        return errtype(message, snippet, loc_in_snip, ln, endpoint=endpt_in_snip, filename=self.filename, **kwargs)
+        return errtype(
+            message,
+            snippet,
+            loc_in_snip,
+            ln,
+            endpoint=endpt_in_snip,
+            filename=self.filename,
+            **kwargs  # no comma
+        ).set_formatting(
+            point_to_endpoint=True if use_startpoint else None,
+            max_err_msg_lines=2 if use_startpoint else None,
+        )
 
     def make_syntax_err(self, err, original, after_parsing=False):
         """Make a CoconutSyntaxError from a CoconutDeferredSyntaxError."""
@@ -1244,7 +1316,7 @@ class Compiler(Grammar, pickleable_obj):
         loc = err.loc
         ln = self.adjust(err.lineno) if include_ln else None
 
-        return self.make_err(CoconutParseError, msg, original, loc, ln, include_causes=True, **kwargs)
+        return self.make_err(CoconutParseError, msg, original, loc, ln, include_causes=True, use_startpoint=None, **kwargs)
 
     def make_internal_syntax_err(self, original, loc, msg, item, extra):
         """Make a CoconutInternalSyntaxError."""
@@ -1286,23 +1358,24 @@ class Compiler(Grammar, pickleable_obj):
             Compiler.current_compiler = self
             yield
 
-    def streamline(self, grammar, inputstring=None, force=False, inner=False):
-        """Streamline the given grammar for the given inputstring."""
-        input_len = 0 if inputstring is None else len(inputstring)
-        if force or (streamline_grammar_for_len is not None and input_len > streamline_grammar_for_len):
-            start_time = get_clock_time()
-            prep_grammar(grammar, streamline=True)
-            logger.log_lambda(
-                lambda: "Streamlined {grammar} in {time} seconds{info}.".format(
-                    grammar=get_name(grammar),
-                    time=get_clock_time() - start_time,
-                    info="" if inputstring is None else " (streamlined due to receiving input of length {length})".format(
-                        length=input_len,
+    def streamline(self, grammars, inputstring=None, force=False, inner=False):
+        """Streamline the given grammar(s) for the given inputstring."""
+        for grammar in grammars if isinstance(grammars, tuple) else (grammars,):
+            input_len = 0 if inputstring is None else len(inputstring)
+            if force or (streamline_grammar_for_len is not None and input_len > streamline_grammar_for_len):
+                start_time = get_clock_time()
+                prep_grammar(grammar, streamline=True)
+                logger.log_lambda(
+                    lambda: "Streamlined {grammar} in {time} seconds{info}.".format(
+                        grammar=get_name(grammar),
+                        time=get_clock_time() - start_time,
+                        info="" if inputstring is None else " (streamlined due to receiving input of length {length})".format(
+                            length=input_len,
+                        ),
                     ),
-                ),
-            )
-        elif inputstring is not None and not inner:
-            logger.log("No streamlining done for input of length {length}.".format(length=input_len))
+                )
+            elif inputstring is not None and not inner:
+                logger.log("No streamlining done for input of length {length}.".format(length=input_len))
 
     def run_final_checks(self, original, keep_state=False):
         """Run post-parsing checks to raise any necessary errors/warnings."""
@@ -1319,6 +1392,30 @@ class Compiler(Grammar, pickleable_obj):
                             loc,
                             endpoint=False,
                         )
+
+    def parse_line_by_line(self, init_parser, line_parser, original):
+        """Apply init_parser then line_parser repeatedly."""
+        if not USE_LINE_BY_LINE:
+            raise CoconutException("line-by-line parsing not supported", extra="run 'pip install --upgrade cPyparsing' to fix")
+        with ComputationNode.using_overrides():
+            ComputationNode.override_original = original
+            out_parts = []
+            init = True
+            cur_loc = 0
+            while cur_loc < len(original):
+                self.remaining_original = original[cur_loc:]
+                ComputationNode.add_to_loc = cur_loc
+                results = parse(init_parser if init else line_parser, self.remaining_original, inner=False)
+                if len(results) == 1:
+                    got_loc, = results
+                else:
+                    got, got_loc = results
+                    out_parts.append(got)
+                got_loc = int(got_loc)
+                internal_assert(got_loc >= cur_loc and (init or got_loc > cur_loc), "invalid line by line parse", (cur_loc, results), extra=lambda: "in: " + repr(self.remaining_original.split("\n", 1)[0]))
+                cur_loc = got_loc
+                init = False
+        return "".join(out_parts)
 
     def parse(
         self,
@@ -1349,7 +1446,11 @@ class Compiler(Grammar, pickleable_obj):
                 with logger.gather_parsing_stats():
                     try:
                         pre_procd = self.pre(inputstring, keep_state=keep_state, **preargs)
-                        parsed = parse(parser, pre_procd, inner=False)
+                        if isinstance(parser, tuple):
+                            init_parser, line_parser = parser
+                            parsed = self.parse_line_by_line(init_parser, line_parser, pre_procd)
+                        else:
+                            parsed = parse(parser, pre_procd, inner=False)
                         out = self.post(parsed, keep_state=keep_state, **postargs)
                     except ParseBaseException as err:
                         raise self.make_parse_err(err)
@@ -1357,7 +1458,7 @@ class Compiler(Grammar, pickleable_obj):
                         internal_assert(pre_procd is not None, "invalid deferred syntax error in pre-processing", err)
                         raise self.make_syntax_err(err, pre_procd, after_parsing=parsed is not None)
                     # RuntimeError, not RecursionError, for Python < 3.5
-                    except RuntimeError as err:
+                    except (RecursionError if PY35 else RuntimeError) as err:
                         raise CoconutException(
                             str(err), extra="try again with --recursion-limit greater than the current "
                             + str(sys.getrecursionlimit()) + " (you may also need to increase --stack-size)",
@@ -1378,7 +1479,7 @@ class Compiler(Grammar, pickleable_obj):
         if self.strict and nl_at_eof_check and inputstring and not inputstring.endswith("\n"):
             end_index = len(inputstring) - 1 if inputstring else 0
             raise self.make_err(CoconutStyleError, "missing new line at end of file", inputstring, end_index)
-        kept_lines = inputstring.splitlines()
+        kept_lines = tuple(literal_lines(inputstring))
         self.num_lines = len(kept_lines)
         if self.keep_lines:
             self.kept_lines = kept_lines
@@ -1559,16 +1660,8 @@ class Compiler(Grammar, pickleable_obj):
 
                 # start the string hold if we're at the start of a string
                 if hold is not None:
-                    is_f = False
-                    j = i - len(hold["start"])
-                    while j >= 0:
-                        prev_c = inputstring[j]
-                        if prev_c == "f":
-                            is_f = True
-                            break
-                        elif prev_c != "r":
-                            break
-                        j -= 1
+                    is_f_check_str = inputstring[clip(i - len(hold["start"]) + 1 - self.start_f_str_regex_len, min=0): i - len(hold["start"]) + 1]
+                    is_f = self.start_f_str_regex.search(is_f_check_str)
                     if is_f:
                         hold.update({
                             "type": "f string",
@@ -1656,7 +1749,7 @@ class Compiler(Grammar, pickleable_obj):
         """Process custom operator definitions."""
         out = []
         skips = self.copy_skips()
-        for i, raw_line in enumerate(logical_lines(inputstring, keep_newlines=True)):
+        for i, raw_line in enumerate(literal_lines(inputstring, keep_newlines=True)):
             ln = i + 1
             base_line = rem_comment(raw_line)
             stripped_line = base_line.lstrip()
@@ -1743,7 +1836,7 @@ class Compiler(Grammar, pickleable_obj):
 
     def ind_proc(self, inputstring, **kwargs):
         """Process indentation and ensure balanced parentheses."""
-        lines = tuple(logical_lines(inputstring))
+        lines = tuple(literal_lines(inputstring))
         new = []  # new lines
         current = None  # indentation level of previous line
         levels = []  # indentation levels of all previous blocks, newest at end
@@ -1814,7 +1907,7 @@ class Compiler(Grammar, pickleable_obj):
                             original=line,
                             ln=self.adjust(len(new)),
                             **err_kwargs
-                        ).set_point_to_endpoint(True)
+                        ).set_formatting(point_to_endpoint=True)
 
         self.set_skips(skips)
         if new:
@@ -1836,11 +1929,8 @@ class Compiler(Grammar, pickleable_obj):
         out_lines = []
         level = 0
 
-        next_line_is_fake = False
-        for line in inputstring.splitlines(True):
-            is_fake = next_line_is_fake
-            next_line_is_fake = line.endswith("\f") and line.rstrip("\f") == line.rstrip()
-
+        is_fake = False
+        for next_line_is_real, line in literal_lines(inputstring, True, yield_next_line_is_real=True):
             line, comment = split_comment(line.strip())
 
             indent, line = split_leading_indent(line)
@@ -1868,6 +1958,8 @@ class Compiler(Grammar, pickleable_obj):
 
             line = (line + comment).rstrip()
             out_lines.append(line)
+
+            is_fake = not next_line_is_real
 
         if not ignore_errors and level != 0:
             logger.log_lambda(lambda: "failed to reindent:\n" + inputstring)
@@ -1915,7 +2007,7 @@ class Compiler(Grammar, pickleable_obj):
         """Add end of line comments."""
         out_lines = []
         ln = 1  # line number in pre-processed original
-        for line in logical_lines(inputstring):
+        for line in literal_lines(inputstring):
             add_one_to_ln = False
             try:
 
@@ -2050,7 +2142,7 @@ class Compiler(Grammar, pickleable_obj):
             pass
         else:
             raw_first_line = split_leading_trailing_indent(rem_comment(first_line))[1]
-            if match_in(self.just_a_string, raw_first_line):
+            if match_in(self.just_a_string, raw_first_line, inner=True):
                 return first_line, rest_of_lines
         return None, block
 
@@ -2268,7 +2360,7 @@ else:
     def proc_funcdef(self, original, loc, decorators, funcdef, is_async, in_method, is_stmt_lambda):
         """Determines if TCO or TRE can be done and if so does it,
         handles dotted function names, and universalizes async functions."""
-        raw_lines = list(logical_lines(funcdef, True))
+        raw_lines = list(literal_lines(funcdef, True))
         def_stmt = raw_lines.pop(0)
         out = []
 
@@ -2383,7 +2475,8 @@ except _coconut.NameError:
                 raise self.make_err(
                     CoconutTargetError,
                     "async function definition requires a specific target",
-                    original, loc,
+                    original,
+                    loc,
                     target="sys",
                 )
             elif self.target_info >= (3, 5):
@@ -2394,7 +2487,8 @@ except _coconut.NameError:
                 raise self.make_err(
                     CoconutTargetError,
                     "found Python 3.6 async generator (Coconut can only backport async generators as far back as 3.5)",
-                    original, loc,
+                    original,
+                    loc,
                     target="35",
                 )
             else:
@@ -2568,7 +2662,7 @@ if _coconut.typing.TYPE_CHECKING:
     {vars_var} = {{"{def_name}": {def_name}}}
 else:
     {vars_var} = _coconut.globals().copy()
-    {vars_var}.update(_coconut.locals().copy())
+    {vars_var}.update(_coconut.locals())
     _coconut_exec({code_str}, {vars_var})
 {func_name} = {func_from_vars}
                 ''',
@@ -2621,7 +2715,7 @@ else:
         self.compile_add_code_before_regexes()
 
         out = []
-        for raw_line in inputstring.splitlines(True):
+        for raw_line in literal_lines(inputstring, True):
             bef_ind, line, aft_ind = split_leading_trailing_indent(raw_line)
 
             # look for deferred errors
@@ -2644,7 +2738,7 @@ else:
                 # handle any non-function code that was added before the funcdef
                 pre_def_lines = []
                 post_def_lines = []
-                funcdef_lines = list(logical_lines(funcdef, True))
+                funcdef_lines = list(literal_lines(funcdef, True))
                 for i, line in enumerate(funcdef_lines):
                     if self.def_regex.match(line):
                         pre_def_lines = funcdef_lines[:i]
@@ -2753,15 +2847,18 @@ else:
         """Enforce properly ordered function parameters."""
         return "(" + join_args(*self.split_function_call(tokens, loc)) + ")"
 
-    def pipe_item_split(self, tokens, loc):
+    def pipe_item_split(self, original, loc, tokens):
         """Process a pipe item, which could be a partial, an attribute access, a method call, or an expression.
 
-        Return (type, split) where split is:
-            - (expr,) for expression
-            - (func, pos_args, kwd_args) for partial
-            - (name, args) for attr/method
-            - (attr, [(op, args)]) for itemgetter
-            - (op, arg) for right op partial
+        Return (type, split) where split is, for each type:
+            - expr: (expr,)
+            - partial: (func, pos_args, kwd_args)
+            - attrgetter: (name, args)
+            - itemgetter: (attr, [(op, args)]) for itemgetter
+            - right op partial: (op, arg)
+            - right arr concat partial: (op, arg)
+            - await: ()
+            - namedexpr: (varname,)
         """
         # list implies artificial tokens, which must be expr
         if isinstance(tokens, list) or "expr" in tokens:
@@ -2791,9 +2888,32 @@ else:
                 return "right op partial", (op, arg)
             else:
                 raise CoconutInternalException("invalid op partial tokens in pipe_item", inner_toks)
+        elif "arr concat partial" in tokens:
+            inner_toks, = tokens
+            if "left arr concat partial" in inner_toks:
+                arg, op = inner_toks
+                internal_assert(op.lstrip(";") == "", "invalid arr concat op", op)
+                return "partial", ("_coconut_arr_concat_op", str(len(op)) + ", " + arg, "")
+            elif "right arr concat partial" in inner_toks:
+                op, arg = inner_toks
+                internal_assert(op.lstrip(";") == "", "invalid arr concat op", op)
+                return "right arr concat partial", (op, arg)
+            else:
+                raise CoconutInternalException("invalid arr concat partial tokens in pipe_item", inner_toks)
         elif "await" in tokens:
             internal_assert(len(tokens) == 1 and tokens[0] == "await", "invalid await pipe item tokens", tokens)
-            return "await", []
+            return "await", ()
+        elif "namedexpr" in tokens:
+            if self.target_info < (3, 8):
+                raise self.make_err(
+                    CoconutTargetError,
+                    "named expression partial in pipe only supported for targets 3.8+",
+                    original,
+                    loc,
+                    target="38",
+                )
+            varname, = tokens
+            return "namedexpr", (varname,)
         else:
             raise CoconutInternalException("invalid pipe item tokens", tokens)
 
@@ -2807,7 +2927,7 @@ else:
                 return item
 
             # we've only been given one operand, so we can't do any optimization, so just produce the standard object
-            name, split_item = self.pipe_item_split(item, loc)
+            name, split_item = self.pipe_item_split(original, loc, item)
             if name == "expr":
                 expr, = split_item
                 return expr
@@ -2820,8 +2940,12 @@ else:
                 return itemgetter_handle(item)
             elif name == "right op partial":
                 return partial_op_item_handle(item)
+            elif name == "right arr concat partial":
+                return partial_arr_concat_handle(item)
             elif name == "await":
                 raise CoconutDeferredSyntaxError("await in pipe must have something piped into it", loc)
+            elif name == "namedexpr":
+                raise CoconutDeferredSyntaxError("named expression partial in pipe must have something piped into it", loc)
             else:
                 raise CoconutInternalException("invalid split pipe item", split_item)
 
@@ -2852,7 +2976,7 @@ else:
 
             elif direction == "forwards":
                 # if this is an implicit partial, we have something to apply it to, so optimize it
-                name, split_item = self.pipe_item_split(item, loc)
+                name, split_item = self.pipe_item_split(original, loc, item)
                 subexpr = self.pipe_handle(original, loc, tokens)
 
                 if name == "expr":
@@ -2888,11 +3012,22 @@ else:
                         raise CoconutDeferredSyntaxError("cannot star pipe into operator partial", loc)
                     op, arg = split_item
                     return "({op})({x}, {arg})".format(op=op, x=subexpr, arg=arg)
+                elif name == "right arr concat partial":
+                    if stars:
+                        raise CoconutDeferredSyntaxError("cannot star pipe into array concatenation operator partial", loc)
+                    op, arg = split_item
+                    internal_assert(op.lstrip(";") == "", "invalid arr concat op", op)
+                    return "_coconut_arr_concat_op({dim}, {x}, {arg})".format(dim=len(op), x=subexpr, arg=arg)
                 elif name == "await":
                     internal_assert(not split_item, "invalid split await pipe item tokens", split_item)
                     if stars:
                         raise CoconutDeferredSyntaxError("cannot star pipe into await", loc)
                     return self.await_expr_handle(original, loc, [subexpr])
+                elif name == "namedexpr":
+                    if stars:
+                        raise CoconutDeferredSyntaxError("cannot star pipe into named expression partial", loc)
+                    varname, = split_item
+                    return "({varname} := {item})".format(varname=varname, item=subexpr)
                 else:
                     raise CoconutInternalException("invalid split pipe item", split_item)
 
@@ -3044,7 +3179,7 @@ while True:
     def endline_handle(self, original, loc, tokens):
         """Add line number information to end of line."""
         endline, = tokens
-        lines = endline.splitlines(True)
+        lines = tuple(literal_lines(endline, True))
         if self.minify:
             lines = lines[0]
         out = []
@@ -3790,69 +3925,105 @@ if not {check_var}:
 
     def stmt_lambdef_handle(self, original, loc, tokens):
         """Process multi-line lambdef statements."""
-        if len(tokens) == 4:
-            got_kwds, params, stmts_toks, followed_by = tokens
-            typedef = None
-        else:
-            got_kwds, params, typedef, stmts_toks, followed_by = tokens
-
-        if followed_by == ",":
-            self.strict_err_or_warn("found statement lambda followed by comma; this isn't recommended as it can be unclear whether the comma is inside or outside the lambda (just wrap the lambda in parentheses)", original, loc)
-        else:
-            internal_assert(followed_by == "", "invalid stmt_lambdef followed_by", followed_by)
-
-        is_async = False
-        add_kwds = []
-        for kwd in got_kwds:
-            if kwd == "async":
-                self.internal_assert(not is_async, original, loc, "duplicate stmt_lambdef async keyword", kwd)
-                is_async = True
-            elif kwd == "copyclosure":
-                add_kwds.append(kwd)
-            else:
-                raise CoconutInternalException("invalid stmt_lambdef keyword", kwd)
-
-        if len(stmts_toks) == 1:
-            stmts, = stmts_toks
-        elif len(stmts_toks) == 2:
-            stmts, last = stmts_toks
-            if "tests" in stmts_toks:
-                stmts = stmts.asList() + ["return " + last]
-            else:
-                stmts = stmts.asList() + [last]
-        else:
-            raise CoconutInternalException("invalid statement lambda body tokens", stmts_toks)
-
         name = self.get_temp_var("lambda", loc)
-        body = openindent + "\n".join(stmts) + closeindent
 
-        if typedef is None:
-            colon = ":"
+        # avoid regenerating the code if we already built it on a previous call
+        if name not in self.add_code_before:
+            if len(tokens) == 4:
+                got_kwds, params, stmts_toks, followed_by = tokens
+                typedef = None
+            else:
+                got_kwds, params, typedef, stmts_toks, followed_by = tokens
+
+            if followed_by == ",":
+                self.strict_err_or_warn("found statement lambda followed by comma; this isn't recommended as it can be unclear whether the comma is inside or outside the lambda (just wrap the lambda in parentheses)", original, loc)
+            else:
+                internal_assert(followed_by == "", "invalid stmt_lambdef followed_by", followed_by)
+
+            is_async = False
+            add_kwds = []
+            for kwd in got_kwds:
+                if kwd == "async":
+                    self.internal_assert(not is_async, original, loc, "duplicate stmt_lambdef async keyword", kwd)
+                    is_async = True
+                elif kwd == "copyclosure":
+                    add_kwds.append(kwd)
+                else:
+                    raise CoconutInternalException("invalid stmt_lambdef keyword", kwd)
+
+            if len(stmts_toks) == 1:
+                stmts, = stmts_toks
+            elif len(stmts_toks) == 2:
+                stmts, last = stmts_toks
+                if "tests" in stmts_toks:
+                    stmts = stmts.asList() + ["return " + last]
+                else:
+                    stmts = stmts.asList() + [last]
+            else:
+                raise CoconutInternalException("invalid statement lambda body tokens", stmts_toks)
+
+            body = openindent + "\n".join(stmts) + closeindent
+
+            if typedef is None:
+                colon = ":"
+            else:
+                colon = self.typedef_handle([typedef])
+            if isinstance(params, str):
+                decorators = ""
+                funcdef = "def " + name + params + colon + "\n" + body
+            else:
+                match_tokens = [name] + list(params)
+                before_colon, after_docstring = self.name_match_funcdef_handle(original, loc, match_tokens)
+                decorators = "@_coconut_mark_as_match\n"
+                funcdef = (
+                    before_colon
+                    + colon
+                    + "\n"
+                    + after_docstring
+                    + body
+                )
+
+            funcdef = " ".join(add_kwds + [funcdef])
+
+            self.add_code_before[name] = self.decoratable_funcdef_stmt_handle(original, loc, [decorators, funcdef], is_async, is_stmt_lambda=True)
+
+        expr_setname_context = self.current_parsing_context("expr_setnames")
+        if expr_setname_context is None:
+            return name
         else:
-            colon = self.typedef_handle([typedef])
-        if isinstance(params, str):
-            decorators = ""
-            funcdef = "def " + name + params + colon + "\n" + body
-        else:
-            match_tokens = [name] + list(params)
-            before_colon, after_docstring = self.name_match_funcdef_handle(original, loc, match_tokens)
-            decorators = "@_coconut_mark_as_match\n"
-            funcdef = (
-                before_colon
-                + colon
-                + "\n"
-                + after_docstring
-                + body
-            )
+            builder_name = self.get_temp_var("lambda_builder", loc)
 
-        funcdef = " ".join(add_kwds + [funcdef])
+            parent_context = expr_setname_context["parent"]
+            parent_setnames = set()
+            while parent_context:
+                parent_setnames |= parent_context["new_names"]
+                parent_context = parent_context["parent"]
 
-        self.add_code_before[name] = self.decoratable_funcdef_stmt_handle(original, loc, [decorators, funcdef], is_async, is_stmt_lambda=True)
+            def stmt_lambdef_callback():
+                expr_setnames = parent_setnames | expr_setname_context["new_names"]
+                expr_setnames_str = ", ".join(sorted(expr_setnames) + ["**_coconut_other_locals"])
+                # the actual code for the function will automatically be added by add_code_before for name
+                builder_code = handle_indentation("""
+def {builder_name}({expr_setnames_str}):
+    del _coconut_other_locals
+    return {name}
+                """).format(
+                    builder_name=builder_name,
+                    expr_setnames_str=expr_setnames_str,
+                    name=name,
+                )
+                self.add_code_before[builder_name] = builder_code
 
-        return name
+            expr_setname_context["callbacks"].append(stmt_lambdef_callback)
+            if parent_setnames:
+                # use _coconut.dict to ensure it supports |
+                builder_args = "**(_coconut.dict(" + ", ".join(name + '=' + name for name in sorted(parent_setnames)) + ") | _coconut.locals())"
+            else:
+                builder_args = "**_coconut.locals()"
+            return builder_name + "(" + builder_args + ")"
 
     def decoratable_funcdef_stmt_handle(self, original, loc, tokens, is_async=False, is_stmt_lambda=False):
-        """Wraps the given function for later processing"""
+        """Wrap the given function for later processing."""
         if len(tokens) == 1:
             funcdef, = tokens
             decorators = ""
@@ -3869,7 +4040,8 @@ if not {check_var}:
             raise self.make_err(
                 CoconutTargetError,
                 "await requires a specific target",
-                original, loc,
+                original,
+                loc,
                 target="sys",
             )
         elif self.target_info >= (3, 5):
@@ -3973,178 +4145,6 @@ __annotations__["{name}"] = {annotation}
                 type_ignore=self.type_ignore_comment(),
             )
 
-    def funcname_typeparams_handle(self, tokens):
-        """Handle function names with type parameters."""
-        if len(tokens) == 1:
-            name, = tokens
-            return name
-        else:
-            name, paramdefs = tokens
-            return self.add_code_before_marker_with_replacement(name, "".join(paramdefs), add_spaces=False)
-
-    funcname_typeparams_handle.ignore_one_token = True
-
-    def type_param_handle(self, original, loc, tokens):
-        """Compile a type param into an assignment."""
-        args = ""
-        bound_op = None
-        bound_op_type = ""
-        if "TypeVar" in tokens:
-            TypeVarFunc = "TypeVar"
-            bound_op_type = "bound"
-            if len(tokens) == 2:
-                name_loc, name = tokens
-            else:
-                name_loc, name, bound_op, bound = tokens
-                args = ", bound=" + self.wrap_typedef(bound, for_py_typedef=False)
-        elif "TypeVar constraint" in tokens:
-            TypeVarFunc = "TypeVar"
-            bound_op_type = "constraint"
-            name_loc, name, bound_op, constraints = tokens
-            args = ", " + ", ".join(self.wrap_typedef(c, for_py_typedef=False) for c in constraints)
-        elif "TypeVarTuple" in tokens:
-            TypeVarFunc = "TypeVarTuple"
-            name_loc, name = tokens
-        elif "ParamSpec" in tokens:
-            TypeVarFunc = "ParamSpec"
-            name_loc, name = tokens
-        else:
-            raise CoconutInternalException("invalid type_param tokens", tokens)
-
-        kwargs = ""
-        if bound_op is not None:
-            self.internal_assert(bound_op_type in ("bound", "constraint"), original, loc, "invalid type_param bound_op", bound_op)
-            # uncomment this line whenever mypy adds support for infer_variance in TypeVar
-            #  (and remove the warning about it in the DOCS)
-            # kwargs = ", infer_variance=True"
-            if bound_op == "<=":
-                self.strict_err_or_warn(
-                    "use of " + repr(bound_op) + " as a type parameter " + bound_op_type + " declaration operator is deprecated (Coconut style is to use '<:' for bounds and ':' for constaints)",
-                    original,
-                    loc,
-                )
-            else:
-                self.internal_assert(bound_op in (":", "<:"), original, loc, "invalid type_param bound_op", bound_op)
-                if bound_op_type == "bound" and bound_op != "<:" or bound_op_type == "constraint" and bound_op != ":":
-                    self.strict_err(
-                        "found use of " + repr(bound_op) + " as a type parameter " + bound_op_type + " declaration operator (Coconut style is to use '<:' for bounds and ':' for constaints)",
-                        original,
-                        loc,
-                    )
-
-        name_loc = int(name_loc)
-        internal_assert(name_loc == loc if TypeVarFunc == "TypeVar" else name_loc >= loc, "invalid name location for " + TypeVarFunc, (name_loc, loc, tokens))
-
-        typevar_info = self.current_parsing_context("typevars")
-        if typevar_info is not None:
-            # check to see if we already parsed this exact typevar, in which case just reuse the existing temp_name
-            if typevar_info["typevar_locs"].get(name, None) == name_loc:
-                name = typevar_info["all_typevars"][name]
-            else:
-                if name in typevar_info["all_typevars"]:
-                    raise CoconutDeferredSyntaxError("type variable {name!r} already defined".format(name=name), loc)
-                temp_name = self.get_temp_var(("typevar", name), name_loc)
-                typevar_info["all_typevars"][name] = temp_name
-                typevar_info["new_typevars"].append((TypeVarFunc, temp_name))
-                typevar_info["typevar_locs"][name] = name_loc
-                name = temp_name
-
-        return '{name} = _coconut.typing.{TypeVarFunc}("{name}"{args}{kwargs})\n'.format(
-            name=name,
-            TypeVarFunc=TypeVarFunc,
-            args=args,
-            kwargs=kwargs,
-        )
-
-    def get_generic_for_typevars(self):
-        """Get the Generic instances for the current typevars."""
-        typevar_info = self.current_parsing_context("typevars")
-        internal_assert(typevar_info is not None, "get_generic_for_typevars called with no typevars")
-        generics = []
-        for TypeVarFunc, name in typevar_info["new_typevars"]:
-            if TypeVarFunc in ("TypeVar", "ParamSpec"):
-                generics.append(name)
-            elif TypeVarFunc == "TypeVarTuple":
-                if self.target_info >= (3, 11):
-                    generics.append("*" + name)
-                else:
-                    generics.append("_coconut.typing.Unpack[" + name + "]")
-            else:
-                raise CoconutInternalException("invalid TypeVarFunc", TypeVarFunc, "(", name, ")")
-        return "_coconut.typing.Generic[" + ", ".join(generics) + "]"
-
-    @contextmanager
-    def type_alias_stmt_manage(self, item=None, original=None, loc=None):
-        """Manage the typevars parsing context."""
-        prev_typevar_info = self.current_parsing_context("typevars")
-        with self.add_to_parsing_context("typevars", {
-            "all_typevars": {} if prev_typevar_info is None else prev_typevar_info["all_typevars"].copy(),
-            "new_typevars": [],
-            "typevar_locs": {},
-        }):
-            yield
-
-    def type_alias_stmt_handle(self, tokens):
-        """Handle type alias statements."""
-        if len(tokens) == 2:
-            name, typedef = tokens
-            paramdefs = ()
-        else:
-            name, paramdefs, typedef = tokens
-        if self.target_info >= (3, 12):
-            return "type " + name + " = " + self.wrap_typedef(typedef, for_py_typedef=True)
-        else:
-            return "".join(paramdefs) + self.typed_assign_stmt_handle([
-                name,
-                "_coconut.typing.TypeAlias",
-                self.wrap_typedef(typedef, for_py_typedef=False),
-            ])
-
-    def where_item_handle(self, tokens):
-        """Manage where items."""
-        where_context = self.current_parsing_context("where")
-        internal_assert(not where_context["assigns"], "invalid where_context", where_context)
-        where_context["assigns"] = set()
-        return tokens
-
-    @contextmanager
-    def where_stmt_manage(self, item, original, loc):
-        """Manage where statements."""
-        with self.add_to_parsing_context("where", {
-            "assigns": None,
-        }):
-            yield
-
-    def where_stmt_handle(self, loc, tokens):
-        """Process where statements."""
-        main_stmt, body_stmts = tokens
-
-        where_assigns = self.current_parsing_context("where")["assigns"]
-        internal_assert(lambda: where_assigns is not None, "missing where_assigns")
-
-        where_init = "".join(body_stmts)
-        where_final = main_stmt + "\n"
-        out = where_init + where_final
-        if not where_assigns:
-            return out
-
-        name_regexes = {
-            name: compile_regex(r"\b" + name + r"\b")
-            for name in where_assigns
-        }
-        name_replacements = {
-            name: self.get_temp_var(("where", name), loc)
-            for name in where_assigns
-        }
-
-        where_init = self.deferred_code_proc(where_init)
-        where_final = self.deferred_code_proc(where_final)
-        out = where_init + where_final
-
-        out = sub_all(out, name_regexes, name_replacements)
-
-        return self.wrap_passthrough(out, early=True)
-
     def with_stmt_handle(self, tokens):
         """Process with statements."""
         withs, body = tokens
@@ -4163,7 +4163,7 @@ __annotations__["{name}"] = {annotation}
         else:
             return "_coconut.Ellipsis"
 
-    ellipsis_handle.ignore_tokens = True
+    ellipsis_handle.ignore_arguments = True
 
     def match_case_tokens(self, match_var, check_var, original, tokens, top):
         """Build code for matching the given case."""
@@ -4542,6 +4542,377 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
 
 # end: HANDLERS
 # -----------------------------------------------------------------------------------------------------------------------
+# MANAGERS:
+# -----------------------------------------------------------------------------------------------------------------------
+
+    def current_parsing_context(self, name, default=None):
+        """Get the current parsing context for the given name."""
+        stack = self.parsing_context[name]
+        if stack:
+            return stack[-1]
+        else:
+            return default
+
+    @contextmanager
+    def add_to_parsing_context(self, name, obj, callbacks_key=None):
+        """Pur the given object on the parsing context stack for the given name."""
+        self.parsing_context[name].append(obj)
+        try:
+            yield
+        finally:
+            popped_ctx = self.parsing_context[name].pop()
+            if callbacks_key is not None:
+                for callback in popped_ctx[callbacks_key]:
+                    callback()
+
+    def funcname_typeparams_handle(self, tokens):
+        """Handle function names with type parameters."""
+        if len(tokens) == 1:
+            name, = tokens
+            return name
+        else:
+            name, paramdefs = tokens
+            return self.add_code_before_marker_with_replacement(name, "".join(paramdefs), add_spaces=False)
+
+    funcname_typeparams_handle.ignore_one_token = True
+
+    def type_param_handle(self, original, loc, tokens):
+        """Compile a type param into an assignment."""
+        args = ""
+        bound_op = None
+        bound_op_type = ""
+        if "TypeVar" in tokens:
+            TypeVarFunc = "TypeVar"
+            bound_op_type = "bound"
+            if len(tokens) == 2:
+                name_loc, name = tokens
+            else:
+                name_loc, name, bound_op, bound = tokens
+                args = ", bound=" + self.wrap_typedef(bound, for_py_typedef=False)
+        elif "TypeVar constraint" in tokens:
+            TypeVarFunc = "TypeVar"
+            bound_op_type = "constraint"
+            name_loc, name, bound_op, constraints = tokens
+            args = ", " + ", ".join(self.wrap_typedef(c, for_py_typedef=False) for c in constraints)
+        elif "TypeVarTuple" in tokens:
+            TypeVarFunc = "TypeVarTuple"
+            name_loc, name = tokens
+        elif "ParamSpec" in tokens:
+            TypeVarFunc = "ParamSpec"
+            name_loc, name = tokens
+        else:
+            raise CoconutInternalException("invalid type_param tokens", tokens)
+
+        if bound_op is not None:
+            self.internal_assert(bound_op_type in ("bound", "constraint"), original, loc, "invalid type_param bound_op", bound_op)
+            if bound_op == "<=":
+                self.strict_err_or_warn(
+                    "use of " + repr(bound_op) + " as a type parameter " + bound_op_type + " declaration operator is deprecated (Coconut style is to use '<:' for bounds and ':' for constaints)",
+                    original,
+                    loc,
+                )
+            else:
+                self.internal_assert(bound_op in (":", "<:"), original, loc, "invalid type_param bound_op", bound_op)
+                if bound_op_type == "bound" and bound_op != "<:" or bound_op_type == "constraint" and bound_op != ":":
+                    self.strict_err(
+                        "found use of " + repr(bound_op) + " as a type parameter " + bound_op_type + " declaration operator (Coconut style is to use '<:' for bounds and ':' for constaints)",
+                        original,
+                        loc,
+                    )
+
+        kwargs = ""
+        # uncomment these lines whenever mypy adds support for infer_variance in TypeVar
+        #  (and remove the warning about it in the DOCS)
+        # if TypeVarFunc == "TypeVar":
+        #     kwargs += ", infer_variance=True"
+
+        name_loc = int(name_loc)
+        internal_assert(name_loc == loc if TypeVarFunc == "TypeVar" else name_loc >= loc, "invalid name location for " + TypeVarFunc, (name_loc, loc, tokens))
+
+        typevar_info = self.current_parsing_context("typevars")
+        if typevar_info is not None:
+            # check to see if we already parsed this exact typevar, in which case just reuse the existing temp_name
+            if typevar_info["typevar_locs"].get(name, None) == name_loc:
+                name = typevar_info["all_typevars"][name]
+            else:
+                if name in typevar_info["all_typevars"]:
+                    raise CoconutDeferredSyntaxError("type variable {name!r} already defined".format(name=name), loc)
+                temp_name = self.get_temp_var(("typevar", name), name_loc)
+                typevar_info["all_typevars"][name] = temp_name
+                typevar_info["new_typevars"].append((TypeVarFunc, temp_name))
+                typevar_info["typevar_locs"][name] = name_loc
+                name = temp_name
+
+        return '{name} = _coconut.typing.{TypeVarFunc}("{name}"{args}{kwargs})\n'.format(
+            name=name,
+            TypeVarFunc=TypeVarFunc,
+            args=args,
+            kwargs=kwargs,
+        )
+
+    def get_generic_for_typevars(self):
+        """Get the Generic instances for the current typevars."""
+        typevar_info = self.current_parsing_context("typevars")
+        internal_assert(typevar_info is not None, "get_generic_for_typevars called with no typevars")
+        generics = []
+        for TypeVarFunc, name in typevar_info["new_typevars"]:
+            if TypeVarFunc in ("TypeVar", "ParamSpec"):
+                generics.append(name)
+            elif TypeVarFunc == "TypeVarTuple":
+                if self.target_info >= (3, 11):
+                    generics.append("*" + name)
+                else:
+                    generics.append("_coconut.typing.Unpack[" + name + "]")
+            else:
+                raise CoconutInternalException("invalid TypeVarFunc", TypeVarFunc, "(", name, ")")
+        return "_coconut.typing.Generic[" + ", ".join(generics) + "]"
+
+    @contextmanager
+    def type_alias_stmt_manage(self, original=None, loc=None, item=None):
+        """Manage the typevars parsing context."""
+        prev_typevar_info = self.current_parsing_context("typevars")
+        with self.add_to_parsing_context("typevars", {
+            "all_typevars": {} if prev_typevar_info is None else prev_typevar_info["all_typevars"].copy(),
+            "new_typevars": [],
+            "typevar_locs": {},
+        }):
+            yield
+
+    def type_alias_stmt_handle(self, tokens):
+        """Handle type alias statements."""
+        if len(tokens) == 2:
+            name, typedef = tokens
+            paramdefs = ()
+        else:
+            name, paramdefs, typedef = tokens
+        out = "".join(paramdefs)
+        if self.target_info >= (3, 12):
+            out += "type " + name + " = " + self.wrap_typedef(typedef, for_py_typedef=True)
+        else:
+            out += self.typed_assign_stmt_handle([
+                name,
+                "_coconut.typing.TypeAlias",
+                self.wrap_typedef(typedef, for_py_typedef=False),
+            ])
+        return out
+
+    def where_item_handle(self, tokens):
+        """Manage where items."""
+        where_context = self.current_parsing_context("where")
+        internal_assert(not where_context["assigns"], "invalid where_context", where_context)
+        where_context["assigns"] = set()
+        return tokens
+
+    @contextmanager
+    def where_stmt_manage(self, original, loc, item):
+        """Manage where statements."""
+        with self.add_to_parsing_context("where", {
+            "assigns": None,
+        }):
+            yield
+
+    def where_stmt_handle(self, loc, tokens):
+        """Process where statements."""
+        main_stmt, body_stmts = tokens
+
+        where_assigns = self.current_parsing_context("where")["assigns"]
+        internal_assert(lambda: where_assigns is not None, "missing where_assigns")
+
+        where_init = "".join(body_stmts)
+        where_final = main_stmt + "\n"
+        out = where_init + where_final
+        if not where_assigns:
+            return out
+
+        name_regexes = {
+            name: compile_regex(r"\b" + name + r"\b")
+            for name in where_assigns
+        }
+        name_replacements = {
+            name: self.get_temp_var(("where", name), loc)
+            for name in where_assigns
+        }
+
+        where_init = self.deferred_code_proc(where_init)
+        where_final = self.deferred_code_proc(where_final)
+        out = where_init + where_final
+
+        out = sub_all(out, name_regexes, name_replacements)
+
+        return self.wrap_passthrough(out, early=True)
+
+    @contextmanager
+    def class_manage(self, original, loc, item):
+        """Manage the class parsing context."""
+        cls_stack = self.parsing_context["class"]
+        if cls_stack:
+            cls_context = cls_stack[-1]
+            if cls_context["name"] is None:  # this should only happen when the managed class item will fail to fully parse
+                name_prefix = cls_context["name_prefix"]
+            elif cls_context["in_method"]:  # if we're in a function, we shouldn't use the prefix to look up the class
+                name_prefix = ""
+            else:
+                name_prefix = cls_context["name_prefix"] + cls_context["name"] + "."
+        else:
+            name_prefix = ""
+        cls_stack.append({
+            "name_prefix": name_prefix,
+            "name": None,
+            "in_method": False,
+        })
+        try:
+            # handles support for class type variables
+            with self.type_alias_stmt_manage():
+                yield
+        finally:
+            cls_stack.pop()
+
+    @contextmanager
+    def func_manage(self, original, loc, item):
+        """Manage the function parsing context."""
+        cls_context = self.current_parsing_context("class")
+        if cls_context is not None:
+            in_method, cls_context["in_method"] = cls_context["in_method"], True
+        try:
+            # handles support for function type variables
+            with self.type_alias_stmt_manage():
+                yield
+        finally:
+            if cls_context is not None:
+                cls_context["in_method"] = in_method
+
+    @property
+    def in_method(self):
+        """Determine if currently in a method."""
+        cls_context = self.current_parsing_context("class")
+        return cls_context is not None and cls_context["name"] is not None and cls_context["in_method"]
+
+    @contextmanager
+    def has_expr_setname_manage(self, original, loc, item):
+        """Handle parses that can assign expr_setname."""
+        with self.add_to_parsing_context(
+            "expr_setnames",
+            {
+                "parent": self.current_parsing_context("expr_setnames"),
+                "new_names": set(),
+                "callbacks": [],
+                "loc": loc,
+            },
+            callbacks_key="callbacks",
+        ):
+            yield
+
+    def name_handle(self, original, loc, tokens, assign=False, classname=False, expr_setname=False):
+        """Handle the given base name."""
+        internal_assert(assign if expr_setname else True, "expr_setname should always imply assign", (expr_setname, assign))
+
+        name, = tokens
+        if name.startswith("\\"):
+            name = name[1:]
+            escaped = True
+        else:
+            escaped = False
+
+        if self.disable_name_check:
+            return name
+
+        if assign:
+            where_context = self.current_parsing_context("where")
+            if where_context is not None:
+                where_assigns = where_context["assigns"]
+                if where_assigns is not None:
+                    where_assigns.add(name)
+
+        if classname:
+            cls_context = self.current_parsing_context("class")
+            self.internal_assert(cls_context is not None, original, loc, "found classname outside of class", tokens)
+            cls_context["name"] = name
+
+        if expr_setname:
+            expr_setnames_context = self.current_parsing_context("expr_setnames")
+            self.internal_assert(expr_setnames_context is not None, original, loc, "found expr_setname outside of has_expr_setname_manage", tokens)
+            expr_setnames_context["new_names"].add(name)
+
+        # raise_or_wrap_error for all errors here to make sure we don't
+        #  raise spurious errors if not using the computation graph
+
+        if not escaped:
+            typevar_info = self.current_parsing_context("typevars")
+            if typevar_info is not None:
+                typevars = typevar_info["all_typevars"]
+                if name in typevars:
+                    # if we're looking at the same position where the typevar was defined,
+                    #  then we shouldn't treat this as a typevar, since then it's either
+                    #  a reparse of a setname in a typevar, or not a typevar at all
+                    if typevar_info["typevar_locs"].get(name, None) != loc:
+                        if assign:
+                            return self.raise_or_wrap_error(
+                                self.make_err(
+                                    CoconutSyntaxError,
+                                    "cannot reassign type variable '{name}'".format(name=name),
+                                    original,
+                                    loc,
+                                    extra="use explicit '\\{name}' syntax if intended".format(name=name),
+                                ),
+                            )
+                        return typevars[name]
+
+        if not assign:
+            self.unused_imports.pop(name, None)
+
+        if (
+            assign
+            and not escaped
+            # if we're not using the computation graph, then name is handled
+            #  greedily, which means this might be an invalid parse, in which
+            #  case we can't be sure this is actually shadowing a builtin
+            and USE_COMPUTATION_GRAPH
+            # classnames and expr_setnames are handled greedily, so ditto the above
+            and not (classname or expr_setname)
+            and name in all_builtins
+        ):
+            self.strict_err_or_warn(
+                "assignment shadows builtin '{name}' (use explicit '\\{name}' syntax when purposefully assigning to builtin names)".format(name=name),
+                original,
+                loc,
+            )
+
+        if name == "exec":
+            if self.target.startswith("3"):
+                return name
+            elif assign:
+                return self.raise_or_wrap_error(
+                    self.make_err(
+                        CoconutTargetError,
+                        "found Python-3-only assignment to 'exec' as a variable name",
+                        original,
+                        loc,
+                        target="3",
+                    ),
+                )
+            else:
+                return "_coconut_exec"
+        elif not assign and name in super_names and not self.target.startswith("3"):
+            if self.in_method:
+                cls_context = self.current_parsing_context("class")
+                enclosing_cls = cls_context["name_prefix"] + cls_context["name"]
+                return self.add_code_before_marker_with_replacement(name, "__class__ = " + enclosing_cls + "\n", add_spaces=False)
+            else:
+                return name
+        elif not escaped and name.startswith(reserved_prefix) and name not in self.operators:
+            return self.raise_or_wrap_error(
+                self.make_err(
+                    CoconutSyntaxError,
+                    "variable names cannot start with reserved prefix '{prefix}' (use explicit '\\{name}' syntax if intending to access Coconut internals)".format(prefix=reserved_prefix, name=name),
+                    original,
+                    loc,
+                ),
+            )
+        else:
+            return name
+
+# end: MANAGERS
+# -----------------------------------------------------------------------------------------------------------------------
 # CHECKING HANDLERS:
 # -----------------------------------------------------------------------------------------------------------------------
 
@@ -4609,154 +4980,6 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
         else:
             return tokens[0]
 
-    @contextmanager
-    def class_manage(self, item, original, loc):
-        """Manage the class parsing context."""
-        cls_stack = self.parsing_context["class"]
-        if cls_stack:
-            cls_context = cls_stack[-1]
-            if cls_context["name"] is None:  # this should only happen when the managed class item will fail to fully parse
-                name_prefix = cls_context["name_prefix"]
-            elif cls_context["in_method"]:  # if we're in a function, we shouldn't use the prefix to look up the class
-                name_prefix = ""
-            else:
-                name_prefix = cls_context["name_prefix"] + cls_context["name"] + "."
-        else:
-            name_prefix = ""
-        cls_stack.append({
-            "name_prefix": name_prefix,
-            "name": None,
-            "in_method": False,
-        })
-        try:
-            # handles support for class type variables
-            with self.type_alias_stmt_manage():
-                yield
-        finally:
-            cls_stack.pop()
-
-    @contextmanager
-    def func_manage(self, item, original, loc):
-        """Manage the function parsing context."""
-        cls_context = self.current_parsing_context("class")
-        if cls_context is not None:
-            in_method, cls_context["in_method"] = cls_context["in_method"], True
-        try:
-            # handles support for function type variables
-            with self.type_alias_stmt_manage():
-                yield
-        finally:
-            if cls_context is not None:
-                cls_context["in_method"] = in_method
-
-    @property
-    def in_method(self):
-        """Determine if currently in a method."""
-        cls_context = self.current_parsing_context("class")
-        return cls_context is not None and cls_context["name"] is not None and cls_context["in_method"]
-
-    def name_handle(self, original, loc, tokens, assign=False, classname=False):
-        """Handle the given base name."""
-        name, = tokens
-        if name.startswith("\\"):
-            name = name[1:]
-            escaped = True
-        else:
-            escaped = False
-
-        if self.disable_name_check:
-            return name
-
-        if assign:
-            where_context = self.current_parsing_context("where")
-            if where_context is not None:
-                where_assigns = where_context["assigns"]
-                if where_assigns is not None:
-                    where_assigns.add(name)
-
-        if classname:
-            cls_context = self.current_parsing_context("class")
-            self.internal_assert(cls_context is not None, original, loc, "found classname outside of class", tokens)
-            cls_context["name"] = name
-
-        # raise_or_wrap_error for all errors here to make sure we don't
-        #  raise spurious errors if not using the computation graph
-
-        if not escaped:
-            typevar_info = self.current_parsing_context("typevars")
-            if typevar_info is not None:
-                typevars = typevar_info["all_typevars"]
-                if name in typevars:
-                    # if we're looking at the same position where the typevar was defined,
-                    #  then we shouldn't treat this as a typevar, since then it's either
-                    #  a reparse of a setname in a typevar, or not a typevar at all
-                    if typevar_info["typevar_locs"].get(name, None) != loc:
-                        if assign:
-                            return self.raise_or_wrap_error(
-                                self.make_err(
-                                    CoconutSyntaxError,
-                                    "cannot reassign type variable '{name}'".format(name=name),
-                                    original,
-                                    loc,
-                                    extra="use explicit '\\{name}' syntax if intended".format(name=name),
-                                ),
-                            )
-                        return typevars[name]
-
-        if not assign:
-            self.unused_imports.pop(name, None)
-
-        if (
-            assign
-            and not escaped
-            # if we're not using the computation graph, then name is handled
-            #  greedily, which means this might be an invalid parse, in which
-            #  case we can't be sure this is actually shadowing a builtin
-            and USE_COMPUTATION_GRAPH
-            # classnames are handled greedily, so ditto the above
-            and not classname
-            and name in all_builtins
-        ):
-            self.strict_err_or_warn(
-                "assignment shadows builtin '{name}' (use explicit '\\{name}' syntax when purposefully assigning to builtin names)".format(name=name),
-                original,
-                loc,
-            )
-
-        if name == "exec":
-            if self.target.startswith("3"):
-                return name
-            elif assign:
-                return self.raise_or_wrap_error(
-                    self.make_err(
-                        CoconutTargetError,
-                        "found Python-3-only assignment to 'exec' as a variable name",
-                        original,
-                        loc,
-                        target="3",
-                    ),
-                )
-            else:
-                return "_coconut_exec"
-        elif not assign and name in super_names and not self.target.startswith("3"):
-            if self.in_method:
-                cls_context = self.current_parsing_context("class")
-                enclosing_cls = cls_context["name_prefix"] + cls_context["name"]
-                return self.add_code_before_marker_with_replacement(name, "__class__ = " + enclosing_cls + "\n", add_spaces=False)
-            else:
-                return name
-        elif not escaped and name.startswith(reserved_prefix) and name not in self.operators:
-            return self.raise_or_wrap_error(
-                self.make_err(
-                    CoconutSyntaxError,
-                    "variable names cannot start with reserved prefix '{prefix}' (use explicit '\\{name}' syntax if intending to access Coconut internals)".format(prefix=reserved_prefix, name=name),
-                    original,
-                    loc,
-                ),
-            )
-        else:
-            return name
-
     def nonlocal_check(self, original, loc, tokens):
         """Check for Python 3 nonlocal statement."""
         return self.check_py("3", "nonlocal statement", original, loc, tokens)
@@ -4787,7 +5010,7 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
 
     def new_namedexpr_check(self, original, loc, tokens):
         """Check for Python 3.10 assignment expressions."""
-        return self.check_py("310", "assignment expression in set literal or indexing", original, loc, tokens)
+        return self.check_py("310", "assignment expression in syntactic location only supported for 3.10+", original, loc, tokens)
 
     def except_star_clause_check(self, original, loc, tokens):
         """Check for Python 3.11 except* statements."""

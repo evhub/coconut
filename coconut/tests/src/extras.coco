@@ -1,4 +1,7 @@
+import os
 from collections.abc import Sequence
+
+os.environ["COCONUT_USE_COLOR"] = "False"
 
 from coconut.__coconut__ import consume as coc_consume
 from coconut.constants import (
@@ -7,6 +10,7 @@ from coconut.constants import (
     PY34,
     PY35,
     PY36,
+    PY39,
     PYPY,
 )  # type: ignore
 from coconut._pyparsing import USE_COMPUTATION_GRAPH  # type: ignore
@@ -112,6 +116,7 @@ def test_setup_none() -> bool:
     assert "==" not in parse("None = None")
     assert parse("(1\f+\f2)", "lenient") == "(1 + 2)" == parse("(1\f+\f2)", "eval")
     assert "Ellipsis" not in parse("x: ... = 1")
+    assert parse("linebreaks = '\x0b\x0c\x1c\x1d\x1e'")
 
     # things that don't parse correctly without the computation graph
     if USE_COMPUTATION_GRAPH:
@@ -127,8 +132,11 @@ def test_setup_none() -> bool:
     assert_raises(-> parse("\\("), CoconutSyntaxError)
     assert_raises(-> parse("if a:\n  b\n c"), CoconutSyntaxError)
     assert_raises(-> parse("_coconut"), CoconutSyntaxError)
-    assert_raises(-> parse("[;]"), CoconutSyntaxError)
+    assert_raises(-> parse("[; ;]"), CoconutSyntaxError)
     assert_raises(-> parse("[; ;; ;]"), CoconutSyntaxError)
+    assert_raises(-> parse("[; ; ;;]"), CoconutSyntaxError)
+    assert_raises(-> parse("[[] ;;; ;; [] ;]"), CoconutSyntaxError)
+    assert_raises(-> parse("[; []]"), CoconutSyntaxError)
     assert_raises(-> parse("f$()"), CoconutSyntaxError)
     assert_raises(-> parse("f(**x, y)"), CoconutSyntaxError)
     assert_raises(-> parse("def f(x) = return x"), CoconutSyntaxError)
@@ -201,13 +209,16 @@ cannot reassign type variable 'T' (use explicit '\T' syntax if intended) (line 1
     assert_raises(-> parse("$"), CoconutParseError)
     assert_raises(-> parse("@"), CoconutParseError)
     assert_raises(-> parse("range(1,10) |> reduce$(*, initializer = 1000) |> print"), CoconutParseError, err_has=(
-        " \\~~~~~~~~~~~~~~~~~~~~~~~^",
-        " \\~~~~~~~~~~~~^",
+        "\n                       \\~~^",
+        "\n  \\~~~~~~~~~~~~~~~~~~~~~~~^",
     ))
-    assert_raises(-> parse("a := b"), CoconutParseError, err_has=" \\~^")
+    assert_raises(-> parse("a := b"), CoconutParseError, err_has=(
+        "\n    ^",
+        "\n  \\~^",
+    ))
     assert_raises(-> parse("1 + return"), CoconutParseError, err_has=(
-        " \\~~~^",
-        " \\~~~~^",
+        "\n    \\~~^",
+        "\n  \\~~~~^",
     ))
     assert_raises(-> parse("""
 def f() =
@@ -222,20 +233,39 @@ def f() =
         """
   assert 2
          ~^
-        """.strip()
+        """.strip(),
     ))
-    assert_raises(-> parse('b"abc" "def"'), CoconutParseError, err_has=" \\~~~~~~^")
-    assert_raises(-> parse('"abc" b"def"'), CoconutParseError, err_has=" \\~~~~~^")
-    assert_raises(-> parse('"a" 10'), CoconutParseError, err_has=" \\~~~^")
-    assert_raises(-> parse("A. ."), CoconutParseError, err_has=" \\~~^")
+    assert_raises(-> parse('b"abc" "def"'), CoconutParseError, err_has=(
+        "\n         ^",
+        "\n  \\~~~~~~^",
+    ))
+    assert_raises(-> parse('"abc" b"def"'), CoconutParseError, err_has=(
+        "\n        ^",
+        "\n  \\~~~~~^",
+    ))
+    assert_raises(-> parse("A. ."), CoconutParseError, err_has=(
+        "\n   \\~^",
+        "\n  \\~~^",
+    ))
+    assert_raises(-> parse("f([] {})"), CoconutParseError, err_has=(
+        "\n   \\~~~^",
+        "\n  \\~~~~^",
+    ))
+    assert_raises(-> parse("0xfgf"), CoconutParseError, err_has=(
+        "\n     ^",
+        "\n     \\~^",
+        "\n  \\~~^",
+    ))
+    assert_raises(-> parse("(. if 1)"), CoconutParseError, err_has=(
+        "\n     ^",
+        "\n  \\~~^",
+    ))
+
     assert_raises(-> parse('''f"""{
 }"""'''), CoconutSyntaxError, err_has="parsing failed for format string expression")
-    assert_raises(-> parse("f([] {})"), CoconutParseError, err_has=" \\~~~~^")
-
     assert_raises(-> parse("return = 1"), CoconutParseError, err_has='invalid use of the keyword "return"')
     assert_raises(-> parse("if a = b: pass"), CoconutParseError, err_has="misplaced assignment")
     assert_raises(-> parse("while a == b"), CoconutParseError, err_has="misplaced newline")
-    assert_raises(-> parse("0xfgf"), CoconutParseError, err_has=" \~~^")
 
     try:
         parse("""
@@ -257,7 +287,7 @@ def gam_eps_rate(bitarr) = (
         err_str = str(err)
         assert "misplaced '?'" in err_str
         if not PYPY:
-            assert """
+            assert r"""
   |> map$(int(?, 2))
          \~~~~^""" in err_str or """
       |> map$(int(?, 2))
@@ -283,8 +313,14 @@ def g(x) = x
 
     assert parse("def f(x):\n ${var}", "xonsh") == "def f(x):\n    ${var}\n"
     assert "data ABC" not in parse("data ABC:\n ${var}", "xonsh")
-
     assert parse('"abc" "xyz"', "lenient") == "'abcxyz'"
+    assert "builder" not in parse("def x -> x", "lenient")
+    assert parse("def x -> x", "lenient").count("def") == 1
+    assert "builder" in parse("x -> def y -> (x, y)", "lenient")
+    assert parse("x -> def y -> (x, y)", "lenient").count("def") == 2
+    assert "builder" in parse("[def x -> (x, y) for y in range(10)]", "lenient")
+    assert parse("[def x -> (x, y) for y in range(10)]", "lenient").count("def") == 2
+    assert parse("123  # derp", "lenient") == "123  # derp"
 
     return True
 
@@ -362,6 +398,22 @@ import abc
     except CoconutStyleError as err:
         assert str(err) == """found unused import 'abc' (add '# NOQA' to suppress) (remove --strict to downgrade to a warning) (line 1)
   import abc"""
+    assert_raises(-> parse("""class A(object):
+     1
+     2
+     3
+     4
+     5
+     6
+     7
+     8
+     9
+     10
+     11
+     12
+     13
+     14
+     15"""), CoconutStyleError, err_has="\n ...\n")
 
     setup(line_numbers=False, strict=True, target="sys")
     assert_raises(-> parse("await f x"), CoconutParseError, err_has='invalid use of the keyword "await"')
@@ -419,6 +471,11 @@ async def async_map_test() =
 # Compiled Coconut: -----------------------------------------------------------
 
 type Num = int | float""".strip())
+    assert parse("type L[T] = list[T]").strip().endswith("""
+# Compiled Coconut: -----------------------------------------------------------
+
+_coconut_typevar_T_0 = _coconut.typing.TypeVar("_coconut_typevar_T_0")
+type L = list[_coconut_typevar_T_0]""".strip())
 
     setup(line_numbers=False, minify=True)
     assert parse("123  # derp", "lenient") == "123# derp"
@@ -462,7 +519,7 @@ def test_kernel() -> bool:
             captured_messages: list[tuple] = []
         else:
             captured_messages: list = []
-        def send(self, stream, msg_or_type, content, *args, **kwargs):
+        def send(self, stream, msg_or_type, content=None, *args, **kwargs):
             self.captured_messages.append((msg_or_type, content))
 
     if PY35:
@@ -514,6 +571,16 @@ def test_kernel() -> bool:
     assert "map" in keyword_complete_result["matches"]
     assert keyword_complete_result["cursor_start"] == 0
     assert keyword_complete_result["cursor_end"] == 1
+
+    assert k.do_execute("ident$(\n?,\n)(99)", False, True, {}, True) |> unwrap_future$(loop) |> .["status"] == "ok"
+    captured_msg_type, captured_msg_content = fake_session.captured_messages[-1]
+    assert captured_msg_content is None
+    assert captured_msg_type["content"]["data"]["text/plain"] == "99"
+
+    assert k.do_execute('"""\n(\n)\n"""', False, True, {}, True) |> unwrap_future$(loop) |> .["status"] == "ok"
+    captured_msg_type, captured_msg_content = fake_session.captured_messages[-1]
+    assert captured_msg_content is None
+    assert captured_msg_type["content"]["data"]["text/plain"] == "'()'"
 
     return True
 
@@ -570,6 +637,9 @@ def test_numpy() -> bool:
     assert all_equal(np.array([1, 1]))
     assert all_equal(np.array([1, 1;; 1, 1]))
     assert not all_equal(np.array([1, 1;; 1, 2]))
+    assert all_equal(np.array([]), to=10)
+    assert all_equal(np.array([10; 10;; 10; 10]), to=10)
+    assert not all_equal(np.array([1, 1]), to=10)
     assert (
         cartesian_product(np.array([1, 2]), np.array([3, 4]))
         `np.array_equal`
@@ -631,22 +701,46 @@ def test_pandas() -> bool:
     return True
 
 
+def test_xarray() -> bool:
+    import xarray as xr
+    import numpy as np
+    def ds1 `dataset_equal` ds2 = (ds1 == ds2).all().values() |> all
+    da = xr.DataArray([10, 11;; 12, 13], dims=["x", "y"])
+    ds = xr.Dataset({"a": da, "b": da + 10})
+    assert ds$[0] == "a"
+    ds_ = [da; da + 10]
+    assert ds `dataset_equal` ds_  # type: ignore
+    ds__ = [da; da |> fmap$(.+10)]
+    assert ds `dataset_equal` ds__  # type: ignore
+    assert ds `dataset_equal` (ds |> fmap$(ident))
+    assert da.to_numpy() `np.array_equal` (da |> fmap$(ident) |> .to_numpy())
+    assert (ds |> fmap$(r -> r["a"] + r["b"]) |> .to_numpy()) `np.array_equal` np.array([30; 32;; 34; 36])
+    assert not all_equal(da)
+    assert not all_equal(ds)
+    assert multi_enumerate(da) |> list == [((0, 0), 10), ((0, 1), 11), ((1, 0), 12), ((1, 1), 13)]
+    assert cartesian_product(da.sel(x=0), da.sel(x=1)) `np.array_equal` np.array([10; 12;; 10; 13;; 11; 12;; 11; 13])  # type: ignore
+    return True
+
+
 def test_extras() -> bool:
     if not PYPY and (PY2 or PY34):
         assert test_numpy() is True
     print(".", end="")
     if not PYPY and PY36:
         assert test_pandas() is True  # .
+    print(".", end="")
+    if not PYPY and PY39:
+        assert test_xarray() is True # ..
     print(".")  # newline bc we print stuff after this
-    assert test_setup_none() is True  # ..
+    assert test_setup_none() is True  # ...
     print(".")  # ditto
-    assert test_convenience() is True  # ...
+    assert test_convenience() is True  # ....
     # everything after here uses incremental parsing, so it must come last
     print(".", end="")
-    assert test_incremental() is True  # ....
+    assert test_incremental() is True  # .....
     if IPY:
         print(".", end="")
-        assert test_kernel() is True  # .....
+        assert test_kernel() is True  # ......
     return True
 
 

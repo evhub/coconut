@@ -33,8 +33,9 @@ from coconut.constants import (
     justify_len,
     report_this_text,
     numpy_modules,
-    pandas_numpy_modules,
+    pandas_modules,
     jax_numpy_modules,
+    xarray_modules,
     self_match_types,
     is_data_var,
     data_defaults_var,
@@ -290,11 +291,16 @@ def process_header_args(which, use_hash, target, no_tco, strict, no_wrap):
         report_this_text=report_this_text,
         from_None=" from None" if target.startswith("3") else "",
         process_="process_" if target_info >= (3, 13) else "",
-
         numpy_modules=tuple_str_of(numpy_modules, add_quotes=True),
-        pandas_numpy_modules=tuple_str_of(pandas_numpy_modules, add_quotes=True),
+        xarray_modules=tuple_str_of(xarray_modules, add_quotes=True),
+        pandas_modules=tuple_str_of(pandas_modules, add_quotes=True),
         jax_numpy_modules=tuple_str_of(jax_numpy_modules, add_quotes=True),
         self_match_types=tuple_str_of(self_match_types),
+        comma_bytearray=", bytearray" if not target.startswith("3") else "",
+        lstatic="staticmethod(" if not target.startswith("3") else "",
+        rstatic=")" if not target.startswith("3") else "",
+        all_keys="self.func_kwargs.keys() | kwargs.keys()" if target_info >= (3,) else "_coconut.set(self.func_kwargs.keys()) | _coconut.set(kwargs.keys())",
+
         set_super=(
             # we have to use _coconut_super even on the universal target, since once we set __class__ it becomes a local variable
             "super = py_super" if target.startswith("3") else "super = _coconut_super"
@@ -335,9 +341,6 @@ zip_longest = itertools.zip_longest if _coconut_sys.version_info >= (3,) else it
             else "zip_longest = itertools.izip_longest",
             indent=1,
         ),
-        comma_bytearray=", bytearray" if not target.startswith("3") else "",
-        lstatic="staticmethod(" if not target.startswith("3") else "",
-        rstatic=")" if not target.startswith("3") else "",
         zip_iter=prepare(
             r'''
 for items in _coconut.iter(_coconut.zip(*self.iters, strict=self.strict) if _coconut_sys.version_info >= (3, 10) else _coconut.zip_longest(*self.iters, fillvalue=_coconut_sentinel) if self.strict else _coconut.zip(*self.iters)):
@@ -638,7 +641,7 @@ for _coconut_varname in dir(MatchError):
     #  (extra_format_dict is to keep indentation levels matching)
     extra_format_dict = dict(
         # when anything is added to this list it must also be added to *both* __coconut__ stub files
-        underscore_imports="{tco_comma}{call_set_names_comma}{handle_cls_args_comma}_namedtuple_of, _coconut, _coconut_Expected, _coconut_MatchError, _coconut_SupportsAdd, _coconut_SupportsMinus, _coconut_SupportsMul, _coconut_SupportsPow, _coconut_SupportsTruediv, _coconut_SupportsFloordiv, _coconut_SupportsMod, _coconut_SupportsAnd, _coconut_SupportsXor, _coconut_SupportsOr, _coconut_SupportsLshift, _coconut_SupportsRshift, _coconut_SupportsMatmul, _coconut_SupportsInv, _coconut_iter_getitem, _coconut_base_compose, _coconut_forward_compose, _coconut_back_compose, _coconut_forward_star_compose, _coconut_back_star_compose, _coconut_forward_dubstar_compose, _coconut_back_dubstar_compose, _coconut_pipe, _coconut_star_pipe, _coconut_dubstar_pipe, _coconut_back_pipe, _coconut_back_star_pipe, _coconut_back_dubstar_pipe, _coconut_none_pipe, _coconut_none_star_pipe, _coconut_none_dubstar_pipe, _coconut_bool_and, _coconut_bool_or, _coconut_none_coalesce, _coconut_minus, _coconut_map, _coconut_partial, _coconut_complex_partial, _coconut_get_function_match_error, _coconut_base_pattern_func, _coconut_addpattern, _coconut_sentinel, _coconut_assert, _coconut_raise, _coconut_mark_as_match, _coconut_reiterable, _coconut_self_match_types, _coconut_dict_merge, _coconut_exec, _coconut_comma_op, _coconut_multi_dim_arr, _coconut_mk_anon_namedtuple, _coconut_matmul, _coconut_py_str, _coconut_flatten, _coconut_multiset, _coconut_back_none_pipe, _coconut_back_none_star_pipe, _coconut_back_none_dubstar_pipe, _coconut_forward_none_compose, _coconut_back_none_compose, _coconut_forward_none_star_compose, _coconut_back_none_star_compose, _coconut_forward_none_dubstar_compose, _coconut_back_none_dubstar_compose, _coconut_call_or_coefficient, _coconut_in, _coconut_not_in, _coconut_attritemgetter".format(**format_dict),
+        underscore_imports="{tco_comma}{call_set_names_comma}{handle_cls_args_comma}_namedtuple_of, _coconut, _coconut_Expected, _coconut_MatchError, _coconut_SupportsAdd, _coconut_SupportsMinus, _coconut_SupportsMul, _coconut_SupportsPow, _coconut_SupportsTruediv, _coconut_SupportsFloordiv, _coconut_SupportsMod, _coconut_SupportsAnd, _coconut_SupportsXor, _coconut_SupportsOr, _coconut_SupportsLshift, _coconut_SupportsRshift, _coconut_SupportsMatmul, _coconut_SupportsInv, _coconut_iter_getitem, _coconut_base_compose, _coconut_forward_compose, _coconut_back_compose, _coconut_forward_star_compose, _coconut_back_star_compose, _coconut_forward_dubstar_compose, _coconut_back_dubstar_compose, _coconut_pipe, _coconut_star_pipe, _coconut_dubstar_pipe, _coconut_back_pipe, _coconut_back_star_pipe, _coconut_back_dubstar_pipe, _coconut_none_pipe, _coconut_none_star_pipe, _coconut_none_dubstar_pipe, _coconut_bool_and, _coconut_bool_or, _coconut_none_coalesce, _coconut_minus, _coconut_map, _coconut_partial, _coconut_complex_partial, _coconut_get_function_match_error, _coconut_base_pattern_func, _coconut_addpattern, _coconut_sentinel, _coconut_assert, _coconut_raise, _coconut_mark_as_match, _coconut_reiterable, _coconut_self_match_types, _coconut_dict_merge, _coconut_exec, _coconut_comma_op, _coconut_arr_concat_op, _coconut_mk_anon_namedtuple, _coconut_matmul, _coconut_py_str, _coconut_flatten, _coconut_multiset, _coconut_back_none_pipe, _coconut_back_none_star_pipe, _coconut_back_none_dubstar_pipe, _coconut_forward_none_compose, _coconut_back_none_compose, _coconut_forward_none_star_compose, _coconut_back_none_star_compose, _coconut_forward_none_dubstar_compose, _coconut_back_none_dubstar_compose, _coconut_call_or_coefficient, _coconut_in, _coconut_not_in, _coconut_attritemgetter, _coconut_if_op".format(**format_dict),
         import_typing=pycondition(
             (3, 5),
             if_ge='''
@@ -774,6 +777,15 @@ class _coconut_amap(_coconut_baseclass):
         return self
 {async_def_anext}
             '''.format(**format_dict),
+        ),
+        handle_bytes=pycondition(
+            (3,),
+            if_lt='''
+if _coconut.isinstance(obj, _coconut.bytes):
+    return _coconut_base_makedata(_coconut.bytes, [func(_coconut.ord(x)) for x in obj], from_fmap=True, fallback_to_init=fallback_to_init)
+            ''',
+            indent=1,
+            newline=True,
         ),
         maybe_bind_lru_cache=pycondition(
             (3, 2),

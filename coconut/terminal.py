@@ -47,7 +47,8 @@ from coconut.constants import (
     taberrfmt,
     use_packrat_parser,
     embed_on_internal_exc,
-    use_color,
+    use_color_env_var,
+    get_bool_env_var,
     error_color_code,
     log_color_code,
     ansii_escape,
@@ -182,6 +183,16 @@ class LoggingStringIO(StringIO):
                 sys.stdout = old_stdout
 
 
+def should_use_color(file=None):
+    """Determine if colors should be used for the given file object."""
+    use_color = get_bool_env_var(use_color_env_var, default=None)
+    if use_color is not None:
+        return use_color
+    if get_bool_env_var("CLICOLOR_FORCE") or get_bool_env_var("FORCE_COLOR"):
+        return True
+    return file is not None and not isatty(file)
+
+
 # -----------------------------------------------------------------------------------------------------------------------
 # LOGGER:
 # -----------------------------------------------------------------------------------------------------------------------
@@ -207,8 +218,10 @@ class Logger(object):
         self.patch_logging()
 
     @classmethod
-    def enable_colors(cls):
+    def enable_colors(cls, file=None):
         """Attempt to enable CLI colors."""
+        if not should_use_color(file):
+            return False
         if not cls.colors_enabled:
             # necessary to resolve https://bugs.python.org/issue40134
             try:
@@ -216,6 +229,7 @@ class Logger(object):
             except BaseException:
                 logger.log_exc()
             cls.colors_enabled = True
+        return True
 
     def copy_from(self, other):
         """Copy other onto self."""
@@ -265,11 +279,8 @@ class Logger(object):
         else:
             raise CoconutInternalException("invalid logging level", level)
 
-        if use_color is False or (use_color is None and not isatty(file)):
-            color = None
-
         if color:
-            self.enable_colors()
+            color = self.enable_colors(file) and color
 
         raw_message = " ".join(str(msg) for msg in messages)
         # if there's nothing to display but there is a sig, display the sig

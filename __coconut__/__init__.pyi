@@ -155,6 +155,7 @@ if sys.version_info < (3, 7):
         ...
 
 
+py_bytes = bytes
 py_chr = chr
 py_dict = dict
 py_hex = hex
@@ -1216,6 +1217,11 @@ def _coconut_comma_op(*args: _t.Any) -> _Tuple:
     ...
 
 
+def _coconut_if_op(cond: _t.Any, if_true: _T, if_false: _U) -> _t.Union[_T, _U]:
+    """If operator (if). Equivalent to (cond, if_true, if_false) => if_true if cond else if_false."""
+    ...
+
+
 if sys.version_info < (3, 5):
     @_t.overload
     def _coconut_matmul(a: _T, b: _T) -> _T: ...
@@ -1451,7 +1457,7 @@ def fmap(func: _t.Callable[[_T, _U], _t.Tuple[_V, _W]], obj: _t.Mapping[_T, _U],
 
     Supports:
     * Coconut data types
-    * `str`, `dict`, `list`, `tuple`, `set`, `frozenset`
+    * `str`, `dict`, `list`, `tuple`, `set`, `frozenset`, `bytes`, `bytearray`
     * `dict` (maps over .items())
     * asynchronous iterables
     * numpy arrays (uses np.vectorize)
@@ -1460,6 +1466,8 @@ def fmap(func: _t.Callable[[_T, _U], _t.Tuple[_V, _W]], obj: _t.Mapping[_T, _U],
     Override by defining obj.__fmap__(func).
     """
     ...
+
+_coconut_fmap = fmap
 
 
 def _coconut_handle_cls_kwargs(**kwargs: _t.Dict[_t.Text, _t.Any]) -> _t.Callable[[_T], _T]: ...
@@ -1636,22 +1644,44 @@ def lift(func: _t.Callable[[_T, _U], _W]) -> _coconut_lifted_2[_T, _U, _W]: ...
 def lift(func: _t.Callable[[_T, _U, _V], _W]) -> _coconut_lifted_3[_T, _U, _V, _W]: ...
 @_t.overload
 def lift(func: _t.Callable[..., _W]) -> _t.Callable[..., _t.Callable[..., _W]]:
-    """Lift a function up so that all of its arguments are functions.
+    """Lift a function up so that all of its arguments are functions that all take the same arguments.
 
     For a binary function f(x, y) and two unary functions g(z) and h(z), lift works as the S' combinator:
         lift(f)(g, h)(z) == f(g(z), h(z))
 
     In general, lift is equivalent to:
-        def lift(f) = ((*func_args, **func_kwargs) -> (*args, **kwargs) ->
-            f(*(g(*args, **kwargs) for g in func_args), **{lbrace}k: h(*args, **kwargs) for k, h in func_kwargs.items(){rbrace}))
+        def lift(f) = ((*func_args, **func_kwargs) => (*args, **kwargs) => (
+            f(*(g(*args, **kwargs) for g in func_args), **{k: h(*args, **kwargs) for k, h in func_kwargs.items()}))
+        )
 
     lift also supports a shortcut form such that lift(f, *func_args, **func_kwargs) is equivalent to lift(f)(*func_args, **func_kwargs).
     """
     ...
 _coconut_lift = lift
 
+@_t.overload
+def lift_apart(func: _t.Callable[[_T], _W]) -> _t.Callable[[_t.Callable[[_U], _T]], _t.Callable[[_U], _W]]: ...
+@_t.overload
+def lift_apart(func: _t.Callable[[_T, _X], _W]) -> _t.Callable[[_t.Callable[[_U], _T], _t.Callable[[_Y], _X]], _t.Callable[[_U, _Y], _W]]: ...
+@_t.overload
+def lift_apart(func: _t.Callable[..., _W]) -> _t.Callable[..., _t.Callable[..., _W]]:
+    """Lift a function up so that all of its arguments are functions that each take separate arguments.
 
-def all_equal(iterable: _Iterable) -> bool:
+    For a binary function f(x, y) and two unary functions g(z) and h(z), lift_apart works as the D2 combinator:
+        lift_apart(f)(g, h)(z, w) == f(g(z), h(w))
+
+    In general, lift_apart is equivalent to:
+        def lift_apart(func) = (*func_args, **func_kwargs) => (*args, **kwargs) => func(
+            *map(call, func_args, args, strict=True),
+            **{k: func_kwargs[k](kwargs[k]) for k in func_kwargs.keys() | kwargs.keys()},
+        )
+
+    lift_apart also supports a shortcut form such that lift_apart(f, *func_args, **func_kwargs) is equivalent to lift_apart(f)(*func_args, **func_kwargs).
+    """
+    ...
+
+
+def all_equal(iterable: _t.Iterable[_T], to: _T = ...) -> bool:
     """For a given iterable, check whether all elements in that iterable are equal to each other.
 
     Supports numpy arrays. Assumes transitivity and 'x != y' being equivalent to 'not (x == y)'.
@@ -1828,45 +1858,44 @@ def _coconut_mk_anon_namedtuple(
 
 
 # @_t.overload
-# def _coconut_multi_dim_arr(
-#     arrs: _t.Tuple[_coconut.npt.NDArray[_DType], ...],
+# def _coconut_arr_concat_op(
 #     dim: int,
+#     *arrs: _coconut.npt.NDArray[_DType],
 # ) -> _coconut.npt.NDArray[_DType]: ...
 # @_t.overload
-# def _coconut_multi_dim_arr(
-#     arrs: _t.Tuple[_DType, ...],
+# def _coconut_arr_concat_op(
 #     dim: int,
+#     *arrs: _DType,
 # ) -> _coconut.npt.NDArray[_DType]: ...
-
 @_t.overload
-def _coconut_multi_dim_arr(
-    arrs: _t.Tuple[_t.Sequence[_T], ...],
+def _coconut_arr_concat_op(
     dim: _t.Literal[1],
+    *arrs: _t.Sequence[_T],
 ) -> _t.Sequence[_T]: ...
 @_t.overload
-def _coconut_multi_dim_arr(
-    arrs: _t.Tuple[_T, ...],
+def _coconut_arr_concat_op(
     dim: _t.Literal[1],
+    *arrs: _T,
 ) -> _t.Sequence[_T]: ...
 
 @_t.overload
-def _coconut_multi_dim_arr(
-    arrs: _t.Tuple[_t.Sequence[_t.Sequence[_T]], ...],
+def _coconut_arr_concat_op(
     dim: _t.Literal[2],
+    *arrs: _t.Sequence[_t.Sequence[_T]],
 ) -> _t.Sequence[_t.Sequence[_T]]: ...
 @_t.overload
-def _coconut_multi_dim_arr(
-    arrs: _t.Tuple[_t.Sequence[_T], ...],
+def _coconut_arr_concat_op(
     dim: _t.Literal[2],
+    *arrs: _t.Sequence[_T],
 ) -> _t.Sequence[_t.Sequence[_T]]: ...
 @_t.overload
-def _coconut_multi_dim_arr(
-    arrs: _t.Tuple[_T, ...],
+def _coconut_arr_concat_op(
     dim: _t.Literal[2],
+    *arrs: _T,
 ) -> _t.Sequence[_t.Sequence[_T]]: ...
 
 @_t.overload
-def _coconut_multi_dim_arr(arrs: _Tuple, dim: int) -> _Sequence: ...
+def _coconut_arr_concat_op(dim: int, *arrs: _t.Any) -> _Sequence: ...
 
 
 class _coconut_SupportsAdd(_t.Protocol, _t.Generic[_Tco, _Ucontra, _Vco]):

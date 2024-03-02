@@ -88,6 +88,7 @@ from coconut.util import (
     univ_open,
     ensure_dir,
     get_clock_time,
+    literal_lines,
 )
 from coconut.terminal import (
     logger,
@@ -123,16 +124,15 @@ from coconut.constants import (
     unwrapper,
     incremental_cache_limit,
     incremental_mode_cache_successes,
-    adaptive_reparse_usage_weight,
     use_adaptive_any_of,
     disable_incremental_for_len,
     coconut_cache_dir,
-    use_adaptive_if_available,
     use_fast_pyparsing_reprs,
     save_new_cache_items,
     cache_validation_info,
     require_cache_clear_frac,
     reverse_any_of,
+    all_keywords,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -264,6 +264,19 @@ class ComputationNode(object):
     """A single node in the computation graph."""
     __slots__ = ("action", "original", "loc", "tokens")
     pprinting = False
+    override_original = None
+    add_to_loc = 0
+
+    @classmethod
+    @contextmanager
+    def using_overrides(cls):
+        override_original, cls.override_original = cls.override_original, None
+        add_to_loc, cls.add_to_loc = cls.add_to_loc, 0
+        try:
+            yield
+        finally:
+            cls.override_original = override_original
+            cls.add_to_loc = add_to_loc
 
     def __new__(cls, action, original, loc, tokens, ignore_no_tokens=False, ignore_one_token=False, greedy=False, trim_arity=True):
         """Create a ComputionNode to return from a parse action.
@@ -281,8 +294,8 @@ class ComputationNode(object):
                 self.action = _trim_arity(action)
             else:
                 self.action = action
-            self.original = original
-            self.loc = loc
+            self.original = original if self.override_original is None else self.override_original
+            self.loc = self.add_to_loc + loc
             self.tokens = tokens
             if greedy:
                 return self.evaluate()
@@ -391,12 +404,38 @@ def add_action(item, action, make_copy=None):
     return item.addParseAction(action)
 
 
-def attach(item, action, ignore_no_tokens=None, ignore_one_token=None, ignore_tokens=None, trim_arity=None, make_copy=None, **kwargs):
+def get_func_args(func):
+    """Inspect a function to determine its argument names."""
+    if PY2:
+        return inspect.getargspec(func)[0]
+    else:
+        return inspect.getfullargspec(func)[0]
+
+
+def should_trim_arity(func):
+    """Determine if we need to call _trim_arity on func."""
+    annotation = getattr(func, "trim_arity", None)
+    if annotation is not None:
+        return annotation
+    try:
+        func_args = get_func_args(func)
+    except TypeError:
+        return True
+    if not func_args:
+        return True
+    if func_args[0] == "self":
+        func_args.pop(0)
+    if func_args[:3] == ["original", "loc", "tokens"]:
+        return False
+    return True
+
+
+def attach(item, action, ignore_no_tokens=None, ignore_one_token=None, ignore_arguments=None, trim_arity=None, make_copy=None, **kwargs):
     """Set the parse action for the given item to create a node in the computation graph."""
-    if ignore_tokens is None:
-        ignore_tokens = getattr(action, "ignore_tokens", False)
-    # if ignore_tokens, then we can just pass in the computation graph and have it be ignored
-    if not ignore_tokens and USE_COMPUTATION_GRAPH:
+    if ignore_arguments is None:
+        ignore_arguments = getattr(action, "ignore_arguments", False)
+    # if ignore_arguments, then we can just pass in the computation graph and have it be ignored
+    if not ignore_arguments and USE_COMPUTATION_GRAPH:
         # use the action's annotations to generate the defaults
         if ignore_no_tokens is None:
             ignore_no_tokens = getattr(action, "ignore_no_tokens", False)
@@ -417,43 +456,14 @@ def attach(item, action, ignore_no_tokens=None, ignore_one_token=None, ignore_to
 
 def final_evaluate_tokens(tokens):
     """Same as evaluate_tokens but should only be used once a parse is assured."""
+    result = evaluate_tokens(tokens, is_final=True)
+    # clear packrat cache after evaluating tokens so error creation gets to see the cache
     clear_packrat_cache()
-    return evaluate_tokens(tokens, is_final=True)
-
-
-@contextmanager
-def adaptive_manager(item, original, loc, reparse=False):
-    """Manage the use of MatchFirst.setAdaptiveMode."""
-    if reparse:
-        cleared_cache = clear_packrat_cache()
-        if cleared_cache is not True:
-            item.include_in_packrat_context = True
-        MatchFirst.setAdaptiveMode(False, usage_weight=adaptive_reparse_usage_weight)
-        try:
-            yield
-        finally:
-            MatchFirst.setAdaptiveMode(False, usage_weight=1)
-            if cleared_cache is not True:
-                item.include_in_packrat_context = False
-    else:
-        MatchFirst.setAdaptiveMode(True)
-        try:
-            yield
-        except Exception as exc:
-            if DEVELOP:
-                logger.log("reparsing due to:", exc)
-                logger.record_stat("adaptive", False)
-        else:
-            if DEVELOP:
-                logger.record_stat("adaptive", True)
-        finally:
-            MatchFirst.setAdaptiveMode(False)
+    return result
 
 
 def final(item):
     """Collapse the computation graph upon parsing the given item."""
-    if SUPPORTS_ADAPTIVE and use_adaptive_if_available:
-        item = Wrap(item, adaptive_manager, greedy=True)
     # evaluate_tokens expects a computation graph, so we just call add_action directly
     return add_action(trace(item), final_evaluate_tokens)
 
@@ -489,11 +499,35 @@ def force_reset_packrat_cache():
 
 
 @contextmanager
-def parsing_context(inner_parse=True):
+def parsing_context(inner_parse=None):
     """Context to manage the packrat cache across parse calls."""
-    if not inner_parse:
-        yield
-    elif should_clear_cache():
+    current_cache_matters = (
+        inner_parse is not False
+        and ParserElement._packratEnabled
+    )
+    new_cache_matters = (
+        inner_parse is not True
+        and ParserElement._incrementalEnabled
+        and not ParserElement._incrementalWithResets
+    )
+    will_clear_cache = (
+        not ParserElement._incrementalEnabled
+        or ParserElement._incrementalWithResets
+    )
+    if (
+        current_cache_matters
+        and new_cache_matters
+        and ParserElement._incrementalWithResets
+    ):
+        incrementalWithResets, ParserElement._incrementalWithResets = ParserElement._incrementalWithResets, False
+        try:
+            yield
+        finally:
+            ParserElement._incrementalWithResets = incrementalWithResets
+    elif (
+        current_cache_matters
+        and will_clear_cache
+    ):
         # store old packrat cache
         old_cache = ParserElement.packrat_cache
         old_cache_stats = ParserElement.packrat_cache_stats[:]
@@ -507,13 +541,6 @@ def parsing_context(inner_parse=True):
             if logger.verbose:
                 ParserElement.packrat_cache_stats[0] += old_cache_stats[0]
                 ParserElement.packrat_cache_stats[1] += old_cache_stats[1]
-    # if we shouldn't clear the cache, but we're using incrementalWithResets, then do this to avoid clearing it
-    elif ParserElement._incrementalWithResets:
-        incrementalWithResets, ParserElement._incrementalWithResets = ParserElement._incrementalWithResets, False
-        try:
-            yield
-        finally:
-            ParserElement._incrementalWithResets = incrementalWithResets
     else:
         yield
 
@@ -529,7 +556,7 @@ def prep_grammar(grammar, streamline=False):
     return grammar.parseWithTabs()
 
 
-def parse(grammar, text, inner=True, eval_parse_tree=True):
+def parse(grammar, text, inner=None, eval_parse_tree=True):
     """Parse text using grammar."""
     with parsing_context(inner):
         result = prep_grammar(grammar).parseString(text)
@@ -538,7 +565,7 @@ def parse(grammar, text, inner=True, eval_parse_tree=True):
         return result
 
 
-def try_parse(grammar, text, inner=True, eval_parse_tree=True):
+def try_parse(grammar, text, inner=None, eval_parse_tree=True):
     """Attempt to parse text using grammar else None."""
     try:
         return parse(grammar, text, inner, eval_parse_tree)
@@ -546,12 +573,12 @@ def try_parse(grammar, text, inner=True, eval_parse_tree=True):
         return None
 
 
-def does_parse(grammar, text, inner=True):
+def does_parse(grammar, text, inner=None):
     """Determine if text can be parsed using grammar."""
     return try_parse(grammar, text, inner, eval_parse_tree=False)
 
 
-def all_matches(grammar, text, inner=True, eval_parse_tree=True):
+def all_matches(grammar, text, inner=None, eval_parse_tree=True):
     """Find all matches for grammar in text."""
     with parsing_context(inner):
         for tokens, start, stop in prep_grammar(grammar).scanString(text):
@@ -560,21 +587,21 @@ def all_matches(grammar, text, inner=True, eval_parse_tree=True):
             yield tokens, start, stop
 
 
-def parse_where(grammar, text, inner=True):
+def parse_where(grammar, text, inner=None):
     """Determine where the first parse is."""
     for tokens, start, stop in all_matches(grammar, text, inner, eval_parse_tree=False):
         return start, stop
     return None, None
 
 
-def match_in(grammar, text, inner=True):
+def match_in(grammar, text, inner=None):
     """Determine if there is a match for grammar anywhere in text."""
     start, stop = parse_where(grammar, text, inner)
     internal_assert((start is None) == (stop is None), "invalid parse_where results", (start, stop))
     return start is not None
 
 
-def transform(grammar, text, inner=True):
+def transform(grammar, text, inner=None):
     """Transform text by replacing matches to grammar."""
     with parsing_context(inner):
         result = prep_grammar(add_action(grammar, unpack)).transformString(text)
@@ -753,7 +780,7 @@ def should_clear_cache(force=False):
         return True
     elif not ParserElement._packratEnabled:
         return False
-    elif SUPPORTS_INCREMENTAL and ParserElement._incrementalEnabled:
+    elif ParserElement._incrementalEnabled:
         if not in_incremental_mode():
             return repeatedly_clear_incremental_cache
         if (
@@ -845,8 +872,8 @@ def get_cache_items_for(original, only_useful=False, exclude_stale=True):
 
 
 def get_highest_parse_loc(original):
-    """Get the highest observed parse location."""
-    # find the highest observed parse location
+    """Get the highest observed parse location.
+    Note that there's no point in filtering for successes/failures, since we always see both at the same locations."""
     highest_loc = 0
     for lookup, _ in get_cache_items_for(original):
         loc = lookup[2]
@@ -1139,7 +1166,7 @@ class Wrap(ParseElementEnhance):
     global_instance_counter = 0
     inside = False
 
-    def __init__(self, item, wrapper, greedy=False, include_in_packrat_context=False):
+    def __init__(self, item, wrapper, greedy=False, include_in_packrat_context=True):
         super(Wrap, self).__init__(item)
         self.wrapper = wrapper
         self.greedy = greedy
@@ -1179,7 +1206,7 @@ class Wrap(ParseElementEnhance):
             reparse = False
             parse_loc = None
             while parse_loc is None:  # lets wrapper catch errors to trigger a reparse
-                with self.wrapper(self, original, loc, **(dict(reparse=True) if reparse else {})):
+                with self.wrapper(original, loc, self, **(dict(reparse=True) if reparse else {})):
                     with self.wrapped_context():
                         parse_loc, tokens = super(Wrap, self).parseImpl(original, loc, *args, **kwargs)
                         if self.greedy:
@@ -1198,10 +1225,14 @@ class Wrap(ParseElementEnhance):
         return self.wrapped_name
 
 
-def handle_and_manage(item, handler, manager):
+def manage(item, manager, include_in_packrat_context, greedy=True):
+    """Attach a manager to the given parse item."""
+    return Wrap(item, manager, include_in_packrat_context=include_in_packrat_context, greedy=greedy)
+
+
+def handle_and_manage(item, handler, manager, **kwargs):
     """Attach a handler and a manager to the given parse item."""
-    new_item = attach(item, handler)
-    return Wrap(new_item, manager, greedy=True)
+    return manage(attach(item, handler), manager, **kwargs)
 
 
 def disable_inside(item, *elems, **kwargs):
@@ -1215,7 +1246,7 @@ def disable_inside(item, *elems, **kwargs):
     level = [0]  # number of wrapped items deep we are; in a list to allow modification
 
     @contextmanager
-    def manage_item(self, original, loc):
+    def manage_item(original, loc, self):
         level[0] += 1
         try:
             yield
@@ -1225,7 +1256,7 @@ def disable_inside(item, *elems, **kwargs):
     yield Wrap(item, manage_item, include_in_packrat_context=True)
 
     @contextmanager
-    def manage_elem(self, original, loc):
+    def manage_elem(original, loc, self):
         if level[0] == 0 if not _invert else level[0] > 0:
             yield
         else:
@@ -1259,7 +1290,7 @@ def invalid_syntax(item, msg, **kwargs):
 
     def invalid_syntax_handle(loc, tokens):
         raise CoconutDeferredSyntaxError(msg, loc)
-    return attach(item, invalid_syntax_handle, ignore_tokens=True, **kwargs)
+    return attach(item, invalid_syntax_handle, ignore_arguments=True, **kwargs)
 
 
 def skip_to_in_line(item):
@@ -1303,7 +1334,7 @@ any_char = regex_item(r".", re.DOTALL)
 
 def fixto(item, output):
     """Force an item to result in a specific output."""
-    return attach(item, replaceWith(output), ignore_tokens=True)
+    return attach(item, replaceWith(output), ignore_arguments=True)
 
 
 def addspace(item):
@@ -1414,9 +1445,6 @@ def stores_loc_action(loc, tokens):
     return str(loc)
 
 
-stores_loc_action.ignore_tokens = True
-
-
 always_match = Empty()
 stores_loc_item = attach(always_match, stores_loc_action)
 
@@ -1430,12 +1458,15 @@ def disallow_keywords(kwds, with_suffix=""):
     return regex_item(r"(?!" + "|".join(to_disallow) + r")").suppress()
 
 
-def disambiguate_literal(literal, not_literals):
+def disambiguate_literal(literal, not_literals, fixesto=None):
     """Get an item that matchesl literal and not any of not_literals."""
-    return regex_item(
+    item = regex_item(
         r"(?!" + "|".join(re.escape(s) for s in not_literals) + ")"
         + re.escape(literal)
     )
+    if fixesto is not None:
+        item = fixto(item, fixesto)
+    return item
 
 
 def any_keyword_in(kwds):
@@ -1515,12 +1546,16 @@ def any_len_perm_at_least_one(*elems, **kwargs):
     return any_len_perm_with_one_of_each_group(*groups_and_elems)
 
 
-def caseless_literal(literalstr, suppress=False):
+def caseless_literal(literalstr, suppress=False, disambiguate=False):
     """Version of CaselessLiteral that always parses to the given literalstr."""
+    out = CaselessLiteral(literalstr)
     if suppress:
-        return CaselessLiteral(literalstr).suppress()
+        out = out.suppress()
     else:
-        return fixto(CaselessLiteral(literalstr), literalstr)
+        out = fixto(out, literalstr)
+    if disambiguate:
+        out = disallow_keywords(k for k in all_keywords if k.startswith((literalstr[0].lower(), literalstr[0].upper()))) + out
+    return out
 
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -1806,13 +1841,13 @@ def collapse_indents(indentation):
 def is_blank(line):
     """Determine whether a line is blank."""
     line, _ = rem_and_count_indents(rem_comment(line))
-    return line.strip() == ""
+    return not line or line.isspace()
 
 
 def final_indentation_level(code):
     """Determine the final indentation level of the given code."""
     level = 0
-    for line in code.splitlines():
+    for line in literal_lines(code):
         leading_indent, _, trailing_indent = split_leading_trailing_indent(line)
         level += ind_change(leading_indent) + ind_change(trailing_indent)
     return level
@@ -1881,32 +1916,6 @@ def literal_eval(py_code):
         return ast.literal_eval(compiled)
     except BaseException:
         raise CoconutInternalException("failed to literal eval", py_code)
-
-
-def get_func_args(func):
-    """Inspect a function to determine its argument names."""
-    if PY2:
-        return inspect.getargspec(func)[0]
-    else:
-        return inspect.getfullargspec(func)[0]
-
-
-def should_trim_arity(func):
-    """Determine if we need to call _trim_arity on func."""
-    annotation = getattr(func, "trim_arity", None)
-    if annotation is not None:
-        return annotation
-    try:
-        func_args = get_func_args(func)
-    except TypeError:
-        return True
-    if not func_args:
-        return True
-    if func_args[0] == "self":
-        func_args.pop(0)
-    if func_args[:3] == ["original", "loc", "tokens"]:
-        return False
-    return True
 
 
 def sequential_split(inputstr, splits):
@@ -2011,7 +2020,7 @@ def sub_all(inputstr, regexes, replacements):
 
 
 # -----------------------------------------------------------------------------------------------------------------------
-# PYTEST:
+# EXTRAS:
 # -----------------------------------------------------------------------------------------------------------------------
 
 
@@ -2042,3 +2051,32 @@ def pytest_rewrite_asserts(code, module_name=reserved_prefix + "_pytest_module")
     rewrite_asserts(tree, module_name)
     fixed_tree = ast.fix_missing_locations(FixPytestNames().visit(tree))
     return ast.unparse(fixed_tree)
+
+
+@contextmanager
+def adaptive_manager(original, loc, item, reparse=False):
+    """Manage the use of MatchFirst.setAdaptiveMode."""
+    if reparse:
+        cleared_cache = clear_packrat_cache()
+        if cleared_cache is not True:
+            item.include_in_packrat_context = True
+        MatchFirst.setAdaptiveMode(False, usage_weight=10)
+        try:
+            yield
+        finally:
+            MatchFirst.setAdaptiveMode(False, usage_weight=1)
+            if cleared_cache is not True:
+                item.include_in_packrat_context = False
+    else:
+        MatchFirst.setAdaptiveMode(True)
+        try:
+            yield
+        except Exception as exc:
+            if DEVELOP:
+                logger.log("reparsing due to:", exc)
+                logger.record_stat("adaptive", False)
+        else:
+            if DEVELOP:
+                logger.record_stat("adaptive", True)
+        finally:
+            MatchFirst.setAdaptiveMode(False)

@@ -27,14 +27,14 @@ def py3_test() -> bool:
     čeština = "czech"
     assert čeština == "czech"
     class HasExecMethod:
-        def exec(self, x) = x()
+        def \exec(self, x) = x()
     has_exec = HasExecMethod()
     assert hasattr(has_exec, "exec")
     assert has_exec.exec(-> 1) == 1
     def exec_rebind_test():
-        exec = 1
+        \exec = 1
         assert exec + 1 == 2
-        def exec(x) = x
+        def \exec(x) = x
         assert exec(1) == 1
         return True
     assert exec_rebind_test() is True

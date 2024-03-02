@@ -8,7 +8,7 @@
 """
 Author: Evan Hubinger
 License: Apache 2.0
-Description: Installer for the Coconut Jupyter kernel.
+Description: Base Coconut utilities.
 """
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -49,6 +49,7 @@ from coconut.constants import (
     icoconut_custom_kernel_file_loc,
     WINDOWS,
     non_syntactic_newline,
+    setuptools_distribution_names,
 )
 
 
@@ -150,8 +151,8 @@ def clip(num, min=None, max=None):
     )
 
 
-def logical_lines(text, keep_newlines=False):
-    """Iterate over the logical code lines in text."""
+def literal_lines(text, keep_newlines=False, yield_next_line_is_real=False):
+    """Iterate over the literal code lines in text."""
     prev_content = None
     for line in text.splitlines(True):
         real_line = True
@@ -162,11 +163,14 @@ def logical_lines(text, keep_newlines=False):
             if not keep_newlines:
                 line = line[:-1]
         else:
-            if prev_content is None:
-                prev_content = ""
-            prev_content += line
+            if not yield_next_line_is_real:
+                if prev_content is None:
+                    prev_content = ""
+                prev_content += line
             real_line = False
-        if real_line:
+        if yield_next_line_is_real:
+            yield real_line, line
+        elif real_line:
             if prev_content is not None:
                 line = prev_content + line
                 prev_content = None
@@ -265,6 +269,9 @@ class keydefaultdict(defaultdict, object):
 class dictset(dict, object):
     """A set implemented using a dictionary to get ordering benefits."""
 
+    def __init__(self, items=()):
+        super(dictset, self).__init__((x, True) for x in items)
+
     def __bool__(self):
         return len(self) > 0  # fixes py2 issue
 
@@ -324,6 +331,20 @@ def replace_all(inputstr, all_to_replace, replace_to):
     return inputstr
 
 
+def highlight(code, force=False):
+    """Attempt to highlight Coconut code for the terminal."""
+    from coconut.terminal import logger  # hide to remove circular deps
+    if force or logger.enable_colors(sys.stdout) and logger.enable_colors(sys.stderr):
+        try:
+            from coconut.highlighter import highlight_coconut_for_terminal
+        except ImportError:
+            logger.log_exc()
+        else:
+            code_base, code_white = split_trailing_whitespace(code)
+            return highlight_coconut_for_terminal(code_base).rstrip() + code_white
+    return code
+
+
 # -----------------------------------------------------------------------------------------------------------------------
 # VERSIONING:
 # -----------------------------------------------------------------------------------------------------------------------
@@ -369,12 +390,10 @@ def get_displayable_target(target):
 
 def get_kernel_data_files(argv):
     """Given sys.argv, write the custom kernel file and return data_files."""
-    if any(arg.startswith("bdist") for arg in argv):
+    if any(arg.startswith(setuptools_distribution_names) for arg in argv):
         executable = "python"
-    elif any(arg.startswith("install") for arg in argv):
-        executable = sys.executable
     else:
-        return []
+        executable = sys.executable
     install_custom_kernel(executable)
     return [
         (

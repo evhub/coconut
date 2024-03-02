@@ -303,8 +303,8 @@ def primary_test_2() -> bool:
     a_dict = {"a": 1, "b": 2}
     a_dict |= {"a": 10, "c": 20}
     assert a_dict == {"a": 10, "b": 2, "c": 20} == {"a": 1, "b": 2} | {"a": 10, "c": 20}
-    assert ["abc" ; "def"] == ['abc', 'def']
-    assert ["abc" ;; "def"] == [['abc'], ['def']]
+    assert ["abc" ; "def"] == ['abc', 'def'] == [;] <*| ("abc", "def")
+    assert ["abc" ;; "def"] == [['abc'], ['def']] == [;;] <*| ("abc", "def")
     assert {"a":0, "b":1}$[0] == "a"
     assert (|0, NotImplemented, 2|)$[1] is NotImplemented
     assert m{1, 1, 2} |> fmap$(.+1) == m{2, 2, 3}
@@ -410,6 +410,51 @@ def primary_test_2() -> bool:
     assert 0x == 0 == 0 x
     assert 0xff == 255 == 0x100-1
     assert 11259375 == 0xabcdef
+    assert [[] ;; [] ;;;] == [[[], []]]
+    assert (
+        1
+        |> [. ; 2]
+        |> [[3; 4] ;; .]
+    ) == [3; 4;; 1; 2] == [[3; 4] ;; .]([. ; 2](1))
+    arr: Any = 1
+    arr |>= [. ; 2]
+    arr |>= [[3; 4] ;; .]
+    assert arr == [3; 4;; 1; 2] == [[3; 4] ;; .] |> call$(?, [. ; 2] |> call$(?, 1))
+    assert (if)(10, 20, 30) == 20 == (if)(0, 10, 20)
+    assert all_equal([], to=10)
+    assert all_equal([10; 10; 10; 10], to=10)
+    assert not all_equal([1, 1], to=10)
+    assert not 0in[1,2,3]
+    if"0":assert True
+    if"0":
+        assert True
+    b = "b"
+    assert "abc".find b == 1
+    assert_raises(-> "a" 10, TypeError)
+    assert (,) ↤* (1, 2, 3) == (1, 2, 3)
+    assert (,) ↤? None is None
+    assert (,) ↤*? None is None  # type: ignore
+    assert '''\u2029'''!='''\n'''
+    assert b"a" `isinstance` bytes
+    assert b"a" `isinstance` py_bytes
+    assert bytes() == b""
+    assert bytes(10) == b"\x00" * 10
+    assert bytes([35, 40]) == b'#('
+    assert bytes(b"abc") == b"abc" == bytes("abc", "utf-8")
+    assert b"Abc" |> fmap$(.|32) == b"abc"
+    assert bytearray(b"Abc") |> fmap$(.|32) == bytearray(b"abc")
+    assert (bytearray(b"Abc") |> fmap$(.|32)) `isinstance` bytearray
+    assert 10 |> lift(+)((x -> x), (def y -> y)) == 20
+    assert (x -> def y -> (x, y))(1)(2) == (1, 2) == (x -> copyclosure def y -> (x, y))(1)(2)  # type: ignore
+    assert ((x, y) -> def z -> (x, y, z))(1, 2)(3) == (1, 2, 3) == (x -> y -> def z -> (x, y, z))(1)(2)(3)  # type: ignore
+    assert [def x -> (x, y) for y in range(10)] |> map$(call$(?, 10)) |> list == [(10, y) for y in range(10)]
+    assert [x -> (x, y) for y in range(10)] |> map$(call$(?, 10)) |> list == [(10, 9) for y in range(10)]
+    assert [=> y for y in range(2)] |> map$(call) |> list == [1, 1]
+    assert [def => y for y in range(2)] |> map$(call) |> list == [0, 1]
+    assert (x -> x -> def y -> (x, y))(1)(2)(3) == (2, 3)
+    match def maybe_dup(x, y=x) = (x, y)
+    assert maybe_dup(1) == (1, 1) == maybe_dup(x=1)
+    assert maybe_dup(1, 2) == (1, 2) == maybe_dup(x=1, y=2)
 
     with process_map.multiple_sequential_calls():  # type: ignore
         assert map((+), range(3), range(4)$[:-1], strict=True) |> list == [0, 2, 4] == process_map((+), range(3), range(4)$[:-1], strict=True) |> list  # type: ignore
