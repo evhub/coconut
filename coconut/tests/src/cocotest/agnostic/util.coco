@@ -1686,7 +1686,7 @@ sum_evens = (
 )
 
 
-# n-ary reduction
+# reduction
 def binary_reduce(binop, it) = (
     it
     |> reiterable
@@ -1702,6 +1702,8 @@ def nary_reduce(n, op, it) = (
 )
 
 binary_reduce_ = nary_reduce$(2)
+
+match def reduce_with_init(f, xs, init=type(xs[0])()) = reduce(f, xs, init)
 
 
 # last/end
