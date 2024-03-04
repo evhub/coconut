@@ -190,7 +190,7 @@ def should_use_color(file=None):
         return use_color
     if get_bool_env_var("CLICOLOR_FORCE") or get_bool_env_var("FORCE_COLOR"):
         return True
-    return file is not None and not isatty(file)
+    return file is not None and isatty(file)
 
 
 # -----------------------------------------------------------------------------------------------------------------------
