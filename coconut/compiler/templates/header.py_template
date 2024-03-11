@@ -843,7 +843,7 @@ class map(_coconut_baseclass, _coconut.map):
     def __len__(self):
         if not _coconut.all(_coconut.isinstance(it, _coconut.abc.Sized) for it in self.iters):
             return _coconut.NotImplemented
-        return _coconut.min(_coconut.len(it) for it in self.iters)
+        return _coconut.min((_coconut.len(it) for it in self.iters), default=0)
     def __repr__(self):
         return "%s(%r, %s)" % (self.__class__.__name__, self.func, ", ".join((_coconut.repr(it) for it in self.iters)))
     def __reduce__(self):
@@ -985,7 +985,7 @@ class zip(_coconut_baseclass, _coconut.zip):
     def __len__(self):
         if not _coconut.all(_coconut.isinstance(it, _coconut.abc.Sized) for it in self.iters):
             return _coconut.NotImplemented
-        return _coconut.min(_coconut.len(it) for it in self.iters)
+        return _coconut.min((_coconut.len(it) for it in self.iters), default=0)
     def __repr__(self):
         return "zip(%s%s)" % (", ".join((_coconut.repr(it) for it in self.iters)), ", strict=True" if self.strict else "")
     def __reduce__(self):
@@ -1036,7 +1036,7 @@ class zip_longest(zip):
     def __len__(self):
         if not _coconut.all(_coconut.isinstance(it, _coconut.abc.Sized) for it in self.iters):
             return _coconut.NotImplemented
-        return _coconut.max(_coconut.len(it) for it in self.iters)
+        return _coconut.max((_coconut.len(it) for it in self.iters), default=0)
     def __repr__(self):
         return "zip_longest(%s, fillvalue=%s)" % (", ".join((_coconut.repr(it) for it in self.iters)), _coconut.repr(self.fillvalue))
     def __reduce__(self):

@@ -819,6 +819,8 @@ coconut_specific_builtins = (
     "py_xrange",
     "py_repr",
     "py_breakpoint",
+    "py_min",
+    "py_max",
     "_namedtuple_of",
     "reveal_type",
     "reveal_locals",

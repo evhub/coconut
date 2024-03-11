@@ -280,6 +280,8 @@ To make Coconut built-ins universal across Python versions, Coconut makes availa
 - `py_xrange`
 - `py_repr`
 - `py_breakpoint`
+- `py_min`
+- `py_max`
 
 _Note: Coconut's `repr` can be somewhat tricky, as it will attempt to remove the `u` before reprs of unicode strings on Python 2, but will not always be able to do so if the unicode string is nested._
 

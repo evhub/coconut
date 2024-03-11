@@ -175,6 +175,8 @@ py_reversed = reversed
 py_enumerate = enumerate
 py_repr = repr
 py_breakpoint = breakpoint
+py_min = min
+py_max = max
 
 # all py_ functions, but not py_ types, go here
 chr = _builtins.chr
@@ -189,6 +191,8 @@ zip = _builtins.zip
 filter = _builtins.filter
 reversed = _builtins.reversed
 enumerate = _builtins.enumerate
+min = _builtins.min
+max = _builtins.max
 
 
 _coconut_py_str = py_str
