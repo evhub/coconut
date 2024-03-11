@@ -123,7 +123,7 @@ from coconut.terminal import (
     complain,
     internal_assert,
 )
-from coconut.compiler.matching import Matcher
+from coconut.compiler.matching import Matcher, match_funcdef_setup_code
 from coconut.compiler.grammar import (
     Grammar,
     lazy_list_handle,
@@ -134,6 +134,7 @@ from coconut.compiler.grammar import (
     itemgetter_handle,
     partial_op_item_handle,
     partial_arr_concat_handle,
+    split_args_list,
 )
 from coconut.compiler.util import (
     ExceptionNode,
@@ -308,75 +309,6 @@ for _coconut_n, _coconut_m in _coconut.tuple(_coconut_sys.modules.items()):
             """,
         )
     return out
-
-
-def split_args_list(tokens, loc):
-    """Splits function definition arguments."""
-    pos_only_args = []
-    req_args = []
-    default_args = []
-    star_arg = None
-    kwd_only_args = []
-    dubstar_arg = None
-    pos = 0
-    for arg in tokens:
-        # only the first two components matter; if there's a third it's a typedef
-        arg = arg[:2]
-
-        if len(arg) == 1:
-            if arg[0] == "*":
-                # star sep (pos = 2)
-                if pos >= 2:
-                    raise CoconutDeferredSyntaxError("star separator at invalid position in function definition", loc)
-                pos = 2
-            elif arg[0] == "/":
-                # slash sep (pos = 0)
-                if pos > 0:
-                    raise CoconutDeferredSyntaxError("slash separator at invalid position in function definition", loc)
-                if pos_only_args:
-                    raise CoconutDeferredSyntaxError("only one slash separator allowed in function definition", loc)
-                if not req_args:
-                    raise CoconutDeferredSyntaxError("slash separator must come after arguments to mark as positional-only", loc)
-                pos_only_args = req_args
-                req_args = []
-            else:
-                # pos arg (pos = 0)
-                if pos == 0:
-                    req_args.append(arg[0])
-                # kwd only arg (pos = 2)
-                elif pos == 2:
-                    kwd_only_args.append((arg[0], None))
-                else:
-                    raise CoconutDeferredSyntaxError("non-default arguments must come first or after star argument/separator", loc)
-
-        else:
-            internal_assert(arg[1] is not None, "invalid arg[1] in split_args_list", arg)
-
-            if arg[0] == "*":
-                # star arg (pos = 2)
-                if pos >= 2:
-                    raise CoconutDeferredSyntaxError("star argument at invalid position in function definition", loc)
-                pos = 2
-                star_arg = arg[1]
-            elif arg[0] == "**":
-                # dub star arg (pos = 3)
-                if pos == 3:
-                    raise CoconutDeferredSyntaxError("double star argument at invalid position in function definition", loc)
-                pos = 3
-                dubstar_arg = arg[1]
-            else:
-                # def arg (pos = 1)
-                if pos <= 1:
-                    pos = 1
-                    default_args.append((arg[0], arg[1]))
-                # kwd only arg (pos = 2)
-                elif pos <= 2:
-                    pos = 2
-                    kwd_only_args.append((arg[0], arg[1]))
-                else:
-                    raise CoconutDeferredSyntaxError("invalid default argument in function definition", loc)
-
-    return pos_only_args, req_args, default_args, star_arg, kwd_only_args, dubstar_arg
 
 
 def reconstitute_paramdef(pos_only_args, req_args, default_args, star_arg, kwd_only_args, dubstar_arg):
@@ -855,6 +787,7 @@ class Compiler(Grammar, pickleable_obj):
         cls.full_match <<= attach(cls.full_match_ref, cls.method("full_match_handle"))
         cls.name_match_funcdef <<= attach(cls.name_match_funcdef_ref, cls.method("name_match_funcdef_handle"))
         cls.op_match_funcdef <<= attach(cls.op_match_funcdef_ref, cls.method("op_match_funcdef_handle"))
+        cls.base_case_funcdef <<= attach(cls.base_case_funcdef_ref, cls.method("base_case_funcdef_handle"))
         cls.yield_from <<= attach(cls.yield_from_ref, cls.method("yield_from_handle"))
         cls.typedef <<= attach(cls.typedef_ref, cls.method("typedef_handle"))
         cls.typedef_default <<= attach(cls.typedef_default_ref, cls.method("typedef_handle"))
@@ -3307,16 +3240,7 @@ while True:
 
         check_var = self.get_temp_var("match_check", loc)
         matcher = self.get_matcher(original, loc, check_var, name_list=[])
-
-        pos_only_args, req_args, default_args, star_arg, kwd_only_args, dubstar_arg = split_args_list(matches, loc)
-        matcher.match_function(
-            pos_only_match_args=pos_only_args,
-            match_args=req_args + default_args,
-            star_arg=star_arg,
-            kwd_only_match_args=kwd_only_args,
-            dubstar_arg=dubstar_arg,
-        )
-
+        matcher.match_function_toks(matches)
         if cond is not None:
             matcher.add_guard(cond)
 
@@ -3848,16 +3772,7 @@ if not {check_var}:
 
         check_var = self.get_temp_var("match_check", loc)
         matcher = self.get_matcher(original, loc, check_var)
-
-        pos_only_args, req_args, default_args, star_arg, kwd_only_args, dubstar_arg = split_args_list(matches, loc)
-        matcher.match_function(
-            pos_only_match_args=pos_only_args,
-            match_args=req_args + default_args,
-            star_arg=star_arg,
-            kwd_only_match_args=kwd_only_args,
-            dubstar_arg=dubstar_arg,
-        )
-
+        matcher.match_function_toks(matches)
         if cond is not None:
             matcher.add_guard(cond)
 
@@ -3887,6 +3802,76 @@ if not {check_var}:
         if cond is not None:
             name_tokens.append(cond)
         return self.name_match_funcdef_handle(original, loc, name_tokens)
+
+    def base_case_funcdef_handle(self, original, loc, tokens):
+        """Process case def function definitions."""
+        if len(tokens) == 3:
+            name, typedef_grp, cases = tokens
+            docstring = None
+        elif len(tokens) == 4:
+            name, typedef_grp, docstring, cases = tokens
+        else:
+            raise CoconutInternalException("invalid case function definition tokens", tokens)
+        if typedef_grp:
+            typedef, = typedef_grp
+        else:
+            typedef = None
+
+        check_var = self.get_temp_var("match_check", loc)
+
+        all_case_code = []
+        for case_toks in cases:
+            if len(case_toks) == 2:
+                matches, body = case_toks
+                cond = None
+            else:
+                matches, cond, body = case_toks
+            matcher = self.get_matcher(original, loc, check_var)
+            matcher.match_function_toks(matches, include_setup=False)
+            if cond is not None:
+                matcher.add_guard(cond)
+            all_case_code.append(handle_indentation("""
+if not {check_var}:
+    {match_to_kwargs_var} = {match_to_kwargs_var}_store.copy()
+    {match_out}
+    if {check_var}:
+        {body}
+            """).format(
+                check_var=check_var,
+                match_to_kwargs_var=match_to_kwargs_var,
+                match_out=matcher.out(),
+                body=body,
+            ))
+
+        code = handle_indentation("""
+def {name}({match_func_paramdef}):
+    {docstring}
+    {check_var} = False
+    {setup_code}
+    {match_to_kwargs_var}_store = {match_to_kwargs_var}
+    {all_case_code}
+    {error}
+        """).format(
+            name=name,
+            match_func_paramdef=match_func_paramdef,
+            docstring=docstring if docstring is not None else "",
+            check_var=check_var,
+            setup_code=match_funcdef_setup_code(),
+            match_to_kwargs_var=match_to_kwargs_var,
+            all_case_code="\n".join(all_case_code),
+            error=self.pattern_error(original, loc, match_to_args_var, check_var, function_match_error_var),
+        )
+        if typedef is None:
+            return code
+        else:
+            return handle_indentation("""
+{typedef_stmt}
+if not _coconut.typing.TYPE_CHECKING:
+    {code}
+            """).format(
+                code=code,
+                typedef_stmt=self.typed_assign_stmt_handle([name, typedef, self.any_type_ellipsis()]),
+            )
 
     def set_literal_handle(self, tokens):
         """Converts set literals to the right form for the target Python."""
@@ -4137,8 +4122,7 @@ __annotations__["{name}"] = {annotation}
             ).format(
                 name=name,
                 value=(
-                    value if value is not None
-                    else "_coconut.typing.cast(_coconut.typing.Any, {ellipsis})".format(ellipsis=self.ellipsis_handle())
+                    value if value is not None else self.any_type_ellipsis()
                 ),
                 comment=self.wrap_type_comment(typedef),
                 annotation=self.wrap_typedef(typedef, for_py_typedef=False, duplicate=True),
@@ -4164,6 +4148,10 @@ __annotations__["{name}"] = {annotation}
             return "_coconut.Ellipsis"
 
     ellipsis_handle.ignore_arguments = True
+
+    def any_type_ellipsis(self):
+        """Get an ellipsis cast to Any type."""
+        return "_coconut.typing.cast(_coconut.typing.Any, {ellipsis})".format(ellipsis=self.ellipsis_handle())
 
     def match_case_tokens(self, match_var, check_var, original, tokens, top):
         """Build code for matching the given case."""

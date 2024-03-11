@@ -116,6 +116,8 @@ def suite_test() -> bool:
     test_factorial(factorial2)
     test_factorial(factorial4)
     test_factorial(factorial5)
+    test_factorial(factorial6)
+    test_factorial(factorial7)
     test_factorial(fact, test_none=False)
     test_factorial(fact_, test_none=False)
     test_factorial(factorial, test_none=False)

@@ -46,6 +46,8 @@ from coconut.constants import (
     match_to_args_var,
     match_to_kwargs_var,
 )
+from coconut.util import noop_ctx
+from coconut.compiler.grammar import split_args_list
 from coconut.compiler.util import (
     paren_join,
     handle_indentation,
@@ -91,6 +93,24 @@ def get_match_names(match):
         if cls_name in self_match_types and len(class_matches) == 1 and len(class_matches[0]) == 1:
             names += get_match_names(class_matches[0][0])
     return names
+
+
+def match_funcdef_setup_code(
+    first_arg=match_first_arg_var,
+    args=match_to_args_var,
+):
+    """Get initial code to set up a match funcdef."""
+    # pop the FunctionMatchError from context
+    # and fix args to include first_arg, which we have to do to make super work
+    return handle_indentation("""
+{function_match_error_var} = _coconut_get_function_match_error()
+if {first_arg} is not _coconut_sentinel:
+    {args} = ({first_arg},) + {args}
+    """).format(
+        function_match_error_var=function_match_error_var,
+        first_arg=first_arg,
+        args=args,
+    )
 
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -393,6 +413,18 @@ if {assign_to} is _coconut_sentinel:
         else:
             self.add_check(str(min_len) + " <= _coconut.len(" + item + ") <= " + str(max_len))
 
+    def match_function_toks(self, match_arg_toks, include_setup=True):
+        """Match pattern-matching function tokens."""
+        pos_only_args, req_args, default_args, star_arg, kwd_only_args, dubstar_arg = split_args_list(match_arg_toks, self.loc)
+        self.match_function(
+            pos_only_match_args=pos_only_args,
+            match_args=req_args + default_args,
+            star_arg=star_arg,
+            kwd_only_match_args=kwd_only_args,
+            dubstar_arg=dubstar_arg,
+            include_setup=include_setup,
+        )
+
     def match_function(
         self,
         first_arg=match_first_arg_var,
@@ -403,24 +435,13 @@ if {assign_to} is _coconut_sentinel:
         star_arg=None,
         kwd_only_match_args=(),
         dubstar_arg=None,
+        include_setup=True,
     ):
         """Matches a pattern-matching function."""
-        # before everything, pop the FunctionMatchError from context
-        self.add_def(function_match_error_var + " = _coconut_get_function_match_error()")
-        # and fix args to include first_arg, which we have to do to make super work
-        self.add_def(
-            handle_indentation(
-                """
-if {first_arg} is not _coconut_sentinel:
-    {args} = ({first_arg},) + {args}
-            """,
-            ).format(
-                first_arg=first_arg,
-                args=args,
-            )
-        )
+        if include_setup:
+            self.add_def(match_funcdef_setup_code(first_arg, args))
 
-        with self.down_a_level():
+        with self.down_a_level() if include_setup else noop_ctx():
 
             self.match_in_args_kwargs(pos_only_match_args, match_args, args, kwargs, allow_star_args=star_arg is not None)
 

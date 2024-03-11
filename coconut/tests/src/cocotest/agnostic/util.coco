@@ -632,6 +632,19 @@ def factorial5(value):
     else:
         return None
     raise TypeError()
+case def factorial6[Num <: int | float]: (Num, Num) -> Num
+    """Factorial function"""
+    match (0, acc=1):
+        return acc
+    match (int(n), acc=1) if n > 0:
+        return factorial6(n - 1, acc * n)
+    match (int(n), acc=...) if n < 0:
+        return None
+case def factorial7[Num <: int | float]: (Num, Num) -> Num
+    """Factorial function"""
+    match(0, acc=1) = acc
+    match(int(n), acc=1) if n > 0 = factorial7(n - 1, acc * n)
+    match(int(n), acc=...) if n < 0 = None
 
 match def fact(n) = fact(n, 1)
 match addpattern def fact(0, acc) = acc  # type: ignore

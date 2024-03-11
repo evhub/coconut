@@ -183,6 +183,75 @@ def pipe_info(op):
     return direction, stars, none_aware
 
 
+def split_args_list(tokens, loc):
+    """Splits function definition arguments."""
+    pos_only_args = []
+    req_args = []
+    default_args = []
+    star_arg = None
+    kwd_only_args = []
+    dubstar_arg = None
+    pos = 0
+    for arg in tokens:
+        # only the first two components matter; if there's a third it's a typedef
+        arg = arg[:2]
+
+        if len(arg) == 1:
+            if arg[0] == "*":
+                # star sep (pos = 2)
+                if pos >= 2:
+                    raise CoconutDeferredSyntaxError("star separator at invalid position in function definition", loc)
+                pos = 2
+            elif arg[0] == "/":
+                # slash sep (pos = 0)
+                if pos > 0:
+                    raise CoconutDeferredSyntaxError("slash separator at invalid position in function definition", loc)
+                if pos_only_args:
+                    raise CoconutDeferredSyntaxError("only one slash separator allowed in function definition", loc)
+                if not req_args:
+                    raise CoconutDeferredSyntaxError("slash separator must come after arguments to mark as positional-only", loc)
+                pos_only_args = req_args
+                req_args = []
+            else:
+                # pos arg (pos = 0)
+                if pos == 0:
+                    req_args.append(arg[0])
+                # kwd only arg (pos = 2)
+                elif pos == 2:
+                    kwd_only_args.append((arg[0], None))
+                else:
+                    raise CoconutDeferredSyntaxError("non-default arguments must come first or after star argument/separator", loc)
+
+        else:
+            internal_assert(arg[1] is not None, "invalid arg[1] in split_args_list", arg)
+
+            if arg[0] == "*":
+                # star arg (pos = 2)
+                if pos >= 2:
+                    raise CoconutDeferredSyntaxError("star argument at invalid position in function definition", loc)
+                pos = 2
+                star_arg = arg[1]
+            elif arg[0] == "**":
+                # dub star arg (pos = 3)
+                if pos == 3:
+                    raise CoconutDeferredSyntaxError("double star argument at invalid position in function definition", loc)
+                pos = 3
+                dubstar_arg = arg[1]
+            else:
+                # def arg (pos = 1)
+                if pos <= 1:
+                    pos = 1
+                    default_args.append((arg[0], arg[1]))
+                # kwd only arg (pos = 2)
+                elif pos <= 2:
+                    pos = 2
+                    kwd_only_args.append((arg[0], arg[1]))
+                else:
+                    raise CoconutDeferredSyntaxError("invalid default argument in function definition", loc)
+
+    return pos_only_args, req_args, default_args, star_arg, kwd_only_args, dubstar_arg
+
+
 # end: HELPERS
 # -----------------------------------------------------------------------------------------------------------------------
 # HANDLERS:
@@ -2274,17 +2343,156 @@ class Grammar(object):
                 base_match_funcdef
                 + end_func_equals
                 - (
-                    attach(implicit_return_stmt, make_suite_handle)
-                    | (
+                    (
                         newline.suppress()
                         - indent.suppress()
                         - Optional(docstring)
                         - attach(math_funcdef_body, make_suite_handle)
                         - dedent.suppress()
                     )
+                    | attach(implicit_return_stmt, make_suite_handle)
                 ),
                 join_match_funcdef,
             )
+        )
+
+        base_case_funcdef = Forward()
+        base_case_funcdef_ref = (
+            keyword("def").suppress()
+            + funcname_typeparams
+            + colon.suppress()
+            - Group(Optional(typedef_test))
+            - newline.suppress()
+            - indent.suppress()
+            - Optional(docstring)
+            - Group(OneOrMore(Group(
+                keyword("match").suppress()
+                + lparen.suppress()
+                + match_args_list
+                + rparen.suppress()
+                + match_guard
+                + (
+                    colon.suppress()
+                    + (
+                        newline.suppress()
+                        + indent.suppress()
+                        + attach(condense(OneOrMore(stmt)), make_suite_handle)
+                        + dedent.suppress()
+                        | attach(simple_stmt, make_suite_handle)
+                    )
+                    | equals.suppress()
+                    + (
+                        (
+                            newline.suppress()
+                            + indent.suppress()
+                            + attach(math_funcdef_body, make_suite_handle)
+                            + dedent.suppress()
+                        )
+                        | attach(implicit_return_stmt, make_suite_handle)
+                    )
+                )
+            )))
+            - dedent.suppress()
+        )
+        case_funcdef = keyword("case").suppress() + base_case_funcdef
+
+        keyword_normal_funcdef = Group(
+            any_len_perm_at_least_one(
+                keyword("yield"),
+                keyword("copyclosure"),
+            )
+        ) + (funcdef | math_funcdef)
+        keyword_match_funcdef = Group(
+            any_len_perm_at_least_one(
+                keyword("yield"),
+                keyword("copyclosure"),
+                keyword("match").suppress(),
+                # addpattern is detected later
+                keyword("addpattern"),
+            )
+        ) + (def_match_funcdef | math_match_funcdef)
+        keyword_case_funcdef = Group(
+            any_len_perm_at_least_one(
+                keyword("yield"),
+                keyword("copyclosure"),
+                required=(keyword("case").suppress(),),
+            )
+        ) + base_case_funcdef
+        keyword_funcdef = Forward()
+        keyword_funcdef_ref = (
+            keyword_normal_funcdef
+            | keyword_match_funcdef
+            | keyword_case_funcdef
+        )
+
+        normal_funcdef_stmt = (
+            # match funcdefs must come after normal
+            funcdef
+            | math_funcdef
+            | match_funcdef
+            | math_match_funcdef
+            | case_funcdef
+            | keyword_funcdef
+        )
+
+        async_funcdef = keyword("async").suppress() + (funcdef | math_funcdef)
+        async_match_funcdef = addspace(
+            any_len_perm(
+                keyword("match").suppress(),
+                # addpattern is detected later
+                keyword("addpattern"),
+                required=(keyword("async").suppress(),),
+            ) + (def_match_funcdef | math_match_funcdef)
+        )
+        async_case_funcdef = addspace(
+            any_len_perm(
+                required=(
+                    keyword("case").suppress(),
+                    keyword("async").suppress(),
+                ),
+            ) + base_case_funcdef
+        )
+
+        async_keyword_normal_funcdef = Group(
+            any_len_perm_at_least_one(
+                keyword("yield"),
+                keyword("copyclosure"),
+                required=(keyword("async").suppress(),),
+            )
+        ) + (funcdef | math_funcdef)
+        async_keyword_match_funcdef = Group(
+            any_len_perm_at_least_one(
+                keyword("yield"),
+                keyword("copyclosure"),
+                keyword("match").suppress(),
+                # addpattern is detected later
+                keyword("addpattern"),
+                required=(keyword("async").suppress(),),
+            )
+        ) + (def_match_funcdef | math_match_funcdef)
+        async_keyword_case_funcdef = Group(
+            any_len_perm_at_least_one(
+                keyword("yield"),
+                keyword("copyclosure"),
+                required=(
+                    keyword("async").suppress(),
+                    keyword("case").suppress(),
+                ),
+            )
+        ) + base_case_funcdef
+        async_keyword_funcdef = Forward()
+        async_keyword_funcdef_ref = (
+            async_keyword_normal_funcdef
+            | async_keyword_match_funcdef
+            | async_keyword_case_funcdef
+        )
+
+        async_funcdef_stmt = (
+            # match funcdefs must come after normal
+            async_funcdef
+            | async_match_funcdef
+            | async_case_funcdef
+            | async_keyword_funcdef
         )
 
         async_stmt = Forward()
@@ -2312,70 +2520,6 @@ class Grammar(object):
             keyword("async") + (with_stmt | any_for_stmt)  # handles async [match] for
             | keyword("match").suppress() + keyword("async") + base_match_for_stmt  # handles match async for
             | async_with_for_stmt
-        )
-
-        async_funcdef = keyword("async").suppress() + (funcdef | math_funcdef)
-        async_match_funcdef = addspace(
-            any_len_perm(
-                keyword("match").suppress(),
-                # addpattern is detected later
-                keyword("addpattern"),
-                required=(keyword("async").suppress(),),
-            ) + (def_match_funcdef | math_match_funcdef),
-        )
-
-        async_keyword_normal_funcdef = Group(
-            any_len_perm_at_least_one(
-                keyword("yield"),
-                keyword("copyclosure"),
-                required=(keyword("async").suppress(),),
-            )
-        ) + (funcdef | math_funcdef)
-        async_keyword_match_funcdef = Group(
-            any_len_perm_at_least_one(
-                keyword("yield"),
-                keyword("copyclosure"),
-                keyword("match").suppress(),
-                # addpattern is detected later
-                keyword("addpattern"),
-                required=(keyword("async").suppress(),),
-            )
-        ) + (def_match_funcdef | math_match_funcdef)
-        async_keyword_funcdef = Forward()
-        async_keyword_funcdef_ref = async_keyword_normal_funcdef | async_keyword_match_funcdef
-
-        async_funcdef_stmt = (
-            # match funcdefs must come after normal
-            async_funcdef
-            | async_match_funcdef
-            | async_keyword_funcdef
-        )
-
-        keyword_normal_funcdef = Group(
-            any_len_perm_at_least_one(
-                keyword("yield"),
-                keyword("copyclosure"),
-            )
-        ) + (funcdef | math_funcdef)
-        keyword_match_funcdef = Group(
-            any_len_perm_at_least_one(
-                keyword("yield"),
-                keyword("copyclosure"),
-                keyword("match").suppress(),
-                # addpattern is detected later
-                keyword("addpattern"),
-            )
-        ) + (def_match_funcdef | math_match_funcdef)
-        keyword_funcdef = Forward()
-        keyword_funcdef_ref = keyword_normal_funcdef | keyword_match_funcdef
-
-        normal_funcdef_stmt = (
-            # match funcdefs must come after normal
-            funcdef
-            | math_funcdef
-            | match_funcdef
-            | math_match_funcdef
-            | keyword_funcdef
         )
 
         datadef = Forward()

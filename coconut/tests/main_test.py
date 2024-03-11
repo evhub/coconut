@@ -685,9 +685,9 @@ def run(
     else:
         agnostic_args = ["--target", str(agnostic_target)] + args
 
-    with (using_caches() if manage_cache else noop_ctx()):
+    with using_caches() if manage_cache else noop_ctx():
         with using_dest():
-            with (using_dest(additional_dest) if "--and" in args else noop_ctx()):
+            with using_dest(additional_dest) if "--and" in args else noop_ctx():
 
                 spec_kwargs = kwargs.copy()
                 spec_kwargs["always_sys"] = always_sys
