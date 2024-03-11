@@ -1804,10 +1804,12 @@ def split_trailing_indent(inputstr, max_indents=None, handle_comments=True):
     return inputstr, "".join(reversed(indents_from_end))
 
 
-def split_leading_trailing_indent(line, max_indents=None):
+def split_leading_trailing_indent(line, symmetric=False, **kwargs):
     """Split leading and trailing indent."""
-    leading_indent, line = split_leading_indent(line, max_indents)
-    line, trailing_indent = split_trailing_indent(line, max_indents)
+    leading_indent, line = split_leading_indent(line, **kwargs)
+    if symmetric:
+        kwargs["max_indents"] = leading_indent.count(openindent)
+    line, trailing_indent = split_trailing_indent(line, **kwargs)
     return leading_indent, line, trailing_indent
 
 

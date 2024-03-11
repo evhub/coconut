@@ -2718,7 +2718,8 @@ class Grammar(object):
 
         whitespace_regex = compile_regex(r"\s")
 
-        def_regex = compile_regex(r"\b((async|addpattern|copyclosure)\s+)*def\b")
+        def_regex = compile_regex(r"((async|addpattern|copyclosure)\s+)*def\b")
+
         yield_regex = compile_regex(r"\byield(?!\s+_coconut\.asyncio\.From)\b")
         yield_from_regex = compile_regex(r"\byield\s+from\b")
 

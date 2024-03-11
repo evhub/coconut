@@ -630,8 +630,10 @@ def suite_test() -> bool:
     assert dt.lam() == dt
     assert dt.comp() == (dt,)
     assert dt.N()$[:2] |> list == [(dt, 0), (dt, 1)] == dt.N_()$[:2] |> list
-    assert map(Ad().ef, range(5)) |> list == range(1, 6) |> list
-    assert Ad().ef 1 == 2
+    assert map(HasDefs().a_def, range(5)) |> list == range(1, 6) |> list
+    assert HasDefs().a_def 1 == 2
+    assert HasDefs().case_def 1 == 0
+    assert HasDefs.__annotations__.keys() |> list == ["a_def", "case_def"]
     assert store.plus1 store.one == store.two
     assert ret_locals()["my_loc"] == 1
     assert ret_globals()["my_glob"] == 1
@@ -741,7 +743,8 @@ def suite_test() -> bool:
     (-> 3) -> _ `isinstance` int = "a"  # type: ignore
     assert empty_it() |> list == [] == empty_it_of_int(1) |> list
     assert just_it(1) |> list == [1]
-    assert just_it_of_int(1) |> list == [1] == just_it_of_int_(1) |> list
+    assert just_it_of_int1(1) |> list == [1] == just_it_of_int2(1) |> list
+    assert just_it_of_int3(1) |> list == [1] == just_it_of_int4(1) |> list
     assert must_be_int(4) == 4 == must_be_int_(4)
     assert typed_plus(1, 2) == 3
     (class inh_A() `isinstance` clsA) `isinstance` object = inh_A()
@@ -1038,7 +1041,7 @@ forward 2""") == 900
     assert (+) `on` (.*2) <*| (3, 5) == 16
     assert test_super_B().method({'somekey': 'string', 'someotherkey': 42})
     assert outer_func_normal() |> map$(call) |> list == [4] * 5
-    for outer_func in (outer_func_1, outer_func_2, outer_func_3, outer_func_4, outer_func_5):
+    for outer_func in (outer_func_1, outer_func_2, outer_func_3, outer_func_4, outer_func_5, outer_func_6):
         assert outer_func() |> map$(call) |> list == range(5) |> list
     assert get_glob() == 0
     assert wrong_get_set_glob(10) == 0

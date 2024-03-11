@@ -48,12 +48,16 @@ def asyncio_test() -> bool:
 
     async def async_map_0(args):
         return thread_map(args[0], *args[1:])
-    async def async_map_1(args) = thread_map(args[0], *args[1:])
-    async def async_map_2([func] + iters) = thread_map(func, *iters)
-    async match def async_map_3([func] + iters) = thread_map(func, *iters)
-    match async def async_map_4([func] + iters) = thread_map(func, *iters)
+    async def async_map_1(args) = map(args[0], *args[1:])
+    async def async_map_2([func] + iters) = map(func, *iters)
+    async match def async_map_3([func] + iters) = map(func, *iters)
+    match async def async_map_4([func] + iters) = map(func, *iters)
+    async case def async_map_5:
+        match([func] + iters) = map(func, *iters)
+    case async def async_map_6:
+        match([func] + iters) = map(func, *iters)
     async def async_map_test() =
-        for async_map_ in (async_map_0, async_map_1, async_map_2, async_map_3, async_map_4):
+        for async_map_ in (async_map_0, async_map_1, async_map_2, async_map_3, async_map_4, async_map_5, async_map_6):
             assert (await ((pow$(2), range(5)) |> async_map_)) |> tuple == (1, 2, 4, 8, 16)
         True
 

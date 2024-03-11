@@ -2513,7 +2513,7 @@ def {mock_var}({mock_paramdef}):
 
                 # assemble tre'd function
                 comment, rest = split_leading_comments(func_code)
-                indent, base, dedent = split_leading_trailing_indent(rest, 1)
+                indent, base, dedent = split_leading_trailing_indent(rest, max_indents=1)
                 base, base_dedent = split_trailing_indent(base)
                 docstring, base = self.split_docstring(base)
 
@@ -2673,15 +2673,19 @@ else:
                 post_def_lines = []
                 funcdef_lines = list(literal_lines(funcdef, True))
                 for i, line in enumerate(funcdef_lines):
-                    if self.def_regex.match(line):
+                    line_indent, line_base = split_leading_indent(line)
+                    if self.def_regex.match(line_base):
                         pre_def_lines = funcdef_lines[:i]
                         post_def_lines = funcdef_lines[i:]
                         break
                 internal_assert(post_def_lines, "no def statement found in funcdef", funcdef)
 
                 out.append(bef_ind)
-                out.extend(pre_def_lines)
-                out.append(self.proc_funcdef(original, loc, decorators, "".join(post_def_lines), is_async, in_method, is_stmt_lambda))
+                out += pre_def_lines
+                func_indent, func_code, func_dedent = split_leading_trailing_indent("".join(post_def_lines), symmetric=True)
+                out.append(func_indent)
+                out.append(self.proc_funcdef(original, loc, decorators, func_code, is_async, in_method, is_stmt_lambda))
+                out.append(func_dedent)
                 out.append(aft_ind)
 
             # look for add_code_before regexes
@@ -3554,7 +3558,7 @@ def __hash__(self):
             fake_mods = imp_as.split(".")
             for i in range(1, len(fake_mods)):
                 mod_name = ".".join(fake_mods[:i])
-                out.extend((
+                out += [
                     "try:",
                     openindent + mod_name,
                     closeindent + "except:",
@@ -3562,7 +3566,7 @@ def __hash__(self):
                     closeindent + "else:",
                     openindent + "if not _coconut.isinstance(" + mod_name + ", _coconut.types.ModuleType):",
                     openindent + mod_name + ' = _coconut.types.ModuleType(_coconut_py_str("' + mod_name + '"))' + closeindent * 2,
-                ))
+                ]
             out.append(".".join(fake_mods) + " = " + import_as_var)
         else:
             out.append(import_stmt(imp_from, imp, imp_as))

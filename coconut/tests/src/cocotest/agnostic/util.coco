@@ -632,7 +632,7 @@ def factorial5(value):
     else:
         return None
     raise TypeError()
-case def factorial6[Num <: int | float]: (Num, Num) -> Num
+case def factorial6[Num: (int, float)]: (Num, Num) -> Num
     """Factorial function"""
     match (0, acc=1):
         return acc
@@ -641,7 +641,6 @@ case def factorial6[Num <: int | float]: (Num, Num) -> Num
     match (int(n), acc=...) if n < 0:
         return None
 case def factorial7[Num <: int | float]: (Num, Num) -> Num
-    """Factorial function"""
     match(0, acc=1) = acc
     match(int(n), acc=1) if n > 0 = factorial7(n - 1, acc * n)
     match(int(n), acc=...) if n < 0 = None
@@ -1410,12 +1409,17 @@ class descriptor_test:
         [(self, i)] :: self.N_(i=i+1)
 
 
-# Function named Ad.ef
-class Ad:
-    ef: typing.Callable
+# Annotation checking
+class HasDefs:
+    a_def: typing.Callable
 
-def Ad.ef(self, 0) = 1  # type: ignore
-addpattern def Ad.ef(self, x) = x + 1  # type: ignore
+    @staticmethod
+    case def case_def: int -> int
+        match(0) = 1
+        match(1) = 0
+
+def HasDefs.a_def(self, 0) = 1  # type: ignore
+addpattern def HasDefs.a_def(self, x) = x + 1  # type: ignore
 
 
 # Storage class
@@ -1524,11 +1528,19 @@ yield def just_it(x): yield x
 
 yield def empty_it_of_int(int() as x): pass
 
-yield match def just_it_of_int(int() as x):
+yield match def just_it_of_int1(int() as x):
     yield x
 
-match yield def just_it_of_int_(int() as x):
+match yield def just_it_of_int2(int() as x):
     yield x
+
+yield case def just_it_of_int3:
+    match(int() as x):
+        yield x
+
+case yield def just_it_of_int4:
+    match(int() as x):
+        yield x
 
 yield def num_it() -> int$[]:
     yield 5
@@ -2057,5 +2069,14 @@ def outer_func_5() -> (() -> int)[]:
     funcs = []
     for x in range(5):
         copyclosure def inner_func() -> int = x
+        funcs.append(inner_func)
+    return funcs
+
+def outer_func_6():
+    funcs = []
+    for x in range(5):
+        copyclosure case def inner_func:
+            match(y) = y
+            match() = x
         funcs.append(inner_func)
     return funcs
