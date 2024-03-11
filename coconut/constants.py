@@ -1035,7 +1035,6 @@ unpinned_min_versions = {
     ("jedi", "py39"): (0, 19),
     ("pygments", "py>=39"): (2, 17),
     ("xonsh", "py39"): (0, 15),
-    ("pytest", "py38"): (8,),
     ("async_generator", "py35"): (1, 10),
     ("exceptiongroup", "py37;py<311"): (1,),
     ("ipython", "py>=310"): (8, 22),
@@ -1043,6 +1042,8 @@ unpinned_min_versions = {
 }
 
 pinned_min_versions = {
+    # don't upgrade this; it breaks xonsh
+    ("pytest", "py38"): (8, 0),
     # don't upgrade these; they break on Python 3.9
     ("numpy", "py34;py<39"): (1, 18),
     ("ipython", "py==39"): (8, 18),
@@ -1109,6 +1110,7 @@ max_versions = {
     ("jedi", "py<39"): _,
     ("pywinpty", "py<3;windows"): _,
     ("ipython", "py3;py<37"): _,
+    ("pytest", "py38"): _,
 }
 
 classifiers = (
