@@ -93,7 +93,7 @@ MYPY = (
     PY38
     and not WINDOWS
     and not PYPY
-    # disabled until MyPy supports PEP 695
+    # TODO: disabled until MyPy supports PEP 695
     and not PY312
 )
 XONSH = (

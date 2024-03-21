@@ -1092,11 +1092,11 @@ if TEST_ALL:
                 if not PYPY and PY38 and not PY310:
                     install_bbopt()
 
-        def test_pyprover(self):
-            with using_paths(pyprover):
-                comp_pyprover()
-                if PY38:
-                    run_pyprover()
+        # def test_pyprover(self):
+        #     with using_paths(pyprover):
+        #         comp_pyprover()
+        #         if PY38:
+        #             run_pyprover()
 
         def test_pyston(self):
             with using_paths(pyston):

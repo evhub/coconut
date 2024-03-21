@@ -3180,7 +3180,16 @@ while True:
         """Process class definitions."""
         decorators, name, paramdefs, classlist_toks, body = tokens
 
-        out = "".join(paramdefs) + decorators + "class " + name
+        out = ""
+
+        # paramdefs are type params on >= 3.12 and type var assignments on < 3.12
+        if paramdefs:
+            if self.target_info >= (3, 12):
+                name += "[" + ", ".join(paramdefs) + "]"
+            else:
+                out += "".join(paramdefs)
+
+        out += decorators + "class " + name
 
         # handle classlist
         base_classes = []
@@ -3210,7 +3219,7 @@ while True:
 
             base_classes.append(join_args(pos_args, star_args, kwd_args, dubstar_args))
 
-        if paramdefs:
+        if paramdefs and self.target_info < (3, 12):
             base_classes.append(self.get_generic_for_typevars())
 
         if not classlist_toks and not self.target.startswith("3"):
@@ -3442,9 +3451,16 @@ def __new__(_coconut_cls, {all_args}):
         IMPORTANT: Any changes to assemble_data must be reflected in the
         definition of Expected in header.py_template.
         """
+        print(paramdefs)
         # create class
-        out = [
-            "".join(paramdefs),
+        out = []
+        if paramdefs:
+            # paramdefs are type params on >= 3.12 and type var assignments on < 3.12
+            if self.target_info >= (3, 12):
+                name += "[" + ", ".join(paramdefs) + "]"
+            else:
+                out += ["".join(paramdefs)]
+        out += [
             decorators,
             "class ",
             name,
@@ -3453,7 +3469,7 @@ def __new__(_coconut_cls, {all_args}):
         ]
         if inherit is not None:
             out += [", ", inherit]
-        if paramdefs:
+        if paramdefs and self.target_info < (3, 12):
             out += [", ", self.get_generic_for_typevars()]
         if not self.target.startswith("3"):
             out.append(", _coconut.object")
@@ -4564,15 +4580,21 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
             return name
         else:
             name, paramdefs = tokens
-            return self.add_code_before_marker_with_replacement(name, "".join(paramdefs), add_spaces=False)
+            # paramdefs are type params on >= 3.12 and type var assignments on < 3.12
+            if self.target_info >= (3, 12):
+                return name + "[" + ", ".join(paramdefs) + "]"
+            else:
+                return self.add_code_before_marker_with_replacement(name, "".join(paramdefs), add_spaces=False)
 
     funcname_typeparams_handle.ignore_one_token = True
 
     def type_param_handle(self, original, loc, tokens):
         """Compile a type param into an assignment."""
         args = ""
+        raw_bound = None
         bound_op = None
         bound_op_type = ""
+        stars = ""
         if "TypeVar" in tokens:
             TypeVarFunc = "TypeVar"
             bound_op_type = "bound"
@@ -4580,18 +4602,24 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
                 name_loc, name = tokens
             else:
                 name_loc, name, bound_op, bound = tokens
+                # raw_bound is for >=3.12, so it is for_py_typedef, but args is for <3.12, so it isn't
+                raw_bound = self.wrap_typedef(bound, for_py_typedef=True)
                 args = ", bound=" + self.wrap_typedef(bound, for_py_typedef=False)
         elif "TypeVar constraint" in tokens:
             TypeVarFunc = "TypeVar"
             bound_op_type = "constraint"
             name_loc, name, bound_op, constraints = tokens
+            # for_py_typedef is different in the two cases here as above
+            raw_bound = ", ".join(self.wrap_typedef(c, for_py_typedef=True) for c in constraints)
             args = ", " + ", ".join(self.wrap_typedef(c, for_py_typedef=False) for c in constraints)
         elif "TypeVarTuple" in tokens:
             TypeVarFunc = "TypeVarTuple"
             name_loc, name = tokens
+            stars = "*"
         elif "ParamSpec" in tokens:
             TypeVarFunc = "ParamSpec"
             name_loc, name = tokens
+            stars = "**"
         else:
             raise CoconutInternalException("invalid type_param tokens", tokens)
 
@@ -4612,8 +4640,14 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
                         loc,
                     )
 
+        # on >= 3.12, return a type param
+        if self.target_info >= (3, 12):
+            return stars + name + (": " + raw_bound if raw_bound is not None else "")
+
+        # on < 3.12, return a type variable assignment
+
         kwargs = ""
-        # uncomment these lines whenever mypy adds support for infer_variance in TypeVar
+        # TODO: uncomment these lines whenever mypy adds support for infer_variance in TypeVar
         #  (and remove the warning about it in the DOCS)
         # if TypeVarFunc == "TypeVar":
         #     kwargs += ", infer_variance=True"
@@ -4644,6 +4678,7 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
 
     def get_generic_for_typevars(self):
         """Get the Generic instances for the current typevars."""
+        internal_assert(self.target_info < (3, 12), "get_generic_for_typevars should only be used on targets < 3.12")
         typevar_info = self.current_parsing_context("typevars")
         internal_assert(typevar_info is not None, "get_generic_for_typevars called with no typevars")
         generics = []
@@ -4677,16 +4712,18 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
             paramdefs = ()
         else:
             name, paramdefs, typedef = tokens
-        out = "".join(paramdefs)
+
+        # paramdefs are type params on >= 3.12 and type var assignments on < 3.12
         if self.target_info >= (3, 12):
-            out += "type " + name + " = " + self.wrap_typedef(typedef, for_py_typedef=True)
+            if paramdefs:
+                name += "[" + ", ".join(paramdefs) + "]"
+            return "type " + name + " = " + self.wrap_typedef(typedef, for_py_typedef=True)
         else:
-            out += self.typed_assign_stmt_handle([
+            return "".join(paramdefs) + self.typed_assign_stmt_handle([
                 name,
                 "_coconut.typing.TypeAlias",
                 self.wrap_typedef(typedef, for_py_typedef=False),
             ])
-        return out
 
     def where_item_handle(self, tokens):
         """Manage where items."""
