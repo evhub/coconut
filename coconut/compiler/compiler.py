@@ -3451,7 +3451,6 @@ def __new__(_coconut_cls, {all_args}):
         IMPORTANT: Any changes to assemble_data must be reflected in the
         definition of Expected in header.py_template.
         """
-        print(paramdefs)
         # create class
         out = []
         if paramdefs:
