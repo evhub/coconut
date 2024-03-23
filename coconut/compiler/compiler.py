@@ -2557,33 +2557,25 @@ def {mock_var}({mock_paramdef}):
         # handle typed case def functions (must happen before decorators are cleared out)
         type_code = None
         if typed_case_def:
+            internal_assert(len(all_type_defs) not in (0, 2), "invalid typed case def all_type_defs", all_type_defs)
             if undotted_name is not None:
                 all_type_defs = [
                     "def " + def_name + assert_remove_prefix(type_def, "def " + func_name)
                     for type_def in all_type_defs
                 ]
-            type_code = (
-                self.deferred_code_proc(type_param_code)
-                + "\n".join(
-                    ("@_coconut.typing.overload\n" if len(all_type_defs) > 1 else "")
+            type_def_lines = []
+            for i, type_def in enumerate(all_type_defs):
+                type_def_lines.append(
+                    ("@_coconut.typing.overload\n" if i < len(all_type_defs) - 1 else "")
                     + decorators
                     + self.deferred_code_proc(type_def)
-                    for type_def in all_type_defs
-                )
-            )
-            if len(all_type_defs) > 1:
-                type_code += "\n" + decorators + handle_indentation("""
-def {def_name}(*_coconut_args, **_coconut_kwargs):
-    return {any_type_ellipsis}
-                """).format(
-                    def_name=def_name,
-                    any_type_ellipsis=self.any_type_ellipsis(),
                 )
             if undotted_name is not None:
-                type_code += "\n{func_name} = {def_name}".format(
+                type_def_lines.append("{func_name} = {def_name}".format(
                     func_name=func_name,
                     def_name=def_name,
-                )
+                ))
+            type_code = self.deferred_code_proc(type_param_code) + "\n".join(type_def_lines)
 
         # handle dotted function definition
         if undotted_name is not None:
@@ -3919,11 +3911,13 @@ if not {check_var}:
                 typed_params, typed_ret = case_toks
                 all_type_defs.append(handle_indentation("""
 def {name}{typed_params}{typed_ret}
+    {docstring}
     return {ellipsis}
                 """).format(
                     name=name,
                     typed_params=typed_params,
                     typed_ret=typed_ret,
+                    docstring=docstring if docstring is not None else "",
                     ellipsis=self.any_type_ellipsis(),
                 ))
             else:
@@ -3931,6 +3925,16 @@ def {name}{typed_params}{typed_ret}
 
         if type_param_code and not all_type_defs:
             raise CoconutDeferredSyntaxError("type parameters in case def but no type declaration cases", loc)
+        if len(all_type_defs) > 1:
+            all_type_defs.append(handle_indentation("""
+def {name}(*_coconut_args, **_coconut_kwargs):
+    {docstring}
+    return {ellipsis}
+            """).format(
+                name=name,
+                docstring=docstring if docstring is not None else "",
+                ellipsis=self.any_type_ellipsis(),
+            ))
 
         func_code = handle_indentation("""
 def {name}({match_func_paramdef}):
