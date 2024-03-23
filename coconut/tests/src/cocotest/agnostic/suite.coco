@@ -10,6 +10,7 @@ from .util import operator CONST
 from .util import operator “
 from .util import operator ”
 from .util import operator !
+from .util import operator <>
 
 operator lol
 operator ++
@@ -1088,6 +1089,7 @@ forward 2""") == 900
     assert [1, 2, 3] |> reduce_with_init$(+) == 6 == (1, 2, 3) |> iter |> reduce_with_init$((+), init=0)
     assert min(1, 2) == 1 == my_min(1, 2)
     assert min([1, 2]) == 1 == my_min([1, 2])
+    assert 3 <> 4
 
     with process_map.multiple_sequential_calls():  # type: ignore
         assert process_map(tuple <.. (|>)$(to_sort), qsorts) |> list == [to_sort |> sorted |> tuple] * len(qsorts)

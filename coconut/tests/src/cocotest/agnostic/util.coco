@@ -245,6 +245,12 @@ addpattern def (float(x))! = 0.0 if x else 1.0  # type: ignore
 addpattern def x! if x = False  # type: ignore
 addpattern def x! = True  # type: ignore
 
+operator <>
+case def <>:
+    match(x, y if x < y) = True
+    match(x, y if x > y) = True
+    match(x, y) = False
+
 # Type aliases:
 if sys.version_info >= (3, 5) or TYPE_CHECKING:
     type list_or_tuple = list | tuple

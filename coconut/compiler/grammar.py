@@ -2256,6 +2256,7 @@ class Grammar(object):
         op_tfpdef = unsafe_typedef_default | condense(setname + Optional(default))
         op_funcdef_arg = setname | condense(lparen.suppress() + op_tfpdef + rparen.suppress())
         op_funcdef_name = unsafe_backtick.suppress() + funcname_typeparams + unsafe_backtick.suppress()
+        op_funcdef_name_tokens = unsafe_backtick.suppress() + funcname_typeparams_tokens + unsafe_backtick.suppress()
         op_funcdef = attach(
             Group(Optional(op_funcdef_arg))
             + op_funcdef_name
@@ -2359,7 +2360,10 @@ class Grammar(object):
         base_case_funcdef = Forward()
         base_case_funcdef_ref = (
             keyword("def").suppress()
-            + Group(funcname_typeparams_tokens)
+            + Group(
+                funcname_typeparams_tokens
+                | op_funcdef_name_tokens
+            )
             + colon.suppress()
             - newline.suppress()
             - indent.suppress()

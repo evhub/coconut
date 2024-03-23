@@ -681,7 +681,7 @@ def run(
     assert use_run_arg + run_directory < 2
 
     if manage_cache and "--no-cache" not in args:
-        args += ["--no-cache"]
+        args = ["--no-cache"] + args
 
     if agnostic_target is None:
         agnostic_args = args
