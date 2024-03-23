@@ -865,6 +865,21 @@ def async_map(*args, **kwargs):
                 "{_coconut_}zip".format(**format_dict): "zip",
             },
         ),
+        def_call=pycondition(
+            (3, 11),
+            if_ge=r'''
+call = _coconut.operator.call
+            ''',
+            if_lt=r'''
+def call(_coconut_f{comma_slash}, *args, **kwargs):
+    """Function application operator function.
+
+    Equivalent to:
+        def call(f, /, *args, **kwargs) = f(*args, **kwargs).
+    """
+    return _coconut_f(*args, **kwargs)
+            '''.format(**format_dict),
+        ),
     )
     format_dict.update(extra_format_dict)
 
