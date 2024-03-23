@@ -291,6 +291,7 @@ errwrapper = "\u24d8"  # circled letter i
 early_passthrough_wrapper = "\u2038"  # caret
 lnwrapper = "\u2021"  # double dagger
 unwrapper = "\u23f9"  # stop square
+tempsep = "\u22ee"  # vertical ellipsis
 funcwrapper = "def:"
 
 # must be tuples for .startswith / .endswith purposes
@@ -314,6 +315,7 @@ delimiter_symbols = tuple(open_chars + close_chars + str_chars) + (
 ) + indchars + comment_chars
 reserved_compiler_symbols = delimiter_symbols + (
     reserved_prefix,
+    tempsep,
     funcwrapper,
 )
 

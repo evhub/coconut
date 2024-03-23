@@ -437,6 +437,7 @@ def suite_test() -> bool:
     assert partition([1, 2, 3], 2) |> map$(tuple) |> list == [(1,), (3, 2)] == partition_([1, 2, 3], 2) |> map$(tuple) |> list
     assert myreduce((+), (1, 2, 3)) == 6
     assert recurse_n_times(10000)
+    assert recurse_n_times_(10000)
     assert fake_recurse_n_times(10000)
     a = clsA()
     assert ((not)..a.true)() is False
@@ -535,7 +536,7 @@ def suite_test() -> bool:
         assert False
     tv = typed_vector()
     assert repr(tv) == "typed_vector(x=0, y=0)"
-    for obj in (factorial, iadd, collatz, recurse_n_times):
+    for obj in (factorial, iadd, collatz, recurse_n_times, recurse_n_times_):
         assert obj.__doc__ == "this is a docstring", obj
     assert list_type((|1,2|)) == "at least 2"
     assert list_type((|1|)) == "at least 1"
@@ -632,8 +633,8 @@ def suite_test() -> bool:
     assert dt.N()$[:2] |> list == [(dt, 0), (dt, 1)] == dt.N_()$[:2] |> list
     assert map(HasDefs().a_def, range(5)) |> list == range(1, 6) |> list
     assert HasDefs().a_def 1 == 2
-    assert HasDefs().case_def 1 == 0
-    assert HasDefs.__annotations__.keys() |> set == {"a_def", "case_def"}, HasDefs.__annotations__
+    assert HasDefs().case_def 1 == 0 == HasDefs().case_def_ 1
+    assert HasDefs.__annotations__.keys() |> set == {"a_def"}, HasDefs.__annotations__
     assert store.plus1 store.one == store.two
     assert ret_locals()["my_loc"] == 1
     assert ret_globals()["my_glob"] == 1
@@ -1085,6 +1086,8 @@ forward 2""") == 900
     assert ret_args_kwargs ↤** dict(a=1) == ((), dict(a=1))
     assert ret_args_kwargs ↤**? None is None
     assert [1, 2, 3] |> reduce_with_init$(+) == 6 == (1, 2, 3) |> iter |> reduce_with_init$((+), init=0)
+    assert min(1, 2) == 1 == my_min(1, 2)
+    assert min([1, 2]) == 1 == my_min([1, 2])
 
     with process_map.multiple_sequential_calls():  # type: ignore
         assert process_map(tuple <.. (|>)$(to_sort), qsorts) |> list == [to_sort |> sorted |> tuple] * len(qsorts)

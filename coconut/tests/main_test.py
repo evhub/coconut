@@ -339,7 +339,7 @@ def call(
             continue
 
         # combine mypy error lines
-        if any(infix in line for infix in mypy_err_infixes):
+        if any(infix in line for infix in mypy_err_infixes) and i < len(raw_lines) - 1:
             # always add the next line, since it might be a continuation of the error message
             line += "\n" + raw_lines[i + 1]
             i += 1

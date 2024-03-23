@@ -2,6 +2,7 @@
 import sys
 import random
 import pickle
+import typing
 import operator  # NOQA
 from contextlib import contextmanager
 from functools import wraps
@@ -10,6 +11,8 @@ from collections import defaultdict, deque
 __doc__ = "docstring"
 
 # Helpers:
+___ = typing.cast(typing.Any, ...)
+
 def rand_list(n):
     '''Generate a random list of length n.'''
     return [random.randrange(10) for x in range(0, n)]
@@ -243,7 +246,6 @@ addpattern def x! if x = False  # type: ignore
 addpattern def x! = True  # type: ignore
 
 # Type aliases:
-import typing
 if sys.version_info >= (3, 5) or TYPE_CHECKING:
     type list_or_tuple = list | tuple
 
@@ -394,6 +396,11 @@ def recurse_n_times(n) =
     if not n:
         return True
     recurse_n_times(n-1)
+
+case def recurse_n_times_:
+    """this is a docstring"""
+    match(0) = True
+    match(n) = recurse_n_times_(n-1)
 
 def is_even(n) =
     if not n:
@@ -632,18 +639,20 @@ def factorial5(value):
     else:
         return None
     raise TypeError()
-case def factorial6[Num: (int, float)]: (Num, Num) -> Num
+case def factorial6[Num: (int, float)]:
     """Factorial function"""
+    type(n: Num, acc: Num = ___) -> Num
     match (0, acc=1):
         return acc
-    match (int(n), acc=1) if n > 0:
+    match (int(n), acc=1 if n > 0):
         return factorial6(n - 1, acc * n)
-    match (int(n), acc=...) if n < 0:
+    match (int(n), acc=... if n < 0):
         return None
-case def factorial7[Num <: int | float]: (Num, Num) -> Num
+case def factorial7[Num <: int | float]:
+    type(n: Num, acc: Num = ___) -> Num
     match(0, acc=1) = acc
-    match(int(n), acc=1) if n > 0 = factorial7(n - 1, acc * n)
-    match(int(n), acc=...) if n < 0 = None
+    match(int(n), acc=1 if n > 0) = factorial7(n - 1, acc * n)
+    match(int(n), acc=... if n < 0) = None
 
 match def fact(n) = fact(n, 1)
 match addpattern def fact(0, acc) = acc  # type: ignore
@@ -1414,12 +1423,19 @@ class HasDefs:
     a_def: typing.Callable
 
     @staticmethod
-    case def case_def: int -> int
+    case def case_def:
+        type(_: int) -> int
         match(0) = 1
         match(1) = 0
 
 def HasDefs.a_def(self, 0) = 1  # type: ignore
 addpattern def HasDefs.a_def(self, x) = x + 1  # type: ignore
+
+@staticmethod  # type: ignore
+case def HasDefs.case_def_:  # type: ignore
+    type(_: int) -> int
+    match(0) = 1
+    match(1) = 0
 
 
 # Storage class
@@ -2080,3 +2096,15 @@ def outer_func_6():
             match() = x
         funcs.append(inner_func)
     return funcs
+
+
+# case def
+
+case def my_min[T]:
+    type(xs: T[]) -> T
+    match([x]) = x
+    match([x] + xs) = my_min(x, my_min(xs))
+
+    type(x: T, y: T) -> T
+    match(x, y if x <= y) = x
+    match(x, y) = y
