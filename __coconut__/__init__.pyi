@@ -257,66 +257,66 @@ def _coconut_tco(func: _Tfunc) -> _Tfunc:
 
 
 # any changes here should also be made to safe_call and call_or_coefficient below
-# @_t.overload
-# def call(
-#     _func: _t.Callable[[], _U],
-# ) -> _U: ...
-# @_t.overload
-# def call(
-#     _func: _t.Callable[[_T], _U],
-#     _x: _T,
-# ) -> _U: ...
-# @_t.overload
-# def call(
-#     _func: _t.Callable[[_T, _U], _V],
-#     _x: _T,
-#     _y: _U,
-# ) -> _V: ...
-# @_t.overload
-# def call(
-#     _func: _t.Callable[[_T, _U, _V], _W],
-#     _x: _T,
-#     _y: _U,
-#     _z: _V,
-# ) -> _W: ...
-# @_t.overload
-# def call(
-#     _func: _t.Callable[_t.Concatenate[_T, _P], _U],
-#     _x: _T,
-#     *args: _t.Any,
-#     **kwargs: _t.Any,
-# ) -> _U: ...
-# @_t.overload
-# def call(
-#     _func: _t.Callable[_t.Concatenate[_T, _U, _P], _V],
-#     _x: _T,
-#     _y: _U,
-#     *args: _t.Any,
-#     **kwargs: _t.Any,
-# ) -> _V: ...
-# @_t.overload
-# def call(
-#     _func: _t.Callable[_t.Concatenate[_T, _U, _V, _P], _W],
-#     _x: _T,
-#     _y: _U,
-#     _z: _V,
-#     *args: _t.Any,
-#     **kwargs: _t.Any,
-# ) -> _W: ...
-# @_t.overload
-# def call(
-#     _func: _t.Callable[..., _T],
-#     *args: _t.Any,
-#     **kwargs: _t.Any,
-# ) -> _T:
-#     """Function application operator function.
+@_t.overload
+def call(
+    _func: _t.Callable[[], _U],
+) -> _U: ...
+@_t.overload
+def call(
+    _func: _t.Callable[[_T], _U],
+    _x: _T,
+) -> _U: ...
+@_t.overload
+def call(
+    _func: _t.Callable[[_T, _U], _V],
+    _x: _T,
+    _y: _U,
+) -> _V: ...
+@_t.overload
+def call(
+    _func: _t.Callable[[_T, _U, _V], _W],
+    _x: _T,
+    _y: _U,
+    _z: _V,
+) -> _W: ...
+@_t.overload
+def call(
+    _func: _t.Callable[_t.Concatenate[_T, _P], _U],
+    _x: _T,
+    *args: _t.Any,
+    **kwargs: _t.Any,
+) -> _U: ...
+@_t.overload
+def call(
+    _func: _t.Callable[_t.Concatenate[_T, _U, _P], _V],
+    _x: _T,
+    _y: _U,
+    *args: _t.Any,
+    **kwargs: _t.Any,
+) -> _V: ...
+@_t.overload
+def call(
+    _func: _t.Callable[_t.Concatenate[_T, _U, _V, _P], _W],
+    _x: _T,
+    _y: _U,
+    _z: _V,
+    *args: _t.Any,
+    **kwargs: _t.Any,
+) -> _W: ...
+@_t.overload
+def call(
+    _func: _t.Callable[..., _T],
+    *args: _t.Any,
+    **kwargs: _t.Any,
+) -> _T:
+    """Function application operator function.
 
-#     Equivalent to:
-#         def call(f, /, *args, **kwargs) = f(*args, **kwargs).
-#     """
-#     ...
+    Equivalent to:
+        def call(f, /, *args, **kwargs) = f(*args, **kwargs).
+    """
+    ...
 
-call = _coconut.operator.call
+# call = _coconut.operator.call
 _coconut_tail_call = call
 of = _deprecated("use call instead")(call)
 
