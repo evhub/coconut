@@ -239,6 +239,11 @@ def scan(
 _coconut_scan = scan
 
 
+class CoconutWarning(Warning):
+    pass
+_coconut_CoconutWarning = CoconutWarning
+
+
 class MatchError(Exception):
     """Pattern-matching error. Has attributes .pattern, .value, and .message."""
     pattern: _t.Optional[_t.Text]

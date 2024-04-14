@@ -136,6 +136,10 @@ def _coconut_xarray_to_numpy(obj):
         return obj.to_dataframe().to_numpy()
     else:
         return obj.to_numpy()
+class CoconutWarning(Warning{comma_object}):
+    """Exception class used for all Coconut warnings."""
+    __slots__ = ()
+_coconut_CoconutWarning = CoconutWarning
 class MatchError(_coconut_baseclass, Exception):
     """Pattern-matching error. Has attributes .pattern, .value, and .message."""{COMMENT.no_slots_to_allow_setattr_below}
     max_val_repr_len = 500
@@ -1439,7 +1443,7 @@ def addpattern(base_func, *add_funcs, **kwargs):
     """
     allow_any_func = kwargs.pop("allow_any_func", False)
     if not allow_any_func and not _coconut.getattr(base_func, "_coconut_is_match", False):
-        _coconut.warnings.warn("Possible misuse of addpattern with non-pattern-matching function " + _coconut.repr(base_func) + " (pass allow_any_func=True to dismiss)", stacklevel=2)
+        _coconut.warnings.warn("Possible misuse of addpattern with non-pattern-matching function " + _coconut.repr(base_func) + " (pass allow_any_func=True to dismiss)", _coconut_CoconutWarning, 2)
     if kwargs:
         raise _coconut.TypeError("addpattern() got unexpected keyword arguments " + _coconut.repr(kwargs))
     if add_funcs:

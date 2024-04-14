@@ -2390,6 +2390,7 @@ else:
 try:
     {addpattern_decorator} = _coconut_addpattern({func_name}) {type_ignore}
 except _coconut.NameError:
+    _coconut.warnings.warn("Deprecated use of 'addpattern def {func_name}' with no prior 'match def {func_name}'", _coconut_CoconutWarning)
     {addpattern_decorator} = lambda f: f
                     """,
                     add_newline=True,

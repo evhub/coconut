@@ -839,6 +839,7 @@ must_use_specific_target_builtins = (
 
 coconut_exceptions = (
     "MatchError",
+    "CoconutWarning",
 )
 
 highlight_builtins = coconut_specific_builtins + interp_only_builtins + python_builtins

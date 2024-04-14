@@ -325,7 +325,7 @@ def g(x) = x
     return True
 
 
-def test_convenience() -> bool:
+def test_api() -> bool:
     if IPY:
         import coconut.highlighter  # noqa # type: ignore
 
@@ -733,7 +733,7 @@ def test_extras() -> bool:
     print(".")  # newline bc we print stuff after this
     assert test_setup_none() is True  # ...
     print(".")  # ditto
-    assert test_convenience() is True  # ....
+    assert test_api() is True  # ....
     # everything after here uses incremental parsing, so it must come last
     print(".", end="")
     assert test_incremental() is True  # .....
