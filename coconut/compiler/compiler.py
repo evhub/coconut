@@ -2390,7 +2390,7 @@ else:
 try:
     {addpattern_decorator} = _coconut_addpattern({func_name}) {type_ignore}
 except _coconut.NameError:
-    _coconut.warnings.warn("Deprecated use of 'addpattern def {func_name}' with no prior 'match def {func_name}'", _coconut_CoconutWarning)
+    _coconut.warnings.warn("Deprecated use of 'addpattern def {func_name}' with no pre-existing '{func_name}' function (use 'match def {func_name}' for the first definition or switch to 'case def' syntax)", _coconut_CoconutWarning)
     {addpattern_decorator} = lambda f: f
                     """,
                     add_newline=True,
@@ -3924,8 +3924,11 @@ def {name}{typed_params}{typed_ret}
             else:
                 raise CoconutInternalException("invalid case_funcdef case_toks", case_toks)
 
+        if not all_case_code:
+            raise CoconutDeferredSyntaxError("case def with no match cases", loc)
         if type_param_code and not all_type_defs:
-            raise CoconutDeferredSyntaxError("type parameters in case def but no type declaration cases", loc)
+            raise CoconutDeferredSyntaxError("type parameters in case def but no type cases", loc)
+
         if len(all_type_defs) > 1:
             all_type_defs.append(handle_indentation("""
 def {name}(*_coconut_args, **_coconut_kwargs):

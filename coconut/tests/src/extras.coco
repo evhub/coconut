@@ -185,6 +185,15 @@ parsing failed for format string expression: 1+ (line 2)
       ^
       """.strip())
 
+    assert_raises(-> parse("""
+case def f[T]:
+    match(x) = x
+""".strip()), CoconutSyntaxError)
+    assert_raises(-> parse("""
+case def f[T]:
+    type(x: T) -> T
+""".strip()), CoconutSyntaxError)
+
     assert_raises(-> parse("(|*?>)"), CoconutSyntaxError, err_has="'|?*>'")
     assert_raises(-> parse("(|**?>)"), CoconutSyntaxError, err_has="'|?**>'")
     assert_raises(-> parse("(<?*|)"), CoconutSyntaxError, err_has="'<*?|'")
