@@ -793,6 +793,20 @@ def depth_2(t):
     match tree(l=l, r=r) in t:
         return 1 + max([depth_2(l), depth_2(r)])
 
+case def depth_3:
+    match(tree()) = 0
+    match(tree(n=n)) = 1
+    match(tree(l=l, r=r)) = 1 + max(depth_3(l), depth_3(r))
+
+def size(empty()) = 0
+addpattern def size(leaf(n)) = 1  # type: ignore
+addpattern def size(node(l, r)) = size(l) + size(r)  # type: ignore
+
+case def size_:
+    match(empty()) = 0
+    match(leaf(n)) = 1
+    match(node(l, r)) = size_(l) + size_(r)
+
 class Tree
 data Node(*children) from Tree
 data Leaf(elem) from Tree
@@ -1945,6 +1959,12 @@ def twin_primes(_ :: [p, (.-2) -> p] :: ps) =
 
 addpattern def twin_primes() =  # type: ignore
     twin_primes(primes())
+
+case def twin_primes_:
+    match(_ :: [p, (.-2) -> p] :: ps) =
+        [(p, p+2)] :: twin_primes_([p + 2] :: ps)
+    match() =
+        twin_primes_(primes())
 
 
 # class matching

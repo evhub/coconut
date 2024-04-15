@@ -379,7 +379,7 @@ def factorial(n):
 ```
 
 By making use of the [Coconut `addpattern` syntax](./DOCS.md#addpattern), we can take that from three indentation levels down to one. Take a look:
-```
+```coconut
 def factorial(0) = 1
 
 addpattern def factorial(int() as n if n > 0) =

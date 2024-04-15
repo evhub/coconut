@@ -174,8 +174,10 @@ ignore_last_lines_with = (
     "DeprecationWarning: The distutils package is deprecated",
     "from distutils.version import LooseVersion",
     ": SyntaxWarning: 'int' object is not ",
+    ": CoconutWarning: Deprecated use of ",
     " assert_raises(",
     "Populating initial parsing cache",
+    "_coconut.warnings.warn(",
 )
 
 kernel_installation_msg = (

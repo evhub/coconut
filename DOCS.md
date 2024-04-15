@@ -1320,11 +1320,10 @@ data Empty() from Tree
 data Leaf(n) from Tree
 data Node(l, r) from Tree
 
-def depth(Tree()) = 0
-
-addpattern def depth(Tree(n)) = 1
-
-addpattern def depth(Tree(l, r)) = 1 + max([depth(l), depth(r)])
+case def depth:
+    match(Tree()) = 0
+    match(Tree(n)) = 1
+    match(Tree(l, r)) = 1 + max(depth(l), depth(r))
 
 Empty() |> depth |> print
 Leaf(5) |> depth |> print
@@ -1340,26 +1339,26 @@ def duplicate_first([x] + xs as l) =
 ```
 _Showcases head-tail splitting, one of the most common uses of pattern-matching, where a `+ <var>` (or `:: <var>` for any iterable) at the end of a list or tuple literal can be used to match the rest of the sequence._
 
-```
-def sieve([head] :: tail) =
-    [head] :: sieve(n for n in tail if n % head)
-
-addpattern def sieve((||)) = []
+```coconut
+case def sieve:
+    match([head] :: tail) =
+        [head] :: sieve(n for n in tail if n % head)
+    match((||)) = []
 ```
 _Showcases how to match against iterators, namely that the empty iterator case (`(||)`) must come last, otherwise that case will exhaust the whole iterator before any other pattern has a chance to match against it._
 
-```
+```coconut
 def odd_primes(p=3) =
     (p,) :: filter(=> _ % p != 0, odd_primes(p + 2))
 
 def primes() =
     (2,) :: odd_primes()
 
-def twin_primes(_ :: [p, (.-2) -> p] :: ps) =
-    [(p, p+2)] :: twin_primes([p + 2] :: ps)
-
-addpattern def twin_primes() =  # type: ignore
-    twin_primes(primes())
+case def twin_primes:
+    match(_ :: [p, (.-2) -> p] :: ps) =
+        [(p, p+2)] :: twin_primes([p + 2] :: ps)
+    match() =
+        twin_primes(primes())
 
 twin_primes()$[:5] |> list |> print
 ```
@@ -1522,15 +1521,14 @@ data Empty()
 data Leaf(n)
 data Node(l, r)
 
-def size(Empty()) = 0
-
-addpattern def size(Leaf(n)) = 1
-
-addpattern def size(Node(l, r)) = size(l) + size(r)
+case def size:
+    match(Empty()) = 0
+    match(Leaf(n)) = 1
+    match(Node(l, r)) = size(l) + size(r)
 
 size(Node(Empty(), Leaf(10))) == 1
 ```
-_Showcases the algebraic nature of `data` types when combined with pattern-matching._
+_Showcases the use of pattern-matching to deconstruct `data` types._
 
 ```coconut
 data vector(*pts):
@@ -2523,6 +2521,58 @@ range(5) |> last_two |> print
 _Can't be done without a long series of checks at the top of the function. See the compiled code for the Python syntax._
 
 
+### `case` Functions
+
+For easily defining a pattern-matching function with many different cases, Coconut provides the `case def` syntax based on Coconut's [`case`](#case) syntax. The basic syntax is
+```
+case def <name>:
+    match(<arg>, <arg>, ... [if <cond>]):
+        <body>
+    match(<arg>, <arg>, ... [if <cond>]):
+        <body>
+    ...
+```
+where the patterns in each `match` are checked in sequence until a match is found and the body under that match is executed, or a [`MatchError`](#matcherror) is raised. Each `match(...)` statement is effectively treated as a separate pattern-matching function signature that is checked independently, as if they had each been defined separately and then combined with [`addpattern`](#addpattern).
+
+Any individual body can also be defined with [assignment function syntax](#assignment-functions) such that
+```
+case def <name>:
+    match(<arg>, <arg>, ... [if <cond>]) = <body>
+```
+is equivalent to
+```
+case def <name>:
+    match(<arg>, <arg>, ... [if <cond>]): return <body>
+```
+
+`case` function definition can also be combined with `async` functions, [`copyclosure` functions](#copyclosure-functions), and [`yield` functions](#explicit-generators). The various keywords in front of the `def` can be put in any order.
+
+`case def` also allows for easily providing type annotations for pattern-matching functions. To add type annotations, inside the body of the `case def`, instead of just `match(...)` statements, include some `type(...)` statements as well, which will compile into [`typing.overload`](https://docs.python.org/3/library/typing.html#overload) declarations. The syntax is
+```
+case def <name>[<type vars>]:
+    type(<arg>: <type>, <arg>: <type>, ...) -> <type>
+    type(<arg>: <type>, <arg>: <type>, ...) -> <type>
+    ...
+```
+which can be interspersed with the `match(...)` statements.
+
+##### Example
+
+**Coconut:**
+```coconut
+case def my_min[T]:
+    type(x: T, y: T) -> T
+    match(x, y if x <= y) = x
+    match(x, y) = y
+
+    type(xs: T[]) -> T
+    match([x]) = x
+    match([x] + xs) = my_min(x, my_min(xs))
+```
+
+**Python:**
+_Can't be done without a long series of checks for each pattern-matching. See the compiled code for the Python syntax._
+
 ### `addpattern` Functions
 
 Coconut provides the `addpattern def` syntax as a shortcut for the full
@@ -2533,9 +2583,11 @@ match def func(...):
 ```
 syntax using the [`addpattern`](#addpattern) decorator.
 
-Additionally, `addpattern def` will act just like a normal [`match def`](#pattern-matching-functions) if the function has not previously been defined, allowing for `addpattern def` to be used for each case rather than requiring `match def` for the first case and `addpattern def` for future cases.
-
 If you want to put a decorator on an `addpattern def` function, make sure to put it on the _last_ pattern function.
+
+For complex multi-pattern functions, it is generally recommended to use [`case def`](#case-functions) over `addpattern def` in most situations.
+
+_Deprecated: `addpattern def` will act just like a normal [`match def`](#pattern-matching-functions) if the function has not previously been defined. This will show a [`CoconutWarning`](#coconutwarning) and is not recommended._
 
 ##### Example
 
@@ -2954,7 +3006,7 @@ depth: 1
 Takes one argument that is a [pattern-matching function](#pattern-matching-functions), and returns a decorator that adds the patterns in the existing function to the new function being decorated, where the existing patterns are checked first, then the new. `addpattern` also supports a shortcut syntax where the new patterns can be passed in directly.
 
 Roughly equivalent to:
-```
+```coconut_python
 def _pattern_adder(base_func, add_func):
     def add_pattern_func(*args, **kwargs):
         try:
@@ -2992,7 +3044,7 @@ print_type()  # appears to work
 print_type(1) # TypeError: print_type() takes 0 positional arguments but 1 was given
 ```
 
-This can be fixed by using either the `match` or `addpattern` keyword. For example:
+This can be fixed by using either the `match` keyword. For example:
 ```coconut
 match def print_type():
     print("Received no arguments.")
@@ -3342,6 +3394,10 @@ A `MatchError` is raised when a [destructuring assignment](#destructuring-assign
 Additionally, if you are using [view patterns](#match), you might need to raise your own `MatchError` (though you can also just use a destructuring assignment or pattern-matching function definition to do so). To raise your own `MatchError`, just `raise MatchError(pattern, value)` (both arguments are optional).
 
 In some cases where there are multiple Coconut packages installed at the same time, there may be multiple `MatchError`s defined in different packages. Coconut can perform some magic under the hood to make sure that all these `MatchError`s will seamlessly interoperate, but only if all such packages are compiled in [`--package` mode rather than `--standalone` mode](#compilation-modes).
+
+### `CoconutWarning`
+
+`CoconutWarning` is the [`Warning`](https://docs.python.org/3/library/exceptions.html#Warning) subclass used for all runtime Coconut warnings; see [`warnings`](https://docs.python.org/3/library/warnings.html).
 
 
 ### Generic Built-In Functions

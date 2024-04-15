@@ -153,9 +153,11 @@ def suite_test() -> bool:
     assert -4 == neg_square_u(2) ≠ 4 ∩ 0 ≤ neg_square_u(0) ≤ 0
     assert is_null(null1())
     assert is_null(null2())
-    assert empty() |> depth_1 == 0 == empty() |> depth_2
-    assert leaf(5) |> depth_1 == 1 == leaf(5) |> depth_2
-    assert node(leaf(2), node(empty(), leaf(3))) |> depth_1 == 3 == node(leaf(2), node(empty(), leaf(3))) |> depth_2
+    for depth in (depth_1, depth_2, depth_3):
+        assert empty() |> depth == 0  # type: ignore
+        assert leaf(5) |> depth == 1  # type: ignore
+        assert node(leaf(2), node(empty(), leaf(3))) |> depth == 3  # type: ignore
+    assert size(node(empty(), leaf(10))) == 1 == size_(node(empty(), leaf(10)))
     assert maybes(5, square, plus1) == 26
     assert maybes(None, square, plus1) is None
     assert square <| 2 == 4
@@ -871,7 +873,7 @@ forward 2""") == 900
     assert split1_comma(",") == ("", "")
     assert split1_comma("abcd") == ("abcd", "")
     assert primes()$[:5] |> tuple == (2, 3, 5, 7, 11)
-    assert twin_primes()$[:5] |> list == [(3, 5), (5, 7), (11, 13), (17, 19), (29, 31)]
+    assert twin_primes()$[:5] |> list == [(3, 5), (5, 7), (11, 13), (17, 19), (29, 31)] == twin_primes_()$[:5] |> list
     assert stored_default(2) == [2, 1] == stored_default_cls()(2)
     assert stored_default(2) == [2, 1, 2, 1] == stored_default_cls()(2)
     if sys.version_info >= (3,):  # naive namespace classes don't work on py2

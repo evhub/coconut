@@ -1,4 +1,5 @@
 import os
+import sys
 from collections.abc import Sequence
 
 os.environ["COCONUT_USE_COLOR"] = "False"
@@ -14,6 +15,7 @@ from coconut.constants import (
     PYPY,
 )  # type: ignore
 from coconut._pyparsing import USE_COMPUTATION_GRAPH  # type: ignore
+from coconut.terminal import logger
 from coconut.exceptions import (
     CoconutSyntaxError,
     CoconutStyleError,
@@ -326,6 +328,7 @@ def g(x) = x
 
 
 def test_api() -> bool:
+    assert not logger.enable_colors(sys.stdout)
     if IPY:
         import coconut.highlighter  # noqa # type: ignore
 
