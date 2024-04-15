@@ -240,7 +240,7 @@ operator ”
 (“) = (”) = (,) ..> map$(str) ..> "".join
 
 operator !
-addpattern def (int(x))! = 0 if x else 1  # type: ignore
+match def (int(x))! = 0 if x else 1  # type: ignore
 addpattern def (float(x))! = 0.0 if x else 1.0  # type: ignore
 addpattern def x! if x = False  # type: ignore
 addpattern def x! = True  # type: ignore
@@ -954,12 +954,12 @@ class MySubExc(MyExc):
 
 class test_super_A:
     @classmethod
-    addpattern def method(cls, {'somekey': str()}) = True
+    match def method(cls, {'somekey': str()}) = True
 
 
 class test_super_B(test_super_A):
     @classmethod
-    addpattern def method(cls, {'someotherkey': int(), **rest}) =
+    match def method(cls, {'someotherkey': int(), **rest}) =
         super().method(rest)
 
 

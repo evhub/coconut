@@ -478,6 +478,11 @@ type Num = int | float""".strip())
 # Compiled Coconut: -----------------------------------------------------------
 
 type L[T] = list[T]""".strip())
+    assert parse("def f[T](x) = x").strip().endswith("""
+# Compiled Coconut: -----------------------------------------------------------
+
+def f[T](x):
+    return x""".strip())
 
     setup(line_numbers=False, minify=True)
     assert parse("123  # derp", "lenient") == "123# derp"
