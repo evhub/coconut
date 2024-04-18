@@ -543,9 +543,9 @@ a `b` c,               left (captures lambda)
   all custom operators
 ??                     left (short-circuits)
 ..>, <.., ..*>, <*..,  n/a (captures lambda)
-  ..**>, <**..
+  ..**>, <**.., etc.
 |>, <|, |*>, <*|,      left (captures lambda)
-  |**>, <**|
+  |**>, <**|, etc.
 ==, !=, <, >,
   <=, >=,
   in, not in,
@@ -1387,7 +1387,7 @@ match <value>:
 ```
 where `<pattern>` is any `match` pattern, `<value>` is the item to match against, `<cond>` is an optional additional check, and `<body>` is simply code that is executed if the header above it succeeds. Note the absence of an `in` in the `match` statements: that's because the `<value>` in `case <value>` is taking its place. If no `else` is present and no match succeeds, then the `case` statement is simply skipped over as with [`match` statements](#match) (though unlike [destructuring assignments](#destructuring-assignment)).
 
-Additionally, `cases` can be used as the top-level keyword instead of `match`, and in such a `case` block `match` is allowed for each case rather than `case`. _Deprecated: Coconut also supports `case` instead of `cases` as the top-level keyword for backwards-compatibility purposes._
+_Deprecated: Additionally, `cases` or `case` can be used as the top-level keyword instead of `match`, and in such a block `match` is used for each case rather than `case`._
 
 ##### Examples
 

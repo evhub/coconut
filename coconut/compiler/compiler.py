@@ -4270,9 +4270,20 @@ __annotations__["{name}"] = {annotation}
         else:
             raise CoconutInternalException("invalid case tokens", tokens)
 
-        self.internal_assert(block_kwd in ("cases", "case", "match"), original, loc, "invalid case statement keyword", block_kwd)
         if block_kwd == "case":
-            self.strict_err_or_warn("deprecated case keyword at top level in case ...: match ...: block (use Python 3.10 match ...: case ...: syntax instead)", original, loc)
+            self.strict_err_or_warn(
+                "deprecated case keyword at top level in case ...: match ...: block (use Python 3.10 match ...: case ...: syntax instead)",
+                original,
+                loc,
+            )
+        elif block_kwd == "cases":
+            self.syntax_warning(
+                "deprecated cases keyword at top level in cases ...: match ...: block (use Python 3.10 match ...: case ...: syntax instead)",
+                original,
+                loc,
+            )
+        else:
+            self.internal_assert(block_kwd == "match", original, loc, "invalid case statement keyword", block_kwd)
 
         check_var = self.get_temp_var("case_match_check", loc)
         match_var = self.get_temp_var("case_match_to", loc)
