@@ -539,6 +539,7 @@ class Compiler(Grammar, pickleable_obj):
         self.add_code_before_replacements = {}
         self.add_code_before_ignore_names = {}
         self.remaining_original = None
+        self.shown_warnings = set()
 
     @contextmanager
     def inner_environment(self, ln=None):
@@ -556,6 +557,7 @@ class Compiler(Grammar, pickleable_obj):
         kept_lines, self.kept_lines = self.kept_lines, []
         num_lines, self.num_lines = self.num_lines, 0
         remaining_original, self.remaining_original = self.remaining_original, None
+        shown_warnings, self.shown_warnings = self.shown_warnings, set()
         try:
             with ComputationNode.using_overrides():
                 yield
@@ -571,6 +573,7 @@ class Compiler(Grammar, pickleable_obj):
             self.kept_lines = kept_lines
             self.num_lines = num_lines
             self.remaining_original = remaining_original
+            self.shown_warnings = shown_warnings
 
     @contextmanager
     def disable_checks(self):
@@ -937,11 +940,14 @@ class Compiler(Grammar, pickleable_obj):
         if self.strict:
             raise self.make_err(CoconutStyleError, *args, **kwargs)
 
-    def syntax_warning(self, *args, **kwargs):
+    def syntax_warning(self, message, original, loc, **kwargs):
         """Show a CoconutSyntaxWarning. Usage:
             self.syntax_warning(message, original, loc)
         """
-        logger.warn_err(self.make_err(CoconutSyntaxWarning, *args, **kwargs))
+        key = (message, loc)
+        if key not in self.shown_warnings:
+            logger.warn_err(self.make_err(CoconutSyntaxWarning, message, original, loc, **kwargs))
+            self.shown_warnings.add(key)
 
     def strict_err_or_warn(self, *args, **kwargs):
         """Raises an error if in strict mode, otherwise raises a warning. Usage:
@@ -2779,7 +2785,7 @@ else:
 # HANDLERS:
 # -----------------------------------------------------------------------------------------------------------------------
 
-    def split_function_call(self, tokens, loc):
+    def split_function_call(self, original, loc, tokens):
         """Split into positional arguments and keyword arguments."""
         pos_args = []
         star_args = []
@@ -2802,7 +2808,10 @@ else:
                     star_args.append(argstr)
                 elif arg[0] == "**":
                     dubstar_args.append(argstr)
+                elif arg[1] == "=":
+                    kwd_args.append(arg[0] + "=" + arg[0])
                 elif arg[0] == "...":
+                    self.strict_err_or_warn("'...={name}' shorthand is deprecated, use '{name}=' shorthand instead".format(name=arg[1]), original, loc)
                     kwd_args.append(arg[1] + "=" + arg[1])
                 else:
                     kwd_args.append(argstr)
@@ -2818,9 +2827,9 @@ else:
 
         return pos_args, star_args, kwd_args, dubstar_args
 
-    def function_call_handle(self, loc, tokens):
+    def function_call_handle(self, original, loc, tokens):
         """Enforce properly ordered function parameters."""
-        return "(" + join_args(*self.split_function_call(tokens, loc)) + ")"
+        return "(" + join_args(*self.split_function_call(original, loc, tokens)) + ")"
 
     def pipe_item_split(self, original, loc, tokens):
         """Process a pipe item, which could be a partial, an attribute access, a method call, or an expression.
@@ -2841,7 +2850,7 @@ else:
             return "expr", tokens
         elif "partial" in tokens:
             func, args = tokens
-            pos_args, star_args, kwd_args, dubstar_args = self.split_function_call(args, loc)
+            pos_args, star_args, kwd_args, dubstar_args = self.split_function_call(original, loc, args)
             return "partial", (func, join_args(pos_args, star_args), join_args(kwd_args, dubstar_args))
         elif "attrgetter" in tokens:
             name, args = attrgetter_atom_split(tokens)
@@ -3061,7 +3070,7 @@ else:
                 elif trailer[0] == "$[":
                     out = "_coconut_iter_getitem(" + out + ", " + trailer[1] + ")"
                 elif trailer[0] == "$(?":
-                    pos_args, star_args, base_kwd_args, dubstar_args = self.split_function_call(trailer[1], loc)
+                    pos_args, star_args, base_kwd_args, dubstar_args = self.split_function_call(original, loc, trailer[1])
 
                     has_question_mark = False
                     needs_complex_partial = False
@@ -3232,7 +3241,7 @@ while True:
         # handle classlist
         base_classes = []
         if classlist_toks:
-            pos_args, star_args, kwd_args, dubstar_args = self.split_function_call(classlist_toks, loc)
+            pos_args, star_args, kwd_args, dubstar_args = self.split_function_call(original, loc, classlist_toks)
 
             # check for just inheriting from object
             if (
@@ -3566,7 +3575,7 @@ def __hash__(self):
 
         return "".join(out)
 
-    def anon_namedtuple_handle(self, tokens):
+    def anon_namedtuple_handle(self, original, loc, tokens):
         """Handle anonymous named tuples."""
         names = []
         types = {}
@@ -3579,7 +3588,10 @@ def __hash__(self):
                 types[i] = typedef
             else:
                 raise CoconutInternalException("invalid anonymous named item", tok)
-            if name == "...":
+            if item == "=":
+                item = name
+            elif name == "...":
+                self.strict_err_or_warn("'...={item}' shorthand is deprecated, use '{item}=' shorthand instead".format(item=item), original, loc)
                 name = item
             names.append(name)
             items.append(item)

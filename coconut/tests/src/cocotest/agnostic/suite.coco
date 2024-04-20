@@ -1055,8 +1055,8 @@ forward 2""") == 900
     assert InitAndIter(range(3)) |> fmap$((.+1), fallback_to_init=True) == InitAndIter(range(1, 4))
     assert_raises(-> InitAndIter(range(3)) |> fmap$(.+1), TypeError)
     really_long_var = 10
-    assert ret_args_kwargs(...=really_long_var) == ((), {"really_long_var": 10}) == ret_args_kwargs$(...=really_long_var)()
-    assert ret_args_kwargs(123, ...=really_long_var, abc="abc") == ((123,), {"really_long_var": 10, "abc": "abc"}) == ret_args_kwargs$(123, ...=really_long_var, abc="abc")()
+    assert ret_args_kwargs(really_long_var=) == ((), {"really_long_var": 10}) == ret_args_kwargs$(really_long_var=)()
+    assert ret_args_kwargs(123, really_long_var=, abc="abc") == ((123,), {"really_long_var": 10, "abc": "abc"}) == ret_args_kwargs$(123, really_long_var=, abc="abc")()
     assert "Coconut version of typing" in typing.__doc__
     numlist: NumList = [1, 2.3, 5]
     assert hasloc([[1, 2]]).loc[0][1] == 2 == hasloc([[1, 2]]) |> .loc[0][1]

@@ -1249,11 +1249,12 @@ class Grammar(object):
 
         call_item = (
             unsafe_name + default
-            # ellipsis must come before namedexpr_test
-            | ellipsis_tokens + equals.suppress() + refname
-            | namedexpr_test
             | star + test
             | dubstar + test
+            | refname + equals  # new long name ellision syntax
+            | ellipsis_tokens + equals.suppress() + refname  # old long name ellision syntax
+            # must come at end
+            | namedexpr_test
         )
         function_call_tokens = lparen.suppress() + (
             # everything here must end with rparen
@@ -1303,7 +1304,7 @@ class Grammar(object):
         maybe_typedef = Optional(colon.suppress() + typedef_test)
         anon_namedtuple_ref = tokenlist(
             Group(
-                unsafe_name + maybe_typedef + equals.suppress() + test
+                unsafe_name + maybe_typedef + (equals.suppress() + test | equals)
                 | ellipsis_tokens + maybe_typedef + equals.suppress() + refname
             ),
             comma,

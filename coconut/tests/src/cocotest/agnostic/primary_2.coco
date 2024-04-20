@@ -313,10 +313,10 @@ def primary_test_2() -> bool:
     f.is_f = True  # type: ignore
     assert (f ..*> (+)).is_f  # type: ignore
     really_long_var = 10
-    assert (...=really_long_var) == (10,)
-    assert (...=really_long_var, abc="abc") == (10, "abc")
-    assert (abc="abc", ...=really_long_var) == ("abc", 10)
-    assert (...=really_long_var).really_long_var == 10  # type: ignore
+    assert (really_long_var=) == (10,)
+    assert (really_long_var=, abc="abc") == (10, "abc")
+    assert (abc="abc", really_long_var=) == ("abc", 10)
+    assert (really_long_var=).really_long_var == 10  # type: ignore
     n = [0]
     assert n[0] == 0
     assert_raises(-> m{{1:2,2:3}}, TypeError)

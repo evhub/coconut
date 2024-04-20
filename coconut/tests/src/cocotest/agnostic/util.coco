@@ -664,7 +664,7 @@ match def fact(n) = fact(n, 1)
 match addpattern def fact(0, acc) = acc  # type: ignore
 addpattern match def fact(n, acc) = fact(n-1, acc*n)  # type: ignore
 
-addpattern def factorial(0, acc=1) = acc
+match def factorial(0, acc=1) = acc
 addpattern def factorial(int() as n, acc=1 if n > 0) =  # type: ignore
     """this is a docstring"""
     factorial(n-1, acc*n)

@@ -2219,7 +2219,7 @@ quad = 5 * x**2 + 3 * x + 1
 
 When passing in long variable names as keyword arguments of the same name, Coconut supports the syntax
 ```
-f(...=long_variable_name)
+f(long_variable_name=)
 ```
 as a shorthand for
 ```
@@ -2228,6 +2228,8 @@ f(long_variable_name=long_variable_name)
 
 Such syntax is also supported in [partial application](#partial-application) and [anonymous `namedtuple`s](#anonymous-namedtuples).
 
+_Deprecated: Coconut also supports `f(...=long_variable_name)` as an alternative shorthand syntax._
+
 ##### Example
 
 **Coconut:**
@@ -2235,8 +2237,8 @@ Such syntax is also supported in [partial application](#partial-application) and
 really_long_variable_name_1 = get_1()
 really_long_variable_name_2 = get_2()
 main_func(
-    ...=really_long_variable_name_1,
-    ...=really_long_variable_name_2,
+    really_long_variable_name_1=,
+    really_long_variable_name_2=,
 )
 ```
 
