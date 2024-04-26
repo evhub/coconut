@@ -3937,7 +3937,7 @@ def {name}{typed_params}{typed_ret}
                 raise CoconutInternalException("invalid case_funcdef case_toks", case_toks)
 
         if not all_case_code:
-            raise CoconutDeferredSyntaxError("case def with no match cases", loc)
+            raise CoconutDeferredSyntaxError("case def with no case patterns", loc)
         if type_param_code and not all_type_defs:
             raise CoconutDeferredSyntaxError("type parameters in case def but no type cases", loc)
 

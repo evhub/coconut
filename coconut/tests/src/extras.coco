@@ -187,7 +187,7 @@ parsing failed for format string expression: 1+ (line 2)
 
     assert_raises(-> parse("""
 case def f[T]:
-    match(x) = x
+    case(x) = x
 """.strip()), CoconutSyntaxError)
     assert_raises(-> parse("""
 case def f[T]:

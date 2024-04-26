@@ -2371,7 +2371,7 @@ class Grammar(object):
             - Optional(docstring)
             - Group(OneOrMore(
                 labeled_group(
-                    keyword("match").suppress()
+                    keyword("case").suppress()
                     + lparen.suppress()
                     + match_args_list
                     + match_guard

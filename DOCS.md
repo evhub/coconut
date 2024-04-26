@@ -1321,9 +1321,9 @@ data Leaf(n) from Tree
 data Node(l, r) from Tree
 
 case def depth:
-    match(Tree()) = 0
-    match(Tree(n)) = 1
-    match(Tree(l, r)) = 1 + max(depth(l), depth(r))
+    case(Tree()) = 0
+    case(Tree(n)) = 1
+    case(Tree(l, r)) = 1 + max(depth(l), depth(r))
 
 Empty() |> depth |> print
 Leaf(5) |> depth |> print
@@ -1341,9 +1341,9 @@ _Showcases head-tail splitting, one of the most common uses of pattern-matching,
 
 ```coconut
 case def sieve:
-    match([head] :: tail) =
+    case([head] :: tail) =
         [head] :: sieve(n for n in tail if n % head)
-    match((||)) = []
+    case((||)) = []
 ```
 _Showcases how to match against iterators, namely that the empty iterator case (`(||)`) must come last, otherwise that case will exhaust the whole iterator before any other pattern has a chance to match against it._
 
@@ -1355,9 +1355,9 @@ def primes() =
     (2,) :: odd_primes()
 
 case def twin_primes:
-    match(_ :: [p, (.-2) -> p] :: ps) =
+    case(_ :: [p, (.-2) -> p] :: ps) =
         [(p, p+2)] :: twin_primes([p + 2] :: ps)
-    match() =
+    case() =
         twin_primes(primes())
 
 twin_primes()$[:5] |> list |> print
@@ -1522,9 +1522,9 @@ data Leaf(n)
 data Node(l, r)
 
 case def size:
-    match(Empty()) = 0
-    match(Leaf(n)) = 1
-    match(Node(l, r)) = size(l) + size(r)
+    case(Empty()) = 0
+    case(Leaf(n)) = 1
+    case(Node(l, r)) = size(l) + size(r)
 
 size(Node(Empty(), Leaf(10))) == 1
 ```
@@ -2528,35 +2528,35 @@ _Can't be done without a long series of checks at the top of the function. See t
 For easily defining a pattern-matching function with many different cases, Coconut provides the `case def` syntax based on Coconut's [`case`](#case) syntax. The basic syntax is
 ```
 case def <name>:
-    match(<arg>, <arg>, ... [if <cond>]):
+    case(<arg>, <arg>, ... [if <cond>]):
         <body>
-    match(<arg>, <arg>, ... [if <cond>]):
+    case(<arg>, <arg>, ... [if <cond>]):
         <body>
     ...
 ```
-where the patterns in each `match` are checked in sequence until a match is found and the body under that match is executed, or a [`MatchError`](#matcherror) is raised. Each `match(...)` statement is effectively treated as a separate pattern-matching function signature that is checked independently, as if they had each been defined separately and then combined with [`addpattern`](#addpattern).
+where the patterns in each `case` are checked in sequence until a match is found and the body under that match is executed, or a [`MatchError`](#matcherror) is raised. Each `case(...)` statement is effectively treated as a separate pattern-matching function signature that is checked independently, as if they had each been defined separately and then combined with [`addpattern`](#addpattern).
 
 Any individual body can also be defined with [assignment function syntax](#assignment-functions) such that
 ```
 case def <name>:
-    match(<arg>, <arg>, ... [if <cond>]) = <body>
+    case(<arg>, <arg>, ... [if <cond>]) = <body>
 ```
 is equivalent to
 ```
 case def <name>:
-    match(<arg>, <arg>, ... [if <cond>]): return <body>
+    case(<arg>, <arg>, ... [if <cond>]): return <body>
 ```
 
 `case` function definition can also be combined with `async` functions, [`copyclosure` functions](#copyclosure-functions), and [`yield` functions](#explicit-generators). The various keywords in front of the `def` can be put in any order.
 
-`case def` also allows for easily providing type annotations for pattern-matching functions. To add type annotations, inside the body of the `case def`, instead of just `match(...)` statements, include some `type(...)` statements as well, which will compile into [`typing.overload`](https://docs.python.org/3/library/typing.html#overload) declarations. The syntax is
+`case def` also allows for easily providing type annotations for pattern-matching functions. To add type annotations, inside the body of the `case def`, instead of just `case(...)` statements, include some `type(...)` statements as well, which will compile into [`typing.overload`](https://docs.python.org/3/library/typing.html#overload) declarations. The syntax is
 ```
 case def <name>[<type vars>]:
     type(<arg>: <type>, <arg>: <type>, ...) -> <type>
     type(<arg>: <type>, <arg>: <type>, ...) -> <type>
     ...
 ```
-which can be interspersed with the `match(...)` statements.
+which can be interspersed with the `case(...)` statements.
 
 ##### Example
 
@@ -2564,12 +2564,12 @@ which can be interspersed with the `match(...)` statements.
 ```coconut
 case def my_min[T]:
     type(x: T, y: T) -> T
-    match(x, y if x <= y) = x
-    match(x, y) = y
+    case(x, y if x <= y) = x
+    case(x, y) = y
 
     type(xs: T[]) -> T
-    match([x]) = x
-    match([x] + xs) = my_min(x, my_min(xs))
+    case([x]) = x
+    case([x] + xs) = my_min(x, my_min(xs))
 ```
 
 **Python:**
