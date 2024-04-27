@@ -968,24 +968,24 @@ import os as _coconut_os
 _coconut_cached__coconut__ = _coconut_sys.modules.get({__coconut__})
 _coconut_file_dir = {coconut_file_dir}
 _coconut_pop_path = False
-if _coconut_cached__coconut__ is None or getattr(_coconut_cached__coconut__, "_coconut_header_info", None) != _coconut_header_info and _coconut_os.path.dirname(_coconut_cached__coconut__.__file__ or "") != _coconut_file_dir:
+if _coconut_cached__coconut__ is None or getattr(_coconut_cached__coconut__, "_coconut_header_info", None) != _coconut_header_info and _coconut_os.path.dirname(_coconut_cached__coconut__.__file__ or "") != _coconut_file_dir:  # type: ignore
     if _coconut_cached__coconut__ is not None:
         _coconut_sys.modules[{_coconut_cached__coconut__}] = _coconut_cached__coconut__
         del _coconut_sys.modules[{__coconut__}]
     _coconut_sys.path.insert(0, _coconut_file_dir)
     _coconut_pop_path = True
     _coconut_module_name = _coconut_os.path.splitext(_coconut_os.path.basename(_coconut_file_dir))[0]
-    if _coconut_module_name and _coconut_module_name[0].isalpha() and all(c.isalpha() or c.isdigit() for c in _coconut_module_name) and "__init__.py" in _coconut_os.listdir(_coconut_file_dir):
-        _coconut_full_module_name = str(_coconut_module_name + ".__coconut__")
+    if _coconut_module_name and _coconut_module_name[0].isalpha() and all(c.isalpha() or c.isdigit() for c in _coconut_module_name) and "__init__.py" in _coconut_os.listdir(_coconut_file_dir):  # type: ignore
+        _coconut_full_module_name = str(_coconut_module_name + ".__coconut__")  # type: ignore
         import __coconut__ as _coconut__coconut__
         _coconut__coconut__.__name__ = _coconut_full_module_name
-        for _coconut_v in vars(_coconut__coconut__).values():
-            if getattr(_coconut_v, "__module__", None) == {__coconut__}:
+        for _coconut_v in vars(_coconut__coconut__).values():  # type: ignore
+            if getattr(_coconut_v, "__module__", None) == {__coconut__}:  # type: ignore
                 try:
                     _coconut_v.__module__ = _coconut_full_module_name
                 except AttributeError:
-                    _coconut_v_type = type(_coconut_v)
-                    if getattr(_coconut_v_type, "__module__", None) == {__coconut__}:
+                    _coconut_v_type = type(_coconut_v)  # type: ignore
+                    if getattr(_coconut_v_type, "__module__", None) == {__coconut__}:  # type: ignore
                         _coconut_v_type.__module__ = _coconut_full_module_name
         _coconut_sys.modules[_coconut_full_module_name] = _coconut__coconut__
 from __coconut__ import *

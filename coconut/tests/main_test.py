@@ -109,7 +109,11 @@ default_jobs = (
     else None
 )
 
-jupyter_timeout = 120
+
+def pexpect(p, out):
+    """p.expect(out) with timeout"""
+    p.expect(out, timeout=120)
+
 
 tests_dir = os.path.dirname(os.path.relpath(__file__))
 src = os.path.join(tests_dir, "src")
@@ -924,37 +928,37 @@ class TestShell(unittest.TestCase):
     if not WINDOWS and XONSH:
         def test_xontrib(self):
             p = spawn_cmd("xonsh")
-            p.expect("$")
+            pexpect(p, "$")
             p.sendline("xontrib load coconut")
-            p.expect("$")
+            pexpect(p, "$")
             p.sendline("!(ls -la) |> bool")
-            p.expect("True")
+            pexpect(p, "True")
             p.sendline("'1; 2' |> print")
-            p.expect("1; 2")
+            pexpect(p, "1; 2")
             p.sendline('$ENV_VAR = "ABC"')
-            p.expect("$")
+            pexpect(p, "$")
             p.sendline('echo f"{$ENV_VAR}"; echo f"{$ENV_VAR}"')
-            p.expect("ABC")
-            p.expect("ABC")
+            pexpect(p, "ABC")
+            pexpect(p, "ABC")
             p.sendline('len("""1\n3\n5""")\n')
-            p.expect("5")
+            pexpect(p, "5")
             if not PYPY or PY39:
                 if PY36:
                     p.sendline("echo 123;; 123")
-                    p.expect("123;; 123")
+                    pexpect(p, "123;; 123")
                     p.sendline("echo abc; echo abc")
-                    p.expect("abc")
-                    p.expect("abc")
+                    pexpect(p, "abc")
+                    pexpect(p, "abc")
                     p.sendline("echo abc; print(1 |> (.+1))")
-                    p.expect("abc")
-                    p.expect("2")
+                    pexpect(p, "abc")
+                    pexpect(p, "2")
                 p.sendline('execx("10 |> print")')
-                p.expect("subprocess mode")
+                pexpect(p, "subprocess mode")
             p.sendline("xontrib unload coconut")
-            p.expect("$")
+            pexpect(p, "$")
             if (not PYPY or PY39) and PY36:
                 p.sendline("1 |> print")
-                p.expect("subprocess mode")
+                pexpect(p, "subprocess mode")
             p.sendeof()
             if p.isalive():
                 p.terminate()
@@ -979,12 +983,12 @@ class TestShell(unittest.TestCase):
         if not WINDOWS and not PYPY:
             def test_jupyter_console(self):
                 p = spawn_cmd("coconut --jupyter console")
-                p.expect("In", timeout=jupyter_timeout)
+                pexpect(p, "In")
                 p.sendline("%load_ext coconut")
-                p.expect("In", timeout=jupyter_timeout)
+                pexpect(p, "In")
                 p.sendline("`exit`")
                 if sys.version_info[:2] != (3, 6):
-                    p.expect("Shutting down kernel|shutting down", timeout=jupyter_timeout)
+                    pexpect(p, "Shutting down kernel|shutting down")
                 if p.isalive():
                     p.terminate()
 
