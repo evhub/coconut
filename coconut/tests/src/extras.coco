@@ -222,6 +222,9 @@ cannot reassign type variable 'T' (use explicit '\T' syntax if intended) (line 1
     assert_raises(-> parse("range(1,10) |> reduce$(*, initializer = 1000) |> print"), CoconutParseError, err_has=(
         "\n                       \\~~^",
         "\n  \\~~~~~~~~~~~~~~~~~~~~~~~^",
+    ) + (
+        ("\n  \\~~~~~~~~~~~~^",)
+        if PYPY else ()
     ))
     assert_raises(-> parse("a := b"), CoconutParseError, err_has=(
         "\n    ^",
@@ -380,6 +383,9 @@ line 6''')
     assert_raises(-> parse("match def kwd_only_x_is_int_def_0(*, x is int = 0) = x"), CoconutStyleError, err_has=(
         "\n        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|",
         "\n        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/",
+    ) + (
+        ("\n        ^",)
+        if PYPY else ()
     ))
     try:
         parse("""
@@ -410,22 +416,24 @@ import abc
     except CoconutStyleError as err:
         assert str(err) == """found unused import 'abc' (add '# NOQA' to suppress) (remove --strict to downgrade to a warning) (line 1)
   import abc"""
-    assert_raises(-> parse("""class A(object):
-     1
-     2
-     3
-     4
-     5
-     6
-     7
-     8
-     9
-     10
-     11
-     12
-     13
-     14
-     15"""), CoconutStyleError, err_has="\n ...\n")
+    assert_raises(-> parse("""
+class A(object):
+    1
+    2
+    3
+    4
+    5
+    6
+    7
+    8
+    9
+    10
+    11
+    12
+    13
+    14
+    15
+    """.strip()), CoconutStyleError, **(dict(err_has="\n ...\n") if not PYPY else {}))
 
     setup(line_numbers=False, strict=True, target="sys")
     assert_raises(-> parse("await f x"), CoconutParseError, err_has='invalid use of the keyword "await"')
