@@ -811,7 +811,7 @@ def comp_prelude(args=[], **kwargs):
 def run_prelude(**kwargs):
     """Runs coconut-prelude."""
     call(["make", "base-install"], cwd=prelude)
-    call(["pytest", "--strict-markers", "-s", os.path.join(prelude, "prelude")], assert_output="passed", **kwargs)
+    call(["pytest", "--strict-markers", "-s", os.path.join(prelude, "prelude")], assert_output=" passed in ", assert_output_only_at_end=False, **kwargs)
 
 
 def comp_bbopt(args=[], **kwargs):
