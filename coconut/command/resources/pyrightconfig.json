@@ -1,0 +1,7 @@
+{
+  "extraPaths": [
+    "C://Users/evanj/.coconut_stubs"
+  ],
+  "pythonVersion": "3.11",
+  "reportPossiblyUnboundVariable": false
+}

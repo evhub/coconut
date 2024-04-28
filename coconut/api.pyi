@@ -27,7 +27,9 @@ from coconut.command.command import Command
 
 class CoconutException(Exception):
     """Coconut Exception."""
-    ...
+
+    def syntax_err(self) -> SyntaxError:
+        ...
 
 #-----------------------------------------------------------------------------------------------------------------------
 # COMMAND:

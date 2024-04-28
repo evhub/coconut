@@ -34,7 +34,7 @@ from coconut.convenience import (
 )
 
 
-def assert_raises(c, Exc, not_Exc=None, err_has=None):
+def assert_raises(c, Exc, not_Exc=None, err_has=None) -> None:
     """Test whether callable c raises an exception of type Exc."""
     if not_Exc is None and Exc is CoconutSyntaxError:
         not_Exc = CoconutParseError
@@ -533,7 +533,7 @@ class F:
 
 def test_kernel() -> bool:
     # hide imports so as to not enable incremental parsing until we want to
-    if PY35:
+    if PY35 or TYPE_CHECKING:
         import asyncio
     from coconut.icoconut import CoconutKernel  # type: ignore
     from jupyter_client.session import Session
@@ -555,7 +555,7 @@ def test_kernel() -> bool:
     k = CoconutKernel()
     fake_session = FakeSession()
     assert k.shell is not None
-    k.shell.displayhook.session = fake_session
+    k.shell.displayhook.session = fake_session  # type: ignore
 
     exec_result = k.do_execute("derp = pow$(?, 2)", False, True, {"two": "(+)(1, 1)"}, True) |> unwrap_future$(loop)
     assert exec_result["status"] == "ok", exec_result
