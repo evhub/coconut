@@ -111,7 +111,6 @@ py_version_str = sys.version.split()[0]
 # set this to False only ever temporarily for ease of debugging
 use_fast_pyparsing_reprs = get_bool_env_var("COCONUT_FAST_PYPARSING_REPRS", True)
 
-enable_pyparsing_warnings = DEVELOP
 warn_on_multiline_regex = False
 
 default_whitespace_chars = " \t\f"  # the only non-newline whitespace Python allows
@@ -611,6 +610,9 @@ python_builtins = (
 python_exceptions = (
     "BaseException", "BaseExceptionGroup", "GeneratorExit", "KeyboardInterrupt", "SystemExit", "Exception", "ArithmeticError", "FloatingPointError", "OverflowError", "ZeroDivisionError", "AssertionError", "AttributeError", "BufferError", "EOFError", "ExceptionGroup", "BaseExceptionGroup", "ImportError", "ModuleNotFoundError", "LookupError", "IndexError", "KeyError", "MemoryError", "NameError", "UnboundLocalError", "OSError", "BlockingIOError", "ChildProcessError", "ConnectionError", "BrokenPipeError", "ConnectionAbortedError", "ConnectionRefusedError", "ConnectionResetError", "FileExistsError", "FileNotFoundError", "InterruptedError", "IsADirectoryError", "NotADirectoryError", "PermissionError", "ProcessLookupError", "TimeoutError", "ReferenceError", "RuntimeError", "NotImplementedError", "RecursionError", "StopAsyncIteration", "StopIteration", "SyntaxError", "IndentationError", "TabError", "SystemError", "TypeError", "ValueError", "UnicodeError", "UnicodeDecodeError", "UnicodeEncodeError", "UnicodeTranslateError", "Warning", "BytesWarning", "DeprecationWarning", "EncodingWarning", "FutureWarning", "ImportWarning", "PendingDeprecationWarning", "ResourceWarning", "RuntimeWarning", "SyntaxWarning", "UnicodeWarning", "UserWarning",
 )
+
+always_keep_parse_name_prefix = "HAS_"
+keep_if_unchanged_parse_name_prefix = "IS_"
 
 # -----------------------------------------------------------------------------------------------------------------------
 # COMMAND CONSTANTS:

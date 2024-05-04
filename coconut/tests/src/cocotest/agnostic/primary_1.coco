@@ -56,10 +56,10 @@ def primary_test_1() -> bool:
     assert x == 5
     x == 6
     assert x == 5
-    assert r"hello, world" == "hello, world" == "hello," " " "world"
+    assert r"hello, world" == "hello, world" == "hello," + " " + "world"
     assert "\n " == """
  """
-    assert "\\" "\"" == "\\\""
+    assert "\\" + "\"" == "\\\""
     assert """
 
 """ == "\n\n"
@@ -812,9 +812,9 @@ def primary_test_1() -> bool:
     else:
         assert False
     x = 1
-    assert f"{x}" f"{x}" == "11"
-    assert f"{x}" "{x}" == "1{x}"
-    assert "{x}" f"{x}" == "{x}1"
+    assert f"{x}" + f"{x}" == "11"
+    assert f"{x}" + "{x}" == "1{x}"
+    assert "{x}" + f"{x}" == "{x}1"
     assert (if False then 1 else 2) == 2 == (if False then 1 else if True then 2 else 3)
     class metaA(type):
         def __instancecheck__(cls, inst):
@@ -1054,12 +1054,10 @@ def primary_test_1() -> bool:
         assert False
     init :: (3,) = (|1, 2, 3|)
     assert init == (1, 2)
-    assert "a\"z""a"'"'"z" == 'a"za"z'
-    assert b"ab" b"cd" == b"abcd" == rb"ab" br"cd"
+    assert "a\"z"+"a"+'"'+"z" == 'a"za"z'
+    assert b"ab" + b"cd" == b"abcd" == rb"ab" + br"cd"
     "a" + "c" = "ac"
     b"a" + b"c" = b"ac"
-    "a" "c" = "ac"
-    b"a" b"c" = b"ac"
     (1, *xs, 4) = (|1, 2, 3, 4|)
     assert xs == [2, 3]
     assert xs `isinstance` list
@@ -1146,9 +1144,9 @@ def primary_test_1() -> bool:
     key = "abc"
     f"{key}: " + value = "abc: xyz"
     assert value == "xyz"
-    f"{key}" ": " + value = "abc: 123"
+    f"{key}" + ": " + value = "abc: 123"
     assert value == "123"
-    "{" f"{key}" ": " + value + "}" = "{abc: aaa}"
+    "{" + f"{key}" + ": " + value + "}" = "{abc: aaa}"
     assert value == "aaa"
     try:
         2 @ 3  # type: ignore

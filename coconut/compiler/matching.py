@@ -639,6 +639,22 @@ if {assign_to} is _coconut_sentinel:
             elif "elem" in group:
                 group_type = "elem_matches"
                 group_contents = group
+            # must check for f_string before string, since a mixture will be tagged as both
+            elif "f_string" in group:
+                group_type = "f_string"
+                # f strings are always unicode
+                if seq_type is None:
+                    seq_type = '"'
+                elif seq_type != '"':
+                    raise CoconutDeferredSyntaxError("string literals and byte literals cannot be mixed in string patterns", self.loc)
+                for str_literal in group:
+                    if str_literal.startswith("b"):
+                        raise CoconutDeferredSyntaxError("string literals and byte literals cannot be mixed in string patterns", self.loc)
+                if len(group) == 1:
+                    str_item = group[0]
+                else:
+                    str_item = self.comp.string_atom_handle(self.original, self.loc, group, allow_silent_concat=True)
+                group_contents = (str_item, "_coconut.len(" + str_item + ")")
             elif "string" in group:
                 group_type = "string"
                 for str_literal in group:
@@ -655,16 +671,6 @@ if {assign_to} is _coconut_sentinel:
                 else:
                     str_item = self.comp.eval_now(" ".join(group))
                 group_contents = (str_item, len(self.comp.literal_eval(str_item)))
-            elif "f_string" in group:
-                group_type = "f_string"
-                # f strings are always unicode
-                if seq_type is None:
-                    seq_type = '"'
-                elif seq_type != '"':
-                    raise CoconutDeferredSyntaxError("string literals and byte literals cannot be mixed in string patterns", self.loc)
-                internal_assert(len(group) == 1, "invalid f string sequence match group", group)
-                str_item = group[0]
-                group_contents = (str_item, "_coconut.len(" + str_item + ")")
             else:
                 raise CoconutInternalException("invalid sequence match group", group)
             seq_groups.append((group_type, group_contents))
@@ -682,12 +688,12 @@ if {assign_to} is _coconut_sentinel:
                     bounded = False
                 elif gtype == "elem_matches":
                     min_len_int += len(gcontents)
-                elif gtype == "string":
-                    str_item, str_len = gcontents
-                    min_len_int += str_len
                 elif gtype == "f_string":
                     str_item, str_len = gcontents
                     min_len_strs.append(str_len)
+                elif gtype == "string":
+                    str_item, str_len = gcontents
+                    min_len_int += str_len
                 else:
                     raise CoconutInternalException("invalid sequence match group type", gtype)
             min_len = add_int_and_strs(min_len_int, min_len_strs)
@@ -711,17 +717,17 @@ if {assign_to} is _coconut_sentinel:
                     self.add_check("_coconut.len(" + head_var + ") == " + str(len(matches)))
                     self.match_all_in(matches, head_var)
             start_ind_int += len(matches)
+        elif seq_groups[0][0] == "f_string":
+            internal_assert(not iter_match, "cannot be both f string and iter match")
+            _, (str_item, str_len) = seq_groups.pop(0)
+            self.add_check(item + ".startswith(" + str_item + ")")
+            start_ind_strs.append(str_len)
         elif seq_groups[0][0] == "string":
             internal_assert(not iter_match, "cannot be both string and iter match")
             _, (str_item, str_len) = seq_groups.pop(0)
             if str_len > 0:
                 self.add_check(item + ".startswith(" + str_item + ")")
             start_ind_int += str_len
-        elif seq_groups[0][0] == "f_string":
-            internal_assert(not iter_match, "cannot be both f string and iter match")
-            _, (str_item, str_len) = seq_groups.pop(0)
-            self.add_check(item + ".startswith(" + str_item + ")")
-            start_ind_strs.append(str_len)
         if not seq_groups:
             return
         start_ind = add_int_and_strs(start_ind_int, start_ind_strs)
@@ -735,17 +741,17 @@ if {assign_to} is _coconut_sentinel:
             for i, match in enumerate(matches):
                 self.match(match, item + "[-" + str(len(matches) - i) + "]")
             last_ind_int -= len(matches)
+        elif seq_groups[-1][0] == "f_string":
+            internal_assert(not iter_match, "cannot be both f string and iter match")
+            _, (str_item, str_len) = seq_groups.pop()
+            self.add_check(item + ".endswith(" + str_item + ")")
+            last_ind_strs.append("-" + str_len)
         elif seq_groups[-1][0] == "string":
             internal_assert(not iter_match, "cannot be both string and iter match")
             _, (str_item, str_len) = seq_groups.pop()
             if str_len > 0:
                 self.add_check(item + ".endswith(" + str_item + ")")
             last_ind_int -= str_len
-        elif seq_groups[-1][0] == "f_string":
-            internal_assert(not iter_match, "cannot be both f string and iter match")
-            _, (str_item, str_len) = seq_groups.pop()
-            self.add_check(item + ".endswith(" + str_item + ")")
-            last_ind_strs.append("-" + str_len)
         if not seq_groups:
             return
         last_ind = add_int_and_strs(last_ind_int, last_ind_strs)

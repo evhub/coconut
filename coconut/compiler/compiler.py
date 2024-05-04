@@ -813,6 +813,7 @@ class Compiler(Grammar, pickleable_obj):
         cls.unsafe_typedef_tuple <<= attach(cls.unsafe_typedef_tuple_ref, cls.method("unsafe_typedef_tuple_handle"))
         cls.impl_call <<= attach(cls.impl_call_ref, cls.method("impl_call_handle"))
         cls.protocol_intersect_expr <<= attach(cls.protocol_intersect_expr_ref, cls.method("protocol_intersect_expr_handle"))
+        cls.and_expr <<= attach(cls.and_expr_ref, cls.method("and_expr_handle"))
 
         # these handlers just do strict/target checking
         cls.u_string <<= attach(cls.u_string_ref, cls.method("u_string_check"))
@@ -4567,17 +4568,39 @@ async with {iter_item} as {temp_var}:
             loop=loop
         )
 
-    def string_atom_handle(self, tokens):
+    def string_atom_handle(self, original, loc, tokens, allow_silent_concat=False):
         """Handle concatenation of string literals."""
         internal_assert(len(tokens) >= 1, "invalid string literal tokens", tokens)
-        if any(s.endswith(")") for s in tokens):  # has .format() calls
-            return "(" + " + ".join(tokens) + ")"
-        elif any(s.startswith(("f", "rf")) for s in tokens):  # has f-strings
-            return " ".join(tokens)
+        if len(tokens) == 1:
+            return tokens[0]
         else:
-            return self.eval_now(" ".join(tokens))
+            if not allow_silent_concat:
+                self.strict_err_or_warn("found Python-style implicit string concatenation (use explicit '+' for clarity; Coconut will compile it away)", original, loc)
+            if any(s.endswith(")") for s in tokens):  # has .format() calls
+                # parens are necessary for string_atom_handle
+                return "(" + " + ".join(tokens) + ")"
+            elif any(s.startswith(("f", "rf")) for s in tokens):  # has f-strings
+                return " ".join(tokens)
+            else:
+                return self.eval_now(" ".join(tokens))
 
     string_atom_handle.ignore_one_token = True
+
+    def and_expr_handle(self, original, loc, tokens):
+        """Handle expressions that could be explicit string concatenation."""
+        item, labels = tokens[0]
+        out = [item]
+        all_items = [item]
+        is_str_concat = "IS_STR" in labels
+        for i in range(1, len(tokens), 2):
+            op, (item, labels) = tokens[i:i + 2]
+            out += [op, item]
+            all_items.append(item)
+            is_str_concat = is_str_concat and "IS_STR" in labels and op == "+"
+        if is_str_concat:
+            return self.string_atom_handle(original, loc, all_items, allow_silent_concat=True)
+        else:
+            return " ".join(out)
 
     def unsafe_typedef_tuple_handle(self, original, loc, tokens):
         """Handle Tuples in typedefs."""
@@ -4594,6 +4617,8 @@ async with {iter_item} as {temp_var}:
             else:
                 out += [op, term]
         return " ".join(out)
+
+    term_handle.ignore_one_token = True
 
     def impl_call_handle(self, loc, tokens):
         """Process implicit function application or coefficient syntax."""

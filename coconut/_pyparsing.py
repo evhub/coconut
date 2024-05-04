@@ -39,7 +39,6 @@ from coconut.constants import (
     min_versions,
     max_versions,
     pure_python_env_var,
-    enable_pyparsing_warnings,
     use_left_recursion_if_available,
     get_bool_env_var,
     use_computation_graph_env_var,
@@ -243,8 +242,9 @@ USE_COMPUTATION_GRAPH = get_bool_env_var(
     use_computation_graph_env_var,
     default=(
         not MODERN_PYPARSING  # not yet supported
-        # commented out to minimize memory footprint when running tests:
-        # and not PYPY  # experimentally determined
+        # technically PYPY is faster without the computation graph, but
+        #  it breaks some features and balloons the memory footprint
+        # and not PYPY
     ),
 )
 
@@ -265,7 +265,7 @@ else:
 
 maybe_make_safe = getattr(_pyparsing, "maybe_make_safe", None)
 
-if enable_pyparsing_warnings:
+if DEVELOP:
     if MODERN_PYPARSING:
         _pyparsing.enable_all_warnings()
     else:

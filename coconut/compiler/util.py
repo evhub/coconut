@@ -133,6 +133,8 @@ from coconut.constants import (
     require_cache_clear_frac,
     reverse_any_of,
     all_keywords,
+    always_keep_parse_name_prefix,
+    keep_if_unchanged_parse_name_prefix,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -147,7 +149,7 @@ from coconut.exceptions import (
 indexable_evaluated_tokens_types = (ParseResults, list, tuple)
 
 
-def evaluate_all_tokens(all_tokens, **kwargs):
+def evaluate_all_tokens(all_tokens, expand_inner=True, **kwargs):
     """Recursively evaluate all the tokens in all_tokens."""
     all_evaluated_toks = []
     for toks in all_tokens:
@@ -156,8 +158,32 @@ def evaluate_all_tokens(all_tokens, **kwargs):
         #  short-circuit the computation and return them, since they imply this parse contains invalid syntax
         if isinstance(evaluated_toks, ExceptionNode):
             return None, evaluated_toks
-        all_evaluated_toks.append(evaluated_toks)
+        elif expand_inner and isinstance(evaluated_toks, MergeNode):
+            all_evaluated_toks = ParseResults(all_evaluated_toks)
+            all_evaluated_toks += evaluated_toks  # use += to avoid an unnecessary copy
+        else:
+            all_evaluated_toks.append(evaluated_toks)
     return all_evaluated_toks, None
+
+
+def make_modified_tokens(old_tokens, new_toklist=None, new_tokdict=None, cls=ParseResults):
+    """Construct a modified ParseResults object from the given ParseResults object."""
+    if new_toklist is None:
+        if DEVELOP:  # avoid the overhead of the call if not develop
+            internal_assert(new_tokdict is None, "if new_toklist is None, new_tokdict must be None", new_tokdict)
+        new_toklist = old_tokens._ParseResults__toklist
+        new_tokdict = old_tokens._ParseResults__tokdict
+    # we have to pass name=None here and then set __name after otherwise
+    #  the constructor might generate a new tokdict item we don't want;
+    #  this also ensures that asList and modal don't matter, since they
+    #  only do anything when you name is not None, so we don't pass them
+    new_tokens = cls(new_toklist)
+    new_tokens._ParseResults__name = old_tokens._ParseResults__name
+    new_tokens._ParseResults__parent = old_tokens._ParseResults__parent
+    new_tokens._ParseResults__accumNames.update(old_tokens._ParseResults__accumNames)
+    if new_tokdict is not None:
+        new_tokens._ParseResults__tokdict.update(new_tokdict)
+    return new_tokens
 
 
 def evaluate_tokens(tokens, **kwargs):
@@ -175,7 +201,7 @@ def evaluate_tokens(tokens, **kwargs):
     if isinstance(tokens, ParseResults):
 
         # evaluate the list portion of the ParseResults
-        old_toklist, old_name, asList, modal = tokens.__getnewargs__()
+        old_toklist = tokens._ParseResults__toklist
         new_toklist = None
         for eval_old_toklist, eval_new_toklist in evaluated_toklists:
             if old_toklist == eval_old_toklist:
@@ -188,26 +214,25 @@ def evaluate_tokens(tokens, **kwargs):
             # overwrite evaluated toklists rather than appending, since this
             #  should be all the information we need for evaluating the dictionary
             evaluated_toklists = ((old_toklist, new_toklist),)
-        # we have to pass name=None here and then set __name after otherwise
-        #  the constructor might generate a new tokdict item we don't want
-        new_tokens = ParseResults(new_toklist, None, asList, modal)
-        new_tokens._ParseResults__name = old_name
-        new_tokens._ParseResults__accumNames.update(tokens._ParseResults__accumNames)
 
         # evaluate the dictionary portion of the ParseResults
         new_tokdict = {}
         for name, occurrences in tokens._ParseResults__tokdict.items():
             new_occurrences = []
             for value, position in occurrences:
-                new_value = evaluate_tokens(value, is_final=is_final, evaluated_toklists=evaluated_toklists)
-                if isinstance(new_value, ExceptionNode):
-                    return new_value
+                if value is None:  # fake value created by build_new_toks_for
+                    new_value = None
+                else:
+                    new_value = evaluate_tokens(value, is_final=is_final, evaluated_toklists=evaluated_toklists)
+                    if isinstance(new_value, ExceptionNode):
+                        return new_value
                 new_occurrences.append(_ParseResultsWithOffset(new_value, position))
             new_tokdict[name] = new_occurrences
-        new_tokens._ParseResults__tokdict.update(new_tokdict)
+
+        new_tokens = make_modified_tokens(tokens, new_toklist, new_tokdict)
 
         if DEVELOP:  # avoid the overhead of the call if not develop
-            internal_assert(set(tokens._ParseResults__tokdict.keys()) == set(new_tokens._ParseResults__tokdict.keys()), "evaluate_tokens on ParseResults failed to maintain tokdict keys", (tokens, "->", new_tokens))
+            internal_assert(set(tokens._ParseResults__tokdict.keys()) <= set(new_tokens._ParseResults__tokdict.keys()), "evaluate_tokens on ParseResults failed to maintain tokdict keys", (tokens, "->", new_tokens))
 
         return new_tokens
 
@@ -238,14 +263,19 @@ def evaluate_tokens(tokens, **kwargs):
             result = tokens.evaluate()
             if is_final and isinstance(result, ExceptionNode):
                 raise result.exception
-            return result
+            elif isinstance(result, ParseResults):
+                return make_modified_tokens(result, cls=MergeNode)
+            elif isinstance(result, list):
+                return MergeNode(result)
+            else:
+                return result
 
         elif isinstance(tokens, list):
             result, exc_node = evaluate_all_tokens(tokens, is_final=is_final, evaluated_toklists=evaluated_toklists)
             return result if exc_node is None else exc_node
 
         elif isinstance(tokens, tuple):
-            result, exc_node = evaluate_all_tokens(tokens, is_final=is_final, evaluated_toklists=evaluated_toklists)
+            result, exc_node = evaluate_all_tokens(tokens, expand_inner=False, is_final=is_final, evaluated_toklists=evaluated_toklists)
             return tuple(result) if exc_node is None else exc_node
 
         elif isinstance(tokens, ExceptionNode):
@@ -258,6 +288,31 @@ def evaluate_tokens(tokens, **kwargs):
 
         else:
             raise CoconutInternalException("invalid computation graph tokens", tokens)
+
+
+class MergeNode(ParseResults):
+    """A special type of ParseResults object that should be merged into outer tokens."""
+    __slots__ = ()
+
+
+def build_new_toks_for(tokens, new_toklist, unchanged=False):
+    """Build new tokens from tokens to return just new_toklist."""
+    if USE_COMPUTATION_GRAPH and not isinstance(new_toklist, ExceptionNode):
+        keep_names = [
+            n for n in tokens._ParseResults__tokdict
+            if n.startswith(always_keep_parse_name_prefix) or unchanged and n.startswith(keep_if_unchanged_parse_name_prefix)
+        ]
+        if tokens._ParseResults__name is not None and (
+            tokens._ParseResults__name.startswith(always_keep_parse_name_prefix)
+            or unchanged and tokens._ParseResults__name.startswith(keep_if_unchanged_parse_name_prefix)
+        ):
+            keep_names.append(tokens._ParseResults__name)
+        if keep_names:
+            new_tokens = make_modified_tokens(tokens, new_toklist)
+            for name in keep_names:
+                new_tokens[name] = None
+            return new_tokens
+    return new_toklist
 
 
 class ComputationNode(object):
@@ -284,10 +339,9 @@ class ComputationNode(object):
         If ignore_no_tokens, then don't call the action if there are no tokens.
         If ignore_one_token, then don't call the action if there is only one token.
         If greedy, then never defer the action until later."""
-        if ignore_no_tokens and len(tokens) == 0:
-            return []
-        elif ignore_one_token and len(tokens) == 1:
-            return tokens[0]  # could be a ComputationNode, so we can't have an __init__
+        if ignore_no_tokens and len(tokens) == 0 or ignore_one_token and len(tokens) == 1:
+            # could be a ComputationNode, so we can't have an __init__
+            return build_new_toks_for(tokens, tokens, unchanged=True)
         else:
             self = super(ComputationNode, cls).__new__(cls)
             if trim_arity:
@@ -321,7 +375,7 @@ class ComputationNode(object):
         if isinstance(evaluated_toks, ExceptionNode):
             return evaluated_toks  # short-circuit if we got an ExceptionNode
         try:
-            return self.action(
+            result = self.action(
                 self.original,
                 self.loc,
                 evaluated_toks,
@@ -336,6 +390,14 @@ class ComputationNode(object):
                 embed(depth=2)
             else:
                 raise error
+        out = build_new_toks_for(evaluated_toks, result)
+        if logger.tracing:  # avoid the overhead if not tracing
+            dropped_keys = set(self.tokens._ParseResults__tokdict.keys())
+            if isinstance(out, ParseResults):
+                dropped_keys -= set(out._ParseResults__tokdict.keys())
+            if dropped_keys:
+                logger.log_tag(self.name, "DROP " + repr(dropped_keys), wrap=False)
+        return out
 
     def __repr__(self):
         """Get a representation of the entire computation graph below this node."""
@@ -1281,6 +1343,23 @@ def labeled_group(item, label):
     return Group(item(label))
 
 
+def fake_labeled_group(item, label):
+    """Apply a label to an item in a group and then destroy the group.
+    Only useful with special labels that stick around."""
+
+    def fake_labeled_group_handle(tokens):
+        internal_assert(label in tokens, "failed to label with " + repr(label) + " for tokens", tokens)
+        [item], = tokens
+        return item
+    return attach(labeled_group(item, label), fake_labeled_group_handle)
+
+
+def add_labels(tokens):
+    """Parse action to gather all the attached labels."""
+    item, = tokens
+    return (item, tokens._ParseResults__tokdict.keys())
+
+
 def invalid_syntax(item, msg, **kwargs):
     """Mark a grammar item as an invalid item that raises a syntax err with msg."""
     if isinstance(item, str):
@@ -1356,30 +1435,44 @@ def maybeparens(lparen, item, rparen, prefer_parens=False):
         return item | lparen.suppress() + item + rparen.suppress()
 
 
-def interleaved_tokenlist(required_item, other_item, sep, allow_trailing=False, at_least_two=False):
+def interleaved_tokenlist(required_item, other_item, sep, allow_trailing=False, at_least_two=False, multi_group=True):
     """Create a grammar to match interleaved required_items and other_items,
     where required_item must show up at least once."""
     sep = sep.suppress()
+
+    def one_or_more_group(item):
+        return Group(OneOrMore(item)) if multi_group else OneOrMore(Group(item))
+
     if at_least_two:
         out = (
             # required sep other (sep other)*
             Group(required_item)
-            + Group(OneOrMore(sep + other_item))
+            + one_or_more_group(sep + other_item)
             # other (sep other)* sep required (sep required)*
-            | Group(other_item + ZeroOrMore(sep + other_item))
-            + Group(OneOrMore(sep + required_item))
+            | (
+                Group(other_item + ZeroOrMore(sep + other_item))
+                if multi_group else
+                Group(other_item) + ZeroOrMore(Group(sep + other_item))
+            ) + one_or_more_group(sep + required_item)
             # required sep required (sep required)*
-            | Group(required_item + OneOrMore(sep + required_item))
+            | (
+                Group(required_item + OneOrMore(sep + required_item))
+                if multi_group else
+                Group(required_item) + OneOrMore(Group(sep + required_item))
+            )
         )
     else:
         out = (
-            Optional(Group(OneOrMore(other_item + sep)))
-            + Group(required_item + ZeroOrMore(sep + required_item))
-            + Optional(Group(OneOrMore(sep + other_item)))
+            Optional(one_or_more_group(other_item + sep))
+            + (
+                Group(required_item + ZeroOrMore(sep + required_item))
+                if multi_group else
+                Group(required_item) + ZeroOrMore(Group(sep + required_item))
+            ) + Optional(one_or_more_group(sep + other_item))
         )
     out += ZeroOrMore(
-        Group(OneOrMore(sep + required_item))
-        | Group(OneOrMore(sep + other_item)),
+        one_or_more_group(sep + required_item)
+        | one_or_more_group(sep + other_item)
     )
     if allow_trailing:
         out += Optional(sep)

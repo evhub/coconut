@@ -119,6 +119,7 @@ from coconut.compiler.util import (
     using_fast_grammar_methods,
     disambiguate_literal,
     any_of,
+    add_labels,
 )
 
 
@@ -590,15 +591,6 @@ def join_match_funcdef(tokens):
         + indentation
         + body
     )
-
-
-def kwd_err_msg_handle(tokens):
-    """Handle keyword parse error messages."""
-    kwd, = tokens
-    if kwd == "def":
-        return "invalid function definition"
-    else:
-        return 'invalid use of the keyword "' + kwd + '"'
 
 
 def alt_ternary_handle(tokens):
@@ -1378,7 +1370,8 @@ class Grammar(object):
         # for known_atom, type should be known at compile time
         known_atom = (
             const_atom
-            | string_atom
+            # IS_STR is used by and_expr_handle
+            | string_atom("IS_STR")
             | list_item
             | dict_literal
             | dict_comp
@@ -1582,14 +1575,13 @@ class Grammar(object):
         # arith_expr = exprlist(term, addop)
         # shift_expr = exprlist(arith_expr, shift)
         # and_expr = exprlist(shift_expr, amp)
-        and_expr = exprlist(
-            term,
-            any_of(
-                addop,
-                shift,
-                amp,
-            ),
+        term_op = any_of(
+            addop,
+            shift,
+            amp,
         )
+        and_expr = Forward()
+        and_expr_ref = tokenlist(attach(term, add_labels), term_op, allow_trailing=False, suppress=False)
 
         protocol_intersect_expr = Forward()
         protocol_intersect_expr_ref = tokenlist(and_expr, amp_colon, allow_trailing=False)
@@ -2863,7 +2855,7 @@ class Grammar(object):
                 "misplaced '?' (naked '?' is only supported inside partial application arguments)",
             )
             | fixto(Optional(keyword("if") + skip_to_in_line(unsafe_equals)) + equals, "misplaced assignment (maybe should be '==')")
-            | attach(any_keyword_in(keyword_vars + reserved_vars), kwd_err_msg_handle)
+            | fixto(keyword("def"), "invalid function definition")
             | fixto(end_of_line, "misplaced newline (maybe missing ':')")
         )
 

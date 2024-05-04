@@ -495,7 +495,7 @@ class Logger(object):
         trace = " ".join(str(arg) for arg in args)
         self.printlog(_indent(trace, self.trace_ind))
 
-    def log_tag(self, tag, block, multiline=False, force=False):
+    def log_tag(self, tag, block, multiline=False, wrap=True, force=False):
         """Logs a tagged message if tracing."""
         if self.tracing or force:
             assert not (not DEVELOP and force), tag
@@ -505,7 +505,7 @@ class Logger(object):
             if multiline:
                 self.print_trace(tagstr + "\n" + displayable(block))
             else:
-                self.print_trace(tagstr, ascii(block))
+                self.print_trace(tagstr, ascii(block) if wrap else block)
 
     def log_trace(self, expr, original, loc, item=None, extra=None):
         """Formats and displays a trace if tracing."""
