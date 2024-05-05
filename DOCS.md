@@ -336,7 +336,7 @@ If the `--strict` (`-s` for short) flag is enabled, Coconut will perform additio
 The style issues which will cause `--strict` to throw an error are:
 
 - mixing of tabs and spaces
-- use of `"hello" "world"` implicit string concatenation (use `+` instead for clarity; Coconut will compile the `+` away)
+- use of `"hello" "world"` implicit string concatenation (use explicit `+` instead)
 - use of `from __future__` imports (Coconut does these automatically)
 - inheriting from `object` in classes (Coconut does this automatically)
 - semicolons at end of lines

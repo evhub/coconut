@@ -333,8 +333,6 @@ def g(x) = x
     assert "builder" in parse("[def x -> (x, y) for y in range(10)]", "lenient")
     assert parse("[def x -> (x, y) for y in range(10)]", "lenient").count("def") == 2
     assert parse("123  # derp", "lenient") == "123  # derp"
-    assert parse('"abc" "xyz"', "lenient") == "'abcxyz'"
-    assert parse('"abc" + "def" + "ghi"', "lenient") == "'abcdefghi'"
 
     return True
 

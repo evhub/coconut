@@ -119,7 +119,6 @@ from coconut.compiler.util import (
     using_fast_grammar_methods,
     disambiguate_literal,
     any_of,
-    add_labels,
 )
 
 
@@ -1370,8 +1369,7 @@ class Grammar(object):
         # for known_atom, type should be known at compile time
         known_atom = (
             const_atom
-            # IS_STR is used by and_expr_handle
-            | string_atom("IS_STR")
+            | string_atom
             | list_item
             | dict_literal
             | dict_comp
@@ -1580,8 +1578,7 @@ class Grammar(object):
             shift,
             amp,
         )
-        and_expr = Forward()
-        and_expr_ref = tokenlist(attach(term, add_labels), term_op, allow_trailing=False, suppress=False)
+        and_expr = exprlist(term, term_op)
 
         protocol_intersect_expr = Forward()
         protocol_intersect_expr_ref = tokenlist(and_expr, amp_colon, allow_trailing=False)
