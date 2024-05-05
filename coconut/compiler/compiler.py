@@ -2996,17 +2996,17 @@ else:
                         raise CoconutDeferredSyntaxError("cannot star pipe into operator partial", loc)
                     op, arg = split_item
                     return "({op})({x}, {arg})".format(op=op, x=subexpr, arg=arg)
+                elif name == "await":
+                    internal_assert(not split_item, "invalid split await pipe item tokens", split_item)
+                    if stars:
+                        raise CoconutDeferredSyntaxError("cannot star pipe into await", loc)
+                    return self.await_expr_handle(original, loc, [subexpr])
                 elif name == "right arr concat partial":
                     if stars:
                         raise CoconutDeferredSyntaxError("cannot star pipe into array concatenation operator partial", loc)
                     op, arg = split_item
                     internal_assert(op.lstrip(";") == "", "invalid arr concat op", op)
                     return "_coconut_arr_concat_op({dim}, {x}, {arg})".format(dim=len(op), x=subexpr, arg=arg)
-                elif name == "await":
-                    internal_assert(not split_item, "invalid split await pipe item tokens", split_item)
-                    if stars:
-                        raise CoconutDeferredSyntaxError("cannot star pipe into await", loc)
-                    return self.await_expr_handle(original, loc, [subexpr])
                 elif name == "namedexpr":
                     if stars:
                         raise CoconutDeferredSyntaxError("cannot star pipe into named expression partial", loc)

@@ -266,7 +266,10 @@ def evaluate_tokens(tokens, **kwargs):
             elif isinstance(result, ParseResults):
                 return make_modified_tokens(result, cls=MergeNode)
             elif isinstance(result, list):
-                return MergeNode(result)
+                if len(result) == 1:
+                    return result[0]
+                else:
+                    return MergeNode(result)
             else:
                 return result
 
