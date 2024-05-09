@@ -178,22 +178,22 @@ if sys.getrecursionlimit() < default_recursion_limit:
     sys.setrecursionlimit(default_recursion_limit)
 
 # modules that numpy-like arrays can live in
-xarray_modules = (
-    "xarray",
+jax_numpy_modules = (
+    "jaxlib",
 )
 pandas_modules = (
     "pandas",
 )
-jax_numpy_modules = (
-    "jaxlib",
+xarray_modules = (
+    "xarray",
 )
 numpy_modules = (
     "numpy",
     "torch",
 ) + (
-    xarray_modules
+    jax_numpy_modules
     + pandas_modules
-    + jax_numpy_modules
+    + xarray_modules
 )
 
 legal_indent_chars = " \t"  # the only Python-legal indent chars
