@@ -291,6 +291,19 @@ def assert_remove_prefix(inputstr, prefix, allow_no_prefix=False):
 remove_prefix = partial(assert_remove_prefix, allow_no_prefix=True)
 
 
+def assert_remove_suffix(inputstr, suffix, allow_no_suffix=False):
+    """Remove prefix asserting that inputstr starts with it."""
+    assert suffix, suffix
+    if not allow_no_suffix:
+        assert inputstr.endswith(suffix), inputstr
+    elif not inputstr.endswith(suffix):
+        return inputstr
+    return inputstr[:-len(suffix)]
+
+
+remove_suffix = partial(assert_remove_suffix, allow_no_suffix=True)
+
+
 def ensure_dir(dirpath, logger=None):
     """Ensure that a directory exists."""
     if not os.path.exists(dirpath):

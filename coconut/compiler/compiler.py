@@ -105,6 +105,7 @@ from coconut.util import (
     get_clock_time,
     get_name,
     assert_remove_prefix,
+    assert_remove_suffix,
     dictset,
     noop_ctx,
 )
@@ -4335,11 +4336,11 @@ __annotations__["{name}"] = {annotation}
 
         # handle Python 3.8 f string = specifier
         for i, expr in enumerate(exprs):
-            if expr.endswith("="):
+            expr_rstrip = expr.rstrip()
+            if expr_rstrip.endswith("="):
                 before = string_parts[i]
-                internal_assert(before[-1] == "{", "invalid format string split", (string_parts, exprs))
-                string_parts[i] = before[:-1] + expr + "{"
-                exprs[i] = expr[:-1]
+                string_parts[i] = assert_remove_prefix(before, "{") + expr + "{"
+                exprs[i] = assert_remove_suffix(expr_rstrip, "=")
 
         # compile Coconut expressions
         compiled_exprs = []
