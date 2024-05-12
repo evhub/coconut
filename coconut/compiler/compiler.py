@@ -4339,7 +4339,7 @@ __annotations__["{name}"] = {annotation}
             expr_rstrip = expr.rstrip()
             if expr_rstrip.endswith("="):
                 before = string_parts[i]
-                string_parts[i] = assert_remove_prefix(before, "{") + expr + "{"
+                string_parts[i] = assert_remove_suffix(before, "{") + expr + "{"
                 exprs[i] = assert_remove_suffix(expr_rstrip, "=")
 
         # compile Coconut expressions

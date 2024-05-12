@@ -459,8 +459,8 @@ def primary_test_2() -> bool:
     assert py_min(3, 4) == 3 == py_max(2, 3)
     assert len(zip()) == 0 == len(zip_longest())  # type: ignore
     assert CoconutWarning `issubclass` Warning
-    a = b = 2
-    assert f"{a + b = }" == "a + b = 4"
+    x = y = 2
+    assert f"{x + y = }" == "x + y = 4"
 
     with process_map.multiple_sequential_calls():  # type: ignore
         assert map((+), range(3), range(4)$[:-1], strict=True) |> list == [0, 2, 4] == process_map((+), range(3), range(4)$[:-1], strict=True) |> list  # type: ignore
