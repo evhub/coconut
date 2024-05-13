@@ -186,9 +186,13 @@ class LoggingStringIO(StringIO):
 def should_use_color(file=None):
     """Determine if colors should be used for the given file object."""
     use_color = get_bool_env_var(use_color_env_var, default=None)
+    if use_color is None:
+        use_color = get_bool_env_var("PYTHON_COLORS", default=None)
     if use_color is not None:
         return use_color
-    if get_bool_env_var("CLICOLOR_FORCE") or get_bool_env_var("FORCE_COLOR"):
+    if get_bool_env_var("NO_COLOR"):
+        return False
+    if get_bool_env_var("FORCE_COLOR") or get_bool_env_var("CLICOLOR_FORCE"):
         return True
     return file is not None and isatty(file)
 
