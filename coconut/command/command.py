@@ -506,7 +506,7 @@ class Command(object):
         ]
         return main_compilation_tasks, extra_compilation_tasks
 
-    def compile_path(self, source, dest=True, package=True, handling_exceptions_kwargs={}, **kwargs):
+    def compile_path(self, source, dest=True, package=True, **kwargs):
         """Compile a path and return paths to compiled files."""
         if not isinstance(dest, bool):
             dest = fixpath(dest)
@@ -514,11 +514,11 @@ class Command(object):
             destpath = self.compile_file(source, dest, package, **kwargs)
             return [destpath] if destpath is not None else []
         elif os.path.isdir(source):
-            return self.compile_folder(source, dest, package, handling_exceptions_kwargs=handling_exceptions_kwargs, **kwargs)
+            return self.compile_folder(source, dest, package, **kwargs)
         else:
             raise CoconutException("could not find source path", source)
 
-    def compile_folder(self, directory, write=True, package=True, handling_exceptions_kwargs={}, **kwargs):
+    def compile_folder(self, directory, write=True, package=True, **kwargs):
         """Compile a directory and return paths to compiled files."""
         if not isinstance(write, bool) and os.path.isfile(write):
             raise CoconutException("destination path cannot point to a file when compiling a directory")
@@ -530,7 +530,7 @@ class Command(object):
                 writedir = os.path.join(write, os.path.relpath(dirpath, directory))
             for filename in filenames:
                 if os.path.splitext(filename)[1] in code_exts:
-                    with self.handling_exceptions(**handling_exceptions_kwargs):
+                    with self.handling_exceptions(**kwargs.get("handling_exceptions_kwargs", {})):
                         destpath = self.compile_file(os.path.join(dirpath, filename), writedir, package, **kwargs)
                         if destpath is not None:
                             filepaths.append(destpath)
@@ -576,7 +576,7 @@ class Command(object):
         self.compile(filepath, destpath, package, force=force, **kwargs)
         return destpath
 
-    def compile(self, codepath, destpath=None, package=False, run=False, force=False, show_unchanged=True, callback=None):
+    def compile(self, codepath, destpath=None, package=False, run=False, force=False, show_unchanged=True, handling_exceptions_kwargs={}, callback=None):
         """Compile a source Coconut file to a destination Python file."""
         with univ_open(codepath, "r") as opened:
             code = readfile(opened)
@@ -599,43 +599,37 @@ class Command(object):
                 logger.print(foundhash)
             if run:
                 self.execute_file(destpath, argv_source_path=codepath)
+            if callback is not None:
+                callback(destpath)
 
         else:
             logger.show_tabulated("Compiling", showpath(codepath), "...")
 
             def inner_callback(compiled):
-                try:
-                    if destpath is None:
-                        logger.show_tabulated("Compiled", showpath(codepath), "without writing to file.")
-                    else:
-                        with univ_open(destpath, "w") as opened:
-                            writefile(opened, compiled)
-                        logger.show_tabulated("Compiled to", showpath(destpath), ".")
-                    if self.display:
-                        logger.print(compiled)
-                    if run:
-                        if destpath is None:
-                            self.execute(compiled, path=codepath, allow_show=False)
-                        else:
-                            self.execute_file(destpath, argv_source_path=codepath)
-                except BaseException as err:
-                    if callback is not None:
-                        callback(False, err)
-                    raise
+                if destpath is None:
+                    logger.show_tabulated("Compiled", showpath(codepath), "without writing to file.")
                 else:
-                    if callback is not None:
-                        callback(True, destpath)
+                    with univ_open(destpath, "w") as opened:
+                        writefile(opened, compiled)
+                    logger.show_tabulated("Compiled to", showpath(destpath), ".")
+                if self.display:
+                    logger.print(compiled)
+                if run:
+                    if destpath is None:
+                        self.execute(compiled, path=codepath, allow_show=False)
+                    else:
+                        self.execute_file(destpath, argv_source_path=codepath)
+                if callback is not None:
+                    callback(destpath)
 
             parse_kwargs = dict(
                 codepath=codepath,
                 use_cache=self.use_cache,
             )
-            if callback is not None:
-                parse_kwargs["error_callback"] = lambda err: callback(False, err)
             if package is True:
-                self.submit_comp_job(codepath, inner_callback, "parse_package", code, package_level=package_level, **parse_kwargs)
+                self.submit_comp_job(codepath, inner_callback, handling_exceptions_kwargs, "parse_package", code, package_level=package_level, **parse_kwargs)
             elif package is False:
-                self.submit_comp_job(codepath, inner_callback, "parse_file", code, **parse_kwargs)
+                self.submit_comp_job(codepath, inner_callback, handling_exceptions_kwargs, "parse_file", code, **parse_kwargs)
             else:
                 raise CoconutInternalException("invalid value for package", package)
 
@@ -677,11 +671,10 @@ class Command(object):
                 time.sleep(random.random() / 10)
                 self.create_package(dirpath, retries_left - 1)
 
-    def submit_comp_job(self, path, callback, method, *args, **kwargs):
+    def submit_comp_job(self, path, callback, handling_exceptions_kwargs, method, *args, **kwargs):
         """Submits a job on self.comp to be run in parallel."""
-        error_callback = kwargs.pop("error_callback", None)
         if self.executor is None:
-            with self.handling_exceptions():
+            with self.handling_exceptions(**handling_exceptions_kwargs):
                 callback(getattr(self.comp, method)(*args, **kwargs))
         else:
             path = showpath(path)
@@ -691,15 +684,9 @@ class Command(object):
                 def callback_wrapper(completed_future):
                     """Ensures that all errors are always caught, since errors raised in a callback won't be propagated."""
                     with logger.in_path(path):  # handle errors in the path context
-                        with self.handling_exceptions():
-                            try:
-                                result = completed_future.result()
-                            except BaseException as err:
-                                if error_callback is not None:
-                                    error_callback(err)
-                                raise
-                            else:
-                                callback(result)
+                        with self.handling_exceptions(**handling_exceptions_kwargs):
+                            result = completed_future.result()
+                            callback(result)
                 future.add_done_callback(callback_wrapper)
 
     def register_exit_code(self, code=1, errmsg=None, err=None):
@@ -722,7 +709,7 @@ class Command(object):
             self.exit_code = code or self.exit_code
 
     @contextmanager
-    def handling_exceptions(self, exit_on_error=None, on_keyboard_interrupt=None):
+    def handling_exceptions(self, exit_on_error=None, error_callback=None):
         """Perform proper exception handling."""
         if exit_on_error is None:
             exit_on_error = self.fail_fast
@@ -732,21 +719,22 @@ class Command(object):
                     yield
             else:
                 yield
-        except SystemExit as err:
-            self.register_exit_code(err.code)
         # make sure we don't catch GeneratorExit below
         except GeneratorExit:
             raise
+        except SystemExit as err:
+            self.register_exit_code(err.code)
+            if error_callback is not None:
+                error_callback(err)
         except BaseException as err:
             if isinstance(err, CoconutException):
                 logger.print_exc()
-            elif isinstance(err, KeyboardInterrupt):
-                if on_keyboard_interrupt is not None:
-                    on_keyboard_interrupt()
-            else:
+            elif not isinstance(err, KeyboardInterrupt):
                 logger.print_exc()
                 logger.printerr(report_this_text)
             self.register_exit_code(err=err)
+            if error_callback is not None:
+                error_callback(err)
         if exit_on_error:
             self.exit_on_error()
 
@@ -1152,33 +1140,36 @@ class Command(object):
 
         interrupted = [False]  # in list to allow modification
 
-        def interrupt():
-            interrupted[0] = True
-
         def recompile(path, callback, **kwargs):
-            def inner_callback(ok, path):
-                if ok:
-                    self.run_mypy(path)
+            def error_callback(err):
+                if isinstance(err, KeyboardInterrupt):
+                    interrupted[0] = True
                 callback()
             path = fixpath(path)
             src = kwargs.pop("source")
             dest = kwargs.pop("dest")
             if os.path.isfile(path) and os.path.splitext(path)[1] in code_exts:
-                with self.handling_exceptions(on_keyboard_interrupt=interrupt):
+                with self.handling_exceptions(error_callback=error_callback):
                     if dest is True or dest is None:
                         writedir = dest
                     else:
                         # correct the compilation path based on the relative position of path to src
                         dirpath = os.path.dirname(path)
                         writedir = os.path.join(dest, os.path.relpath(dirpath, src))
+
+                    def inner_callback(path):
+                        self.run_mypy([path])
+                        callback()
                     self.compile_path(
                         path,
                         writedir,
                         show_unchanged=False,
-                        handling_exceptions_kwargs=dict(on_keyboard_interrupt=interrupt),
+                        handling_exceptions_kwargs=dict(error_callback=error_callback),
                         callback=inner_callback,
                         **kwargs  # no comma for py2
                     )
+            else:
+                callback()
 
         observer = Observer()
         watchers = []
@@ -1193,7 +1184,7 @@ class Command(object):
                 while not interrupted[0]:
                     time.sleep(watch_interval)
             except KeyboardInterrupt:
-                interrupt()
+                interrupted[0] = True
             finally:
                 if interrupted[0]:
                     logger.show_sig("Got KeyboardInterrupt; stopping watcher.")

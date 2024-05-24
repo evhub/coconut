@@ -21,6 +21,7 @@ from coconut.root import *  # NOQA
 
 import sys
 
+from coconut.terminal import logger
 from coconut.exceptions import CoconutException
 
 try:
@@ -51,6 +52,9 @@ class RecompilationWatcher(FileSystemEventHandler):
     def on_modified(self, event):
         """Handle a file modified event."""
         path = event.src_path
-        if path not in self.saw:
+        if path in self.saw:
+            logger.log("Skipping watch event for: " + repr(path) + "\n\t(currently compiling: " + repr(self.saw) + ")")
+        else:
+            logger.log("Handling watch event for: " + repr(path) + "\n\t(currently compiling: " + repr(self.saw) + ")")
             self.saw.add(path)
-            self.recompile(path, callback=lambda: self.saw.remove(path), *self.args, **self.kwargs)
+            self.recompile(path, callback=lambda: self.saw.discard(path), *self.args, **self.kwargs)
