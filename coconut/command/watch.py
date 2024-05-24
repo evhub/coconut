@@ -46,10 +46,6 @@ class RecompilationWatcher(FileSystemEventHandler):
         self.recompile = recompile
         self.args = args
         self.kwargs = kwargs
-        self.keep_watching()
-
-    def keep_watching(self):
-        """Allows recompiling previously-compiled files."""
         self.saw = set()
 
     def on_modified(self, event):
@@ -57,4 +53,4 @@ class RecompilationWatcher(FileSystemEventHandler):
         path = event.src_path
         if path not in self.saw:
             self.saw.add(path)
-            self.recompile(path, *self.args, **self.kwargs)
+            self.recompile(path, callback=lambda: self.saw.remove(path), *self.args, **self.kwargs)
