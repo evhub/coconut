@@ -740,6 +740,8 @@ class Command(object):
 
     def set_jobs(self, jobs, profile=False):
         """Set --jobs."""
+        if profile and jobs is None:
+            jobs = 0
         if jobs in (None, "sys"):
             self.jobs = jobs
         else:
