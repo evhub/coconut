@@ -187,6 +187,7 @@ from coconut.compiler.util import (
     manage,
     sub_all,
     ComputationNode,
+    StartOfStrGrammar,
 )
 from coconut.compiler.header import (
     minify_header,
@@ -1305,7 +1306,7 @@ class Compiler(Grammar, pickleable_obj):
             input_len = 0 if inputstring is None else len(inputstring)
             if force or (streamline_grammar_for_len is not None and input_len > streamline_grammar_for_len):
                 start_time = get_clock_time()
-                prep_grammar(grammar, streamline=True)
+                prep_grammar(grammar, for_scan=False, streamline=True)
                 logger.log_lambda(
                     lambda: "Streamlined {grammar} in {time} seconds{info}.".format(
                         grammar=get_name(grammar),
@@ -1502,7 +1503,7 @@ class Compiler(Grammar, pickleable_obj):
                             hold["exprs"][-1] += c
                         elif hold["paren_level"] > 0:
                             raise self.make_err(CoconutSyntaxError, "imbalanced parentheses in format string expression", inputstring, i, reformat=False)
-                        elif match_in(self.end_f_str_expr, remaining_text):
+                        elif does_parse(self.end_f_str_expr, remaining_text):
                             hold["in_expr"] = False
                             hold["str_parts"].append(c)
                         else:
@@ -2128,11 +2129,11 @@ else:
                 type_ignore=self.type_ignore_comment(),
             )
         self.tre_func_name <<= base_keyword(func_name).suppress()
-        return attach(
-            self.tre_return,
+        return StartOfStrGrammar(attach(
+            self.tre_return_base,
             tre_return_handle,
             greedy=True,
-        )
+        ))
 
     def detect_is_gen(self, raw_lines):
         """Determine if the given function code is for a generator."""

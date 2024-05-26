@@ -72,6 +72,7 @@ from coconut._pyparsing import (
     ParserElement,
     MatchFirst,
     And,
+    StringStart,
     _trim_arity,
     _ParseResultsWithOffset,
     all_parse_elements,
@@ -610,8 +611,31 @@ def parsing_context(inner_parse=None):
         yield
 
 
-def prep_grammar(grammar, streamline=False):
+class StartOfStrGrammar(object):
+    """A container object that denotes grammars that should always be parsed at the start of the string."""
+    __slots__ = ("grammar",)
+    start_marker = StringStart()
+
+    def __init__(self, grammar):
+        self.grammar = grammar
+
+    def with_start_marker(self):
+        """Get the grammar with the start marker."""
+        internal_assert(not CPYPARSING, "StartOfStrGrammar.with_start_marker() should only be necessary without cPyparsing")
+        return self.start_marker + self.grammar
+
+    @property
+    def name(self):
+        return get_name(self.grammar)
+
+
+def prep_grammar(grammar, for_scan, streamline=False):
     """Prepare a grammar item to be used as the root of a parse."""
+    if isinstance(grammar, StartOfStrGrammar):
+        if for_scan:
+            grammar = grammar.with_start_marker()
+        else:
+            grammar = grammar.grammar
     grammar = trace(grammar)
     if streamline:
         grammar.streamlined = False
@@ -624,7 +648,7 @@ def prep_grammar(grammar, streamline=False):
 def parse(grammar, text, inner=None, eval_parse_tree=True):
     """Parse text using grammar."""
     with parsing_context(inner):
-        result = prep_grammar(grammar).parseString(text)
+        result = prep_grammar(grammar, for_scan=False).parseString(text)
         if eval_parse_tree:
             result = unpack(result)
         return result
@@ -645,8 +669,12 @@ def does_parse(grammar, text, inner=None):
 
 def all_matches(grammar, text, inner=None, eval_parse_tree=True):
     """Find all matches for grammar in text."""
+    kwargs = {}
+    if CPYPARSING and isinstance(grammar, StartOfStrGrammar):
+        grammar = grammar.grammar
+        kwargs["maxStartLoc"] = 0
     with parsing_context(inner):
-        for tokens, start, stop in prep_grammar(grammar).scanString(text):
+        for tokens, start, stop in prep_grammar(grammar, for_scan=True).scanString(text, **kwargs):
             if eval_parse_tree:
                 tokens = unpack(tokens)
             yield tokens, start, stop
@@ -668,8 +696,12 @@ def match_in(grammar, text, inner=None):
 
 def transform(grammar, text, inner=None):
     """Transform text by replacing matches to grammar."""
+    kwargs = {}
+    if CPYPARSING and isinstance(grammar, StartOfStrGrammar):
+        grammar = grammar.grammar
+        kwargs["maxStartLoc"] = 0
     with parsing_context(inner):
-        result = prep_grammar(add_action(grammar, unpack)).transformString(text)
+        result = prep_grammar(add_action(grammar, unpack), for_scan=True).transformString(text, **kwargs)
         if result == text:
             result = None
         return result

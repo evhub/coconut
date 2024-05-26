@@ -20,7 +20,6 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 from coconut.root import *  # NOQA
 
 import os
-import re
 import sys
 import traceback
 from warnings import warn
@@ -146,6 +145,7 @@ if MODERN_PYPARSING:
 # -----------------------------------------------------------------------------------------------------------------------
 
 if MODERN_PYPARSING:
+    ParserElement.leaveWhitespace = ParserElement.leave_whitespace
     SUPPORTS_PACKRAT_CONTEXT = False
 
 elif CPYPARSING:
@@ -288,22 +288,6 @@ if SUPPORTS_INCREMENTAL:
     all_parse_elements = ParserElement.collectParseElements()
 else:
     all_parse_elements = None
-
-
-# -----------------------------------------------------------------------------------------------------------------------
-# MISSING OBJECTS:
-# -----------------------------------------------------------------------------------------------------------------------
-
-python_quoted_string = getattr(_pyparsing, "python_quoted_string", None)
-if python_quoted_string is None:
-    python_quoted_string = _pyparsing.Combine(
-        # multiline strings must come first
-        (_pyparsing.Regex(r'"""(?:[^"\\]|""(?!")|"(?!"")|\\.)*', flags=re.MULTILINE) + '"""').setName("multiline double quoted string")
-        | (_pyparsing.Regex(r"'''(?:[^'\\]|''(?!')|'(?!'')|\\.)*", flags=re.MULTILINE) + "'''").setName("multiline single quoted string")
-        | (_pyparsing.Regex(r'"(?:[^"\n\r\\]|(?:\\")|(?:\\(?:[^x]|x[0-9a-fA-F]+)))*') + '"').setName("double quoted string")
-        | (_pyparsing.Regex(r"'(?:[^'\n\r\\]|(?:\\')|(?:\\(?:[^x]|x[0-9a-fA-F]+)))*") + "'").setName("single quoted string")
-    ).setName("Python quoted string")
-    _pyparsing.python_quoted_string = python_quoted_string
 
 
 # -----------------------------------------------------------------------------------------------------------------------

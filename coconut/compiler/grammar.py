@@ -40,7 +40,6 @@ from coconut._pyparsing import (
     Optional,
     ParserElement,
     StringEnd,
-    StringStart,
     Word,
     ZeroOrMore,
     hexnums,
@@ -48,7 +47,6 @@ from coconut._pyparsing import (
     originalTextFor,
     nestedExpr,
     FollowedBy,
-    python_quoted_string,
     restOfLine,
 )
 
@@ -119,6 +117,7 @@ from coconut.compiler.util import (
     using_fast_grammar_methods,
     disambiguate_literal,
     any_of,
+    StartOfStrGrammar,
 )
 
 
@@ -924,7 +923,6 @@ class Grammar(object):
         # rparen handles simple stmts ending parenthesized stmt lambdas
         end_simple_stmt_item = FollowedBy(newline | semicolon | rparen)
 
-        start_marker = StringStart()
         moduledoc_marker = condense(ZeroOrMore(lineitem) - Optional(moduledoc_item))
         end_marker = StringEnd()
         indent = Literal(openindent)
@@ -2669,19 +2667,19 @@ class Grammar(object):
         line = newline | stmt
 
         file_input = condense(moduledoc_marker - ZeroOrMore(line))
-        raw_file_parser = start_marker - file_input - end_marker
+        raw_file_parser = StartOfStrGrammar(file_input - end_marker)
         line_by_line_file_parser = (
-            start_marker - moduledoc_marker - stores_loc_item,
-            start_marker - line - stores_loc_item,
+            StartOfStrGrammar(moduledoc_marker - stores_loc_item),
+            StartOfStrGrammar(line - stores_loc_item),
         )
         file_parser = line_by_line_file_parser if USE_LINE_BY_LINE else raw_file_parser
 
         single_input = condense(Optional(line) - ZeroOrMore(newline))
         eval_input = condense(testlist - ZeroOrMore(newline))
 
-        single_parser = start_marker - single_input - end_marker
-        eval_parser = start_marker - eval_input - end_marker
-        some_eval_parser = start_marker + eval_input
+        single_parser = StartOfStrGrammar(single_input - end_marker)
+        eval_parser = StartOfStrGrammar(eval_input - end_marker)
+        some_eval_parser = StartOfStrGrammar(eval_input)
 
         parens = originalTextFor(nestedExpr("(", ")", ignoreExpr=None))
         brackets = originalTextFor(nestedExpr("[", "]", ignoreExpr=None))
@@ -2699,15 +2697,16 @@ class Grammar(object):
             )
         )
         unsafe_xonsh_parser, _impl_call_ref = disable_inside(
-            single_parser,
+            single_input - end_marker,
             unsafe_impl_call_ref,
         )
         impl_call_ref <<= _impl_call_ref
-        xonsh_parser, _anything_stmt, _xonsh_command = disable_outside(
+        _xonsh_parser, _anything_stmt, _xonsh_command = disable_outside(
             unsafe_xonsh_parser,
             unsafe_anything_stmt,
             unsafe_xonsh_command,
         )
+        xonsh_parser = StartOfStrGrammar(_xonsh_parser)
         anything_stmt <<= _anything_stmt
         xonsh_command <<= _xonsh_command
 
@@ -2731,7 +2730,7 @@ class Grammar(object):
 
         noqa_regex = compile_regex(r"\b[Nn][Oo][Qq][Aa]\b")
 
-        just_non_none_atom = start_marker + ~keyword("None") + known_atom + end_marker
+        just_non_none_atom = StartOfStrGrammar(~keyword("None") + known_atom + end_marker)
 
         original_function_call_tokens = (
             lparen.suppress() + rparen.suppress()
@@ -2741,9 +2740,8 @@ class Grammar(object):
         )
 
         tre_func_name = Forward()
-        tre_return = (
-            start_marker
-            + keyword("return").suppress()
+        tre_return_base = (
+            keyword("return").suppress()
             + maybeparens(
                 lparen,
                 tre_func_name + original_function_call_tokens,
@@ -2751,9 +2749,8 @@ class Grammar(object):
             ) + end_marker
         )
 
-        tco_return = attach(
-            start_marker
-            + keyword("return").suppress()
+        tco_return = StartOfStrGrammar(attach(
+            keyword("return").suppress()
             + maybeparens(
                 lparen,
                 disallow_keywords(untcoable_funcs, with_suffix="(")
@@ -2778,7 +2775,7 @@ class Grammar(object):
             tco_return_handle,
             # this is the root in what it's used for, so might as well evaluate greedily
             greedy=True,
-        )
+        ))
 
         rest_of_lambda = Forward()
         lambdas = keyword("lambda") - rest_of_lambda - colon
@@ -2818,9 +2815,8 @@ class Grammar(object):
             ))
         )
 
-        split_func = (
-            start_marker
-            - keyword("def").suppress()
+        split_func = StartOfStrGrammar(
+            keyword("def").suppress()
             - unsafe_dotted_name
             - Optional(brackets).suppress()
             - lparen.suppress()
@@ -2834,13 +2830,13 @@ class Grammar(object):
             | ~indent + ~dedent + any_char + keyword("for") + unsafe_name + keyword("in")
         )
 
-        just_a_string = start_marker + string_atom + end_marker
+        just_a_string = StartOfStrGrammar(string_atom + end_marker)
 
         end_of_line = end_marker | Literal("\n") | pound
 
         unsafe_equals = Literal("=")
 
-        parse_err_msg = start_marker + (
+        parse_err_msg = StartOfStrGrammar(
             # should be in order of most likely to actually be the source of the error first
             fixto(
                 ZeroOrMore(~questionmark + ~Literal("\n") + any_char)
@@ -2859,22 +2855,31 @@ class Grammar(object):
         start_f_str_regex = compile_regex(r"\br?fr?$")
         start_f_str_regex_len = 4
 
-        end_f_str_expr = combine(start_marker + (rbrace | colon | bang))
+        end_f_str_expr = StartOfStrGrammar(combine(rbrace | colon | bang).leaveWhitespace())
 
-        string_start = start_marker + python_quoted_string
+        python_quoted_string = regex_item(
+            # multiline strings must come first
+            r'"""(?:[^"\\]|\n|""(?!")|"(?!"")|\\.)*"""'
+            r"|'''(?:[^'\\]|\n|''(?!')|'(?!'')|\\.)*'''"
+            r'|"(?:[^"\n\r\\]|(?:\\")|(?:\\(?:[^x]|x[0-9a-fA-F]+)))*"'
+            r"|'(?:[^'\n\r\\]|(?:\\')|(?:\\(?:[^x]|x[0-9a-fA-F]+)))*'"
+        )
 
-        no_unquoted_newlines = start_marker + ZeroOrMore(python_quoted_string | ~Literal("\n") + any_char) + end_marker
+        string_start = StartOfStrGrammar(python_quoted_string)
 
-        operator_stmt = (
-            start_marker
-            + keyword("operator").suppress()
+        no_unquoted_newlines = StartOfStrGrammar(
+            ZeroOrMore(python_quoted_string | ~Literal("\n") + any_char)
+            + end_marker
+        )
+
+        operator_stmt = StartOfStrGrammar(
+            keyword("operator").suppress()
             + restOfLine
         )
 
         unsafe_import_from_name = condense(ZeroOrMore(unsafe_dot) + unsafe_dotted_name | OneOrMore(unsafe_dot))
-        from_import_operator = (
-            start_marker
-            + keyword("from").suppress()
+        from_import_operator = StartOfStrGrammar(
+            keyword("from").suppress()
             + unsafe_import_from_name
             + keyword("import").suppress()
             + keyword("operator").suppress()
