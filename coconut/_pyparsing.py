@@ -543,5 +543,5 @@ def start_profiling():
 
 def print_profiling_results():
     """Print all profiling results."""
-    print_timing_info()
     print_poorly_ordered_MatchFirsts()
+    print_timing_info()

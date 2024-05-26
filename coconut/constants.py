@@ -137,7 +137,8 @@ streamline_grammar_for_len = 1536
 
 use_cache_file = True
 
-disable_incremental_for_len = 46080
+# 0 for always disabled; float("inf") for always enabled
+disable_incremental_for_len = 20480
 
 adaptive_any_of_env_var = "COCONUT_ADAPTIVE_ANY_OF"
 use_adaptive_any_of = get_bool_env_var(adaptive_any_of_env_var, True)
