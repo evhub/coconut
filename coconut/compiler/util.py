@@ -624,18 +624,24 @@ class StartOfStrGrammar(object):
         internal_assert(not CPYPARSING, "StartOfStrGrammar.with_start_marker() should only be necessary without cPyparsing")
         return self.start_marker + self.grammar
 
+    def apply(self, grammar_transformer):
+        """Apply a function to transform the grammar."""
+        self.grammar = grammar_transformer(self.grammar)
+
     @property
     def name(self):
         return get_name(self.grammar)
 
 
-def prep_grammar(grammar, for_scan, streamline=False):
+def prep_grammar(grammar, for_scan, streamline=False, unpack=False):
     """Prepare a grammar item to be used as the root of a parse."""
     if isinstance(grammar, StartOfStrGrammar):
         if for_scan:
             grammar = grammar.with_start_marker()
         else:
             grammar = grammar.grammar
+    if unpack:
+        grammar = add_action(grammar, unpack)
     grammar = trace(grammar)
     if streamline:
         grammar.streamlined = False
@@ -701,7 +707,7 @@ def transform(grammar, text, inner=None):
         grammar = grammar.grammar
         kwargs["maxStartLoc"] = 0
     with parsing_context(inner):
-        result = prep_grammar(add_action(grammar, unpack), for_scan=True).transformString(text, **kwargs)
+        result = prep_grammar(grammar, unpack=True, for_scan=True).transformString(text, **kwargs)
         if result == text:
             result = None
         return result
