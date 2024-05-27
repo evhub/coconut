@@ -633,14 +633,14 @@ class StartOfStrGrammar(object):
         return get_name(self.grammar)
 
 
-def prep_grammar(grammar, for_scan, streamline=False, unpack=False):
+def prep_grammar(grammar, for_scan, streamline=False, add_unpack=False):
     """Prepare a grammar item to be used as the root of a parse."""
     if isinstance(grammar, StartOfStrGrammar):
         if for_scan:
             grammar = grammar.with_start_marker()
         else:
             grammar = grammar.grammar
-    if unpack:
+    if add_unpack:
         grammar = add_action(grammar, unpack)
     grammar = trace(grammar)
     if streamline:
@@ -707,7 +707,7 @@ def transform(grammar, text, inner=None):
         grammar = grammar.grammar
         kwargs["maxStartLoc"] = 0
     with parsing_context(inner):
-        result = prep_grammar(grammar, unpack=True, for_scan=True).transformString(text, **kwargs)
+        result = prep_grammar(grammar, add_unpack=True, for_scan=True).transformString(text, **kwargs)
         if result == text:
             result = None
         return result
