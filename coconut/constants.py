@@ -137,26 +137,29 @@ streamline_grammar_for_len = 1536
 
 use_cache_file = True
 
-# 0 for always disabled; float("inf") for always enabled
-disable_incremental_for_len = 20480
-
 adaptive_any_of_env_var = "COCONUT_ADAPTIVE_ANY_OF"
 use_adaptive_any_of = get_bool_env_var(adaptive_any_of_env_var, True)
 
+use_line_by_line_parser = False
+
+# 0 for always disabled; float("inf") for always enabled
+#  (this determines when compiler.util.enable_incremental_parsing() is used)
+disable_incremental_for_len = 20480
+
 # note that _parseIncremental produces much smaller caches
 use_incremental_if_available = False
-
-use_line_by_line_parser = False
 
 # these only apply to use_incremental_if_available, not compiler.util.enable_incremental_parsing()
 default_incremental_cache_size = None
 repeatedly_clear_incremental_cache = True
 never_clear_incremental_cache = False
+# also applies to compiler.util.enable_incremental_parsing() if incremental_mode_cache_successes is True
+incremental_use_hybrid = True
 
 # this is what gets used in compiler.util.enable_incremental_parsing()
 incremental_mode_cache_size = None
 incremental_cache_limit = 2097152  # clear cache when it gets this large
-incremental_mode_cache_successes = False
+incremental_mode_cache_successes = False  # if False, also disables hybrid mode
 require_cache_clear_frac = 0.3125  # require that at least this much of the cache must be cleared on each cache clear
 
 use_left_recursion_if_available = False
@@ -1020,7 +1023,7 @@ all_reqs = {
 
 # min versions are inclusive
 unpinned_min_versions = {
-    "cPyparsing": (2, 4, 7, 2, 3, 3),
+    "cPyparsing": (2, 4, 7, 2, 4, 0),
     ("pre-commit", "py3"): (3,),
     ("psutil", "py>=27"): (5,),
     "jupyter": (1, 0),

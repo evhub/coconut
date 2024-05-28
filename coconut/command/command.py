@@ -328,21 +328,18 @@ class Command(object):
                 no_tco=args.no_tco,
                 no_wrap=args.no_wrap_types,
             )
-            self.comp.warm_up(
-                streamline=(
-                    not self.using_jobs
-                    and (args.watch or args.profile)
-                ),
-                enable_incremental_mode=(
-                    not self.using_jobs
-                    and args.watch
-                ),
-                set_debug_names=(
-                    args.verbose
-                    or args.trace
-                    or args.profile
-                ),
-            )
+            if not self.using_jobs:
+                self.comp.warm_up(
+                    streamline=(
+                        args.watch
+                        or args.profile
+                    ),
+                    set_debug_names=(
+                        args.verbose
+                        or args.trace
+                        or args.profile
+                    ),
+                )
 
             # process mypy args and print timing info (must come after compiler setup)
             if args.mypy is not None:

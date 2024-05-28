@@ -38,7 +38,6 @@ from coconut._pyparsing import (
     Literal,
     OneOrMore,
     Optional,
-    ParserElement,
     StringEnd,
     Word,
     ZeroOrMore,
@@ -2907,7 +2906,7 @@ class Grammar(object):
     def set_grammar_names():
         """Set names of grammar elements to their variable names."""
         for varname, val in vars(Grammar).items():
-            if isinstance(val, ParserElement):
+            if hasattr(val, "setName"):
                 val.setName(varname)
 
 

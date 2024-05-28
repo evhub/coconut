@@ -136,6 +136,7 @@ from coconut.constants import (
     all_keywords,
     always_keep_parse_name_prefix,
     keep_if_unchanged_parse_name_prefix,
+    incremental_use_hybrid,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -558,7 +559,10 @@ def force_reset_packrat_cache():
     """Forcibly reset the packrat cache and all packrat stats."""
     if ParserElement._incrementalEnabled:
         ParserElement._incrementalEnabled = False
-        ParserElement.enableIncremental(incremental_mode_cache_size if in_incremental_mode() else default_incremental_cache_size, still_reset_cache=False)
+        ParserElement.enableIncremental(
+            incremental_mode_cache_size if in_incremental_mode() else default_incremental_cache_size,
+            **ParserElement.getIncrementalInfo(),
+        )
     else:
         ParserElement._packratEnabled = False
         ParserElement.enablePackrat(packrat_cache_size)
@@ -590,6 +594,7 @@ def parsing_context(inner_parse=None):
             yield
         finally:
             ParserElement._incrementalWithResets = incrementalWithResets
+            dehybridize_cache()
     elif (
         current_cache_matters
         and will_clear_cache
@@ -607,6 +612,11 @@ def parsing_context(inner_parse=None):
             if logger.verbose:
                 ParserElement.packrat_cache_stats[0] += old_cache_stats[0]
                 ParserElement.packrat_cache_stats[1] += old_cache_stats[1]
+    elif not will_clear_cache:
+        try:
+            yield
+        finally:
+            dehybridize_cache()
     else:
         yield
 
@@ -631,6 +641,10 @@ class StartOfStrGrammar(object):
     @property
     def name(self):
         return get_name(self.grammar)
+
+    def setName(self, *args, **kwargs):
+        """Equivalent to .grammar.setName."""
+        return self.grammar.setName(*args, **kwargs)
 
 
 def prep_grammar(grammar, for_scan, streamline=False, add_unpack=False):
@@ -795,6 +809,22 @@ def get_target_info_smart(target, mode="lowest"):
 # PARSING INTROSPECTION:
 # -----------------------------------------------------------------------------------------------------------------------
 
+# incremental lookup indices
+_lookup_elem = 0
+_lookup_orig = 1
+_lookup_loc = 2
+# _lookup_bools = 3
+# _lookup_context = 4
+assert _lookup_elem == 0, "lookup must start with elem"
+
+# incremental value indices
+_value_exc_loc_or_ret = 0
+# _value_furthest_loc = 1
+_value_useful = -1
+assert _value_exc_loc_or_ret == 0, "value must start with exc loc / ret"
+assert _value_useful == -1, "value must end with usefullness obj"
+
+
 def maybe_copy_elem(item, name):
     """Copy the given grammar element if it's referenced somewhere else."""
     item_ref_count = sys.getrefcount(item) if CPYTHON and not on_new_python else float("inf")
@@ -927,7 +957,7 @@ def execute_clear_strat(clear_cache):
         if clear_cache == "useless":
             keys_to_del = []
             for lookup, value in cache.items():
-                if not value[-1][0]:
+                if not value[_value_useful][0]:
                     keys_to_del.append(lookup)
             for del_key in keys_to_del:
                 del cache[del_key]
@@ -940,6 +970,24 @@ def execute_clear_strat(clear_cache):
     return orig_cache_len
 
 
+def dehybridize_cache():
+    """Dehybridize any hybrid entries in the incremental parsing cache."""
+    if (
+        CPYPARSING
+        # if we're not in incremental mode, we just throw away the cache
+        #  after every parse, so no need to dehybridize it
+        and in_incremental_mode()
+        and ParserElement.getIncrementalInfo()["hybrid_mode"]
+    ):
+        cache = get_pyparsing_cache()
+        new_entries = {}
+        for lookup, value in cache.items():
+            cached_item = value[0]
+            if cached_item is not True and not isinstance(cached_item, int):
+                new_entries[lookup] = (True,) + value[1:]
+        cache.update(new_entries)
+
+
 def clear_packrat_cache(force=False):
     """Clear the packrat cache if applicable.
     Very performance-sensitive for incremental parsing mode."""
@@ -948,6 +996,8 @@ def clear_packrat_cache(force=False):
         if DEVELOP:
             start_time = get_clock_time()
         orig_cache_len = execute_clear_strat(clear_cache)
+        # always dehybridize after cache clear so we're dehybridizing the fewest items
+        dehybridize_cache()
         if DEVELOP and orig_cache_len is not None:
             logger.log("Pruned packrat cache from {orig_len} items to {new_len} items using {strat!r} strategy ({time} secs).".format(
                 orig_len=orig_cache_len,
@@ -962,10 +1012,10 @@ def get_cache_items_for(original, only_useful=False, exclude_stale=True):
     """Get items from the pyparsing cache filtered to only be from parsing original."""
     cache = get_pyparsing_cache()
     for lookup, value in cache.items():
-        got_orig = lookup[1]
+        got_orig = lookup[_lookup_orig]
         internal_assert(lambda: isinstance(got_orig, (bytes, str)), "failed to look up original in pyparsing cache item", (lookup, value))
         if ParserElement._incrementalEnabled:
-            (is_useful,) = value[-1]
+            (is_useful,) = value[_value_useful]
             if only_useful and not is_useful:
                 continue
             if exclude_stale and is_useful >= 2:
@@ -979,7 +1029,7 @@ def get_highest_parse_loc(original):
     Note that there's no point in filtering for successes/failures, since we always see both at the same locations."""
     highest_loc = 0
     for lookup, _ in get_cache_items_for(original):
-        loc = lookup[2]
+        loc = lookup[_lookup_loc]
         if loc > highest_loc:
             highest_loc = loc
     return highest_loc
@@ -993,7 +1043,12 @@ def enable_incremental_parsing():
         return True
     ParserElement._incrementalEnabled = False
     try:
-        ParserElement.enableIncremental(incremental_mode_cache_size, still_reset_cache=False, cache_successes=incremental_mode_cache_successes)
+        ParserElement.enableIncremental(
+            incremental_mode_cache_size,
+            still_reset_cache=False,
+            cache_successes=incremental_mode_cache_successes,
+            hybrid_mode=incremental_mode_cache_successes and incremental_use_hybrid,
+        )
     except ImportError as err:
         raise CoconutException(str(err))
     logger.log("Incremental parsing mode enabled.")
@@ -1022,7 +1077,7 @@ def pickle_cache(original, cache_path, include_incremental=True, protocol=pickle
                 break
             if len(pickleable_cache_items) >= incremental_cache_limit:
                 break
-            loc = lookup[2]
+            loc = lookup[_lookup_loc]
             # only include cache items that aren't at the start or end, since those
             #  are the only ones that parseIncremental will reuse
             if 0 < loc < len(original) - 1:
@@ -1032,6 +1087,7 @@ def pickle_cache(original, cache_path, include_incremental=True, protocol=pickle
                 if validation_dict is not None:
                     validation_dict[identifier] = elem.__class__.__name__
                 pickleable_lookup = (identifier,) + lookup[1:]
+                internal_assert(value[_value_exc_loc_or_ret] is True or isinstance(value[_value_exc_loc_or_ret], int), "cache must be dehybridized before pickling", value[_value_exc_loc_or_ret])
                 pickleable_cache_items.append((pickleable_lookup, value))
 
     all_adaptive_stats = {}
@@ -1120,6 +1176,7 @@ def unpickle_cache(cache_path):
             if maybe_elem is not None:
                 if validation_dict is not None:
                     internal_assert(maybe_elem.__class__.__name__ == validation_dict[identifier], "incremental cache pickle-unpickle inconsistency", (maybe_elem, validation_dict[identifier]))
+                internal_assert(value[_value_exc_loc_or_ret] is True or isinstance(value[_value_exc_loc_or_ret], int), "attempting to unpickle hybrid cache item", value[_value_exc_loc_or_ret])
                 lookup = (maybe_elem,) + pickleable_lookup[1:]
                 usefullness = value[-1][0]
                 internal_assert(usefullness, "loaded useless cache item", (lookup, value))

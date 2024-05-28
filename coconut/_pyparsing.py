@@ -48,6 +48,7 @@ from coconut.constants import (
     num_displayed_timing_items,
     use_cache_file,
     use_line_by_line_parser,
+    incremental_use_hybrid,
 )
 from coconut.util import get_clock_time  # NOQA
 from coconut.util import (
@@ -276,7 +277,11 @@ if DEVELOP:
 if MODERN_PYPARSING and use_left_recursion_if_available:
     ParserElement.enable_left_recursion()
 elif SUPPORTS_INCREMENTAL and use_incremental_if_available:
-    ParserElement.enableIncremental(default_incremental_cache_size, still_reset_cache=not never_clear_incremental_cache)
+    ParserElement.enableIncremental(
+        default_incremental_cache_size,
+        still_reset_cache=not never_clear_incremental_cache,
+        hybrid_mode=incremental_use_hybrid,
+    )
 elif use_packrat_parser:
     ParserElement.enablePackrat(packrat_cache_size)
 
