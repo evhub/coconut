@@ -561,7 +561,7 @@ def force_reset_packrat_cache():
         ParserElement._incrementalEnabled = False
         ParserElement.enableIncremental(
             incremental_mode_cache_size if in_incremental_mode() else default_incremental_cache_size,
-            **ParserElement.getIncrementalInfo(),
+            **ParserElement.getIncrementalInfo()  # no comma for py2
         )
     else:
         ParserElement._packratEnabled = False
