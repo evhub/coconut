@@ -1512,10 +1512,7 @@ class Compiler(Grammar, pickleable_obj):
 
                     # if we might be at the end of the string
                     elif hold["stop"] is not None:
-                        if c == "\\":
-                            self.str_hold_contents(hold, append=hold["stop"] + c)
-                            hold["stop"] = None
-                        elif c == hold["start"][0]:
+                        if c == hold["start"][0]:
                             hold["stop"] += c
                         elif len(hold["stop"]) > len(hold["start"]):
                             raise self.make_err(CoconutSyntaxError, "invalid number of closing " + repr(hold["start"][0]) + "s", inputstring, i, reformat=False)
@@ -1523,8 +1520,9 @@ class Compiler(Grammar, pickleable_obj):
                             done = True
                             rerun = True
                         else:
-                            self.str_hold_contents(hold, append=hold["stop"] + c)
+                            self.str_hold_contents(hold, append=hold["stop"])
                             hold["stop"] = None
+                            rerun = True
 
                     # if we might be at the start of an f string expr
                     elif hold.get("saw_brace", False):
@@ -1539,15 +1537,16 @@ class Compiler(Grammar, pickleable_obj):
                             hold["exprs"].append("")
                             rerun = True
 
+                    elif is_f and c == "{":
+                        hold["saw_brace"] = True
+                        self.str_hold_contents(hold, append=c)
+                    # backslashes should escape quotes, but nothing else
                     elif count_end(self.str_hold_contents(hold), "\\") % 2 == 1:
                         self.str_hold_contents(hold, append=c)
                     elif c == hold["start"]:
                         done = True
                     elif c == hold["start"][0]:
                         hold["stop"] = c
-                    elif is_f and c == "{":
-                        hold["saw_brace"] = True
-                        self.str_hold_contents(hold, append=c)
                     else:
                         self.str_hold_contents(hold, append=c)
 

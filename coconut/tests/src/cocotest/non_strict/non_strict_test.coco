@@ -113,6 +113,8 @@ def non_strict_test() -> bool:
     assert value == "123"
     "{" f"{key}" ": " + value + "}" = "{abc: aaa}"
     assert value == "aaa"
+    assert """ """\
+        == " "
     return True
 
 if __name__ == "__main__":
