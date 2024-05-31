@@ -182,6 +182,7 @@ ignore_last_lines_with = (
     " assert_raises(",
     "Populating initial parsing cache",
     "_coconut.warnings.warn(",
+    ": SyntaxWarning: invalid escape sequence",
 )
 
 kernel_installation_msg = (
