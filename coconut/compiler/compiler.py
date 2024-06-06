@@ -5209,7 +5209,7 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
         self.streamline(self.file_parser, force=streamline)
         self.streamline(self.eval_parser, force=streamline)
         if enable_incremental_mode:
-            enable_incremental_parsing()
+            enable_incremental_parsing(reason="explicit warm_up call")
 
 
 # end: ENDPOINTS

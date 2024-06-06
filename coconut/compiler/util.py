@@ -1035,7 +1035,7 @@ def get_highest_parse_loc(original):
     return highest_loc
 
 
-def enable_incremental_parsing():
+def enable_incremental_parsing(reason="explicit enable_incremental_parsing call"):
     """Enable incremental parsing mode where prefix/suffix parses are reused."""
     if not SUPPORTS_INCREMENTAL:
         return False
@@ -1051,7 +1051,7 @@ def enable_incremental_parsing():
         )
     except ImportError as err:
         raise CoconutException(str(err))
-    logger.log("Incremental parsing mode enabled.")
+    logger.log("Incremental parsing mode enabled due to {reason}.".format(reason=reason))
     return True
 
 
@@ -1199,7 +1199,7 @@ def load_cache_for(inputstring, codepath):
         incremental_enabled = True
         incremental_info = "using incremental parsing mode since it was already enabled"
     elif len(inputstring) < disable_incremental_for_len:
-        incremental_enabled = enable_incremental_parsing()
+        incremental_enabled = enable_incremental_parsing(reason="input length")
         if incremental_enabled:
             incremental_info = "incremental parsing mode enabled due to len == {input_len} < {max_len}".format(
                 input_len=len(inputstring),
