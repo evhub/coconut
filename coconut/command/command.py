@@ -83,8 +83,6 @@ from coconut.util import (
     first_import_time,
 )
 from coconut.command.util import (
-    writefile,
-    readfile,
     showpath,
     rem_encoding,
     Runner,
@@ -104,6 +102,7 @@ from coconut.command.util import (
     run_with_stack_size,
     proc_run_args,
     get_python_lib,
+    update_pyright_config,
 )
 from coconut.compiler.util import (
     should_indent,
@@ -128,6 +127,7 @@ class Command(object):
     display = False  # corresponds to --display flag
     jobs = 0  # corresponds to --jobs flag
     mypy_args = None  # corresponds to --mypy flag
+    pyright = False  # corresponds to --pyright flag
     argv_args = None  # corresponds to --argv flag
     stack_size = 0  # corresponds to --stack-size flag
     use_cache = USE_CACHE  # corresponds to --no-cache flag
@@ -252,6 +252,8 @@ class Command(object):
                 logger.log("Directly passed args:", original_args)
             logger.log("Parsed args:", args)
 
+            type_checking_arg = "--mypy" if args.mypy else "--pyright" if args.pyright else None
+
             # validate args and show warnings
             if args.stack_size and args.stack_size % 4 != 0:
                 logger.warn("--stack-size should generally be a multiple of 4, not {stack_size} (to support 4 KB pages)".format(stack_size=args.stack_size))
@@ -259,8 +261,8 @@ class Command(object):
                 logger.warn("using --mypy running with --no-line-numbers is not recommended; mypy error messages won't include Coconut line numbers")
             if args.interact and args.run:
                 logger.warn("extraneous --run argument passed; --interact implies --run")
-            if args.package and self.mypy:
-                logger.warn("extraneous --package argument passed; --mypy implies --package")
+            if args.package and type_checking_arg:
+                logger.warn("extraneous --package argument passed; --{type_checking_arg} implies --package".format(type_checking_arg=type_checking_arg))
 
             # validate args and raise errors
             if args.line_numbers and args.no_line_numbers:
@@ -269,10 +271,10 @@ class Command(object):
                 raise CoconutException("cannot --site-install and --site-uninstall simultaneously")
             if args.standalone and args.package:
                 raise CoconutException("cannot compile as both --package and --standalone")
-            if args.standalone and self.mypy:
-                raise CoconutException("cannot compile as both --package (implied by --mypy) and --standalone")
-            if args.no_write and self.mypy:
-                raise CoconutException("cannot compile with --no-write when using --mypy")
+            if args.standalone and type_checking_arg:
+                raise CoconutException("cannot compile as both --package (implied by --{type_checking_arg}) and --standalone".format(type_checking_arg=type_checking_arg))
+            if args.no_write and type_checking_arg:
+                raise CoconutException("cannot compile with --no-write when using --{type_checking_arg}".format(type_checking_arg=type_checking_arg))
             for and_args in getattr(args, "and") or []:
                 if len(and_args) > 2:
                     raise CoconutException(
@@ -291,6 +293,7 @@ class Command(object):
                 set_recursion_limit(args.recursion_limit)
             self.fail_fast = args.fail_fast
             self.display = args.display
+            self.pyright = args.pyright
             self.prompt.vi_mode = args.vi_mode
             if args.style is not None:
                 self.prompt.set_style(args.style)
@@ -375,8 +378,8 @@ class Command(object):
                     for kwargs in all_compile_path_kwargs:
                         filepaths += self.compile_path(**kwargs)
 
-                # run mypy on compiled files
-                self.run_mypy(filepaths)
+                # run type checking on compiled files
+                self.run_type_checking(filepaths)
 
                 # do extra compilation if there is any
                 if extra_compile_path_kwargs:
@@ -456,7 +459,7 @@ class Command(object):
             processed_dest = dest
 
         # determine package mode
-        if args.package or self.mypy:
+        if args.package or self.type_checking:
             package = True
         elif args.standalone:
             package = False
@@ -576,7 +579,7 @@ class Command(object):
     def compile(self, codepath, destpath=None, package=False, run=False, force=False, show_unchanged=True, handling_exceptions_kwargs={}, callback=None):
         """Compile a source Coconut file to a destination Python file."""
         with univ_open(codepath, "r") as opened:
-            code = readfile(opened)
+            code = opened.read()
 
         package_level = -1
         if destpath is not None:
@@ -607,7 +610,7 @@ class Command(object):
                     logger.show_tabulated("Compiled", showpath(codepath), "without writing to file.")
                 else:
                     with univ_open(destpath, "w") as opened:
-                        writefile(opened, compiled)
+                        opened.write(compiled)
                     logger.show_tabulated("Compiled to", showpath(destpath), ".")
                 if self.display:
                     logger.print(compiled)
@@ -657,7 +660,7 @@ class Command(object):
         filepath = os.path.join(dirpath, "__coconut__.py")
         try:
             with univ_open(filepath, "w") as opened:
-                writefile(opened, self.comp.getheader("__coconut__"))
+                opened.write(self.comp.getheader("__coconut__"))
         except OSError:
             logger.log_exc()
             if retries_left <= 0:
@@ -792,7 +795,7 @@ class Command(object):
         """Determine if a file has the hash of the code."""
         if destpath is not None and os.path.isfile(destpath):
             with univ_open(destpath, "r") as opened:
-                compiled = readfile(opened)
+                compiled = opened.read()
             hashash = gethash(compiled)
             if hashash is not None:
                 newhash = self.comp.genhash(code, package_level)
@@ -880,7 +883,7 @@ class Command(object):
                 logger.print(compiled)
 
             if path is None:  # header is not included
-                if not self.mypy:
+                if not self.type_checking:
                     no_str_code = self.comp.remove_strs(compiled)
                     if no_str_code is not None:
                         result = mypy_builtin_regex.search(no_str_code)
@@ -892,7 +895,7 @@ class Command(object):
 
             self.runner.run(compiled, use_eval=use_eval, path=path, all_errors_exit=path is not None)
 
-            self.run_mypy(code=self.runner.was_run_code())
+            self.run_type_checking(code=self.runner.was_run_code())
 
     def execute_file(self, destpath, **kwargs):
         """Execute compiled file."""
@@ -912,15 +915,20 @@ class Command(object):
 
         # set up runner
         if self.runner is None:
-            self.runner = Runner(self.comp, exit=self.exit_runner, store=self.mypy)
+            self.runner = Runner(self.comp, exit=self.exit_runner, store=self.type_checking)
 
         # pass runner to prompt
         self.prompt.set_runner(self.runner)
 
     @property
-    def mypy(self):
-        """Whether using MyPy or not."""
-        return self.mypy_args is not None
+    def type_checking(self):
+        """Whether using a static type-checker or not."""
+        return self.mypy_args is not None or self.pyright
+
+    @property
+    def type_checking_version(self):
+        """What version of Python to type check against."""
+        return ver_tuple_to_str(get_target_info_smart(self.comp.target, mode="highest"))
 
     def set_mypy_args(self, mypy_args=None):
         """Set MyPy arguments."""
@@ -940,7 +948,7 @@ class Command(object):
             if not any(arg.startswith("--python-version") for arg in self.mypy_args):
                 self.mypy_args += [
                     "--python-version",
-                    ver_tuple_to_str(get_target_info_smart(self.comp.target, mode="highest")),
+                    self.type_checking_version,
                 ]
 
             if not any(arg.startswith("--python-executable") for arg in self.mypy_args):
@@ -960,9 +968,9 @@ class Command(object):
             logger.log("MyPy args:", self.mypy_args)
             self.mypy_errs = []
 
-    def run_mypy(self, paths=(), code=None):
-        """Run MyPy with arguments."""
-        if self.mypy:
+    def run_type_checking(self, paths=(), code=None):
+        """Run type-checking on the given paths / code."""
+        if self.mypy_args is not None:
             set_mypy_path()
             from coconut.command.mypy import mypy_run
             args = list(paths) + self.mypy_args
@@ -987,6 +995,14 @@ class Command(object):
                         if code is not None:  # interpreter
                             logger.printerr(line)
                         self.mypy_errs.append(line)
+        if self.pyright:
+            config_file = update_pyright_config()
+            if code is not None:
+                logger.warn("--pyright only works on files, not code snippets or at the interpreter")
+            if paths:
+                from pyright import main
+                args = ["--project", config_file, "--pythonversion", self.type_checking_version] + list(paths)
+                main(args)
 
     def run_silent_cmd(self, *args):
         """Same as run_cmd$(show_output=logger.verbose)."""
@@ -1157,7 +1173,7 @@ class Command(object):
                         writedir = os.path.join(dest, os.path.relpath(dirpath, src))
 
                     def inner_callback(path):
-                        self.run_mypy([path])
+                        self.run_type_checking([path])
                         callback()
                     self.compile_path(
                         path,

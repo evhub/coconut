@@ -92,6 +92,7 @@ The full list of optional dependencies is:
 - `kernel`: lightweight subset of `jupyter` that only includes the dependencies that are strictly necessary for Coconut's [Jupyter kernel](#kernel).
 - `watch`: enables use of the `--watch` flag.
 - `mypy`: enables use of the `--mypy` flag.
+- `pyright`: enables use of the `--pyright` flag.
 - `xonsh`: enables use of Coconut's [`xonsh` support](#xonsh-support).
 - `numpy`: installs everything necessary for making use of Coconut's [`numpy` integration](#numpy-integration).
 - `jupyterlab`: installs everything necessary to use [JupyterLab](https://github.com/jupyterlab/jupyterlab) with Coconut.
@@ -121,11 +122,11 @@ depth: 1
 
 ```
 coconut [-h] [--and source [dest ...]] [-v] [-t version] [-i] [-p] [-a] [-l]
-        [--no-line-numbers] [-k] [-w] [-r] [-n] [-d] [-q] [-s] [--no-tco]
-        [--no-wrap-types] [-c code] [--incremental] [-j processes] [-f] [--minify]
-        [--jupyter ...] [--mypy ...] [--argv ...] [--tutorial] [--docs] [--style name]
-        [--vi-mode] [--recursion-limit limit] [--stack-size kbs] [--site-install]
-        [--site-uninstall] [--verbose] [--trace] [--profile]
+        [--no-line-numbers] [-k] [-w] [-r] [-n] [-d] [-q] [-s] [--no-tco] [--no-wrap-types]
+        [-c code] [-j processes] [-f] [--minify] [--jupyter ...] [--mypy ...] [--pyright]
+        [--argv ...] [--tutorial] [--docs] [--style name] [--vi-mode]
+        [--recursion-limit limit] [--stack-size kbs] [--fail-fast] [--no-cache]
+        [--site-install] [--site-uninstall] [--verbose] [--trace] [--profile]
         [source] [dest]
 ```
 
@@ -184,6 +185,7 @@ dest                destination directory for compiled files (defaults to
                       Jupyter)
 --mypy ...            run MyPy on compiled Python (remaining args passed to MyPy) (implies
                       --package --line-numbers)
+--pyright             run Pyright on compiled Python (implies --package)
 --argv ..., --args ...
                       set sys.argv to source plus remaining args for use in the Coconut script
                       being run
@@ -452,6 +454,10 @@ You can also run `mypy`—or any other static type checker—directly on the com
 
 To distribute your code with checkable type annotations, you'll need to include `coconut` as a dependency (though a `--no-deps` install should be fine), as installing it is necessary to make the requisite stub files available. You'll also probably want to include a [`py.typed`](https://peps.python.org/pep-0561/) file.
 
+##### Pyright Integration
+
+Though not as well-supported as MyPy, Coconut also has built-in [Pyright](https://github.com/microsoft/pyright) support. Simply pass `--pyright` to automatically run Pyright on all compiled code. To adjust Pyright options, rather than pass them at the command-line, add your settings to the file `~/.coconut_pyrightconfig.json` (automatically generated the first time `coconut --pyright` is run).
+
 ##### Syntax
 
 To explicitly annotate your code with types to be checked, Coconut supports (on all Python versions):
@@ -467,7 +473,7 @@ Sometimes, MyPy will not know how to handle certain Coconut constructs, such as 
 
 ##### Interpreter
 
-Coconut even supports `--mypy` in the interpreter, which will intelligently scan each new line of code, in the context of previous lines, for newly-introduced MyPy errors. For example:
+Coconut even supports `--mypy` (though not `--pyright`) in the interpreter, which will intelligently scan each new line of code, in the context of previous lines, for newly-introduced MyPy errors. For example:
 ```coconut_pycon
 >>> a: str = count()[0]
 <string>:14: error: Incompatible types in assignment (expression has type "int", variable has type "str")
@@ -4655,7 +4661,7 @@ else:
 
 #### `reveal_type` and `reveal_locals`
 
-When using MyPy, `reveal_type(<expr>)` will cause MyPy to print the type of `<expr>` and `reveal_locals()` will cause MyPy to print the types of the current `locals()`. At runtime, `reveal_type(x)` is always the identity function and `reveal_locals()` always returns `None`. See [the MyPy documentation](https://mypy.readthedocs.io/en/stable/common_issues.html#reveal-type) for more information.
+When using static type analysis tools integrated with Coconut such as [MyPy](#mypy-integration), `reveal_type(<expr>)` will cause MyPy to print the type of `<expr>` and `reveal_locals()` will cause MyPy to print the types of the current `locals()`. At runtime, `reveal_type(x)` is always the identity function and `reveal_locals()` always returns `None`. See [the MyPy documentation](https://mypy.readthedocs.io/en/stable/common_issues.html#reveal-type) for more information.
 
 ##### Example
 

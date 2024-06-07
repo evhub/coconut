@@ -217,6 +217,12 @@ arguments.add_argument(
 )
 
 arguments.add_argument(
+    "--pyright",
+    action="store_true",
+    help="run Pyright on compiled Python (implies --package)",
+)
+
+arguments.add_argument(
     "--argv", "--args",
     type=str,
     nargs=argparse.REMAINDER,

@@ -223,6 +223,7 @@ extras = {
     "kernel": get_reqs("kernel"),
     "watch": get_reqs("watch"),
     "mypy": get_reqs("mypy"),
+    "pyright": get_reqs("pyright"),
     "xonsh": get_reqs("xonsh"),
     "numpy": get_reqs("numpy"),
 }

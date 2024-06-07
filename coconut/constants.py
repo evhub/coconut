@@ -670,6 +670,8 @@ stub_dir_names = (
 )
 installed_stub_dir = os.path.join(coconut_home, ".coconut_stubs")
 
+pyright_config_file = os.path.join(coconut_home, ".coconut_pyrightconfig.json")
+
 watch_interval = .1  # seconds
 
 info_tabulation = 18  # offset for tabulated info messages
@@ -721,6 +723,10 @@ mypy_err_infixes = (
 mypy_non_err_infixes = (
     ": note: ",
 )
+
+extra_pyright_args = {
+    "reportPossiblyUnboundVariable": False,
+}
 
 oserror_retcode = 127
 
@@ -985,6 +991,11 @@ all_reqs = {
         "types-backports",
         ("typing", "py<35"),
     ),
+    "pyright": (
+        "pyright",
+        "types-backports",
+        ("typing", "py<35"),
+    ),
     "watch": (
         "watchdog",
     ),
@@ -1041,6 +1052,7 @@ unpinned_min_versions = {
     "myst-parser": (3,),
     "sphinx": (7,),
     "mypy[python2]": (1, 10),
+    "pyright": (1, 1),
     ("jupyter-console", "py37"): (6, 6),
     ("typing", "py<35"): (3, 10),
     ("typing_extensions", "py>=38"): (4, 11),
