@@ -10,7 +10,7 @@ repos:
         - --experimental
         - --ignore=W503,E501,E722,E402,E721
 -   repo: https://github.com/pre-commit/pre-commit-hooks.git
-    rev: v4.5.0
+    rev: v4.6.0
     hooks:
     -   id: check-added-large-files
     -   id: fix-byte-order-marker
