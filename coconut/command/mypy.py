@@ -34,7 +34,7 @@ try:
     from mypy.api import run
 except ImportError:
     raise CoconutException(
-        "--mypy flag requires MyPy library",
+        "coconut --mypy requires MyPy",
         extra="run '{python} -m pip install coconut[mypy]' to fix".format(python=sys.executable),
     )
 

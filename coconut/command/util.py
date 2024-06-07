@@ -510,7 +510,10 @@ def update_pyright_config(python_version=None):
     update_existing = os.path.exists(pyright_config_file)
     with univ_open(pyright_config_file, "r+" if update_existing else "w") as config_file:
         if update_existing:
-            config = readfile(config_file, in_json=True)
+            try:
+                config = readfile(config_file, in_json=True)
+            except ValueError:
+                raise CoconutException("invalid JSON syntax in " + repr(pyright_config_file))
         else:
             config = extra_pyright_args.copy()
         config["extraPaths"] = [install_stubs()]

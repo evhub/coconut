@@ -1000,7 +1000,13 @@ class Command(object):
             if code is not None:
                 logger.warn("--pyright only works on files, not code snippets or at the interpreter")
             if paths:
-                from pyright import main
+                try:
+                    from pyright import main
+                except ImportError:
+                    raise CoconutException(
+                        "coconut --pyright requires Pyright",
+                        extra="run '{python} -m pip install coconut[pyright]' to fix".format(python=sys.executable),
+                    )
                 args = ["--project", config_file, "--pythonversion", self.type_checking_version] + list(paths)
                 main(args)
 
