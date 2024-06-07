@@ -44,12 +44,13 @@ def main(args=None):
 
     # compile everything
     print("Compiling Coconut test suite with args %r and agnostic_target=%r." % (args, agnostic_target))
+    type_checking = "--mypy" in args or "--pyright" in args
     comp_all(
         args,
         agnostic_target=agnostic_target,
-        expect_retcode=0 if "--mypy" not in args else None,
+        expect_retcode=0 if not type_checking else None,
         check_errors="--verbose" not in args,
-        ignore_output=WINDOWS and "--mypy" not in args,
+        ignore_output=WINDOWS and not type_checking,
     )
 
 

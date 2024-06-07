@@ -293,7 +293,6 @@ class Command(object):
                 set_recursion_limit(args.recursion_limit)
             self.fail_fast = args.fail_fast
             self.display = args.display
-            self.pyright = args.pyright
             self.prompt.vi_mode = args.vi_mode
             if args.style is not None:
                 self.prompt.set_style(args.style)
@@ -344,9 +343,11 @@ class Command(object):
                     ),
                 )
 
-            # process mypy args and print timing info (must come after compiler setup)
+            # process mypy + pyright args and print timing info (must come after compiler setup)
             if args.mypy is not None:
                 self.set_mypy_args(args.mypy)
+            if args.pyright:
+                self.enable_pyright()
             logger.log_compiler_stats(self.comp)
 
             # do compilation, keeping track of compiled filepaths
@@ -697,15 +698,15 @@ class Command(object):
                 errmsg = format_error(err)
             else:
                 errmsg = err.__class__.__name__
-        if errmsg is not None:
-            if self.errmsg is None:
-                self.errmsg = errmsg
-            elif errmsg not in self.errmsg:
-                if logger.verbose:
-                    self.errmsg += "\nAnd error: " + errmsg
-                else:
-                    self.errmsg += "; " + errmsg
-        if code is not None:
+        if code:
+            if errmsg is not None:
+                if self.errmsg is None:
+                    self.errmsg = errmsg
+                elif errmsg not in self.errmsg:
+                    if logger.verbose:
+                        self.errmsg += "\nAnd error: " + errmsg
+                    else:
+                        self.errmsg += "; " + errmsg
             self.exit_code = code or self.exit_code
 
     @contextmanager
@@ -888,7 +889,7 @@ class Command(object):
                     if no_str_code is not None:
                         result = mypy_builtin_regex.search(no_str_code)
                         if result:
-                            logger.warn("found mypy-only built-in " + repr(result.group(0)) + "; pass --mypy to use mypy-only built-ins at the interpreter")
+                            logger.warn("found type-checking-only built-in " + repr(result.group(0)) + "; pass --mypy to use such built-ins at the interpreter")
 
             else:  # header is included
                 compiled = rem_encoding(compiled)
@@ -935,10 +936,11 @@ class Command(object):
         if mypy_args is None:
             self.mypy_args = None
 
-        elif mypy_install_arg in mypy_args:
+        stub_dir = set_mypy_path()
+
+        if mypy_install_arg in mypy_args:
             if mypy_args != [mypy_install_arg]:
                 raise CoconutException("'--mypy install' cannot be used alongside other --mypy arguments")
-            stub_dir = set_mypy_path()
             logger.show_sig("Successfully installed MyPy stubs into " + repr(stub_dir))
             self.mypy_args = None
 
@@ -968,10 +970,15 @@ class Command(object):
             logger.log("MyPy args:", self.mypy_args)
             self.mypy_errs = []
 
+    def enable_pyright(self):
+        """Enable the use of Pyright for type-checking."""
+        update_pyright_config()
+        self.pyright = True
+
     def run_type_checking(self, paths=(), code=None):
         """Run type-checking on the given paths / code."""
         if self.mypy_args is not None:
-            set_mypy_path()
+            set_mypy_path(ensure_stubs=False)
             from coconut.command.mypy import mypy_run
             args = list(paths) + self.mypy_args
             if code is not None:  # interpreter
@@ -996,9 +1003,8 @@ class Command(object):
                             logger.printerr(line)
                         self.mypy_errs.append(line)
         if self.pyright:
-            config_file = update_pyright_config()
             if code is not None:
-                logger.warn("--pyright only works on files, not code snippets or at the interpreter")
+                logger.warn("--pyright only works on files, not code snippets or at the interpreter (use --mypy instead)")
             if paths:
                 try:
                     from pyright import main
@@ -1007,8 +1013,8 @@ class Command(object):
                         "coconut --pyright requires Pyright",
                         extra="run '{python} -m pip install coconut[pyright]' to fix".format(python=sys.executable),
                     )
-                args = ["--project", config_file, "--pythonversion", self.type_checking_version] + list(paths)
-                main(args)
+                args = ["--project", pyright_config_file, "--pythonversion", self.type_checking_version] + list(paths)
+                self.register_exit_code(main(args), errmsg="Pyright error")
 
     def run_silent_cmd(self, *args):
         """Same as run_cmd$(show_output=logger.verbose)."""

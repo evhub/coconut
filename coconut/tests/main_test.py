@@ -154,6 +154,8 @@ always_err_strs = (
 ignore_error_lines_with = (
     # ignore SyntaxWarnings containing assert_raises or raise
     "raise",
+    # ignore Pyright errors
+    " - error: ",
 )
 
 mypy_snip = "a: str = count()[0]"
