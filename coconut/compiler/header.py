@@ -939,8 +939,8 @@ def getheader(which, use_hash, target, no_tco, strict, no_wrap):
         header += "from __future__ import print_function, absolute_import, unicode_literals, division\n"
     # including generator_stop here is fine, even though to universalize generator returns
     #  we raise StopIteration errors, since we only do so when target_info < (3, 3)
-    elif target_info >= (3, 13):
-        # 3.13 supports lazy annotations, so we should just use that instead of from __future__ import annotations
+    elif target_info >= (3, 14):
+        # 3.14 supports lazy annotations, so we should just use that instead of from __future__ import annotations
         header += "from __future__ import generator_stop\n"
     elif target_info >= (3, 7):
         if no_wrap:

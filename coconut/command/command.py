@@ -73,6 +73,7 @@ from coconut.constants import (
     coconut_cache_dir,
     coconut_sys_kwargs,
     interpreter_uses_incremental,
+    pyright_config_file,
 )
 from coconut.util import (
     univ_open,

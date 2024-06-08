@@ -509,6 +509,7 @@ def set_mypy_path(ensure_stubs=True):
 
 def update_pyright_config(python_version=None):
     """Save an updated pyrightconfig.json."""
+    stubs_dir = install_stubs()
     update_existing = os.path.exists(pyright_config_file)
     with univ_open(pyright_config_file, "r+" if update_existing else "w") as config_file:
         if update_existing:
@@ -518,7 +519,10 @@ def update_pyright_config(python_version=None):
                 raise CoconutException("invalid JSON syntax in " + repr(pyright_config_file))
         else:
             config = extra_pyright_args.copy()
-        config["extraPaths"] = [install_stubs()]
+        if "extraPaths" not in config:
+            config["extraPaths"] = []
+        if stubs_dir not in config["extraPaths"]:
+            config["extraPaths"].append(stubs_dir)
         if python_version is not None:
             config["pythonVersion"] = python_version
         writefile(config_file, config, in_json=True, indent=tabideal)
