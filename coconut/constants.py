@@ -93,7 +93,7 @@ MYPY = (
     PY38
     and not WINDOWS
     and not PYPY
-    # disabled until MyPy supports PEP 695
+    # TODO: disabled until MyPy supports PEP 695
     and not PY312
 )
 XONSH = (
@@ -111,7 +111,6 @@ py_version_str = sys.version.split()[0]
 # set this to False only ever temporarily for ease of debugging
 use_fast_pyparsing_reprs = get_bool_env_var("COCONUT_FAST_PYPARSING_REPRS", True)
 
-enable_pyparsing_warnings = DEVELOP
 warn_on_multiline_regex = False
 
 default_whitespace_chars = " \t\f"  # the only non-newline whitespace Python allows
@@ -138,25 +137,29 @@ streamline_grammar_for_len = 1536
 
 use_cache_file = True
 
-disable_incremental_for_len = 46080
-
 adaptive_any_of_env_var = "COCONUT_ADAPTIVE_ANY_OF"
 use_adaptive_any_of = get_bool_env_var(adaptive_any_of_env_var, True)
 
+use_line_by_line_parser = False
+
+# 0 for always disabled; float("inf") for always enabled
+#  (this determines when compiler.util.enable_incremental_parsing() is used)
+disable_incremental_for_len = 20480
+
 # note that _parseIncremental produces much smaller caches
 use_incremental_if_available = False
-
-use_line_by_line_parser = False
 
 # these only apply to use_incremental_if_available, not compiler.util.enable_incremental_parsing()
 default_incremental_cache_size = None
 repeatedly_clear_incremental_cache = True
 never_clear_incremental_cache = False
+# also applies to compiler.util.enable_incremental_parsing() if incremental_mode_cache_successes is True
+incremental_use_hybrid = True
 
 # this is what gets used in compiler.util.enable_incremental_parsing()
 incremental_mode_cache_size = None
 incremental_cache_limit = 2097152  # clear cache when it gets this large
-incremental_mode_cache_successes = False
+incremental_mode_cache_successes = False  # if False, also disables hybrid mode
 require_cache_clear_frac = 0.3125  # require that at least this much of the cache must be cleared on each cache clear
 
 use_left_recursion_if_available = False
@@ -179,22 +182,22 @@ if sys.getrecursionlimit() < default_recursion_limit:
     sys.setrecursionlimit(default_recursion_limit)
 
 # modules that numpy-like arrays can live in
-xarray_modules = (
-    "xarray",
+jax_numpy_modules = (
+    "jaxlib",
 )
 pandas_modules = (
     "pandas",
 )
-jax_numpy_modules = (
-    "jaxlib",
+xarray_modules = (
+    "xarray",
 )
 numpy_modules = (
     "numpy",
     "torch",
 ) + (
-    xarray_modules
+    jax_numpy_modules
     + pandas_modules
-    + jax_numpy_modules
+    + xarray_modules
 )
 
 legal_indent_chars = " \t"  # the only Python-legal indent chars
@@ -219,6 +222,7 @@ supported_py3_vers = (
     (3, 11),
     (3, 12),
     (3, 13),
+    (3, 14),
 )
 
 # must be in ascending order and kept up-to-date with https://devguide.python.org/versions
@@ -230,6 +234,7 @@ py_vers_with_eols = (
     ("311", dt.datetime(2027, 11, 1)),
     ("312", dt.datetime(2028, 11, 1)),
     ("313", dt.datetime(2029, 11, 1)),
+    ("314", dt.datetime(2030, 11, 1)),
 )
 
 # must match supported vers above and must be replicated in DOCS
@@ -248,6 +253,7 @@ specific_targets = (
     "311",
     "312",
     "313",
+    "314",
 )
 pseudo_targets = {
     "universal": "",
@@ -287,10 +293,11 @@ match_set_name_var = reserved_prefix + "_match_set_name"
 openindent = "\u204b"  # reverse pilcrow
 closeindent = "\xb6"  # pilcrow
 strwrapper = "\u25b6"  # black right-pointing triangle
-errwrapper = "\u24d8"  # circled letter i
 early_passthrough_wrapper = "\u2038"  # caret
 lnwrapper = "\u2021"  # double dagger
 unwrapper = "\u23f9"  # stop square
+errwrapper = "\u24d8"  # circled letter i
+tempsep = "\u22ee"  # vertical ellipsis
 funcwrapper = "def:"
 
 # must be tuples for .startswith / .endswith purposes
@@ -308,12 +315,17 @@ str_chars = "'\""  # string open/close chars
 # together should include all the constants defined above
 delimiter_symbols = tuple(open_chars + close_chars + str_chars) + (
     strwrapper,
-    errwrapper,
     early_passthrough_wrapper,
     unwrapper,
+    "`",
+    ":",
+    ",",
+    ";",
 ) + indchars + comment_chars
 reserved_compiler_symbols = delimiter_symbols + (
     reserved_prefix,
+    errwrapper,
+    tempsep,
     funcwrapper,
 )
 
@@ -606,6 +618,9 @@ python_exceptions = (
     "BaseException", "BaseExceptionGroup", "GeneratorExit", "KeyboardInterrupt", "SystemExit", "Exception", "ArithmeticError", "FloatingPointError", "OverflowError", "ZeroDivisionError", "AssertionError", "AttributeError", "BufferError", "EOFError", "ExceptionGroup", "BaseExceptionGroup", "ImportError", "ModuleNotFoundError", "LookupError", "IndexError", "KeyError", "MemoryError", "NameError", "UnboundLocalError", "OSError", "BlockingIOError", "ChildProcessError", "ConnectionError", "BrokenPipeError", "ConnectionAbortedError", "ConnectionRefusedError", "ConnectionResetError", "FileExistsError", "FileNotFoundError", "InterruptedError", "IsADirectoryError", "NotADirectoryError", "PermissionError", "ProcessLookupError", "TimeoutError", "ReferenceError", "RuntimeError", "NotImplementedError", "RecursionError", "StopAsyncIteration", "StopIteration", "SyntaxError", "IndentationError", "TabError", "SystemError", "TypeError", "ValueError", "UnicodeError", "UnicodeDecodeError", "UnicodeEncodeError", "UnicodeTranslateError", "Warning", "BytesWarning", "DeprecationWarning", "EncodingWarning", "FutureWarning", "ImportWarning", "PendingDeprecationWarning", "ResourceWarning", "RuntimeWarning", "SyntaxWarning", "UnicodeWarning", "UserWarning",
 )
 
+always_keep_parse_name_prefix = "HAS_"
+keep_if_unchanged_parse_name_prefix = "IS_"
+
 # -----------------------------------------------------------------------------------------------------------------------
 # COMMAND CONSTANTS:
 # -----------------------------------------------------------------------------------------------------------------------
@@ -658,6 +673,8 @@ stub_dir_names = (
 )
 installed_stub_dir = os.path.join(coconut_home, ".coconut_stubs")
 
+pyright_config_file = os.path.join(coconut_home, ".coconut_pyrightconfig.json")
+
 watch_interval = .1  # seconds
 
 info_tabulation = 18  # offset for tabulated info messages
@@ -709,6 +726,10 @@ mypy_err_infixes = (
 mypy_non_err_infixes = (
     ": note: ",
 )
+
+extra_pyright_args = {
+    "reportPossiblyUnboundVariable": False,
+}
 
 oserror_retcode = 127
 
@@ -819,6 +840,8 @@ coconut_specific_builtins = (
     "py_xrange",
     "py_repr",
     "py_breakpoint",
+    "py_min",
+    "py_max",
     "_namedtuple_of",
     "reveal_type",
     "reveal_locals",
@@ -831,6 +854,7 @@ must_use_specific_target_builtins = (
 
 coconut_exceptions = (
     "MatchError",
+    "CoconutWarning",
 )
 
 highlight_builtins = coconut_specific_builtins + interp_only_builtins + python_builtins
@@ -970,6 +994,11 @@ all_reqs = {
         "types-backports",
         ("typing", "py<35"),
     ),
+    "pyright": (
+        "pyright",
+        "types-backports",
+        ("typing", "py<35"),
+    ),
     "watch": (
         "watchdog",
     ),
@@ -1008,7 +1037,7 @@ all_reqs = {
 
 # min versions are inclusive
 unpinned_min_versions = {
-    "cPyparsing": (2, 4, 7, 2, 3, 2),
+    "cPyparsing": (2, 4, 7, 2, 4, 0),
     ("pre-commit", "py3"): (3,),
     ("psutil", "py>=27"): (5,),
     "jupyter": (1, 0),
@@ -1017,30 +1046,32 @@ unpinned_min_versions = {
     ("argparse", "py<27"): (1, 4),
     "pexpect": (4,),
     ("trollius", "py<3;cpy"): (2, 2),
-    "requests": (2, 31),
+    "requests": (2, 32),
     ("numpy", "py39"): (1, 26),
     ("xarray", "py39"): (2024,),
     ("dataclasses", "py==36"): (0, 8),
     ("aenum", "py<34"): (3, 1, 15),
     "pydata-sphinx-theme": (0, 15),
-    "myst-parser": (2,),
+    "myst-parser": (3,),
     "sphinx": (7,),
-    "mypy[python2]": (1, 8),
+    "mypy[python2]": (1, 10),
+    "pyright": (1, 1),
     ("jupyter-console", "py37"): (6, 6),
     ("typing", "py<35"): (3, 10),
-    ("typing_extensions", "py>=38"): (4, 9),
+    ("typing_extensions", "py>=38"): (4, 12),
     ("ipykernel", "py38"): (6,),
     ("jedi", "py39"): (0, 19),
-    ("pygments", "py>=39"): (2, 17),
-    ("xonsh", "py39"): (0, 15),
-    ("pytest", "py38"): (8,),
+    ("pygments", "py>=39"): (2, 18),
+    ("xonsh", "py39"): (0, 16),
     ("async_generator", "py35"): (1, 10),
     ("exceptiongroup", "py37;py<311"): (1,),
-    ("ipython", "py>=310"): (8, 22),
+    ("ipython", "py>=310"): (8, 25),
     "py-spy": (0, 3),
 }
 
 pinned_min_versions = {
+    # don't upgrade this; it breaks xonsh
+    ("pytest", "py38"): (8, 0),
     # don't upgrade these; they break on Python 3.9
     ("numpy", "py34;py<39"): (1, 18),
     ("ipython", "py==39"): (8, 18),
@@ -1107,6 +1138,7 @@ max_versions = {
     ("jedi", "py<39"): _,
     ("pywinpty", "py<3;windows"): _,
     ("ipython", "py3;py<37"): _,
+    ("pytest", "py38"): _,
 }
 
 classifiers = (

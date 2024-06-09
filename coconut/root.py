@@ -23,7 +23,7 @@ import sys as _coconut_sys
 # VERSION:
 # -----------------------------------------------------------------------------------------------------------------------
 
-VERSION = "3.1.0"
+VERSION = "3.1.1"
 VERSION_NAME = None
 # False for release, int >= 1 for develop
 DEVELOP = False
@@ -61,16 +61,16 @@ def _get_target_info(target):
 
 # if a new assignment is added below, a new builtins import should be added alongside it
 _base_py3_header = r'''from builtins import chr, dict, hex, input, int, map, object, oct, open, print, range, str, super, zip, filter, reversed, enumerate, repr
-py_bytes, py_chr, py_dict, py_hex, py_input, py_int, py_map, py_object, py_oct, py_open, py_print, py_range, py_str, py_super, py_zip, py_filter, py_reversed, py_enumerate, py_repr = bytes, chr, dict, hex, input, int, map, object, oct, open, print, range, str, super, zip, filter, reversed, enumerate, repr
-_coconut_py_str, _coconut_py_super, _coconut_py_dict = str, super, dict
+py_bytes, py_chr, py_dict, py_hex, py_input, py_int, py_map, py_object, py_oct, py_open, py_print, py_range, py_str, py_super, py_zip, py_filter, py_reversed, py_enumerate, py_repr, py_min, py_max = bytes, chr, dict, hex, input, int, map, object, oct, open, print, range, str, super, zip, filter, reversed, enumerate, repr, min, max
+_coconut_py_str, _coconut_py_super, _coconut_py_dict, _coconut_py_min, _coconut_py_max = str, super, dict, min, max
 from functools import wraps as _coconut_wraps
 exec("_coconut_exec = exec")
 '''
 
 # if a new assignment is added below, a new builtins import should be added alongside it
 _base_py2_header = r'''from __builtin__ import chr, dict, hex, input, int, map, object, oct, open, print, range, str, super, zip, filter, reversed, enumerate, raw_input, xrange, repr, long
-py_bytes, py_chr, py_dict, py_hex, py_input, py_int, py_map, py_object, py_oct, py_open, py_print, py_range, py_str, py_super, py_zip, py_filter, py_reversed, py_enumerate, py_raw_input, py_xrange, py_repr = bytes, chr, dict, hex, input, int, map, object, oct, open, print, range, str, super, zip, filter, reversed, enumerate, raw_input, xrange, repr
-_coconut_py_raw_input, _coconut_py_xrange, _coconut_py_int, _coconut_py_long, _coconut_py_print, _coconut_py_str, _coconut_py_super, _coconut_py_unicode, _coconut_py_repr, _coconut_py_dict, _coconut_py_bytes = raw_input, xrange, int, long, print, str, super, unicode, repr, dict, bytes
+py_bytes, py_chr, py_dict, py_hex, py_input, py_int, py_map, py_object, py_oct, py_open, py_print, py_range, py_str, py_super, py_zip, py_filter, py_reversed, py_enumerate, py_raw_input, py_xrange, py_repr, py_min, py_max = bytes, chr, dict, hex, input, int, map, object, oct, open, print, range, str, super, zip, filter, reversed, enumerate, raw_input, xrange, repr, min, max
+_coconut_py_raw_input, _coconut_py_xrange, _coconut_py_int, _coconut_py_long, _coconut_py_print, _coconut_py_str, _coconut_py_super, _coconut_py_unicode, _coconut_py_repr, _coconut_py_dict, _coconut_py_bytes, _coconut_py_min, _coconut_py_max = raw_input, xrange, int, long, print, str, super, unicode, repr, dict, bytes, min, max
 from functools import wraps as _coconut_wraps
 from collections import Sequence as _coconut_Sequence
 from future_builtins import *
@@ -278,26 +278,26 @@ class _coconut_methodcaller(object):
 _coconut_operator.methodcaller = _coconut_methodcaller
 '''
 
-_non_py37_extras = r'''def _coconut_default_breakpointhook(*args, **kwargs):
-    hookname = _coconut.os.getenv("PYTHONBREAKPOINT")
-    if hookname != "0":
-        if not hookname:
-            hookname = "pdb.set_trace"
-        modname, dot, funcname = hookname.rpartition(".")
-        if not dot:
-            modname = "builtins" if _coconut_sys.version_info >= (3,) else "__builtin__"
-        if _coconut_sys.version_info >= (2, 7):
-            import importlib
-            module = importlib.import_module(modname)
+_below_py34_extras = '''def min(*args, **kwargs):
+    if len(args) == 1 and "default" in kwargs:
+        obj = tuple(args[0])
+        default = kwargs.pop("default")
+        if len(obj):
+            return _coconut_py_min(obj, **kwargs)
         else:
-            import imp
-            module = imp.load_module(modname, *imp.find_module(modname))
-        hook = _coconut.getattr(module, funcname)
-        return hook(*args, **kwargs)
-if not hasattr(_coconut_sys, "__breakpointhook__"):
-    _coconut_sys.__breakpointhook__ = _coconut_default_breakpointhook
-def breakpoint(*args, **kwargs):
-    return _coconut.getattr(_coconut_sys, "breakpointhook", _coconut_default_breakpointhook)(*args, **kwargs)
+            return default
+    else:
+        return _coconut_py_min(*args, **kwargs)
+def max(*args, **kwargs):
+    if len(args) == 1 and "default" in kwargs:
+        obj = tuple(args[0])
+        default = kwargs.pop("default")
+        if len(obj):
+            return _coconut_py_max(obj, **kwargs)
+        else:
+            return default
+    else:
+        return _coconut_py_max(*args, **kwargs)
 '''
 
 _finish_dict_def = '''
@@ -321,6 +321,26 @@ dict = _coconut_dict_meta(py_str("dict"), _coconut_dict_base.__bases__, _coconut
 '''
 
 _below_py37_extras = '''from collections import OrderedDict as _coconut_OrderedDict
+def _coconut_default_breakpointhook(*args, **kwargs):
+    hookname = _coconut.os.getenv("PYTHONBREAKPOINT")
+    if hookname != "0":
+        if not hookname:
+            hookname = "pdb.set_trace"
+        modname, dot, funcname = hookname.rpartition(".")
+        if not dot:
+            modname = "builtins" if _coconut_sys.version_info >= (3,) else "__builtin__"
+        if _coconut_sys.version_info >= (2, 7):
+            import importlib
+            module = importlib.import_module(modname)
+        else:
+            import imp
+            module = imp.load_module(modname, *imp.find_module(modname))
+        hook = _coconut.getattr(module, funcname)
+        return hook(*args, **kwargs)
+if not hasattr(_coconut_sys, "__breakpointhook__"):
+    _coconut_sys.__breakpointhook__ = _coconut_default_breakpointhook
+def breakpoint(*args, **kwargs):
+    return _coconut.getattr(_coconut_sys, "breakpointhook", _coconut_default_breakpointhook)(*args, **kwargs)
 class _coconut_dict_base(_coconut_OrderedDict):
     __slots__ = ()
     __doc__ = getattr(_coconut_OrderedDict, "__doc__", "<see help(py_dict)>")
@@ -385,15 +405,17 @@ def _get_root_header(version="universal"):
         header += r'''py_breakpoint = breakpoint
 '''
     elif version == "3":
-        header += r'''if _coconut_sys.version_info < (3, 7):
-''' + _indent(_non_py37_extras) + r'''else:
+        header += r'''if _coconut_sys.version_info >= (3, 7):
     py_breakpoint = breakpoint
 '''
-    else:
-        assert version.startswith("2"), version
-        header += _non_py37_extras
-        if version == "2":
-            header += _py26_extras
+    elif version == "2":
+        header += _py26_extras
+
+    if version.startswith("2"):
+        header += _below_py34_extras
+    elif version_info < (3, 4):
+        header += r'''if _coconut_sys.version_info < (3, 4):
+''' + _indent(_below_py34_extras)
 
     if version == "3":
         header += r'''if _coconut_sys.version_info < (3, 7):

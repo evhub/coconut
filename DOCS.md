@@ -92,6 +92,7 @@ The full list of optional dependencies is:
 - `kernel`: lightweight subset of `jupyter` that only includes the dependencies that are strictly necessary for Coconut's [Jupyter kernel](#kernel).
 - `watch`: enables use of the `--watch` flag.
 - `mypy`: enables use of the `--mypy` flag.
+- `pyright`: enables use of the `--pyright` flag.
 - `xonsh`: enables use of Coconut's [`xonsh` support](#xonsh-support).
 - `numpy`: installs everything necessary for making use of Coconut's [`numpy` integration](#numpy-integration).
 - `jupyterlab`: installs everything necessary to use [JupyterLab](https://github.com/jupyterlab/jupyterlab) with Coconut.
@@ -121,11 +122,11 @@ depth: 1
 
 ```
 coconut [-h] [--and source [dest ...]] [-v] [-t version] [-i] [-p] [-a] [-l]
-        [--no-line-numbers] [-k] [-w] [-r] [-n] [-d] [-q] [-s] [--no-tco]
-        [--no-wrap-types] [-c code] [--incremental] [-j processes] [-f] [--minify]
-        [--jupyter ...] [--mypy ...] [--argv ...] [--tutorial] [--docs] [--style name]
-        [--vi-mode] [--recursion-limit limit] [--stack-size kbs] [--site-install]
-        [--site-uninstall] [--verbose] [--trace] [--profile]
+        [--no-line-numbers] [-k] [-w] [-r] [-n] [-d] [-q] [-s] [--no-tco] [--no-wrap-types]
+        [-c code] [-j processes] [-f] [--minify] [--jupyter ...] [--mypy ...] [--pyright]
+        [--argv ...] [--tutorial] [--docs] [--style name] [--vi-mode]
+        [--recursion-limit limit] [--stack-size kbs] [--fail-fast] [--no-cache]
+        [--site-install] [--site-uninstall] [--verbose] [--trace] [--profile]
         [source] [dest]
 ```
 
@@ -184,6 +185,7 @@ dest                destination directory for compiled files (defaults to
                       Jupyter)
 --mypy ...            run MyPy on compiled Python (remaining args passed to MyPy) (implies
                       --package --line-numbers)
+--pyright             run Pyright on compiled Python (implies --package)
 --argv ..., --args ...
                       set sys.argv to source plus remaining args for use in the Coconut script
                       being run
@@ -280,6 +282,8 @@ To make Coconut built-ins universal across Python versions, Coconut makes availa
 - `py_xrange`
 - `py_repr`
 - `py_breakpoint`
+- `py_min`
+- `py_max`
 
 _Note: Coconut's `repr` can be somewhat tricky, as it will attempt to remove the `u` before reprs of unicode strings on Python 2, but will not always be able to do so if the unicode string is nested._
 
@@ -334,6 +338,7 @@ If the `--strict` (`-s` for short) flag is enabled, Coconut will perform additio
 The style issues which will cause `--strict` to throw an error are:
 
 - mixing of tabs and spaces
+- use of `"hello" "world"` implicit string concatenation (use explicit `+` instead)
 - use of `from __future__` imports (Coconut does these automatically)
 - inheriting from `object` in classes (Coconut does this automatically)
 - semicolons at end of lines
@@ -449,6 +454,10 @@ You can also run `mypy`—or any other static type checker—directly on the com
 
 To distribute your code with checkable type annotations, you'll need to include `coconut` as a dependency (though a `--no-deps` install should be fine), as installing it is necessary to make the requisite stub files available. You'll also probably want to include a [`py.typed`](https://peps.python.org/pep-0561/) file.
 
+##### Pyright Integration
+
+Though not as well-supported as MyPy, Coconut also has built-in [Pyright](https://github.com/microsoft/pyright) support. Simply pass `--pyright` to automatically run Pyright on all compiled code. To adjust Pyright options, rather than pass them at the command-line, add your settings to the file `~/.coconut_pyrightconfig.json` (automatically generated the first time `coconut --pyright` is run).
+
 ##### Syntax
 
 To explicitly annotate your code with types to be checked, Coconut supports (on all Python versions):
@@ -464,7 +473,7 @@ Sometimes, MyPy will not know how to handle certain Coconut constructs, such as 
 
 ##### Interpreter
 
-Coconut even supports `--mypy` in the interpreter, which will intelligently scan each new line of code, in the context of previous lines, for newly-introduced MyPy errors. For example:
+Coconut even supports `--mypy` (though not `--pyright`) in the interpreter, which will intelligently scan each new line of code, in the context of previous lines, for newly-introduced MyPy errors. For example:
 ```coconut_pycon
 >>> a: str = count()[0]
 <string>:14: error: Incompatible types in assignment (expression has type "int", variable has type "str")
@@ -541,9 +550,9 @@ a `b` c,               left (captures lambda)
   all custom operators
 ??                     left (short-circuits)
 ..>, <.., ..*>, <*..,  n/a (captures lambda)
-  ..**>, <**..
+  ..**>, <**.., etc.
 |>, <|, |*>, <*|,      left (captures lambda)
-  |**>, <**|
+  |**>, <**|, etc.
 ==, !=, <, >,
   <=, >=,
   in, not in,
@@ -1318,11 +1327,10 @@ data Empty() from Tree
 data Leaf(n) from Tree
 data Node(l, r) from Tree
 
-def depth(Tree()) = 0
-
-addpattern def depth(Tree(n)) = 1
-
-addpattern def depth(Tree(l, r)) = 1 + max([depth(l), depth(r)])
+case def depth:
+    case(Tree()) = 0
+    case(Tree(n)) = 1
+    case(Tree(l, r)) = 1 + max(depth(l), depth(r))
 
 Empty() |> depth |> print
 Leaf(5) |> depth |> print
@@ -1338,26 +1346,26 @@ def duplicate_first([x] + xs as l) =
 ```
 _Showcases head-tail splitting, one of the most common uses of pattern-matching, where a `+ <var>` (or `:: <var>` for any iterable) at the end of a list or tuple literal can be used to match the rest of the sequence._
 
-```
-def sieve([head] :: tail) =
-    [head] :: sieve(n for n in tail if n % head)
-
-addpattern def sieve((||)) = []
+```coconut
+case def sieve:
+    case([head] :: tail) =
+        [head] :: sieve(n for n in tail if n % head)
+    case((||)) = []
 ```
 _Showcases how to match against iterators, namely that the empty iterator case (`(||)`) must come last, otherwise that case will exhaust the whole iterator before any other pattern has a chance to match against it._
 
-```
+```coconut
 def odd_primes(p=3) =
     (p,) :: filter(=> _ % p != 0, odd_primes(p + 2))
 
 def primes() =
     (2,) :: odd_primes()
 
-def twin_primes(_ :: [p, (.-2) -> p] :: ps) =
-    [(p, p+2)] :: twin_primes([p + 2] :: ps)
-
-addpattern def twin_primes() =  # type: ignore
-    twin_primes(primes())
+case def twin_primes:
+    case(_ :: [p, (.-2) -> p] :: ps) =
+        [(p, p+2)] :: twin_primes([p + 2] :: ps)
+    case() =
+        twin_primes(primes())
 
 twin_primes()$[:5] |> list |> print
 ```
@@ -1386,7 +1394,7 @@ match <value>:
 ```
 where `<pattern>` is any `match` pattern, `<value>` is the item to match against, `<cond>` is an optional additional check, and `<body>` is simply code that is executed if the header above it succeeds. Note the absence of an `in` in the `match` statements: that's because the `<value>` in `case <value>` is taking its place. If no `else` is present and no match succeeds, then the `case` statement is simply skipped over as with [`match` statements](#match) (though unlike [destructuring assignments](#destructuring-assignment)).
 
-Additionally, `cases` can be used as the top-level keyword instead of `match`, and in such a `case` block `match` is allowed for each case rather than `case`. _Deprecated: Coconut also supports `case` instead of `cases` as the top-level keyword for backwards-compatibility purposes._
+_Deprecated: Additionally, `cases` or `case` can be used as the top-level keyword instead of `match`, and in such a block `match` is used for each case rather than `case`._
 
 ##### Examples
 
@@ -1520,15 +1528,14 @@ data Empty()
 data Leaf(n)
 data Node(l, r)
 
-def size(Empty()) = 0
-
-addpattern def size(Leaf(n)) = 1
-
-addpattern def size(Node(l, r)) = size(l) + size(r)
+case def size:
+    case(Empty()) = 0
+    case(Leaf(n)) = 1
+    case(Node(l, r)) = size(l) + size(r)
 
 size(Node(Empty(), Leaf(10))) == 1
 ```
-_Showcases the algebraic nature of `data` types when combined with pattern-matching._
+_Showcases the use of pattern-matching to deconstruct `data` types._
 
 ```coconut
 data vector(*pts):
@@ -2219,7 +2226,7 @@ quad = 5 * x**2 + 3 * x + 1
 
 When passing in long variable names as keyword arguments of the same name, Coconut supports the syntax
 ```
-f(...=long_variable_name)
+f(long_variable_name=)
 ```
 as a shorthand for
 ```
@@ -2228,6 +2235,8 @@ f(long_variable_name=long_variable_name)
 
 Such syntax is also supported in [partial application](#partial-application) and [anonymous `namedtuple`s](#anonymous-namedtuples).
 
+_Deprecated: Coconut also supports `f(...=long_variable_name)` as an alternative shorthand syntax._
+
 ##### Example
 
 **Coconut:**
@@ -2235,8 +2244,8 @@ Such syntax is also supported in [partial application](#partial-application) and
 really_long_variable_name_1 = get_1()
 really_long_variable_name_2 = get_2()
 main_func(
-    ...=really_long_variable_name_1,
-    ...=really_long_variable_name_2,
+    really_long_variable_name_1=,
+    really_long_variable_name_2=,
 )
 ```
 
@@ -2521,6 +2530,58 @@ range(5) |> last_two |> print
 _Can't be done without a long series of checks at the top of the function. See the compiled code for the Python syntax._
 
 
+### `case` Functions
+
+For easily defining a pattern-matching function with many different cases, Coconut provides the `case def` syntax based on Coconut's [`case`](#case) syntax. The basic syntax is
+```
+case def <name>:
+    case(<arg>, <arg>, ... [if <cond>]):
+        <body>
+    case(<arg>, <arg>, ... [if <cond>]):
+        <body>
+    ...
+```
+where the patterns in each `case` are checked in sequence until a match is found and the body under that match is executed, or a [`MatchError`](#matcherror) is raised. Each `case(...)` statement is effectively treated as a separate pattern-matching function signature that is checked independently, as if they had each been defined separately and then combined with [`addpattern`](#addpattern).
+
+Any individual body can also be defined with [assignment function syntax](#assignment-functions) such that
+```
+case def <name>:
+    case(<arg>, <arg>, ... [if <cond>]) = <body>
+```
+is equivalent to
+```
+case def <name>:
+    case(<arg>, <arg>, ... [if <cond>]): return <body>
+```
+
+`case` function definition can also be combined with `async` functions, [`copyclosure` functions](#copyclosure-functions), and [`yield` functions](#explicit-generators). The various keywords in front of the `def` can be put in any order.
+
+`case def` also allows for easily providing type annotations for pattern-matching functions. To add type annotations, inside the body of the `case def`, instead of just `case(...)` statements, include some `type(...)` statements as well, which will compile into [`typing.overload`](https://docs.python.org/3/library/typing.html#overload) declarations. The syntax is
+```
+case def <name>[<type vars>]:
+    type(<arg>: <type>, <arg>: <type>, ...) -> <type>
+    type(<arg>: <type>, <arg>: <type>, ...) -> <type>
+    ...
+```
+which can be interspersed with the `case(...)` statements.
+
+##### Example
+
+**Coconut:**
+```coconut
+case def my_min[T]:
+    type(x: T, y: T) -> T
+    case(x, y if x <= y) = x
+    case(x, y) = y
+
+    type(xs: T[]) -> T
+    case([x]) = x
+    case([x] + xs) = my_min(x, my_min(xs))
+```
+
+**Python:**
+_Can't be done without a long series of checks for each pattern-matching. See the compiled code for the Python syntax._
+
 ### `addpattern` Functions
 
 Coconut provides the `addpattern def` syntax as a shortcut for the full
@@ -2531,9 +2592,11 @@ match def func(...):
 ```
 syntax using the [`addpattern`](#addpattern) decorator.
 
-Additionally, `addpattern def` will act just like a normal [`match def`](#pattern-matching-functions) if the function has not previously been defined, allowing for `addpattern def` to be used for each case rather than requiring `match def` for the first case and `addpattern def` for future cases.
-
 If you want to put a decorator on an `addpattern def` function, make sure to put it on the _last_ pattern function.
+
+For complex multi-pattern functions, it is generally recommended to use [`case def`](#case-functions) over `addpattern def` in most situations.
+
+_Deprecated: `addpattern def` will act just like a normal [`match def`](#pattern-matching-functions) if the function has not previously been defined. This will show a [`CoconutWarning`](#coconutwarning) and is not recommended._
 
 ##### Example
 
@@ -2952,7 +3015,7 @@ depth: 1
 Takes one argument that is a [pattern-matching function](#pattern-matching-functions), and returns a decorator that adds the patterns in the existing function to the new function being decorated, where the existing patterns are checked first, then the new. `addpattern` also supports a shortcut syntax where the new patterns can be passed in directly.
 
 Roughly equivalent to:
-```
+```coconut_python
 def _pattern_adder(base_func, add_func):
     def add_pattern_func(*args, **kwargs):
         try:
@@ -2990,7 +3053,7 @@ print_type()  # appears to work
 print_type(1) # TypeError: print_type() takes 0 positional arguments but 1 was given
 ```
 
-This can be fixed by using either the `match` or `addpattern` keyword. For example:
+This can be fixed by using either the `match` keyword. For example:
 ```coconut
 match def print_type():
     print("Received no arguments.")
@@ -3340,6 +3403,10 @@ A `MatchError` is raised when a [destructuring assignment](#destructuring-assign
 Additionally, if you are using [view patterns](#match), you might need to raise your own `MatchError` (though you can also just use a destructuring assignment or pattern-matching function definition to do so). To raise your own `MatchError`, just `raise MatchError(pattern, value)` (both arguments are optional).
 
 In some cases where there are multiple Coconut packages installed at the same time, there may be multiple `MatchError`s defined in different packages. Coconut can perform some magic under the hood to make sure that all these `MatchError`s will seamlessly interoperate, but only if all such packages are compiled in [`--package` mode rather than `--standalone` mode](#compilation-modes).
+
+### `CoconutWarning`
+
+`CoconutWarning` is the [`Warning`](https://docs.python.org/3/library/exceptions.html#Warning) subclass used for all runtime Coconut warnings; see [`warnings`](https://docs.python.org/3/library/warnings.html).
 
 
 ### Generic Built-In Functions
@@ -4594,7 +4661,7 @@ else:
 
 #### `reveal_type` and `reveal_locals`
 
-When using MyPy, `reveal_type(<expr>)` will cause MyPy to print the type of `<expr>` and `reveal_locals()` will cause MyPy to print the types of the current `locals()`. At runtime, `reveal_type(x)` is always the identity function and `reveal_locals()` always returns `None`. See [the MyPy documentation](https://mypy.readthedocs.io/en/stable/common_issues.html#reveal-type) for more information.
+When using static type analysis tools integrated with Coconut such as [MyPy](#mypy-integration), `reveal_type(<expr>)` will cause MyPy to print the type of `<expr>` and `reveal_locals()` will cause MyPy to print the types of the current `locals()`. At runtime, `reveal_type(x)` is always the identity function and `reveal_locals()` always returns `None`. See [the MyPy documentation](https://mypy.readthedocs.io/en/stable/common_issues.html#reveal-type) for more information.
 
 ##### Example
 

@@ -20,7 +20,6 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 from coconut.root import *  # NOQA
 
 import os
-import re
 import sys
 import traceback
 from warnings import warn
@@ -39,7 +38,6 @@ from coconut.constants import (
     min_versions,
     max_versions,
     pure_python_env_var,
-    enable_pyparsing_warnings,
     use_left_recursion_if_available,
     get_bool_env_var,
     use_computation_graph_env_var,
@@ -50,6 +48,7 @@ from coconut.constants import (
     num_displayed_timing_items,
     use_cache_file,
     use_line_by_line_parser,
+    incremental_use_hybrid,
 )
 from coconut.util import get_clock_time  # NOQA
 from coconut.util import (
@@ -147,6 +146,7 @@ if MODERN_PYPARSING:
 # -----------------------------------------------------------------------------------------------------------------------
 
 if MODERN_PYPARSING:
+    ParserElement.leaveWhitespace = ParserElement.leave_whitespace
     SUPPORTS_PACKRAT_CONTEXT = False
 
 elif CPYPARSING:
@@ -243,8 +243,9 @@ USE_COMPUTATION_GRAPH = get_bool_env_var(
     use_computation_graph_env_var,
     default=(
         not MODERN_PYPARSING  # not yet supported
-        # commented out to minimize memory footprint when running tests:
-        # and not PYPY  # experimentally determined
+        # technically PYPY is faster without the computation graph, but
+        #  it breaks some features and balloons the memory footprint
+        # and not PYPY
     ),
 )
 
@@ -265,7 +266,7 @@ else:
 
 maybe_make_safe = getattr(_pyparsing, "maybe_make_safe", None)
 
-if enable_pyparsing_warnings:
+if DEVELOP:
     if MODERN_PYPARSING:
         _pyparsing.enable_all_warnings()
     else:
@@ -276,7 +277,11 @@ if enable_pyparsing_warnings:
 if MODERN_PYPARSING and use_left_recursion_if_available:
     ParserElement.enable_left_recursion()
 elif SUPPORTS_INCREMENTAL and use_incremental_if_available:
-    ParserElement.enableIncremental(default_incremental_cache_size, still_reset_cache=not never_clear_incremental_cache)
+    ParserElement.enableIncremental(
+        default_incremental_cache_size,
+        still_reset_cache=not never_clear_incremental_cache,
+        hybrid_mode=incremental_use_hybrid,
+    )
 elif use_packrat_parser:
     ParserElement.enablePackrat(packrat_cache_size)
 
@@ -288,22 +293,6 @@ if SUPPORTS_INCREMENTAL:
     all_parse_elements = ParserElement.collectParseElements()
 else:
     all_parse_elements = None
-
-
-# -----------------------------------------------------------------------------------------------------------------------
-# MISSING OBJECTS:
-# -----------------------------------------------------------------------------------------------------------------------
-
-python_quoted_string = getattr(_pyparsing, "python_quoted_string", None)
-if python_quoted_string is None:
-    python_quoted_string = _pyparsing.Combine(
-        # multiline strings must come first
-        (_pyparsing.Regex(r'"""(?:[^"\\]|""(?!")|"(?!"")|\\.)*', flags=re.MULTILINE) + '"""').setName("multiline double quoted string")
-        | (_pyparsing.Regex(r"'''(?:[^'\\]|''(?!')|'(?!'')|\\.)*", flags=re.MULTILINE) + "'''").setName("multiline single quoted string")
-        | (_pyparsing.Regex(r'"(?:[^"\n\r\\]|(?:\\")|(?:\\(?:[^x]|x[0-9a-fA-F]+)))*') + '"').setName("double quoted string")
-        | (_pyparsing.Regex(r"'(?:[^'\n\r\\]|(?:\\')|(?:\\(?:[^x]|x[0-9a-fA-F]+)))*") + "'").setName("single quoted string")
-    ).setName("Python quoted string")
-    _pyparsing.python_quoted_string = python_quoted_string
 
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -559,5 +548,5 @@ def start_profiling():
 
 def print_profiling_results():
     """Print all profiling results."""
-    print_timing_info()
     print_poorly_ordered_MatchFirsts()
+    print_timing_info()

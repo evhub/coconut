@@ -72,6 +72,7 @@ from coconut._pyparsing import (
     ParserElement,
     MatchFirst,
     And,
+    StringStart,
     _trim_arity,
     _ParseResultsWithOffset,
     all_parse_elements,
@@ -133,6 +134,9 @@ from coconut.constants import (
     require_cache_clear_frac,
     reverse_any_of,
     all_keywords,
+    always_keep_parse_name_prefix,
+    keep_if_unchanged_parse_name_prefix,
+    incremental_use_hybrid,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -147,7 +151,7 @@ from coconut.exceptions import (
 indexable_evaluated_tokens_types = (ParseResults, list, tuple)
 
 
-def evaluate_all_tokens(all_tokens, **kwargs):
+def evaluate_all_tokens(all_tokens, expand_inner=True, **kwargs):
     """Recursively evaluate all the tokens in all_tokens."""
     all_evaluated_toks = []
     for toks in all_tokens:
@@ -156,8 +160,32 @@ def evaluate_all_tokens(all_tokens, **kwargs):
         #  short-circuit the computation and return them, since they imply this parse contains invalid syntax
         if isinstance(evaluated_toks, ExceptionNode):
             return None, evaluated_toks
-        all_evaluated_toks.append(evaluated_toks)
+        elif expand_inner and isinstance(evaluated_toks, MergeNode):
+            all_evaluated_toks = ParseResults(all_evaluated_toks)
+            all_evaluated_toks += evaluated_toks  # use += to avoid an unnecessary copy
+        else:
+            all_evaluated_toks.append(evaluated_toks)
     return all_evaluated_toks, None
+
+
+def make_modified_tokens(old_tokens, new_toklist=None, new_tokdict=None, cls=ParseResults):
+    """Construct a modified ParseResults object from the given ParseResults object."""
+    if new_toklist is None:
+        if DEVELOP:  # avoid the overhead of the call if not develop
+            internal_assert(new_tokdict is None, "if new_toklist is None, new_tokdict must be None", new_tokdict)
+        new_toklist = old_tokens._ParseResults__toklist
+        new_tokdict = old_tokens._ParseResults__tokdict
+    # we have to pass name=None here and then set __name after otherwise
+    #  the constructor might generate a new tokdict item we don't want;
+    #  this also ensures that asList and modal don't matter, since they
+    #  only do anything when you name is not None, so we don't pass them
+    new_tokens = cls(new_toklist)
+    new_tokens._ParseResults__name = old_tokens._ParseResults__name
+    new_tokens._ParseResults__parent = old_tokens._ParseResults__parent
+    new_tokens._ParseResults__accumNames.update(old_tokens._ParseResults__accumNames)
+    if new_tokdict is not None:
+        new_tokens._ParseResults__tokdict.update(new_tokdict)
+    return new_tokens
 
 
 def evaluate_tokens(tokens, **kwargs):
@@ -175,7 +203,7 @@ def evaluate_tokens(tokens, **kwargs):
     if isinstance(tokens, ParseResults):
 
         # evaluate the list portion of the ParseResults
-        old_toklist, old_name, asList, modal = tokens.__getnewargs__()
+        old_toklist = tokens._ParseResults__toklist
         new_toklist = None
         for eval_old_toklist, eval_new_toklist in evaluated_toklists:
             if old_toklist == eval_old_toklist:
@@ -188,26 +216,25 @@ def evaluate_tokens(tokens, **kwargs):
             # overwrite evaluated toklists rather than appending, since this
             #  should be all the information we need for evaluating the dictionary
             evaluated_toklists = ((old_toklist, new_toklist),)
-        # we have to pass name=None here and then set __name after otherwise
-        #  the constructor might generate a new tokdict item we don't want
-        new_tokens = ParseResults(new_toklist, None, asList, modal)
-        new_tokens._ParseResults__name = old_name
-        new_tokens._ParseResults__accumNames.update(tokens._ParseResults__accumNames)
 
         # evaluate the dictionary portion of the ParseResults
         new_tokdict = {}
         for name, occurrences in tokens._ParseResults__tokdict.items():
             new_occurrences = []
             for value, position in occurrences:
-                new_value = evaluate_tokens(value, is_final=is_final, evaluated_toklists=evaluated_toklists)
-                if isinstance(new_value, ExceptionNode):
-                    return new_value
+                if value is None:  # fake value created by build_new_toks_for
+                    new_value = None
+                else:
+                    new_value = evaluate_tokens(value, is_final=is_final, evaluated_toklists=evaluated_toklists)
+                    if isinstance(new_value, ExceptionNode):
+                        return new_value
                 new_occurrences.append(_ParseResultsWithOffset(new_value, position))
             new_tokdict[name] = new_occurrences
-        new_tokens._ParseResults__tokdict.update(new_tokdict)
+
+        new_tokens = make_modified_tokens(tokens, new_toklist, new_tokdict)
 
         if DEVELOP:  # avoid the overhead of the call if not develop
-            internal_assert(set(tokens._ParseResults__tokdict.keys()) == set(new_tokens._ParseResults__tokdict.keys()), "evaluate_tokens on ParseResults failed to maintain tokdict keys", (tokens, "->", new_tokens))
+            internal_assert(set(tokens._ParseResults__tokdict.keys()) <= set(new_tokens._ParseResults__tokdict.keys()), "evaluate_tokens on ParseResults failed to maintain tokdict keys", (tokens, "->", new_tokens))
 
         return new_tokens
 
@@ -238,14 +265,22 @@ def evaluate_tokens(tokens, **kwargs):
             result = tokens.evaluate()
             if is_final and isinstance(result, ExceptionNode):
                 raise result.exception
-            return result
+            elif isinstance(result, ParseResults):
+                return make_modified_tokens(result, cls=MergeNode)
+            elif isinstance(result, list):
+                if len(result) == 1:
+                    return result[0]
+                else:
+                    return MergeNode(result)
+            else:
+                return result
 
         elif isinstance(tokens, list):
             result, exc_node = evaluate_all_tokens(tokens, is_final=is_final, evaluated_toklists=evaluated_toklists)
             return result if exc_node is None else exc_node
 
         elif isinstance(tokens, tuple):
-            result, exc_node = evaluate_all_tokens(tokens, is_final=is_final, evaluated_toklists=evaluated_toklists)
+            result, exc_node = evaluate_all_tokens(tokens, expand_inner=False, is_final=is_final, evaluated_toklists=evaluated_toklists)
             return tuple(result) if exc_node is None else exc_node
 
         elif isinstance(tokens, ExceptionNode):
@@ -258,6 +293,31 @@ def evaluate_tokens(tokens, **kwargs):
 
         else:
             raise CoconutInternalException("invalid computation graph tokens", tokens)
+
+
+class MergeNode(ParseResults):
+    """A special type of ParseResults object that should be merged into outer tokens."""
+    __slots__ = ()
+
+
+def build_new_toks_for(tokens, new_toklist, unchanged=False):
+    """Build new tokens from tokens to return just new_toklist."""
+    if USE_COMPUTATION_GRAPH and not isinstance(new_toklist, ExceptionNode):
+        keep_names = [
+            n for n in tokens._ParseResults__tokdict
+            if n.startswith(always_keep_parse_name_prefix) or unchanged and n.startswith(keep_if_unchanged_parse_name_prefix)
+        ]
+        if tokens._ParseResults__name is not None and (
+            tokens._ParseResults__name.startswith(always_keep_parse_name_prefix)
+            or unchanged and tokens._ParseResults__name.startswith(keep_if_unchanged_parse_name_prefix)
+        ):
+            keep_names.append(tokens._ParseResults__name)
+        if keep_names:
+            new_tokens = make_modified_tokens(tokens, new_toklist)
+            for name in keep_names:
+                new_tokens[name] = None
+            return new_tokens
+    return new_toklist
 
 
 class ComputationNode(object):
@@ -284,10 +344,9 @@ class ComputationNode(object):
         If ignore_no_tokens, then don't call the action if there are no tokens.
         If ignore_one_token, then don't call the action if there is only one token.
         If greedy, then never defer the action until later."""
-        if ignore_no_tokens and len(tokens) == 0:
-            return []
-        elif ignore_one_token and len(tokens) == 1:
-            return tokens[0]  # could be a ComputationNode, so we can't have an __init__
+        if ignore_no_tokens and len(tokens) == 0 or ignore_one_token and len(tokens) == 1:
+            # could be a ComputationNode, so we can't have an __init__
+            return build_new_toks_for(tokens, tokens, unchanged=True)
         else:
             self = super(ComputationNode, cls).__new__(cls)
             if trim_arity:
@@ -321,7 +380,7 @@ class ComputationNode(object):
         if isinstance(evaluated_toks, ExceptionNode):
             return evaluated_toks  # short-circuit if we got an ExceptionNode
         try:
-            return self.action(
+            result = self.action(
                 self.original,
                 self.loc,
                 evaluated_toks,
@@ -336,6 +395,14 @@ class ComputationNode(object):
                 embed(depth=2)
             else:
                 raise error
+        out = build_new_toks_for(evaluated_toks, result)
+        if logger.tracing:  # avoid the overhead if not tracing
+            dropped_keys = set(self.tokens._ParseResults__tokdict.keys())
+            if isinstance(out, ParseResults):
+                dropped_keys -= set(out._ParseResults__tokdict.keys())
+            if dropped_keys:
+                logger.log_tag(self.name, "DROP " + repr(dropped_keys), wrap=False)
+        return out
 
     def __repr__(self):
         """Get a representation of the entire computation graph below this node."""
@@ -492,7 +559,10 @@ def force_reset_packrat_cache():
     """Forcibly reset the packrat cache and all packrat stats."""
     if ParserElement._incrementalEnabled:
         ParserElement._incrementalEnabled = False
-        ParserElement.enableIncremental(incremental_mode_cache_size if in_incremental_mode() else default_incremental_cache_size, still_reset_cache=False)
+        ParserElement.enableIncremental(
+            incremental_mode_cache_size if in_incremental_mode() else default_incremental_cache_size,
+            **ParserElement.getIncrementalInfo()  # no comma for py2
+        )
     else:
         ParserElement._packratEnabled = False
         ParserElement.enablePackrat(packrat_cache_size)
@@ -524,6 +594,7 @@ def parsing_context(inner_parse=None):
             yield
         finally:
             ParserElement._incrementalWithResets = incrementalWithResets
+            dehybridize_cache()
     elif (
         current_cache_matters
         and will_clear_cache
@@ -541,12 +612,50 @@ def parsing_context(inner_parse=None):
             if logger.verbose:
                 ParserElement.packrat_cache_stats[0] += old_cache_stats[0]
                 ParserElement.packrat_cache_stats[1] += old_cache_stats[1]
+    elif not will_clear_cache:
+        try:
+            yield
+        finally:
+            dehybridize_cache()
     else:
         yield
 
 
-def prep_grammar(grammar, streamline=False):
+class StartOfStrGrammar(object):
+    """A container object that denotes grammars that should always be parsed at the start of the string."""
+    __slots__ = ("grammar",)
+    start_marker = StringStart()
+
+    def __init__(self, grammar):
+        self.grammar = grammar
+
+    def with_start_marker(self):
+        """Get the grammar with the start marker."""
+        internal_assert(not CPYPARSING, "StartOfStrGrammar.with_start_marker() should only be necessary without cPyparsing")
+        return self.start_marker + self.grammar
+
+    def apply(self, grammar_transformer):
+        """Apply a function to transform the grammar."""
+        self.grammar = grammar_transformer(self.grammar)
+
+    @property
+    def name(self):
+        return get_name(self.grammar)
+
+    def setName(self, *args, **kwargs):
+        """Equivalent to .grammar.setName."""
+        return self.grammar.setName(*args, **kwargs)
+
+
+def prep_grammar(grammar, for_scan, streamline=False, add_unpack=False):
     """Prepare a grammar item to be used as the root of a parse."""
+    if isinstance(grammar, StartOfStrGrammar):
+        if for_scan:
+            grammar = grammar.with_start_marker()
+        else:
+            grammar = grammar.grammar
+    if add_unpack:
+        grammar = add_action(grammar, unpack)
     grammar = trace(grammar)
     if streamline:
         grammar.streamlined = False
@@ -559,7 +668,7 @@ def prep_grammar(grammar, streamline=False):
 def parse(grammar, text, inner=None, eval_parse_tree=True):
     """Parse text using grammar."""
     with parsing_context(inner):
-        result = prep_grammar(grammar).parseString(text)
+        result = prep_grammar(grammar, for_scan=False).parseString(text)
         if eval_parse_tree:
             result = unpack(result)
         return result
@@ -580,8 +689,12 @@ def does_parse(grammar, text, inner=None):
 
 def all_matches(grammar, text, inner=None, eval_parse_tree=True):
     """Find all matches for grammar in text."""
+    kwargs = {}
+    if CPYPARSING and isinstance(grammar, StartOfStrGrammar):
+        grammar = grammar.grammar
+        kwargs["maxStartLoc"] = 0
     with parsing_context(inner):
-        for tokens, start, stop in prep_grammar(grammar).scanString(text):
+        for tokens, start, stop in prep_grammar(grammar, for_scan=True).scanString(text, **kwargs):
             if eval_parse_tree:
                 tokens = unpack(tokens)
             yield tokens, start, stop
@@ -603,8 +716,12 @@ def match_in(grammar, text, inner=None):
 
 def transform(grammar, text, inner=None):
     """Transform text by replacing matches to grammar."""
+    kwargs = {}
+    if CPYPARSING and isinstance(grammar, StartOfStrGrammar):
+        grammar = grammar.grammar
+        kwargs["maxStartLoc"] = 0
     with parsing_context(inner):
-        result = prep_grammar(add_action(grammar, unpack)).transformString(text)
+        result = prep_grammar(grammar, add_unpack=True, for_scan=True).transformString(text, **kwargs)
         if result == text:
             result = None
         return result
@@ -691,6 +808,22 @@ def get_target_info_smart(target, mode="lowest"):
 # -----------------------------------------------------------------------------------------------------------------------
 # PARSING INTROSPECTION:
 # -----------------------------------------------------------------------------------------------------------------------
+
+# incremental lookup indices
+_lookup_elem = 0
+_lookup_orig = 1
+_lookup_loc = 2
+# _lookup_bools = 3
+# _lookup_context = 4
+assert _lookup_elem == 0, "lookup must start with elem"
+
+# incremental value indices
+_value_exc_loc_or_ret = 0
+# _value_furthest_loc = 1
+_value_useful = -1
+assert _value_exc_loc_or_ret == 0, "value must start with exc loc / ret"
+assert _value_useful == -1, "value must end with usefullness obj"
+
 
 def maybe_copy_elem(item, name):
     """Copy the given grammar element if it's referenced somewhere else."""
@@ -824,7 +957,7 @@ def execute_clear_strat(clear_cache):
         if clear_cache == "useless":
             keys_to_del = []
             for lookup, value in cache.items():
-                if not value[-1][0]:
+                if not value[_value_useful][0]:
                     keys_to_del.append(lookup)
             for del_key in keys_to_del:
                 del cache[del_key]
@@ -837,6 +970,24 @@ def execute_clear_strat(clear_cache):
     return orig_cache_len
 
 
+def dehybridize_cache():
+    """Dehybridize any hybrid entries in the incremental parsing cache."""
+    if (
+        CPYPARSING
+        # if we're not in incremental mode, we just throw away the cache
+        #  after every parse, so no need to dehybridize it
+        and in_incremental_mode()
+        and ParserElement.getIncrementalInfo()["hybrid_mode"]
+    ):
+        cache = get_pyparsing_cache()
+        new_entries = {}
+        for lookup, value in cache.items():
+            cached_item = value[0]
+            if cached_item is not True and not isinstance(cached_item, int):
+                new_entries[lookup] = (True,) + value[1:]
+        cache.update(new_entries)
+
+
 def clear_packrat_cache(force=False):
     """Clear the packrat cache if applicable.
     Very performance-sensitive for incremental parsing mode."""
@@ -845,6 +996,8 @@ def clear_packrat_cache(force=False):
         if DEVELOP:
             start_time = get_clock_time()
         orig_cache_len = execute_clear_strat(clear_cache)
+        # always dehybridize after cache clear so we're dehybridizing the fewest items
+        dehybridize_cache()
         if DEVELOP and orig_cache_len is not None:
             logger.log("Pruned packrat cache from {orig_len} items to {new_len} items using {strat!r} strategy ({time} secs).".format(
                 orig_len=orig_cache_len,
@@ -859,10 +1012,10 @@ def get_cache_items_for(original, only_useful=False, exclude_stale=True):
     """Get items from the pyparsing cache filtered to only be from parsing original."""
     cache = get_pyparsing_cache()
     for lookup, value in cache.items():
-        got_orig = lookup[1]
+        got_orig = lookup[_lookup_orig]
         internal_assert(lambda: isinstance(got_orig, (bytes, str)), "failed to look up original in pyparsing cache item", (lookup, value))
         if ParserElement._incrementalEnabled:
-            (is_useful,) = value[-1]
+            (is_useful,) = value[_value_useful]
             if only_useful and not is_useful:
                 continue
             if exclude_stale and is_useful >= 2:
@@ -876,13 +1029,13 @@ def get_highest_parse_loc(original):
     Note that there's no point in filtering for successes/failures, since we always see both at the same locations."""
     highest_loc = 0
     for lookup, _ in get_cache_items_for(original):
-        loc = lookup[2]
+        loc = lookup[_lookup_loc]
         if loc > highest_loc:
             highest_loc = loc
     return highest_loc
 
 
-def enable_incremental_parsing():
+def enable_incremental_parsing(reason="explicit enable_incremental_parsing call"):
     """Enable incremental parsing mode where prefix/suffix parses are reused."""
     if not SUPPORTS_INCREMENTAL:
         return False
@@ -890,10 +1043,15 @@ def enable_incremental_parsing():
         return True
     ParserElement._incrementalEnabled = False
     try:
-        ParserElement.enableIncremental(incremental_mode_cache_size, still_reset_cache=False, cache_successes=incremental_mode_cache_successes)
+        ParserElement.enableIncremental(
+            incremental_mode_cache_size,
+            still_reset_cache=False,
+            cache_successes=incremental_mode_cache_successes,
+            hybrid_mode=incremental_mode_cache_successes and incremental_use_hybrid,
+        )
     except ImportError as err:
         raise CoconutException(str(err))
-    logger.log("Incremental parsing mode enabled.")
+    logger.log("Incremental parsing mode enabled due to {reason}.".format(reason=reason))
     return True
 
 
@@ -919,7 +1077,7 @@ def pickle_cache(original, cache_path, include_incremental=True, protocol=pickle
                 break
             if len(pickleable_cache_items) >= incremental_cache_limit:
                 break
-            loc = lookup[2]
+            loc = lookup[_lookup_loc]
             # only include cache items that aren't at the start or end, since those
             #  are the only ones that parseIncremental will reuse
             if 0 < loc < len(original) - 1:
@@ -929,6 +1087,7 @@ def pickle_cache(original, cache_path, include_incremental=True, protocol=pickle
                 if validation_dict is not None:
                     validation_dict[identifier] = elem.__class__.__name__
                 pickleable_lookup = (identifier,) + lookup[1:]
+                internal_assert(value[_value_exc_loc_or_ret] is True or isinstance(value[_value_exc_loc_or_ret], int), "cache must be dehybridized before pickling", value[_value_exc_loc_or_ret])
                 pickleable_cache_items.append((pickleable_lookup, value))
 
     all_adaptive_stats = {}
@@ -1017,6 +1176,7 @@ def unpickle_cache(cache_path):
             if maybe_elem is not None:
                 if validation_dict is not None:
                     internal_assert(maybe_elem.__class__.__name__ == validation_dict[identifier], "incremental cache pickle-unpickle inconsistency", (maybe_elem, validation_dict[identifier]))
+                internal_assert(value[_value_exc_loc_or_ret] is True or isinstance(value[_value_exc_loc_or_ret], int), "attempting to unpickle hybrid cache item", value[_value_exc_loc_or_ret])
                 lookup = (maybe_elem,) + pickleable_lookup[1:]
                 usefullness = value[-1][0]
                 internal_assert(usefullness, "loaded useless cache item", (lookup, value))
@@ -1039,7 +1199,7 @@ def load_cache_for(inputstring, codepath):
         incremental_enabled = True
         incremental_info = "using incremental parsing mode since it was already enabled"
     elif len(inputstring) < disable_incremental_for_len:
-        incremental_enabled = enable_incremental_parsing()
+        incremental_enabled = enable_incremental_parsing(reason="input length")
         if incremental_enabled:
             incremental_info = "incremental parsing mode enabled due to len == {input_len} < {max_len}".format(
                 input_len=len(inputstring),
@@ -1077,7 +1237,7 @@ def load_cache_for(inputstring, codepath):
                 incremental_info=incremental_info,
             ))
             if incremental_enabled:
-                logger.warn("Populating initial parsing cache (compilation may take longer than usual)...")
+                logger.warn("Populating initial parsing cache (initial compilation may take a while; pass --no-cache to disable)...")
     else:
         cache_path = None
         logger.log("Declined to load cache for {filename!r} ({incremental_info}).".format(
@@ -1281,6 +1441,23 @@ def labeled_group(item, label):
     return Group(item(label))
 
 
+def fake_labeled_group(item, label):
+    """Apply a label to an item in a group and then destroy the group.
+    Only useful with special labels that stick around."""
+
+    def fake_labeled_group_handle(tokens):
+        internal_assert(label in tokens, "failed to label with " + repr(label) + " for tokens", tokens)
+        [item], = tokens
+        return item
+    return attach(labeled_group(item, label), fake_labeled_group_handle)
+
+
+def add_labels(tokens):
+    """Parse action to gather all the attached labels."""
+    item, = tokens
+    return (item, tokens._ParseResults__tokdict.keys())
+
+
 def invalid_syntax(item, msg, **kwargs):
     """Mark a grammar item as an invalid item that raises a syntax err with msg."""
     if isinstance(item, str):
@@ -1356,30 +1533,44 @@ def maybeparens(lparen, item, rparen, prefer_parens=False):
         return item | lparen.suppress() + item + rparen.suppress()
 
 
-def interleaved_tokenlist(required_item, other_item, sep, allow_trailing=False, at_least_two=False):
+def interleaved_tokenlist(required_item, other_item, sep, allow_trailing=False, at_least_two=False, multi_group=True):
     """Create a grammar to match interleaved required_items and other_items,
     where required_item must show up at least once."""
     sep = sep.suppress()
+
+    def one_or_more_group(item):
+        return Group(OneOrMore(item)) if multi_group else OneOrMore(Group(item))
+
     if at_least_two:
         out = (
             # required sep other (sep other)*
             Group(required_item)
-            + Group(OneOrMore(sep + other_item))
+            + one_or_more_group(sep + other_item)
             # other (sep other)* sep required (sep required)*
-            | Group(other_item + ZeroOrMore(sep + other_item))
-            + Group(OneOrMore(sep + required_item))
+            | (
+                Group(other_item + ZeroOrMore(sep + other_item))
+                if multi_group else
+                Group(other_item) + ZeroOrMore(Group(sep + other_item))
+            ) + one_or_more_group(sep + required_item)
             # required sep required (sep required)*
-            | Group(required_item + OneOrMore(sep + required_item))
+            | (
+                Group(required_item + OneOrMore(sep + required_item))
+                if multi_group else
+                Group(required_item) + OneOrMore(Group(sep + required_item))
+            )
         )
     else:
         out = (
-            Optional(Group(OneOrMore(other_item + sep)))
-            + Group(required_item + ZeroOrMore(sep + required_item))
-            + Optional(Group(OneOrMore(sep + other_item)))
+            Optional(one_or_more_group(other_item + sep))
+            + (
+                Group(required_item + ZeroOrMore(sep + required_item))
+                if multi_group else
+                Group(required_item) + ZeroOrMore(Group(sep + required_item))
+            ) + Optional(one_or_more_group(sep + other_item))
         )
     out += ZeroOrMore(
-        Group(OneOrMore(sep + required_item))
-        | Group(OneOrMore(sep + other_item)),
+        one_or_more_group(sep + required_item)
+        | one_or_more_group(sep + other_item)
     )
     if allow_trailing:
         out += Optional(sep)
@@ -1804,10 +1995,12 @@ def split_trailing_indent(inputstr, max_indents=None, handle_comments=True):
     return inputstr, "".join(reversed(indents_from_end))
 
 
-def split_leading_trailing_indent(line, max_indents=None):
+def split_leading_trailing_indent(line, symmetric=False, **kwargs):
     """Split leading and trailing indent."""
-    leading_indent, line = split_leading_indent(line, max_indents)
-    line, trailing_indent = split_trailing_indent(line, max_indents)
+    leading_indent, line = split_leading_indent(line, **kwargs)
+    if symmetric:
+        kwargs["max_indents"] = leading_indent.count(openindent)
+    line, trailing_indent = split_trailing_indent(line, **kwargs)
     return leading_indent, line, trailing_indent
 
 

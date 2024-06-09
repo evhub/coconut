@@ -38,9 +38,7 @@ from coconut._pyparsing import (
     Literal,
     OneOrMore,
     Optional,
-    ParserElement,
     StringEnd,
-    StringStart,
     Word,
     ZeroOrMore,
     hexnums,
@@ -48,7 +46,6 @@ from coconut._pyparsing import (
     originalTextFor,
     nestedExpr,
     FollowedBy,
-    python_quoted_string,
     restOfLine,
 )
 
@@ -119,6 +116,7 @@ from coconut.compiler.util import (
     using_fast_grammar_methods,
     disambiguate_literal,
     any_of,
+    StartOfStrGrammar,
 )
 
 
@@ -181,6 +179,75 @@ def pipe_info(op):
     else:
         raise CoconutInternalException("invalid direction in pipe operator", op)
     return direction, stars, none_aware
+
+
+def split_args_list(tokens, loc):
+    """Splits function definition arguments."""
+    pos_only_args = []
+    req_args = []
+    default_args = []
+    star_arg = None
+    kwd_only_args = []
+    dubstar_arg = None
+    pos = 0
+    for arg in tokens:
+        # only the first two components matter; if there's a third it's a typedef
+        arg = arg[:2]
+
+        if len(arg) == 1:
+            if arg[0] == "*":
+                # star sep (pos = 2)
+                if pos >= 2:
+                    raise CoconutDeferredSyntaxError("star separator at invalid position in function definition", loc)
+                pos = 2
+            elif arg[0] == "/":
+                # slash sep (pos = 0)
+                if pos > 0:
+                    raise CoconutDeferredSyntaxError("slash separator at invalid position in function definition", loc)
+                if pos_only_args:
+                    raise CoconutDeferredSyntaxError("only one slash separator allowed in function definition", loc)
+                if not req_args:
+                    raise CoconutDeferredSyntaxError("slash separator must come after arguments to mark as positional-only", loc)
+                pos_only_args = req_args
+                req_args = []
+            else:
+                # pos arg (pos = 0)
+                if pos == 0:
+                    req_args.append(arg[0])
+                # kwd only arg (pos = 2)
+                elif pos == 2:
+                    kwd_only_args.append((arg[0], None))
+                else:
+                    raise CoconutDeferredSyntaxError("non-default arguments must come first or after star argument/separator", loc)
+
+        else:
+            internal_assert(arg[1] is not None, "invalid arg[1] in split_args_list", arg)
+
+            if arg[0] == "*":
+                # star arg (pos = 2)
+                if pos >= 2:
+                    raise CoconutDeferredSyntaxError("star argument at invalid position in function definition", loc)
+                pos = 2
+                star_arg = arg[1]
+            elif arg[0] == "**":
+                # dub star arg (pos = 3)
+                if pos == 3:
+                    raise CoconutDeferredSyntaxError("double star argument at invalid position in function definition", loc)
+                pos = 3
+                dubstar_arg = arg[1]
+            else:
+                # def arg (pos = 1)
+                if pos <= 1:
+                    pos = 1
+                    default_args.append((arg[0], arg[1]))
+                # kwd only arg (pos = 2)
+                elif pos <= 2:
+                    pos = 2
+                    kwd_only_args.append((arg[0], arg[1]))
+                else:
+                    raise CoconutDeferredSyntaxError("invalid default argument in function definition", loc)
+
+    return pos_only_args, req_args, default_args, star_arg, kwd_only_args, dubstar_arg
 
 
 # end: HELPERS
@@ -523,15 +590,6 @@ def join_match_funcdef(tokens):
     )
 
 
-def kwd_err_msg_handle(tokens):
-    """Handle keyword parse error messages."""
-    kwd, = tokens
-    if kwd == "def":
-        return "invalid function definition"
-    else:
-        return 'invalid use of the keyword "' + kwd + '"'
-
-
 def alt_ternary_handle(tokens):
     """Handle if ... then ... else ternary operator."""
     cond, if_true, if_false = tokens
@@ -864,7 +922,6 @@ class Grammar(object):
         # rparen handles simple stmts ending parenthesized stmt lambdas
         end_simple_stmt_item = FollowedBy(newline | semicolon | rparen)
 
-        start_marker = StringStart()
         moduledoc_marker = condense(ZeroOrMore(lineitem) - Optional(moduledoc_item))
         end_marker = StringEnd()
         indent = Literal(openindent)
@@ -1180,11 +1237,12 @@ class Grammar(object):
 
         call_item = (
             unsafe_name + default
-            # ellipsis must come before namedexpr_test
-            | ellipsis_tokens + equals.suppress() + refname
-            | namedexpr_test
             | star + test
             | dubstar + test
+            | refname + equals  # new long name ellision syntax
+            | ellipsis_tokens + equals.suppress() + refname  # old long name ellision syntax
+            # must come at end
+            | namedexpr_test
         )
         function_call_tokens = lparen.suppress() + (
             # everything here must end with rparen
@@ -1234,7 +1292,7 @@ class Grammar(object):
         maybe_typedef = Optional(colon.suppress() + typedef_test)
         anon_namedtuple_ref = tokenlist(
             Group(
-                unsafe_name + maybe_typedef + equals.suppress() + test
+                unsafe_name + maybe_typedef + (equals.suppress() + test | equals)
                 | ellipsis_tokens + maybe_typedef + equals.suppress() + refname
             ),
             comma,
@@ -1512,14 +1570,12 @@ class Grammar(object):
         # arith_expr = exprlist(term, addop)
         # shift_expr = exprlist(arith_expr, shift)
         # and_expr = exprlist(shift_expr, amp)
-        and_expr = exprlist(
-            term,
-            any_of(
-                addop,
-                shift,
-                amp,
-            ),
+        term_op = any_of(
+            addop,
+            shift,
+            amp,
         )
+        and_expr = exprlist(term, term_op)
 
         protocol_intersect_expr = Forward()
         protocol_intersect_expr_ref = tokenlist(and_expr, amp_colon, allow_trailing=False)
@@ -2182,11 +2238,12 @@ class Grammar(object):
         with_stmt = Forward()
 
         funcname_typeparams = Forward()
-        funcname_typeparams_ref = dotted_setname + Optional(type_params)
+        funcname_typeparams_tokens = dotted_setname + Optional(type_params)
         name_funcdef = condense(funcname_typeparams + parameters)
         op_tfpdef = unsafe_typedef_default | condense(setname + Optional(default))
         op_funcdef_arg = setname | condense(lparen.suppress() + op_tfpdef + rparen.suppress())
         op_funcdef_name = unsafe_backtick.suppress() + funcname_typeparams + unsafe_backtick.suppress()
+        op_funcdef_name_tokens = unsafe_backtick.suppress() + funcname_typeparams_tokens + unsafe_backtick.suppress()
         op_funcdef = attach(
             Group(Optional(op_funcdef_arg))
             + op_funcdef_name
@@ -2274,17 +2331,168 @@ class Grammar(object):
                 base_match_funcdef
                 + end_func_equals
                 - (
-                    attach(implicit_return_stmt, make_suite_handle)
-                    | (
+                    (
                         newline.suppress()
                         - indent.suppress()
                         - Optional(docstring)
                         - attach(math_funcdef_body, make_suite_handle)
                         - dedent.suppress()
                     )
+                    | attach(implicit_return_stmt, make_suite_handle)
                 ),
                 join_match_funcdef,
             )
+        )
+
+        base_case_funcdef = Forward()
+        base_case_funcdef_ref = (
+            keyword("def").suppress()
+            + Group(
+                funcname_typeparams_tokens
+                | op_funcdef_name_tokens
+            )
+            + colon.suppress()
+            - newline.suppress()
+            - indent.suppress()
+            - Optional(docstring)
+            - Group(OneOrMore(
+                labeled_group(
+                    keyword("case").suppress()
+                    + lparen.suppress()
+                    + match_args_list
+                    + match_guard
+                    + rparen.suppress()
+                    + (
+                        colon.suppress()
+                        + (
+                            newline.suppress()
+                            + indent.suppress()
+                            + attach(condense(OneOrMore(stmt)), make_suite_handle)
+                            + dedent.suppress()
+                            | attach(simple_stmt, make_suite_handle)
+                        )
+                        | equals.suppress()
+                        + (
+                            (
+                                newline.suppress()
+                                + indent.suppress()
+                                + attach(math_funcdef_body, make_suite_handle)
+                                + dedent.suppress()
+                            )
+                            | attach(implicit_return_stmt, make_suite_handle)
+                        )
+                    ),
+                    "match",
+                )
+                | labeled_group(
+                    keyword("type").suppress()
+                    + parameters
+                    + return_typedef
+                    + newline.suppress(),
+                    "type",
+                )
+            ))
+            - dedent.suppress()
+        )
+        case_funcdef = keyword("case").suppress() + base_case_funcdef
+
+        keyword_normal_funcdef = Group(
+            any_len_perm_at_least_one(
+                keyword("yield"),
+                keyword("copyclosure"),
+            )
+        ) + (funcdef | math_funcdef)
+        keyword_match_funcdef = Group(
+            any_len_perm_at_least_one(
+                keyword("yield"),
+                keyword("copyclosure"),
+                keyword("match").suppress(),
+                # addpattern is detected later
+                keyword("addpattern"),
+            )
+        ) + (def_match_funcdef | math_match_funcdef)
+        keyword_case_funcdef = Group(
+            any_len_perm_at_least_one(
+                keyword("yield"),
+                keyword("copyclosure"),
+                required=(keyword("case").suppress(),),
+            )
+        ) + base_case_funcdef
+        keyword_funcdef = Forward()
+        keyword_funcdef_ref = (
+            keyword_normal_funcdef
+            | keyword_match_funcdef
+            | keyword_case_funcdef
+        )
+
+        normal_funcdef_stmt = (
+            # match funcdefs must come after normal
+            funcdef
+            | math_funcdef
+            | match_funcdef
+            | math_match_funcdef
+            | case_funcdef
+            | keyword_funcdef
+        )
+
+        async_funcdef = keyword("async").suppress() + (funcdef | math_funcdef)
+        async_match_funcdef = addspace(
+            any_len_perm(
+                keyword("match").suppress(),
+                # addpattern is detected later
+                keyword("addpattern"),
+                required=(keyword("async").suppress(),),
+            ) + (def_match_funcdef | math_match_funcdef)
+        )
+        async_case_funcdef = addspace(
+            any_len_perm(
+                required=(
+                    keyword("case").suppress(),
+                    keyword("async").suppress(),
+                ),
+            ) + base_case_funcdef
+        )
+
+        async_keyword_normal_funcdef = Group(
+            any_len_perm_at_least_one(
+                keyword("yield"),
+                keyword("copyclosure"),
+                required=(keyword("async").suppress(),),
+            )
+        ) + (funcdef | math_funcdef)
+        async_keyword_match_funcdef = Group(
+            any_len_perm_at_least_one(
+                keyword("yield"),
+                keyword("copyclosure"),
+                keyword("match").suppress(),
+                # addpattern is detected later
+                keyword("addpattern"),
+                required=(keyword("async").suppress(),),
+            )
+        ) + (def_match_funcdef | math_match_funcdef)
+        async_keyword_case_funcdef = Group(
+            any_len_perm_at_least_one(
+                keyword("yield"),
+                keyword("copyclosure"),
+                required=(
+                    keyword("async").suppress(),
+                    keyword("case").suppress(),
+                ),
+            )
+        ) + base_case_funcdef
+        async_keyword_funcdef = Forward()
+        async_keyword_funcdef_ref = (
+            async_keyword_normal_funcdef
+            | async_keyword_match_funcdef
+            | async_keyword_case_funcdef
+        )
+
+        async_funcdef_stmt = (
+            # match funcdefs must come after normal
+            async_funcdef
+            | async_match_funcdef
+            | async_case_funcdef
+            | async_keyword_funcdef
         )
 
         async_stmt = Forward()
@@ -2312,70 +2520,6 @@ class Grammar(object):
             keyword("async") + (with_stmt | any_for_stmt)  # handles async [match] for
             | keyword("match").suppress() + keyword("async") + base_match_for_stmt  # handles match async for
             | async_with_for_stmt
-        )
-
-        async_funcdef = keyword("async").suppress() + (funcdef | math_funcdef)
-        async_match_funcdef = addspace(
-            any_len_perm(
-                keyword("match").suppress(),
-                # addpattern is detected later
-                keyword("addpattern"),
-                required=(keyword("async").suppress(),),
-            ) + (def_match_funcdef | math_match_funcdef),
-        )
-
-        async_keyword_normal_funcdef = Group(
-            any_len_perm_at_least_one(
-                keyword("yield"),
-                keyword("copyclosure"),
-                required=(keyword("async").suppress(),),
-            )
-        ) + (funcdef | math_funcdef)
-        async_keyword_match_funcdef = Group(
-            any_len_perm_at_least_one(
-                keyword("yield"),
-                keyword("copyclosure"),
-                keyword("match").suppress(),
-                # addpattern is detected later
-                keyword("addpattern"),
-                required=(keyword("async").suppress(),),
-            )
-        ) + (def_match_funcdef | math_match_funcdef)
-        async_keyword_funcdef = Forward()
-        async_keyword_funcdef_ref = async_keyword_normal_funcdef | async_keyword_match_funcdef
-
-        async_funcdef_stmt = (
-            # match funcdefs must come after normal
-            async_funcdef
-            | async_match_funcdef
-            | async_keyword_funcdef
-        )
-
-        keyword_normal_funcdef = Group(
-            any_len_perm_at_least_one(
-                keyword("yield"),
-                keyword("copyclosure"),
-            )
-        ) + (funcdef | math_funcdef)
-        keyword_match_funcdef = Group(
-            any_len_perm_at_least_one(
-                keyword("yield"),
-                keyword("copyclosure"),
-                keyword("match").suppress(),
-                # addpattern is detected later
-                keyword("addpattern"),
-            )
-        ) + (def_match_funcdef | math_match_funcdef)
-        keyword_funcdef = Forward()
-        keyword_funcdef_ref = keyword_normal_funcdef | keyword_match_funcdef
-
-        normal_funcdef_stmt = (
-            # match funcdefs must come after normal
-            funcdef
-            | math_funcdef
-            | match_funcdef
-            | math_match_funcdef
-            | keyword_funcdef
         )
 
         datadef = Forward()
@@ -2522,19 +2666,19 @@ class Grammar(object):
         line = newline | stmt
 
         file_input = condense(moduledoc_marker - ZeroOrMore(line))
-        raw_file_parser = start_marker - file_input - end_marker
+        raw_file_parser = StartOfStrGrammar(file_input - end_marker)
         line_by_line_file_parser = (
-            start_marker - moduledoc_marker - stores_loc_item,
-            start_marker - line - stores_loc_item,
+            StartOfStrGrammar(moduledoc_marker - stores_loc_item),
+            StartOfStrGrammar(line - stores_loc_item),
         )
         file_parser = line_by_line_file_parser if USE_LINE_BY_LINE else raw_file_parser
 
         single_input = condense(Optional(line) - ZeroOrMore(newline))
         eval_input = condense(testlist - ZeroOrMore(newline))
 
-        single_parser = start_marker - single_input - end_marker
-        eval_parser = start_marker - eval_input - end_marker
-        some_eval_parser = start_marker + eval_input
+        single_parser = StartOfStrGrammar(single_input - end_marker)
+        eval_parser = StartOfStrGrammar(eval_input - end_marker)
+        some_eval_parser = StartOfStrGrammar(eval_input)
 
         parens = originalTextFor(nestedExpr("(", ")", ignoreExpr=None))
         brackets = originalTextFor(nestedExpr("[", "]", ignoreExpr=None))
@@ -2552,15 +2696,16 @@ class Grammar(object):
             )
         )
         unsafe_xonsh_parser, _impl_call_ref = disable_inside(
-            single_parser,
+            single_input - end_marker,
             unsafe_impl_call_ref,
         )
         impl_call_ref <<= _impl_call_ref
-        xonsh_parser, _anything_stmt, _xonsh_command = disable_outside(
+        _xonsh_parser, _anything_stmt, _xonsh_command = disable_outside(
             unsafe_xonsh_parser,
             unsafe_anything_stmt,
             unsafe_xonsh_command,
         )
+        xonsh_parser = StartOfStrGrammar(_xonsh_parser)
         anything_stmt <<= _anything_stmt
         xonsh_command <<= _xonsh_command
 
@@ -2574,7 +2719,8 @@ class Grammar(object):
 
         whitespace_regex = compile_regex(r"\s")
 
-        def_regex = compile_regex(r"\b((async|addpattern|copyclosure)\s+)*def\b")
+        def_regex = compile_regex(r"((async|addpattern|copyclosure)\s+)*def\b")
+
         yield_regex = compile_regex(r"\byield(?!\s+_coconut\.asyncio\.From)\b")
         yield_from_regex = compile_regex(r"\byield\s+from\b")
 
@@ -2583,7 +2729,7 @@ class Grammar(object):
 
         noqa_regex = compile_regex(r"\b[Nn][Oo][Qq][Aa]\b")
 
-        just_non_none_atom = start_marker + ~keyword("None") + known_atom + end_marker
+        just_non_none_atom = StartOfStrGrammar(~keyword("None") + known_atom + end_marker)
 
         original_function_call_tokens = (
             lparen.suppress() + rparen.suppress()
@@ -2593,9 +2739,8 @@ class Grammar(object):
         )
 
         tre_func_name = Forward()
-        tre_return = (
-            start_marker
-            + keyword("return").suppress()
+        tre_return_base = (
+            keyword("return").suppress()
             + maybeparens(
                 lparen,
                 tre_func_name + original_function_call_tokens,
@@ -2603,9 +2748,8 @@ class Grammar(object):
             ) + end_marker
         )
 
-        tco_return = attach(
-            start_marker
-            + keyword("return").suppress()
+        tco_return = StartOfStrGrammar(attach(
+            keyword("return").suppress()
             + maybeparens(
                 lparen,
                 disallow_keywords(untcoable_funcs, with_suffix="(")
@@ -2630,7 +2774,7 @@ class Grammar(object):
             tco_return_handle,
             # this is the root in what it's used for, so might as well evaluate greedily
             greedy=True,
-        )
+        ))
 
         rest_of_lambda = Forward()
         lambdas = keyword("lambda") - rest_of_lambda - colon
@@ -2670,9 +2814,8 @@ class Grammar(object):
             ))
         )
 
-        split_func = (
-            start_marker
-            - keyword("def").suppress()
+        split_func = StartOfStrGrammar(
+            keyword("def").suppress()
             - unsafe_dotted_name
             - Optional(brackets).suppress()
             - lparen.suppress()
@@ -2686,13 +2829,13 @@ class Grammar(object):
             | ~indent + ~dedent + any_char + keyword("for") + unsafe_name + keyword("in")
         )
 
-        just_a_string = start_marker + string_atom + end_marker
+        just_a_string = StartOfStrGrammar(string_atom + end_marker)
 
         end_of_line = end_marker | Literal("\n") | pound
 
         unsafe_equals = Literal("=")
 
-        parse_err_msg = start_marker + (
+        parse_err_msg = StartOfStrGrammar(
             # should be in order of most likely to actually be the source of the error first
             fixto(
                 ZeroOrMore(~questionmark + ~Literal("\n") + any_char)
@@ -2704,29 +2847,38 @@ class Grammar(object):
                 "misplaced '?' (naked '?' is only supported inside partial application arguments)",
             )
             | fixto(Optional(keyword("if") + skip_to_in_line(unsafe_equals)) + equals, "misplaced assignment (maybe should be '==')")
-            | attach(any_keyword_in(keyword_vars + reserved_vars), kwd_err_msg_handle)
+            | fixto(keyword("def"), "invalid function definition")
             | fixto(end_of_line, "misplaced newline (maybe missing ':')")
         )
 
         start_f_str_regex = compile_regex(r"\br?fr?$")
         start_f_str_regex_len = 4
 
-        end_f_str_expr = combine(start_marker + (rbrace | colon | bang))
+        end_f_str_expr = StartOfStrGrammar(combine(rbrace | colon | bang).leaveWhitespace())
 
-        string_start = start_marker + python_quoted_string
+        python_quoted_string = regex_item(
+            # multiline strings must come first
+            r'"""(?:[^"\\]|\n|""(?!")|"(?!"")|\\.)*"""'
+            r"|'''(?:[^'\\]|\n|''(?!')|'(?!'')|\\.)*'''"
+            r'|"(?:[^"\n\r\\]|(?:\\")|(?:\\(?:[^x]|x[0-9a-fA-F]+)))*"'
+            r"|'(?:[^'\n\r\\]|(?:\\')|(?:\\(?:[^x]|x[0-9a-fA-F]+)))*'"
+        )
 
-        no_unquoted_newlines = start_marker + ZeroOrMore(python_quoted_string | ~Literal("\n") + any_char) + end_marker
+        string_start = StartOfStrGrammar(python_quoted_string)
 
-        operator_stmt = (
-            start_marker
-            + keyword("operator").suppress()
+        no_unquoted_newlines = StartOfStrGrammar(
+            ZeroOrMore(python_quoted_string | ~Literal("\n") + any_char)
+            + end_marker
+        )
+
+        operator_stmt = StartOfStrGrammar(
+            keyword("operator").suppress()
             + restOfLine
         )
 
         unsafe_import_from_name = condense(ZeroOrMore(unsafe_dot) + unsafe_dotted_name | OneOrMore(unsafe_dot))
-        from_import_operator = (
-            start_marker
-            + keyword("from").suppress()
+        from_import_operator = StartOfStrGrammar(
+            keyword("from").suppress()
             + unsafe_import_from_name
             + keyword("import").suppress()
             + keyword("operator").suppress()
@@ -2754,7 +2906,7 @@ class Grammar(object):
     def set_grammar_names():
         """Set names of grammar elements to their variable names."""
         for varname, val in vars(Grammar).items():
-            if isinstance(val, ParserElement):
+            if hasattr(val, "setName"):
                 val.setName(varname)
 
 

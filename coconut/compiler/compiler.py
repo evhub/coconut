@@ -93,6 +93,7 @@ from coconut.constants import (
     import_existing,
     use_adaptive_any_of,
     reverse_any_of,
+    tempsep,
 )
 from coconut.util import (
     pickleable_obj,
@@ -104,6 +105,7 @@ from coconut.util import (
     get_clock_time,
     get_name,
     assert_remove_prefix,
+    assert_remove_suffix,
     dictset,
     noop_ctx,
 )
@@ -123,7 +125,7 @@ from coconut.terminal import (
     complain,
     internal_assert,
 )
-from coconut.compiler.matching import Matcher
+from coconut.compiler.matching import Matcher, match_funcdef_setup_code
 from coconut.compiler.grammar import (
     Grammar,
     lazy_list_handle,
@@ -134,6 +136,7 @@ from coconut.compiler.grammar import (
     itemgetter_handle,
     partial_op_item_handle,
     partial_arr_concat_handle,
+    split_args_list,
 )
 from coconut.compiler.util import (
     ExceptionNode,
@@ -184,6 +187,7 @@ from coconut.compiler.util import (
     manage,
     sub_all,
     ComputationNode,
+    StartOfStrGrammar,
 )
 from coconut.compiler.header import (
     minify_header,
@@ -308,75 +312,6 @@ for _coconut_n, _coconut_m in _coconut.tuple(_coconut_sys.modules.items()):
             """,
         )
     return out
-
-
-def split_args_list(tokens, loc):
-    """Splits function definition arguments."""
-    pos_only_args = []
-    req_args = []
-    default_args = []
-    star_arg = None
-    kwd_only_args = []
-    dubstar_arg = None
-    pos = 0
-    for arg in tokens:
-        # only the first two components matter; if there's a third it's a typedef
-        arg = arg[:2]
-
-        if len(arg) == 1:
-            if arg[0] == "*":
-                # star sep (pos = 2)
-                if pos >= 2:
-                    raise CoconutDeferredSyntaxError("star separator at invalid position in function definition", loc)
-                pos = 2
-            elif arg[0] == "/":
-                # slash sep (pos = 0)
-                if pos > 0:
-                    raise CoconutDeferredSyntaxError("slash separator at invalid position in function definition", loc)
-                if pos_only_args:
-                    raise CoconutDeferredSyntaxError("only one slash separator allowed in function definition", loc)
-                if not req_args:
-                    raise CoconutDeferredSyntaxError("slash separator must come after arguments to mark as positional-only", loc)
-                pos_only_args = req_args
-                req_args = []
-            else:
-                # pos arg (pos = 0)
-                if pos == 0:
-                    req_args.append(arg[0])
-                # kwd only arg (pos = 2)
-                elif pos == 2:
-                    kwd_only_args.append((arg[0], None))
-                else:
-                    raise CoconutDeferredSyntaxError("non-default arguments must come first or after star argument/separator", loc)
-
-        else:
-            internal_assert(arg[1] is not None, "invalid arg[1] in split_args_list", arg)
-
-            if arg[0] == "*":
-                # star arg (pos = 2)
-                if pos >= 2:
-                    raise CoconutDeferredSyntaxError("star argument at invalid position in function definition", loc)
-                pos = 2
-                star_arg = arg[1]
-            elif arg[0] == "**":
-                # dub star arg (pos = 3)
-                if pos == 3:
-                    raise CoconutDeferredSyntaxError("double star argument at invalid position in function definition", loc)
-                pos = 3
-                dubstar_arg = arg[1]
-            else:
-                # def arg (pos = 1)
-                if pos <= 1:
-                    pos = 1
-                    default_args.append((arg[0], arg[1]))
-                # kwd only arg (pos = 2)
-                elif pos <= 2:
-                    pos = 2
-                    kwd_only_args.append((arg[0], arg[1]))
-                else:
-                    raise CoconutDeferredSyntaxError("invalid default argument in function definition", loc)
-
-    return pos_only_args, req_args, default_args, star_arg, kwd_only_args, dubstar_arg
 
 
 def reconstitute_paramdef(pos_only_args, req_args, default_args, star_arg, kwd_only_args, dubstar_arg):
@@ -606,6 +541,7 @@ class Compiler(Grammar, pickleable_obj):
         self.add_code_before_replacements = {}
         self.add_code_before_ignore_names = {}
         self.remaining_original = None
+        self.shown_warnings = set()
 
     @contextmanager
     def inner_environment(self, ln=None):
@@ -623,6 +559,7 @@ class Compiler(Grammar, pickleable_obj):
         kept_lines, self.kept_lines = self.kept_lines, []
         num_lines, self.num_lines = self.num_lines, 0
         remaining_original, self.remaining_original = self.remaining_original, None
+        shown_warnings, self.shown_warnings = self.shown_warnings, set()
         try:
             with ComputationNode.using_overrides():
                 yield
@@ -638,6 +575,7 @@ class Compiler(Grammar, pickleable_obj):
             self.kept_lines = kept_lines
             self.num_lines = num_lines
             self.remaining_original = remaining_original
+            self.shown_warnings = shown_warnings
 
     @contextmanager
     def disable_checks(self):
@@ -842,6 +780,7 @@ class Compiler(Grammar, pickleable_obj):
         cls.testlist_star_namedexpr <<= attach(cls.testlist_star_namedexpr_tokens, cls.method("testlist_star_expr_handle"))
         cls.ellipsis <<= attach(cls.ellipsis_tokens, cls.method("ellipsis_handle"))
         cls.f_string <<= attach(cls.f_string_tokens, cls.method("f_string_handle"))
+        cls.funcname_typeparams <<= attach(cls.funcname_typeparams_tokens, cls.method("funcname_typeparams_handle"))
 
         # standard handlers of the form name <<= attach(name_ref, method("name_handle"))
         cls.term <<= attach(cls.term_ref, cls.method("term_handle"))
@@ -855,6 +794,7 @@ class Compiler(Grammar, pickleable_obj):
         cls.full_match <<= attach(cls.full_match_ref, cls.method("full_match_handle"))
         cls.name_match_funcdef <<= attach(cls.name_match_funcdef_ref, cls.method("name_match_funcdef_handle"))
         cls.op_match_funcdef <<= attach(cls.op_match_funcdef_ref, cls.method("op_match_funcdef_handle"))
+        cls.base_case_funcdef <<= attach(cls.base_case_funcdef_ref, cls.method("base_case_funcdef_handle"))
         cls.yield_from <<= attach(cls.yield_from_ref, cls.method("yield_from_handle"))
         cls.typedef <<= attach(cls.typedef_ref, cls.method("typedef_handle"))
         cls.typedef_default <<= attach(cls.typedef_default_ref, cls.method("typedef_handle"))
@@ -873,7 +813,6 @@ class Compiler(Grammar, pickleable_obj):
         cls.base_match_for_stmt <<= attach(cls.base_match_for_stmt_ref, cls.method("base_match_for_stmt_handle"))
         cls.async_with_for_stmt <<= attach(cls.async_with_for_stmt_ref, cls.method("async_with_for_stmt_handle"))
         cls.unsafe_typedef_tuple <<= attach(cls.unsafe_typedef_tuple_ref, cls.method("unsafe_typedef_tuple_handle"))
-        cls.funcname_typeparams <<= attach(cls.funcname_typeparams_ref, cls.method("funcname_typeparams_handle"))
         cls.impl_call <<= attach(cls.impl_call_ref, cls.method("impl_call_handle"))
         cls.protocol_intersect_expr <<= attach(cls.protocol_intersect_expr_ref, cls.method("protocol_intersect_expr_handle"))
 
@@ -1003,11 +942,14 @@ class Compiler(Grammar, pickleable_obj):
         if self.strict:
             raise self.make_err(CoconutStyleError, *args, **kwargs)
 
-    def syntax_warning(self, *args, **kwargs):
+    def syntax_warning(self, message, original, loc, **kwargs):
         """Show a CoconutSyntaxWarning. Usage:
             self.syntax_warning(message, original, loc)
         """
-        logger.warn_err(self.make_err(CoconutSyntaxWarning, *args, **kwargs))
+        key = (message, loc)
+        if key not in self.shown_warnings:
+            logger.warn_err(self.make_err(CoconutSyntaxWarning, message, original, loc, **kwargs))
+            self.shown_warnings.add(key)
 
     def strict_err_or_warn(self, *args, **kwargs):
         """Raises an error if in strict mode, otherwise raises a warning. Usage:
@@ -1364,7 +1306,7 @@ class Compiler(Grammar, pickleable_obj):
             input_len = 0 if inputstring is None else len(inputstring)
             if force or (streamline_grammar_for_len is not None and input_len > streamline_grammar_for_len):
                 start_time = get_clock_time()
-                prep_grammar(grammar, streamline=True)
+                prep_grammar(grammar, for_scan=False, streamline=True)
                 logger.log_lambda(
                     lambda: "Streamlined {grammar} in {time} seconds{info}.".format(
                         grammar=get_name(grammar),
@@ -1561,7 +1503,7 @@ class Compiler(Grammar, pickleable_obj):
                             hold["exprs"][-1] += c
                         elif hold["paren_level"] > 0:
                             raise self.make_err(CoconutSyntaxError, "imbalanced parentheses in format string expression", inputstring, i, reformat=False)
-                        elif match_in(self.end_f_str_expr, remaining_text):
+                        elif does_parse(self.end_f_str_expr, remaining_text):
                             hold["in_expr"] = False
                             hold["str_parts"].append(c)
                         else:
@@ -1570,10 +1512,7 @@ class Compiler(Grammar, pickleable_obj):
 
                     # if we might be at the end of the string
                     elif hold["stop"] is not None:
-                        if c == "\\":
-                            self.str_hold_contents(hold, append=hold["stop"] + c)
-                            hold["stop"] = None
-                        elif c == hold["start"][0]:
+                        if c == hold["start"][0]:
                             hold["stop"] += c
                         elif len(hold["stop"]) > len(hold["start"]):
                             raise self.make_err(CoconutSyntaxError, "invalid number of closing " + repr(hold["start"][0]) + "s", inputstring, i, reformat=False)
@@ -1581,8 +1520,9 @@ class Compiler(Grammar, pickleable_obj):
                             done = True
                             rerun = True
                         else:
-                            self.str_hold_contents(hold, append=hold["stop"] + c)
+                            self.str_hold_contents(hold, append=hold["stop"])
                             hold["stop"] = None
+                            rerun = True
 
                     # if we might be at the start of an f string expr
                     elif hold.get("saw_brace", False):
@@ -1597,15 +1537,16 @@ class Compiler(Grammar, pickleable_obj):
                             hold["exprs"].append("")
                             rerun = True
 
+                    elif is_f and c == "{":
+                        hold["saw_brace"] = True
+                        self.str_hold_contents(hold, append=c)
+                    # backslashes should escape quotes, but nothing else
                     elif count_end(self.str_hold_contents(hold), "\\") % 2 == 1:
                         self.str_hold_contents(hold, append=c)
                     elif c == hold["start"]:
                         done = True
                     elif c == hold["start"][0]:
                         hold["stop"] = c
-                    elif is_f and c == "{":
-                        hold["saw_brace"] = True
-                        self.str_hold_contents(hold, append=c)
                     else:
                         self.str_hold_contents(hold, append=c)
 
@@ -2187,11 +2128,11 @@ else:
                 type_ignore=self.type_ignore_comment(),
             )
         self.tre_func_name <<= base_keyword(func_name).suppress()
-        return attach(
-            self.tre_return,
+        return StartOfStrGrammar(attach(
+            self.tre_return_base,
             tre_return_handle,
             greedy=True,
-        )
+        ))
 
     def detect_is_gen(self, raw_lines):
         """Determine if the given function code is for a generator."""
@@ -2364,9 +2305,10 @@ else:
         def_stmt = raw_lines.pop(0)
         out = []
 
-        # detect addpattern/copyclosure functions
+        # detect keyword functions
         addpattern = False
         copyclosure = False
+        typed_case_def = False
         done = False
         while not done:
             if def_stmt.startswith("addpattern "):
@@ -2375,6 +2317,11 @@ else:
             elif def_stmt.startswith("copyclosure "):
                 def_stmt = assert_remove_prefix(def_stmt, "copyclosure ")
                 copyclosure = True
+            elif def_stmt.startswith("case "):
+                def_stmt = assert_remove_prefix(def_stmt, "case ")
+                case_def_ref, def_stmt = def_stmt.split(unwrapper, 1)
+                type_param_code, all_type_defs = self.get_ref("case_def", case_def_ref)
+                typed_case_def = True
             elif def_stmt.startswith("def"):
                 done = True
             else:
@@ -2450,6 +2397,7 @@ else:
 try:
     {addpattern_decorator} = _coconut_addpattern({func_name}) {type_ignore}
 except _coconut.NameError:
+    _coconut.warnings.warn("Deprecated use of 'addpattern def {func_name}' with no pre-existing '{func_name}' function (use 'match def {func_name}' for the first definition or switch to 'case def' syntax)", _coconut_CoconutWarning)
     {addpattern_decorator} = lambda f: f
                     """,
                     add_newline=True,
@@ -2580,7 +2528,7 @@ def {mock_var}({mock_paramdef}):
 
                 # assemble tre'd function
                 comment, rest = split_leading_comments(func_code)
-                indent, base, dedent = split_leading_trailing_indent(rest, 1)
+                indent, base, dedent = split_leading_trailing_indent(rest, max_indents=1)
                 base, base_dedent = split_trailing_indent(base)
                 docstring, base = self.split_docstring(base)
 
@@ -2614,6 +2562,29 @@ def {mock_var}({mock_paramdef}):
         if is_match_func:
             decorators += "@_coconut_mark_as_match\n"  # binds most tightly
 
+        # handle typed case def functions (must happen before decorators are cleared out)
+        type_code = None
+        if typed_case_def:
+            internal_assert(len(all_type_defs) not in (0, 2), "invalid typed case def all_type_defs", all_type_defs)
+            if undotted_name is not None:
+                all_type_defs = [
+                    "def " + def_name + assert_remove_prefix(type_def, "def " + func_name)
+                    for type_def in all_type_defs
+                ]
+            type_def_lines = []
+            for i, type_def in enumerate(all_type_defs):
+                type_def_lines.append(
+                    ("@_coconut.typing.overload\n" if i < len(all_type_defs) - 1 else "")
+                    + decorators
+                    + self.deferred_code_proc(type_def)
+                )
+            if undotted_name is not None:
+                type_def_lines.append("{func_name} = {def_name}".format(
+                    func_name=func_name,
+                    def_name=def_name,
+                ))
+            type_code = self.deferred_code_proc(type_param_code) + "\n".join(type_def_lines)
+
         # handle dotted function definition
         if undotted_name is not None:
             out.append(
@@ -2645,7 +2616,7 @@ if {temp_var} is not None:
             out += [decorators, def_stmt, func_code]
             decorators = ""
 
-        # handle copyclosure functions
+        # handle copyclosure functions and type_code
         if copyclosure:
             vars_var = self.get_temp_var("func_vars", loc)
             func_from_vars = vars_var + '["' + def_name + '"]'
@@ -2658,22 +2629,37 @@ if {temp_var} is not None:
                 handle_indentation(
                     '''
 if _coconut.typing.TYPE_CHECKING:
-    {code}
+    {type_code}
     {vars_var} = {{"{def_name}": {def_name}}}
 else:
     {vars_var} = _coconut.globals().copy()
     {vars_var}.update(_coconut.locals())
     _coconut_exec({code_str}, {vars_var})
 {func_name} = {func_from_vars}
-                ''',
+                    ''',
                     add_newline=True,
                 ).format(
                     func_name=func_name,
                     def_name=def_name,
                     vars_var=vars_var,
-                    code=code,
+                    type_code=code if type_code is None else type_code,
                     code_str=self.wrap_str_of(self.reformat_post_deferred_code_proc(code)),
                     func_from_vars=func_from_vars,
+                ),
+            ]
+        elif type_code:
+            out = [
+                handle_indentation(
+                    '''
+if _coconut.typing.TYPE_CHECKING:
+    {type_code}
+else:
+    {code}
+                    ''',
+                    add_newline=True,
+                ).format(
+                    type_code=type_code,
+                    code="".join(out),
                 ),
             ]
 
@@ -2731,25 +2717,21 @@ else:
                 func_id = int(assert_remove_prefix(line, funcwrapper))
                 original, loc, decorators, funcdef, is_async, in_method, is_stmt_lambda = self.get_ref("func", func_id)
 
-                # process inner code
+                # process inner code (we use tempsep to tell what was newly added before the funcdef)
                 decorators = self.deferred_code_proc(decorators, add_code_at_start=True, ignore_names=ignore_names, **kwargs)
-                funcdef = self.deferred_code_proc(funcdef, ignore_names=ignore_names, **kwargs)
+                raw_funcdef = self.deferred_code_proc(tempsep + funcdef, ignore_names=ignore_names, **kwargs)
 
-                # handle any non-function code that was added before the funcdef
-                pre_def_lines = []
-                post_def_lines = []
-                funcdef_lines = list(literal_lines(funcdef, True))
-                for i, line in enumerate(funcdef_lines):
-                    if self.def_regex.match(line):
-                        pre_def_lines = funcdef_lines[:i]
-                        post_def_lines = funcdef_lines[i:]
-                        break
-                internal_assert(post_def_lines, "no def statement found in funcdef", funcdef)
+                pre_funcdef, post_funcdef = raw_funcdef.split(tempsep)
+                func_indent, func_code, func_dedent = split_leading_trailing_indent(post_funcdef, symmetric=True)
 
-                out.append(bef_ind)
-                out.extend(pre_def_lines)
-                out.append(self.proc_funcdef(original, loc, decorators, "".join(post_def_lines), is_async, in_method, is_stmt_lambda))
-                out.append(aft_ind)
+                out += [
+                    bef_ind,
+                    pre_funcdef,
+                    func_indent,
+                    self.proc_funcdef(original, loc, decorators, func_code, is_async, in_method, is_stmt_lambda),
+                    func_dedent,
+                    aft_ind,
+                ]
 
             # look for add_code_before regexes
             else:
@@ -2804,7 +2786,7 @@ else:
 # HANDLERS:
 # -----------------------------------------------------------------------------------------------------------------------
 
-    def split_function_call(self, tokens, loc):
+    def split_function_call(self, original, loc, tokens):
         """Split into positional arguments and keyword arguments."""
         pos_args = []
         star_args = []
@@ -2827,7 +2809,10 @@ else:
                     star_args.append(argstr)
                 elif arg[0] == "**":
                     dubstar_args.append(argstr)
+                elif arg[1] == "=":
+                    kwd_args.append(arg[0] + "=" + arg[0])
                 elif arg[0] == "...":
+                    self.strict_err_or_warn("'...={name}' shorthand is deprecated, use '{name}=' shorthand instead".format(name=arg[1]), original, loc)
                     kwd_args.append(arg[1] + "=" + arg[1])
                 else:
                     kwd_args.append(argstr)
@@ -2843,9 +2828,9 @@ else:
 
         return pos_args, star_args, kwd_args, dubstar_args
 
-    def function_call_handle(self, loc, tokens):
+    def function_call_handle(self, original, loc, tokens):
         """Enforce properly ordered function parameters."""
-        return "(" + join_args(*self.split_function_call(tokens, loc)) + ")"
+        return "(" + join_args(*self.split_function_call(original, loc, tokens)) + ")"
 
     def pipe_item_split(self, original, loc, tokens):
         """Process a pipe item, which could be a partial, an attribute access, a method call, or an expression.
@@ -2866,7 +2851,7 @@ else:
             return "expr", tokens
         elif "partial" in tokens:
             func, args = tokens
-            pos_args, star_args, kwd_args, dubstar_args = self.split_function_call(args, loc)
+            pos_args, star_args, kwd_args, dubstar_args = self.split_function_call(original, loc, args)
             return "partial", (func, join_args(pos_args, star_args), join_args(kwd_args, dubstar_args))
         elif "attrgetter" in tokens:
             name, args = attrgetter_atom_split(tokens)
@@ -3012,17 +2997,17 @@ else:
                         raise CoconutDeferredSyntaxError("cannot star pipe into operator partial", loc)
                     op, arg = split_item
                     return "({op})({x}, {arg})".format(op=op, x=subexpr, arg=arg)
+                elif name == "await":
+                    internal_assert(not split_item, "invalid split await pipe item tokens", split_item)
+                    if stars:
+                        raise CoconutDeferredSyntaxError("cannot star pipe into await", loc)
+                    return self.await_expr_handle(original, loc, [subexpr])
                 elif name == "right arr concat partial":
                     if stars:
                         raise CoconutDeferredSyntaxError("cannot star pipe into array concatenation operator partial", loc)
                     op, arg = split_item
                     internal_assert(op.lstrip(";") == "", "invalid arr concat op", op)
                     return "_coconut_arr_concat_op({dim}, {x}, {arg})".format(dim=len(op), x=subexpr, arg=arg)
-                elif name == "await":
-                    internal_assert(not split_item, "invalid split await pipe item tokens", split_item)
-                    if stars:
-                        raise CoconutDeferredSyntaxError("cannot star pipe into await", loc)
-                    return self.await_expr_handle(original, loc, [subexpr])
                 elif name == "namedexpr":
                     if stars:
                         raise CoconutDeferredSyntaxError("cannot star pipe into named expression partial", loc)
@@ -3086,7 +3071,7 @@ else:
                 elif trailer[0] == "$[":
                     out = "_coconut_iter_getitem(" + out + ", " + trailer[1] + ")"
                 elif trailer[0] == "$(?":
-                    pos_args, star_args, base_kwd_args, dubstar_args = self.split_function_call(trailer[1], loc)
+                    pos_args, star_args, base_kwd_args, dubstar_args = self.split_function_call(original, loc, trailer[1])
 
                     has_question_mark = False
                     needs_complex_partial = False
@@ -3243,12 +3228,21 @@ while True:
         """Process class definitions."""
         decorators, name, paramdefs, classlist_toks, body = tokens
 
-        out = "".join(paramdefs) + decorators + "class " + name
+        out = ""
+
+        # paramdefs are type params on >= 3.12 and type var assignments on < 3.12
+        if paramdefs:
+            if self.target_info >= (3, 12):
+                name += "[" + ", ".join(paramdefs) + "]"
+            else:
+                out += "".join(paramdefs)
+
+        out += decorators + "class " + name
 
         # handle classlist
         base_classes = []
         if classlist_toks:
-            pos_args, star_args, kwd_args, dubstar_args = self.split_function_call(classlist_toks, loc)
+            pos_args, star_args, kwd_args, dubstar_args = self.split_function_call(original, loc, classlist_toks)
 
             # check for just inheriting from object
             if (
@@ -3273,7 +3267,7 @@ while True:
 
             base_classes.append(join_args(pos_args, star_args, kwd_args, dubstar_args))
 
-        if paramdefs:
+        if paramdefs and self.target_info < (3, 12):
             base_classes.append(self.get_generic_for_typevars())
 
         if not classlist_toks and not self.target.startswith("3"):
@@ -3307,16 +3301,7 @@ while True:
 
         check_var = self.get_temp_var("match_check", loc)
         matcher = self.get_matcher(original, loc, check_var, name_list=[])
-
-        pos_only_args, req_args, default_args, star_arg, kwd_only_args, dubstar_arg = split_args_list(matches, loc)
-        matcher.match_function(
-            pos_only_match_args=pos_only_args,
-            match_args=req_args + default_args,
-            star_arg=star_arg,
-            kwd_only_match_args=kwd_only_args,
-            dubstar_arg=dubstar_arg,
-        )
-
+        matcher.match_function_toks(matches)
         if cond is not None:
             matcher.add_guard(cond)
 
@@ -3515,8 +3500,14 @@ def __new__(_coconut_cls, {all_args}):
         definition of Expected in header.py_template.
         """
         # create class
-        out = [
-            "".join(paramdefs),
+        out = []
+        if paramdefs:
+            # paramdefs are type params on >= 3.12 and type var assignments on < 3.12
+            if self.target_info >= (3, 12):
+                name += "[" + ", ".join(paramdefs) + "]"
+            else:
+                out += ["".join(paramdefs)]
+        out += [
             decorators,
             "class ",
             name,
@@ -3525,7 +3516,7 @@ def __new__(_coconut_cls, {all_args}):
         ]
         if inherit is not None:
             out += [", ", inherit]
-        if paramdefs:
+        if paramdefs and self.target_info < (3, 12):
             out += [", ", self.get_generic_for_typevars()]
         if not self.target.startswith("3"):
             out.append(", _coconut.object")
@@ -3547,7 +3538,7 @@ __ne__ = _coconut.object.__ne__
 def __eq__(self, other):
     return self.__class__ is other.__class__ and _coconut.tuple.__eq__(self, other)
 def __hash__(self):
-    return _coconut.tuple.__hash__(self) ^ hash(self.__class__)
+    return _coconut.tuple.__hash__(self) ^ _coconut.hash(self.__class__)
             """,
             add_newline=True,
         ).format(
@@ -3585,7 +3576,7 @@ def __hash__(self):
 
         return "".join(out)
 
-    def anon_namedtuple_handle(self, tokens):
+    def anon_namedtuple_handle(self, original, loc, tokens):
         """Handle anonymous named tuples."""
         names = []
         types = {}
@@ -3598,7 +3589,10 @@ def __hash__(self):
                 types[i] = typedef
             else:
                 raise CoconutInternalException("invalid anonymous named item", tok)
-            if name == "...":
+            if item == "=":
+                item = name
+            elif name == "...":
+                self.strict_err_or_warn("'...={item}' shorthand is deprecated, use '{item}=' shorthand instead".format(item=item), original, loc)
                 name = item
             names.append(name)
             items.append(item)
@@ -3630,7 +3624,7 @@ def __hash__(self):
             fake_mods = imp_as.split(".")
             for i in range(1, len(fake_mods)):
                 mod_name = ".".join(fake_mods[:i])
-                out.extend((
+                out += [
                     "try:",
                     openindent + mod_name,
                     closeindent + "except:",
@@ -3638,7 +3632,7 @@ def __hash__(self):
                     closeindent + "else:",
                     openindent + "if not _coconut.isinstance(" + mod_name + ", _coconut.types.ModuleType):",
                     openindent + mod_name + ' = _coconut.types.ModuleType(_coconut_py_str("' + mod_name + '"))' + closeindent * 2,
-                ))
+                ]
             out.append(".".join(fake_mods) + " = " + import_as_var)
         else:
             out.append(import_stmt(imp_from, imp, imp_as))
@@ -3848,16 +3842,7 @@ if not {check_var}:
 
         check_var = self.get_temp_var("match_check", loc)
         matcher = self.get_matcher(original, loc, check_var)
-
-        pos_only_args, req_args, default_args, star_arg, kwd_only_args, dubstar_arg = split_args_list(matches, loc)
-        matcher.match_function(
-            pos_only_match_args=pos_only_args,
-            match_args=req_args + default_args,
-            star_arg=star_arg,
-            kwd_only_match_args=kwd_only_args,
-            dubstar_arg=dubstar_arg,
-        )
-
+        matcher.match_function_toks(matches)
         if cond is not None:
             matcher.add_guard(cond)
 
@@ -3887,6 +3872,110 @@ if not {check_var}:
         if cond is not None:
             name_tokens.append(cond)
         return self.name_match_funcdef_handle(original, loc, name_tokens)
+
+    def base_case_funcdef_handle(self, original, loc, tokens):
+        """Process case def function definitions."""
+        if len(tokens) == 2:
+            name_toks, cases = tokens
+            docstring = None
+        elif len(tokens) == 3:
+            name_toks, docstring, cases = tokens
+        else:
+            raise CoconutInternalException("invalid case function definition tokens", tokens)
+
+        type_param_code = ""
+        if len(name_toks) == 1:
+            name, = name_toks
+        else:
+            name, paramdefs = name_toks
+            # paramdefs are type params on >= 3.12 and type var assignments on < 3.12
+            if self.target_info >= (3, 12):
+                name += "[" + ", ".join(paramdefs) + "]"
+            else:
+                type_param_code = "".join(paramdefs)
+
+        check_var = self.get_temp_var("match_check", loc)
+
+        all_case_code = []
+        all_type_defs = []
+        for case_toks in cases:
+            if "match" in case_toks:
+                if len(case_toks) == 2:
+                    matches, body = case_toks
+                    cond = None
+                else:
+                    matches, cond, body = case_toks
+                matcher = self.get_matcher(original, loc, check_var)
+                matcher.match_function_toks(matches, include_setup=False)
+                if cond is not None:
+                    matcher.add_guard(cond)
+                all_case_code.append(handle_indentation("""
+if not {check_var}:
+    {match_to_kwargs_var} = {match_to_kwargs_var}_store.copy()
+    {match_out}
+    if {check_var}:
+        {body}
+                """).format(
+                    check_var=check_var,
+                    match_to_kwargs_var=match_to_kwargs_var,
+                    match_out=matcher.out(),
+                    body=body,
+                ))
+            elif "type" in case_toks:
+                typed_params, typed_ret = case_toks
+                all_type_defs.append(handle_indentation("""
+def {name}{typed_params}{typed_ret}
+    {docstring}
+    return {ellipsis}
+                """).format(
+                    name=name,
+                    typed_params=typed_params,
+                    typed_ret=typed_ret,
+                    docstring=docstring if docstring is not None else "",
+                    ellipsis=self.any_type_ellipsis(),
+                ))
+            else:
+                raise CoconutInternalException("invalid case_funcdef case_toks", case_toks)
+
+        if not all_case_code:
+            raise CoconutDeferredSyntaxError("case def with no case patterns", loc)
+        if type_param_code and not all_type_defs:
+            raise CoconutDeferredSyntaxError("type parameters in case def but no type cases", loc)
+
+        if len(all_type_defs) > 1:
+            all_type_defs.append(handle_indentation("""
+def {name}(*_coconut_args, **_coconut_kwargs):
+    {docstring}
+    return {ellipsis}
+            """).format(
+                name=name,
+                docstring=docstring if docstring is not None else "",
+                ellipsis=self.any_type_ellipsis(),
+            ))
+
+        func_code = handle_indentation("""
+def {name}({match_func_paramdef}):
+    {docstring}
+    {check_var} = False
+    {setup_code}
+    {match_to_kwargs_var}_store = {match_to_kwargs_var}
+    {all_case_code}
+    {error}
+        """).format(
+            name=name,
+            match_func_paramdef=match_func_paramdef,
+            docstring=docstring if docstring is not None else "",
+            check_var=check_var,
+            setup_code=match_funcdef_setup_code(),
+            match_to_kwargs_var=match_to_kwargs_var,
+            all_case_code="\n".join(all_case_code),
+            error=self.pattern_error(original, loc, match_to_args_var, check_var, function_match_error_var),
+        )
+
+        if not (type_param_code or all_type_defs):
+            return func_code
+
+        return "case " + self.add_ref("case_def", (type_param_code, all_type_defs)) + unwrapper + func_code
 
     def set_literal_handle(self, tokens):
         """Converts set literals to the right form for the target Python."""
@@ -4137,8 +4226,7 @@ __annotations__["{name}"] = {annotation}
             ).format(
                 name=name,
                 value=(
-                    value if value is not None
-                    else "_coconut.typing.cast(_coconut.typing.Any, {ellipsis})".format(ellipsis=self.ellipsis_handle())
+                    value if value is not None else self.any_type_ellipsis()
                 ),
                 comment=self.wrap_type_comment(typedef),
                 annotation=self.wrap_typedef(typedef, for_py_typedef=False, duplicate=True),
@@ -4164,6 +4252,10 @@ __annotations__["{name}"] = {annotation}
             return "_coconut.Ellipsis"
 
     ellipsis_handle.ignore_arguments = True
+
+    def any_type_ellipsis(self):
+        """Get an ellipsis cast to Any type."""
+        return "_coconut.typing.cast(_coconut.typing.Any, {ellipsis})".format(ellipsis=self.ellipsis_handle())
 
     def match_case_tokens(self, match_var, check_var, original, tokens, top):
         """Build code for matching the given case."""
@@ -4191,9 +4283,20 @@ __annotations__["{name}"] = {annotation}
         else:
             raise CoconutInternalException("invalid case tokens", tokens)
 
-        self.internal_assert(block_kwd in ("cases", "case", "match"), original, loc, "invalid case statement keyword", block_kwd)
         if block_kwd == "case":
-            self.strict_err_or_warn("deprecated case keyword at top level in case ...: match ...: block (use Python 3.10 match ...: case ...: syntax instead)", original, loc)
+            self.strict_err_or_warn(
+                "deprecated case keyword at top level in case ...: match ...: block (use Python 3.10 match ...: case ...: syntax instead)",
+                original,
+                loc,
+            )
+        elif block_kwd == "cases":
+            self.syntax_warning(
+                "deprecated cases keyword at top level in cases ...: match ...: block (use Python 3.10 match ...: case ...: syntax instead)",
+                original,
+                loc,
+            )
+        else:
+            self.internal_assert(block_kwd == "match", original, loc, "invalid case statement keyword", block_kwd)
 
         check_var = self.get_temp_var("case_match_check", loc)
         match_var = self.get_temp_var("case_match_to", loc)
@@ -4233,11 +4336,11 @@ __annotations__["{name}"] = {annotation}
 
         # handle Python 3.8 f string = specifier
         for i, expr in enumerate(exprs):
-            if expr.endswith("="):
+            expr_rstrip = expr.rstrip()
+            if expr_rstrip.endswith("="):
                 before = string_parts[i]
-                internal_assert(before[-1] == "{", "invalid format string split", (string_parts, exprs))
-                string_parts[i] = before[:-1] + expr + "{"
-                exprs[i] = expr[:-1]
+                string_parts[i] = assert_remove_suffix(before, "{") + expr + "{"
+                exprs[i] = assert_remove_suffix(expr_rstrip, "=")
 
         # compile Coconut expressions
         compiled_exprs = []
@@ -4465,15 +4568,21 @@ async with {iter_item} as {temp_var}:
             loop=loop
         )
 
-    def string_atom_handle(self, tokens):
+    def string_atom_handle(self, original, loc, tokens, allow_silent_concat=False):
         """Handle concatenation of string literals."""
         internal_assert(len(tokens) >= 1, "invalid string literal tokens", tokens)
-        if any(s.endswith(")") for s in tokens):  # has .format() calls
-            return "(" + " + ".join(tokens) + ")"
-        elif any(s.startswith(("f", "rf")) for s in tokens):  # has f-strings
-            return " ".join(tokens)
+        if len(tokens) == 1:
+            return tokens[0]
         else:
-            return self.eval_now(" ".join(tokens))
+            if not allow_silent_concat:
+                self.strict_err_or_warn("found Python-style implicit string concatenation (use explicit '+' instead)", original, loc)
+            if any(s.endswith(")") for s in tokens):  # has .format() calls
+                # parens are necessary for string_atom_handle
+                return "(" + " + ".join(tokens) + ")"
+            elif any(s.startswith(("f", "rf")) for s in tokens):  # has f-strings
+                return " ".join(tokens)
+            else:
+                return self.eval_now(" ".join(tokens))
 
     string_atom_handle.ignore_one_token = True
 
@@ -4492,6 +4601,8 @@ async with {iter_item} as {temp_var}:
             else:
                 out += [op, term]
         return " ".join(out)
+
+    term_handle.ignore_one_token = True
 
     def impl_call_handle(self, loc, tokens):
         """Process implicit function application or coefficient syntax."""
@@ -4572,15 +4683,21 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
             return name
         else:
             name, paramdefs = tokens
-            return self.add_code_before_marker_with_replacement(name, "".join(paramdefs), add_spaces=False)
+            # paramdefs are type params on >= 3.12 and type var assignments on < 3.12
+            if self.target_info >= (3, 12):
+                return name + "[" + ", ".join(paramdefs) + "]"
+            else:
+                return self.add_code_before_marker_with_replacement(name, "".join(paramdefs), add_spaces=False)
 
     funcname_typeparams_handle.ignore_one_token = True
 
     def type_param_handle(self, original, loc, tokens):
         """Compile a type param into an assignment."""
         args = ""
+        raw_bound = None
         bound_op = None
         bound_op_type = ""
+        stars = ""
         if "TypeVar" in tokens:
             TypeVarFunc = "TypeVar"
             bound_op_type = "bound"
@@ -4588,18 +4705,24 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
                 name_loc, name = tokens
             else:
                 name_loc, name, bound_op, bound = tokens
+                # raw_bound is for >=3.12, so it is for_py_typedef, but args is for <3.12, so it isn't
+                raw_bound = self.wrap_typedef(bound, for_py_typedef=True)
                 args = ", bound=" + self.wrap_typedef(bound, for_py_typedef=False)
         elif "TypeVar constraint" in tokens:
             TypeVarFunc = "TypeVar"
             bound_op_type = "constraint"
             name_loc, name, bound_op, constraints = tokens
+            # for_py_typedef is different in the two cases here as above
+            raw_bound = ", ".join(self.wrap_typedef(c, for_py_typedef=True) for c in constraints)
             args = ", " + ", ".join(self.wrap_typedef(c, for_py_typedef=False) for c in constraints)
         elif "TypeVarTuple" in tokens:
             TypeVarFunc = "TypeVarTuple"
             name_loc, name = tokens
+            stars = "*"
         elif "ParamSpec" in tokens:
             TypeVarFunc = "ParamSpec"
             name_loc, name = tokens
+            stars = "**"
         else:
             raise CoconutInternalException("invalid type_param tokens", tokens)
 
@@ -4620,8 +4743,14 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
                         loc,
                     )
 
+        # on >= 3.12, return a type param
+        if self.target_info >= (3, 12):
+            return stars + name + (": " + raw_bound if raw_bound is not None else "")
+
+        # on < 3.12, return a type variable assignment
+
         kwargs = ""
-        # uncomment these lines whenever mypy adds support for infer_variance in TypeVar
+        # TODO: uncomment these lines whenever mypy adds support for infer_variance in TypeVar
         #  (and remove the warning about it in the DOCS)
         # if TypeVarFunc == "TypeVar":
         #     kwargs += ", infer_variance=True"
@@ -4652,6 +4781,7 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
 
     def get_generic_for_typevars(self):
         """Get the Generic instances for the current typevars."""
+        internal_assert(self.target_info < (3, 12), "get_generic_for_typevars should only be used on targets < 3.12")
         typevar_info = self.current_parsing_context("typevars")
         internal_assert(typevar_info is not None, "get_generic_for_typevars called with no typevars")
         generics = []
@@ -4685,16 +4815,18 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
             paramdefs = ()
         else:
             name, paramdefs, typedef = tokens
-        out = "".join(paramdefs)
+
+        # paramdefs are type params on >= 3.12 and type var assignments on < 3.12
         if self.target_info >= (3, 12):
-            out += "type " + name + " = " + self.wrap_typedef(typedef, for_py_typedef=True)
+            if paramdefs:
+                name += "[" + ", ".join(paramdefs) + "]"
+            return "type " + name + " = " + self.wrap_typedef(typedef, for_py_typedef=True)
         else:
-            out += self.typed_assign_stmt_handle([
+            return "".join(paramdefs) + self.typed_assign_stmt_handle([
                 name,
                 "_coconut.typing.TypeAlias",
                 self.wrap_typedef(typedef, for_py_typedef=False),
             ])
-        return out
 
     def where_item_handle(self, tokens):
         """Manage where items."""
@@ -5077,7 +5209,7 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
         self.streamline(self.file_parser, force=streamline)
         self.streamline(self.eval_parser, force=streamline)
         if enable_incremental_mode:
-            enable_incremental_parsing()
+            enable_incremental_parsing(reason="explicit warm_up call")
 
 
 # end: ENDPOINTS

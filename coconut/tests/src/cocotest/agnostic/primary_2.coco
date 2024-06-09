@@ -313,10 +313,10 @@ def primary_test_2() -> bool:
     f.is_f = True  # type: ignore
     assert (f ..*> (+)).is_f  # type: ignore
     really_long_var = 10
-    assert (...=really_long_var) == (10,)
-    assert (...=really_long_var, abc="abc") == (10, "abc")
-    assert (abc="abc", ...=really_long_var) == ("abc", 10)
-    assert (...=really_long_var).really_long_var == 10  # type: ignore
+    assert (really_long_var=) == (10,)
+    assert (really_long_var=, abc="abc") == (10, "abc")
+    assert (abc="abc", really_long_var=) == ("abc", 10)
+    assert (really_long_var=).really_long_var == 10  # type: ignore
     n = [0]
     assert n[0] == 0
     assert_raises(-> m{{1:2,2:3}}, TypeError)
@@ -455,6 +455,17 @@ def primary_test_2() -> bool:
     match def maybe_dup(x, y=x) = (x, y)
     assert maybe_dup(1) == (1, 1) == maybe_dup(x=1)
     assert maybe_dup(1, 2) == (1, 2) == maybe_dup(x=1, y=2)
+    assert min((), default=10) == 10 == max((), default=10)
+    assert py_min(3, 4) == 3 == py_max(2, 3)
+    assert len(zip()) == 0 == len(zip_longest())  # type: ignore
+    assert CoconutWarning `issubclass` Warning
+    x = y = 2
+    assert f"{x + y = }" == "x + y = 4"
+    assert f"""
+"{x}"
+""" == '\n"2"\n'
+    assert f"\{1}" == "\\1"
+    assert f''' '{1}' ''' == " '1' "
 
     with process_map.multiple_sequential_calls():  # type: ignore
         assert map((+), range(3), range(4)$[:-1], strict=True) |> list == [0, 2, 4] == process_map((+), range(3), range(4)$[:-1], strict=True) |> list  # type: ignore

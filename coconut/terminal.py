@@ -186,11 +186,15 @@ class LoggingStringIO(StringIO):
 def should_use_color(file=None):
     """Determine if colors should be used for the given file object."""
     use_color = get_bool_env_var(use_color_env_var, default=None)
+    if use_color is None:
+        use_color = get_bool_env_var("PYTHON_COLORS", default=None)
     if use_color is not None:
         return use_color
-    if get_bool_env_var("CLICOLOR_FORCE") or get_bool_env_var("FORCE_COLOR"):
+    if get_bool_env_var("NO_COLOR"):
+        return False
+    if get_bool_env_var("FORCE_COLOR") or get_bool_env_var("CLICOLOR_FORCE"):
         return True
-    return file is not None and not isatty(file)
+    return file is not None and isatty(file)
 
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -495,7 +499,7 @@ class Logger(object):
         trace = " ".join(str(arg) for arg in args)
         self.printlog(_indent(trace, self.trace_ind))
 
-    def log_tag(self, tag, block, multiline=False, force=False):
+    def log_tag(self, tag, block, multiline=False, wrap=True, force=False):
         """Logs a tagged message if tracing."""
         if self.tracing or force:
             assert not (not DEVELOP and force), tag
@@ -505,7 +509,7 @@ class Logger(object):
             if multiline:
                 self.print_trace(tagstr + "\n" + displayable(block))
             else:
-                self.print_trace(tagstr, ascii(block))
+                self.print_trace(tagstr, ascii(block) if wrap else block)
 
     def log_trace(self, expr, original, loc, item=None, extra=None):
         """Formats and displays a trace if tracing."""

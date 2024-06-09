@@ -2,6 +2,7 @@
 import sys
 import random
 import pickle
+import typing
 import operator  # NOQA
 from contextlib import contextmanager
 from functools import wraps
@@ -10,6 +11,8 @@ from collections import defaultdict, deque
 __doc__ = "docstring"
 
 # Helpers:
+___ = typing.cast(typing.Any, ...)
+
 def rand_list(n):
     '''Generate a random list of length n.'''
     return [random.randrange(10) for x in range(0, n)]
@@ -237,13 +240,18 @@ operator ”
 (“) = (”) = (,) ..> map$(str) ..> "".join
 
 operator !
-addpattern def (int(x))! = 0 if x else 1  # type: ignore
+match def (int(x))! = 0 if x else 1  # type: ignore
 addpattern def (float(x))! = 0.0 if x else 1.0  # type: ignore
 addpattern def x! if x = False  # type: ignore
 addpattern def x! = True  # type: ignore
 
+operator <>
+case def <>:
+    case(x, y if x < y) = True
+    case(x, y if x > y) = True
+    case(x, y) = False
+
 # Type aliases:
-import typing
 if sys.version_info >= (3, 5) or TYPE_CHECKING:
     type list_or_tuple = list | tuple
 
@@ -394,6 +402,11 @@ def recurse_n_times(n) =
     if not n:
         return True
     recurse_n_times(n-1)
+
+case def recurse_n_times_:
+    """this is a docstring"""
+    case(0) = True
+    case(n) = recurse_n_times_(n-1)
 
 def is_even(n) =
     if not n:
@@ -632,12 +645,26 @@ def factorial5(value):
     else:
         return None
     raise TypeError()
+case def factorial6[Num: (int, float)]:
+    """Factorial function"""
+    type(n: Num, acc: Num = ___) -> Num
+    case (0, acc=1):
+        return acc
+    case (int(n), acc=1 if n > 0):
+        return factorial6(n - 1, acc * n)
+    case (int(n), acc=... if n < 0):
+        return None
+case def factorial7[Num <: int | float]:
+    type(n: Num, acc: Num = ___) -> Num
+    case(0, acc=1) = acc
+    case(int(n), acc=1 if n > 0) = factorial7(n - 1, acc * n)
+    case(int(n), acc=... if n < 0) = None
 
 match def fact(n) = fact(n, 1)
 match addpattern def fact(0, acc) = acc  # type: ignore
 addpattern match def fact(n, acc) = fact(n-1, acc*n)  # type: ignore
 
-addpattern def factorial(0, acc=1) = acc
+match def factorial(0, acc=1) = acc
 addpattern def factorial(int() as n, acc=1 if n > 0) =  # type: ignore
     """this is a docstring"""
     factorial(n-1, acc*n)
@@ -765,6 +792,20 @@ def depth_2(t):
         return 1
     match tree(l=l, r=r) in t:
         return 1 + max([depth_2(l), depth_2(r)])
+
+case def depth_3:
+    case(tree()) = 0
+    case(tree(n=n)) = 1
+    case(tree(l=l, r=r)) = 1 + max(depth_3(l), depth_3(r))
+
+def size(empty()) = 0
+addpattern def size(leaf(n)) = 1  # type: ignore
+addpattern def size(node(l, r)) = size(l) + size(r)  # type: ignore
+
+case def size_:
+    case(empty()) = 0
+    case(leaf(n)) = 1
+    case(node(l, r)) = size_(l) + size_(r)
 
 class Tree
 data Node(*children) from Tree
@@ -913,12 +954,12 @@ class MySubExc(MyExc):
 
 class test_super_A:
     @classmethod
-    addpattern def method(cls, {'somekey': str()}) = True
+    match def method(cls, {'somekey': str()}) = True
 
 
 class test_super_B(test_super_A):
     @classmethod
-    addpattern def method(cls, {'someotherkey': int(), **rest}) =
+    match def method(cls, {'someotherkey': int(), **rest}) =
         super().method(rest)
 
 
@@ -1397,12 +1438,24 @@ class descriptor_test:
         [(self, i)] :: self.N_(i=i+1)
 
 
-# Function named Ad.ef
-class Ad:
-    ef: typing.Callable
+# Annotation checking
+class HasDefs:
+    a_def: typing.Callable
 
-def Ad.ef(self, 0) = 1  # type: ignore
-addpattern def Ad.ef(self, x) = x + 1  # type: ignore
+    @staticmethod
+    case def case_def:
+        type(_: int) -> int
+        case(0) = 1
+        case(1) = 0
+
+def HasDefs.a_def(self, 0) = 1  # type: ignore
+addpattern def HasDefs.a_def(self, x) = x + 1  # type: ignore
+
+@staticmethod  # type: ignore
+case def HasDefs.case_def_:  # type: ignore
+    type(_: int) -> int
+    case(0) = 1
+    case(1) = 0
 
 
 # Storage class
@@ -1511,11 +1564,19 @@ yield def just_it(x): yield x
 
 yield def empty_it_of_int(int() as x): pass
 
-yield match def just_it_of_int(int() as x):
+yield match def just_it_of_int1(int() as x):
     yield x
 
-match yield def just_it_of_int_(int() as x):
+match yield def just_it_of_int2(int() as x):
     yield x
+
+yield case def just_it_of_int3:
+    case(int() as x):
+        yield x
+
+case yield def just_it_of_int4:
+    case(int() as x):
+        yield x
 
 yield def num_it() -> int$[]:
     yield 5
@@ -1686,7 +1747,7 @@ sum_evens = (
 )
 
 
-# n-ary reduction
+# reduction
 def binary_reduce(binop, it) = (
     it
     |> reiterable
@@ -1702,6 +1763,8 @@ def nary_reduce(n, op, it) = (
 )
 
 binary_reduce_ = nary_reduce$(2)
+
+match def reduce_with_init(f, xs, init=type(xs[0])()) = reduce(f, xs, init)
 
 
 # last/end
@@ -1897,6 +1960,12 @@ def twin_primes(_ :: [p, (.-2) -> p] :: ps) =
 addpattern def twin_primes() =  # type: ignore
     twin_primes(primes())
 
+case def twin_primes_:
+    case(_ :: [p, (.-2) -> p] :: ps) =
+        [(p, p+2)] :: twin_primes_([p + 2] :: ps)
+    case() =
+        twin_primes_(primes())
+
 
 # class matching
 class HasElems:
@@ -2044,3 +2113,24 @@ def outer_func_5() -> (() -> int)[]:
         copyclosure def inner_func() -> int = x
         funcs.append(inner_func)
     return funcs
+
+def outer_func_6():
+    funcs = []
+    for x in range(5):
+        copyclosure case def inner_func:
+            case(y) = y
+            case() = x
+        funcs.append(inner_func)
+    return funcs
+
+
+# case def
+
+case def my_min[T]:
+    type(xs: T[]) -> T
+    case([x]) = x
+    case([x] + xs) = my_min(x, my_min(xs))
+
+    type(x: T, y: T) -> T
+    case(x, y if x <= y) = x
+    case(x, y) = y

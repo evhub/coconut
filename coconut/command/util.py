@@ -24,6 +24,7 @@ import os
 import subprocess
 import shutil
 import threading
+import json
 from select import select
 from contextlib import contextmanager
 from functools import partial
@@ -50,6 +51,7 @@ from coconut.util import (
     get_encoding,
     get_clock_time,
     assert_remove_prefix,
+    univ_open,
 )
 from coconut.constants import (
     WINDOWS,
@@ -88,6 +90,9 @@ from coconut.constants import (
     high_proc_prio,
     call_timeout,
     use_fancy_call_output,
+    extra_pyright_args,
+    pyright_config_file,
+    tabideal,
 )
 
 if PY26:
@@ -148,17 +153,23 @@ except ImportError:
 # -----------------------------------------------------------------------------------------------------------------------
 
 
-def writefile(openedfile, newcontents):
-    """Set the contents of a file."""
+def writefile(openedfile, newcontents, in_json=False, **kwargs):
+    """Set the entire contents of a file regardless of current position."""
     openedfile.seek(0)
     openedfile.truncate()
-    openedfile.write(newcontents)
+    if in_json:
+        json.dump(newcontents, openedfile, **kwargs)
+    else:
+        openedfile.write(newcontents, **kwargs)
 
 
-def readfile(openedfile):
-    """Read the contents of a file."""
+def readfile(openedfile, in_json=False, **kwargs):
+    """Read the entire contents of a file regardless of current position."""
     openedfile.seek(0)
-    return str(openedfile.read())
+    if in_json:
+        return json.load(openedfile, **kwargs)
+    else:
+        return str(openedfile.read(**kwargs))
 
 
 def open_website(url):
@@ -450,8 +461,8 @@ def symlink(link_to, link_from):
         shutil.copytree(link_to, link_from)
 
 
-def install_mypy_stubs():
-    """Properly symlink mypy stub files."""
+def install_stubs():
+    """Properly symlink stub files for type-checking purposes."""
     # unlink stub_dirs so we know rm_dir_or_link won't clear them
     for stub_name in stub_dir_names:
         unlink(os.path.join(base_stub_dir, stub_name))
@@ -477,10 +488,12 @@ def set_env_var(name, value):
     os.environ[py_str(name)] = py_str(value)
 
 
-def set_mypy_path():
+def set_mypy_path(ensure_stubs=True):
     """Put Coconut stubs in MYPYPATH."""
+    if ensure_stubs:
+        install_stubs()
     # mypy complains about the path if we don't use / over \
-    install_dir = install_mypy_stubs().replace(os.sep, "/")
+    install_dir = installed_stub_dir.replace(os.sep, "/")
     original = os.getenv(mypy_path_env_var)
     if original is None:
         new_mypy_path = install_dir
@@ -492,6 +505,28 @@ def set_mypy_path():
         set_env_var(mypy_path_env_var, new_mypy_path)
     logger.log_func(lambda: (mypy_path_env_var, "=", os.getenv(mypy_path_env_var)))
     return install_dir
+
+
+def update_pyright_config(python_version=None):
+    """Save an updated pyrightconfig.json."""
+    stubs_dir = install_stubs()
+    update_existing = os.path.exists(pyright_config_file)
+    with univ_open(pyright_config_file, "r+" if update_existing else "w") as config_file:
+        if update_existing:
+            try:
+                config = readfile(config_file, in_json=True)
+            except ValueError:
+                raise CoconutException("invalid JSON syntax in " + repr(pyright_config_file))
+        else:
+            config = extra_pyright_args.copy()
+        if "extraPaths" not in config:
+            config["extraPaths"] = []
+        if stubs_dir not in config["extraPaths"]:
+            config["extraPaths"].append(stubs_dir)
+        if python_version is not None:
+            config["pythonVersion"] = python_version
+        writefile(config_file, config, in_json=True, indent=tabideal)
+    return pyright_config_file
 
 
 def is_empty_pipe(pipe, default=None):

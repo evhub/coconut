@@ -201,7 +201,7 @@ class CoconutSyntaxError(CoconutException):
                         message_parts += ["|"]
                     else:
                         message_parts += ["/", "~" * (len(lines[0]) - point_ind - 1)]
-                    message_parts += ["~" * (max_line_len - len(lines[0])), "\n"]
+                    message_parts += ["~" * (max_line_len - len(lines[0]) + 1), "\n"]
 
                     # add code, highlighting all of it together
                     code_parts = []

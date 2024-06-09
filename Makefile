@@ -161,11 +161,27 @@ test-mypy-tests: clean-no-tests
 	python ./coconut/tests/dest/runner.py
 	python ./coconut/tests/dest/extras.py
 
+# same as test-mypy but uses pyright instead
+.PHONY: test-pyright
+test-pyright: export COCONUT_USE_COLOR=TRUE
+test-pyright: clean
+	python ./coconut/tests --strict --keep-lines --force --target sys --no-cache --pyright
+	python ./coconut/tests/dest/runner.py
+	python ./coconut/tests/dest/extras.py
+
 # same as test-univ but includes verbose output for better debugging
-#  regex for getting non-timing lines: ^(?!\s*(Time|Packrat|Loaded|Saving|Adaptive|Errorless|Grammar|Failed|Incremental|Pruned)\s)[^\n]*\n*
+#  regex for getting non-timing lines: ^(?!'|\s*(Time|Packrat|Loaded|Saving|Adaptive|Errorless|Grammar|Failed|Incremental|Pruned|Compiled)\s)[^\n]*\n*
 .PHONY: test-verbose
 test-verbose: export COCONUT_USE_COLOR=TRUE
 test-verbose: clean
+	python ./coconut/tests --strict --keep-lines --force --verbose
+	python ./coconut/tests/dest/runner.py
+	python ./coconut/tests/dest/extras.py
+
+# same as test-verbose but reuses the incremental cache
+.PHONY: test-verbose-cache
+test-verbose-cache: export COCONUT_USE_COLOR=TRUE
+test-verbose-cache: clean-no-tests
 	python ./coconut/tests --strict --keep-lines --force --verbose
 	python ./coconut/tests/dest/runner.py
 	python ./coconut/tests/dest/extras.py
@@ -359,7 +375,7 @@ check-reqs:
 .PHONY: profile
 profile: export COCONUT_USE_COLOR=TRUE
 profile:
-	coconut ./coconut/tests/src/cocotest/agnostic/util.coco ./coconut/tests/dest/cocotest --force --jobs 0 --profile --verbose --stack-size 4096 --recursion-limit 4096 2>&1 | tee ./profile.log
+	coconut ./coconut/tests/src/cocotest/agnostic/util.coco ./coconut/tests/dest/cocotest --force --verbose --profile --stack-size 4096 --recursion-limit 4096 2>&1 | tee ./profile.log
 
 .PHONY: open-speedscope
 open-speedscope:

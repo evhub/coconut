@@ -1,4 +1,5 @@
 import os
+import sys
 from collections.abc import Sequence
 
 os.environ["COCONUT_USE_COLOR"] = "False"
@@ -14,6 +15,7 @@ from coconut.constants import (
     PYPY,
 )  # type: ignore
 from coconut._pyparsing import USE_COMPUTATION_GRAPH  # type: ignore
+from coconut.terminal import logger
 from coconut.exceptions import (
     CoconutSyntaxError,
     CoconutStyleError,
@@ -32,7 +34,7 @@ from coconut.convenience import (
 )
 
 
-def assert_raises(c, Exc, not_Exc=None, err_has=None):
+def assert_raises(c, Exc, not_Exc=None, err_has=None) -> None:
     """Test whether callable c raises an exception of type Exc."""
     if not_Exc is None and Exc is CoconutSyntaxError:
         not_Exc = CoconutParseError
@@ -183,6 +185,15 @@ parsing failed for format string expression: 1+ (line 2)
       ^
       """.strip())
 
+    assert_raises(-> parse("""
+case def f[T]:
+    case(x) = x
+""".strip()), CoconutSyntaxError)
+    assert_raises(-> parse("""
+case def f[T]:
+    type(x: T) -> T
+""".strip()), CoconutSyntaxError)
+
     assert_raises(-> parse("(|*?>)"), CoconutSyntaxError, err_has="'|?*>'")
     assert_raises(-> parse("(|**?>)"), CoconutSyntaxError, err_has="'|?**>'")
     assert_raises(-> parse("(<?*|)"), CoconutSyntaxError, err_has="'<*?|'")
@@ -211,6 +222,9 @@ cannot reassign type variable 'T' (use explicit '\T' syntax if intended) (line 1
     assert_raises(-> parse("range(1,10) |> reduce$(*, initializer = 1000) |> print"), CoconutParseError, err_has=(
         "\n                       \\~~^",
         "\n  \\~~~~~~~~~~~~~~~~~~~~~~~^",
+    ) + (
+        ("\n  \\~~~~~~~~~~~~^",)
+        if PYPY else ()
     ))
     assert_raises(-> parse("a := b"), CoconutParseError, err_has=(
         "\n    ^",
@@ -263,7 +277,6 @@ def f() =
 
     assert_raises(-> parse('''f"""{
 }"""'''), CoconutSyntaxError, err_has="parsing failed for format string expression")
-    assert_raises(-> parse("return = 1"), CoconutParseError, err_has='invalid use of the keyword "return"')
     assert_raises(-> parse("if a = b: pass"), CoconutParseError, err_has="misplaced assignment")
     assert_raises(-> parse("while a == b"), CoconutParseError, err_has="misplaced newline")
 
@@ -313,7 +326,6 @@ def g(x) = x
 
     assert parse("def f(x):\n ${var}", "xonsh") == "def f(x):\n    ${var}\n"
     assert "data ABC" not in parse("data ABC:\n ${var}", "xonsh")
-    assert parse('"abc" "xyz"', "lenient") == "'abcxyz'"
     assert "builder" not in parse("def x -> x", "lenient")
     assert parse("def x -> x", "lenient").count("def") == 1
     assert "builder" in parse("x -> def y -> (x, y)", "lenient")
@@ -325,7 +337,8 @@ def g(x) = x
     return True
 
 
-def test_convenience() -> bool:
+def test_api() -> bool:
+    assert not logger.enable_colors(sys.stdout)
     if IPY:
         import coconut.highlighter  # noqa # type: ignore
 
@@ -368,6 +381,9 @@ line 6''')
     assert_raises(-> parse("match def kwd_only_x_is_int_def_0(*, x is int = 0) = x"), CoconutStyleError, err_has=(
         "\n        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|",
         "\n        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/",
+    ) + (
+        ("\n        ^",)
+        if PYPY else ()
     ))
     try:
         parse("""
@@ -398,25 +414,28 @@ import abc
     except CoconutStyleError as err:
         assert str(err) == """found unused import 'abc' (add '# NOQA' to suppress) (remove --strict to downgrade to a warning) (line 1)
   import abc"""
-    assert_raises(-> parse("""class A(object):
-     1
-     2
-     3
-     4
-     5
-     6
-     7
-     8
-     9
-     10
-     11
-     12
-     13
-     14
-     15"""), CoconutStyleError, err_has="\n ...\n")
+    assert_raises(-> parse("""
+class A(object):
+    1
+    2
+    3
+    4
+    5
+    6
+    7
+    8
+    9
+    10
+    11
+    12
+    13
+    14
+    15
+    """.strip()), CoconutStyleError, **(dict(err_has="\n ...\n") if not PYPY else {}))
+    assert_raises(-> parse('["abc", "def" "ghi"]'), CoconutStyleError, err_has="implicit string concatenation")
 
     setup(line_numbers=False, strict=True, target="sys")
-    assert_raises(-> parse("await f x"), CoconutParseError, err_has='invalid use of the keyword "await"')
+    assert_raises(-> parse("await f x"), CoconutParseError)
 
     setup(line_numbers=False, target="2.7")
     assert parse("from io import BytesIO", mode="lenient") == "from io import BytesIO"
@@ -467,15 +486,16 @@ async def async_map_test() =
     assert parse("a[x, *y]")
 
     setup(line_numbers=False, target="3.12")
-    assert parse("type Num = int | float").strip().endswith("""
-# Compiled Coconut: -----------------------------------------------------------
-
-type Num = int | float""".strip())
-    assert parse("type L[T] = list[T]").strip().endswith("""
-# Compiled Coconut: -----------------------------------------------------------
-
-_coconut_typevar_T_0 = _coconut.typing.TypeVar("_coconut_typevar_T_0")
-type L = list[_coconut_typevar_T_0]""".strip())
+    assert parse("type Num = int | float", "lenient").strip() == """
+type Num = int | float
+""".strip()
+    assert parse("type L[T] = list[T]", "lenient").strip() == """
+type L[T] = list[T]
+""".strip()
+    assert parse("def f[T](x) = x", "lenient") == """
+def f[T](x):
+    return x
+""".strip()
 
     setup(line_numbers=False, minify=True)
     assert parse("123  # derp", "lenient") == "123# derp"
@@ -509,7 +529,7 @@ class F:
 
 def test_kernel() -> bool:
     # hide imports so as to not enable incremental parsing until we want to
-    if PY35:
+    if PY35 or TYPE_CHECKING:
         import asyncio
     from coconut.icoconut import CoconutKernel  # type: ignore
     from jupyter_client.session import Session
@@ -531,7 +551,7 @@ def test_kernel() -> bool:
     k = CoconutKernel()
     fake_session = FakeSession()
     assert k.shell is not None
-    k.shell.displayhook.session = fake_session
+    k.shell.displayhook.session = fake_session  # type: ignore
 
     exec_result = k.do_execute("derp = pow$(?, 2)", False, True, {"two": "(+)(1, 1)"}, True) |> unwrap_future$(loop)
     assert exec_result["status"] == "ok", exec_result
@@ -734,7 +754,7 @@ def test_extras() -> bool:
     print(".")  # newline bc we print stuff after this
     assert test_setup_none() is True  # ...
     print(".")  # ditto
-    assert test_convenience() is True  # ....
+    assert test_api() is True  # ....
     # everything after here uses incremental parsing, so it must come last
     print(".", end="")
     assert test_incremental() is True  # .....

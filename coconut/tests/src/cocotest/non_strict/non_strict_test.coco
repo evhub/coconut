@@ -93,6 +93,28 @@ def non_strict_test() -> bool:
     @recursive_iterator
     def fib() = (1, 1) :: map((+), fib(), fib()$[1:])
     assert fib()$[:5] |> list == [1, 1, 2, 3, 5]
+    addpattern def args_or_kwargs(*args) = args
+    addpattern def args_or_kwargs(**kwargs) = kwargs  # type: ignore
+    assert args_or_kwargs(1, 2) == (1, 2)
+    very_long_name = 10
+    assert args_or_kwargs(short_name=5, very_long_name=) == {"short_name": 5, "very_long_name": 10}
+    assert "hello," " " "world" == "hello, world"
+    assert "\\" "\"" == "\\\""
+    x = 1
+    assert f"{x}" f"{x}" == "11"
+    assert f"{x}" "{x}" == "1{x}"
+    assert "{x}" f"{x}" == "{x}1"
+    assert "a\"z""a"'"'"z" == 'a"za"z'
+    assert b"ab" b"cd" == b"abcd" == rb"ab" br"cd"
+    "a" "c" = "ac"
+    b"a" b"c" = b"ac"
+    key = "abc"
+    f"{key}" ": " + value = "abc: 123"
+    assert value == "123"
+    "{" f"{key}" ": " + value + "}" = "{abc: aaa}"
+    assert value == "aaa"
+    assert """ """\
+        == " "
     return True
 
 if __name__ == "__main__":
