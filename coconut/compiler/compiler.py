@@ -4575,7 +4575,7 @@ async with {iter_item} as {temp_var}:
             return tokens[0]
         else:
             if not allow_silent_concat:
-                self.strict_err_or_warn("found Python-style implicit string concatenation (use explicit '+' instead)", original, loc)
+                self.strict_err_or_warn("found implicit string concatenation (use explicit '+' instead)", original, loc)
             if any(s.endswith(")") for s in tokens):  # has .format() calls
                 # parens are necessary for string_atom_handle
                 return "(" + " + ".join(tokens) + ")"
