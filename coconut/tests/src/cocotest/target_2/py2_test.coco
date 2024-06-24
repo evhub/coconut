@@ -4,5 +4,5 @@ def py2_test() -> bool:
     assert py_map((+)$(2), range(5)) == [2, 3, 4, 5, 6]
     assert py_range(5) == [0, 1, 2, 3, 4]
     assert not isinstance(long(1), py_int)  # type: ignore
-    assert py_str(3) == b"3" == unicode(b"3")  # type: ignore
+    assert py_str(3) == b"3" == unicode(b"3")  # noqa  # type: ignore
     return True

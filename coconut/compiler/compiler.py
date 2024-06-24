@@ -246,12 +246,17 @@ else:
     )
 
 
-def imported_names(imports):
-    """Yields all the names imported by imports = [[imp1], [imp2, as], ...]."""
+def get_imported_names(imports):
+    """Returns all the names imported by imports = [[imp1], [imp2, as], ...] and whether there is a star import."""
+    saw_names = []
+    saw_star = False
     for imp in imports:
         imp_name = imp[-1].split(".", 1)[0]
-        if imp_name != "*":
-            yield imp_name
+        if imp_name == "*":
+            saw_star = True
+        else:
+            saw_names.append(imp_name)
+    return saw_names, saw_star
 
 
 def special_starred_import_handle(imp_all=False):
@@ -529,7 +534,8 @@ class Compiler(Grammar, pickleable_obj):
         # but always overwrite temp_vars_by_key since they store locs that will be invalidated
         self.temp_vars_by_key = {}
         self.parsing_context = defaultdict(list)
-        self.unused_imports = defaultdict(list)
+        self.name_info = defaultdict(lambda: {"imported": [], "referenced": [], "assigned": []})
+        self.star_import = False
         self.kept_lines = []
         self.num_lines = 0
         self.disable_name_check = False
@@ -942,6 +948,11 @@ class Compiler(Grammar, pickleable_obj):
         if self.strict:
             raise self.make_err(CoconutStyleError, *args, **kwargs)
 
+    def strict_warn(self, *args, **kwargs):
+        internal_assert("extra" not in kwargs, "cannot pass extra=... to strict_warn")
+        if self.strict:
+            self.syntax_warning(*args, extra="remove --strict to dismiss", **kwargs)
+
     def syntax_warning(self, message, original, loc, **kwargs):
         """Show a CoconutSyntaxWarning. Usage:
             self.syntax_warning(message, original, loc)
@@ -1319,21 +1330,30 @@ class Compiler(Grammar, pickleable_obj):
             elif inputstring is not None and not inner:
                 logger.log("No streamlining done for input of length {length}.".format(length=input_len))
 
+    def qa_error(self, msg, original, loc):
+        """Strict error or warn an error that should be disabled by a NOQA comment."""
+        ln = self.adjust(lineno(loc, original))
+        comment = self.reformat(" ".join(self.comments[ln]), ignore_errors=True)
+        if not self.noqa_regex.search(comment):
+            self.strict_err_or_warn(
+                msg + " (add '# NOQA' to suppress)",
+                original,
+                loc,
+                endpoint=False,
+            )
+
     def run_final_checks(self, original, keep_state=False):
         """Run post-parsing checks to raise any necessary errors/warnings."""
-        # only check for unused imports if we're not keeping state accross parses
+        # only check for unused imports/etc. if we're not keeping state accross parses
         if not keep_state:
-            for name, locs in self.unused_imports.items():
-                for loc in locs:
-                    ln = self.adjust(lineno(loc, original))
-                    comment = self.reformat(" ".join(self.comments[ln]), ignore_errors=True)
-                    if not self.noqa_regex.search(comment):
-                        self.strict_err_or_warn(
-                            "found unused import " + repr(self.reformat(name, ignore_errors=True)) + " (add '# NOQA' to suppress)",
-                            original,
-                            loc,
-                            endpoint=False,
-                        )
+            for name, info in self.name_info.items():
+                if info["imported"] and not info["referenced"]:
+                    for loc in info["imported"]:
+                        self.qa_error("found unused import " + repr(self.reformat(name, ignore_errors=True)), original, loc)
+                if not self.star_import:  # only check for undefined names when there are no * imports
+                    if name not in all_builtins and info["referenced"] and not (info["assigned"] or info["imported"]):
+                        for loc in info["referenced"]:
+                            self.qa_error("found undefined name " + repr(self.reformat(name, ignore_errors=True)), original, loc)
 
     def parse_line_by_line(self, init_parser, line_parser, original):
         """Apply init_parser then line_parser repeatedly."""
@@ -3731,13 +3751,17 @@ if {store_var} is not _coconut_sentinel:
         else:
             raise CoconutInternalException("invalid import tokens", tokens)
         imports = list(imports)
-        if imp_from == "*" or imp_from is None and "*" in imports:
+        imported_names, star_import = get_imported_names(imports)
+        self.star_import = self.star_import or star_import
+        if star_import:
+            self.strict_warn("found * import; these disable Coconut's undefined name detection", original, loc)
+        if imp_from == "*" or (imp_from is None and star_import):
             if not (len(imports) == 1 and imports[0] == "*"):
                 raise self.make_err(CoconutSyntaxError, "only [from *] import * allowed, not from * import name", original, loc)
             self.syntax_warning("[from *] import * is a Coconut Easter egg and should not be used in production code", original, loc)
             return special_starred_import_handle(imp_all=bool(imp_from))
-        for imp_name in imported_names(imports):
-            self.unused_imports[imp_name].append(loc)
+        for imp_name in imported_names:
+            self.name_info[imp_name]["imported"].append(loc)
         return self.universal_import(loc, imports, imp_from=imp_from)
 
     def complex_raise_stmt_handle(self, loc, tokens):
@@ -4989,8 +5013,10 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
                             )
                         return typevars[name]
 
-        if not assign:
-            self.unused_imports.pop(name, None)
+        if assign:
+            self.name_info[name]["assigned"].append(loc)
+        else:
+            self.name_info[name]["referenced"].append(loc)
 
         if (
             assign

@@ -22,13 +22,15 @@ assert range(1, 5) |> product == 24
 first_five_words = .split() ..> .$[:5] ..> " ".join
 assert first_five_words("ab cd ef gh ij kl") == "ab cd ef gh ij"
 
-@recursive_iterator
+# TODO: recursive_iterator -> recursive_generator
+@recursive_iterator  # noqa
 def fib() = (1, 1) :: map((+), fib(), fib()$[1:])
 assert fib()$[:5] |> list == [1, 1, 2, 3, 5]
 
+# TODO: parallel_map -> process_map
 # can't use parallel_map here otherwise each process would have to rerun all
 #  the tutorial tests since we don't guard them behind __name__ == "__main__"
-assert range(100) |> concurrent_map$(.**2) |> list |> .$[-1] == 9801
+assert range(100) |> thread_map$(.**2) |> list |> .$[-1] == 9801
 
 def factorial(n, acc=1):
     match n:

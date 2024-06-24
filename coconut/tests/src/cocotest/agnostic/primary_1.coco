@@ -90,7 +90,7 @@ def primary_test_1() -> bool:
     \\assert data == 3
     \\def backslash_test():
         return (x) -> x
-    assert \(1) == 1 == backslash_test()(1)
+    assert \(1) == 1 == backslash_test()(1)  # NOQA
     assert True is (\(
             "hello"
         ) == "hello" == \(
@@ -100,7 +100,7 @@ def primary_test_1() -> bool:
                                    x,
                                    y):
         return x + y
-    assert multiline_backslash_test(1, 2) == 3
+    assert multiline_backslash_test(1, 2) == 3  # noqa
     \\ assert True
     class one_line_class: pass
     assert isinstance(one_line_class(), one_line_class)

@@ -414,6 +414,16 @@ import abc
     except CoconutStyleError as err:
         assert str(err) == """found unused import 'abc' (add '# NOQA' to suppress) (remove --strict to downgrade to a warning) (line 1)
   import abc"""
+    try:
+        parse("""
+1
+2 + x
+3
+        """.strip())
+    except CoconutStyleError as err:
+        assert str(err) == """found undefined name 'x' (add '# NOQA' to suppress) (remove --strict to downgrade to a warning) (line 2)
+  2 + x
+      ^"""
     assert_raises(-> parse("""
 class A(object):
     1
