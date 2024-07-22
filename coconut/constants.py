@@ -135,7 +135,7 @@ packrat_cache_size = None  # only works because final() clears the cache
 
 streamline_grammar_for_len = 1536
 
-use_cache_file = True
+use_pyparsing_cache_file = True
 
 adaptive_any_of_env_var = "COCONUT_ADAPTIVE_ANY_OF"
 use_adaptive_any_of = get_bool_env_var(adaptive_any_of_env_var, True)
@@ -638,7 +638,7 @@ main_sig = "Coconut: "
 main_prompt = ">>> "
 more_prompt = "    "
 
-default_use_cache_dir = PY34
+default_use_cache_dir = get_bool_env_var("COCONUT_USE_COCONUT_CACHE", PY34)
 coconut_cache_dir = "__coconut_cache__"
 
 mypy_path_env_var = "MYPYPATH"
