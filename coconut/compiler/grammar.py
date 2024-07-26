@@ -1995,8 +1995,17 @@ class Grammar(object):
 
         del_stmt = addspace(keyword("del") - simple_assignlist)
 
-        matchlist_data_item = Group(Optional(star | Optional(dot) + unsafe_name + equals) + match)
-        matchlist_data = Group(Optional(tokenlist(matchlist_data_item, comma)))
+        interior_name_match = labeled_group(setname, "var")
+        matchlist_anon_named_tuple_item = (
+            Group(Optional(dot) + unsafe_name) + equals + match
+            | Group(Optional(dot) + interior_name_match) + equals
+        )
+        matchlist_data_item = (
+            matchlist_anon_named_tuple_item
+            | Optional(star) + match
+        )
+        matchlist_data = Group(Optional(tokenlist(Group(matchlist_data_item), comma)))
+        matchlist_anon_named_tuple = Optional(tokenlist(Group(matchlist_anon_named_tuple_item), comma))
 
         match_check_equals = Forward()
         match_check_equals_ref = equals
@@ -2031,7 +2040,6 @@ class Grammar(object):
         match_tuple = Group(lparen + matchlist_tuple + rparen.suppress())
         match_lazy = Group(lbanana + matchlist_list + rbanana.suppress())
 
-        interior_name_match = labeled_group(setname, "var")
         match_string = interleaved_tokenlist(
             # f_string_atom must come first
             f_string_atom("f_string") | fixed_len_string_tokens("string"),
@@ -2085,6 +2093,7 @@ class Grammar(object):
             | (keyword("data").suppress() + dotted_refname + lparen.suppress() + matchlist_data + rparen.suppress())("data")
             | (keyword("class").suppress() + dotted_refname + lparen.suppress() + matchlist_data + rparen.suppress())("class")
             | (dotted_refname + lparen.suppress() + matchlist_data + rparen.suppress())("data_or_class")
+            | (lparen.suppress() + matchlist_anon_named_tuple + rparen.suppress())("anon_named_tuple")
             | Optional(keyword("as").suppress()) + setname("var"),
         )
 

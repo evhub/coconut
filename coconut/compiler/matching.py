@@ -150,6 +150,7 @@ class Matcher(object):
         "data": lambda self: self.match_data,
         "class": lambda self: self.match_class,
         "data_or_class": lambda self: self.match_data_or_class,
+        "anon_named_tuple": lambda self: self.match_anon_named_tuple,
         "paren": lambda self: self.match_paren,
         "as": lambda self: self.match_as,
         "and": lambda self: self.match_and,
@@ -1056,10 +1057,8 @@ if {assign_to} is _coconut_sentinel:
             for const in match:
                 self.add_check(const + " in " + item)
 
-    def split_data_or_class_match(self, tokens):
-        """Split data/class match tokens into cls_name, pos_matches, name_matches, star_match."""
-        cls_name, matches = tokens
-
+    def split_data_or_class_matches(self, matches):
+        """Split data/class match tokens into pos_matches, name_matches, star_match."""
         pos_matches = []
         name_matches = {}
         star_match = None
@@ -1073,8 +1072,7 @@ if {assign_to} is _coconut_sentinel:
                     raise CoconutDeferredSyntaxError("positional arg after keyword arg in data/class match", self.loc)
                 pos_matches.append(match)
             # starred arg
-            elif len(match_arg) == 2:
-                internal_assert(match_arg[0] == "*", "invalid starred data/class match arg tokens", match_arg)
+            elif len(match_arg) == 2 and match_arg[0] == "*":
                 _, match = match_arg
                 if star_match is not None:
                     raise CoconutDeferredSyntaxError("duplicate starred arg in data/class match", self.loc)
@@ -1083,23 +1081,30 @@ if {assign_to} is _coconut_sentinel:
                 star_match = match
             # keyword arg
             else:
+                internal_assert(match_arg[1] == "=", "invalid keyword data/class match arg tokens", match_arg)
                 if len(match_arg) == 3:
-                    internal_assert(match_arg[1] == "=", "invalid keyword data/class match arg tokens", match_arg)
-                    name, _, match = match_arg
-                    strict = False
-                elif len(match_arg) == 4:
-                    internal_assert(match_arg[0] == "." and match_arg[2] == "=", "invalid strict keyword data/class match arg tokens", match_arg)
-                    _, name, _, match = match_arg
-                    strict = True
+                    name_grp, _, match = match_arg
+                elif len(match_arg) == 2:
+                    match_grp, _ = match_arg
+                    match = match_grp[-1]
+                    name, = match
+                    name_grp = match_grp[:-1] + [name]
                 else:
                     raise CoconutInternalException("invalid data/class match arg", match_arg)
+                if len(name_grp) == 1:
+                    name, = name_grp
+                    strict = False
+                else:
+                    internal_assert(name_grp[0] == ".", "invalid keyword data/class match arg tokens", name_grp)
+                    _, name = name_grp
+                    strict = True
                 if star_match is not None:
                     raise CoconutDeferredSyntaxError("both keyword arg and starred arg in data/class match", self.loc)
                 if name in name_matches:
                     raise CoconutDeferredSyntaxError("duplicate keyword arg {name!r} in data/class match".format(name=name), self.loc)
                 name_matches[name] = (match, strict)
 
-        return cls_name, pos_matches, name_matches, star_match
+        return pos_matches, name_matches, star_match
 
     def match_class_attr(self, match, attr, item):
         """Match an attribute for a class match where attr is an expression that evaluates to the attribute name."""
@@ -1119,7 +1124,8 @@ if {assign_to} is _coconut_sentinel:
 
     def match_class(self, tokens, item):
         """Matches a class PEP-622-style."""
-        cls_name, pos_matches, name_matches, star_match = self.split_data_or_class_match(tokens)
+        cls_name, matches = tokens
+        pos_matches, name_matches, star_match = self.split_data_or_class_matches(matches)
 
         self.add_check("_coconut.isinstance(" + item + ", " + cls_name + ")")
 
@@ -1191,7 +1197,8 @@ if _coconut.len({match_args_var}) < {num_pos_matches}:
 
     def match_data(self, tokens, item):
         """Matches a data type."""
-        cls_name, pos_matches, name_matches, star_match = self.split_data_or_class_match(tokens)
+        cls_name, matches = tokens
+        pos_matches, name_matches, star_match = self.split_data_or_class_matches(matches)
 
         self.add_check("_coconut.isinstance(" + item + ", " + cls_name + ")")
 
@@ -1239,6 +1246,17 @@ if _coconut.len({match_args_var}) < {num_pos_matches}:
             )
             with self.down_a_level():
                 self.add_check(temp_var)
+
+    def match_anon_named_tuple(self, tokens, item):
+        """Matches an anonymous named tuple pattern."""
+        pos_matches, name_matches, star_match = self.split_data_or_class_matches(tokens)
+        internal_assert(not pos_matches and not star_match, "got invalid pos/star matches in anon named tuple pattern", (pos_matches, star_match))
+        self.add_check("_coconut.isinstance(" + item + ", tuple)")
+        self.add_check("_coconut.len({item}) == {expected_len}".format(
+            item=item,
+            expected_len=len(name_matches),
+        ))
+        self.match_class_names(name_matches, item)
 
     def match_data_or_class(self, tokens, item):
         """Matches an ambiguous data or class match."""

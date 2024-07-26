@@ -1204,6 +1204,7 @@ base_pattern ::= (
     | NAME "(" patterns ")"          # classes or data types
     | "data" NAME "(" patterns ")"   # data types
     | "class" NAME "(" patterns ")"  # classes
+    | "(" name "=" pattern ... ")"   # anonymous named tuples
     | "{" pattern_pairs              # dictionaries
         ["," "**" (NAME | "{}")] "}" #  (keys must be constants or equality checks)
     | ["s" | "f" | "m"] "{"
@@ -1269,7 +1270,8 @@ base_pattern ::= (
   - Classes or Data Types (`<name>(<args>)`): will match as a data type if given [a Coconut `data` type](#data) (or a tuple of Coconut data types) and a class otherwise.
   - Data Types (`data <name>(<args>)`): will check that whatever is in that position is of data type `<name>` and will match the attributes to `<args>`. Generally, `data <name>(<args>)` will match any data type that could have been constructed with `makedata(<name>, <args>)`. Includes support for positional arguments, named arguments, default arguments, and starred arguments. Also supports strict attributes by prepending a dot to the attribute name that raises `AttributError` if the attribute is not present rather than failing the match (e.g. `data MyData(.my_attr=<some_pattern>)`).
   - Classes (`class <name>(<args>)`): does [PEP-634-style class matching](https://www.python.org/dev/peps/pep-0634/#class-patterns). Also supports strict attribute matching as above.
-- Mapping Destructuring:
+  - Anonymous Named Tuples (`(<name>=<pattern>, ...)`): checks that the object is a `tuple` of the given length with the given attributes. For matching [anonymous `namedtuple`s](#anonymous-namedtuples).
+- Dict Destructuring:
   - Dicts (`{<key>: <value>, ...}`): will match any mapping (`collections.abc.Mapping`) with the given keys and values that match the value patterns. Keys must be constants or equality checks.
   - Dicts With Rest (`{<pairs>, **<rest>}`): will match a mapping (`collections.abc.Mapping`) containing all the `<pairs>`, and will put a `dict` of everything else into `<rest>`. If `<rest>` is `{}`, will enforce that the mapping is exactly the same length as `<pairs>`.
 - Set Destructuring:
@@ -2233,7 +2235,7 @@ as a shorthand for
 f(long_variable_name=long_variable_name)
 ```
 
-Such syntax is also supported in [partial application](#partial-application) and [anonymous `namedtuple`s](#anonymous-namedtuples).
+Such syntax is also supported in [partial application](#partial-application), [anonymous `namedtuple`s](#anonymous-namedtuples), and [`class`/`data`/anonymous `namedtuple` patterns](#match).
 
 _Deprecated: Coconut also supports `f(...=long_variable_name)` as an alternative shorthand syntax._
 
