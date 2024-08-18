@@ -638,7 +638,7 @@ main_sig = "Coconut: "
 main_prompt = ">>> "
 more_prompt = "    "
 
-default_use_cache_dir = get_bool_env_var("COCONUT_USE_COCONUT_CACHE", PY34)
+default_use_cache_dir = get_bool_env_var("COCONUT_USE_CACHE_DIR", PY34)
 coconut_cache_dir = "__coconut_cache__"
 
 mypy_path_env_var = "MYPYPATH"
