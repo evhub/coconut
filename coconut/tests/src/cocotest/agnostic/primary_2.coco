@@ -480,7 +480,7 @@ def primary_test_2() -> bool:
     assert x == 9 == y
     (x=x) = (x=10)
     assert x == 10
-    (x=, y=y) = (x=11, y=11)
+    (y=y, x=) = (x=11, y=11)
     assert x == 11 == y
     tuple(x=) = (x=12, y=12)
     assert x == 12
