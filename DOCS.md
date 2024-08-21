@@ -2264,7 +2264,7 @@ main_func(
 
 ### Anonymous Namedtuples
 
-Coconut supports anonymous [`namedtuple`](https://docs.python.org/3/library/collections.html#collections.namedtuple) literals, such that `(a=1, b=2)` can be used just as `(1, 2)`, but with added names. Anonymous `namedtuple`s are always pickleable.
+Coconut supports anonymous [`namedtuple`](https://docs.python.org/3/library/collections.html#collections.namedtuple) literals, such that `(a=1, b=2)` can be used just as `(1, 2)`, but with added names. Anonymous `namedtuple`s are always pickleable and support [`__match_args__`](https://peps.python.org/pep-0622/) on all Python versions.
 
 The syntax for anonymous namedtuple literals is:
 ```coconut

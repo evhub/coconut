@@ -671,7 +671,7 @@ class Prompt(object):
     style = None
     runner = None
     lexer = None
-    suggester = None if prompt_use_suggester else False
+    suggester = True if prompt_use_suggester else None
 
     def __init__(self, setup_now=False):
         """Set up the prompt."""
@@ -686,7 +686,7 @@ class Prompt(object):
         We do this lazily since it's expensive."""
         if self.lexer is None:
             self.lexer = PygmentsLexer(CoconutLexer)
-        if self.suggester is None:
+        if self.suggester is True:
             self.suggester = AutoSuggestFromHistory()
 
     def set_style(self, style):
@@ -760,7 +760,7 @@ class Prompt(object):
                 pygments.styles.get_style_by_name(self.style),
             ),
             completer=self.get_completer(),
-            auto_suggest=self.suggester or None,
+            auto_suggest=self.suggester,
         )
 
 

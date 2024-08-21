@@ -35,7 +35,7 @@ def package_test(outer_MatchError) -> bool:
     assert MatchError() `isinstance` outer_MatchError, (MatchError, outer_MatchError)
     assert outer_MatchError() `isinstance` MatchError, (outer_MatchError, MatchError)
     assert_raises((raise)$(outer_MatchError), MatchError)
-    assert_raises((raise)$(MatchError), outer_MatchError)
+    assert_raises((raise)$(MatchError), outer_MatchError)  # type: ignore
     def raises_outer_MatchError(obj=None):
         raise outer_MatchError("raises_outer_MatchError")
     match raises_outer_MatchError -> None in 10:
