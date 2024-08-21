@@ -1925,6 +1925,12 @@ def rem_comment(line):
     return base
 
 
+def get_comment(line):
+    """Extract a comment from a line if it has one."""
+    base, comment = split_comment(line)
+    return comment
+
+
 def should_indent(code):
     """Determines whether the next line should be indented."""
     last_line = rem_comment(code.splitlines()[-1])

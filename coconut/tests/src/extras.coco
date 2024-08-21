@@ -612,6 +612,15 @@ def test_kernel() -> bool:
     assert captured_msg_content is None
     assert captured_msg_type["content"]["data"]["text/plain"] == "'()'"
 
+    assert k.do_execute("""[
+    "hey",
+    # "there", # dont want this value now
+    "is comment"
+]""", False, True, {}, True) |> unwrap_future$(loop) |> .["status"] == "ok"
+    captured_msg_type, captured_msg_content = fake_session.captured_messages[-1]
+    assert captured_msg_content is None
+    assert captured_msg_type["content"]["data"]["text/plain"] == "['hey', 'is comment']"
+
     return True
 
 

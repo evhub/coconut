@@ -48,7 +48,7 @@ from coconut.constants import (
 from coconut.terminal import logger
 from coconut.util import override, memoize_with_exceptions, replace_all
 from coconut.compiler import Compiler
-from coconut.compiler.util import should_indent, paren_change
+from coconut.compiler.util import should_indent, paren_change, get_comment
 from coconut.command.util import Runner
 
 try:
@@ -214,7 +214,10 @@ if LOAD_MODULE:
                     level += paren_change(no_strs_line)
 
                     # put line in parts and break if done
-                    if level < 0:
+                    if get_comment(line):
+                        parts.append(line)
+                        break
+                    elif level < 0:
                         parts.append(line)
                     elif no_strs_line.endswith("\\"):
                         parts.append(line[:-1])
