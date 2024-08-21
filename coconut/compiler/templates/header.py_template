@@ -2024,8 +2024,10 @@ def _coconut_mk_anon_namedtuple(fields, types=None, of_kwargs=None):
         NT = _coconut.typing.NamedTuple("_namedtuple_of", [(f, t) for f, t in _coconut.zip(fields, types)])
     _coconut.copyreg.pickle(NT, lambda nt: (_coconut_mk_anon_namedtuple, (nt._fields, types, nt._asdict())))
     if of_kwargs is None:
-        return NT
-    return NT(**of_kwargs)
+        nt = NT
+    else:
+        nt = NT(**of_kwargs)
+{set_nt_match_args}    return nt
 def _coconut_ndim(arr):
     arr_mod = _coconut_get_base_module(arr)
     if (arr_mod in _coconut.numpy_modules or _coconut.hasattr(arr.__class__, "__matconcat__")) and _coconut.hasattr(arr, "ndim"):

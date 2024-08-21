@@ -760,7 +760,7 @@ class Prompt(object):
                 pygments.styles.get_style_by_name(self.style),
             ),
             completer=self.get_completer(),
-            auto_suggest=self.suggester,
+            auto_suggest=self.suggester or None,
         )
 
 

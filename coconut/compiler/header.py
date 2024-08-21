@@ -458,6 +458,14 @@ raise _coconut.RuntimeError("_namedtuple_of is not available on Python < 3.6 (us
             ''',
             indent=1,
         ),
+        set_nt_match_args=pycondition(
+            (3, 10),
+            if_lt=r'''
+nt.__match_args__ = nt._fields
+            ''',
+            indent=1,
+            newline=True,
+        ),
         import_copyreg=pycondition(
             (3,),
             if_lt="import copy_reg as copyreg",
