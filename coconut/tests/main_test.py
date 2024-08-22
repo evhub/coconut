@@ -1054,11 +1054,8 @@ class TestCompilation(unittest.TestCase):
                 }):
                     run()
 
-        def test_keep_lines(self):
-            run(["--keep-lines"])
-
-        def test_strict(self):
-            run(["--strict"])
+        def test_strict_keep_lines(self):
+            run(["--strict", "--keep-lines"])
 
         def test_and(self):
             run(["--and"])  # src and dest built by comp
