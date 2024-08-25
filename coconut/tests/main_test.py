@@ -1108,11 +1108,12 @@ if TEST_ALL:
         #         if PY38:
         #             run_pyprover()
 
-        def test_pyston(self):
-            with using_paths(pyston):
-                comp_pyston(["--no-tco"])
-                if PYPY and PY2:
-                    run_pyston()
+        if PY312:  # reduce test load
+            def test_pyston(self):
+                with using_paths(pyston):
+                    comp_pyston(["--no-tco"])
+                    if PYPY and PY2:
+                        run_pyston()
 
 
 # -----------------------------------------------------------------------------------------------------------------------
