@@ -3493,25 +3493,30 @@ def __new__(_coconut_cls, {all_args}):
 
         return self.assemble_data(decorators, name, namedtuple_call, inherit, extra_stmts, stmts, base_args, paramdefs)
 
-    def make_namedtuple_call(self, name, namedtuple_args, types=None):
+    def make_namedtuple_call(self, name, namedtuple_args, types=None, of_args=None):
         """Construct a namedtuple call."""
         if types:
             wrapped_types = [
                 self.wrap_typedef(types.get(i, "_coconut.typing.Any"), for_py_typedef=False)
                 for i in range(len(namedtuple_args))
             ]
-            if name is None:
-                return "_coconut_mk_anon_namedtuple(" + tuple_str_of(namedtuple_args, add_quotes=True) + ", " + tuple_str_of(wrapped_types) + ")"
-            else:
-                return '_coconut.typing.NamedTuple("' + name + '", [' + ", ".join(
-                    '("' + argname + '", ' + wrapped_type + ")"
-                    for argname, wrapped_type in zip(namedtuple_args, wrapped_types)
-                ) + "])"
         else:
-            if name is None:
-                return "_coconut_mk_anon_namedtuple(" + tuple_str_of(namedtuple_args, add_quotes=True) + ")"
-            else:
-                return '_coconut.collections.namedtuple("' + name + '", ' + tuple_str_of(namedtuple_args, add_quotes=True) + ')'
+            wrapped_types = None
+        if name is None:
+            return (
+                "_coconut_mk_anon_namedtuple("
+                + tuple_str_of(namedtuple_args, add_quotes=True)
+                + ("" if wrapped_types is None else ", " + tuple_str_of(wrapped_types))
+                + ("" if of_args is None else ", of_args=" + tuple_str_of(of_args) + "")
+                + ")"
+            )
+        elif wrapped_types is None:
+            return '_coconut.collections.namedtuple("' + name + '", ' + tuple_str_of(namedtuple_args, add_quotes=True) + ')' + ("" if of_args is None else tuple_str_of(of_args))
+        else:
+            return '_coconut.typing.NamedTuple("' + name + '", [' + ", ".join(
+                '("' + argname + '", ' + wrapped_type + ")"
+                for argname, wrapped_type in zip(namedtuple_args, wrapped_types)
+            ) + "])" + ("" if of_args is None else tuple_str_of(of_args))
 
     def assemble_data(self, decorators, name, namedtuple_call, inherit, extra_stmts, stmts, match_args, paramdefs=()):
         """Create a data class definition from the given components.
@@ -3617,8 +3622,7 @@ def __hash__(self):
             names.append(name)
             items.append(item)
 
-        namedtuple_call = self.make_namedtuple_call(None, names, types)
-        return namedtuple_call + "(" + ", ".join(items) + ")"
+        return self.make_namedtuple_call(None, names, types, of_args=items)
 
     def single_import(self, loc, path, imp_as, type_ignore=False):
         """Generate import statements from a fully qualified import and the name to bind it to."""

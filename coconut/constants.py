@@ -666,7 +666,7 @@ prompt_multiline = False
 prompt_vi_mode = get_bool_env_var(vi_mode_env_var, False)
 prompt_wrap_lines = True
 prompt_history_search = True
-prompt_use_suggester = not PY2
+prompt_use_suggester = False
 
 base_dir = os.path.dirname(os.path.abspath(fixpath(__file__)))
 

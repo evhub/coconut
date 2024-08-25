@@ -2017,17 +2017,17 @@ collectby.using_threads = _coconut_partial(_coconut_parallel_mapreduce, collectb
 def _namedtuple_of(**kwargs):
     """Construct an anonymous namedtuple of the given keyword arguments."""
 {namedtuple_of_implementation}
-def _coconut_mk_anon_namedtuple(fields, types=None, of_kwargs=None):
+def _coconut_mk_anon_namedtuple(fields, types=None, of_kwargs={empty_dict}, of_args=()):
     if types is None:
         NT = _coconut.collections.namedtuple("_namedtuple_of", fields)
     else:
         NT = _coconut.typing.NamedTuple("_namedtuple_of", [(f, t) for f, t in _coconut.zip(fields, types)])
     _coconut.copyreg.pickle(NT, lambda nt: (_coconut_mk_anon_namedtuple, (nt._fields, types, nt._asdict())))
-    if of_kwargs is None:
-        nt = NT
-    else:
-        nt = NT(**of_kwargs)
-{set_nt_match_args}    return nt
+    if not (of_kwargs or of_args):
+        return NT
+    nt = NT(*of_args, **of_kwargs)
+{set_nt_match_args}
+    return nt
 def _coconut_ndim(arr):
     arr_mod = _coconut_get_base_module(arr)
     if (arr_mod in _coconut.numpy_modules or _coconut.hasattr(arr.__class__, "__matconcat__")) and _coconut.hasattr(arr, "ndim"):
