@@ -1737,7 +1737,7 @@ The syntax for a statement lambda is
 ```
 [async|match|copyclosure] def (arguments) => statement; statement; ...
 ```
-where `arguments` can be standard function arguments or [pattern-matching function definition](#pattern-matching-functions) arguments and `statement` can be an assignment statement or a keyword statement. Note that the `async`, `match`, and [`copyclosure`](#copyclosure-functions) keywords can be combined and can be in any order.
+where `arguments` can be standard function arguments or [pattern-matching function definition](#pattern-matching-functions) arguments and `statement` can be any non-compound statement—that is, any statement that doesn't open a code block below it (so `def x => assert x` is fine but `def x => if x: True` is not). Note that the `async`, `match`, and [`copyclosure`](#copyclosure-functions) keywords can be combined and can be in any order.
 
 If the last `statement` (not followed by a semicolon) in a statement lambda is an `expression`, it will automatically be returned.
 
@@ -3805,9 +3805,9 @@ _Can’t be done quickly without Coconut’s iterable indexing, which requires m
 
 #### `reduce`
 
-**reduce**(_function_, _iterable_[, _initial_], /)
+**reduce**(_function_, _iterable_[, _initial_])
 
-Coconut re-introduces Python 2's `reduce` built-in, using the `functools.reduce` version.
+Coconut re-introduces Python 2's `reduce` built-in, using the `functools.reduce` version. Additionally, unlike `functools.reduce`, Coconut's `reduce` always supports keyword arguments.
 
 ##### Python Docs
 
@@ -3937,9 +3937,9 @@ result = itertools.zip_longest(range(5), range(10))
 
 #### `takewhile`
 
-**takewhile**(_predicate_, _iterable_, /)
+**takewhile**(_predicate_, _iterable_)
 
-Coconut provides `itertools.takewhile` as a built-in under the name `takewhile`.
+Coconut provides `itertools.takewhile` as a built-in under the name `takewhile`. Additionally, unlike `itertools.takewhile`, Coconut's `takewhile` always supports keyword arguments.
 
 ##### Python Docs
 
@@ -3971,9 +3971,9 @@ negatives = itertools.takewhile(lambda x: x < 0, numiter)
 
 #### `dropwhile`
 
-**dropwhile**(_predicate_, _iterable_, /)
+**dropwhile**(_predicate_, _iterable_)
 
-Coconut provides `itertools.dropwhile` as a built-in under the name `dropwhile`.
+Coconut provides `itertools.dropwhile` as a built-in under the name `dropwhile`. Additionally, unlike `itertools.dropwhile`, Coconut's `dropwhile` always supports keyword arguments.
 
 ##### Python Docs
 

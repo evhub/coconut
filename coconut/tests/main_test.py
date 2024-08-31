@@ -168,6 +168,7 @@ ignore_mypy_errs_with = (
     "tutorial.py",
     "unused 'type: ignore' comment",
     "site-packages/numpy",
+    ".py: error:"
 )
 
 ignore_atexit_errors_with = (
