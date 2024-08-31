@@ -7,8 +7,7 @@ os.environ["COCONUT_USE_COLOR"] = "False"
 from coconut.__coconut__ import consume as coc_consume
 from coconut.constants import (
     IPY,
-    PY2,
-    PY34,
+    NUMPY,
     PY35,
     PY36,
     PY39,
@@ -762,13 +761,13 @@ def test_xarray() -> bool:
 
 
 def test_extras() -> bool:
-    if not PYPY and (PY2 or PY34):
+    if NUMPY:
         assert test_numpy() is True
     print(".", end="")
-    if not PYPY and PY36:
+    if NUMPY and PY36:
         assert test_pandas() is True  # .
     print(".", end="")
-    if not PYPY and PY39:
+    if NUMPY and PY39:
         assert test_xarray() is True # ..
     print(".")  # newline bc we print stuff after this
     assert test_setup_none() is True  # ...

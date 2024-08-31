@@ -101,6 +101,10 @@ XONSH = (
     and not (PYPY and PY39)
     and (PY38 or not PY36)
 )
+NUMPY = (
+    not PYPY
+    and (PY2 or PY34)
+)
 
 py_version_str = sys.version.split()[0]
 
