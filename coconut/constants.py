@@ -1056,7 +1056,6 @@ unpinned_min_versions = {
     "pexpect": (4,),
     ("trollius", "py<3;cpy"): (2, 2),
     "requests": (2, 32),
-    ("numpy", "py39"): (2,),
     ("xarray", "py39"): (2024,),
     ("dataclasses", "py==36"): (0, 8),
     ("aenum", "py<34"): (3, 1, 15),
@@ -1082,6 +1081,8 @@ unpinned_min_versions = {
 }
 
 pinned_min_versions = {
+    # don't upgrade this; some extensions implicitly require numpy<2
+    ("numpy", "py39"): (1, 26),
     # don't upgrade this; it breaks xonsh
     ("pytest", "py38"): (8, 0),
     # don't upgrade these; they break on Python 3.9
