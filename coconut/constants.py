@@ -1077,7 +1077,6 @@ unpinned_min_versions = {
     ("exceptiongroup", "py37;py<311"): (1,),
     ("ipython", "py>=310"): (8, 27),
     "py-spy": (0, 3),
-    "pytest_remotedata": (0, 4),
 }
 
 pinned_min_versions = {
@@ -1096,7 +1095,7 @@ pinned_min_versions = {
     # don't upgrade these; they break on Python 3.6
     ("anyio", "py36"): (3,),
     ("xonsh", "py>=36;py<39"): (0, 11),
-    ("pandas", "py36"): (1, 16),
+    ("pandas", "py36"): (1, 1),
     ("jupyter-client", "py36"): (7, 1, 2),
     ("typing_extensions", "py==36"): (4, 1),
     ("pytest", "py>=36;py<38"): (7,),
@@ -1129,6 +1128,7 @@ pinned_min_versions = {
     "papermill": (1, 2),
     ("numpy", "py<3;cpy"): (1, 16),
     ("backports.functools-lru-cache", "py<3"): (1, 6),
+    "pytest_remotedata": (0, 3),
     # don't upgrade this; it breaks with old IPython versions
     ("jedi", "py<39"): (0, 17),
     # Coconut requires pyparsing 2
