@@ -1093,7 +1093,7 @@ if TEST_ALL:
         if not PYPY or PY2:
             def test_prelude(self):
                 with using_paths(prelude):
-                    comp_prelude()
+                    comp_prelude(expect_retcode=None)
                     if MYPY and PY38:
                         run_prelude()
 
