@@ -178,7 +178,7 @@ def suite_test() -> bool:
     assert init_last([1,2,3]) == ([1,2], 3)
     assert last_two([1,2,3]) == (2, 3) == last_two_([1,2,3])
     assert expl_ident(5) == 5 == ident(5)
-    assert mod$ <| 5 <| 3 == 2 == (%)$ <| 5 <| 3
+    assert mod$ <| 5 <| 3 == 2 == (%)$ <| 5 <| 3  # type: ignore
     assert 5 |> dectest == 5
     try:
         raise ValueError()

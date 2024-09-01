@@ -62,7 +62,7 @@ class _coconut{object}:{COMMENT.EVERYTHING_HERE_MUST_BE_COPIED_TO_STUB_FILE}
     fmappables = list, tuple, dict, set, frozenset, bytes, bytearray
     abc.Sequence.register(collections.deque)
     Ellipsis, NotImplemented, NotImplementedError, Exception, AttributeError, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, RuntimeError, all, any, bool, bytes, callable, chr, classmethod, complex, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, locals, globals, map, min, max, next, object, ord, property, range, reversed, set, setattr, slice, str, sum, super, tuple, type, vars, zip, repr, print{comma_bytearray} = Ellipsis, NotImplemented, NotImplementedError, Exception, AttributeError, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, RuntimeError, all, any, bool, bytes, callable, chr, classmethod, complex, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, locals, globals, map, {lstatic}min{rstatic}, {lstatic}max{rstatic}, next, object, ord, property, range, reversed, set, setattr, slice, str, sum, {lstatic}super{rstatic}, tuple, type, vars, zip, {lstatic}repr{rstatic}, {lstatic}print{rstatic}{comma_bytearray}
-@_coconut.functools.wraps(_coconut.functools.partial)
+@_coconut_wraps(_coconut.functools.partial)
 def _coconut_partial(_coconut_func, *args, **kwargs):
     partial_func = _coconut.functools.partial(_coconut_func, *args, **kwargs)
     partial_func.__name__ = _coconut.getattr(_coconut_func, "__name__", None)
@@ -182,7 +182,7 @@ class _coconut_tail_call(_coconut_baseclass):
         return (self.__class__, (self.func, self.args, self.kwargs))
 _coconut_tco_func_dict = _coconut.weakref.WeakValueDictionary()
 def _coconut_tco(func):
-    @_coconut.functools.wraps(func)
+    @_coconut_wraps(func)
     def tail_call_optimized_func(*args, **kwargs):
         call_func = func
         while True:{COMMENT.weakrefs_necessary_for_ignoring_functools_wraps_decorators}
@@ -209,7 +209,7 @@ def _coconut_tco(func):
     tail_call_optimized_func.__qualname__ = _coconut.getattr(func, "__qualname__", None)
     _coconut_tco_func_dict[_coconut.id(tail_call_optimized_func)] = tail_call_optimized_func
     return tail_call_optimized_func
-@_coconut.functools.wraps(_coconut.itertools.tee)
+@_coconut_wraps(_coconut.itertools.tee)
 def tee(iterable, n=2):
     if n < 0:
         raise _coconut.ValueError("tee: n cannot be negative")
@@ -2017,15 +2017,16 @@ collectby.using_threads = _coconut_partial(_coconut_parallel_mapreduce, collectb
 def _namedtuple_of(**kwargs):
     """Construct an anonymous namedtuple of the given keyword arguments."""
 {namedtuple_of_implementation}
-def _coconut_mk_anon_namedtuple(fields, types=None, of_kwargs=None):
+def _coconut_mk_anon_namedtuple(fields, types=None, of_kwargs={empty_dict}, of_args=()):
     if types is None:
         NT = _coconut.collections.namedtuple("_namedtuple_of", fields)
     else:
         NT = _coconut.typing.NamedTuple("_namedtuple_of", [(f, t) for f, t in _coconut.zip(fields, types)])
     _coconut.copyreg.pickle(NT, lambda nt: (_coconut_mk_anon_namedtuple, (nt._fields, types, nt._asdict())))
-    if of_kwargs is None:
+{set_NT_match_args}    if of_kwargs or of_args:
+        return NT(*of_args, **of_kwargs)
+    else:
         return NT
-    return NT(**of_kwargs)
 def _coconut_ndim(arr):
     arr_mod = _coconut_get_base_module(arr)
     if (arr_mod in _coconut.numpy_modules or _coconut.hasattr(arr.__class__, "__matconcat__")) and _coconut.hasattr(arr, "ndim"):
@@ -2219,7 +2220,22 @@ class _coconut_SupportsInv(_coconut.typing.Protocol):
     """
     def __invert__(self):
         raise _coconut.NotImplementedError("Protocol methods cannot be called at runtime ((~) in a typing context is a Protocol)")
+@_coconut_wraps(_coconut.functools.reduce)
+def reduce(function, iterable, initial=_coconut_sentinel):
+    if initial is _coconut_sentinel:
+        return _coconut.functools.reduce(function, iterable)
+    return _coconut.functools.reduce(function, iterable, initial)
+class takewhile(_coconut.itertools.takewhile{comma_object}):
+    __slots__ = ()
+    __doc__ = _coconut.itertools.takewhile.__doc__
+    def __new__(cls, predicate, iterable):
+        return _coconut.itertools.takewhile.__new__(cls, predicate, iterable)
+class dropwhile(_coconut.itertools.dropwhile{comma_object}):
+    __slots__ = ()
+    __doc__ = _coconut.itertools.dropwhile.__doc__
+    def __new__(cls, predicate, iterable):
+        return _coconut.itertools.dropwhile.__new__(cls, predicate, iterable)
 {def_async_map}
 {def_aliases}
 _coconut_self_match_types = {self_match_types}
-_coconut_Expected, _coconut_MatchError, _coconut_cartesian_product, _coconut_count, _coconut_cycle, _coconut_enumerate, _coconut_flatten, _coconut_fmap, _coconut_filter, _coconut_groupsof, _coconut_ident, _coconut_lift, _coconut_map, _coconut_mapreduce, _coconut_multiset, _coconut_range, _coconut_reiterable, _coconut_reversed, _coconut_scan, _coconut_starmap, _coconut_tee, _coconut_windowsof, _coconut_zip, _coconut_zip_longest, TYPE_CHECKING, reduce, takewhile, dropwhile = Expected, MatchError, cartesian_product, count, cycle, enumerate, flatten, fmap, filter, groupsof, ident, lift, map, mapreduce, multiset, range, reiterable, reversed, scan, starmap, tee, windowsof, zip, zip_longest, False, _coconut.functools.reduce, _coconut.itertools.takewhile, _coconut.itertools.dropwhile{COMMENT.anything_added_here_should_be_copied_to_stub_file}
+TYPE_CHECKING, _coconut_Expected, _coconut_MatchError, _coconut_cartesian_product, _coconut_count, _coconut_cycle, _coconut_enumerate, _coconut_flatten, _coconut_fmap, _coconut_filter, _coconut_groupsof, _coconut_ident, _coconut_lift, _coconut_map, _coconut_mapreduce, _coconut_multiset, _coconut_range, _coconut_reiterable, _coconut_reversed, _coconut_scan, _coconut_starmap, _coconut_tee, _coconut_windowsof, _coconut_zip, _coconut_zip_longest = False, Expected, MatchError, cartesian_product, count, cycle, enumerate, flatten, fmap, filter, groupsof, ident, lift, map, mapreduce, multiset, range, reiterable, reversed, scan, starmap, tee, windowsof, zip, zip_longest{COMMENT.anything_added_here_should_be_copied_to_stub_file}

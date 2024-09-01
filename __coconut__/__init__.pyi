@@ -1865,6 +1865,18 @@ def _coconut_mk_anon_namedtuple(
     fields: _t.Tuple[_t.Text, ...],
     types: _t.Optional[_t.Tuple[_t.Any, ...]] = None,
 ) -> _t.Callable[..., _t.Tuple[_t.Any, ...]]: ...
+@_t.overload
+def _coconut_mk_anon_namedtuple(
+    fields: _t.Tuple[_t.Text, ...],
+    types: _t.Optional[_t.Tuple[_t.Any, ...]],
+    of_args: _T,
+) -> _T: ...
+@_t.overload
+def _coconut_mk_anon_namedtuple(
+    fields: _t.Tuple[_t.Text, ...],
+    *,
+    of_args: _T,
+) -> _T: ...
 
 
 # @_t.overload

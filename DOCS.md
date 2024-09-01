@@ -1006,7 +1006,7 @@ Coconut also allows a single `?` before attribute access, function calling, part
 
 When using a `None`-aware operator for member access, either for a method or an attribute, the syntax is `obj?.method()` or `obj?.attr` respectively. `obj?.attr` is equivalent to `obj.attr if obj is not None else obj`. This does not prevent an `AttributeError` if `attr` is not an attribute or method of `obj`.
 
-The `None`-aware indexing operator is used identically to normal indexing, using `?[]` instead of `[]`. `seq?[index]` is equivalent to the expression `seq[index] is seq is not None else seq`. Using this operator will not prevent an `IndexError` if `index` is outside the bounds of `seq`.
+The `None`-aware indexing operator is used identically to normal indexing, using `?[]` instead of `[]`. `seq?[index]` is equivalent to the expression `seq[index] if seq is not None else seq`. Using this operator will not prevent an `IndexError` if `index` is outside the bounds of `seq`.
 
 Coconut also supports None-aware [pipe operators](#pipes) and [function composition pipes](#function-composition).
 
@@ -1204,6 +1204,7 @@ base_pattern ::= (
     | NAME "(" patterns ")"          # classes or data types
     | "data" NAME "(" patterns ")"   # data types
     | "class" NAME "(" patterns ")"  # classes
+    | "(" name "=" pattern ... ")"   # anonymous named tuples
     | "{" pattern_pairs              # dictionaries
         ["," "**" (NAME | "{}")] "}" #  (keys must be constants or equality checks)
     | ["s" | "f" | "m"] "{"
@@ -1269,7 +1270,8 @@ base_pattern ::= (
   - Classes or Data Types (`<name>(<args>)`): will match as a data type if given [a Coconut `data` type](#data) (or a tuple of Coconut data types) and a class otherwise.
   - Data Types (`data <name>(<args>)`): will check that whatever is in that position is of data type `<name>` and will match the attributes to `<args>`. Generally, `data <name>(<args>)` will match any data type that could have been constructed with `makedata(<name>, <args>)`. Includes support for positional arguments, named arguments, default arguments, and starred arguments. Also supports strict attributes by prepending a dot to the attribute name that raises `AttributError` if the attribute is not present rather than failing the match (e.g. `data MyData(.my_attr=<some_pattern>)`).
   - Classes (`class <name>(<args>)`): does [PEP-634-style class matching](https://www.python.org/dev/peps/pep-0634/#class-patterns). Also supports strict attribute matching as above.
-- Mapping Destructuring:
+  - Anonymous Named Tuples (`(<name>=<pattern>, ...)`): checks that the object is a `tuple` of the given length with the given attributes. For matching [anonymous `namedtuple`s](#anonymous-namedtuples).
+- Dict Destructuring:
   - Dicts (`{<key>: <value>, ...}`): will match any mapping (`collections.abc.Mapping`) with the given keys and values that match the value patterns. Keys must be constants or equality checks.
   - Dicts With Rest (`{<pairs>, **<rest>}`): will match a mapping (`collections.abc.Mapping`) containing all the `<pairs>`, and will put a `dict` of everything else into `<rest>`. If `<rest>` is `{}`, will enforce that the mapping is exactly the same length as `<pairs>`.
 - Set Destructuring:
@@ -1735,7 +1737,7 @@ The syntax for a statement lambda is
 ```
 [async|match|copyclosure] def (arguments) => statement; statement; ...
 ```
-where `arguments` can be standard function arguments or [pattern-matching function definition](#pattern-matching-functions) arguments and `statement` can be an assignment statement or a keyword statement. Note that the `async`, `match`, and [`copyclosure`](#copyclosure-functions) keywords can be combined and can be in any order.
+where `arguments` can be standard function arguments or [pattern-matching function definition](#pattern-matching-functions) arguments and `statement` can be any non-compound statement—that is, any statement that doesn't open a code block below it (so `def x => assert x` is fine but `def x => if x: True` is not). Note that the `async`, `match`, and [`copyclosure`](#copyclosure-functions) keywords can be combined and can be in any order.
 
 If the last `statement` (not followed by a semicolon) in a statement lambda is an `expression`, it will automatically be returned.
 
@@ -2233,7 +2235,7 @@ as a shorthand for
 f(long_variable_name=long_variable_name)
 ```
 
-Such syntax is also supported in [partial application](#partial-application) and [anonymous `namedtuple`s](#anonymous-namedtuples).
+Such syntax is also supported in [partial application](#partial-application), [anonymous `namedtuple`s](#anonymous-namedtuples), and [`class`/`data`/anonymous `namedtuple` patterns](#match).
 
 _Deprecated: Coconut also supports `f(...=long_variable_name)` as an alternative shorthand syntax._
 
@@ -2262,7 +2264,7 @@ main_func(
 
 ### Anonymous Namedtuples
 
-Coconut supports anonymous [`namedtuple`](https://docs.python.org/3/library/collections.html#collections.namedtuple) literals, such that `(a=1, b=2)` can be used just as `(1, 2)`, but with added names. Anonymous `namedtuple`s are always pickleable.
+Coconut supports anonymous [`namedtuple`](https://docs.python.org/3/library/collections.html#collections.namedtuple) literals, such that `(a=1, b=2)` can be used just as `(1, 2)`, but with added names. Anonymous `namedtuple`s are always pickleable and support [`__match_args__`](https://peps.python.org/pep-0622/) on all Python versions.
 
 The syntax for anonymous namedtuple literals is:
 ```coconut
@@ -3803,9 +3805,9 @@ _Can’t be done quickly without Coconut’s iterable indexing, which requires m
 
 #### `reduce`
 
-**reduce**(_function_, _iterable_[, _initial_], /)
+**reduce**(_function_, _iterable_[, _initial_])
 
-Coconut re-introduces Python 2's `reduce` built-in, using the `functools.reduce` version.
+Coconut re-introduces Python 2's `reduce` built-in, using the `functools.reduce` version. Additionally, unlike `functools.reduce`, Coconut's `reduce` always supports keyword arguments.
 
 ##### Python Docs
 
@@ -3935,9 +3937,9 @@ result = itertools.zip_longest(range(5), range(10))
 
 #### `takewhile`
 
-**takewhile**(_predicate_, _iterable_, /)
+**takewhile**(_predicate_, _iterable_)
 
-Coconut provides `itertools.takewhile` as a built-in under the name `takewhile`.
+Coconut provides `itertools.takewhile` as a built-in under the name `takewhile`. Additionally, unlike `itertools.takewhile`, Coconut's `takewhile` always supports keyword arguments.
 
 ##### Python Docs
 
@@ -3969,9 +3971,9 @@ negatives = itertools.takewhile(lambda x: x < 0, numiter)
 
 #### `dropwhile`
 
-**dropwhile**(_predicate_, _iterable_, /)
+**dropwhile**(_predicate_, _iterable_)
 
-Coconut provides `itertools.dropwhile` as a built-in under the name `dropwhile`.
+Coconut provides `itertools.dropwhile` as a built-in under the name `dropwhile`. Additionally, unlike `itertools.dropwhile`, Coconut's `dropwhile` always supports keyword arguments.
 
 ##### Python Docs
 

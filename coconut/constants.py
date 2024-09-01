@@ -101,6 +101,10 @@ XONSH = (
     and not (PYPY and PY39)
     and (PY38 or not PY36)
 )
+NUMPY = (
+    not PYPY
+    and (PY2 or PY34)
+)
 
 py_version_str = sys.version.split()[0]
 
@@ -135,7 +139,7 @@ packrat_cache_size = None  # only works because final() clears the cache
 
 streamline_grammar_for_len = 1536
 
-use_cache_file = True
+use_pyparsing_cache_file = True
 
 adaptive_any_of_env_var = "COCONUT_ADAPTIVE_ANY_OF"
 use_adaptive_any_of = get_bool_env_var(adaptive_any_of_env_var, True)
@@ -607,15 +611,20 @@ python_builtins = (
     "tuple", "type",
     "vars",
     "zip",
+    'Ellipsis',
     "__import__",
     '__name__',
     '__file__',
     '__annotations__',
     '__debug__',
+    '__build_class__',
+    '__loader__',
+    '__package__',
+    '__spec__',
 )
 
 python_exceptions = (
-    "BaseException", "BaseExceptionGroup", "GeneratorExit", "KeyboardInterrupt", "SystemExit", "Exception", "ArithmeticError", "FloatingPointError", "OverflowError", "ZeroDivisionError", "AssertionError", "AttributeError", "BufferError", "EOFError", "ExceptionGroup", "BaseExceptionGroup", "ImportError", "ModuleNotFoundError", "LookupError", "IndexError", "KeyError", "MemoryError", "NameError", "UnboundLocalError", "OSError", "BlockingIOError", "ChildProcessError", "ConnectionError", "BrokenPipeError", "ConnectionAbortedError", "ConnectionRefusedError", "ConnectionResetError", "FileExistsError", "FileNotFoundError", "InterruptedError", "IsADirectoryError", "NotADirectoryError", "PermissionError", "ProcessLookupError", "TimeoutError", "ReferenceError", "RuntimeError", "NotImplementedError", "RecursionError", "StopAsyncIteration", "StopIteration", "SyntaxError", "IndentationError", "TabError", "SystemError", "TypeError", "ValueError", "UnicodeError", "UnicodeDecodeError", "UnicodeEncodeError", "UnicodeTranslateError", "Warning", "BytesWarning", "DeprecationWarning", "EncodingWarning", "FutureWarning", "ImportWarning", "PendingDeprecationWarning", "ResourceWarning", "RuntimeWarning", "SyntaxWarning", "UnicodeWarning", "UserWarning",
+    'ArithmeticError', 'AssertionError', 'AttributeError', 'BaseException', 'BaseExceptionGroup', 'BlockingIOError', 'BrokenPipeError', 'BufferError', 'BytesWarning', 'ChildProcessError', 'ConnectionAbortedError', 'ConnectionError', 'ConnectionRefusedError', 'ConnectionResetError', 'DeprecationWarning', 'EOFError', 'EncodingWarning', 'EnvironmentError', 'Exception', 'ExceptionGroup', 'FileExistsError', 'FileNotFoundError', 'FloatingPointError', 'FutureWarning', 'GeneratorExit', 'IOError', 'ImportError', 'ImportWarning', 'IndentationError', 'IndexError', 'InterruptedError', 'IsADirectoryError', 'KeyError', 'KeyboardInterrupt', 'LookupError', 'MemoryError', 'ModuleNotFoundError', 'NameError', 'NotADirectoryError', 'NotImplemented', 'NotImplementedError', 'OSError', 'OverflowError', 'PendingDeprecationWarning', 'PermissionError', 'ProcessLookupError', 'RecursionError', 'ReferenceError', 'ResourceWarning', 'RuntimeError', 'RuntimeWarning', 'StopAsyncIteration', 'StopIteration', 'SyntaxError', 'SyntaxWarning', 'SystemError', 'SystemExit', 'TabError', 'TimeoutError', 'TypeError', 'UnboundLocalError', 'UnicodeDecodeError', 'UnicodeEncodeError', 'UnicodeError', 'UnicodeTranslateError', 'UnicodeWarning', 'UserWarning', 'ValueError', 'Warning', 'WindowsError', 'ZeroDivisionError'
 )
 
 always_keep_parse_name_prefix = "HAS_"
@@ -633,7 +642,7 @@ main_sig = "Coconut: "
 main_prompt = ">>> "
 more_prompt = "    "
 
-default_use_cache_dir = PY34
+default_use_cache_dir = get_bool_env_var("COCONUT_USE_CACHE_DIR", PY34)
 coconut_cache_dir = "__coconut_cache__"
 
 mypy_path_env_var = "MYPYPATH"
@@ -1019,6 +1028,9 @@ all_reqs = {
         ("pygments", "py>=39"),
         "myst-parser",
         "pydata-sphinx-theme",
+        # these are necessary to fix a sphinx error
+        "sphinxcontrib_applehelp",
+        "sphinxcontrib_htmlhelp",
     ),
     "numpy": (
         ("numpy", "py<3;cpy"),
@@ -1032,6 +1044,7 @@ all_reqs = {
         ("pytest", "py>=36;py<38"),
         ("pytest", "py38"),
         "pexpect",
+        "pytest_remotedata",  # fixes a pytest error
     ),
 }
 
@@ -1039,22 +1052,23 @@ all_reqs = {
 unpinned_min_versions = {
     "cPyparsing": (2, 4, 7, 2, 4, 0),
     ("pre-commit", "py3"): (3,),
-    ("psutil", "py>=27"): (5,),
-    "jupyter": (1, 0),
+    ("psutil", "py>=27"): (6,),
+    "jupyter": (1, 1),
     "types-backports": (0, 1),
     ("futures", "py<3"): (3, 4),
     ("argparse", "py<27"): (1, 4),
     "pexpect": (4,),
     ("trollius", "py<3;cpy"): (2, 2),
     "requests": (2, 32),
-    ("numpy", "py39"): (1, 26),
     ("xarray", "py39"): (2024,),
     ("dataclasses", "py==36"): (0, 8),
     ("aenum", "py<34"): (3, 1, 15),
     "pydata-sphinx-theme": (0, 15),
-    "myst-parser": (3,),
-    "sphinx": (7,),
-    "mypy[python2]": (1, 10),
+    "myst-parser": (4,),
+    "sphinx": (8,),
+    "sphinxcontrib_applehelp": (2,),
+    "sphinxcontrib_htmlhelp": (2,),
+    "mypy[python2]": (1, 11),
     "pyright": (1, 1),
     ("jupyter-console", "py37"): (6, 6),
     ("typing", "py<35"): (3, 10),
@@ -1062,14 +1076,16 @@ unpinned_min_versions = {
     ("ipykernel", "py38"): (6,),
     ("jedi", "py39"): (0, 19),
     ("pygments", "py>=39"): (2, 18),
-    ("xonsh", "py39"): (0, 16),
+    ("xonsh", "py39"): (0, 18),
     ("async_generator", "py35"): (1, 10),
     ("exceptiongroup", "py37;py<311"): (1,),
-    ("ipython", "py>=310"): (8, 25),
+    ("ipython", "py>=310"): (8, 27),
     "py-spy": (0, 3),
 }
 
 pinned_min_versions = {
+    # don't upgrade this; some extensions implicitly require numpy<2
+    ("numpy", "py39"): (1, 26),
     # don't upgrade this; it breaks xonsh
     ("pytest", "py38"): (8, 0),
     # don't upgrade these; they break on Python 3.9
@@ -1083,7 +1099,7 @@ pinned_min_versions = {
     # don't upgrade these; they break on Python 3.6
     ("anyio", "py36"): (3,),
     ("xonsh", "py>=36;py<39"): (0, 11),
-    ("pandas", "py36"): (1,),
+    ("pandas", "py36"): (1, 1),
     ("jupyter-client", "py36"): (7, 1, 2),
     ("typing_extensions", "py==36"): (4, 1),
     ("pytest", "py>=36;py<38"): (7,),
@@ -1116,6 +1132,7 @@ pinned_min_versions = {
     "papermill": (1, 2),
     ("numpy", "py<3;cpy"): (1, 16),
     ("backports.functools-lru-cache", "py<3"): (1, 6),
+    "pytest_remotedata": (0, 3),
     # don't upgrade this; it breaks with old IPython versions
     ("jedi", "py<39"): (0, 17),
     # Coconut requires pyparsing 2

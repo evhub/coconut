@@ -7,8 +7,7 @@ os.environ["COCONUT_USE_COLOR"] = "False"
 from coconut.__coconut__ import consume as coc_consume
 from coconut.constants import (
     IPY,
-    PY2,
-    PY34,
+    NUMPY,
     PY35,
     PY36,
     PY39,
@@ -414,6 +413,16 @@ import abc
     except CoconutStyleError as err:
         assert str(err) == """found unused import 'abc' (add '# NOQA' to suppress) (remove --strict to downgrade to a warning) (line 1)
   import abc"""
+    try:
+        parse("""
+1
+2 + x
+3
+        """.strip())
+    except CoconutStyleError as err:
+        assert str(err) == """found undefined name 'x' (add '# NOQA' to suppress) (remove --strict to downgrade to a warning) (line 2)
+  2 + x
+      ^"""
     assert_raises(-> parse("""
 class A(object):
     1
@@ -602,6 +611,15 @@ def test_kernel() -> bool:
     assert captured_msg_content is None
     assert captured_msg_type["content"]["data"]["text/plain"] == "'()'"
 
+    assert k.do_execute("""[
+    "hey",
+    # "there", # dont want this value now
+    "is comment"
+]""", False, True, {}, True) |> unwrap_future$(loop) |> .["status"] == "ok"
+    captured_msg_type, captured_msg_content = fake_session.captured_messages[-1]
+    assert captured_msg_content is None
+    assert captured_msg_type["content"]["data"]["text/plain"] == "['hey', 'is comment']"
+
     return True
 
 
@@ -743,13 +761,13 @@ def test_xarray() -> bool:
 
 
 def test_extras() -> bool:
-    if not PYPY and (PY2 or PY34):
+    if NUMPY:
         assert test_numpy() is True
     print(".", end="")
-    if not PYPY and PY36:
+    if NUMPY and PY36:
         assert test_pandas() is True  # .
     print(".", end="")
-    if not PYPY and PY39:
+    if NUMPY and PY39:
         assert test_xarray() is True # ..
     print(".")  # newline bc we print stuff after this
     assert test_setup_none() is True  # ...

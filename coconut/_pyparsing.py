@@ -46,7 +46,7 @@ from coconut.constants import (
     never_clear_incremental_cache,
     warn_on_multiline_regex,
     num_displayed_timing_items,
-    use_cache_file,
+    use_pyparsing_cache_file,
     use_line_by_line_parser,
     incremental_use_hybrid,
 )
@@ -254,7 +254,7 @@ SUPPORTS_ADAPTIVE = (
     and hasattr(MatchFirst, "setAdaptiveMode")
 )
 
-USE_CACHE = SUPPORTS_INCREMENTAL and use_cache_file
+USE_CACHE = SUPPORTS_INCREMENTAL and use_pyparsing_cache_file
 USE_LINE_BY_LINE = USE_COMPUTATION_GRAPH and use_line_by_line_parser
 
 if MODERN_PYPARSING:

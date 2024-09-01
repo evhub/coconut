@@ -25,6 +25,7 @@ from coconut.integrations import embed
 from coconut.constants import (
     CPYTHON,
     PY34,
+    NUMPY,
     IPY,
     MYPY,
     XONSH,
@@ -249,7 +250,7 @@ extras.update({
     "docs": unique_wrt(get_reqs("docs"), requirements),
     "tests": uniqueify_all(
         get_reqs("tests"),
-        extras["numpy"],
+        extras["numpy"] if NUMPY else [],
         extras["jupyter"] if IPY else [],
         extras["mypy"] if MYPY else [],
         extras["xonsh"] if XONSH else [],
