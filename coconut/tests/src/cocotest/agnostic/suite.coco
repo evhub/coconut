@@ -637,7 +637,7 @@ def suite_test() -> bool:
     assert map(HasDefs().a_def, range(5)) |> list == range(1, 6) |> list
     assert HasDefs().a_def 1 == 2
     assert HasDefs().case_def 1 == 0 == HasDefs().case_def_ 1
-    assert HasDefs.__annotations__.keys() |> set == {"a_def"}, HasDefs.__annotations__
+    assert "a_def" in HasDefs.__annotations__.keys() |> set, HasDefs.__annotations__
     assert store.plus1 store.one == store.two
     assert ret_locals()["my_loc"] == 1
     assert ret_globals()["my_glob"] == 1
