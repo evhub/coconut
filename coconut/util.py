@@ -107,6 +107,14 @@ class const(pickleable_obj):
         return self.value
 
 
+def create_method(func, obj, objtype):
+    """Universally create a new method object."""
+    if PY2:
+        return MethodType(func, obj, objtype)
+    else:
+        return MethodType(func, obj)
+
+
 class override(pickleable_obj):
     """Implementation of Coconut's @override for use within Coconut."""
     __slots__ = ("func",)
@@ -129,10 +137,7 @@ class override(pickleable_obj):
                 return self.func.__get__(obj, objtype)
         if obj is None:
             return self.func
-        if PY2:
-            return MethodType(self.func, obj, objtype)
-        else:
-            return MethodType(self.func, obj)
+        return create_method(self.func, obj, objtype)
 
     def __set_name__(self, obj, name):
         if not hasattr(super(obj, obj), name):

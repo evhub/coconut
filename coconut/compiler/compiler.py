@@ -37,11 +37,11 @@ from contextlib import contextmanager
 from functools import partial, wraps
 from collections import defaultdict
 from threading import Lock
+from copy import copy
 
 from coconut._pyparsing import (
     USE_COMPUTATION_GRAPH,
     USE_CACHE,
-    USE_LINE_BY_LINE,
     ParseBaseException,
     ParseResults,
     col as getcol,
@@ -108,6 +108,7 @@ from coconut.util import (
     assert_remove_suffix,
     dictset,
     noop_ctx,
+    create_method,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -484,12 +485,16 @@ class Compiler(Grammar, pickleable_obj):
             args.append("--no-wrap-types")
         return args
 
-    def __copy__(self):
-        """Create a new, blank copy of the compiler."""
-        cls, args = self.__reduce__()
-        return cls(*args)
-
-    copy = __copy__
+    def copy(self, snapshot=False):
+        """Create a blank copy of the compiler, or a non-blank copy if snapshot=True."""
+        if snapshot:
+            old_reduce, self.__reduce__ = self.__reduce__, create_method(object.__reduce__, self, self.__class__)
+            try:
+                return copy(self)
+            finally:
+                self.__reduce__ = old_reduce
+        else:
+            return copy(self)
 
     def genhash(self, code, package_level=-1):
         """Generate a hash from code."""
@@ -1357,7 +1362,7 @@ class Compiler(Grammar, pickleable_obj):
 
     def parse_line_by_line(self, init_parser, line_parser, original):
         """Apply init_parser then line_parser repeatedly."""
-        if not USE_LINE_BY_LINE:
+        if not USE_COMPUTATION_GRAPH:
             raise CoconutException("line-by-line parsing not supported", extra="run 'pip install --upgrade cPyparsing' to fix")
         with ComputationNode.using_overrides():
             ComputationNode.override_original = original
