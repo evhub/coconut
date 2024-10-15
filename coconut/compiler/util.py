@@ -265,7 +265,7 @@ def evaluate_tokens(tokens, **kwargs):
         elif isinstance(tokens, ComputationNode):
             result = tokens.evaluate()
             if is_final and isinstance(result, ExceptionNode):
-                raise result.exception
+                result.evaluate()
             elif isinstance(result, ParseResults):
                 return make_modified_tokens(result, cls=MergeNode)
             elif isinstance(result, list):
@@ -286,7 +286,7 @@ def evaluate_tokens(tokens, **kwargs):
 
         elif isinstance(tokens, ExceptionNode):
             if is_final:
-                raise tokens.exception
+                tokens.evaluate()
             return tokens
 
         elif isinstance(tokens, DeferredNode):
@@ -321,9 +321,12 @@ def build_new_toks_for(tokens, new_toklist, unchanged=False):
     return new_toklist
 
 
+cached_trim_arity = memoize()(_trim_arity)
+
+
 class ComputationNode(object):
     """A single node in the computation graph."""
-    __slots__ = ("action", "original", "loc", "tokens")
+    __slots__ = ("action", "original", "loc", "tokens", "trim_arity")
     pprinting = False
     override_original = None
     add_to_loc = 0
@@ -339,7 +342,7 @@ class ComputationNode(object):
             cls.override_original = override_original
             cls.add_to_loc = add_to_loc
 
-    def __new__(cls, action, original, loc, tokens, ignore_no_tokens=False, ignore_one_token=False, greedy=False, trim_arity=True):
+    def __new__(cls, action, original, loc, tokens, trim_arity=True, ignore_no_tokens=False, ignore_one_token=False, greedy=False):
         """Create a ComputionNode to return from a parse action.
 
         If ignore_no_tokens, then don't call the action if there are no tokens.
@@ -350,17 +353,19 @@ class ComputationNode(object):
             return build_new_toks_for(tokens, tokens, unchanged=True)
         else:
             self = super(ComputationNode, cls).__new__(cls)
-            if trim_arity:
-                self.action = _trim_arity(action)
-            else:
-                self.action = action
-            self.original = original if self.override_original is None else self.override_original
-            self.loc = self.add_to_loc + loc
+            self.action = action
+            self.original = original
+            self.loc = loc
             self.tokens = tokens
+            self.trim_arity = trim_arity
             if greedy:
                 return self.evaluate()
             else:
                 return self
+
+    def __reduce__(self):
+        """Get pickling information."""
+        return (self.__class__, (self.action, self.original, self.loc, self.tokens, self.trim_arity))
 
     @property
     def name(self):
@@ -377,15 +382,23 @@ class ComputationNode(object):
         #  to actually be reevaluated
         if logger.tracing and not final_evaluate_tokens.enabled:
             logger.log_tag("cached_parse invalidated by", self)
+
+        if self.trim_arity:
+            using_action = cached_trim_arity(self.action)
+        else:
+            using_action = self.action
+        using_original = self.original if self.override_original is None else self.override_original
+        using_loc = self.loc + self.add_to_loc
         evaluated_toks = evaluate_tokens(self.tokens)
+
         if logger.tracing:  # avoid the overhead of the call if not tracing
-            logger.log_trace(self.name, self.original, self.loc, evaluated_toks, self.tokens)
+            logger.log_trace(self.name, using_original, using_loc, evaluated_toks, self.tokens)
         if isinstance(evaluated_toks, ExceptionNode):
             return evaluated_toks  # short-circuit if we got an ExceptionNode
         try:
-            result = self.action(
-                self.original,
-                self.loc,
+            result = using_action(
+                using_original,
+                using_loc,
                 evaluated_toks,
             )
         except CoconutException:
@@ -398,6 +411,7 @@ class ComputationNode(object):
                 embed(depth=2)
             else:
                 raise error
+
         out = build_new_toks_for(evaluated_toks, result)
         if logger.tracing:  # avoid the overhead if not tracing
             dropped_keys = set(self.tokens._ParseResults__tokdict.keys())
@@ -434,12 +448,16 @@ class DeferredNode(object):
 
 class ExceptionNode(object):
     """A node in the computation graph that stores an exception that will be raised upon final evaluation."""
-    __slots__ = ("exception",)
+    __slots__ = ("exception_maker",)
 
-    def __init__(self, exception):
+    def __init__(self, exception_maker):
         if not USE_COMPUTATION_GRAPH:
-            raise exception
-        self.exception = exception
+            raise exception_maker()
+        self.exception_maker = exception_maker
+
+    def evaluate(self):
+        """Raise the stored exception."""
+        raise self.exception_maker()
 
 
 class CombineToNode(Combine):

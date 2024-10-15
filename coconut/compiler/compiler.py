@@ -431,7 +431,7 @@ class Compiler(Grammar, pickleable_obj):
     ]
 
     def __init__(self, *args, **kwargs):
-        """Creates a new compiler with the given parsing parameters."""
+        """Create a new compiler with the given parsing parameters."""
         self.setup(*args, **kwargs)
         self.reset()
 
@@ -467,7 +467,7 @@ class Compiler(Grammar, pickleable_obj):
         self.no_wrap = no_wrap
 
     def __reduce__(self):
-        """Return pickling information."""
+        """Get pickling information."""
         return (self.__class__, (self.target, self.strict, self.minify, self.line_numbers, self.keep_lines, self.no_tco, self.no_wrap))
 
     def get_cli_args(self):
@@ -644,6 +644,8 @@ class Compiler(Grammar, pickleable_obj):
             if trim_arity:
                 self_method = _trim_arity(self_method)
             return self_method(original, loc, tokens_or_item)
+        if kwargs:
+            method.__name__ = py_str(method.__name__ + "$(" + ", ".join(str(k) + "=" + repr(v) for k, v in kwargs.items()) + ")")
         internal_assert(
             hasattr(cls_method, "ignore_arguments") is hasattr(method, "ignore_arguments")
             and hasattr(cls_method, "ignore_no_tokens") is hasattr(method, "ignore_no_tokens")
@@ -1086,18 +1088,20 @@ class Compiler(Grammar, pickleable_obj):
         """Wrap a comment."""
         return "#" + self.add_ref("comment", text) + unwrapper
 
-    def wrap_error(self, error):
+    def wrap_error(self, error_maker):
         """Create a symbol that will raise the given error in postprocessing."""
-        return errwrapper + self.add_ref("error", error) + unwrapper
+        return errwrapper + self.add_ref("error_maker", error_maker) + unwrapper
 
-    def raise_or_wrap_error(self, error):
-        """Raise if USE_COMPUTATION_GRAPH else wrap."""
+    def raise_or_wrap_error(self, *args, **kwargs):
+        """Raise or defer if USE_COMPUTATION_GRAPH else wrap."""
+        error_maker = partial(self.make_err, *args, **kwargs)
         if not USE_COMPUTATION_GRAPH:
-            return self.wrap_error(error)
+            return self.wrap_error(error_maker)
+        # differently-ordered any ofs can push these errors earlier than they should be, requiring us to defer them
         elif use_adaptive_any_of or reverse_any_of:
-            return ExceptionNode(error)
+            return ExceptionNode(error_maker)
         else:
-            raise error
+            raise error_maker()
 
     def type_ignore_comment(self):
         """Get a "type: ignore" comment."""
@@ -2742,7 +2746,7 @@ else:
                 pre_err_line, err_line = raw_line.split(errwrapper, 1)
                 err_ref, post_err_line = err_line.split(unwrapper, 1)
                 if not ignore_errors:
-                    raise self.get_ref("error", err_ref)
+                    raise self.get_ref("error_maker", err_ref)()
                 raw_line = pre_err_line + " " + post_err_line
 
             # look for functions
@@ -4890,6 +4894,7 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
 
         where_assigns = self.current_parsing_context("where")["assigns"]
         internal_assert(lambda: where_assigns is not None, "missing where_assigns")
+        print(where_assigns)
 
         where_init = "".join(body_stmts)
         where_final = main_stmt + "\n"
@@ -4989,7 +4994,8 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
         if self.disable_name_check:
             return name
 
-        if assign:
+        # register non-mid-expression variable assignments inside of where statements for later mangling
+        if assign and not expr_setname:
             where_context = self.current_parsing_context("where")
             if where_context is not None:
                 where_assigns = where_context["assigns"]
@@ -5020,13 +5026,11 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
                     if typevar_info["typevar_locs"].get(name, None) != loc:
                         if assign:
                             return self.raise_or_wrap_error(
-                                self.make_err(
-                                    CoconutSyntaxError,
-                                    "cannot reassign type variable '{name}'".format(name=name),
-                                    original,
-                                    loc,
-                                    extra="use explicit '\\{name}' syntax if intended".format(name=name),
-                                ),
+                                CoconutSyntaxError,
+                                "cannot reassign type variable '{name}'".format(name=name),
+                                original,
+                                loc,
+                                extra="use explicit '\\{name}' syntax if intended".format(name=name),
                             )
                         return typevars[name]
 
@@ -5057,13 +5061,11 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
                 return name
             elif assign:
                 return self.raise_or_wrap_error(
-                    self.make_err(
-                        CoconutTargetError,
-                        "found Python-3-only assignment to 'exec' as a variable name",
-                        original,
-                        loc,
-                        target="3",
-                    ),
+                    CoconutTargetError,
+                    "found Python-3-only assignment to 'exec' as a variable name",
+                    original,
+                    loc,
+                    target="3",
                 )
             else:
                 return "_coconut_exec"
@@ -5076,12 +5078,10 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
                 return name
         elif not escaped and name.startswith(reserved_prefix) and name not in self.operators:
             return self.raise_or_wrap_error(
-                self.make_err(
-                    CoconutSyntaxError,
-                    "variable names cannot start with reserved prefix '{prefix}' (use explicit '\\{name}' syntax if intending to access Coconut internals)".format(prefix=reserved_prefix, name=name),
-                    original,
-                    loc,
-                ),
+                CoconutSyntaxError,
+                "variable names cannot start with reserved prefix '{prefix}' (use explicit '\\{name}' syntax if intending to access Coconut internals)".format(prefix=reserved_prefix, name=name),
+                original,
+                loc,
             )
         else:
             return name
@@ -5104,7 +5104,7 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
             else:
                 if always_warn:
                     kwargs["extra"] = "remove --strict to downgrade to a warning"
-                return self.raise_or_wrap_error(self.make_err(CoconutStyleError, message, original, loc, **kwargs))
+                return self.raise_or_wrap_error(CoconutStyleError, message, original, loc, **kwargs)
         elif always_warn:
             self.syntax_warning(message, original, loc)
         return tokens[0]
@@ -5145,13 +5145,13 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
         self.internal_assert(len(tokens) == 1, original, loc, "invalid " + name + " tokens", tokens)
         version_info = get_target_info(version)
         if self.target_info < version_info:
-            return self.raise_or_wrap_error(self.make_err(
+            return self.raise_or_wrap_error(
                 CoconutTargetError,
                 "found Python " + ".".join(str(v) for v in version_info) + " " + name,
                 original,
                 loc,
                 target=version,
-            ))
+            )
         else:
             return tokens[0]
 

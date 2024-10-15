@@ -2616,7 +2616,6 @@ class Grammar(object):
             decoratable_data_stmt,
             match_stmt,
             passthrough_stmt,
-            where_stmt,
         )
 
         flow_stmt = any_of(
@@ -2661,8 +2660,8 @@ class Grammar(object):
         stmt <<= final(
             compound_stmt
             | simple_stmt  # includes destructuring
-            # must be after destructuring due to ambiguity
-            | cases_stmt
+            | cases_stmt  # must be after destructuring due to ambiguity
+            | where_stmt  # slows down parsing when put before simple_stmt
             # at the very end as a fallback case for the anything parser
             | anything_stmt
         )
