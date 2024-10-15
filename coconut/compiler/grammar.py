@@ -2781,8 +2781,6 @@ class Grammar(object):
                 rparen,
             ) + end_marker,
             tco_return_handle,
-            # this is the root in what it's used for, so might as well evaluate greedily
-            greedy=True,
         ))
 
         rest_of_lambda = Forward()

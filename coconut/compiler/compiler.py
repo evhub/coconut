@@ -156,6 +156,7 @@ from coconut.compiler.util import (
     match_in,
     transform,
     parse,
+    cached_parse,
     get_target_info_smart,
     split_leading_comments,
     compile_regex,
@@ -405,6 +406,7 @@ class Compiler(Grammar, pickleable_obj):
     """The Coconut compiler."""
     lock = Lock()
     current_compiler = None
+    computation_graph_caches = defaultdict(dict)
 
     preprocs = [
         lambda self: self.prepare,
@@ -1372,14 +1374,20 @@ class Compiler(Grammar, pickleable_obj):
             while cur_loc < len(original):
                 self.remaining_original = original[cur_loc:]
                 ComputationNode.add_to_loc = cur_loc
-                results = parse(init_parser if init else line_parser, self.remaining_original, inner=False)
+                parser = init_parser if init else line_parser
+                results = cached_parse(
+                    self.computation_graph_caches[("line_by_line", parser)],
+                    parser,
+                    self.remaining_original,
+                    inner=False,
+                )
                 if len(results) == 1:
                     got_loc, = results
                 else:
                     got, got_loc = results
                     out_parts.append(got)
                 got_loc = int(got_loc)
-                internal_assert(got_loc >= cur_loc and (init or got_loc > cur_loc), "invalid line by line parse", (cur_loc, results), extra=lambda: "in: " + repr(self.remaining_original.split("\n", 1)[0]))
+                internal_assert(got_loc >= cur_loc and (init or got_loc > cur_loc), "invalid line by line parse", (cur_loc, got_loc, results), extra=lambda: "in: " + repr(self.remaining_original.split("\n", 1)[0]))
                 cur_loc = got_loc
                 init = False
         return "".join(out_parts)

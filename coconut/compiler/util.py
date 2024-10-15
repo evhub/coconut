@@ -199,6 +199,7 @@ def evaluate_tokens(tokens, **kwargs):
 
     if not USE_COMPUTATION_GRAPH:
         return tokens
+    final_evaluate_tokens.enabled = True  # special variable used by cached_parse
 
     if isinstance(tokens, ParseResults):
 
@@ -374,6 +375,8 @@ class ComputationNode(object):
         # note that this should never cache, since if a greedy Wrap that doesn't add to the packrat context
         #  hits the cache, it'll get the same ComputationNode object, but since it's greedy that object needs
         #  to actually be reevaluated
+        if logger.tracing and not final_evaluate_tokens.enabled:
+            logger.log_tag("cached_parse invalidated by", self)
         evaluated_toks = evaluate_tokens(self.tokens)
         if logger.tracing:  # avoid the overhead of the call if not tracing
             logger.log_trace(self.name, self.original, self.loc, evaluated_toks, self.tokens)
@@ -523,10 +526,15 @@ def attach(item, action, ignore_no_tokens=None, ignore_one_token=None, ignore_ar
 
 def final_evaluate_tokens(tokens):
     """Same as evaluate_tokens but should only be used once a parse is assured."""
+    if not final_evaluate_tokens.enabled:  # handled by cached_parse
+        return tokens
     result = evaluate_tokens(tokens, is_final=True)
     # clear packrat cache after evaluating tokens so error creation gets to see the cache
     clear_packrat_cache()
     return result
+
+
+final_evaluate_tokens.enabled = True
 
 
 def final(item):
@@ -674,17 +682,66 @@ def parse(grammar, text, inner=None, eval_parse_tree=True):
         return result
 
 
-def try_parse(grammar, text, inner=None, eval_parse_tree=True):
+def cached_parse(computation_graph_cache, grammar, text, inner=None, eval_parse_tree=True):
+    """Version of parse that caches the result when it's a pure ComputationNode."""
+    if not CPYPARSING:  # caching is only supported on cPyparsing
+        return parse(grammar, text, inner)
+
+    for (prefix, is_at_end), tokens in computation_graph_cache.items():
+        # the assumption here is that if the prior parse didn't make it to the end,
+        #  then we can freely change the text after the end of where it made it,
+        #  but if it did make it to the end, then we can't add more text after that
+        if (
+            is_at_end and text == prefix
+            or not is_at_end and text.startswith(prefix)
+        ):
+            if DEVELOP:
+                logger.record_stat("cached_parse", True)
+                logger.log_tag("cached_parse hit", (prefix, text[len(prefix):], tokens))
+            break
+    else:  # no break
+        # disable token evaluation by final() to allow us to get a ComputationNode;
+        #  this makes long parses very slow, however, so once a greedy parse action
+        #  is hit such that evaluate_tokens gets called, evaluate_tokens will set
+        #  final_evaluate_tokens.enabled back to True, which speeds up the rest of the
+        #  parse and tells us that something greedy happened so we can't cache
+        final_evaluate_tokens.enabled = False
+        try:
+            with parsing_context(inner):
+                loc, tokens = prep_grammar(grammar, for_scan=False).parseString(text, returnLoc=True)
+            if not final_evaluate_tokens.enabled:
+                prefix = text[:loc + 1]
+                is_at_end = loc >= len(text)
+                computation_graph_cache[(prefix, is_at_end)] = tokens
+        finally:
+            if DEVELOP:
+                logger.record_stat("cached_parse", False)
+                logger.log_tag(
+                    "cached_parse miss " + ("-> stored" if not final_evaluate_tokens.enabled else "(not stored)"),
+                    text,
+                    multiline=True,
+                )
+            final_evaluate_tokens.enabled = True
+
+    if eval_parse_tree:
+        tokens = unpack(tokens)
+    return tokens
+
+
+def try_parse(grammar, text, inner=None, eval_parse_tree=True, computation_graph_cache=None):
     """Attempt to parse text using grammar else None."""
     try:
-        return parse(grammar, text, inner, eval_parse_tree)
+        if computation_graph_cache is None:
+            return parse(grammar, text, inner, eval_parse_tree)
+        else:
+            return cached_parse(computation_graph_cache, grammar, text, inner, eval_parse_tree)
     except ParseBaseException:
         return None
 
 
-def does_parse(grammar, text, inner=None):
+def does_parse(grammar, text, inner=None, **kwargs):
     """Determine if text can be parsed using grammar."""
-    return try_parse(grammar, text, inner, eval_parse_tree=False)
+    return try_parse(grammar, text, inner, eval_parse_tree=False, **kwargs)
 
 
 def all_matches(grammar, text, inner=None, eval_parse_tree=True):
@@ -1370,6 +1427,8 @@ class Wrap(ParseElementEnhance):
                     with self.wrapped_context():
                         parse_loc, tokens = super(Wrap, self).parseImpl(original, loc, *args, **kwargs)
                         if self.greedy:
+                            if logger.tracing and not final_evaluate_tokens.enabled:
+                                logger.log_tag("cached_parse invalidated by", self)
                             tokens = evaluate_tokens(tokens)
                 if reparse and parse_loc is None:
                     raise CoconutInternalException("illegal double reparse in", self)

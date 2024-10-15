@@ -561,7 +561,10 @@ class Logger(object):
         return item
 
     def record_stat(self, stat_name, stat_bool):
-        """Record the given boolean statistic for the given stat_name."""
+        """Record the given boolean statistic for the given stat_name.
+
+        All stats recorded here must have some printing logic added to gather_parsing_stats or log_compiler_stats.
+        Printed stats should also be added to the regex in the Makefile for getting non-informational lines."""
         self.recorded_stats[stat_name][stat_bool] += 1
 
     @contextmanager
@@ -569,6 +572,7 @@ class Logger(object):
         """Times parsing if --verbose."""
         if self.verbose:
             self.recorded_stats.pop("adaptive", None)
+            self.recorded_stats.pop("cached_parse", None)
             start_time = get_clock_time()
             try:
                 yield
@@ -584,6 +588,9 @@ class Logger(object):
                 if "adaptive" in self.recorded_stats:
                     failures, successes = self.recorded_stats["adaptive"]
                     self.printlog("\tAdaptive parsing stats:", successes, "successes;", failures, "failures")
+                if "cached_parse" in self.recorded_stats:
+                    misses, hits = self.recorded_stats["cached_parse"]
+                    self.printlog("\tComputation graph cache stats:", hits, "hits;", misses, "misses")
                 if maybe_make_safe is not None:
                     hits, misses = maybe_make_safe.stats
                     self.printlog("\tErrorless parsing stats:", hits, "errorless;", misses, "with errors")
@@ -595,10 +602,9 @@ class Logger(object):
         if self.verbose:
             self.log("Grammar init time: " + str(comp.grammar_init_time) + " secs / Total init time: " + str(get_clock_time() - first_import_time) + " secs")
             for stat_name, (no_copy, yes_copy) in self.recorded_stats.items():
-                if not stat_name.startswith("maybe_copy_"):
-                    continue
-                name = assert_remove_prefix(stat_name, "maybe_copy_")
-                self.printlog("\tGrammar copying stats (" + name + "):", no_copy, "not copied;", yes_copy, "copied")
+                if stat_name.startswith("maybe_copy_"):
+                    name = assert_remove_prefix(stat_name, "maybe_copy_")
+                    self.printlog("\tGrammar copying stats (" + name + "):", no_copy, "not copied;", yes_copy, "copied")
 
     total_block_time = defaultdict(int)
 
