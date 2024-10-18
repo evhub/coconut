@@ -1097,12 +1097,6 @@ if TEST_ALL:
                     if MYPY and PY38:
                         run_prelude()
 
-        def test_bbopt(self):
-            with using_paths(bbopt):
-                comp_bbopt()
-                if not PYPY and PY38 and not PY310:
-                    install_bbopt()
-
         # def test_pyprover(self):
         #     with using_paths(pyprover):
         #         comp_pyprover()
@@ -1110,6 +1104,13 @@ if TEST_ALL:
         #             run_pyprover()
 
         if PY312:  # reduce test load
+
+            def test_bbopt(self):
+                with using_paths(bbopt):
+                    comp_bbopt()
+                    if not PYPY and PY38 and not PY310:
+                        install_bbopt()
+
             def test_pyston(self):
                 with using_paths(pyston):
                     comp_pyston(["--no-tco"])
