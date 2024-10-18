@@ -1330,9 +1330,9 @@ data Leaf(n) from Tree
 data Node(l, r) from Tree
 
 case def depth:
-    case(Tree()) = 0
-    case(Tree(n)) = 1
-    case(Tree(l, r)) = 1 + max(depth(l), depth(r))
+    case(Empty()) = 0
+    case(Leaf(n)) = 1
+    case(Node(l, r)) = 1 + max(depth(l), depth(r))
 
 Empty() |> depth |> print
 Leaf(5) |> depth |> print
