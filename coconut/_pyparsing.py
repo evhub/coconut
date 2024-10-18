@@ -263,6 +263,7 @@ if MODERN_PYPARSING:
 else:
     _trim_arity = _pyparsing._trim_arity
     _ParseResultsWithOffset = _pyparsing._ParseResultsWithOffset
+_trim_arity.inspect_tracebacks = False
 
 maybe_make_safe = getattr(_pyparsing, "maybe_make_safe", None)
 

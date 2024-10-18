@@ -34,20 +34,29 @@ import sys
 import os
 import re
 from contextlib import contextmanager
-from functools import partial, wraps
+from functools import partial, update_wrapper
 from collections import defaultdict
 from threading import Lock
 from copy import copy
 
+if sys.version_info >= (3,):
+    import pickle
+else:
+    import cPickle as pickle
+
 from coconut._pyparsing import (
     USE_COMPUTATION_GRAPH,
     USE_CACHE,
+    SUPPORTS_INCREMENTAL,
     ParseBaseException,
     ParseResults,
+    ParserElement,
     col as getcol,
     lineno,
     nums,
     _trim_arity,
+    all_parse_elements,
+    __version__ as pyparsing_version,
 )
 
 from coconut.constants import (
@@ -94,6 +103,12 @@ from coconut.constants import (
     use_adaptive_any_of,
     reverse_any_of,
     tempsep,
+    disable_incremental_for_len,
+    save_new_cache_items,
+    cache_validation_info,
+    incremental_mode_cache_size,
+    incremental_cache_limit,
+    use_line_by_line_parser,
 )
 from coconut.util import (
     pickleable_obj,
@@ -109,6 +124,8 @@ from coconut.util import (
     dictset,
     noop_ctx,
     create_method,
+    univ_open,
+    staledict,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -141,6 +158,9 @@ from coconut.compiler.grammar import (
 )
 from coconut.compiler.util import (
     ExceptionNode,
+    ComputationNode,
+    StartOfStrGrammar,
+    MatchAny,
     sys_target,
     getline,
     addskip,
@@ -180,16 +200,19 @@ from coconut.compiler.util import (
     close_char_for,
     base_keyword,
     enable_incremental_parsing,
+    disable_incremental_parsing,
     get_psf_target,
     move_loc_to_non_whitespace,
     move_endpt_to_non_whitespace,
-    load_cache_for,
-    pickle_cache,
     handle_and_manage,
     manage,
     sub_all,
-    ComputationNode,
-    StartOfStrGrammar,
+    get_cache_items_for,
+    clear_packrat_cache,
+    add_packrat_cache_items,
+    get_cache_path,
+    _lookup_loc,
+    _value_exc_loc_or_ret,
 )
 from coconut.compiler.header import (
     minify_header,
@@ -396,6 +419,255 @@ def call_decorators(decorators, func_name):
     return out
 
 
+def pickle_cache(original, cache_path, include_incremental=True, protocol=pickle.HIGHEST_PROTOCOL):
+    """Pickle the pyparsing cache for original to cache_path."""
+    internal_assert(all_parse_elements is not None, "pickle_cache requires cPyparsing")
+    if not save_new_cache_items:
+        logger.log("Skipping saving cache items due to environment variable.")
+        return
+
+    validation_dict = {} if cache_validation_info else None
+
+    # incremental cache
+    pickleable_cache_items = []
+    if ParserElement._incrementalEnabled and include_incremental:
+        # note that exclude_stale is fine here because that means it was never used,
+        #  since _parseIncremental sets usefullness to True when a cache item is used
+        for lookup, value in get_cache_items_for(original, only_useful=True):
+            if incremental_mode_cache_size is not None and len(pickleable_cache_items) > incremental_mode_cache_size:
+                logger.log(
+                    "Got too large incremental cache: "
+                    + str(len(get_pyparsing_cache())) + " > " + str(incremental_mode_cache_size)
+                )
+                break
+            if len(pickleable_cache_items) >= incremental_cache_limit:
+                break
+            loc = lookup[_lookup_loc]
+            # only include cache items that aren't at the start or end, since those
+            #  are the only ones that parseIncremental will reuse
+            if 0 < loc < len(original) - 1:
+                elem = lookup[0]
+                identifier = elem.parse_element_index
+                internal_assert(lambda: elem == all_parse_elements[identifier](), "failed to look up parse element by identifier", lambda: (elem, all_parse_elements[identifier]()))
+                if validation_dict is not None:
+                    validation_dict[identifier] = elem.__class__.__name__
+                pickleable_lookup = (identifier,) + lookup[1:]
+                internal_assert(value[_value_exc_loc_or_ret] is True or isinstance(value[_value_exc_loc_or_ret], int), "cache must be dehybridized before pickling", value[_value_exc_loc_or_ret])
+                pickleable_cache_items.append((pickleable_lookup, value))
+
+    # adaptive cache
+    all_adaptive_items = []
+    for wkref in MatchAny.all_match_anys:
+        match_any = wkref()
+        if match_any is not None and match_any.adaptive_usage is not None:
+            identifier = match_any.parse_element_index
+            internal_assert(lambda: match_any == all_parse_elements[identifier](), "failed to look up match_any by identifier", lambda: (match_any, all_parse_elements[identifier]()))
+            if validation_dict is not None:
+                validation_dict[identifier] = match_any.__class__.__name__
+            match_any.expr_order.sort(key=lambda i: (-match_any.adaptive_usage[i], i))
+            all_adaptive_items.append((identifier, (match_any.adaptive_usage, match_any.expr_order)))
+            logger.log("Caching adaptive item:", match_any, (match_any.adaptive_usage, match_any.expr_order))
+
+    # computation graph cache
+    computation_graph_cache_items = []
+    for (call_site_name, grammar_elem), cache in Compiler.computation_graph_caches.items():
+        identifier = grammar_elem.parse_element_index
+        internal_assert(lambda: grammar_elem == all_parse_elements[identifier](), "failed to look up grammar by identifier", lambda: (grammar_elem, all_parse_elements[identifier]()))
+        if validation_dict is not None:
+            validation_dict[identifier] = grammar_elem.__class__.__name__
+        computation_graph_cache_items.append(((call_site_name, identifier), cache))
+
+    logger.log("Saving {num_inc} incremental, {num_adapt} adaptive, and {num_comp_graph} computation graph cache items to {cache_path!r}.".format(
+        num_inc=len(pickleable_cache_items),
+        num_adapt=len(all_adaptive_items),
+        num_comp_graph=sum(len(cache) for _, cache in computation_graph_cache_items) if computation_graph_cache_items else 0,
+        cache_path=cache_path,
+    ))
+    pickle_info_obj = {
+        "VERSION": VERSION,
+        "pyparsing_version": pyparsing_version,
+        "validation_dict": validation_dict,
+        "pickleable_cache_items": pickleable_cache_items,
+        "all_adaptive_items": all_adaptive_items,
+        "computation_graph_cache_items": computation_graph_cache_items,
+    }
+    try:
+        with univ_open(cache_path, "wb") as pickle_file:
+            pickle.dump(pickle_info_obj, pickle_file, protocol=protocol)
+    except Exception:
+        logger.log_exc()
+        return False
+    else:
+        return True
+    finally:
+        # clear the packrat cache when we're done so we don't interfere with anything else happening in this process
+        clear_packrat_cache(force=True)
+
+
+def unpickle_cache(cache_path):
+    """Unpickle and load the given incremental cache file."""
+    internal_assert(all_parse_elements is not None, "unpickle_cache requires cPyparsing")
+
+    if not os.path.exists(cache_path):
+        return False
+    try:
+        with univ_open(cache_path, "rb") as pickle_file:
+            pickle_info_obj = pickle.load(pickle_file)
+    except Exception:
+        logger.log_exc()
+        return False
+    if (
+        pickle_info_obj["VERSION"] != VERSION
+        or pickle_info_obj["pyparsing_version"] != pyparsing_version
+    ):
+        return False
+
+    # unpack pickle_info_obj
+    validation_dict = pickle_info_obj["validation_dict"]
+    if ParserElement._incrementalEnabled:
+        pickleable_cache_items = pickle_info_obj["pickleable_cache_items"]
+    else:
+        pickleable_cache_items = []
+    all_adaptive_items = pickle_info_obj["all_adaptive_items"]
+    computation_graph_cache_items = pickle_info_obj["computation_graph_cache_items"]
+
+    # adaptive cache
+    for identifier, (adaptive_usage, expr_order) in all_adaptive_items:
+        if identifier < len(all_parse_elements):
+            maybe_elem = all_parse_elements[identifier]()
+            if maybe_elem is not None:
+                if validation_dict is not None:
+                    internal_assert(maybe_elem.__class__.__name__ == validation_dict[identifier], "adaptive cache pickle-unpickle inconsistency", (maybe_elem, validation_dict[identifier]))
+                maybe_elem.adaptive_usage = adaptive_usage
+                maybe_elem.expr_order = expr_order
+
+    max_cache_size = min(
+        incremental_mode_cache_size or float("inf"),
+        incremental_cache_limit or float("inf"),
+    )
+    if max_cache_size != float("inf"):
+        pickleable_cache_items = pickleable_cache_items[-max_cache_size:]
+
+    # incremental cache
+    new_cache_items = []
+    for pickleable_lookup, value in pickleable_cache_items:
+        identifier = pickleable_lookup[0]
+        if identifier < len(all_parse_elements):
+            maybe_elem = all_parse_elements[identifier]()
+            if maybe_elem is not None:
+                if validation_dict is not None:
+                    internal_assert(maybe_elem.__class__.__name__ == validation_dict[identifier], "incremental cache pickle-unpickle inconsistency", (maybe_elem, validation_dict[identifier]))
+                internal_assert(value[_value_exc_loc_or_ret] is True or isinstance(value[_value_exc_loc_or_ret], int), "attempting to unpickle hybrid cache item", value[_value_exc_loc_or_ret])
+                lookup = (maybe_elem,) + pickleable_lookup[1:]
+                usefullness = value[-1][0]
+                internal_assert(usefullness, "loaded useless cache item", (lookup, value))
+                stale_value = value[:-1] + ([usefullness + 1],)
+                new_cache_items.append((lookup, stale_value))
+    add_packrat_cache_items(new_cache_items)
+
+    # computation graph cache
+    for (call_site_name, identifier), cache in computation_graph_cache_items:
+        if identifier < len(all_parse_elements):
+            maybe_elem = all_parse_elements[identifier]()
+            if maybe_elem is not None:
+                if validation_dict is not None:
+                    internal_assert(maybe_elem.__class__.__name__ == validation_dict[identifier], "computation graph cache pickle-unpickle inconsistency", (maybe_elem, validation_dict[identifier]))
+                Compiler.computation_graph_caches[(call_site_name, maybe_elem)].update(cache)
+
+    num_inc = len(pickleable_cache_items)
+    num_adapt = len(all_adaptive_items)
+    num_comp_graph = sum(len(cache) for _, cache in computation_graph_cache_items) if computation_graph_cache_items else 0
+    return num_inc, num_adapt, num_comp_graph
+
+
+def load_cache_for(inputstring, codepath):
+    """Load cache_path (for the given inputstring and filename)."""
+    if not SUPPORTS_INCREMENTAL:
+        raise CoconutException("the parsing cache requires cPyparsing (run '{python} -m pip install --upgrade cPyparsing' to fix)".format(python=sys.executable))
+    filename = os.path.basename(codepath)
+
+    if len(inputstring) < disable_incremental_for_len:
+        incremental_enabled = enable_incremental_parsing(reason="input length")
+        if incremental_enabled:
+            incremental_info = "incremental parsing mode enabled due to len == {input_len} < {max_len}".format(
+                input_len=len(inputstring),
+                max_len=disable_incremental_for_len,
+            )
+        else:
+            incremental_info = "failed to enable incremental parsing mode"
+    else:
+        disable_incremental_parsing()
+        incremental_enabled = False
+        incremental_info = "not using incremental parsing mode due to len == {input_len} >= {max_len}".format(
+            input_len=len(inputstring),
+            max_len=disable_incremental_for_len,
+        )
+
+    if (
+        # only load the cache if we're using anything that makes use of it
+        incremental_enabled
+        or use_adaptive_any_of
+        or use_line_by_line_parser
+    ):
+        cache_path = get_cache_path(codepath)
+        did_load_cache = unpickle_cache(cache_path)
+        if did_load_cache:
+            num_inc, num_adapt, num_comp_graph = did_load_cache
+            logger.log("Loaded {num_inc} incremental, {num_adapt} adaptive, and {num_comp_graph} computation graph cache items for {filename!r} ({incremental_info}).".format(
+                num_inc=num_inc,
+                num_adapt=num_adapt,
+                num_comp_graph=num_comp_graph,
+                filename=filename,
+                incremental_info=incremental_info,
+            ))
+        else:
+            logger.log("Failed to load cache for {filename!r} from {cache_path!r} ({incremental_info}).".format(
+                filename=filename,
+                cache_path=cache_path,
+                incremental_info=incremental_info,
+            ))
+            if incremental_enabled:
+                logger.warn("Populating initial parsing cache (initial compilation may take a while; pass --no-cache to disable)...")
+    else:
+        cache_path = None
+        logger.log("Declined to load cache for {filename!r} ({incremental_info}).".format(
+            filename=filename,
+            incremental_info=incremental_info,
+        ))
+
+    return cache_path, incremental_enabled
+
+
+class CompilerMethodCaller(object):
+    """Create a function that will call the given compiler method."""
+    # don't set anything up here since it'll be overwritten by update_wrapper
+
+    def __init__(self, method_name, trim_arity, kwargs):
+        update_wrapper(self, getattr(Compiler, method_name))
+        self.trim_arity = False
+        self._method_name = method_name
+        self._trim_arity = trim_arity
+        self._kwargs = kwargs
+        if kwargs:
+            self.__name__ = py_str(self.__name__ + "$(" + ", ".join(str(k) + "=" + repr(v) for k, v in kwargs.items()) + ")")
+
+    def __reduce__(self):
+        return (self.__class__, (self._method_name, self._trim_arity, self._kwargs))
+
+    def __call__(self, original, loc, tokens_or_item):
+        """Performance sensitive."""
+        method = getattr(Compiler.current_compiler, self._method_name)
+        if self._kwargs:
+            if self._trim_arity:
+                return _trim_arity(partial(method, **self._kwargs))(original, loc, tokens_or_item)
+            else:
+                return method(original, loc, tokens_or_item, **self._kwargs)
+        else:
+            if self._trim_arity:
+                method = _trim_arity(method)
+            return method(original, loc, tokens_or_item)
+
+
 # end: UTILITIES
 # -----------------------------------------------------------------------------------------------------------------------
 # COMPILER:
@@ -406,7 +678,7 @@ class Compiler(Grammar, pickleable_obj):
     """The Coconut compiler."""
     lock = Lock()
     current_compiler = None
-    computation_graph_caches = defaultdict(dict)
+    computation_graph_caches = defaultdict(staledict)
 
     preprocs = [
         lambda self: self.prepare,
@@ -634,27 +906,25 @@ class Compiler(Grammar, pickleable_obj):
         cls_method = getattr(cls, method_name)
         if is_action is None:
             is_action = not method_name.endswith("_manage")
-        trim_arity = should_trim_arity(cls_method) if is_action else False
-
-        @wraps(cls_method)
-        def method(original, loc, tokens_or_item):
-            self_method = getattr(cls.current_compiler, method_name)
-            if kwargs:
-                self_method = partial(self_method, **kwargs)
-            if trim_arity:
-                self_method = _trim_arity(self_method)
-            return self_method(original, loc, tokens_or_item)
-        if kwargs:
-            method.__name__ = py_str(method.__name__ + "$(" + ", ".join(str(k) + "=" + repr(v) for k, v in kwargs.items()) + ")")
+        method = CompilerMethodCaller(
+            method_name=method_name,
+            trim_arity=should_trim_arity(cls_method) if is_action else False,
+            kwargs=kwargs,
+        )
         internal_assert(
-            hasattr(cls_method, "ignore_arguments") is hasattr(method, "ignore_arguments")
+            not method.trim_arity
+            and hasattr(cls_method, "ignore_arguments") is hasattr(method, "ignore_arguments")
             and hasattr(cls_method, "ignore_no_tokens") is hasattr(method, "ignore_no_tokens")
             and hasattr(cls_method, "ignore_one_token") is hasattr(method, "ignore_one_token"),
             "failed to properly wrap method",
             method_name,
         )
-        method.trim_arity = False
         return method
+
+    @classmethod
+    def method_of(cls, method_name, is_action, kwargs):
+        """Version of Compiler.method for use in pickling."""
+        return cls.method(method_name, is_action, **kwargs)
 
     @classmethod
     def bind(cls):
@@ -4894,7 +5164,6 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
 
         where_assigns = self.current_parsing_context("where")["assigns"]
         internal_assert(lambda: where_assigns is not None, "missing where_assigns")
-        print(where_assigns)
 
         where_init = "".join(body_stmts)
         where_final = main_stmt + "\n"

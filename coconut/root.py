@@ -469,10 +469,10 @@ if PY2:
 else:
     import builtins as _coconut  # NOQA
 
-import pickle
-_coconut.pickle = pickle
+import pickle as _pickle
+_coconut.pickle = _pickle
 
-import os
-_coconut.os = os
+import os as _os
+_coconut.os = _os
 
 exec(_get_root_header())
