@@ -419,149 +419,6 @@ def call_decorators(decorators, func_name):
     return out
 
 
-def pickle_cache(original, cache_path, include_incremental=True, protocol=pickle.HIGHEST_PROTOCOL):
-    """Pickle the pyparsing cache for original to cache_path."""
-    internal_assert(all_parse_elements is not None, "pickle_cache requires cPyparsing")
-    if not save_new_cache_items:
-        logger.log("Skipping saving cache items due to environment variable.")
-        return
-
-    validation_dict = {} if cache_validation_info else None
-
-    # incremental cache
-    pickleable_cache_items = []
-    if ParserElement._incrementalEnabled and include_incremental:
-        # note that exclude_stale is fine here because that means it was never used,
-        #  since _parseIncremental sets usefullness to True when a cache item is used
-        for lookup, value in get_cache_items_for(original, only_useful=True):
-            if incremental_mode_cache_size is not None and len(pickleable_cache_items) > incremental_mode_cache_size:
-                logger.log(
-                    "Got too large incremental cache: "
-                    + str(len(get_pyparsing_cache())) + " > " + str(incremental_mode_cache_size)
-                )
-                break
-            if len(pickleable_cache_items) >= incremental_cache_limit:
-                break
-            loc = lookup[_lookup_loc]
-            # only include cache items that aren't at the start or end, since those
-            #  are the only ones that parseIncremental will reuse
-            if 0 < loc < len(original) - 1:
-                elem = lookup[0]
-                identifier = parse_elem_to_identifier(elem, validation_dict)
-                pickleable_lookup = (identifier,) + lookup[1:]
-                internal_assert(value[_value_exc_loc_or_ret] is True or isinstance(value[_value_exc_loc_or_ret], int), "cache must be dehybridized before pickling", value[_value_exc_loc_or_ret])
-                pickleable_cache_items.append((pickleable_lookup, value))
-
-    # adaptive cache
-    all_adaptive_items = []
-    for wkref in MatchAny.all_match_anys:
-        match_any = wkref()
-        if match_any is not None and match_any.adaptive_usage is not None:
-            identifier = parse_elem_to_identifier(match_any, validation_dict)
-            match_any.expr_order.sort(key=lambda i: (-match_any.adaptive_usage[i], i))
-            all_adaptive_items.append((identifier, (match_any.adaptive_usage, match_any.expr_order)))
-            logger.log("Caching adaptive item:", match_any, (match_any.adaptive_usage, match_any.expr_order))
-
-    # computation graph cache
-    computation_graph_cache_items = []
-    for (call_site_name, grammar_elem), cache in Compiler.computation_graph_caches.items():
-        identifier = parse_elem_to_identifier(grammar_elem, validation_dict)
-        computation_graph_cache_items.append(((call_site_name, identifier), cache))
-
-    logger.log("Saving {num_inc} incremental, {num_adapt} adaptive, and {num_comp_graph} computation graph cache items to {cache_path!r}.".format(
-        num_inc=len(pickleable_cache_items),
-        num_adapt=len(all_adaptive_items),
-        num_comp_graph=sum(len(cache) for _, cache in computation_graph_cache_items) if computation_graph_cache_items else 0,
-        cache_path=cache_path,
-    ))
-    pickle_info_obj = {
-        "VERSION": VERSION,
-        "pyparsing_version": pyparsing_version,
-        "validation_dict": validation_dict,
-        "pickleable_cache_items": pickleable_cache_items,
-        "all_adaptive_items": all_adaptive_items,
-        "computation_graph_cache_items": computation_graph_cache_items,
-    }
-    try:
-        with CombineToNode.enable_pickling(validation_dict):
-            with univ_open(cache_path, "wb") as pickle_file:
-                pickle.dump(pickle_info_obj, pickle_file, protocol=protocol)
-    except Exception:
-        logger.log_exc()
-        return False
-    else:
-        return True
-    finally:
-        # clear the packrat cache when we're done so we don't interfere with anything else happening in this process
-        clear_packrat_cache(force=True)
-
-
-def unpickle_cache(cache_path):
-    """Unpickle and load the given incremental cache file."""
-    internal_assert(all_parse_elements is not None, "unpickle_cache requires cPyparsing")
-
-    if not os.path.exists(cache_path):
-        return False
-    try:
-        with univ_open(cache_path, "rb") as pickle_file:
-            pickle_info_obj = pickle.load(pickle_file)
-    except Exception:
-        logger.log_exc()
-        return False
-    if (
-        pickle_info_obj["VERSION"] != VERSION
-        or pickle_info_obj["pyparsing_version"] != pyparsing_version
-    ):
-        return False
-
-    # unpack pickle_info_obj
-    validation_dict = pickle_info_obj["validation_dict"]
-    if ParserElement._incrementalEnabled:
-        pickleable_cache_items = pickle_info_obj["pickleable_cache_items"]
-    else:
-        pickleable_cache_items = []
-    all_adaptive_items = pickle_info_obj["all_adaptive_items"]
-    computation_graph_cache_items = pickle_info_obj["computation_graph_cache_items"]
-
-    # incremental cache
-    new_cache_items = []
-    for pickleable_lookup, value in pickleable_cache_items:
-        maybe_elem = identifier_to_parse_elem(pickleable_lookup[0], validation_dict)
-        if maybe_elem is not None:
-            internal_assert(value[_value_exc_loc_or_ret] is True or isinstance(value[_value_exc_loc_or_ret], int), "attempting to unpickle hybrid cache item", value[_value_exc_loc_or_ret])
-            lookup = (maybe_elem,) + pickleable_lookup[1:]
-            usefullness = value[-1][0]
-            internal_assert(usefullness, "loaded useless cache item", (lookup, value))
-            stale_value = value[:-1] + ([usefullness + 1],)
-            new_cache_items.append((lookup, stale_value))
-    add_packrat_cache_items(new_cache_items)
-
-    # adaptive cache
-    for identifier, (adaptive_usage, expr_order) in all_adaptive_items:
-        maybe_elem = identifier_to_parse_elem(identifier, validation_dict)
-        if maybe_elem is not None:
-            maybe_elem.adaptive_usage = adaptive_usage
-            maybe_elem.expr_order = expr_order
-
-    max_cache_size = min(
-        incremental_mode_cache_size or float("inf"),
-        incremental_cache_limit or float("inf"),
-    )
-    if max_cache_size != float("inf"):
-        pickleable_cache_items = pickleable_cache_items[-max_cache_size:]
-
-    # computation graph cache
-    for (call_site_name, identifier), cache in computation_graph_cache_items:
-        maybe_elem = identifier_to_parse_elem(identifier, validation_dict)
-        if maybe_elem is not None:
-            Compiler.computation_graph_caches[(call_site_name, maybe_elem)].update(cache)
-
-    num_inc = len(pickleable_cache_items)
-    num_adapt = len(all_adaptive_items)
-    num_comp_graph = sum(len(cache) for _, cache in computation_graph_cache_items) if computation_graph_cache_items else 0
-    return num_inc, num_adapt, num_comp_graph
-
-
 def get_cache_path(codepath):
     """Get the cache filename to use for the given codepath."""
     code_dir, code_fname = os.path.split(codepath)
@@ -571,64 +428,6 @@ def get_cache_path(codepath):
 
     pickle_fname = code_fname + ".pkl"
     return os.path.join(cache_dir, pickle_fname)
-
-
-def load_cache_for(inputstring, codepath):
-    """Load cache_path (for the given inputstring and filename)."""
-    if not SUPPORTS_INCREMENTAL:
-        raise CoconutException("the parsing cache requires cPyparsing (run '{python} -m pip install --upgrade cPyparsing' to fix)".format(python=sys.executable))
-    filename = os.path.basename(codepath)
-
-    if len(inputstring) < disable_incremental_for_len:
-        incremental_enabled = enable_incremental_parsing(reason="input length")
-        if incremental_enabled:
-            incremental_info = "incremental parsing mode enabled due to len == {input_len} < {max_len}".format(
-                input_len=len(inputstring),
-                max_len=disable_incremental_for_len,
-            )
-        else:
-            incremental_info = "failed to enable incremental parsing mode"
-    else:
-        disable_incremental_parsing()
-        incremental_enabled = False
-        incremental_info = "not using incremental parsing mode due to len == {input_len} >= {max_len}".format(
-            input_len=len(inputstring),
-            max_len=disable_incremental_for_len,
-        )
-
-    if (
-        # only load the cache if we're using anything that makes use of it
-        incremental_enabled
-        or use_adaptive_any_of
-        or use_line_by_line_parser
-    ):
-        cache_path = get_cache_path(codepath)
-        did_load_cache = unpickle_cache(cache_path)
-        if did_load_cache:
-            num_inc, num_adapt, num_comp_graph = did_load_cache
-            logger.log("Loaded {num_inc} incremental, {num_adapt} adaptive, and {num_comp_graph} computation graph cache items for {filename!r} ({incremental_info}).".format(
-                num_inc=num_inc,
-                num_adapt=num_adapt,
-                num_comp_graph=num_comp_graph,
-                filename=filename,
-                incremental_info=incremental_info,
-            ))
-        else:
-            logger.log("Failed to load cache for {filename!r} from {cache_path!r} ({incremental_info}).".format(
-                filename=filename,
-                cache_path=cache_path,
-                incremental_info=incremental_info,
-            ))
-            if incremental_enabled:
-                logger.warn("Populating initial parsing cache (initial compilation may take a while; pass --no-cache to disable)...")
-    else:
-        cache_path = None
-        logger.log("Declined to load cache for {filename!r} ({incremental_info}).".format(
-            filename=filename,
-            incremental_info=incremental_info,
-        ))
-
-    return cache_path, incremental_enabled
 
 
 class CompilerMethodCaller(object):
@@ -671,7 +470,6 @@ class Compiler(Grammar, pickleable_obj):
     """The Coconut compiler."""
     lock = Lock()
     current_compiler = None
-    computation_graph_caches = defaultdict(staledict)
 
     preprocs = [
         lambda self: self.prepare,
@@ -820,6 +618,7 @@ class Compiler(Grammar, pickleable_obj):
         self.add_code_before_ignore_names = {}
         self.remaining_original = None
         self.shown_warnings = set()
+        self.computation_graph_caches = defaultdict(staledict)
 
     @contextmanager
     def inner_environment(self, ln=None):
@@ -1573,7 +1372,7 @@ class Compiler(Grammar, pickleable_obj):
         with self.inner_environment(ln=outer_ln):
             self.streamline(parser, inputstring, inner=True)
             pre_procd = self.pre(inputstring, **preargs)
-            parsed = parse(parser, pre_procd)
+            parsed = self.cached_parse("inner_parse_eval", parser, pre_procd)
             return self.post(parsed, **postargs)
 
     @contextmanager
@@ -1629,6 +1428,216 @@ class Compiler(Grammar, pickleable_obj):
                         for loc in info["referenced"]:
                             self.qa_error("found undefined name " + repr(self.reformat(name, ignore_errors=True)), original, loc)
 
+    def pickle_cache(self, original, cache_path, include_incremental=True):
+        """Pickle the pyparsing cache for original to cache_path."""
+        internal_assert(all_parse_elements is not None, "pickle_cache requires cPyparsing")
+        if not save_new_cache_items:
+            logger.log("Skipping saving cache items due to environment variable.")
+            return
+
+        validation_dict = {} if cache_validation_info else None
+
+        # incremental cache
+        pickleable_cache_items = []
+        if ParserElement._incrementalEnabled and include_incremental:
+            # note that exclude_stale is fine here because that means it was never used,
+            #  since _parseIncremental sets usefullness to True when a cache item is used
+            for lookup, value in get_cache_items_for(original, only_useful=True):
+                if incremental_mode_cache_size is not None and len(pickleable_cache_items) > incremental_mode_cache_size:
+                    logger.log(
+                        "Got too large incremental cache: "
+                        + str(len(get_pyparsing_cache())) + " > " + str(incremental_mode_cache_size)
+                    )
+                    break
+                if len(pickleable_cache_items) >= incremental_cache_limit:
+                    break
+                loc = lookup[_lookup_loc]
+                # only include cache items that aren't at the start or end, since those
+                #  are the only ones that parseIncremental will reuse
+                if 0 < loc < len(original) - 1:
+                    elem = lookup[0]
+                    identifier = parse_elem_to_identifier(elem, validation_dict)
+                    pickleable_lookup = (identifier,) + lookup[1:]
+                    internal_assert(value[_value_exc_loc_or_ret] is True or isinstance(value[_value_exc_loc_or_ret], int), "cache must be dehybridized before pickling", value[_value_exc_loc_or_ret])
+                    pickleable_cache_items.append((pickleable_lookup, value))
+
+        # adaptive cache
+        all_adaptive_items = []
+        for wkref in MatchAny.all_match_anys:
+            match_any = wkref()
+            if match_any is not None and match_any.adaptive_usage is not None:
+                identifier = parse_elem_to_identifier(match_any, validation_dict)
+                match_any.expr_order.sort(key=lambda i: (-match_any.adaptive_usage[i], i))
+                all_adaptive_items.append((identifier, (match_any.adaptive_usage, match_any.expr_order)))
+                logger.log("Caching adaptive item:", match_any, (match_any.adaptive_usage, match_any.expr_order))
+
+        # computation graph cache
+        computation_graph_cache_items = []
+        for (call_site_name, grammar_elem), cache in self.computation_graph_caches.items():
+            identifier = parse_elem_to_identifier(grammar_elem, validation_dict)
+            computation_graph_cache_items.append(((call_site_name, identifier), cache))
+
+        logger.log("Saving {num_inc} incremental, {num_adapt} adaptive, and {num_comp_graph} computation graph cache items to {cache_path!r}.".format(
+            num_inc=len(pickleable_cache_items),
+            num_adapt=len(all_adaptive_items),
+            num_comp_graph=sum(len(cache) for _, cache in computation_graph_cache_items) if computation_graph_cache_items else 0,
+            cache_path=cache_path,
+        ))
+        pickle_info_obj = {
+            "VERSION": VERSION,
+            "pyparsing_version": pyparsing_version,
+            "validation_dict": validation_dict,
+            "pickleable_cache_items": pickleable_cache_items,
+            "all_adaptive_items": all_adaptive_items,
+            "computation_graph_cache_items": computation_graph_cache_items,
+        }
+        try:
+            with CombineToNode.enable_pickling(validation_dict):
+                with univ_open(cache_path, "wb") as pickle_file:
+                    pickle.dump(pickle_info_obj, pickle_file, protocol=pickle.HIGHEST_PROTOCOL)
+        except Exception:
+            logger.log_exc()
+            return False
+        else:
+            return True
+        finally:
+            # clear the packrat cache when we're done so we don't interfere with anything else happening in this process
+            clear_packrat_cache(force=True)
+
+    def unpickle_cache(self, cache_path):
+        """Unpickle and load the given incremental cache file."""
+        internal_assert(all_parse_elements is not None, "unpickle_cache requires cPyparsing")
+
+        if not os.path.exists(cache_path):
+            return False
+        try:
+            with univ_open(cache_path, "rb") as pickle_file:
+                pickle_info_obj = pickle.load(pickle_file)
+        except Exception:
+            logger.log_exc()
+            return False
+        if (
+            pickle_info_obj["VERSION"] != VERSION
+            or pickle_info_obj["pyparsing_version"] != pyparsing_version
+        ):
+            return False
+
+        # unpack pickle_info_obj
+        validation_dict = pickle_info_obj["validation_dict"]
+        if ParserElement._incrementalEnabled:
+            pickleable_cache_items = pickle_info_obj["pickleable_cache_items"]
+        else:
+            pickleable_cache_items = []
+        all_adaptive_items = pickle_info_obj["all_adaptive_items"]
+        computation_graph_cache_items = pickle_info_obj["computation_graph_cache_items"]
+
+        # incremental cache
+        new_cache_items = []
+        for pickleable_lookup, value in pickleable_cache_items:
+            maybe_elem = identifier_to_parse_elem(pickleable_lookup[0], validation_dict)
+            if maybe_elem is not None:
+                internal_assert(value[_value_exc_loc_or_ret] is True or isinstance(value[_value_exc_loc_or_ret], int), "attempting to unpickle hybrid cache item", value[_value_exc_loc_or_ret])
+                lookup = (maybe_elem,) + pickleable_lookup[1:]
+                usefullness = value[-1][0]
+                internal_assert(usefullness, "loaded useless cache item", (lookup, value))
+                stale_value = value[:-1] + ([usefullness + 1],)
+                new_cache_items.append((lookup, stale_value))
+        add_packrat_cache_items(new_cache_items)
+
+        # adaptive cache
+        for identifier, (adaptive_usage, expr_order) in all_adaptive_items:
+            maybe_elem = identifier_to_parse_elem(identifier, validation_dict)
+            if maybe_elem is not None:
+                maybe_elem.adaptive_usage = adaptive_usage
+                maybe_elem.expr_order = expr_order
+
+        max_cache_size = min(
+            incremental_mode_cache_size or float("inf"),
+            incremental_cache_limit or float("inf"),
+        )
+        if max_cache_size != float("inf"):
+            pickleable_cache_items = pickleable_cache_items[-max_cache_size:]
+
+        # computation graph cache
+        for (call_site_name, identifier), cache in computation_graph_cache_items:
+            maybe_elem = identifier_to_parse_elem(identifier, validation_dict)
+            if maybe_elem is not None:
+                self.computation_graph_caches[(call_site_name, maybe_elem)].update(cache)
+
+        num_inc = len(pickleable_cache_items)
+        num_adapt = len(all_adaptive_items)
+        num_comp_graph = sum(len(cache) for _, cache in computation_graph_cache_items) if computation_graph_cache_items else 0
+        return num_inc, num_adapt, num_comp_graph
+
+    def load_cache_for(self, inputstring, codepath):
+        """Load cache_path (for the given inputstring and filename)."""
+        if not SUPPORTS_INCREMENTAL:
+            raise CoconutException("the parsing cache requires cPyparsing (run '{python} -m pip install --upgrade cPyparsing' to fix)".format(python=sys.executable))
+        filename = os.path.basename(codepath)
+
+        if len(inputstring) < disable_incremental_for_len:
+            incremental_enabled = enable_incremental_parsing(reason="input length")
+            if incremental_enabled:
+                incremental_info = "incremental parsing mode enabled due to len == {input_len} < {max_len}".format(
+                    input_len=len(inputstring),
+                    max_len=disable_incremental_for_len,
+                )
+            else:
+                incremental_info = "failed to enable incremental parsing mode"
+        else:
+            disable_incremental_parsing()
+            incremental_enabled = False
+            incremental_info = "not using incremental parsing mode due to len == {input_len} >= {max_len}".format(
+                input_len=len(inputstring),
+                max_len=disable_incremental_for_len,
+            )
+
+        if (
+            # only load the cache if we're using anything that makes use of it
+            incremental_enabled
+            or use_adaptive_any_of
+            or use_line_by_line_parser
+        ):
+            cache_path = get_cache_path(codepath)
+            did_load_cache = self.unpickle_cache(cache_path)
+            if did_load_cache:
+                num_inc, num_adapt, num_comp_graph = did_load_cache
+                logger.log("Loaded {num_inc} incremental, {num_adapt} adaptive, and {num_comp_graph} computation graph cache items for {filename!r} ({incremental_info}).".format(
+                    num_inc=num_inc,
+                    num_adapt=num_adapt,
+                    num_comp_graph=num_comp_graph,
+                    filename=filename,
+                    incremental_info=incremental_info,
+                ))
+            else:
+                logger.log("Failed to load cache for {filename!r} from {cache_path!r} ({incremental_info}).".format(
+                    filename=filename,
+                    cache_path=cache_path,
+                    incremental_info=incremental_info,
+                ))
+                if incremental_enabled:
+                    logger.warn("Populating initial parsing cache (initial compilation may take a while; pass --no-cache to disable)...")
+        else:
+            cache_path = None
+            logger.log("Declined to load cache for {filename!r} ({incremental_info}).".format(
+                filename=filename,
+                incremental_info=incremental_info,
+            ))
+
+        return cache_path, incremental_enabled
+
+    def cached_parse(self, call_site_name, parser, text, **kwargs):
+        """Call cached_parse using self.computation_graph_caches."""
+        return cached_parse(self.computation_graph_caches[(call_site_name, parser)], parser, text, **kwargs)
+
+    def cached_try_parse(self, call_site_name, parser, text, **kwargs):
+        """Call cached_try_parse using self.computation_graph_caches."""
+        return try_parse(parser, text, computation_graph_cache=self.computation_graph_caches[(call_site_name, parser)], **kwargs)
+
+    def cached_does_parse(self, call_site_name, parser, text, **kwargs):
+        """Call cached_does_parse using self.computation_graph_caches."""
+        return does_parse(parser, text, computation_graph_cache=self.computation_graph_caches[(call_site_name, parser)], **kwargs)
+
     def parse_line_by_line(self, init_parser, line_parser, original):
         """Apply init_parser then line_parser repeatedly."""
         if not USE_COMPUTATION_GRAPH:
@@ -1642,8 +1651,8 @@ class Compiler(Grammar, pickleable_obj):
                 self.remaining_original = original[cur_loc:]
                 ComputationNode.add_to_loc = cur_loc
                 parser = init_parser if init else line_parser
-                results = cached_parse(
-                    self.computation_graph_caches[("line_by_line", parser)],
+                results = self.cached_parse(
+                    "parse_line_by_line",
                     parser,
                     self.remaining_original,
                     inner=False,
@@ -1680,7 +1689,7 @@ class Compiler(Grammar, pickleable_obj):
             # unpickling must happen after streamlining and must occur in the
             #  compiler so that it happens in the same process as compilation
             if use_cache:
-                cache_path, incremental_enabled = load_cache_for(inputstring, codepath)
+                cache_path, incremental_enabled = self.load_cache_for(inputstring, codepath)
             else:
                 cache_path = None
             pre_procd = parsed = None
@@ -1707,7 +1716,7 @@ class Compiler(Grammar, pickleable_obj):
                         )
             finally:
                 if cache_path is not None and pre_procd is not None:
-                    pickle_cache(pre_procd, cache_path, include_incremental=incremental_enabled)
+                    self.pickle_cache(pre_procd, cache_path, include_incremental=incremental_enabled)
             self.run_final_checks(pre_procd, keep_state)
         return out
 
@@ -1803,7 +1812,7 @@ class Compiler(Grammar, pickleable_obj):
                             hold["exprs"][-1] += c
                         elif hold["paren_level"] > 0:
                             raise self.make_err(CoconutSyntaxError, "imbalanced parentheses in format string expression", inputstring, i, reformat=False)
-                        elif does_parse(self.end_f_str_expr, remaining_text):
+                        elif self.cached_does_parse("str_proc", self.end_f_str_expr, remaining_text):
                             hold["in_expr"] = False
                             hold["str_parts"].append(c)
                         else:
@@ -1996,9 +2005,9 @@ class Compiler(Grammar, pickleable_obj):
             stripped_line = base_line.lstrip()
 
             imp_from = None
-            op = try_parse(self.operator_stmt, stripped_line)
+            op = self.cached_try_parse("operator_proc", self.operator_stmt, stripped_line)
             if op is None:
-                op_imp_toks = try_parse(self.from_import_operator, base_line)
+                op_imp_toks = self.cached_try_parse("operator_proc", self.from_import_operator, base_line)
                 if op_imp_toks is not None:
                     imp_from, op = op_imp_toks
             if op is not None:
@@ -2630,7 +2639,7 @@ else:
         # extract information about the function
         with self.complain_on_err():
             try:
-                split_func_tokens = parse(self.split_func, def_stmt)
+                split_func_tokens = self.cached_parse("proc_funcdef", self.split_func, def_stmt)
 
                 self.internal_assert(len(split_func_tokens) == 2, original, loc, "invalid function definition splitting tokens", split_func_tokens)
                 func_name, func_arg_tokens = split_func_tokens
@@ -4657,7 +4666,7 @@ __annotations__["{name}"] = {annotation}
                 py_expr = self.inner_parse_eval(original, loc, co_expr)
             except ParseBaseException:
                 raise CoconutDeferredSyntaxError("parsing failed for format string expression: " + co_expr, loc)
-            if not does_parse(self.no_unquoted_newlines, py_expr):
+            if not self.cached_does_parse("f_string_handle", self.no_unquoted_newlines, py_expr):
                 raise CoconutDeferredSyntaxError("illegal complex expression in format string: " + co_expr, loc)
             compiled_exprs.append(py_expr)
 
@@ -4915,9 +4924,9 @@ async with {iter_item} as {temp_var}:
     def impl_call_handle(self, loc, tokens):
         """Process implicit function application or coefficient syntax."""
         internal_assert(len(tokens) >= 2, "invalid implicit call / coefficient tokens", tokens)
-        first_is_num = does_parse(self.number, tokens[0])
+        first_is_num = self.cached_does_parse("impl_call_handle", self.number, tokens[0])
         if first_is_num:
-            if does_parse(self.number, tokens[1]):
+            if self.cached_does_parse("impl_call_handle", self.number, tokens[1]):
                 raise CoconutDeferredSyntaxError("multiplying two or more numeric literals with implicit coefficient syntax is prohibited", loc)
             return "(" + " * ".join(tokens) + ")"
         else:
