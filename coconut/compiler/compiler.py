@@ -618,7 +618,8 @@ class Compiler(Grammar, pickleable_obj):
         self.add_code_before_ignore_names = {}
         self.remaining_original = None
         self.shown_warnings = set()
-        self.computation_graph_caches = defaultdict(staledict)
+        if not keep_state:
+            self.computation_graph_caches = defaultdict(staledict)
 
     @contextmanager
     def inner_environment(self, ln=None):
@@ -2396,28 +2397,27 @@ class Compiler(Grammar, pickleable_obj):
                 return first_line, rest_of_lines
         return None, block
 
-    def tre_return_grammar(self, func_name, func_args, func_store, mock_var=None):
-        """Generate grammar element that matches a string which is just a TRE return statement."""
-        def tre_return_handle(loc, tokens):
-            args = ", ".join(tokens)
+    def tre_return_handle(self, func_name, func_args, func_store, mock_var, loc, tokens):
+        """Handler for tre_return_grammar."""
+        args = ", ".join(tokens)
 
-            # we have to use func_name not func_store here since we use
-            #  this when we fail to verify that func_name is func_store
-            if self.no_tco:
-                tco_recurse = "return " + func_name + "(" + args + ")"
-            else:
-                tco_recurse = "return _coconut_tail_call(" + func_name + (", " + args if args else "") + ")"
+        # we have to use func_name not func_store here since we use
+        #  this when we fail to verify that func_name is func_store
+        if self.no_tco:
+            tco_recurse = "return " + func_name + "(" + args + ")"
+        else:
+            tco_recurse = "return _coconut_tail_call(" + func_name + (", " + args if args else "") + ")"
 
-            if not func_args or func_args == args:
-                tre_recurse = "continue"
-            elif mock_var is None:
-                tre_recurse = tuple_str_of_str(func_args) + " = " + tuple_str_of_str(args) + "\ncontinue"
-            else:
-                tre_recurse = tuple_str_of_str(func_args) + " = " + mock_var + "(" + args + ")" + "\ncontinue"
+        if not func_args or func_args == args:
+            tre_recurse = "continue"
+        elif mock_var is None:
+            tre_recurse = tuple_str_of_str(func_args) + " = " + tuple_str_of_str(args) + "\ncontinue"
+        else:
+            tre_recurse = tuple_str_of_str(func_args) + " = " + mock_var + "(" + args + ")" + "\ncontinue"
 
-            tre_check_var = self.get_temp_var("tre_check", loc)
-            return handle_indentation(
-                """
+        tre_check_var = self.get_temp_var("tre_check", loc)
+        return handle_indentation(
+            """
 try:
     {tre_check_var} = {func_name} is {func_store} {type_ignore}
 except _coconut.NameError:
@@ -2426,21 +2426,23 @@ if {tre_check_var}:
     {tre_recurse}
 else:
     {tco_recurse}
-                """,
-                add_newline=True,
-            ).format(
-                tre_check_var=tre_check_var,
-                func_name=func_name,
-                func_store=func_store,
-                tre_recurse=tre_recurse,
-                tco_recurse=tco_recurse,
-                type_ignore=self.type_ignore_comment(),
-            )
+            """,
+            add_newline=True,
+        ).format(
+            tre_check_var=tre_check_var,
+            func_name=func_name,
+            func_store=func_store,
+            tre_recurse=tre_recurse,
+            tco_recurse=tco_recurse,
+            type_ignore=self.type_ignore_comment(),
+        )
+
+    def tre_return_grammar(self, func_name, func_args, func_store, mock_var=None):
+        """Generate grammar element that matches a string which is just a TRE return statement."""
         self.tre_func_name <<= base_keyword(func_name).suppress()
         return StartOfStrGrammar(attach(
             self.tre_return_base,
-            tre_return_handle,
-            greedy=True,
+            partial(self.tre_return_handle, func_name, func_args, func_store, mock_var),
         ))
 
     def detect_is_gen(self, raw_lines):
