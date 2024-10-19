@@ -80,8 +80,9 @@ class TestConstants(unittest.TestCase):
 
     def test_defaults(self):
         assert constants.use_fast_pyparsing_reprs
-        assert not constants.embed_on_internal_exc
         assert constants.num_assemble_logical_lines_tries >= 1
+        assert not constants.embed_on_internal_exc
+        assert not constants.test_computation_graph_pickling
 
     def test_fixpath(self):
         assert os.path.basename(fixpath("CamelCase.py")) == "CamelCase.py"

@@ -172,8 +172,9 @@ use_left_recursion_if_available = False
 # COMPILER CONSTANTS:
 # -----------------------------------------------------------------------------------------------------------------------
 
-# set this to True only ever temporarily for ease of debugging
+# set these to True only ever temporarily for ease of debugging
 embed_on_internal_exc = get_bool_env_var("COCONUT_EMBED_ON_INTERNAL_EXC", False)
+test_computation_graph_pickling = False
 
 # should be the minimal ref count observed by maybe_copy_elem
 temp_grammar_item_ref_count = 4 if PY311 else 5

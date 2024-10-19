@@ -28,7 +28,6 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 from coconut.root import *  # NOQA
 
 import sys
-import os
 import re
 import ast
 import inspect
@@ -49,7 +48,6 @@ from coconut._pyparsing import (
     SUPPORTS_INCREMENTAL,
     SUPPORTS_ADAPTIVE,
     SUPPORTS_PACKRAT_CONTEXT,
-    replaceWith,
     ZeroOrMore,
     OneOrMore,
     Optional,
@@ -77,13 +75,15 @@ from coconut._pyparsing import (
 
 from coconut.integrations import embed
 from coconut.util import (
+    pickle,
     override,
     get_name,
     get_target_info,
     memoize,
-    ensure_dir,
     get_clock_time,
     literal_lines,
+    const,
+    pickleable_obj,
 )
 from coconut.terminal import (
     logger,
@@ -120,7 +120,6 @@ from coconut.constants import (
     incremental_cache_limit,
     incremental_mode_cache_successes,
     use_adaptive_any_of,
-    coconut_cache_dir,
     use_fast_pyparsing_reprs,
     require_cache_clear_frac,
     reverse_any_of,
@@ -128,6 +127,7 @@ from coconut.constants import (
     always_keep_parse_name_prefix,
     keep_if_unchanged_parse_name_prefix,
     incremental_use_hybrid,
+    test_computation_graph_pickling,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -315,7 +315,7 @@ def build_new_toks_for(tokens, new_toklist, unchanged=False):
 cached_trim_arity = memoize()(_trim_arity)
 
 
-class ComputationNode(object):
+class ComputationNode(pickleable_obj):
     """A single node in the computation graph."""
     __slots__ = ("action", "original", "loc", "tokens", "trim_arity")
     pprinting = False
@@ -339,6 +339,12 @@ class ComputationNode(object):
         If ignore_no_tokens, then don't call the action if there are no tokens.
         If ignore_one_token, then don't call the action if there is only one token.
         If greedy, then never defer the action until later."""
+        if test_computation_graph_pickling:
+            with CombineToNode.enable_pickling():
+                try:
+                    pickle.dumps(action, protocol=pickle.HIGHEST_PROTOCOL)
+                except Exception:
+                    raise ValueError("unpickleable action in ComputationNode: " + repr(action))
         if ignore_no_tokens and len(tokens) == 0 or ignore_one_token and len(tokens) == 1:
             # could be a ComputationNode, so we can't have an __init__
             return build_new_toks_for(tokens, tokens, unchanged=True)
@@ -452,9 +458,10 @@ class ExceptionNode(object):
         raise self.exception_maker()
 
 
-class CombineToNode(Combine):
+class CombineToNode(Combine, pickleable_obj):
     """Modified Combine to work with the computation graph."""
     __slots__ = ()
+    validation_dict = None
 
     def _combine(self, original, loc, tokens):
         """Implement the parse action for Combine."""
@@ -467,6 +474,26 @@ class CombineToNode(Combine):
     def postParse(self, original, loc, tokens):
         """Create a ComputationNode for Combine."""
         return ComputationNode(self._combine, original, loc, tokens, ignore_no_tokens=True, ignore_one_token=True, trim_arity=False)
+
+    @classmethod
+    def reconstitute(self, identifier):
+        return identifier_to_parse_elem(identifier, self.validation_dict)
+
+    def __reduce__(self):
+        if self.validation_dict is None:
+            return super(CombineToNode, self).__reduce__()
+        else:
+            return (self.reconstitute, (parse_elem_to_identifier(self, self.validation_dict),))
+
+    @classmethod
+    @contextmanager
+    def enable_pickling(validation_dict={}):
+        """Context manager to enable pickling for CombineToNode."""
+        old_validation_dict, CombineToNode.validation_dict = CombineToNode.validation_dict, validation_dict
+        try:
+            yield
+        finally:
+            CombineToNode.validation_dict = old_validation_dict
 
 
 if USE_COMPUTATION_GRAPH:
@@ -1136,15 +1163,24 @@ def disable_incremental_parsing():
         force_reset_packrat_cache()
 
 
-def get_cache_path(codepath):
-    """Get the cache filename to use for the given codepath."""
-    code_dir, code_fname = os.path.split(codepath)
+def parse_elem_to_identifier(elem, validation_dict=None):
+    """Get the identifier for the given parse element."""
+    identifier = elem.parse_element_index
+    internal_assert(lambda: elem == all_parse_elements[identifier](), "failed to look up parse element by identifier", lambda: (elem, all_parse_elements[identifier]()))
+    if validation_dict is not None:
+        validation_dict[identifier] = elem.__class__.__name__
+    return identifier
 
-    cache_dir = os.path.join(code_dir, coconut_cache_dir)
-    ensure_dir(cache_dir, logger=logger)
 
-    pickle_fname = code_fname + ".pkl"
-    return os.path.join(cache_dir, pickle_fname)
+def identifier_to_parse_elem(identifier, validation_dict=None):
+    """Get the parse element for the given identifier."""
+    if identifier < len(all_parse_elements):
+        maybe_elem = all_parse_elements[identifier]()
+        if maybe_elem is not None:
+            if validation_dict is not None:
+                internal_assert(maybe_elem.__class__.__name__ == validation_dict[identifier], "parse element pickle-unpickle inconsistency", (maybe_elem, validation_dict[identifier]))
+            return maybe_elem
+    return None
 
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -1350,9 +1386,12 @@ def add_labels(tokens):
     return (item, tokens._ParseResults__tokdict.keys())
 
 
-def invalid_syntax_handle(msg, loc, tokens):
+def invalid_syntax_handle(msg, original, loc, tokens):
     """Pickleable handler for invalid_syntax."""
     raise CoconutDeferredSyntaxError(msg, loc)
+
+
+invalid_syntax_handle.trim_arity = False  # fixes pypy issue
 
 
 def invalid_syntax(item, msg, **kwargs):
@@ -1405,7 +1444,7 @@ any_char = regex_item(r".", re.DOTALL)
 
 def fixto(item, output):
     """Force an item to result in a specific output."""
-    return attach(item, replaceWith(output), ignore_arguments=True)
+    return attach(item, const([output]), ignore_arguments=True)
 
 
 def addspace(item):

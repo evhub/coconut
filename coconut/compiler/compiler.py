@@ -39,11 +39,6 @@ from collections import defaultdict
 from threading import Lock
 from copy import copy
 
-if sys.version_info >= (3,):
-    import pickle
-else:
-    import cPickle as pickle
-
 from coconut._pyparsing import (
     USE_COMPUTATION_GRAPH,
     USE_CACHE,
@@ -109,8 +104,10 @@ from coconut.constants import (
     incremental_mode_cache_size,
     incremental_cache_limit,
     use_line_by_line_parser,
+    coconut_cache_dir,
 )
 from coconut.util import (
+    pickle,
     pickleable_obj,
     checksum,
     clip,
@@ -126,6 +123,7 @@ from coconut.util import (
     create_method,
     univ_open,
     staledict,
+    ensure_dir,
 )
 from coconut.exceptions import (
     CoconutException,
@@ -161,6 +159,7 @@ from coconut.compiler.util import (
     ComputationNode,
     StartOfStrGrammar,
     MatchAny,
+    CombineToNode,
     sys_target,
     getline,
     addskip,
@@ -210,7 +209,8 @@ from coconut.compiler.util import (
     get_cache_items_for,
     clear_packrat_cache,
     add_packrat_cache_items,
-    get_cache_path,
+    parse_elem_to_identifier,
+    identifier_to_parse_elem,
     _lookup_loc,
     _value_exc_loc_or_ret,
 )
@@ -447,10 +447,7 @@ def pickle_cache(original, cache_path, include_incremental=True, protocol=pickle
             #  are the only ones that parseIncremental will reuse
             if 0 < loc < len(original) - 1:
                 elem = lookup[0]
-                identifier = elem.parse_element_index
-                internal_assert(lambda: elem == all_parse_elements[identifier](), "failed to look up parse element by identifier", lambda: (elem, all_parse_elements[identifier]()))
-                if validation_dict is not None:
-                    validation_dict[identifier] = elem.__class__.__name__
+                identifier = parse_elem_to_identifier(elem, validation_dict)
                 pickleable_lookup = (identifier,) + lookup[1:]
                 internal_assert(value[_value_exc_loc_or_ret] is True or isinstance(value[_value_exc_loc_or_ret], int), "cache must be dehybridized before pickling", value[_value_exc_loc_or_ret])
                 pickleable_cache_items.append((pickleable_lookup, value))
@@ -460,10 +457,7 @@ def pickle_cache(original, cache_path, include_incremental=True, protocol=pickle
     for wkref in MatchAny.all_match_anys:
         match_any = wkref()
         if match_any is not None and match_any.adaptive_usage is not None:
-            identifier = match_any.parse_element_index
-            internal_assert(lambda: match_any == all_parse_elements[identifier](), "failed to look up match_any by identifier", lambda: (match_any, all_parse_elements[identifier]()))
-            if validation_dict is not None:
-                validation_dict[identifier] = match_any.__class__.__name__
+            identifier = parse_elem_to_identifier(match_any, validation_dict)
             match_any.expr_order.sort(key=lambda i: (-match_any.adaptive_usage[i], i))
             all_adaptive_items.append((identifier, (match_any.adaptive_usage, match_any.expr_order)))
             logger.log("Caching adaptive item:", match_any, (match_any.adaptive_usage, match_any.expr_order))
@@ -471,10 +465,7 @@ def pickle_cache(original, cache_path, include_incremental=True, protocol=pickle
     # computation graph cache
     computation_graph_cache_items = []
     for (call_site_name, grammar_elem), cache in Compiler.computation_graph_caches.items():
-        identifier = grammar_elem.parse_element_index
-        internal_assert(lambda: grammar_elem == all_parse_elements[identifier](), "failed to look up grammar by identifier", lambda: (grammar_elem, all_parse_elements[identifier]()))
-        if validation_dict is not None:
-            validation_dict[identifier] = grammar_elem.__class__.__name__
+        identifier = parse_elem_to_identifier(grammar_elem, validation_dict)
         computation_graph_cache_items.append(((call_site_name, identifier), cache))
 
     logger.log("Saving {num_inc} incremental, {num_adapt} adaptive, and {num_comp_graph} computation graph cache items to {cache_path!r}.".format(
@@ -492,8 +483,9 @@ def pickle_cache(original, cache_path, include_incremental=True, protocol=pickle
         "computation_graph_cache_items": computation_graph_cache_items,
     }
     try:
-        with univ_open(cache_path, "wb") as pickle_file:
-            pickle.dump(pickle_info_obj, pickle_file, protocol=protocol)
+        with CombineToNode.enable_pickling(validation_dict):
+            with univ_open(cache_path, "wb") as pickle_file:
+                pickle.dump(pickle_info_obj, pickle_file, protocol=protocol)
     except Exception:
         logger.log_exc()
         return False
@@ -531,15 +523,25 @@ def unpickle_cache(cache_path):
     all_adaptive_items = pickle_info_obj["all_adaptive_items"]
     computation_graph_cache_items = pickle_info_obj["computation_graph_cache_items"]
 
+    # incremental cache
+    new_cache_items = []
+    for pickleable_lookup, value in pickleable_cache_items:
+        maybe_elem = identifier_to_parse_elem(pickleable_lookup[0], validation_dict)
+        if maybe_elem is not None:
+            internal_assert(value[_value_exc_loc_or_ret] is True or isinstance(value[_value_exc_loc_or_ret], int), "attempting to unpickle hybrid cache item", value[_value_exc_loc_or_ret])
+            lookup = (maybe_elem,) + pickleable_lookup[1:]
+            usefullness = value[-1][0]
+            internal_assert(usefullness, "loaded useless cache item", (lookup, value))
+            stale_value = value[:-1] + ([usefullness + 1],)
+            new_cache_items.append((lookup, stale_value))
+    add_packrat_cache_items(new_cache_items)
+
     # adaptive cache
     for identifier, (adaptive_usage, expr_order) in all_adaptive_items:
-        if identifier < len(all_parse_elements):
-            maybe_elem = all_parse_elements[identifier]()
-            if maybe_elem is not None:
-                if validation_dict is not None:
-                    internal_assert(maybe_elem.__class__.__name__ == validation_dict[identifier], "adaptive cache pickle-unpickle inconsistency", (maybe_elem, validation_dict[identifier]))
-                maybe_elem.adaptive_usage = adaptive_usage
-                maybe_elem.expr_order = expr_order
+        maybe_elem = identifier_to_parse_elem(identifier, validation_dict)
+        if maybe_elem is not None:
+            maybe_elem.adaptive_usage = adaptive_usage
+            maybe_elem.expr_order = expr_order
 
     max_cache_size = min(
         incremental_mode_cache_size or float("inf"),
@@ -548,36 +550,27 @@ def unpickle_cache(cache_path):
     if max_cache_size != float("inf"):
         pickleable_cache_items = pickleable_cache_items[-max_cache_size:]
 
-    # incremental cache
-    new_cache_items = []
-    for pickleable_lookup, value in pickleable_cache_items:
-        identifier = pickleable_lookup[0]
-        if identifier < len(all_parse_elements):
-            maybe_elem = all_parse_elements[identifier]()
-            if maybe_elem is not None:
-                if validation_dict is not None:
-                    internal_assert(maybe_elem.__class__.__name__ == validation_dict[identifier], "incremental cache pickle-unpickle inconsistency", (maybe_elem, validation_dict[identifier]))
-                internal_assert(value[_value_exc_loc_or_ret] is True or isinstance(value[_value_exc_loc_or_ret], int), "attempting to unpickle hybrid cache item", value[_value_exc_loc_or_ret])
-                lookup = (maybe_elem,) + pickleable_lookup[1:]
-                usefullness = value[-1][0]
-                internal_assert(usefullness, "loaded useless cache item", (lookup, value))
-                stale_value = value[:-1] + ([usefullness + 1],)
-                new_cache_items.append((lookup, stale_value))
-    add_packrat_cache_items(new_cache_items)
-
     # computation graph cache
     for (call_site_name, identifier), cache in computation_graph_cache_items:
-        if identifier < len(all_parse_elements):
-            maybe_elem = all_parse_elements[identifier]()
-            if maybe_elem is not None:
-                if validation_dict is not None:
-                    internal_assert(maybe_elem.__class__.__name__ == validation_dict[identifier], "computation graph cache pickle-unpickle inconsistency", (maybe_elem, validation_dict[identifier]))
-                Compiler.computation_graph_caches[(call_site_name, maybe_elem)].update(cache)
+        maybe_elem = identifier_to_parse_elem(identifier, validation_dict)
+        if maybe_elem is not None:
+            Compiler.computation_graph_caches[(call_site_name, maybe_elem)].update(cache)
 
     num_inc = len(pickleable_cache_items)
     num_adapt = len(all_adaptive_items)
     num_comp_graph = sum(len(cache) for _, cache in computation_graph_cache_items) if computation_graph_cache_items else 0
     return num_inc, num_adapt, num_comp_graph
+
+
+def get_cache_path(codepath):
+    """Get the cache filename to use for the given codepath."""
+    code_dir, code_fname = os.path.split(codepath)
+
+    cache_dir = os.path.join(code_dir, coconut_cache_dir)
+    ensure_dir(cache_dir, logger=logger)
+
+    pickle_fname = code_fname + ".pkl"
+    return os.path.join(cache_dir, pickle_fname)
 
 
 def load_cache_for(inputstring, codepath):

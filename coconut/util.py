@@ -39,6 +39,10 @@ else:
         from backports.functools_lru_cache import lru_cache
     except ImportError:
         lru_cache = None
+if sys.version_info >= (3,):
+    import pickle  # NOQA
+else:
+    import cPickle as pickle  # NOQA
 
 from coconut.root import _get_target_info
 from coconut.constants import (
@@ -286,7 +290,7 @@ class dictset(dict, object):
         self[item] = True
 
 
-class staledict(dict, object):
+class staledict(dict, pickleable_obj):
     """A dictionary that keeps track of staleness.
 
     Initial elements are always marked as stale and pickling always prunes stale elements."""
