@@ -751,6 +751,8 @@ def cached_parse(
     # only iterate over keys, not items, so we don't mark everything as alive
     for key in computation_graph_cache:
         prefix, is_at_end = key
+        if DEVELOP:  # avoid overhead
+            internal_assert(cache_prefixes or is_at_end, "invalid computation graph cache item", key)
         # the assumption here is that if the prior parse didn't make it to the end,
         #  then we can freely change the text after the end of where it made it,
         #  but if it did make it to the end, then we can't add more text after that

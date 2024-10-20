@@ -2406,7 +2406,7 @@ class Compiler(Grammar, pickleable_obj):
                 return first_line, rest_of_lines
         return None, block
 
-    def tre_return_handle(self, func_name, func_args, func_store, mock_var, loc, tokens):
+    def tre_return_handle(self, func_name, func_args, func_store, mock_var, original, loc, tokens):
         """Handler for tre_return_grammar."""
         args = ", ".join(tokens)
 
@@ -2445,6 +2445,8 @@ else:
             tco_recurse=tco_recurse,
             type_ignore=self.type_ignore_comment(),
         )
+
+    tre_return_handle.trim_arity = False  # fixes pypy issue
 
     def tre_return_grammar(self, func_name, func_args, func_store, mock_var=None):
         """Generate grammar element that matches a string which is just a TRE return statement."""
