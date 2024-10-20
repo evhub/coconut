@@ -1324,7 +1324,7 @@ point(1,2) |> (==)$(point(1,2)) |> print
 _Showcases matching to data types and the default equality operator. Values defined by the user with the `data` statement can be matched against and their contents accessed by specifically referencing arguments to the data type's constructor._
 
 ```coconut
-class Tree
+data Tree
 data Empty() from Tree
 data Leaf(n) from Tree
 data Node(l, r) from Tree
@@ -1338,7 +1338,7 @@ Empty() |> depth |> print
 Leaf(5) |> depth |> print
 Node(Leaf(2), Node(Empty(), Leaf(3))) |> depth |> print
 ```
-_Showcases how the combination of data types and match statements can be used to powerful effect to replicate the usage of algebraic data types in other functional programming languages._
+_Showcases how the combination of data types and match statements can be used to powerful effect to replicate the usage of algebraic data types in other functional programming languages. Note that for `Tree` to be used for each case rather than `Empty`/`Leaf`/`Node`, `Tree` needs to be a `data` type to ensure that [`data` matching rather than `class` matching](#semantics-specification) is performed._
 
 ```coconut
 def duplicate_first([x] + xs as l) =
