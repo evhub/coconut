@@ -172,10 +172,13 @@ from coconut.compiler.util import (
     split_leading_indent,
     split_trailing_indent,
     split_leading_trailing_indent,
-    match_in,
-    transform,
     parse,
+    transform,
     cached_parse,
+    cached_try_parse,
+    cached_does_parse,
+    cached_parse_where,
+    cached_match_in,
     get_target_info_smart,
     split_leading_comments,
     compile_regex,
@@ -184,14 +187,11 @@ from coconut.compiler.util import (
     handle_indentation,
     tuple_str_of,
     join_args,
-    parse_where,
     get_highest_parse_loc,
     literal_eval,
     should_trim_arity,
     rem_and_count_indents,
     normalize_indent_markers,
-    try_parse,
-    does_parse,
     prep_grammar,
     ordered,
     tuple_str_of_str,
@@ -1266,7 +1266,7 @@ class Compiler(Grammar, pickleable_obj):
             causes = dictset()
             for check_loc in dictset((loc, endpoint, startpoint)):
                 if check_loc is not None:
-                    cause = try_parse(self.parse_err_msg, original[check_loc:], inner=True)
+                    cause = self.cached_try_parse("make_err", self.parse_err_msg, original[check_loc:], inner=True, cache_prefixes=True)
                     if cause:
                         causes.add(cause)
             if causes:
@@ -1633,11 +1633,19 @@ class Compiler(Grammar, pickleable_obj):
 
     def cached_try_parse(self, call_site_name, parser, text, **kwargs):
         """Call cached_try_parse using self.computation_graph_caches."""
-        return try_parse(parser, text, computation_graph_cache=self.computation_graph_caches[(call_site_name, parser)], **kwargs)
+        return cached_try_parse(self.computation_graph_caches[(call_site_name, parser)], parser, text, **kwargs)
 
     def cached_does_parse(self, call_site_name, parser, text, **kwargs):
         """Call cached_does_parse using self.computation_graph_caches."""
-        return does_parse(parser, text, computation_graph_cache=self.computation_graph_caches[(call_site_name, parser)], **kwargs)
+        return cached_does_parse(self.computation_graph_caches[(call_site_name, parser)], parser, text, **kwargs)
+
+    def cached_parse_where(self, call_site_name, parser, text, **kwargs):
+        """Call cached_parse_where using self.computation_graph_caches."""
+        return cached_parse_where(self.computation_graph_caches[(call_site_name, parser)], parser, text, **kwargs)
+
+    def cached_match_in(self, call_site_name, parser, text, **kwargs):
+        """Call cached_match_in using self.computation_graph_caches."""
+        return cached_match_in(self.computation_graph_caches[(call_site_name, parser)], parser, text, **kwargs)
 
     def parse_line_by_line(self, init_parser, line_parser, original):
         """Apply init_parser then line_parser repeatedly."""
@@ -1657,6 +1665,7 @@ class Compiler(Grammar, pickleable_obj):
                     parser,
                     self.remaining_original,
                     inner=False,
+                    cache_prefixes=True,
                 )
                 if len(results) == 1:
                     got_loc, = results
@@ -1800,7 +1809,7 @@ class Compiler(Grammar, pickleable_obj):
                     if hold.get("in_expr", False):
                         internal_assert(is_f, "in_expr should only be for f string holds, not", hold)
                         remaining_text = inputstring[i:]
-                        str_start, str_stop = parse_where(self.string_start, remaining_text)
+                        str_start, str_stop = self.cached_parse_where("str_proc", self.string_start, remaining_text, cache_prefixes=True)
                         if str_start is not None:  # str_start >= 0; if > 0 means there is whitespace before the string
                             hold["exprs"][-1] += remaining_text[:str_stop]
                             # add any skips from where we're fast-forwarding (except don't include c since we handle that below)
@@ -1813,7 +1822,7 @@ class Compiler(Grammar, pickleable_obj):
                             hold["exprs"][-1] += c
                         elif hold["paren_level"] > 0:
                             raise self.make_err(CoconutSyntaxError, "imbalanced parentheses in format string expression", inputstring, i, reformat=False)
-                        elif self.cached_does_parse("str_proc", self.end_f_str_expr, remaining_text):
+                        elif self.cached_does_parse("str_proc", self.end_f_str_expr, remaining_text, cache_prefixes=True):
                             hold["in_expr"] = False
                             hold["str_parts"].append(c)
                         else:
@@ -2393,7 +2402,7 @@ class Compiler(Grammar, pickleable_obj):
             pass
         else:
             raw_first_line = split_leading_trailing_indent(rem_comment(first_line))[1]
-            if match_in(self.just_a_string, raw_first_line, inner=True):
+            if self.cached_match_in("split_docstring", self.just_a_string, raw_first_line, inner=True):
                 return first_line, rest_of_lines
         return None, block
 
@@ -2527,7 +2536,7 @@ else:
 
             # check if there is anything that stores a scope reference, and if so,
             #  disable TRE, since it can't handle that
-            if attempt_tre and match_in(self.stores_scope, line):
+            if attempt_tre and self.cached_match_in("transform_returns", self.stores_scope, line):
                 attempt_tre = False
 
             # attempt tco/tre/async universalization
