@@ -745,9 +745,11 @@ def cached_parse(
     cache_prefixes=False,
 ):
     """Version of parse that caches the result when it's a pure ComputationNode."""
+    if not include_tokens:
+        eval_parse_tree = False
     if not CPYPARSING:  # caching is only supported on cPyparsing
         if scan_string:
-            for tokens, start, stop in all_matches(grammar, text, inner, eval_parse_tree=False):
+            for tokens, start, stop in all_matches(grammar, text, inner, eval_parse_tree):
                 return tokens, start, stop
             return None, None, None
         else:
@@ -841,7 +843,7 @@ def does_parse(grammar, text, inner=None):
 
 def cached_does_parse(cache, grammar, text, inner=None, **kwargs):
     """Cached version of does_parse."""
-    return cached_try_parse(cache, grammar, text, inner, eval_parse_tree=False, include_tokens=False, **kwargs)
+    return cached_try_parse(cache, grammar, text, inner, include_tokens=False, **kwargs)
 
 
 def parse_where(grammar, text, inner=None):
@@ -853,7 +855,7 @@ def parse_where(grammar, text, inner=None):
 
 def cached_parse_where(cache, grammar, text, inner=None, **kwargs):
     """Cached version of parse_where."""
-    tokens, start, stop = cached_parse(cache, grammar, text, inner, scan_string=True, eval_parse_tree=False, include_tokens=False, **kwargs)
+    tokens, start, stop = cached_parse(cache, grammar, text, inner, scan_string=True, include_tokens=False, **kwargs)
     return start, stop
 
 
