@@ -746,7 +746,12 @@ def cached_parse(
 ):
     """Version of parse that caches the result when it's a pure ComputationNode."""
     if not CPYPARSING:  # caching is only supported on cPyparsing
-        return (parse_where if scan_string else parse)(grammar, text, inner)
+        if scan_string:
+            for tokens, start, stop in all_matches(grammar, text, inner, eval_parse_tree=False):
+                return tokens, start, stop
+            return None, None, None
+        else:
+            return parse(grammar, text, inner)
 
     # only iterate over keys, not items, so we don't mark everything as alive
     for key in computation_graph_cache:
