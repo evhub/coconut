@@ -986,8 +986,10 @@ assert _value_useful == -1, "value must end with usefullness obj"
 
 def maybe_copy_elem(item, name):
     """Copy the given grammar element if it's referenced somewhere else."""
-    item_ref_count = sys.getrefcount(item) if CPYTHON and not on_new_python else float("inf")
-    if isinstance(min_observed_ref_count, dict):
+    item_ref_count = sys.getrefcount(item) if CPYTHON else float("inf")
+    if on_new_python:
+        temp_grammar_item_ref_count = 1
+    elif isinstance(min_observed_ref_count, dict):
         temp_grammar_item_ref_count = min_observed_ref_count[name]
     else:
         temp_grammar_item_ref_count = min_observed_ref_count
