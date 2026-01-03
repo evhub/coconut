@@ -6,6 +6,8 @@
       "Bash(cd:*)",
       "Bash(ls:*)",
       "Bash(echo:*)",
+      "Bash(grep:*)",
+      "Bash(find:*)",
       "Bash(python:*)",
       "Bash(gh:*)",
       "Bash(pip:*)",
