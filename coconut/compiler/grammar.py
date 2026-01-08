@@ -859,10 +859,16 @@ class Grammar(object):
         base_name = regex_item(base_name_regex)
 
         refname = Forward()
-        setname = Forward()
         expr_setname = Forward()
-        classname = Forward()
+        final_setname = Forward()
+        nonfinal_setname = Forward()
+        final_classname = Forward()
+        nonfinal_classname = Forward()
+
         name_ref = combine(Optional(backslash) + base_name)
+        final_setname_ref = keyword("final").suppress() + name_ref
+        setname = final_setname | nonfinal_setname
+        classname = final_classname | nonfinal_classname
         unsafe_name = combine(Optional(backslash.suppress()) + base_name)
 
         # use unsafe_name for dotted components since name should only be used for base names

@@ -442,6 +442,7 @@ reserved_vars = (
     "case",
     "cases",
     "where",
+    "final",
     "addpattern",
     "then",
     "operator",

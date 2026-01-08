@@ -335,6 +335,18 @@ def g(x) = x
     assert parse("[def x -> (x, y) for y in range(10)]", "lenient").count("def") == 2
     assert parse("123  # derp", "lenient") == "123  # derp"
 
+    assert_raises(-> parse("final x = 1\nx = 2"), CoconutSyntaxError, err_has="final")
+    assert_raises(-> parse("final x = 1\nx += 1"), CoconutSyntaxError, err_has="final")
+    assert_raises(-> parse("final x = 1\ndel x"), CoconutSyntaxError, err_has="final")
+    assert_raises(-> parse("final x = 1\nfor x in [1]: pass"), CoconutSyntaxError, err_has="final")
+    assert_raises(-> parse("final x = 1\nwith foo() as x: pass"), CoconutSyntaxError, err_has="final")
+    assert_raises(-> parse("final e = 1\ntry: pass\nexcept E as e: pass"), CoconutSyntaxError, err_has="final")
+    assert_raises(-> parse("final os = 1\nimport os"), CoconutSyntaxError, err_has="final")
+    assert_raises(-> parse("final path = 1\nfrom os import path"), CoconutSyntaxError, err_has="final")
+    assert_raises(-> parse("def f(final x): x = 2"), CoconutSyntaxError, err_has="final")
+    assert_raises(-> parse("final x = 1\nmatch y:\n    case x: pass"), CoconutSyntaxError, err_has="final")
+    assert_raises(-> parse("final x = 1\nfinal x = 2"), CoconutSyntaxError, err_has="final")
+
     return True
 
 

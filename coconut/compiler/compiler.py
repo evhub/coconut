@@ -604,6 +604,7 @@ class Compiler(Grammar, pickleable_obj):
         # but always overwrite temp_vars_by_key since they store locs that will be invalidated
         self.temp_vars_by_key = {}
         self.parsing_context = defaultdict(list)
+        self.parsing_context["final_vars"].append(set())  # initialize module-level final scope
         self.name_info = defaultdict(lambda: {"imported": [], "referenced": [], "assigned": []})
         self.star_import = False
         self.kept_lines = []
@@ -634,6 +635,7 @@ class Compiler(Grammar, pickleable_obj):
         skips, self.skips = self.skips, []
         docstring, self.docstring = self.docstring, ""
         parsing_context, self.parsing_context = self.parsing_context, defaultdict(list)
+        self.parsing_context["final_vars"].append(set())  # initialize module-level final scope
         kept_lines, self.kept_lines = self.kept_lines, []
         num_lines, self.num_lines = self.num_lines, 0
         remaining_original, self.remaining_original = self.remaining_original, None
@@ -816,10 +818,20 @@ class Compiler(Grammar, pickleable_obj):
 
         # name handlers
         cls.refname <<= attach(cls.name_ref, cls.method("name_handle"))
-        cls.setname <<= attach(cls.name_ref, cls.method("name_handle", assign=True))
-        cls.classname <<= attach(
+        cls.nonfinal_setname <<= attach(cls.name_ref, cls.method("name_handle", assign=True))
+        cls.final_setname <<= attach(
+            cls.final_setname_ref,
+            cls.method("name_handle", assign=True, is_final=True),
+            greedy=True,
+        )
+        cls.nonfinal_classname <<= attach(
             cls.name_ref,
             cls.method("name_handle", assign=True, classname=True),
+            greedy=True,
+        )
+        cls.final_classname <<= attach(
+            cls.final_setname_ref,
+            cls.method("name_handle", assign=True, classname=True, is_final=True),
             greedy=True,
         )
         cls.expr_setname <<= attach(
@@ -5015,7 +5027,7 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
 
     @contextmanager
     def add_to_parsing_context(self, name, obj, callbacks_key=None):
-        """Pur the given object on the parsing context stack for the given name."""
+        """Put the given object on the parsing context stack for the given name."""
         self.parsing_context[name].append(obj)
         try:
             yield
@@ -5244,7 +5256,8 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
         try:
             # handles support for class type variables
             with self.type_alias_stmt_manage():
-                yield
+                with self.add_to_parsing_context("final_vars", set()):
+                    yield
         finally:
             cls_stack.pop()
 
@@ -5257,7 +5270,8 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
         try:
             # handles support for function type variables
             with self.type_alias_stmt_manage():
-                yield
+                with self.add_to_parsing_context("final_vars", set()):
+                    yield
         finally:
             if cls_context is not None:
                 cls_context["in_method"] = in_method
@@ -5283,11 +5297,15 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
         ):
             yield
 
-    def name_handle(self, original, loc, tokens, assign=False, classname=False, expr_setname=False):
+    def name_handle(self, original, loc, tokens, assign=False, classname=False, expr_setname=False, is_final=False):
         """Handle the given base name."""
-        internal_assert(assign if expr_setname else True, "expr_setname should always imply assign", (expr_setname, assign))
+        if expr_setname:
+            internal_assert(assign, "expr_setname should always imply assign", (expr_setname, assign))
+        if is_final:
+            internal_assert(assign and not expr_setname, "only setnames should ever be final", (assign, is_final))
 
         name, = tokens
+
         if name.startswith("\\"):
             name = name[1:]
             escaped = True
@@ -5296,6 +5314,28 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
 
         if self.disable_name_check:
             return name
+
+        # raise_or_wrap_error for all errors here to make sure we don't
+        #  raise spurious errors if not using the computation graph
+
+        # final variable checking
+        final_vars = self.current_parsing_context("final_vars")
+        self.internal_assert(final_vars is not None, original, loc, "no final_vars context")
+        if (
+            assign
+            and not expr_setname
+            and not escaped
+            and name in final_vars
+        ):
+            return self.raise_or_wrap_error(
+                CoconutSyntaxError,
+                "cannot reassign final variable '{name}'".format(name=name),
+                original,
+                loc,
+                extra="use explicit '\\{name}' syntax to bypass final checking".format(name=name),
+            )
+        if is_final:
+            final_vars.add(name)
 
         # register non-mid-expression variable assignments inside of where statements for later mangling
         if assign and not expr_setname:
@@ -5314,9 +5354,6 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
             expr_setnames_context = self.current_parsing_context("expr_setnames")
             self.internal_assert(expr_setnames_context is not None, original, loc, "found expr_setname outside of has_expr_setname_manage", tokens)
             expr_setnames_context["new_names"].add(name)
-
-        # raise_or_wrap_error for all errors here to make sure we don't
-        #  raise spurious errors if not using the computation graph
 
         if not escaped:
             typevar_info = self.current_parsing_context("typevars")

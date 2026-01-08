@@ -518,4 +518,78 @@ def primary_test_2() -> bool:
         # repeat the same thing again now that my_match_err.str has been called
         assert process_map(ident, [my_match_err]) |> list |> str == str([my_match_err])  # type: ignore
 
+    # final variable tests - valid cases
+    # 1. Simple final declaration
+    final final_x = 1
+    assert final_x == 1
+    # 2. Final parameter (no reassignment inside)
+    def final_param_func(final param) = param * 2
+    assert final_param_func(5) == 10
+    # 3. Shadowing in inner scope WITH final (allowed)
+    final final_outer1 = 1
+    def final_shadow_test1():
+        final final_outer1 = 2  # shadows with final
+        return final_outer1
+    assert final_shadow_test1() == 2
+    assert final_outer1 == 1  # outer unchanged
+    # 4. Shadowing in inner scope WITHOUT final (also allowed - creates new non-final binding)
+    final final_outer2 = 10
+    def final_shadow_test2():
+        final_outer2 = 20  # shadows without final - OK, new binding
+        final_outer2 = 30  # can reassign since it's not final in this scope
+        return final_outer2
+    assert final_shadow_test2() == 30
+    assert final_outer2 == 10  # outer unchanged
+    # 5. Function parameter shadows outer final (no final needed)
+    final final_param_shadow = 100
+    def final_param_test(final_param_shadow):  # parameter shadows outer final - OK
+        return final_param_shadow * 2
+    assert final_param_test(5) == 10
+    assert final_param_shadow == 100
+    # 6. Referencing final (read access is fine)
+    final final_readable = 42
+    final_other = final_readable + 1
+    assert final_other == 43
+    # 7. Multiple final declarations (different names)
+    final final_a = 1
+    final final_b = 2
+    assert final_a + final_b == 3
+    # 8. Final in class body (class attribute)
+    class FinalClass:
+        final class_final = 100
+    assert FinalClass.class_final == 100
+    # 9. Typed final
+    final final_typed_val: int = 999
+    assert final_typed_val == 999
+    # 10. Final in for loop (new final binding per iteration)
+    final_result = []
+    for final final_i in [1, 2, 3]:
+        final_result.append(final_i)
+    assert final_result == [1, 2, 3]
+    # 11. Escape hatch - can bypass with backslash
+    final final_escape_test = 1
+    \final_escape_test = 2  # bypasses final check
+    assert final_escape_test == 2
+    # 12. Class body assignment doesn't conflict with outer final
+    final final_class_ok = 1
+    class OkClass:
+        final_class_ok = 2  # This is a class attribute, different namespace
+    assert OkClass.final_class_ok == 2
+    assert final_class_ok == 1
+    # 13. Comprehension variables are independent (not checked for final)
+    final final_comp_var = 1
+    final_result2 = [final_comp_var for final_comp_var in [10, 20]]  # expr_setname, not checked
+    assert final_result2 == [10, 20]
+    assert final_comp_var == 1  # outer unchanged
+    # 14. Nested function shadowing
+    final final_nested = 1
+    def final_outer_fn():
+        final_nested = 2  # shadows without final - OK
+        def final_inner_fn():
+            final_nested = 3  # shadows again - OK
+            return final_nested
+        return final_inner_fn() + final_nested
+    assert final_outer_fn() == 5
+    assert final_nested == 1
+
     return True

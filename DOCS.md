@@ -1593,6 +1593,76 @@ data namedpt(name `isinstance` str, x `isinstance` int, y `isinstance` int):
 _Can't be done without a series of method definitions for each data type. See the compiled code for the Python syntax._
 
 
+### `final`
+
+Coconut supports `final` declarations to mark variables as constant, preventing reassignment within the same scope. The syntax is:
+```coconut
+final <name> = <value>
+```
+
+Once a variable is declared `final`, it cannot be reassigned within that scope. Attempting to reassign a final variable will result in a compile-time error.
+
+#### Shadowing
+
+Inner scopes can freely shadow final variables from outer scopes, creating new bindings:
+```coconut
+final x = 1
+def f():
+    x = 2  # OK - creates new binding in f's scope, doesn't modify outer x
+    x = 3  # OK - x is not final in this scope
+    return x
+```
+
+You can also explicitly make the inner binding final:
+```coconut
+final x = 1
+def f():
+    final x = 2  # OK - new final binding that shadows outer x
+    return x
+```
+
+#### Usage Contexts
+
+The `final` keyword can be used in:
+- Variable assignments: `final x = 1`
+- Typed assignments: `final x: int = 1`
+- Function parameters: `def f(final x): ...`
+- For loops: `for final i in items: ...`
+- Match patterns: `case final x: ...`
+
+#### Escape Hatch
+
+To bypass final checking (e.g., for metaprogramming), prefix the variable name with a backslash:
+```coconut
+final x = 1
+\x = 2  # OK - bypasses final check
+```
+
+##### Example
+
+**Coconut:**
+```coconut
+final PI = 3.14159
+final GREETING = "Hello"
+
+def calculate_area(final radius):
+    return PI * radius ** 2
+
+# PI = 3.14  # ERROR - cannot reassign final variable 'PI'
+```
+
+**Python:**
+```python
+PI = 3.14159
+GREETING = "Hello"
+
+def calculate_area(radius):
+    return PI * radius ** 2
+
+# No compile-time enforcement - reassignment would be allowed
+```
+
+
 ### `where`
 
 Coconut's `where` statement is fairly straightforward. The syntax for a `where` statement is just
