@@ -1595,9 +1595,12 @@ _Can't be done without a series of method definitions for each data type. See th
 
 ### `final`
 
-Coconut supports `final` declarations to mark variables as constant, preventing reassignment within the same scope. The syntax is:
+Coconut supports `final` declarations to mark variables as constant, preventing reassignment within the same scope. `final` is supported anywhere a variable can be declared, such as:
 ```coconut
-final <name> = <value>
+final x = 1
+final x: int = 1
+def f(final x): ...
+for final i in items: ...
 ```
 
 Once a variable is declared `final`, it cannot be reassigned within that scope. Attempting to reassign a final variable will result in a compile-time error.
@@ -1621,18 +1624,9 @@ def f():
     return x
 ```
 
-#### Usage Contexts
-
-The `final` keyword can be used in:
-- Variable assignments: `final x = 1`
-- Typed assignments: `final x: int = 1`
-- Function parameters: `def f(final x): ...`
-- For loops: `for final i in items: ...`
-- Match patterns: `case final x: ...`
-
 #### Escape Hatch
 
-To bypass final checking (e.g., for metaprogramming), prefix the variable name with a backslash:
+To bypass final checking, prefix the variable name with a backslash:
 ```coconut
 final x = 1
 \x = 2  # OK - bypasses final check
