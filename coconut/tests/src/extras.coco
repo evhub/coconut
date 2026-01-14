@@ -456,6 +456,113 @@ class A(object):
     """.strip()), CoconutStyleError, **(dict(err_has="\n ...\n") if not PYPY else {}))
     assert_raises(-> parse('["abc", "def" "ghi"]'), CoconutStyleError, err_has="implicit string concatenation")
 
+    # imported name shadowing tests
+    assert_raises(-> parse("""
+import abc
+abc: int = 1
+    """.strip()), CoconutStyleError, err_has="shadows imported name")
+    assert_raises(-> parse("""
+from os import path
+path = 'test'
+    """.strip()), CoconutStyleError, err_has="shadows imported name")
+    assert_raises(-> parse("""
+from collections import OrderedDict
+def OrderedDict() = None
+    """.strip()), CoconutStyleError, err_has="shadows imported name")
+    assert_raises(-> parse("""
+import abc
+class abc:
+    pass
+    """.strip()), CoconutStyleError, err_has="shadows imported name")
+    assert_raises(-> parse("""
+from os import path
+[path for path in []]
+    """.strip()), CoconutStyleError, err_has="shadows imported name")
+    assert_raises(-> parse("""
+import abc
+final abc = 1
+    """.strip()), CoconutStyleError, err_has="shadows imported name")
+    # class attribute shadowing should be allowed (not module-level shadowing)
+    # (use NOQA to suppress unused import warning since we're intentionally shadowing)
+    assert parse("""
+import abc  # NOQA
+class Foo:
+    abc = 1
+    """.strip())
+    assert parse("""
+import abc  # NOQA
+class Foo:
+    class abc:
+        pass
+    """.strip())
+    # method-level shadowing should still raise
+    assert_raises(-> parse("""
+import abc
+class Foo:
+    def bar(self):
+        abc = 1
+    """.strip()), CoconutStyleError, err_has="shadows imported name")
+    assert_raises(-> parse("""
+class Foo:
+    def bar(self):
+        super = 1
+    """.strip()), CoconutStyleError, err_has="shadows builtin")
+    # nested class tests - class attributes should be allowed at any depth
+    assert parse("""
+class A:
+    class super:
+        pass
+    """.strip())
+    assert parse("""
+class A:
+    class B:
+        class super:
+            pass
+    """.strip())
+    assert parse("""
+class A:
+    class B:
+        class C:
+            class super:
+                pass
+    """.strip())
+    assert parse("""
+import abc  # NOQA
+class A:
+    class B:
+        abc = 1
+    """.strip())
+    # nested class inside method should still raise (shadows method's local scope)
+    assert_raises(-> parse("""
+class A:
+    def foo(self):
+        class super:
+            pass
+    """.strip()), CoconutStyleError, err_has="shadows builtin")
+    assert_raises(-> parse("""
+import abc
+class A:
+    def foo(self):
+        class abc:
+            pass
+    """.strip()), CoconutStyleError, err_has="shadows imported name")
+    # deeply nested: class inside class inside method - no error because super is a class attribute of B
+    assert parse("""
+class A:
+    def foo(self):
+        class B:
+            class super:
+                pass
+    """.strip())
+    # method inside nested class inside method should still raise
+    assert_raises(-> parse("""
+class A:
+    def foo(self):
+        class B:
+            def bar(self):
+                super = 1
+    """.strip()), CoconutStyleError, err_has="shadows builtin")
+
     setup(line_numbers=False, strict=True, target="sys")
     assert_raises(-> parse("await f x"), CoconutParseError)
 
@@ -719,7 +826,8 @@ def test_numpy() -> bool:
 
 def test_pandas() -> bool:
     import pandas as pd
-    import numpy as np
+    # use \np to avoid shadowing warning since np is imported elsewhere in this file
+    import numpy as \np
     d1 = pd.DataFrame({"nums": [1, 2, 3], "chars": ["a", "b", "c"]})
     assert d1$[0] == "nums"
     assert [d1; d1].keys() |> list == ["nums", "chars"] * 2  # type: ignore
@@ -754,7 +862,8 @@ def test_pandas() -> bool:
 
 def test_xarray() -> bool:
     import xarray as xr
-    import numpy as np
+    # use \np to avoid shadowing warning since np is imported elsewhere in this file
+    import numpy as \np
     def ds1 `dataset_equal` ds2 = (ds1 == ds2).all().values() |> all
     da = xr.DataArray([10, 11;; 12, 13], dims=["x", "y"])
     ds = xr.Dataset({"a": da, "b": da + 10})

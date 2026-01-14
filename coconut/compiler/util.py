@@ -18,6 +18,7 @@ Description: Utilities for use in the compiler.
 #   - Targets
 #   - Parse Elements
 #   - Utilities
+#   - Extras
 
 # -----------------------------------------------------------------------------------------------------------------------
 # IMPORTS:
@@ -70,6 +71,7 @@ from coconut._pyparsing import (
     _trim_arity,
     _ParseResultsWithOffset,
     line as _line,
+    lineno,
     all_parse_elements,
 )
 
@@ -1361,7 +1363,7 @@ class Wrap(ParseElementEnhance):
                         if self.greedy:
                             if logger.tracing and not final_evaluate_tokens.enabled:
                                 logger.log_tag("cached_parse invalidated by", self)
-                            tokens = evaluate_tokens(tokens)
+                            tokens = ParseResults(evaluate_tokens(tokens))
                 if reparse and parse_loc is None:
                     raise CoconutInternalException("illegal double reparse in", self)
                 reparse = True
@@ -2214,6 +2216,11 @@ def sub_all(inputstr, regexes, replacements):
     for key, regex in regexes.items():
         inputstr = regex.sub(lambda match: replacements[key], inputstr)
     return inputstr
+
+
+def same_line(original, loc1, loc2):
+    """Check if two locations are on the same line in the original string."""
+    return lineno(loc1, original) == lineno(loc2, original)
 
 
 # -----------------------------------------------------------------------------------------------------------------------

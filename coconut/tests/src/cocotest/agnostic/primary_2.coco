@@ -1,5 +1,6 @@
 import collections
-import collections.abc
+# use \collections to avoid shadowing warning since collections is imported above
+import \collections.abc
 import weakref
 import sys
 

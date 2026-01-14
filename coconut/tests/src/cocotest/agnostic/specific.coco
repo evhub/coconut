@@ -70,7 +70,7 @@ def py33_spec_test() -> bool:
 def py36_spec_test(tco: bool) -> bool:
     """Tests for any py36+ version."""
     from dataclasses import dataclass
-    from typing import Any, Literal
+    from typing import Literal
 
     outfile = StringIO()
 

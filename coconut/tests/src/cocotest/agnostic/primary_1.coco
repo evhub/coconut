@@ -1,6 +1,7 @@
 import itertools
 import collections
-import collections.abc
+# use \collections to avoid shadowing warning since collections is imported above
+import \collections.abc
 import platform
 from copy import copy
 
@@ -642,7 +643,8 @@ def primary_test_1() -> bool:
     assert list(z[10:]) == []
     hook = getattr(sys, "breakpointhook", None)
     try:
-        def sys.breakpointhook() = 5
+        # use \sys to avoid shadowing warning when defining attribute on imported module
+        def \sys.breakpointhook() = 5
         assert breakpoint() == 5
     finally:
         if hook is None:

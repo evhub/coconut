@@ -1394,8 +1394,6 @@ def fib_alt2(n if n < 2) = n
 addpattern def fib_alt2(n) = fib_alt2(n-1) + fib_alt2(n-2)  # type: ignore
 
 # MapReduce
-from collections import defaultdict
-
 join_pairs1 = reduce$((def (acc, (k, v)) ->
     acc[k] += v;
     acc
@@ -1778,8 +1776,6 @@ match def reduce_with_init(f, xs, init=type(xs[0])()) = reduce(f, xs, init)
 
 
 # last/end
-import operator
-
 def last(n=0 if n >= 0) = -n or None
 
 # TODO: #645 to remove the below type: ignore

@@ -206,6 +206,7 @@ from coconut.compiler.util import (
     handle_and_manage,
     manage,
     sub_all,
+    same_line,
     get_cache_items_for,
     clear_packrat_cache,
     add_packrat_cache_items,
@@ -604,8 +605,8 @@ class Compiler(Grammar, pickleable_obj):
         # but always overwrite temp_vars_by_key since they store locs that will be invalidated
         self.temp_vars_by_key = {}
         self.parsing_context = defaultdict(list)
-        self.parsing_context["final_vars"].append(set())  # initialize module-level final scope
-        self.name_info = defaultdict(lambda: {"imported": [], "referenced": [], "assigned": []})
+        self.parsing_context["final_vars"].append({})  # initialize module-level final scope
+        self.name_info = defaultdict(lambda: {"imported": set(), "referenced": set(), "assigned": set()})
         self.star_import = False
         self.kept_lines = []
         self.num_lines = 0
@@ -635,7 +636,7 @@ class Compiler(Grammar, pickleable_obj):
         skips, self.skips = self.skips, []
         docstring, self.docstring = self.docstring, ""
         parsing_context, self.parsing_context = self.parsing_context, defaultdict(list)
-        self.parsing_context["final_vars"].append(set())  # initialize module-level final scope
+        self.parsing_context["final_vars"].append({})  # initialize module-level final scope
         kept_lines, self.kept_lines = self.kept_lines, []
         num_lines, self.num_lines = self.num_lines, 0
         remaining_original, self.remaining_original = self.remaining_original, None
@@ -1051,19 +1052,28 @@ class Compiler(Grammar, pickleable_obj):
         """Raises an error if in strict mode, otherwise raises a warning. Usage:
             self.strict_err_or_warn(message, original, loc)
         """
+        raise_err_func = kwargs.pop("raise_err_func", None)
         internal_assert("extra" not in kwargs, "cannot pass extra=... to strict_err_or_warn")
         if self.strict:
             kwargs["extra"] = "remove --strict to downgrade to a warning"
-            raise self.make_err(CoconutStyleError, *args, **kwargs)
+            if raise_err_func is None:
+                raise self.make_err(CoconutStyleError, *args, **kwargs)
+            else:
+                return raise_err_func(CoconutStyleError, *args, **kwargs)
         else:
             self.syntax_warning(*args, **kwargs)
 
     def strict_qa_error(self, msg, original, loc, **kwargs):
-        """Strict error or warn an error that should be disabled by a NOQA comment."""
+        """Strict error or warn an error that should be disabled by a NOQA comment.
+
+        Use strict_qa_error when the error is non-greedy and the comment can be handled first;
+        use strict_err_or_warn when the error is greedy, which means the comment won't have
+        been recorded yet and so we won't be able to check if it contains NOQA.
+        """
         ln = self.adjust(lineno(loc, original))
         comment = self.reformat(" ".join(self.comments[ln]), ignore_errors=True)
         if not self.noqa_regex.search(comment):
-            self.strict_err_or_warn(
+            return self.strict_err_or_warn(
                 msg + " (add '# NOQA' to suppress)",
                 original,
                 loc,
@@ -1182,11 +1192,12 @@ class Compiler(Grammar, pickleable_obj):
 
     def raise_or_wrap_error(self, *args, **kwargs):
         """Raise or defer if USE_COMPUTATION_GRAPH else wrap."""
+        always_wrap = kwargs.pop("always_wrap", False)
         error_maker = partial(self.make_err, *args, **kwargs)
         if not USE_COMPUTATION_GRAPH:
             return self.wrap_error(error_maker)
         # differently-ordered any ofs can push these errors earlier than they should be, requiring us to defer them
-        elif use_adaptive_any_of or reverse_any_of:
+        elif always_wrap or use_adaptive_any_of or reverse_any_of:
             return ExceptionNode(error_maker)
         else:
             raise error_maker()
@@ -4081,7 +4092,7 @@ if {store_var} is not _coconut_sentinel:
             self.syntax_warning("[from *] import * is a Coconut Easter egg and should not be used in production code", original, loc)
             return special_starred_import_handle(imp_all=bool(imp_from))
         for imp_name in imported_names:
-            self.name_info[imp_name]["imported"].append(loc)
+            self.name_info[imp_name]["imported"].add(loc)
         return self.universal_import(loc, imports, imp_from=imp_from)
 
     def complex_raise_stmt_handle(self, loc, tokens):
@@ -4369,7 +4380,7 @@ def {name}({match_func_paramdef}):
                 got_kwds, params, typedef, stmts_toks, followed_by = tokens
 
             if followed_by == ",":
-                self.strict_qa_error("found statement lambda followed by comma; this isn't recommended as it can be unclear whether the comma is inside or outside the lambda (just wrap the lambda in parentheses)", original, loc)
+                self.strict_err_or_warn("found statement lambda followed by comma; this isn't recommended as it can be unclear whether the comma is inside or outside the lambda (just wrap the lambda in parentheses)", original, loc)
             else:
                 internal_assert(followed_by == "", "invalid stmt_lambdef followed_by", followed_by)
 
@@ -5090,7 +5101,7 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
         if bound_op is not None:
             self.internal_assert(bound_op_type in ("bound", "constraint"), original, loc, "invalid type_param bound_op", bound_op)
             if bound_op == "<=":
-                self.strict_qa_error(
+                self.strict_err_or_warn(
                     "use of " + repr(bound_op) + " as a type parameter " + bound_op_type + " declaration operator is deprecated (Coconut style is to use '<:' for bounds and ':' for constaints)",
                     original,
                     loc,
@@ -5256,7 +5267,7 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
         try:
             # handles support for class type variables
             with self.type_alias_stmt_manage():
-                with self.add_to_parsing_context("final_vars", set()):
+                with self.add_to_parsing_context("final_vars", {}):
                     yield
         finally:
             cls_stack.pop()
@@ -5270,7 +5281,7 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
         try:
             # handles support for function type variables
             with self.type_alias_stmt_manage():
-                with self.add_to_parsing_context("final_vars", set()):
+                with self.add_to_parsing_context("final_vars", {}):
                     yield
         finally:
             if cls_context is not None:
@@ -5315,27 +5326,13 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
         if self.disable_name_check:
             return name
 
-        # raise_or_wrap_error for all errors here to make sure we don't
-        #  raise spurious errors if not using the computation graph
-
-        # final variable checking
-        final_vars = self.current_parsing_context("final_vars")
-        self.internal_assert(final_vars is not None, original, loc, "no final_vars context")
-        if (
-            assign
-            and not expr_setname
-            and not escaped
-            and name in final_vars
-        ):
-            return self.raise_or_wrap_error(
-                CoconutSyntaxError,
-                "cannot reassign final variable '{name}'".format(name=name),
-                original,
-                loc,
-                extra="use explicit '\\{name}' syntax to bypass final checking".format(name=name),
-            )
-        if is_final:
-            final_vars.add(name)
+        # these are all handled greedily, so they should always be wrapped
+        is_greedy = classname or expr_setname or is_final
+        # use this for all errors here to make sure we don't raise spurious errors
+        local_raise_or_wrap_error = partial(
+            self.raise_or_wrap_error,
+            always_wrap=is_greedy,
+        )
 
         # register non-mid-expression variable assignments inside of where statements for later mangling
         if assign and not expr_setname:
@@ -5365,42 +5362,109 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
                     #  a reparse of a setname in a typevar, or not a typevar at all
                     if typevar_info["typevar_locs"].get(name, None) != loc:
                         if assign:
-                            return self.raise_or_wrap_error(
+                            return local_raise_or_wrap_error(
                                 CoconutSyntaxError,
                                 "cannot reassign type variable '{name}'".format(name=name),
                                 original,
                                 loc,
                                 extra="use explicit '\\{name}' syntax if intended".format(name=name),
                             )
+                        # note that this is the one case where we return early that isn't an error
                         return typevars[name]
 
+        # track assigned/referenced early so that even if we return early with an
+        #  error, the name is marked as used (e.g. for unused import checking)
         if assign:
-            self.name_info[name]["assigned"].append(loc)
+            is_new = loc not in self.name_info[name]["assigned"]
+            self.name_info[name]["assigned"].add(loc)
         else:
-            self.name_info[name]["referenced"].append(loc)
+            is_new = loc not in self.name_info[name]["referenced"]
+            self.name_info[name]["referenced"].add(loc)
+
+        is_class_attr = (
+            self.current_parsing_context("class")
+            and not self.in_method
+            and (
+                # for classnames, we need special handling for nested classes
+                True if not classname
+                #  - outer class (len == 1): this is the name of the class, not a class attr
+                else False if len(self.parsing_context["class"]) <= 1
+                #  - class defined directly in a method (immediate parent has in_method):
+                #       not a class attr, this is a variable in the method's local scope
+                else False if self.parsing_context["class"][-2].get("in_method")
+                #  - nested class as attribute (immediate parent does NOT have in_method):
+                #       this is a class attr just like any other
+                else True
+            )
+        )
 
         if (
             assign
             and not escaped
+            # if we're creating a class attribute, then we're not actually shadowing anything
+            and not is_class_attr
             # if we're not using the computation graph, then name is handled
             #  greedily, which means this might be an invalid parse, in which
-            #  case we can't be sure this is actually shadowing a builtin
-            and USE_COMPUTATION_GRAPH
-            # classnames and expr_setnames are handled greedily, so ditto the above
-            and not (classname or expr_setname)
-            and name in all_builtins
+            #  case we can't be sure this is actually shadowing a builtin;
+            #  BUT if we're on strict mode, then it's an actual error, rather
+            #  than a warning, which means we can just wrap it
+            and (
+                # in strict mode, errors are wrapped and we should always do that
+                self.strict
+                # in non-strict mode, only check when using computation graph
+                #  and not for greedy handlers (to avoid spurious warnings)
+                #  and only if it's a new assignment (to avoid duplicate warnings)
+                or (is_new and not is_greedy and USE_COMPUTATION_GRAPH)
+            )
         ):
-            self.strict_qa_error(
-                "assignment shadows builtin '{name}' (use explicit '\\{name}' syntax when purposefully assigning to builtin names)".format(name=name),
+            if name in all_builtins:
+                err = self.strict_err_or_warn(
+                    "assignment shadows builtin '{name}' (use explicit '\\{name}' syntax when purposefully assigning to builtin names)".format(name=name),
+                    original,
+                    loc,
+                    raise_err_func=local_raise_or_wrap_error,
+                )
+                if err is not None:
+                    return err
+            # Only check for shadowing if there are imports on different lines;
+            # if all imports are on the same line as the current loc, this is
+            # the import statement itself, not an assignment shadowing an import
+            if any(not same_line(original, loc, imp_loc) for imp_loc in self.name_info[name]["imported"]):
+                err = self.strict_err_or_warn(
+                    "assignment shadows imported name '{name}' (use explicit '\\{name}' syntax when purposefully redefining imported names)".format(name=name),
+                    original,
+                    loc,
+                    raise_err_func=local_raise_or_wrap_error,
+                )
+                if err is not None:
+                    return err
+
+        # final variable checking
+        final_vars = self.current_parsing_context("final_vars")
+        self.internal_assert(final_vars is not None, original, loc, "no final_vars context")
+        if (
+            assign
+            and not escaped
+            and not expr_setname
+            and name in final_vars
+            and final_vars[name] != loc  # allow reassign in same loc (speculative parsing duplicate)
+        ):
+            return local_raise_or_wrap_error(
+                CoconutSyntaxError,
+                "cannot reassign final variable '{name}'".format(name=name),
                 original,
                 loc,
+                extra="use explicit '\\{name}' syntax to bypass final checking".format(name=name),
             )
+        # only mark as final after all checks pass
+        if is_final:
+            final_vars[name] = loc
 
         if name == "exec":
             if self.target.startswith("3"):
                 return name
             elif assign:
-                return self.raise_or_wrap_error(
+                return local_raise_or_wrap_error(
                     CoconutTargetError,
                     "found Python-3-only assignment to 'exec' as a variable name",
                     original,
@@ -5417,7 +5481,7 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
             else:
                 return name
         elif not escaped and name.startswith(reserved_prefix) and name not in self.operators:
-            return self.raise_or_wrap_error(
+            return local_raise_or_wrap_error(
                 CoconutSyntaxError,
                 "variable names cannot start with reserved prefix '{prefix}' (use explicit '\\{name}' syntax if intending to access Coconut internals)".format(prefix=reserved_prefix, name=name),
                 original,
