@@ -1937,6 +1937,14 @@ num_until_neg_sum = (
     ..> len
 )
 
+stt = (
+    map$(set)
+    ..> (::)$([s{}], ?, [s{}])
+    ..> windowsof$(2)
+    ..> starmap$(lift(,)(flip(-), (-)))
+    ..> list
+)
+
 
 # Search patterns
 def first_twin(_ + [p, (.-2) -> p] + _) = (p, p+2)
