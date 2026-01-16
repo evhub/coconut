@@ -1393,7 +1393,10 @@ class Wrap(ParseElementEnhance):
 
 
 def manage(item, manager, include_in_packrat_context, greedy=True):
-    """Attach a manager to the given parse item."""
+    """Attach a manager to the given parse item.
+
+    include_in_packrat_context should be True if the manager changes whether a parse can succeed and False otherwise.
+    """
     return Wrap(item, manager, include_in_packrat_context=include_in_packrat_context, greedy=greedy)
 
 

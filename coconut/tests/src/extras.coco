@@ -572,6 +572,15 @@ class A:
 class A:
     def mk_int(x) = int(x)
     """.strip())
+    assert parse("""
+x: int
+x = 1
+    """.strip())
+    assert parse("""
+case def f:
+    case(x) = x
+    case(x, y) = x + y
+    """.strip())
     assert_raises(-> parse("""
 def f():
     global x

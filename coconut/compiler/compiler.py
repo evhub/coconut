@@ -869,6 +869,7 @@ class Compiler(Grammar, pickleable_obj):
         cls.no_partial_trailer_atom <<= attach(cls.no_partial_trailer_atom_ref, cls.method("item_handle"))
         cls.simple_assign <<= attach(cls.simple_assign_ref, cls.method("item_handle"))
         cls.expr_simple_assign <<= attach(cls.expr_simple_assign_ref, cls.method("item_handle"))
+        cls.unsafe_simple_assign <<= attach(cls.unsafe_simple_assign_ref, cls.method("item_handle"))
 
         # handle all star assignments with star_assign_item_check
         cls.star_assign_item <<= attach(cls.star_assign_item_ref, cls.method("star_assign_item_check"))
@@ -903,6 +904,16 @@ class Compiler(Grammar, pickleable_obj):
         cls.name_match_funcdef <<= attach(cls.name_match_funcdef_ref, cls.method("name_match_funcdef_handle"))
         cls.op_match_funcdef <<= attach(cls.op_match_funcdef_ref, cls.method("op_match_funcdef_handle"))
         cls.base_case_funcdef <<= attach(cls.base_case_funcdef_ref, cls.method("base_case_funcdef_handle"))
+        cls.case_funcdef_case <<= manage(
+            cls.case_funcdef_case_ref,
+            cls.method("case_funcdef_clause_manage"),
+            include_in_packrat_context=False,
+        )
+        cls.case_funcdef_type <<= manage(
+            cls.case_funcdef_type_ref,
+            cls.method("case_funcdef_clause_manage"),
+            include_in_packrat_context=False,
+        )
         cls.yield_from <<= attach(cls.yield_from_ref, cls.method("yield_from_handle"))
         cls.typedef <<= attach(cls.typedef_ref, cls.method("typedef_handle"))
         cls.typedef_default <<= attach(cls.typedef_default_ref, cls.method("typedef_handle"))
@@ -5276,6 +5287,12 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
 
         return self.wrap_passthrough(out, early=True)
 
+    @property
+    def in_method(self):
+        """Determine if currently in a method."""
+        cls_context = self.current_parsing_context("class")
+        return cls_context is not None and cls_context["name"] is not None and cls_context["in_method"]
+
     @contextmanager
     def class_manage(self, original, loc, item):
         """Manage the class parsing context."""
@@ -5322,11 +5339,13 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
             if cls_context is not None:
                 cls_context["in_method"] = in_method
 
-    @property
-    def in_method(self):
-        """Determine if currently in a method."""
-        cls_context = self.current_parsing_context("class")
-        return cls_context is not None and cls_context["name"] is not None and cls_context["in_method"]
+    @contextmanager
+    def case_funcdef_clause_manage(self, original, loc, item):
+        """Manage the scope for each case clause in a case def."""
+        with self.add_to_parsing_context({
+            "scope": self.get_empty_scope(),
+        }):
+            yield
 
     @contextmanager
     def has_expr_setname_manage(self, original, loc, item):

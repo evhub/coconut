@@ -1511,9 +1511,27 @@ class Grammar(object):
         expr_assign_item = expr_base_assign_item | expr_star_assign_item
         expr_assignlist <<= itemlist(expr_assign_item, comma, suppress_trailing=False)
 
+        # must be kept in sync with assignlist block above (but with unsafe_name)
+        unsafe_simple_assign = Forward()
+        unsafe_simple_assign_ref = maybeparens(
+            lparen,
+            (
+                # refname if there's a trailer, unsafe_name if not
+                (refname | passthrough_atom) + OneOrMore(ZeroOrMore(complex_trailer) + OneOrMore(simple_trailer))
+                | unsafe_name
+                | passthrough_atom
+            ),
+            rparen,
+        )
+
         simple_assignlist = maybeparens(lparen, itemlist(simple_assign, comma, suppress_trailing=False), rparen)
         typed_assign_stmt = Forward()
-        typed_assign_stmt_ref = simple_assign + colon.suppress() + typedef_test + Optional(equals.suppress() + test_expr)
+        typed_assign_stmt_ref = (
+            # with assignment value, use simple_assign
+            simple_assign + colon.suppress() + typedef_test + equals.suppress() + test_expr
+            # bare annotation, use unsafe_simple_assign
+            | unsafe_simple_assign + colon.suppress() + typedef_test
+        )
         basic_stmt = addspace(ZeroOrMore(assignlist + equals) + test_expr)
 
         type_param = Forward()
@@ -2369,6 +2387,41 @@ class Grammar(object):
         )
 
         base_case_funcdef = Forward()
+        case_funcdef_case = Forward()
+        case_funcdef_case_ref = (
+            keyword("case").suppress()
+            + lparen.suppress()
+            + match_args_list
+            + match_guard
+            + rparen.suppress()
+            + (
+                colon.suppress()
+                + (
+                    newline.suppress()
+                    + indent.suppress()
+                    + attach(condense(OneOrMore(stmt)), make_suite_handle)
+                    + dedent.suppress()
+                    | attach(simple_stmt, make_suite_handle)
+                )
+                | equals.suppress()
+                + (
+                    (
+                        newline.suppress()
+                        + indent.suppress()
+                        + attach(math_funcdef_body, make_suite_handle)
+                        + dedent.suppress()
+                    )
+                    | attach(implicit_return_stmt, make_suite_handle)
+                )
+            )
+        )
+        case_funcdef_type = Forward()
+        case_funcdef_type_ref = (
+            keyword("type").suppress()
+            + parameters
+            + return_typedef
+            + newline.suppress()
+        )
         base_case_funcdef_ref = (
             keyword("def").suppress()
             + Group(
@@ -2381,38 +2434,11 @@ class Grammar(object):
             - Optional(docstring)
             - Group(OneOrMore(
                 labeled_group(
-                    keyword("case").suppress()
-                    + lparen.suppress()
-                    + match_args_list
-                    + match_guard
-                    + rparen.suppress()
-                    + (
-                        colon.suppress()
-                        + (
-                            newline.suppress()
-                            + indent.suppress()
-                            + attach(condense(OneOrMore(stmt)), make_suite_handle)
-                            + dedent.suppress()
-                            | attach(simple_stmt, make_suite_handle)
-                        )
-                        | equals.suppress()
-                        + (
-                            (
-                                newline.suppress()
-                                + indent.suppress()
-                                + attach(math_funcdef_body, make_suite_handle)
-                                + dedent.suppress()
-                            )
-                            | attach(implicit_return_stmt, make_suite_handle)
-                        )
-                    ),
+                    case_funcdef_case,
                     "match",
                 )
                 | labeled_group(
-                    keyword("type").suppress()
-                    + parameters
-                    + return_typedef
-                    + newline.suppress(),
+                    case_funcdef_type,
                     "type",
                 )
             ))
