@@ -2003,7 +2003,8 @@ class Grammar(object):
             kwd_augassign
             | simple_kwd_assign
         )
-        global_stmt = addspace(keyword("global") + kwd_assign)
+        global_stmt = Forward()
+        global_stmt_ref = addspace(keyword("global") + kwd_assign)
         nonlocal_stmt = Forward()
         nonlocal_stmt_ref = addspace(keyword("nonlocal") + kwd_assign)
 

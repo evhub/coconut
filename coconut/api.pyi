@@ -73,13 +73,14 @@ def version(which: Optional[Text] = None) -> Text:
 
 def setup(
     target: Optional[str] = None,
+    *,
     strict: bool = False,
     minify: bool = False,
     line_numbers: bool = True,
     keep_lines: bool = False,
     no_tco: bool = False,
     no_wrap: bool = False,
-    *,
+    pure: bool = False,
     state: Optional[Command] = ...,
 ) -> None:
     """Set up the given state object."""

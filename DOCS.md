@@ -327,7 +327,7 @@ _Note: Periods are optional in target specifications, such that the target `27` 
 
 #### `strict` Mode
 
-If the `--strict` (`-s` for short) flag is enabled, Coconut will perform additional checks on the code being compiled. It is recommended that you use the `--strict` flag if you are starting a new Coconut project, as it will help you write cleaner code. Almost all of these checks can be disabled on a line-by-line basis by adding `# NOQA` or `# noqa` comments. Specifically, the extra checks done by `--strict` are:
+If the `--strict` (`-s` for short) flag is enabled, Coconut will perform additional checks on the code being compiled. It is recommended that you use the `--strict` flag if you are starting a new Coconut project, as it will help you write cleaner code. Most of these checks can be disabled on a line-by-line basis by adding `# NOQA` or `# noqa` comments (the error message will say whether `NOQA` is supported). Specifically, the extra checks done by `--strict` are:
 
 - disabling deprecated features (making them entirely unavailable to code compiled with `--strict`),
 - errors instead of warnings on unused imports (unless they have a `# NOQA` or `# noqa` comment),
@@ -353,6 +353,14 @@ The style issues which will cause `--strict` to throw an error are:
 - use of `:` instead of `<:` to specify upper bounds in [Coconut's type parameter syntax](#type-parameter-syntax)
 
 Note that many of the above style issues will still show a warning if `--strict` is not present.
+
+#### `pure` Mode
+
+If the `--pure` flag is enabled, Coconut will enforce functional programming norms on the code being compiled. These checks are compatible with `--strict` mode—when both are enabled, violations become errors instead of warnings. Like `--strict`, these checks can usually be disabled on a line-by-line basis by adding `# NOQA` or `# noqa` comments.
+
+The following are disallowed in `--pure` mode:
+- `global` statements
+- `nonlocal` statements
 
 #### Backports
 

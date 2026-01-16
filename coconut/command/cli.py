@@ -165,6 +165,12 @@ arguments.add_argument(
 )
 
 arguments.add_argument(
+    "--pure",
+    action="store_true",
+    help="enforce functional programming norms",
+)
+
+arguments.add_argument(
     "--no-tco", "--notco",
     action="store_true",
     help="disable tail call optimization",

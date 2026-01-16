@@ -566,6 +566,43 @@ class A:
     setup(line_numbers=False, strict=True, target="sys")
     assert_raises(-> parse("await f x"), CoconutParseError)
 
+    setup(line_numbers=False, strict=True, pure=True, target="sys")
+    assert_raises(-> parse("""
+def f():
+    global x
+    """.strip()), CoconutStyleError, err_has="pure")
+    assert_raises(-> parse("""
+def f():
+    x = 1
+    def g():
+        nonlocal x
+    """.strip()), CoconutStyleError, err_has="pure")
+
+    # test NOQA suppression
+    setup(line_numbers=False, strict=True, target="sys")
+    # these should NOT raise with NOQA
+    parse('u"test"  # NOQA')
+    parse('x = 1;  # NOQA')
+    parse('"a" "b"  # NOQA')
+    parse('f"no expr"  # NOQA')
+    parse("""
+class Foo(object):  # NOQA
+    pass
+    """.strip())
+    parse("from __future__ import print_function  # NOQA")
+    # pure mode NOQA
+    setup(line_numbers=False, strict=True, pure=True, target="sys")
+    parse("""
+def f():
+    global x  # NOQA
+    """.strip())
+    parse("""
+def f():
+    x = 1
+    def g():
+        nonlocal x  # NOQA
+    """.strip())
+
     setup(line_numbers=False, target="2.7")
     assert parse("from io import BytesIO", mode="lenient") == "from io import BytesIO"
     assert_raises(-> parse("def f(*, x=None) = x"), CoconutTargetError, err_has="\n        ^")

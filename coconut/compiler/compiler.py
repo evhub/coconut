@@ -500,7 +500,7 @@ class Compiler(Grammar, pickleable_obj):
         self.reset()
 
     # changes here should be reflected in __reduce__, get_cli_args, and in the stub for coconut.api.setup
-    def setup(self, target=None, strict=False, minify=False, line_numbers=True, keep_lines=False, no_tco=False, no_wrap=False):
+    def setup(self, target=None, strict=False, minify=False, line_numbers=True, keep_lines=False, no_tco=False, no_wrap=False, pure=False):
         """Initializes parsing parameters."""
         if target is None:
             target = ""
@@ -529,10 +529,11 @@ class Compiler(Grammar, pickleable_obj):
         self.keep_lines = keep_lines
         self.no_tco = no_tco
         self.no_wrap = no_wrap
+        self.pure = pure
 
     def __reduce__(self):
         """Get pickling information."""
-        return (self.__class__, (self.target, self.strict, self.minify, self.line_numbers, self.keep_lines, self.no_tco, self.no_wrap))
+        return (self.__class__, (self.target, self.strict, self.minify, self.line_numbers, self.keep_lines, self.no_tco, self.no_wrap, self.pure))
 
     def get_cli_args(self):
         """Get the Coconut CLI args that can be used to set up an equivalent compiler."""
@@ -549,6 +550,8 @@ class Compiler(Grammar, pickleable_obj):
             args.append("--no-tco")
         if self.no_wrap:
             args.append("--no-wrap-types")
+        if self.pure:
+            args.append("--pure")
         return args
 
     def copy(self, snapshot=False):
@@ -910,6 +913,7 @@ class Compiler(Grammar, pickleable_obj):
 
         # these handlers just do strict/target checking
         cls.u_string <<= attach(cls.u_string_ref, cls.method("u_string_check"))
+        cls.global_stmt <<= attach(cls.global_stmt_ref, cls.method("global_check"))
         cls.nonlocal_stmt <<= attach(cls.nonlocal_stmt_ref, cls.method("nonlocal_check"))
         cls.keyword_lambdef <<= attach(cls.keyword_lambdef_ref, cls.method("lambdef_check"))
         cls.star_sep_arg <<= attach(cls.star_sep_arg_ref, cls.method("star_sep_check"))
@@ -1048,37 +1052,42 @@ class Compiler(Grammar, pickleable_obj):
             logger.warn_err(self.make_err(CoconutSyntaxWarning, message, original, loc, **kwargs))
             self.shown_warnings.add(key)
 
-    def strict_err_or_warn(self, *args, **kwargs):
-        """Raises an error if in strict mode, otherwise raises a warning. Usage:
-            self.strict_err_or_warn(message, original, loc)
-        """
-        raise_err_func = kwargs.pop("raise_err_func", None)
-        internal_assert("extra" not in kwargs, "cannot pass extra=... to strict_err_or_warn")
-        if self.strict:
-            kwargs["extra"] = "remove --strict to downgrade to a warning"
-            if raise_err_func is None:
-                raise self.make_err(CoconutStyleError, *args, **kwargs)
-            else:
-                return raise_err_func(CoconutStyleError, *args, **kwargs)
-        else:
-            self.syntax_warning(*args, **kwargs)
-
-    def strict_qa_error(self, msg, original, loc, **kwargs):
-        """Strict error or warn an error that should be disabled by a NOQA comment.
-
-        Use strict_qa_error when the error is non-greedy and the comment can be handled first;
-        use strict_err_or_warn when the error is greedy, which means the comment won't have
-        been recorded yet and so we won't be able to check if it contains NOQA.
-        """
+    def has_noqa_comment(self, original, loc):
+        """Check if the given location has a NOQA comment."""
         ln = self.adjust(lineno(loc, original))
         comment = self.reformat(" ".join(self.comments[ln]), ignore_errors=True)
-        if not self.noqa_regex.search(comment):
-            return self.strict_err_or_warn(
-                msg + " (add '# NOQA' to suppress)",
-                original,
-                loc,
-                **kwargs  # no comma
+        return self.noqa_regex.search(comment)
+
+    def strict_err_or_warn(self, msg, original, loc, noqa_able=False, **kwargs):
+        """Raises an error if in strict mode, otherwise raises a warning.
+
+        Set noqa_able=True when the error is non-greedy and comments have been
+        parsed, allowing NOQA suppression. Use noqa_able=False (default) when
+        errors are greedy and comments haven't been recorded yet.
+        """
+        raise_err_func = kwargs.pop("raise_err_func", None)
+        pure_err = kwargs.pop("pure_err", False)
+        internal_assert("extra" not in kwargs, "cannot pass extra=... to strict_err_or_warn")
+        if noqa_able:
+            if self.has_noqa_comment(original, loc):
+                return None
+            msg += " (add '# NOQA' to suppress)"
+        if self.strict:
+            kwargs["extra"] = (
+                ("remove --pure to dismiss; " if pure_err else "")
+                + "remove --strict to downgrade to a warning"
             )
+            if raise_err_func is None:
+                raise self.make_err(CoconutStyleError, msg, original, loc, **kwargs)
+            else:
+                return raise_err_func(CoconutStyleError, msg, original, loc, **kwargs)
+        else:
+            self.syntax_warning(msg, original, loc, **kwargs)
+
+    def pure_error(self, msg, original, loc, noqa_able=True, **kwargs):
+        """If in pure mode, raise an error or warn depending on strict mode."""
+        if self.pure:
+            return self.strict_err_or_warn(msg, original, loc, noqa_able=noqa_able, pure_err=True, **kwargs)
 
     @contextmanager
     def complain_on_err(self):
@@ -1448,11 +1457,11 @@ class Compiler(Grammar, pickleable_obj):
                 # always use endpoint=False otherwise the endpoint will be the end of the file since we've finished parsing
                 if info["imported"] and not info["referenced"]:
                     for loc in info["imported"]:
-                        self.strict_qa_error("found unused import " + repr(self.reformat(name, ignore_errors=True)), original, loc, endpoint=False)
+                        self.strict_err_or_warn("found unused import " + repr(self.reformat(name, ignore_errors=True)), original, loc, noqa_able=True, endpoint=False)
                 if not self.star_import:  # only check for undefined names when there are no * imports
                     if name not in all_builtins and info["referenced"] and not (info["assigned"] or info["imported"]):
                         for loc in info["referenced"]:
-                            self.strict_qa_error("found undefined name " + repr(self.reformat(name, ignore_errors=True)), original, loc, endpoint=False)
+                            self.strict_err_or_warn("found undefined name " + repr(self.reformat(name, ignore_errors=True)), original, loc, noqa_able=True, endpoint=False)
 
     def pickle_cache(self, original, cache_path, include_incremental=True):
         """Pickle the pyparsing cache for original to cache_path."""
@@ -1762,9 +1771,9 @@ class Compiler(Grammar, pickleable_obj):
 
     def prepare(self, inputstring, strip=False, nl_at_eof_check=False, **kwargs):
         """Prepare a string for processing."""
-        if self.strict and nl_at_eof_check and inputstring and not inputstring.endswith("\n"):
+        if nl_at_eof_check and inputstring and not inputstring.endswith("\n"):
             end_index = len(inputstring) - 1 if inputstring else 0
-            raise self.make_err(CoconutStyleError, "missing new line at end of file", inputstring, end_index)
+            self.strict_err("missing new line at end of file", inputstring, end_index)
         kept_lines = tuple(literal_lines(inputstring))
         self.num_lines = len(kept_lines)
         if self.keep_lines:
@@ -3159,7 +3168,7 @@ else:
                 elif arg[1] == "=":
                     kwd_args.append(arg[0] + "=" + arg[0])
                 elif arg[0] == "...":
-                    self.strict_qa_error("'...={name}' shorthand is deprecated, use '{name}=' shorthand instead".format(name=arg[1]), original, loc)
+                    self.strict_err_or_warn("'...={name}' shorthand is deprecated, use '{name}=' shorthand instead".format(name=arg[1]), original, loc, noqa_able=True)
                     kwd_args.append(arg[1] + "=" + arg[1])
                 else:
                     kwd_args.append(argstr)
@@ -3380,7 +3389,7 @@ else:
                 elif trailer[0] == "[]":
                     out = "_coconut_partial(_coconut.operator.getitem, " + out + ")"
                 elif trailer[0] == ".":
-                    self.strict_qa_error("'obj.' as a shorthand for 'getattr$(obj)' is deprecated (just use the getattr partial)", original, loc)
+                    self.strict_err_or_warn("'obj.' as a shorthand for 'getattr$(obj)' is deprecated (just use the getattr partial)", original, loc, noqa_able=True)
                     out = "_coconut_partial(_coconut.getattr, " + out + ")"
                 elif trailer[0] == "type:[]":
                     out = "_coconut.typing.Sequence[" + out + "]"
@@ -3599,7 +3608,7 @@ while True:
                 and not kwd_args
                 and not dubstar_args
             ):
-                self.strict_qa_error("unnecessary inheriting from object (Coconut does this automatically)", original, loc)
+                self.strict_err_or_warn("unnecessary inheriting from object (Coconut does this automatically)", original, loc, noqa_able=True)
 
             # universalize if not Python 3
             if not self.target.startswith("3"):
@@ -3944,7 +3953,7 @@ def __hash__(self):
             if item == "=":
                 item = name
             elif name == "...":
-                self.strict_qa_error("'...={item}' shorthand is deprecated, use '{item}=' shorthand instead".format(item=item), original, loc)
+                self.strict_err_or_warn("'...={item}' shorthand is deprecated, use '{item}=' shorthand instead".format(item=item), original, loc, noqa_able=True)
                 name = item
             names.append(name)
             items.append(item)
@@ -4077,7 +4086,7 @@ if {store_var} is not _coconut_sentinel:
         elif len(tokens) == 2:
             imp_from, imports = tokens
             if imp_from == "__future__":
-                self.strict_qa_error("unnecessary from __future__ import (Coconut does these automatically)", original, loc)
+                self.strict_err_or_warn("unnecessary from __future__ import (Coconut does these automatically)", original, loc, noqa_able=True)
                 return ""
         else:
             raise CoconutInternalException("invalid import tokens", tokens)
@@ -4639,10 +4648,11 @@ __annotations__["{name}"] = {annotation}
             raise CoconutInternalException("invalid case tokens", tokens)
 
         if block_kwd == "case":
-            self.strict_qa_error(
+            self.strict_err_or_warn(
                 "deprecated case keyword at top level in case ...: match ...: block (use Python 3.10 match ...: case ...: syntax instead)",
                 original,
                 loc,
+                noqa_able=True,
             )
         elif block_kwd == "cases":
             self.syntax_warning(
@@ -4687,7 +4697,7 @@ __annotations__["{name}"] = {annotation}
 
         # warn if there are no exprs
         if not exprs:
-            self.strict_qa_error(("t" if is_t else "f") + "-string with no expressions", original, loc)
+            self.strict_err_or_warn(("t" if is_t else "f") + "-string with no expressions", original, loc, noqa_able=True)
 
         # handle Python 3.8 f string = specifier
         for i, expr in enumerate(exprs):
@@ -4947,7 +4957,7 @@ async with {iter_item} as {temp_var}:
             return tokens[0]
         else:
             if not allow_silent_concat:
-                self.strict_qa_error("found implicit string concatenation (use explicit '+' instead)", original, loc)
+                self.strict_err_or_warn("found implicit string concatenation (use explicit '+' instead)", original, loc, noqa_able=True)
             if any(s.endswith(")") for s in tokens):  # has .format() calls
                 # parens are necessary for string_atom_handle
                 return "(" + " + ".join(tokens) + ")"
@@ -5495,10 +5505,14 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
 # CHECKING HANDLERS:
 # -----------------------------------------------------------------------------------------------------------------------
 
-    def check_strict(self, name, original, loc, tokens=(None,), only_warn=False, always_warn=False):
+    def check_strict(self, name, original, loc, tokens=(None,), only_warn=False, always_warn=False, noqa_able=True):
         """Check that syntax meets --strict requirements."""
         self.internal_assert(len(tokens) == 1, original, loc, "invalid " + name + " tokens", tokens)
+        if noqa_able and self.has_noqa_comment(original, loc):
+            return tokens[0]
         message = "found " + name
+        if noqa_able:
+            message += " (add '# NOQA' to suppress)"
         if self.strict:
             kwargs = {}
             if only_warn:
@@ -5515,7 +5529,7 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
 
     def lambdef_check(self, original, loc, tokens):
         """Check for Python-style lambdas."""
-        return self.check_strict("Python-style lambda", original, loc, tokens)
+        return self.check_strict("Python-style lambda", original, loc, tokens, noqa_able=False)
 
     def endline_semicolon_check(self, original, loc, tokens):
         """Check for semicolons at the end of lines."""
@@ -5559,8 +5573,15 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
         else:
             return tokens[0]
 
+    def global_check(self, original, loc, tokens):
+        """Check for global statement in --pure mode."""
+        self.pure_error("global statements are disabled in --pure mode", original, loc)
+        global_stmt, = tokens
+        return global_stmt
+
     def nonlocal_check(self, original, loc, tokens):
         """Check for Python 3 nonlocal statement."""
+        self.pure_error("nonlocal statements are disabled in --pure mode", original, loc)
         return self.check_py("3", "nonlocal statement", original, loc, tokens)
 
     def star_assign_item_check(self, original, loc, tokens):

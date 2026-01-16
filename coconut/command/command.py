@@ -331,6 +331,7 @@ class Command(object):
                 keep_lines=args.keep_lines,
                 no_tco=args.no_tco,
                 no_wrap=args.no_wrap_types,
+                pure=args.pure,
             )
             if not self.using_jobs:
                 self.comp.warm_up(
