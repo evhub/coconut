@@ -122,9 +122,9 @@ depth: 1
 
 ```
 coconut [-h] [--and source [dest ...]] [-v] [-t version] [-i] [-p] [-a] [-l]
-        [--no-line-numbers] [-k] [-w] [-r] [-n] [-d] [-q] [-s] [--no-tco] [--no-wrap-types]
-        [-c code] [-j processes] [-f] [--minify] [--jupyter ...] [--mypy ...] [--pyright]
-        [--argv ...] [--tutorial] [--docs] [--style name] [--vi-mode]
+        [--no-line-numbers] [-k] [-w] [-r] [-n] [-d] [-q] [-s] [--pure] [--no-tco]
+        [--no-wrap-types] [-c code] [-j processes] [-f] [--minify] [--jupyter ...]
+        [--mypy ...] [--pyright] [--argv ...] [--tutorial] [--docs] [--style name] [--vi-mode]
         [--recursion-limit limit] [--stack-size kbs] [--fail-fast] [--no-cache]
         [--site-install] [--site-uninstall] [--verbose] [--trace] [--profile]
         [source] [dest]
@@ -145,8 +145,7 @@ dest                destination directory for compiled files (defaults to
 --and source [dest ...]
                       add an additional source/dest pair to compile (dest is optional)
 -v, -V, --version     print Coconut and Python version information
--t version, --target version
-                      specify target Python version (defaults to universal)
+-t, --target version  specify target Python version (defaults to universal)
 -i, --interact        force the interpreter to start (otherwise starts if no other command is
                       given) (implies --run)
 -p, --package         compile source as part of a package (defaults to only if source is a
@@ -166,48 +165,45 @@ dest                destination directory for compiled files (defaults to
 -n, --no-write, --nowrite
                       disable writing compiled Python
 -d, --display         print compiled Python
--q, --quiet           suppress all informational output (combine with --display to write
-                      runnable code to stdout)
+-q, --quiet           suppress all informational output (combine with --display to write runnable
+                      code to stdout)
 -s, --strict          enforce code cleanliness standards
+--pure                enforce functional programming norms
 --no-tco, --notco     disable tail call optimization
 --no-wrap-types, --nowraptypes
                       disable wrapping type annotations in strings and turn off 'from __future__
                       import annotations' behavior
--c code, --code code  run Coconut passed in as a string (can also be piped into stdin)
--j processes, --jobs processes
-                      number of additional processes to use (defaults to 'sys') (0 is no
-                      additional processes; 'sys' uses machine default)
--f, --force           force re-compilation even when source code and compilation parameters
-                      haven't changed
+-c, --code code       run Coconut passed in as a string (can also be piped into stdin)
+-j, --jobs processes  number of additional processes to use (defaults to 'sys') (0 is no additional
+                      processes; 'sys' uses machine default)
+-f, --force           force re-compilation even when source code and compilation parameters haven't
+                      changed
 --minify              reduce size of compiled Python
---jupyter ..., --ipython ...
+--jupyter, --ipython ...
                       run Jupyter/IPython with Coconut as the kernel (remaining args passed to
                       Jupyter)
 --mypy ...            run MyPy on compiled Python (remaining args passed to MyPy) (implies
                       --package --line-numbers)
 --pyright             run Pyright on compiled Python (implies --package)
---argv ..., --args ...
-                      set sys.argv to source plus remaining args for use in the Coconut script
+--argv, --args ...    set sys.argv to source plus remaining args for use in the Coconut script
                       being run
 --tutorial            open Coconut's tutorial in the default web browser
 --docs, --documentation
                       open Coconut's documentation in the default web browser
---style name          set Pygments syntax highlighting style (or 'list' to list styles)
-                      (defaults to COCONUT_STYLE environment variable if it exists, otherwise
-                      'default')
---vi-mode, --vimode   enable vi mode in the interpreter (currently set to False) (can be
-                      modified by setting COCONUT_VI_MODE environment variable)
---recursion-limit limit, --recursionlimit limit
-                      set maximum recursion depth in compiler (defaults to 1920) (when
-                      increasing --recursion-limit, you may also need to increase --stack-size;
-                      setting them to approximately equal values is recommended)
---stack-size kbs, --stacksize kbs
-                      run the compiler in a separate thread with the given stack size in
-                      kilobytes
---fail-fast           causes the compiler to fail immediately upon encountering a compilation
-                      error rather than attempting to continue compiling other files
---no-cache            disables use of Coconut's incremental parsing cache (caches previous
-                      parses to improve recompilation performance for slightly modified files)
+--style name          set Pygments syntax highlighting style (or 'list' to list styles) (defaults
+                      to COCONUT_STYLE environment variable if it exists, otherwise 'default')
+--vi-mode, --vimode   enable vi mode in the interpreter (currently set to False) (can be modified
+                      by setting COCONUT_VI_MODE environment variable)
+--recursion-limit, --recursionlimit limit
+                      set maximum recursion depth in compiler (defaults to 1920) (when increasing
+                      --recursion-limit, you may also need to increase --stack-size; setting them
+                      to approximately equal values is recommended)
+--stack-size, --stacksize kbs
+                      run the compiler in a separate thread with the given stack size in kilobytes
+--fail-fast           causes the compiler to fail immediately upon encountering a compilation error
+                      rather than attempting to continue compiling other files
+--no-cache            disables use of Coconut's incremental parsing cache (caches previous parses
+                      to improve recompilation performance for slightly modified files)
 --site-install, --siteinstall
                       set up coconut.api to be imported on Python start
 --site-uninstall, --siteuninstall

@@ -571,6 +571,8 @@ class A:
 def f():
     global x
     """.strip()), CoconutStyleError, err_has="pure")
+    # nonlocal requires target="3" since it's Python 3 only
+    setup(line_numbers=False, strict=True, pure=True, target="3")
     assert_raises(-> parse("""
 def f():
     x = 1
@@ -596,6 +598,8 @@ class Foo(object):  # NOQA
 def f():
     global x  # NOQA
     """.strip())
+    # nonlocal requires target="3" since it's Python 3 only
+    setup(line_numbers=False, strict=True, pure=True, target="3")
     parse("""
 def f():
     x = 1
