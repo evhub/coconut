@@ -255,7 +255,7 @@ def evaluate_tokens(tokens, **kwargs):
         if isinstance(tokens, (str, bool)) or tokens is None:
             return tokens
 
-        elif isinstance(tokens, ComputationNode):
+        elif isinstance(tokens, (ComputationNode, SideEffectNode)):
             result = tokens.evaluate()
             if is_final and isinstance(result, ExceptionNode):
                 result.evaluate()
@@ -444,6 +444,20 @@ class DeferredNode(object):
     def evaluate(self):
         """Evaluate the deferred computation."""
         return unpack(self.tokens)
+
+
+class SideEffectNode(object):
+    """A node in the computation graph that performs a side effect when evaluated."""
+    __slots__ = ("result", "side_effect")
+
+    def __init__(self, result, side_effect):
+        self.result = result
+        self.side_effect = side_effect
+
+    def evaluate(self):
+        """Call the stored function to get the result."""
+        self.side_effect()
+        return self.result
 
 
 class ExceptionNode(object):

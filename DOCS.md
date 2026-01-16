@@ -359,8 +359,8 @@ Note that many of the above style issues will still show a warning if `--strict`
 If the `--pure` flag is enabled, Coconut will enforce functional programming norms on the code being compiled. These checks are compatible with `--strict` mode—when both are enabled, violations become errors instead of warnings. Like `--strict`, these checks can usually be disabled on a line-by-line basis by adding `# NOQA` or `# noqa` comments.
 
 The following are disallowed in `--pure` mode:
-- `global` statements
-- `nonlocal` statements
+- variable reassignment (all variables are implicitly [`final`](#final))
+- `global` and `nonlocal` statements
 
 #### Backports
 
@@ -1662,7 +1662,7 @@ GREETING = "Hello"
 def calculate_area(radius):
     return PI * radius ** 2
 
-# No compile-time enforcement - reassignment would be allowed
+PI = 3.14 # No compile-time enforcement - reassignment is allowed
 ```
 
 

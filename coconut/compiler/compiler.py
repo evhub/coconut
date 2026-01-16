@@ -589,6 +589,14 @@ class Compiler(Grammar, pickleable_obj):
     temp_var_counts = None
     operators = None
 
+    def init_parsing_context(self):
+        """Initialize parsing context."""
+        self.parsing_context = defaultdict(list)
+        # initialize module-level scopes
+        self.parsing_context["final_vars"].append({})
+        self.parsing_context["pure_vars"].append({})
+        return self.parsing_context
+
     def reset(self, keep_state=False, filename=None):
         """Reset references.
 
@@ -607,8 +615,6 @@ class Compiler(Grammar, pickleable_obj):
             self.temp_var_counts = defaultdict(int)
         # but always overwrite temp_vars_by_key since they store locs that will be invalidated
         self.temp_vars_by_key = {}
-        self.parsing_context = defaultdict(list)
-        self.parsing_context["final_vars"].append({})  # initialize module-level final scope
         self.name_info = defaultdict(lambda: {"imported": set(), "referenced": set(), "assigned": set()})
         self.star_import = False
         self.kept_lines = []
@@ -625,6 +631,7 @@ class Compiler(Grammar, pickleable_obj):
         self.shown_warnings = set()
         if not keep_state:
             self.computation_graph_caches = defaultdict(staledict)
+        self.init_parsing_context()
 
     @contextmanager
     def inner_environment(self, ln=None):
@@ -638,12 +645,12 @@ class Compiler(Grammar, pickleable_obj):
         wrapped_type_ignore, self.wrapped_type_ignore = self.wrapped_type_ignore, None
         skips, self.skips = self.skips, []
         docstring, self.docstring = self.docstring, ""
-        parsing_context, self.parsing_context = self.parsing_context, defaultdict(list)
-        self.parsing_context["final_vars"].append({})  # initialize module-level final scope
         kept_lines, self.kept_lines = self.kept_lines, []
         num_lines, self.num_lines = self.num_lines, 0
         remaining_original, self.remaining_original = self.remaining_original, None
         shown_warnings, self.shown_warnings = self.shown_warnings, set()
+        parsing_context = self.parsing_context
+        self.init_parsing_context()
         try:
             with ComputationNode.using_overrides():
                 yield
@@ -655,11 +662,11 @@ class Compiler(Grammar, pickleable_obj):
             self.wrapped_type_ignore = wrapped_type_ignore
             self.skips = skips
             self.docstring = docstring
-            self.parsing_context = parsing_context
             self.kept_lines = kept_lines
             self.num_lines = num_lines
             self.remaining_original = remaining_original
             self.shown_warnings = shown_warnings
+            self.parsing_context = parsing_context
 
     @contextmanager
     def disable_checks(self):
@@ -1084,10 +1091,10 @@ class Compiler(Grammar, pickleable_obj):
         else:
             self.syntax_warning(msg, original, loc, **kwargs)
 
-    def pure_error(self, msg, original, loc, noqa_able=True, **kwargs):
+    def pure_error(self, msg, original, loc, **kwargs):
         """If in pure mode, raise an error or warn depending on strict mode."""
         if self.pure:
-            return self.strict_err_or_warn(msg, original, loc, noqa_able=noqa_able, pure_err=True, **kwargs)
+            return self.strict_err_or_warn(msg, original, loc, pure_err=True, **kwargs)
 
     @contextmanager
     def complain_on_err(self):
@@ -5047,16 +5054,20 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
             return default
 
     @contextmanager
-    def add_to_parsing_context(self, name, obj, callbacks_key=None):
-        """Put the given object on the parsing context stack for the given name."""
-        self.parsing_context[name].append(obj)
+    def add_to_parsing_context(self, name_obj_dict, callbacks_keys_dict=None):
+        """Put all the given objects on their respective parsing context stacks."""
+        for name, obj in name_obj_dict.items():
+            self.parsing_context[name].append(obj)
         try:
             yield
         finally:
-            popped_ctx = self.parsing_context[name].pop()
-            if callbacks_key is not None:
-                for callback in popped_ctx[callbacks_key]:
-                    callback()
+            for name in name_obj_dict:
+                popped_ctx = self.parsing_context[name].pop()
+                if callbacks_keys_dict is not None:
+                    callbacks_key = callbacks_keys_dict.get(name)
+                    if callbacks_key is not None:
+                        for callback in popped_ctx[callbacks_key]:
+                            callback()
 
     def funcname_typeparams_handle(self, tokens):
         """Handle function names with type parameters."""
@@ -5183,10 +5194,12 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
     def type_alias_stmt_manage(self, original=None, loc=None, item=None):
         """Manage the typevars parsing context."""
         prev_typevar_info = self.current_parsing_context("typevars")
-        with self.add_to_parsing_context("typevars", {
-            "all_typevars": {} if prev_typevar_info is None else prev_typevar_info["all_typevars"].copy(),
-            "new_typevars": [],
-            "typevar_locs": {},
+        with self.add_to_parsing_context({
+            "typevars": {
+                "all_typevars": {} if prev_typevar_info is None else prev_typevar_info["all_typevars"].copy(),
+                "new_typevars": [],
+                "typevar_locs": {},
+            },
         }):
             yield
 
@@ -5220,8 +5233,10 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
     @contextmanager
     def where_stmt_manage(self, original, loc, item):
         """Manage where statements."""
-        with self.add_to_parsing_context("where", {
-            "assigns": None,
+        with self.add_to_parsing_context({
+            "where": {
+                "assigns": None,
+            },
         }):
             yield
 
@@ -5277,7 +5292,10 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
         try:
             # handles support for class type variables
             with self.type_alias_stmt_manage():
-                with self.add_to_parsing_context("final_vars", {}):
+                with self.add_to_parsing_context({
+                    "final_vars": {},
+                    "pure_vars": {},
+                }):
                     yield
         finally:
             cls_stack.pop()
@@ -5291,7 +5309,10 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
         try:
             # handles support for function type variables
             with self.type_alias_stmt_manage():
-                with self.add_to_parsing_context("final_vars", {}):
+                with self.add_to_parsing_context({
+                    "final_vars": {},
+                    "pure_vars": {},
+                }):
                     yield
         finally:
             if cls_context is not None:
@@ -5307,14 +5328,13 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
     def has_expr_setname_manage(self, original, loc, item):
         """Handle parses that can assign expr_setname."""
         with self.add_to_parsing_context(
-            "expr_setnames",
-            {
+            {"expr_setnames": {
                 "parent": self.current_parsing_context("expr_setnames"),
                 "new_names": set(),
                 "callbacks": [],
                 "loc": loc,
-            },
-            callbacks_key="callbacks",
+            }},
+            callbacks_keys_dict={"expr_setnames": "callbacks"},
         ):
             yield
 
@@ -5391,6 +5411,55 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
             is_new = loc not in self.name_info[name]["referenced"]
             self.name_info[name]["referenced"].add(loc)
 
+        # final variable checking (setting final_vars happens at the end)
+        final_vars = self.current_parsing_context("final_vars")
+        self.internal_assert(final_vars is not None, original, loc, "no final_vars context")
+        if (
+            assign
+            and not escaped
+            # at least on py3, expr_setnames shadow rather than overwrite, so we allow them
+            and not expr_setname
+            and name in final_vars
+            and final_vars[name] != loc  # allow reassign in same loc (speculative parsing duplicate)
+        ):
+            return local_raise_or_wrap_error(
+                CoconutSyntaxError,
+                "disallowed reassignment of final variable '{name}'".format(name=name),
+                original,
+                loc,
+                extra="use explicit '\\{name}' syntax to bypass final checking".format(name=name),
+            )
+
+        safe_to_show_warnings = (
+            # in strict mode, errors are wrapped and we should always do that
+            self.strict
+            # in non-strict mode, only check when using computation graph
+            #  and not for greedy handlers (to avoid spurious warnings)
+            #  and only if it's a new assignment (to avoid duplicate warnings)
+            or (is_new and not is_greedy and USE_COMPUTATION_GRAPH)
+        )
+
+        # pure variable checking (setting pure_vars happens at the end)
+        if self.pure:
+            pure_vars = self.current_parsing_context("pure_vars")
+            self.internal_assert(pure_vars is not None, original, loc, "no pure_vars context")
+            if (
+                assign
+                and not escaped
+                and not expr_setname
+                and safe_to_show_warnings
+                and name in pure_vars
+                and pure_vars[name] != loc  # allow reassign in same loc (speculative parsing duplicate)
+            ):
+                err = self.pure_error(
+                    "disallowed reassignment of variable '{name}' (all variable reassignment is prohibited in --pure mode; try reworking to be more functional or bypass with explicit '\\{name}' syntax if necessary)".format(name=name),
+                    original,
+                    loc,
+                    raise_err_func=local_raise_or_wrap_error,
+                )
+                if err is not None:
+                    return err
+
         is_class_attr = (
             self.current_parsing_context("class")
             and not self.in_method
@@ -5418,14 +5487,7 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
             #  case we can't be sure this is actually shadowing a builtin;
             #  BUT if we're on strict mode, then it's an actual error, rather
             #  than a warning, which means we can just wrap it
-            and (
-                # in strict mode, errors are wrapped and we should always do that
-                self.strict
-                # in non-strict mode, only check when using computation graph
-                #  and not for greedy handlers (to avoid spurious warnings)
-                #  and only if it's a new assignment (to avoid duplicate warnings)
-                or (is_new and not is_greedy and USE_COMPUTATION_GRAPH)
-            )
+            and safe_to_show_warnings
         ):
             if name in all_builtins:
                 err = self.strict_err_or_warn(
@@ -5449,26 +5511,11 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
                 if err is not None:
                     return err
 
-        # final variable checking
-        final_vars = self.current_parsing_context("final_vars")
-        self.internal_assert(final_vars is not None, original, loc, "no final_vars context")
-        if (
-            assign
-            and not escaped
-            and not expr_setname
-            and name in final_vars
-            and final_vars[name] != loc  # allow reassign in same loc (speculative parsing duplicate)
-        ):
-            return local_raise_or_wrap_error(
-                CoconutSyntaxError,
-                "cannot reassign final variable '{name}'".format(name=name),
-                original,
-                loc,
-                extra="use explicit '\\{name}' syntax to bypass final checking".format(name=name),
-            )
         # only mark as final after all checks pass
         if is_final:
             final_vars[name] = loc
+        if self.pure:
+            pure_vars[name] = loc
 
         if name == "exec":
             if self.target.startswith("3"):
@@ -5575,13 +5622,13 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
 
     def global_check(self, original, loc, tokens):
         """Check for global statement in --pure mode."""
-        self.pure_error("global statements are disabled in --pure mode", original, loc)
+        self.pure_error("global statements are disabled in --pure mode", original, loc, noqa_able=True)
         global_stmt, = tokens
         return global_stmt
 
     def nonlocal_check(self, original, loc, tokens):
         """Check for Python 3 nonlocal statement."""
-        self.pure_error("nonlocal statements are disabled in --pure mode", original, loc)
+        self.pure_error("nonlocal statements are disabled in --pure mode", original, loc, noqa_able=True)
         return self.check_py("3", "nonlocal statement", original, loc, tokens)
 
     def star_assign_item_check(self, original, loc, tokens):

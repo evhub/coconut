@@ -603,6 +603,23 @@ def f():
         nonlocal x  # NOQA
     """.strip())
 
+    # test final variables in pure mode
+    setup(line_numbers=False, strict=True, pure=True, target="sys")
+    assert_raises(-> parse("""
+x = 1
+x = 2
+    """.strip()), CoconutStyleError, err_has="pure")
+    assert_raises(-> parse("""
+def f():
+    y = 1
+    y = 2
+    """.strip()), CoconutStyleError, err_has="pure")
+    # escape syntax should allow reassignment
+    parse(r"""
+x = 1
+\x = 2
+    """.strip())
+
     setup(line_numbers=False, target="2.7")
     assert parse("from io import BytesIO", mode="lenient") == "from io import BytesIO"
     assert_raises(-> parse("def f(*, x=None) = x"), CoconutTargetError, err_has="\n        ^")
