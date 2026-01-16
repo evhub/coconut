@@ -589,12 +589,18 @@ class Compiler(Grammar, pickleable_obj):
     temp_var_counts = None
     operators = None
 
+    def get_empty_scope(self):
+        """Get an empty scope for the parsing_context."""
+        return {
+            "final_vars": {},
+            "pure_vars": {},
+        }
+
     def init_parsing_context(self):
         """Initialize parsing context."""
         self.parsing_context = defaultdict(list)
         # initialize module-level scopes
-        self.parsing_context["final_vars"].append({})
-        self.parsing_context["pure_vars"].append({})
+        self.parsing_context["scope"].append(self.get_empty_scope())
         return self.parsing_context
 
     def reset(self, keep_state=False, filename=None):
@@ -5293,8 +5299,7 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
             # handles support for class type variables
             with self.type_alias_stmt_manage():
                 with self.add_to_parsing_context({
-                    "final_vars": {},
-                    "pure_vars": {},
+                    "scope": self.get_empty_scope(),
                 }):
                     yield
         finally:
@@ -5310,8 +5315,7 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
             # handles support for function type variables
             with self.type_alias_stmt_manage():
                 with self.add_to_parsing_context({
-                    "final_vars": {},
-                    "pure_vars": {},
+                    "scope": self.get_empty_scope(),
                 }):
                     yield
         finally:
@@ -5411,9 +5415,11 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
             is_new = loc not in self.name_info[name]["referenced"]
             self.name_info[name]["referenced"].add(loc)
 
+        scope = self.current_parsing_context("scope")
+        self.internal_assert(scope is not None, original, loc, "no scope context")
+
         # final variable checking (setting final_vars happens at the end)
-        final_vars = self.current_parsing_context("final_vars")
-        self.internal_assert(final_vars is not None, original, loc, "no final_vars context")
+        final_vars = scope["final_vars"]
         if (
             assign
             and not escaped
@@ -5441,8 +5447,7 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
 
         # pure variable checking (setting pure_vars happens at the end)
         if self.pure:
-            pure_vars = self.current_parsing_context("pure_vars")
-            self.internal_assert(pure_vars is not None, original, loc, "no pure_vars context")
+            pure_vars = scope["pure_vars"]
             if (
                 assign
                 and not escaped
@@ -5514,7 +5519,7 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
         # only mark as final after all checks pass
         if is_final:
             final_vars[name] = loc
-        if self.pure:
+        if self.pure and assign and not escaped and not expr_setname:
             pure_vars[name] = loc
 
         if name == "exec":

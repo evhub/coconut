@@ -566,11 +566,30 @@ class A:
     setup(line_numbers=False, strict=True, target="sys")
     assert_raises(-> parse("await f x"), CoconutParseError)
 
+    # pure tests
     setup(line_numbers=False, strict=True, pure=True, target="sys")
+    assert parse("""
+class A:
+    def mk_int(x) = int(x)
+    """.strip())
     assert_raises(-> parse("""
 def f():
     global x
     """.strip()), CoconutStyleError, err_has="pure")
+    assert_raises(-> parse("""
+x = 1
+x = 2
+    """.strip()), CoconutStyleError, err_has="pure")
+    assert_raises(-> parse("""
+def f():
+    y = 1
+    y = 2
+    """.strip()), CoconutStyleError, err_has="pure")
+    # escape syntax should allow reassignment
+    parse(r"""
+x = 1
+\x = 2
+    """.strip())
     # nonlocal requires target="3" since it's Python 3 only
     setup(line_numbers=False, strict=True, pure=True, target="3")
     assert_raises(-> parse("""
@@ -605,23 +624,6 @@ def f():
     x = 1
     def g():
         nonlocal x  # NOQA
-    """.strip())
-
-    # test final variables in pure mode
-    setup(line_numbers=False, strict=True, pure=True, target="sys")
-    assert_raises(-> parse("""
-x = 1
-x = 2
-    """.strip()), CoconutStyleError, err_has="pure")
-    assert_raises(-> parse("""
-def f():
-    y = 1
-    y = 2
-    """.strip()), CoconutStyleError, err_has="pure")
-    # escape syntax should allow reassignment
-    parse(r"""
-x = 1
-\x = 2
     """.strip())
 
     setup(line_numbers=False, target="2.7")
