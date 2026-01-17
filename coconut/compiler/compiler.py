@@ -105,6 +105,7 @@ from coconut.constants import (
     incremental_cache_limit,
     use_line_by_line_parser,
     coconut_cache_dir,
+    wildcard,
 )
 from coconut.util import (
     pickle,
@@ -785,7 +786,7 @@ class Compiler(Grammar, pickleable_obj):
         cls.type_alias_stmt <<= handle_and_manage(
             cls.type_alias_stmt_ref,
             cls.method("type_alias_stmt_handle"),
-            cls.method("type_alias_stmt_manage"),
+            cls.method("scope_manage"),
             include_in_packrat_context=False,
         )
 
@@ -5207,19 +5208,6 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
                 raise CoconutInternalException("invalid TypeVarFunc", TypeVarFunc, "(", name, ")")
         return "_coconut.typing.Generic[" + ", ".join(generics) + "]"
 
-    @contextmanager
-    def type_alias_stmt_manage(self, original=None, loc=None, item=None):
-        """Manage the typevars parsing context."""
-        prev_typevar_info = self.current_parsing_context("typevars")
-        with self.add_to_parsing_context({
-            "typevars": {
-                "all_typevars": {} if prev_typevar_info is None else prev_typevar_info["all_typevars"].copy(),
-                "new_typevars": [],
-                "typevar_locs": {},
-            },
-        }):
-            yield
-
     def type_alias_stmt_handle(self, tokens):
         """Handle type alias statements."""
         if len(tokens) == 2:
@@ -5294,6 +5282,20 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
         return cls_context is not None and cls_context["name"] is not None and cls_context["in_method"]
 
     @contextmanager
+    def scope_manage(self, original=None, loc=None, item=None):
+        """Manage a context that opens a new scope."""
+        prev_typevar_info = self.current_parsing_context("typevars")
+        with self.add_to_parsing_context({
+            "scope": self.get_empty_scope(),
+            "typevars": {
+                "all_typevars": {} if prev_typevar_info is None else prev_typevar_info["all_typevars"].copy(),
+                "new_typevars": [],
+                "typevar_locs": {},
+            },
+        }):
+            yield
+
+    @contextmanager
     def class_manage(self, original, loc, item):
         """Manage the class parsing context."""
         cls_stack = self.parsing_context["class"]
@@ -5313,12 +5315,9 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
             "in_method": False,
         })
         try:
-            # handles support for class type variables
-            with self.type_alias_stmt_manage():
-                with self.add_to_parsing_context({
-                    "scope": self.get_empty_scope(),
-                }):
-                    yield
+            # handles support for class type variables and opens a new scope
+            with self.scope_manage():
+                yield
         finally:
             cls_stack.pop()
 
@@ -5329,12 +5328,9 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
         if cls_context is not None:
             in_method, cls_context["in_method"] = cls_context["in_method"], True
         try:
-            # handles support for function type variables
-            with self.type_alias_stmt_manage():
-                with self.add_to_parsing_context({
-                    "scope": self.get_empty_scope(),
-                }):
-                    yield
+            # handles support for function type variables and opens a new scope
+            with self.scope_manage():
+                yield
         finally:
             if cls_context is not None:
                 cls_context["in_method"] = in_method
@@ -5538,7 +5534,15 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
         # only mark as final after all checks pass
         if is_final:
             final_vars[name] = loc
-        if self.pure and assign and not escaped and not expr_setname:
+        if (
+            self.pure
+            and assign
+            and not escaped
+            and not expr_setname
+            # wildcard matching uses setname but doesn't actually assign the name,
+            #  so we need this to avoid false positives
+            and name != wildcard
+        ):
             pure_vars[name] = loc
 
         if name == "exec":
