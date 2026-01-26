@@ -29,8 +29,7 @@ from coconut.root import *  # NOQA
 
 from collections import defaultdict
 from contextlib import contextmanager
-from functools import partial
-
+from coconut.root import _coconut_partial as partial
 from coconut._pyparsing import (
     USE_LINE_BY_LINE,
     Forward,

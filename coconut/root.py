@@ -26,7 +26,7 @@ import sys as _coconut_sys
 VERSION = "3.2.0"
 VERSION_NAME = None
 # False for release, int >= 1 for develop
-DEVELOP = 7
+DEVELOP = 8
 ALPHA = False  # for pre releases rather than post releases
 
 assert DEVELOP is False or DEVELOP >= 1, "DEVELOP must be False or an int >= 1"
@@ -77,6 +77,25 @@ _base_py3_header = r'''from builtins import chr, dict, hex, input, int, map, obj
 py_bytes, py_chr, py_dict, py_hex, py_input, py_int, py_map, py_object, py_oct, py_open, py_print, py_range, py_str, py_super, py_zip, py_filter, py_reversed, py_enumerate, py_repr, py_min, py_max = bytes, chr, dict, hex, input, int, map, object, oct, open, print, range, str, super, zip, filter, reversed, enumerate, repr, min, max
 _coconut_py_str, _coconut_py_super, _coconut_py_dict, _coconut_py_min, _coconut_py_max = str, super, dict, min, max
 exec("_coconut_exec = exec")
+class _coconut_partial(_coconut_functools.partial):
+    __slots__ = ()
+    def __new__(cls, func, *args, **kwargs):
+        self = _coconut_functools.partial.__new__(cls, func, *args, **kwargs)
+        self.__name__ = _coconut.getattr(func, "__name__", None)
+        return self
+    def __get__(self, obj, objtype=None):
+        if obj is None:
+            return self
+        return _coconut.types.MethodType(self, obj)
+    def __repr__(self):
+        cls = type(self)
+        old_qualname, cls.__qualname__ = cls.__qualname__, _coconut_functools.partial.__qualname__
+        old_module, cls.__module__ = cls.__module__, _coconut_functools.partial.__module__
+        try:
+            return _coconut_functools.partial.__repr__(self)
+        finally:
+            cls.__qualname__ = old_qualname
+            cls.__module__ = old_module
 '''
 
 # if a new assignment is added below, a new builtins import should be added alongside it
@@ -87,6 +106,25 @@ from collections import Sequence as _coconut_Sequence
 from future_builtins import *
 chr, str = unichr, unicode
 from io import open
+class _coconut_partial(_coconut_functools.partial):
+    __slots__ = ()
+    def __new__(cls, func, *args, **kwargs):
+        self = _coconut_functools.partial.__new__(cls, func, *args, **kwargs)
+        self.__name__ = _coconut.getattr(func, "__name__", None)
+        return self
+    def __get__(self, obj, objtype=None):
+        if obj is None:
+            return self
+        return _coconut.types.MethodType(self, obj, objtype)
+    def __repr__(self):
+        cls = type(self)
+        old_name, cls.__name__ = cls.__name__, _coconut_functools.partial.__name__
+        old_module, cls.__module__ = cls.__module__, _coconut_functools.partial.__module__
+        try:
+            return _coconut_functools.partial.__repr__(self)
+        finally:
+            cls.__name__ = old_name
+            cls.__module__ = old_module
 class object(object):
     __slots__ = ()
     def __ne__(self, other):
@@ -486,5 +524,8 @@ _coconut.pickle = _pickle
 
 import os as _os
 _coconut.os = _os
+
+import types as _types
+_coconut.types = _types
 
 exec(_get_root_header())

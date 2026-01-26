@@ -20,9 +20,12 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 from coconut.root import *  # NOQA
 
 import os.path
-from functools import partial
 
-from coconut.root import _indent, _get_root_header
+from coconut.root import (
+    _coconut_partial as partial,
+    _indent,
+    _get_root_header,
+)
 from coconut.exceptions import CoconutInternalException
 from coconut.terminal import internal_assert
 from coconut.constants import (

@@ -66,11 +66,6 @@ class _coconut{object}:{COMMENT.EVERYTHING_HERE_MUST_BE_COPIED_TO_STUB_FILE}
     fmappables = list, tuple, dict, set, frozenset, bytes, bytearray
     abc.Sequence.register(collections.deque)
     Ellipsis, NotImplemented, NotImplementedError, Exception, AttributeError, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, RuntimeError, all, any, bool, bytes, callable, chr, classmethod, complex, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, locals, globals, map, min, max, next, object, ord, property, range, reversed, set, setattr, slice, str, sum, super, tuple, type, vars, zip, repr, print{comma_bytearray} = Ellipsis, NotImplemented, NotImplementedError, Exception, AttributeError, ImportError, IndexError, KeyError, NameError, TypeError, ValueError, StopIteration, RuntimeError, all, any, bool, bytes, callable, chr, classmethod, complex, dict, enumerate, filter, float, frozenset, getattr, hasattr, hash, id, int, isinstance, issubclass, iter, len, list, locals, globals, map, {lstatic}min{rstatic}, {lstatic}max{rstatic}, next, object, ord, property, range, reversed, set, setattr, slice, str, sum, {lstatic}super{rstatic}, tuple, type, vars, zip, {lstatic}repr{rstatic}, {lstatic}print{rstatic}{comma_bytearray}
-@_coconut_wraps(_coconut.functools.partial)
-def _coconut_partial(_coconut_func, *args, **kwargs):
-    partial_func = _coconut.functools.partial(_coconut_func, *args, **kwargs)
-    partial_func.__name__ = _coconut.getattr(_coconut_func, "__name__", None)
-    return partial_func
 def _coconut_handle_cls_kwargs(**kwargs):
     """Some code taken from six under the terms of its MIT license."""
     metaclass = kwargs.pop("metaclass", None)
@@ -699,7 +694,7 @@ class flatten(_coconut_has_iter):{COMMENT.cant_implement_len_else_list_calls_bec
             for i in _coconut.reversed(_coconut.range(0 if self.levels is None else self.levels + 1)):
                 mapper = {_coconut_}reiterable
                 for _ in _coconut.range(i):
-                    mapper = _coconut.functools.partial({_coconut_}map, mapper)
+                    mapper = _coconut_partial({_coconut_}map, mapper)
                 self.iter = mapper(self.iter)
             self._made_reit = True
         return self.iter
@@ -725,7 +720,7 @@ class flatten(_coconut_has_iter):{COMMENT.cant_implement_len_else_list_calls_bec
         for i in _coconut.reversed(_coconut.range(self.levels + 1)):
             reverser = {_coconut_}reversed
             for _ in _coconut.range(i):
-                reverser = _coconut.functools.partial({_coconut_}map, reverser)
+                reverser = _coconut_partial({_coconut_}map, reverser)
             reversed_iter = reverser(reversed_iter)
         return self.__class__(reversed_iter, self.levels)
     def __repr__(self):
@@ -2028,7 +2023,7 @@ def mapreduce(key_value_func, iterable, **kwargs):
 def _coconut_parallel_mapreduce(mapreduce_func, map_cls, *args, **kwargs):
     if "map_using" in kwargs:
         raise _coconut.TypeError("redundant map_using argument to process/thread mapreduce/collectby")
-    kwargs["map_using"] = _coconut.functools.partial(map_cls, stream=True, ordered=kwargs.pop("ordered", False), chunksize=kwargs.pop("chunksize", 1))
+    kwargs["map_using"] = _coconut_partial(map_cls, stream=True, ordered=kwargs.pop("ordered", False), chunksize=kwargs.pop("chunksize", 1))
     with map_cls.multiple_sequential_calls(max_workers=kwargs.pop("max_workers", None)):
         return mapreduce_func(*args, **kwargs)
 mapreduce.using_processes = _coconut_partial(_coconut_parallel_mapreduce, mapreduce, process_map)

@@ -34,7 +34,7 @@ import sys
 import os
 import re
 from contextlib import contextmanager
-from functools import partial, update_wrapper
+from functools import update_wrapper
 from collections import defaultdict
 from threading import Lock
 from copy import copy
@@ -54,6 +54,7 @@ from coconut._pyparsing import (
     __version__ as pyparsing_version,
 )
 
+from coconut.root import _coconut_partial as partial
 from coconut.constants import (
     PY35,
     specific_targets,

@@ -36,7 +36,7 @@ import __future__
 import itertools
 import weakref
 import datetime as dt
-from functools import partial, reduce
+from functools import reduce
 from collections import defaultdict
 from contextlib import contextmanager
 from pprint import pformat, pprint
@@ -75,6 +75,7 @@ from coconut._pyparsing import (
     all_parse_elements,
 )
 
+from coconut.root import _coconut_partial as partial
 from coconut.integrations import embed
 from coconut.util import (
     pickle,
