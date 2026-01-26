@@ -79,9 +79,9 @@ _coconut_py_str, _coconut_py_super, _coconut_py_dict, _coconut_py_min, _coconut_
 exec("_coconut_exec = exec")
 class _coconut_partial(_coconut_functools.partial):
     __slots__ = ()
-    def __new__(cls, func, *args, **kwargs):
-        self = _coconut_functools.partial.__new__(cls, func, *args, **kwargs)
-        self.__name__ = _coconut.getattr(func, "__name__", None)
+    def __new__(cls, *args, **kwargs):
+        self = _coconut_functools.partial.__new__(cls, *args, **kwargs)
+        self.__name__ = _coconut.getattr(self.func, "__name__", None)
         return self
     def __get__(self, obj, objtype=None):
         if obj is None:
@@ -108,9 +108,9 @@ chr, str = unichr, unicode
 from io import open
 class _coconut_partial(_coconut_functools.partial):
     __slots__ = ()
-    def __new__(cls, func, *args, **kwargs):
-        self = _coconut_functools.partial.__new__(cls, func, *args, **kwargs)
-        self.__name__ = _coconut.getattr(func, "__name__", None)
+    def __new__(cls, *args, **kwargs):
+        self = _coconut_functools.partial.__new__(cls, *args, **kwargs)
+        self.__name__ = _coconut.getattr(self.func, "__name__", None)
         return self
     def __get__(self, obj, objtype=None):
         if obj is None:
