@@ -81,12 +81,15 @@ class _coconut_partial(_coconut_functools.partial):
     __slots__ = ()
     def __new__(cls, *args, **kwargs):
         self = _coconut_functools.partial.__new__(cls, *args, **kwargs)
-        self.__name__ = _coconut.getattr(self.func, "__name__", None)
+        self.__name__ = _coconut.getattr(args[0] if args else self.func, "__name__", None)
         return self
     def __get__(self, obj, objtype=None):
         if obj is None:
             return self
         return _coconut.types.MethodType(self, obj)
+    @property
+    def __signature__(self):
+        return _coconut.inspect.signature(_coconut_functools.partial(self.func, *self.args, **self.keywords))
     def __repr__(self):
         cls = type(self)
         old_qualname, cls.__qualname__ = cls.__qualname__, _coconut_functools.partial.__qualname__
@@ -110,7 +113,7 @@ class _coconut_partial(_coconut_functools.partial):
     __slots__ = ()
     def __new__(cls, *args, **kwargs):
         self = _coconut_functools.partial.__new__(cls, *args, **kwargs)
-        self.__name__ = _coconut.getattr(self.func, "__name__", None)
+        self.__name__ = _coconut.getattr(args[0] if args else self.func, "__name__", None)
         return self
     def __get__(self, obj, objtype=None):
         if obj is None:
@@ -527,5 +530,8 @@ _coconut.os = _os
 
 import types as _types
 _coconut.types = _types
+
+import inspect as _inspect
+_coconut.inspect = _inspect
 
 exec(_get_root_header())

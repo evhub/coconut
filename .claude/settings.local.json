@@ -21,7 +21,8 @@
       "WebFetch(domain:peps.python.org)",
       "WebFetch(domain:pypi.org)",
       "WebFetch(domain:discuss.python.org)",
-      "WebFetch(domain:doc.pypy.org)"
+      "WebFetch(domain:doc.pypy.org)",
+      "WebFetch(domain:raw.githubusercontent.com)"
     ]
   }
 }

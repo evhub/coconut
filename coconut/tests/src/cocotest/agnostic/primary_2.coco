@@ -371,7 +371,7 @@ def primary_test_2() -> bool:
         i = h$(y=42)
     has_partial = HasPartial()
     assert has_partial.g() == (has_partial, 1)
-    assert has_partial.i(10) == (has_partial, 10, 42)
+    assert has_partial.i(10) == (has_partial, 10, 42)  # type: ignore
     xs = zip([1, 2], [3, 4])
     py_xs = py_zip([1, 2], [3, 4])
     assert list(xs) == [(1, 3), (2, 4)] == list(xs)
