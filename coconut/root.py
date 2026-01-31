@@ -91,14 +91,7 @@ class _coconut_partial(_coconut_functools.partial):
     def __signature__(self):
         return _coconut.inspect.signature(_coconut_functools.partial(self.func, *self.args, **self.keywords))
     def __repr__(self):
-        cls = type(self)
-        old_qualname, cls.__qualname__ = cls.__qualname__, _coconut_functools.partial.__qualname__
-        old_module, cls.__module__ = cls.__module__, _coconut_functools.partial.__module__
-        try:
-            return _coconut_functools.partial.__repr__(self)
-        finally:
-            cls.__qualname__ = old_qualname
-            cls.__module__ = old_module
+        return "functools.partial({0})".format(", ".join([_coconut.repr(self.func)] + [_coconut.repr(a) for a in self.args] + ["{0}={1}".format(k, _coconut.repr(v)) for k, v in self.keywords.items()]))
 '''
 
 # if a new assignment is added below, a new builtins import should be added alongside it
@@ -120,14 +113,7 @@ class _coconut_partial(_coconut_functools.partial):
             return self
         return _coconut.types.MethodType(self, obj, objtype)
     def __repr__(self):
-        cls = type(self)
-        old_name, cls.__name__ = cls.__name__, _coconut_functools.partial.__name__
-        old_module, cls.__module__ = cls.__module__, _coconut_functools.partial.__module__
-        try:
-            return _coconut_functools.partial.__repr__(self)
-        finally:
-            cls.__name__ = old_name
-            cls.__module__ = old_module
+        return "functools.partial({0})".format(", ".join([_coconut.repr(self.func)] + [_coconut.repr(a) for a in self.args] + ["{0}={1}".format(k, _coconut.repr(v)) for k, v in self.keywords.items()]))
 class object(object):
     __slots__ = ()
     def __ne__(self, other):

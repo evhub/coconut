@@ -132,6 +132,8 @@ plus1sqsum_all_ = sum <.. square_all <*.. plus1_all
 
 min_and_max = min `lift(,)` max
 
+starmap_ = lift_apart(map)((<*|)$, ident)
+
 # Basic Functions:
 product = reduce$((*), ?, 1)
 product_ = reduce$(*)

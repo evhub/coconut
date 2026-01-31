@@ -448,7 +448,7 @@ def suite_test() -> bool:
     assert square_times2_plus1(3) == 19 == square_times2_plus1_(3)
     assert plus1_cube(2) == 27
     assert square ..> times2 ..> plus1 |> repr == square ..> (times2 ..> plus1) |> repr
-    assert range(1, 5) |> map$(range) |> starmap$(toprint) |> tuple == ('0', '0 1', '0 1 2', '0 1 2 3')
+    assert range(1, 5) |> map$(range) |> starmap$(toprint) |> tuple == ('0', '0 1', '0 1 2', '0 1 2 3') == range(1, 5) |> map$(range) |> starmap_$(toprint) |> tuple
     assert range(1, 5) |> map$(range) |> starmap$(toprint) |> fmap$(.strip(" 0")) |> tuple == ("", "1", "1 2", "1 2 3")
     assert () |> starmap$(toprint) |> len == 0  # type: ignore
     assert [(1, 2)] |> starmap$(toprint) |> .[0] == "1 2"  # type: ignore
