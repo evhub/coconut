@@ -13,6 +13,8 @@
       "Bash(python3:*)",
       "Bash(gh:*)",
       "Bash(pip:*)",
+      "Bash(log \")",
+      "Bash(test:*)",
       "Bash(conda:*)",
       "Bash(xonsh:*)",
       "Bash(make test-tests:*)",
