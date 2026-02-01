@@ -955,10 +955,10 @@ class Grammar(object):
         f_string_tokens = combine((format_f + Optional(raw_r) | raw_r + format_f) + string_item)
         t_string_tokens = combine((template_t + Optional(raw_r) | raw_r + template_t) + string_item)
         # d-string (PEP 822) dedented string variants
-        d_string_tokens = combine(any_len_perm(raw_r, required=(dedent_d,)) + string_item)
-        db_string_tokens = combine(any_len_perm(raw_r, required=(dedent_d, bit_b)) + string_item)
-        df_string_tokens = combine(any_len_perm(raw_r, required=(dedent_d, format_f)) + string_item)
-        dt_string_tokens = combine(any_len_perm(raw_r, required=(dedent_d, template_t)) + string_item)
+        d_string_ref = combine(any_len_perm(raw_r, required=(dedent_d,)) + string_item)
+        db_string_ref = combine(any_len_perm(raw_r, required=(dedent_d, bit_b)) + string_item)
+        df_string_ref = combine(any_len_perm(raw_r, required=(dedent_d, format_f)) + string_item)
+        dt_string_ref = combine(any_len_perm(raw_r, required=(dedent_d, template_t)) + string_item)
         nonbf_string = string | u_string | d_string
         nonb_string = nonbf_string | f_string | t_string | df_string | dt_string
         any_string = nonb_string | b_string | db_string
@@ -1355,7 +1355,7 @@ class Grammar(object):
         string_atom_ref = OneOrMore(nonb_string) | OneOrMore(b_string | db_string)
         fixed_len_string_tokens = OneOrMore(nonbf_string) | OneOrMore(b_string | db_string)
         f_string_atom = Forward()
-        f_string_atom_ref = ZeroOrMore(nonbf_string) + (f_string | df_string | dt_string) + ZeroOrMore(nonb_string)
+        f_string_atom_ref = ZeroOrMore(nonbf_string) + (f_string | df_string) + ZeroOrMore(nonb_string)
 
         keyword_atom = any_keyword_in(const_vars)
         passthrough_atom = addspace(OneOrMore(passthrough_item))
