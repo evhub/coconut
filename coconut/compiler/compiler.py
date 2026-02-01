@@ -4890,10 +4890,11 @@ __annotations__["{name}"] = {annotation}
         if len(strchar) != 3:
             raise CoconutDeferredSyntaxError("d-string prefix requires triple-quoted string", loc)
 
-        # apply dedentation to the f-string parts using placeholder for expressions
-        placeholder = strwrapper
-        full_text = placeholder.join(string_parts)
+        # apply dedentation to the f-string parts using placeholder for expressions;
+        # null bytes can't appear in Python source code so they're safe to use here
+        placeholder = "\x00"
         internal_assert(placeholder not in "".join(string_parts), "placeholder character found in d-string contents", string_parts)
+        full_text = placeholder.join(string_parts)
         dedented = self._d_string_dedent(full_text, loc, placeholder=placeholder)
         new_parts = dedented.split(placeholder)
 
