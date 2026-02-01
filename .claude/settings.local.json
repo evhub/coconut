@@ -15,16 +15,16 @@
       "Bash(pip:*)",
       "Bash(log \")",
       "Bash(test:*)",
-      "Bash(conda:*)",
-      "Bash(xonsh:*)",
-      "Bash(make test-tests:*)",
-      "WebFetch(domain:coconut.readthedocs.io)",
       "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:coconut.readthedocs.io)",
       "WebFetch(domain:peps.python.org)",
       "WebFetch(domain:pypi.org)",
       "WebFetch(domain:discuss.python.org)",
       "WebFetch(domain:doc.pypy.org)",
-      "WebFetch(domain:raw.githubusercontent.com)"
+      "Bash(conda:*)",
+      "Bash(xonsh:*)",
+      "Bash(make test-tests:*)"
     ]
   }
 }
