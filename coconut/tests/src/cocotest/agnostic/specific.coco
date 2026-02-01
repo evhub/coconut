@@ -237,4 +237,49 @@ def py310_spec_test() -> bool:
     assert template5.interpolations[1].value == 2
     assert template5.interpolations[2].value == 3
 
+    # dt-string (PEP 822 + t-string) tests
+    dt_name = "World"
+    dt_template = dt"""
+        Hello, {dt_name}!
+        """
+    assert type(dt_template).__name__ == "Template"
+    assert dt_template.strings == ("Hello, ", "!\n")
+    assert len(dt_template.interpolations) == 1
+    assert dt_template.interpolations[0].value == "World"
+
+    # dt-string prefix permutations: td
+    td_template = td"""
+        Hello, {dt_name}!
+        """
+    assert type(td_template).__name__ == "Template"
+    assert td_template.strings == ("Hello, ", "!\n")
+    assert td_template.interpolations[0].value == "World"
+
+    # dt-string prefix permutations: dtr/drt/tdr/trd/rdt/rtd
+    dtr_template = dtr"""
+        Hello\n, {dt_name}!
+        """
+    assert type(dtr_template).__name__ == "Template"
+    assert dtr_template.strings == ("Hello\\n, ", "!\n")
+    drt_template = drt"""
+        Hello\n, {dt_name}!
+        """
+    assert drt_template.strings == ("Hello\\n, ", "!\n")
+    tdr_template = tdr"""
+        Hello\n, {dt_name}!
+        """
+    assert tdr_template.strings == ("Hello\\n, ", "!\n")
+    trd_template = trd"""
+        Hello\n, {dt_name}!
+        """
+    assert trd_template.strings == ("Hello\\n, ", "!\n")
+    rdt_template = rdt"""
+        Hello\n, {dt_name}!
+        """
+    assert rdt_template.strings == ("Hello\\n, ", "!\n")
+    rtd_template = rtd"""
+        Hello\n, {dt_name}!
+        """
+    assert rtd_template.strings == ("Hello\\n, ", "!\n")
+
     return True

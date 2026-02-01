@@ -597,4 +597,94 @@ def primary_test_2() -> bool:
     assert final_outer_fn() == 5
     assert final_nested == 1
 
+    # d-string (PEP 822) tests
+    assert d"""
+        Hello
+        World!
+        """ == "Hello\nWorld!\n"
+    assert d"""
+        Hello
+        World!""" == "Hello\nWorld!"
+    assert d"""
+        Hello
+
+        World!
+        """ == "Hello\n\nWorld!\n"
+    assert d"""
+          Hello
+        World!
+        """ == "  Hello\nWorld!\n"
+    assert d"""
+        Hello
+    """ == "    Hello\n"
+
+    # d-string prefix permutations: dr/rd
+    assert dr"""
+        Hello\n
+        World!
+        """ == "Hello\\n\nWorld!\n"
+    assert rd"""
+        Hello\n
+        World!
+        """ == "Hello\\n\nWorld!\n"
+
+    # d-string prefix permutations: db/bd
+    assert db"""
+        Hello
+        World!
+        """ == b"Hello\nWorld!\n"
+    assert bd"""
+        Hello
+        World!
+        """ == b"Hello\nWorld!\n"
+
+    # d-string prefix permutations: dbr/drb/bdr/brd/rdb/rbd
+    assert dbr"""
+        Hello\n
+        """ == b"Hello\\n\n"
+    assert drb"""
+        Hello\n
+        """ == b"Hello\\n\n"
+    assert bdr"""
+        Hello\n
+        """ == b"Hello\\n\n"
+    assert brd"""
+        Hello\n
+        """ == b"Hello\\n\n"
+    assert rdb"""
+        Hello\n
+        """ == b"Hello\\n\n"
+    assert rbd"""
+        Hello\n
+        """ == b"Hello\\n\n"
+
+    # d-string prefix permutations: df/fd
+    name = "World"
+    assert df"""
+        Hello, {name}!
+        """ == "Hello, World!\n"
+    assert fd"""
+        Hello, {name}!
+        """ == "Hello, World!\n"
+
+    # d-string prefix permutations: dfr/drf/fdr/frd/rdf/rfd
+    assert dfr"""
+        Hello\n, {name}!
+        """ == "Hello\\n, World!\n"
+    assert drf"""
+        Hello\n, {name}!
+        """ == "Hello\\n, World!\n"
+    assert fdr"""
+        Hello\n, {name}!
+        """ == "Hello\\n, World!\n"
+    assert frd"""
+        Hello\n, {name}!
+        """ == "Hello\\n, World!\n"
+    assert rdf"""
+        Hello\n, {name}!
+        """ == "Hello\\n, World!\n"
+    assert rfd"""
+        Hello\n, {name}!
+        """ == "Hello\\n, World!\n"
+
     return True

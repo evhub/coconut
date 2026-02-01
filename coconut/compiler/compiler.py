@@ -891,6 +891,10 @@ class Compiler(Grammar, pickleable_obj):
         cls.ellipsis <<= attach(cls.ellipsis_tokens, cls.method("ellipsis_handle"))
         cls.f_string <<= attach(cls.f_string_tokens, cls.method("f_string_handle"))
         cls.t_string <<= attach(cls.t_string_tokens, cls.method("t_string_handle"))
+        cls.d_string <<= attach(cls.d_string_ref, cls.method("d_string_handle"))
+        cls.db_string <<= attach(cls.db_string_ref, cls.method("d_string_handle"))
+        cls.df_string <<= attach(cls.df_string_ref, cls.method("d_f_string_handle"))
+        cls.dt_string <<= attach(cls.dt_string_ref, cls.method("d_f_string_handle", is_t=True))
         cls.funcname_typeparams <<= attach(cls.funcname_typeparams_tokens, cls.method("funcname_typeparams_handle"))
 
         # standard handlers of the form name <<= attach(name_ref, method("name_handle"))
@@ -4777,6 +4781,122 @@ __annotations__["{name}"] = {annotation}
     def t_string_handle(self, original, loc, tokens):
         """Process Python 3.14 template strings."""
         return self.f_string_handle(original, loc, tokens, is_t=True)
+
+    @staticmethod
+    def _d_string_dedent(text, loc, placeholder=None):
+        """Apply PEP 822 dedentation to string contents.
+        The text must start with a newline (the required newline after opening quotes).
+        If placeholder is given, it is treated as non-whitespace for indentation calculation
+        but preserved in the output."""
+        if not text.startswith("\n"):
+            raise CoconutDeferredSyntaxError("d-string contents must start with a newline after opening quotes", loc)
+        text = text[1:]  # remove leading newline (not included in result)
+
+        lines = text.split("\n")
+
+        # determine common indentation
+        # blank lines are ignored except the last line (closing quotes line)
+        indent = None
+        for i, line in enumerate(lines):
+            is_last = i == len(lines) - 1
+            check_line = line.replace(placeholder, "X") if placeholder else line
+            if not is_last and check_line.strip() == "":
+                continue
+            stripped = check_line.lstrip()
+            line_indent = check_line[:len(check_line) - len(stripped)]
+            if indent is None:
+                indent = line_indent
+            else:
+                common = ""
+                for a, b in zip(indent, line_indent):
+                    if a == b:
+                        common += a
+                    else:
+                        break
+                indent = common
+
+        if indent is None:
+            indent = ""
+
+        # apply dedentation
+        result_lines = []
+        for i, line in enumerate(lines):
+            is_last = i == len(lines) - 1
+            check_line = line.replace(placeholder, "X") if placeholder else line
+            if check_line.strip() == "" and not is_last:
+                result_lines.append("")
+            elif line.startswith(indent):
+                result_lines.append(line[len(indent):])
+            elif indent.startswith(check_line) and check_line.strip() == "":
+                result_lines.append("")
+            else:
+                raise CoconutDeferredSyntaxError("inconsistent indentation in d-string", loc)
+
+        return "\n".join(result_lines)
+
+    @staticmethod
+    def _strip_raw_and_b(string):
+        """Strip r and b prefixes from a string token, returning (raw, has_b, string)."""
+        raw = False
+        has_b = False
+        while string:
+            if string[0] in "rR":
+                raw = True
+            elif string[0] in "bB":
+                has_b = True
+            else:
+                break
+            string = string[1:]
+        return raw, has_b, string
+
+    def d_string_handle(self, original, loc, tokens):
+        """Process PEP 822 d-strings (dedented strings)."""
+        string, = tokens
+
+        raw, has_b, string = self._strip_raw_and_b(string)
+
+        # unwrap string ref
+        internal_assert(string.startswith(strwrapper) and string.endswith(unwrapper), "invalid d string item", string)
+        text, strchar = self.get_ref("str", string[1:-1])
+
+        # must be triple-quoted
+        if len(strchar) != 3:
+            raise CoconutDeferredSyntaxError("d-string prefix requires triple-quoted string", loc)
+
+        # apply dedentation
+        text = self._d_string_dedent(text, loc)
+
+        return ("b" if has_b else "") + ("r" if raw else "") + self.wrap_str(text, strchar[0], multiline=True)
+
+    def d_f_string_handle(self, original, loc, tokens, is_t=False):
+        """Process d-string combined with f or t prefix."""
+        string, = tokens
+
+        # strip raw r
+        raw = string.startswith("r")
+        if raw:
+            string = string[1:]
+
+        # unwrap f-string ref
+        internal_assert(string.startswith(strwrapper) and string.endswith(unwrapper), "invalid df string item", string)
+        strchar, string_parts, exprs = self.get_ref("f_str", string[1:-1])
+
+        # must be triple-quoted
+        if len(strchar) != 3:
+            raise CoconutDeferredSyntaxError("d-string prefix requires triple-quoted string", loc)
+
+        # apply dedentation to the f-string parts using placeholder for expressions;
+        # null bytes can't appear in Python source code so they're safe to use here
+        placeholder = "\x00"
+        internal_assert(placeholder not in "".join(string_parts), "placeholder character found in d-string contents", string_parts)
+        full_text = placeholder.join(string_parts)
+        dedented = self._d_string_dedent(full_text, loc, placeholder=placeholder)
+        new_parts = dedented.split(placeholder)
+
+        # re-wrap as f-string ref and delegate to f_string_handle
+        new_ref = self.wrap_f_str(strchar, new_parts, exprs)
+        new_token = ("r" if raw else "") + new_ref
+        return self.f_string_handle(original, loc, [new_token], is_t=is_t)
 
     def decorators_handle(self, loc, tokens):
         """Process decorators."""
