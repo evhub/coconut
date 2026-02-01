@@ -174,24 +174,24 @@ mismatched open '[' and close ')' (line 1)
   ])
    ^
     """.strip())
-    assert_raises(-> parse("""
-a = 1
-b = f"{1+}"
-c = 3
-    """.strip()), CoconutSyntaxError, err_has="""
+    assert_raises(-> parse(d"""
+    a = 1
+    b = f"{1+}"
+    c = 3
+    """), CoconutSyntaxError, err_has="""
 parsing failed for format string expression: 1+ (line 2)
   b = f"{1+}"
       ^
       """.strip())
 
-    assert_raises(-> parse("""
+    assert_raises(-> parse(d"""
 case def f[T]:
     case(x) = x
-""".strip()), CoconutSyntaxError)
-    assert_raises(-> parse("""
+"""), CoconutSyntaxError)
+    assert_raises(-> parse(d"""
 case def f[T]:
     type(x: T) -> T
-""".strip()), CoconutSyntaxError)
+"""), CoconutSyntaxError)
 
     assert_raises(-> parse("(|*?>)"), CoconutSyntaxError, err_has="'|?*>'")
     assert_raises(-> parse("(|**?>)"), CoconutSyntaxError, err_has="'|?**>'")
@@ -233,11 +233,11 @@ cannot reassign type variable 'T' (use explicit '\T' syntax if intended) (line 1
         "\n    \\~~^",
         "\n  \\~~~~^",
     ))
-    assert_raises(-> parse("""
-def f() =
-    assert 1
-    assert 2
-    """.strip()), CoconutParseError, err_has=(
+    assert_raises(-> parse(d"""
+    def f() =
+        assert 1
+        assert 2
+    """), CoconutParseError, err_has=(
         """
       assert 2
 
@@ -282,21 +282,21 @@ def f() =
     assert_raises(-> parse("[(0)foo[0] for _ in [0]]"), CoconutParseError)
 
     try:
-        parse("""
-def gam_eps_rate(bitarr) = (
-    bitarr
-    |*> zip
-    |> map$(map$(int))
-    |> map$(sum)
-    |> map$(.>len(bitarr)//2)
-    |> lift(,)(ident, map$(not))
-    |> map$(map$(int))
-    |> map$(map$(str))
-    |> map$("".join)
-    |> map$(int(?, 2))
-    |*> (*)
-)
-        """.strip())
+        parse(d"""
+        def gam_eps_rate(bitarr) = (
+            bitarr
+            |*> zip
+            |> map$(map$(int))
+            |> map$(sum)
+            |> map$(.>len(bitarr)//2)
+            |> lift(,)(ident, map$(not))
+            |> map$(map$(int))
+            |> map$(map$(str))
+            |> map$("".join)
+            |> map$(int(?, 2))
+            |*> (*)
+        )
+        """)
     except CoconutParseError as err:
         err_str = str(err)
         assert "misplaced '?'" in err_str
@@ -311,13 +311,13 @@ def gam_eps_rate(bitarr) = (
         assert False
 
     try:
-        parse("""
-def f(x=1, y) = x, y
+        parse(d"""
+        def f(x=1, y) = x, y
 
-class A
+        class A
 
-def g(x) = x
-        """.strip())
+        def g(x) = x
+        """)
     except CoconutSyntaxError as err:
         err_str = str(err)
         assert "non-default arguments must come first" in err_str, err_str
@@ -398,14 +398,14 @@ line 6''')
         if PYPY else ()
     ))
     try:
-        parse("""
-try:
-    x is int is str = x
-except MatchError:
-    pass
-else:
-    assert False
-        """.strip())
+        parse(d"""
+        try:
+            x is int is str = x
+        except MatchError:
+            pass
+        else:
+            assert False
+        """)
     except CoconutStyleError as err:
         assert str(err).startswith("""found deprecated isinstance-checking 'x is int is str' pattern; rewrite to use class patterns (try 'int(x) and str(x)') or explicit isinstance-checking ('x `isinstance` int and x `isinstance` str' should always work) (remove --strict to downgrade to a warning) (line 2)
   x is int is str = x"""), err
@@ -417,196 +417,196 @@ else:
     assert_raises(-> parse("abc = f'abc'"), CoconutStyleError, err_has="\n        ^")
     assert_raises(-> parse('f"{f"{f"infinite"}"}"'), CoconutStyleError, err_has="f-string with no expressions")
     try:
-        parse("""
-import abc
-1
-2
-3
-        """.strip())
+        parse(d"""
+        import abc
+        1
+        2
+        3
+        """)
     except CoconutStyleError as err:
         assert str(err) == """found unused import 'abc' (add '# NOQA' to suppress) (remove --strict to downgrade to a warning) (line 1)
   import abc"""
     try:
-        parse("""
-1
-2 + x
-3
-        """.strip())
+        parse(d"""
+        1
+        2 + x
+        3
+        """)
     except CoconutStyleError as err:
         assert str(err) == """found undefined name 'x' (add '# NOQA' to suppress) (remove --strict to downgrade to a warning) (line 2)
   2 + x
       ^"""
-    assert_raises(-> parse("""
-class A(object):
-    1
-    2
-    3
-    4
-    5
-    6
-    7
-    8
-    9
-    10
-    11
-    12
-    13
-    14
-    15
-    """.strip()), CoconutStyleError, **(dict(err_has="\n ...\n") if not PYPY else {}))
+    assert_raises(-> parse(d"""
+    class A(object):
+        1
+        2
+        3
+        4
+        5
+        6
+        7
+        8
+        9
+        10
+        11
+        12
+        13
+        14
+        15
+    """), CoconutStyleError, **(dict(err_has="\n ...\n") if not PYPY else {}))
     assert_raises(-> parse('["abc", "def" "ghi"]'), CoconutStyleError, err_has="implicit string concatenation")
 
     # imported name shadowing tests
-    assert_raises(-> parse("""
-import abc
-abc: int = 1
-    """.strip()), CoconutStyleError, err_has="shadows imported name")
-    assert_raises(-> parse("""
-from os import path
-path = 'test'
-    """.strip()), CoconutStyleError, err_has="shadows imported name")
-    assert_raises(-> parse("""
-from collections import OrderedDict
-def OrderedDict() = None
-    """.strip()), CoconutStyleError, err_has="shadows imported name")
-    assert_raises(-> parse("""
-import abc
-class abc:
-    pass
-    """.strip()), CoconutStyleError, err_has="shadows imported name")
-    assert_raises(-> parse("""
-from os import path
-[path for path in []]
-    """.strip()), CoconutStyleError, err_has="shadows imported name")
-    assert_raises(-> parse("""
-import abc
-final abc = 1
-    """.strip()), CoconutStyleError, err_has="shadows imported name")
-    # class attribute shadowing should be allowed (not module-level shadowing)
-    # (use NOQA to suppress unused import warning since we're intentionally shadowing)
-    assert parse("""
-import abc  # NOQA
-class Foo:
-    abc = 1
-    """.strip())
-    assert parse("""
-import abc  # NOQA
-class Foo:
+    assert_raises(-> parse(d"""
+    import abc
+    abc: int = 1
+    """), CoconutStyleError, err_has="shadows imported name")
+    assert_raises(-> parse(d"""
+    from os import path
+    path = 'test'
+    """), CoconutStyleError, err_has="shadows imported name")
+    assert_raises(-> parse(d"""
+    from collections import OrderedDict
+    def OrderedDict() = None
+    """), CoconutStyleError, err_has="shadows imported name")
+    assert_raises(-> parse(d"""
+    import abc
     class abc:
         pass
-    """.strip())
-    # method-level shadowing should still raise
-    assert_raises(-> parse("""
-import abc
-class Foo:
-    def bar(self):
+    """), CoconutStyleError, err_has="shadows imported name")
+    assert_raises(-> parse(d"""
+    from os import path
+    [path for path in []]
+    """), CoconutStyleError, err_has="shadows imported name")
+    assert_raises(-> parse(d"""
+    import abc
+    final abc = 1
+    """), CoconutStyleError, err_has="shadows imported name")
+    # class attribute shadowing should be allowed (not module-level shadowing)
+    # (use NOQA to suppress unused import warning since we're intentionally shadowing)
+    assert parse(d"""
+    import abc  # NOQA
+    class Foo:
         abc = 1
-    """.strip()), CoconutStyleError, err_has="shadows imported name")
-    assert_raises(-> parse("""
-class Foo:
-    def bar(self):
-        super = 1
-    """.strip()), CoconutStyleError, err_has="shadows builtin")
-    # nested class tests - class attributes should be allowed at any depth
-    assert parse("""
-class A:
-    class super:
-        pass
-    """.strip())
-    assert parse("""
-class A:
-    class B:
-        class super:
-            pass
-    """.strip())
-    assert parse("""
-class A:
-    class B:
-        class C:
-            class super:
-                pass
-    """.strip())
-    assert parse("""
-import abc  # NOQA
-class A:
-    class B:
-        abc = 1
-    """.strip())
-    # nested class inside method should still raise (shadows method's local scope)
-    assert_raises(-> parse("""
-class A:
-    def foo(self):
-        class super:
-            pass
-    """.strip()), CoconutStyleError, err_has="shadows builtin")
-    assert_raises(-> parse("""
-import abc
-class A:
-    def foo(self):
+    """)
+    assert parse(d"""
+    import abc  # NOQA
+    class Foo:
         class abc:
             pass
-    """.strip()), CoconutStyleError, err_has="shadows imported name")
-    # deeply nested: class inside class inside method - no error because super is a class attribute of B
-    assert parse("""
-class A:
-    def foo(self):
+    """)
+    # method-level shadowing should still raise
+    assert_raises(-> parse(d"""
+    import abc
+    class Foo:
+        def bar(self):
+            abc = 1
+    """), CoconutStyleError, err_has="shadows imported name")
+    assert_raises(-> parse(d"""
+    class Foo:
+        def bar(self):
+            super = 1
+    """), CoconutStyleError, err_has="shadows builtin")
+    # nested class tests - class attributes should be allowed at any depth
+    assert parse(d"""
+    class A:
+        class super:
+            pass
+    """)
+    assert parse(d"""
+    class A:
         class B:
             class super:
                 pass
-    """.strip())
-    # method inside nested class inside method should still raise
-    assert_raises(-> parse("""
-class A:
-    def foo(self):
+    """)
+    assert parse(d"""
+    class A:
         class B:
-            def bar(self):
-                super = 1
-    """.strip()), CoconutStyleError, err_has="shadows builtin")
+            class C:
+                class super:
+                    pass
+    """)
+    assert parse(d"""
+    import abc  # NOQA
+    class A:
+        class B:
+            abc = 1
+    """)
+    # nested class inside method should still raise (shadows method's local scope)
+    assert_raises(-> parse(d"""
+    class A:
+        def foo(self):
+            class super:
+                pass
+    """), CoconutStyleError, err_has="shadows builtin")
+    assert_raises(-> parse(d"""
+    import abc
+    class A:
+        def foo(self):
+            class abc:
+                pass
+    """), CoconutStyleError, err_has="shadows imported name")
+    # deeply nested: class inside class inside method - no error because super is a class attribute of B
+    assert parse(d"""
+    class A:
+        def foo(self):
+            class B:
+                class super:
+                    pass
+    """)
+    # method inside nested class inside method should still raise
+    assert_raises(-> parse(d"""
+    class A:
+        def foo(self):
+            class B:
+                def bar(self):
+                    super = 1
+    """), CoconutStyleError, err_has="shadows builtin")
 
     setup(line_numbers=False, strict=True, target="sys")
     assert_raises(-> parse("await f x"), CoconutParseError)
 
     # pure tests
     setup(line_numbers=False, strict=True, pure=True, target="sys")
-    assert parse("""
-class A:
-    def mk_int(x) = int(x)
-    """.strip())
-    assert parse("""
-x: int
-x = 1
-    """.strip())
-    assert parse("""
-case def f:
-    case(x) = x
-    case(x, y) = x + y
-    """.strip())
-    assert_raises(-> parse("""
-def f():
-    global x
-    """.strip()), CoconutStyleError, err_has="pure")
-    assert_raises(-> parse("""
-x = 1
-x = 2
-    """.strip()), CoconutStyleError, err_has="pure")
-    assert_raises(-> parse("""
-def f():
-    y = 1
-    y = 2
-    """.strip()), CoconutStyleError, err_has="pure")
+    assert parse(d"""
+    class A:
+        def mk_int(x) = int(x)
+    """)
+    assert parse(d"""
+    x: int
+    x = 1
+    """)
+    assert parse(d"""
+    case def f:
+        case(x) = x
+        case(x, y) = x + y
+    """)
+    assert_raises(-> parse(d"""
+    def f():
+        global x
+    """), CoconutStyleError, err_has="pure")
+    assert_raises(-> parse(d"""
+    x = 1
+    x = 2
+    """), CoconutStyleError, err_has="pure")
+    assert_raises(-> parse(d"""
+    def f():
+        y = 1
+        y = 2
+    """), CoconutStyleError, err_has="pure")
     # escape syntax should allow reassignment
-    parse(r"""
-x = 1
-\x = 2
-    """.strip())
+    parse(rd"""
+    x = 1
+    \x = 2
+    """)
     # nonlocal requires target="3" since it's Python 3 only
     setup(line_numbers=False, strict=True, pure=True, target="3")
-    assert_raises(-> parse("""
-def f():
-    x = 1
-    def g():
-        nonlocal x
-    """.strip()), CoconutStyleError, err_has="pure")
+    assert_raises(-> parse(d"""
+    def f():
+        x = 1
+        def g():
+            nonlocal x
+    """), CoconutStyleError, err_has="pure")
 
     # test NOQA suppression
     setup(line_numbers=False, strict=True, target="sys")
@@ -615,37 +615,37 @@ def f():
     parse('x = 1;  # NOQA')
     parse('"a" "b"  # NOQA')
     parse('f"no expr"  # NOQA')
-    parse("""
-class Foo(object):  # NOQA
-    pass
-    """.strip())
+    parse(d"""
+    class Foo(object):  # NOQA
+        pass
+    """)
     parse("from __future__ import print_function  # NOQA")
     # pure mode NOQA
     setup(line_numbers=False, strict=True, pure=True, target="sys")
-    parse("""
-def f():
-    global x  # NOQA
-    """.strip())
+    parse(d"""
+    def f():
+        global x  # NOQA
+    """)
     # nonlocal requires target="3" since it's Python 3 only
     setup(line_numbers=False, strict=True, pure=True, target="3")
-    parse("""
-def f():
-    x = 1
-    def g():
-        nonlocal x  # NOQA
-    """.strip())
+    parse(d"""
+    def f():
+        x = 1
+        def g():
+            nonlocal x  # NOQA
+    """)
 
     setup(line_numbers=False, target="2.7")
     assert parse("from io import BytesIO", mode="lenient") == "from io import BytesIO"
     assert_raises(-> parse("def f(*, x=None) = x"), CoconutTargetError, err_has="\n        ^")
 
     setup(line_numbers=False, target="3")
-    assert parse("""
-async def async_map_test() =
-    for async_map in (async_map_0, async_map_1, async_map_2, async_map_3, async_map_4):
-        assert (await ((pow$(2), range(5)) |> async_map)) |> tuple == (1, 2, 4, 8, 16)
-    True
-    """.strip())
+    assert parse(d"""
+    async def async_map_test() =
+        for async_map in (async_map_0, async_map_1, async_map_2, async_map_3, async_map_4):
+            assert (await ((pow$(2), range(5)) |> async_map)) |> tuple == (1, 2, 4, 8, 16)
+        True
+    """)
 
     setup(line_numbers=False, target="3.3")
     gen_func_def = """def f(x):

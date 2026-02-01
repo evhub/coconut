@@ -948,8 +948,6 @@ class Grammar(object):
         dedent_d = caseless_literal("d", suppress=True)
 
         string = combine(Optional(raw_r) + string_item)
-        # Python 2 only supports br"..." not rb"..."
-        b_string = combine((bit_b + Optional(raw_r) | fixto(raw_r + bit_b, "br")) + string_item)
         # ur"..."/ru"..." strings are not suppored in Python 3
         u_string_ref = combine(unicode_u + string_item)
         f_string_tokens = combine((format_f + Optional(raw_r) | raw_r + format_f) + string_item)
@@ -959,9 +957,11 @@ class Grammar(object):
         db_string_ref = combine(any_len_perm(raw_r, required=(dedent_d, bit_b)) + string_item)
         df_string_ref = combine(any_len_perm(raw_r, required=(dedent_d, format_f)) + string_item)
         dt_string_ref = combine(any_len_perm(raw_r, required=(dedent_d, template_t)) + string_item)
+        # Python 2 only supports br"..." not rb"..."
+        b_string = combine((bit_b + Optional(raw_r) | fixto(raw_r + bit_b, "br")) + string_item) | db_string
         nonbf_string = string | u_string | d_string
         nonb_string = nonbf_string | f_string | t_string | df_string | dt_string
-        any_string = nonb_string | b_string | db_string
+        any_string = nonb_string | b_string
         moduledoc = any_string + newline
         docstring = condense(moduledoc)
 
@@ -1352,8 +1352,8 @@ class Grammar(object):
         )
 
         string_atom = Forward()
-        string_atom_ref = OneOrMore(nonb_string) | OneOrMore(b_string | db_string)
-        fixed_len_string_tokens = OneOrMore(nonbf_string) | OneOrMore(b_string | db_string)
+        string_atom_ref = OneOrMore(nonb_string) | OneOrMore(b_string)
+        fixed_len_string_tokens = OneOrMore(nonbf_string) | OneOrMore(b_string)
         f_string_atom = Forward()
         f_string_atom_ref = ZeroOrMore(nonbf_string) + (f_string | df_string) + ZeroOrMore(nonb_string)
 

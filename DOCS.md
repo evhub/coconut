@@ -2417,6 +2417,34 @@ print(abs(3 + 4j))
 ```
 
 
+### Dedented Strings
+
+Coconut supports [PEP 822](https://peps.python.org/pep-0822/) dedented strings (d-strings), which automatically remove common leading indentation from triple-quoted strings at compile time. D-strings use the `d` prefix before a triple-quoted string. The `d` prefix can be combined with other string prefixes (`rbft`) in any order.
+
+##### Example
+
+**Coconut:**
+```coconut
+msg = d"""
+    Hello,
+    World!
+    """
+
+name = "World"
+greeting = df"""
+    Hello, {name}!
+    """
+```
+
+**Python:**
+```coconut_python
+msg = "Hello,\nWorld!\n"
+
+name = "World"
+greeting = f"Hello, {name}!\n"
+```
+
+
 ### Alternative Ternary Operator
 
 Python supports the ternary operator syntax

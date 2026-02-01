@@ -246,6 +246,21 @@ def set_to_tuple(tokens):
         raise CoconutInternalException("invalid set maker item", tokens[0])
 
 
+def strip_raw_and_b(string):
+    """Strip r and b prefixes from a string token, returning (raw, has_b, string)."""
+    raw = False
+    has_b = False
+    while string:
+        if string[0] in "rR":
+            raw = True
+        elif string[0] in "bB":
+            has_b = True
+        else:
+            break
+        string = string[1:]
+    return raw, has_b, string
+
+
 def import_stmt(imp_from, imp, imp_as, raw=False):
     """Generate an import statement."""
     if not raw and imp != "*":
@@ -4783,11 +4798,12 @@ __annotations__["{name}"] = {annotation}
         return self.f_string_handle(original, loc, tokens, is_t=True)
 
     @staticmethod
-    def _d_string_dedent(text, loc, placeholder=None):
+    def dedent_d_string(text, loc, placeholder=None):
         """Apply PEP 822 dedentation to string contents.
         The text must start with a newline (the required newline after opening quotes).
         If placeholder is given, it is treated as non-whitespace for indentation calculation
         but preserved in the output."""
+
         if not text.startswith("\n"):
             raise CoconutDeferredSyntaxError("d-string contents must start with a newline after opening quotes", loc)
         text = text[1:]  # remove leading newline (not included in result)
@@ -4799,6 +4815,7 @@ __annotations__["{name}"] = {annotation}
         indent = None
         for i, line in enumerate(lines):
             is_last = i == len(lines) - 1
+            # X is an arbitrary non-whitespace character
             check_line = line.replace(placeholder, "X") if placeholder else line
             if not is_last and check_line.strip() == "":
                 continue
@@ -4834,26 +4851,11 @@ __annotations__["{name}"] = {annotation}
 
         return "\n".join(result_lines)
 
-    @staticmethod
-    def _strip_raw_and_b(string):
-        """Strip r and b prefixes from a string token, returning (raw, has_b, string)."""
-        raw = False
-        has_b = False
-        while string:
-            if string[0] in "rR":
-                raw = True
-            elif string[0] in "bB":
-                has_b = True
-            else:
-                break
-            string = string[1:]
-        return raw, has_b, string
-
     def d_string_handle(self, original, loc, tokens):
         """Process PEP 822 d-strings (dedented strings)."""
         string, = tokens
 
-        raw, has_b, string = self._strip_raw_and_b(string)
+        raw, has_b, string = strip_raw_and_b(string)
 
         # unwrap string ref
         internal_assert(string.startswith(strwrapper) and string.endswith(unwrapper), "invalid d string item", string)
@@ -4864,9 +4866,10 @@ __annotations__["{name}"] = {annotation}
             raise CoconutDeferredSyntaxError("d-string prefix requires triple-quoted string", loc)
 
         # apply dedentation
-        text = self._d_string_dedent(text, loc)
+        text = self.dedent_d_string(text, loc)
 
-        return ("b" if has_b else "") + ("r" if raw else "") + self.wrap_str(text, strchar[0], multiline=True)
+        # Python 2 only supports br"..." not rb"..."
+        return ("b" if has_b else "") + ("r" if raw else "") + self.wrap_str(text, strchar)
 
     def d_f_string_handle(self, original, loc, tokens, is_t=False):
         """Process d-string combined with f or t prefix."""
@@ -4888,10 +4891,9 @@ __annotations__["{name}"] = {annotation}
         # apply dedentation to the f-string parts using placeholder for expressions;
         # null bytes can't appear in Python source code so they're safe to use here
         placeholder = "\x00"
-        internal_assert(placeholder not in "".join(string_parts), "placeholder character found in d-string contents", string_parts)
         full_text = placeholder.join(string_parts)
-        dedented = self._d_string_dedent(full_text, loc, placeholder=placeholder)
-        new_parts = dedented.split(placeholder)
+        internal_assert(lambda: full_text.count(placeholder) == len(string_parts) - 1, "placeholder character found in d-string contents", string_parts)
+        new_parts = self.dedent_d_string(full_text, loc, placeholder=placeholder).split(placeholder)
 
         # re-wrap as f-string ref and delegate to f_string_handle
         new_ref = self.wrap_f_str(strchar, new_parts, exprs)
