@@ -4798,7 +4798,7 @@ __annotations__["{name}"] = {annotation}
         # blank lines are ignored except the last line (closing quotes line)
         indent = None
         for i, line in enumerate(lines):
-            is_last = (i == len(lines) - 1)
+            is_last = i == len(lines) - 1
             check_line = line.replace(placeholder, "X") if placeholder else line
             if not is_last and check_line.strip() == "":
                 continue
@@ -4821,7 +4821,7 @@ __annotations__["{name}"] = {annotation}
         # apply dedentation
         result_lines = []
         for i, line in enumerate(lines):
-            is_last = (i == len(lines) - 1)
+            is_last = i == len(lines) - 1
             check_line = line.replace(placeholder, "X") if placeholder else line
             if check_line.strip() == "" and not is_last:
                 result_lines.append("")
@@ -4866,12 +4866,7 @@ __annotations__["{name}"] = {annotation}
         # apply dedentation
         text = self._d_string_dedent(text, loc)
 
-        prefix = ""
-        if has_b:
-            prefix += "b"
-        if raw:
-            prefix += "r"
-        return prefix + self.wrap_str(text, strchar[0], multiline=True)
+        return ("b" if has_b else "") + ("r" if raw else "") + self.wrap_str(text, strchar[0], multiline=True)
 
     def d_f_string_handle(self, original, loc, tokens, is_t=False):
         """Process d-string combined with f or t prefix."""
