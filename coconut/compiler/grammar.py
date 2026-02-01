@@ -935,12 +935,17 @@ class Grammar(object):
         u_string = Forward()
         f_string = Forward()
         t_string = Forward()
+        d_string = Forward()
+        db_string = Forward()
+        df_string = Forward()
+        dt_string = Forward()
 
         bit_b = caseless_literal("b")
         raw_r = caseless_literal("r")
         unicode_u = caseless_literal("u", suppress=True)
         format_f = caseless_literal("f", suppress=True)
         template_t = caseless_literal("t", suppress=True)
+        dedent_d = caseless_literal("d", suppress=True)
 
         string = combine(Optional(raw_r) + string_item)
         # Python 2 only supports br"..." not rb"..."
@@ -949,9 +954,14 @@ class Grammar(object):
         u_string_ref = combine(unicode_u + string_item)
         f_string_tokens = combine((format_f + Optional(raw_r) | raw_r + format_f) + string_item)
         t_string_tokens = combine((template_t + Optional(raw_r) | raw_r + template_t) + string_item)
-        nonbf_string = string | u_string
-        nonb_string = nonbf_string | f_string | t_string
-        any_string = nonb_string | b_string
+        # d-string (PEP 822) dedented string variants
+        d_string_tokens = combine(any_len_perm(raw_r, required=(dedent_d,)) + string_item)
+        db_string_tokens = combine(any_len_perm(raw_r, required=(dedent_d, bit_b)) + string_item)
+        df_string_tokens = combine(any_len_perm(raw_r, required=(dedent_d, format_f)) + string_item)
+        dt_string_tokens = combine(any_len_perm(raw_r, required=(dedent_d, template_t)) + string_item)
+        nonbf_string = string | u_string | d_string
+        nonb_string = nonbf_string | f_string | t_string | df_string | dt_string
+        any_string = nonb_string | b_string | db_string
         moduledoc = any_string + newline
         docstring = condense(moduledoc)
 
@@ -1342,10 +1352,10 @@ class Grammar(object):
         )
 
         string_atom = Forward()
-        string_atom_ref = OneOrMore(nonb_string) | OneOrMore(b_string)
-        fixed_len_string_tokens = OneOrMore(nonbf_string) | OneOrMore(b_string)
+        string_atom_ref = OneOrMore(nonb_string) | OneOrMore(b_string | db_string)
+        fixed_len_string_tokens = OneOrMore(nonbf_string) | OneOrMore(b_string | db_string)
         f_string_atom = Forward()
-        f_string_atom_ref = ZeroOrMore(nonbf_string) + f_string + ZeroOrMore(nonb_string)
+        f_string_atom_ref = ZeroOrMore(nonbf_string) + (f_string | df_string | dt_string) + ZeroOrMore(nonb_string)
 
         keyword_atom = any_keyword_in(const_vars)
         passthrough_atom = addspace(OneOrMore(passthrough_item))
@@ -2897,8 +2907,8 @@ class Grammar(object):
             | fixto(end_of_line, "misplaced newline (maybe missing ':')")
         )
 
-        start_f_str_regex = compile_regex(r"\br?[ft]r?$")
-        start_f_str_regex_len = 4
+        start_f_str_regex = compile_regex(r"\b[dr]{0,2}[ft][dr]{0,2}$")
+        start_f_str_regex_len = 5
 
         end_f_str_expr = StartOfStrGrammar(combine(rbrace | colon | bang).leaveWhitespace())
 

@@ -597,4 +597,37 @@ def primary_test_2() -> bool:
     assert final_outer_fn() == 5
     assert final_nested == 1
 
+    # d-string (PEP 822) tests
+    assert d"""
+        Hello
+        World!
+        """ == "Hello\nWorld!\n"
+    assert d"""
+        Hello
+        World!""" == "Hello\nWorld!"
+    assert d"""
+        Hello
+
+        World!
+        """ == "Hello\n\nWorld!\n"
+    assert d"""
+          Hello
+        World!
+        """ == "  Hello\nWorld!\n"
+    assert d"""
+        Hello
+    """ == "    Hello\n"
+    assert dr"""
+        Hello\n
+        World!
+        """ == "Hello\\n\nWorld!\n"
+    assert db"""
+        Hello
+        World!
+        """ == b"Hello\nWorld!\n"
+    name = "World"
+    assert df"""
+        Hello, {name}!
+        """ == "Hello, World!\n"
+
     return True
