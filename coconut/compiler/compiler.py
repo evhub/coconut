@@ -892,7 +892,7 @@ class Compiler(Grammar, pickleable_obj):
         cls.f_string <<= attach(cls.f_string_tokens, cls.method("f_string_handle"))
         cls.t_string <<= attach(cls.t_string_tokens, cls.method("t_string_handle"))
         cls.d_string <<= attach(cls.d_string_ref, cls.method("d_string_handle"))
-        cls.db_string <<= attach(cls.db_string_ref, cls.method("d_string_handle", is_b=True))
+        cls.db_string <<= attach(cls.db_string_ref, cls.method("d_string_handle"))
         cls.df_string <<= attach(cls.df_string_ref, cls.method("d_f_string_handle"))
         cls.dt_string <<= attach(cls.dt_string_ref, cls.method("d_f_string_handle", is_t=True))
         cls.funcname_typeparams <<= attach(cls.funcname_typeparams_tokens, cls.method("funcname_typeparams_handle"))
@@ -4839,16 +4839,18 @@ __annotations__["{name}"] = {annotation}
         """Strip r and b prefixes from a string token, returning (raw, has_b, string)."""
         raw = False
         has_b = False
-        while string and string[0] in "rRbB":
+        while string:
             if string[0] in "rR":
                 raw = True
-            else:
+            elif string[0] in "bB":
                 has_b = True
+            else:
+                break
             string = string[1:]
         return raw, has_b, string
 
-    def d_string_handle(self, original, loc, tokens, is_b=False):
-        """Process PEP 822 d-strings (dedented strings), with optional b prefix."""
+    def d_string_handle(self, original, loc, tokens):
+        """Process PEP 822 d-strings (dedented strings)."""
         string, = tokens
 
         raw, has_b, string = self._strip_raw_and_b(string)
@@ -4864,7 +4866,12 @@ __annotations__["{name}"] = {annotation}
         # apply dedentation
         text = self._d_string_dedent(text, loc)
 
-        return ("b" if is_b or has_b else "") + ("r" if raw else "") + self.wrap_str(text, strchar[0], multiline=True)
+        prefix = ""
+        if has_b:
+            prefix += "b"
+        if raw:
+            prefix += "r"
+        return prefix + self.wrap_str(text, strchar[0], multiline=True)
 
     def d_f_string_handle(self, original, loc, tokens, is_t=False):
         """Process d-string combined with f or t prefix."""
@@ -4884,8 +4891,9 @@ __annotations__["{name}"] = {annotation}
             raise CoconutDeferredSyntaxError("d-string prefix requires triple-quoted string", loc)
 
         # apply dedentation to the f-string parts using placeholder for expressions
-        placeholder = "\x00"
+        placeholder = strwrapper
         full_text = placeholder.join(string_parts)
+        internal_assert(placeholder not in "".join(string_parts), "placeholder character found in d-string contents", string_parts)
         dedented = self._d_string_dedent(full_text, loc, placeholder=placeholder)
         new_parts = dedented.split(placeholder)
 
