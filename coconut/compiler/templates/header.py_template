@@ -1,38 +1,37 @@
-def _coconut_import_module(name):
-{lazy_module_import}
 def _coconut_lazy_module(name, on_import=None, attr=None):
-    _coconut_lazy_state = [None, None]
-    def _coconut_lazy_load():
-        if _coconut_lazy_state[0] is None and _coconut_lazy_state[1] is None:
+    state = [None, None]
+    def load():
+        if state[0] is None and state[1] is None:
             try:
-                _coconut_lazy_state[0] = _coconut_import_module(name)
+{lazy_module_import}
             except _coconut.ImportError as err:
-                _coconut_lazy_state[1] = err
+                state[1] = err
             else:
+                state[0] = mod
                 if on_import is not None:
-                    on_import(_coconut_lazy_state[0])
-        if _coconut_lazy_state[1] is not None:
-            raise _coconut_lazy_state[1]
+                    on_import(mod)
+        if state[1] is not None:
+            raise state[1]
         if attr is not None:
-            return _coconut.getattr(_coconut_lazy_state[0], attr)
-        return _coconut_lazy_state[0]
-    class _coconut_lazy_meta(type):
+            return _coconut.getattr(state[0], attr)
+        return state[0]
+    class meta(type):
         def __getattr__(cls, name):
-            return _coconut.getattr(_coconut_lazy_load(), name)
+            return _coconut.getattr(load(), name)
         def __setattr__(cls, name, value):
             if name.startswith("__") and name.endswith("__"):
                 type.__setattr__(cls, name, value)
             else:
-                _coconut.setattr(_coconut_lazy_load(), name, value)
+                _coconut.setattr(load(), name, value)
         def __dir__(cls):
             try:
-                return _coconut.dir(_coconut_lazy_load())
+                return _coconut.dir(load())
             except _coconut.ImportError:
                 return []
         def __bool__(cls):
             return True
         __nonzero__ = __bool__
-    return _coconut_lazy_meta("_coconut_lazy_module", (), {{}})
+    return meta("_coconut_lazy_module", (), {{}})
 @_coconut_wraps(_coconut_py_super)
 def _coconut_super(type=None, object_or_type=None):
     if type is None:

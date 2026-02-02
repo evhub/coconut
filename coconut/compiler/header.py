@@ -322,13 +322,13 @@ import pickle
             (2, 7),
             if_lt='''
 import imp
-return imp.load_module(name, *imp.find_module(name))
+mod = imp.load_module(name, *imp.find_module(name))
             ''',
             if_ge='''
 import importlib
-return importlib.import_module(name)
+mod = importlib.import_module(name)
             ''',
-            indent=1,
+            indent=4,
         ),
         import_OrderedDict=prepare(
             r'''
