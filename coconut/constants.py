@@ -583,6 +583,7 @@ new_to_old_stdlib = {
 
 import_existing = {
     "typing": "_coconut.typing",
+    "numpy": "_coconut.numpy",
 }
 
 self_match_types = (

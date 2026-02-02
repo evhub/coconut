@@ -89,6 +89,9 @@ try:
 except ImportError:
     def _deprecated(message: _t.Text) -> _t.Callable[[_T], _T]: ...  # type: ignore
 
+import importlib as _importlib
+_coconut_lazy_module = _importlib.import_module
+
 import _coconut as __coconut  # we mock _coconut as a package since mypy doesn't handle namespace classes very well
 _coconut = __coconut
 
