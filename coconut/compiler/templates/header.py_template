@@ -25,9 +25,6 @@ def _coconut_lazy_module(name, on_import=None, attr=None):
                 return _coconut.dir(load())
             except _coconut.ImportError:
                 return []
-        def __bool__(cls):
-            return True
-        __nonzero__ = __bool__
     return meta("_coconut_lazy_module", (), {{}})
 @_coconut_wraps(_coconut_py_super)
 def _coconut_super(type=None, object_or_type=None):
