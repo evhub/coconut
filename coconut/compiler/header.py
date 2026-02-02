@@ -318,6 +318,18 @@ import pickle
             ''',
             indent=1,
         ),
+        lazy_module_import=pycondition(
+            (2, 7),
+            if_lt='''
+import imp
+self._module = imp.load_module(self._name, *imp.find_module(self._name))
+            ''',
+            if_ge='''
+import importlib
+self._module = importlib.import_module(self._name)
+            ''',
+            indent=4,
+        ),
         import_OrderedDict=prepare(
             r'''
 OrderedDict = collections.OrderedDict if _coconut_sys.version_info >= (2, 7) else dict
@@ -749,18 +761,21 @@ if not hasattr(typing, "Unpack"):
         import_asyncio=pycondition(
             (3, 4),
             if_lt='''
-try:
-    import trollius as asyncio
-except ImportError as trollius_import_err:
-    class you_need_to_install_trollius(_coconut_missing_module):
-        __slots__ = ()
-        def coroutine(self, func):
+class _coconut_trollius_module(_coconut_lazy_module):
+    __slots__ = ()
+    def coroutine(self, func):
+        mod = self._get_module()
+        if mod is None:
             def raise_import_error(*args, **kwargs):
                 raise self._import_err
             return raise_import_error
-        def Return(self, obj):
+        return mod.coroutine(func)
+    def Return(self, obj):
+        mod = self._get_module()
+        if mod is None:
             raise self._import_err
-    asyncio = you_need_to_install_trollius(trollius_import_err)
+        return mod.Return(obj)
+asyncio = _coconut_trollius_module("trollius")
 asyncio_Return = asyncio.Return
             '''.format(**format_dict),
             if_ge='''
@@ -801,11 +816,14 @@ if _coconut.isinstance(obj, _coconut.bytes):
         maybe_bind_lru_cache=pycondition(
             (3, 2),
             if_lt='''
-try:
-    from backports.functools_lru_cache import lru_cache
-    functools.lru_cache = lru_cache
-except ImportError as lru_cache_import_err:
-    functools.lru_cache = _coconut_missing_module(lru_cache_import_err)
+_coconut_lru_cache_module = _coconut_lazy_module("backports.functools_lru_cache")
+class _coconut_lru_cache_binding{object}:
+    __slots__ = ()
+    def __getattr__(self, name):
+        return _coconut.getattr(_coconut_lru_cache_module.lru_cache, name)
+    def __call__(self, *args, **kwargs):
+        return _coconut_lru_cache_module.lru_cache(*args, **kwargs)
+functools.lru_cache = _coconut_lru_cache_binding()
             '''.format(**format_dict),
             if_ge=None,
             indent=1,
