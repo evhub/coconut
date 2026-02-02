@@ -322,13 +322,13 @@ import pickle
             (2, 7),
             if_lt='''
 import imp
-_coconut_lazy_module._coconut_base_setattr(self, "_coconut_module", imp.load_module(_coconut_lazy_module._coconut_base_getattr(self, "_coconut_name"), *imp.find_module(_coconut_lazy_module._coconut_base_getattr(self, "_coconut_name"))))
+return imp.load_module(name, *imp.find_module(name))
             ''',
             if_ge='''
 import importlib
-_coconut_lazy_module._coconut_base_setattr(self, "_coconut_module", importlib.import_module(_coconut_lazy_module._coconut_base_getattr(self, "_coconut_name")))
+return importlib.import_module(name)
             ''',
-            indent=4,
+            indent=1,
         ),
         import_OrderedDict=prepare(
             r'''
@@ -761,21 +761,9 @@ if not hasattr(typing, "Unpack"):
         import_asyncio=pycondition(
             (3, 4),
             if_lt='''
-class _coconut_trollius_module(_coconut_lazy_module):
-    __slots__ = ()
-    def coroutine(self, func):
-        try:
-            mod = self._coconut_load()
-        except ImportError:
-            def raise_import_error(*args, **kwargs):
-                raise _coconut_lazy_module._coconut_base_getattr(self, "_coconut_import_err")
-            return raise_import_error
-        return mod.coroutine(func)
-    def Return(self, obj):
-        return self._coconut_load().Return(obj)
-asyncio = _coconut_trollius_module("trollius")
-asyncio_Return = asyncio.Return
-            '''.format(**format_dict),
+asyncio = _coconut_lazy_module("trollius")
+asyncio_Return = _coconut_lazy_module("trollius", attr="Return")
+            ''',
             if_ge='''
 import asyncio
 asyncio_Return = StopIteration
