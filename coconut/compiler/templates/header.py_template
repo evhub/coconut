@@ -1,53 +1,49 @@
 class _coconut_lazy_module{object}:
-    _slots = ("_name", "_module", "_on_import", "_import_err")
-    __slots__ = _slots
-    def __init__(self, name, on_import=None):
-        py_object.__setattr__(self, "_name", name)
-        py_object.__setattr__(self, "_module", None)
-        py_object.__setattr__(self, "_on_import", on_import)
-        py_object.__setattr__(self, "_import_err", None)
-    def _load(self):
-        if py_object.__getattribute__(self, "_module") is None and py_object.__getattribute__(self, "_import_err") is None:
+    __slots__ = ("_coconut_name", "_coconut_module", "_coconut_on_import", "_coconut_import_err", "_coconut_attr")
+    _coconut_base_getattr = object.__getattribute__
+    _coconut_base_setattr = object.__setattr__
+    def __init__(self, name, on_import=None, attr=None):
+        _coconut_lazy_module._coconut_base_setattr(self, "_coconut_name", name)
+        _coconut_lazy_module._coconut_base_setattr(self, "_coconut_module", None)
+        _coconut_lazy_module._coconut_base_setattr(self, "_coconut_on_import", on_import)
+        _coconut_lazy_module._coconut_base_setattr(self, "_coconut_import_err", None)
+        _coconut_lazy_module._coconut_base_setattr(self, "_coconut_attr", attr)
+    def _coconut_load(self):
+        if _coconut_lazy_module._coconut_base_getattr(self, "_coconut_module") is None and _coconut_lazy_module._coconut_base_getattr(self, "_coconut_import_err") is None:
             try:
 {lazy_module_import}
             except _coconut.ImportError as err:
-                py_object.__setattr__(self, "_import_err", err)
+                _coconut_lazy_module._coconut_base_setattr(self, "_coconut_import_err", err)
             else:
-                on_import = py_object.__getattribute__(self, "_on_import")
+                on_import = _coconut_lazy_module._coconut_base_getattr(self, "_coconut_on_import")
                 if on_import is not None:
-                    on_import(py_object.__getattribute__(self, "_module"))
-    def _get_module(self):
-        py_object.__getattribute__(self, "_load")()
-        return py_object.__getattribute__(self, "_module")
+                    on_import(_coconut_lazy_module._coconut_base_getattr(self, "_coconut_module"))
+        _coconut_import_err = _coconut_lazy_module._coconut_base_getattr(self, "_coconut_import_err")
+        if _coconut_import_err is not None:
+            raise _coconut_import_err
+        _coconut_module = _coconut_lazy_module._coconut_base_getattr(self, "_coconut_module")
+        _coconut_attr = _coconut_lazy_module._coconut_base_getattr(self, "_coconut_attr")
+        if _coconut_attr is not None:
+            return _coconut.getattr(_coconut_module, _coconut_attr)
+        return _coconut_module
     def __getattribute__(self, name):
-        if name in _coconut_lazy_module._slots or name in ("_load", "_get_module"):
-            return py_object.__getattribute__(self, name)
+        if name in _coconut_lazy_module.__slots__ or name == "_coconut_load":
+            return _coconut_lazy_module._coconut_base_getattr(self, name)
         try:
-            return py_object.__getattribute__(self, name)
+            return _coconut_lazy_module._coconut_base_getattr(self, name)
         except _coconut.AttributeError:
             pass
-        py_object.__getattribute__(self, "_load")()
-        _import_err = py_object.__getattribute__(self, "_import_err")
-        if _import_err is not None:
-            raise _import_err
-        return _coconut.getattr(py_object.__getattribute__(self, "_module"), name)
+        return _coconut.getattr(_coconut_lazy_module._coconut_base_getattr(self, "_coconut_load")(), name)
     def __setattr__(self, name, value):
-        if name in _coconut_lazy_module._slots:
-            py_object.__setattr__(self, name, value)
+        if name in _coconut_lazy_module.__slots__:
+            _coconut_lazy_module._coconut_base_setattr(self, name, value)
         else:
-            py_object.__getattribute__(self, "_load")()
-            _import_err = py_object.__getattribute__(self, "_import_err")
-            if _import_err is not None:
-                raise _import_err
-            _coconut.setattr(py_object.__getattribute__(self, "_module"), name, value)
+            _coconut.setattr(_coconut_lazy_module._coconut_base_getattr(self, "_coconut_load")(), name, value)
     def __dir__(self):
-        py_object.__getattribute__(self, "_load")()
-        _module = py_object.__getattribute__(self, "_module")
-        if _module is not None:
-            return _coconut.dir(_module)
-        return _coconut_lazy_module._slots
-    def __repr__(self):
-        return "_coconut_lazy_module(%s)" % (py_object.__getattribute__(self, "_name"),)
+        try:
+            return _coconut.dir(_coconut_lazy_module._coconut_base_getattr(self, "_coconut_load")())
+        except _coconut.ImportError:
+            return _coconut_lazy_module.__slots__
 @_coconut_wraps(_coconut_py_super)
 def _coconut_super(type=None, object_or_type=None):
     if type is None:
@@ -878,7 +874,7 @@ class map(_coconut_baseclass, _coconut.map):
             return _coconut.NotImplemented
         return _coconut.min((_coconut.len(it) for it in self.iters), default=0)
     def __repr__(self):
-        return "%s(%r, %s)" % (self.__class__.__name__, self.func, ", ".join((_coconut.repr(it) for it in self.iters)))
+        return "%s(%r, %s)" % (type(self).__name__, self.func, ", ".join((_coconut.repr(it) for it in self.iters)))
     def __reduce__(self):
         return (self.__class__, (self.func,) + self.iters)
     def __copy__(self):
