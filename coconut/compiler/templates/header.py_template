@@ -25,7 +25,7 @@ def _coconut_lazy_module(name, on_import=None, attr=None):
                 return _coconut.dir(load())
             except _coconut.ImportError:
                 return []
-    return meta("_coconut_lazy_module", (), {{}})
+    return meta({py_str_module}, (), {{}})
 @_coconut_wraps(_coconut_py_super)
 def _coconut_super(type=None, object_or_type=None):
     if type is None:
@@ -50,7 +50,7 @@ class _coconut{object}:{COMMENT.EVERYTHING_HERE_MUST_BE_COPIED_TO_STUB_FILE}
 {import_pickle}
 {import_OrderedDict}
 {import_collections_abc}
-    typing = types.ModuleType(_coconut_py_str("typing"))
+    typing = types.ModuleType({py_str_typing})
     try:
         import typing_extensions
     except ImportError:
@@ -1399,7 +1399,7 @@ def _coconut_get_function_match_error():
 class _coconut_base_pattern_func(_coconut_base_callable):{COMMENT.no_slots_to_allow_func_attrs}
     _coconut_is_match = True
     def __init__(self, *funcs):
-        self.FunctionMatchError = _coconut.type(_coconut_py_str("MatchError"), ({_coconut_}MatchError,), {empty_py_dict})
+        self.FunctionMatchError = _coconut.type({py_str_MatchError}, ({_coconut_}MatchError,), {empty_py_dict})
         self.patterns = []
         self.__doc__ = None
         self.__name__ = None

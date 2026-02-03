@@ -238,12 +238,12 @@ def base_async_def(
     return prepare(out, **kwargs)
 
 
-def make_py_str(str_contents, target, after_py_str_defined=False):
-    """Get code that effectively wraps the given code in py_str."""
+def make_py_str(str_contents, target, after_py_str_defined):
+    """Get code that effectively wraps the given str in py_str."""
     return (
         repr(str_contents) if target.startswith("3")
         else "b" + repr(str_contents) if target.startswith("2")
-        else "py_str(" + repr(str_contents) + ")" if after_py_str_defined
+        else "_coconut_py_str(" + repr(str_contents) + ")" if after_py_str_defined
         else "str(" + repr(str_contents) + ")"
     )
 
@@ -285,9 +285,12 @@ def process_header_args(which, use_hash, target, no_tco, strict, no_wrap):
         _coconut_="_coconut_" if which != "__coconut__" else "",  # only for aliases defined at the end of the header
         VERSION_STR=VERSION_STR,
         module_docstring='"""Built-in Coconut utilities."""\n\n' if which == "__coconut__" else "",
-        __coconut__=make_py_str("__coconut__", target),
-        _coconut_cached__coconut__=make_py_str("_coconut_cached__coconut__", target),
-        coconut_cache_dir=make_py_str(coconut_cache_dir, target),
+        __coconut__=make_py_str("__coconut__", target, after_py_str_defined=False),
+        _coconut_cached__coconut__=make_py_str("_coconut_cached__coconut__", target, after_py_str_defined=False),
+        coconut_cache_dir=make_py_str(coconut_cache_dir, target, after_py_str_defined=False),
+        py_str_module=make_py_str("module", target, after_py_str_defined=True),
+        py_str_typing=make_py_str("typing", target, after_py_str_defined=True),
+        py_str_MatchError=make_py_str("MatchError", target, after_py_str_defined=True),
         object="" if target.startswith("3") else "(object)",
         comma_object="" if target.startswith("3") else ", object",
         comma_slash=", /" if target_info >= (3, 8) else "",
