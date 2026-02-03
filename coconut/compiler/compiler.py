@@ -4124,13 +4124,48 @@ if {store_var} is not _coconut_sentinel:
                 )
         return "\n".join(stmts)
 
+    def lazy_import(self, loc, imports, imp_from=None):
+        """Generate code for lazy imports using _coconut_lazy_module.
+        imports = [[imp1], [imp2, as], ...]"""
+        stmts = []
+        for imps in imports:
+            if len(imps) == 1:
+                imp, imp_as = imps[0], imps[0]
+            else:
+                imp, imp_as = imps
+            if imp_from is not None:
+                # from x import y -> y = _coconut_lazy_module("x", attr="y")
+                # from x import y as z -> z = _coconut_lazy_module("x", attr="y")
+                stmts.append('{name} = _coconut_lazy_module("{module}", attr="{attr}")'.format(
+                    name=imp_as,
+                    module=imp_from,
+                    attr=imp,
+                ))
+            else:
+                # import x -> x = _coconut_lazy_module("x")
+                # import x as y -> y = _coconut_lazy_module("x")
+                # import x.y.z -> x = _coconut_lazy_module("x.y.z")  (binds to first part)
+                # import x.y.z as w -> w = _coconut_lazy_module("x.y.z")
+                bind_name = imp_as.split(".", 1)[0] if imp_as == imp else imp_as
+                stmts.append('{name} = _coconut_lazy_module("{module}")'.format(
+                    name=bind_name,
+                    module=imp,
+                ))
+        return "\n".join(stmts)
+
     def import_handle(self, original, loc, tokens):
         """Universalizes imports."""
+        # Extract lazy prefix (first token is either "lazy" or "")
+        lazy = tokens[0] == "lazy"
+        tokens = tokens[1:]
+
         if len(tokens) == 1:
             imp_from, imports = None, tokens[0]
         elif len(tokens) == 2:
             imp_from, imports = tokens
             if imp_from == "__future__":
+                if lazy:
+                    raise self.make_err(CoconutSyntaxError, "lazy imports not allowed for __future__", original, loc)
                 self.strict_err_or_warn("unnecessary from __future__ import (Coconut does these automatically)", original, loc, noqa_able=True)
                 return ""
         else:
@@ -4139,6 +4174,8 @@ if {store_var} is not _coconut_sentinel:
         imported_names, star_import = get_imported_names(imports)
         self.star_import = self.star_import or star_import
         if star_import:
+            if lazy:
+                raise self.make_err(CoconutSyntaxError, "lazy imports not allowed for star imports", original, loc)
             self.strict_warn("found * import; these disable Coconut's undefined name detection", original, loc)
         if imp_from == "*" or (imp_from is None and star_import):
             if not (len(imports) == 1 and imports[0] == "*"):
@@ -4147,6 +4184,8 @@ if {store_var} is not _coconut_sentinel:
             return special_starred_import_handle(imp_all=bool(imp_from))
         for imp_name in imported_names:
             self.name_info[imp_name]["imported"].add(loc)
+        if lazy:
+            return self.lazy_import(loc, imports, imp_from=imp_from)
         return self.universal_import(loc, imports, imp_from=imp_from)
 
     def complex_raise_stmt_handle(self, loc, tokens):

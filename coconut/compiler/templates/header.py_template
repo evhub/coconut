@@ -25,6 +25,10 @@ def _coconut_lazy_module(name, on_import=None, attr=None):
                 return _coconut.dir(load())
             except _coconut.ImportError:
                 return []
+        def __call__(cls, *args, **kwargs):
+            return load()(*args, **kwargs)
+        def __iter__(cls):
+            return _coconut.iter(load())
     return meta({py_str_module}, (), {{}})
 @_coconut_wraps(_coconut_py_super)
 def _coconut_super(type=None, object_or_type=None):
