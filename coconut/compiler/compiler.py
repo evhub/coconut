@@ -4086,11 +4086,11 @@ else:
                 mod_name = ".".join(fake_mods[:i])
                 out_lines.append(self.ensure_module_or_create_fake(mod_name))
             bind_to = imp_as if imp_as is not None else imp
-            out_lines.append('{bind_to} = _coconut_lazy_module("{module}"){attr} {type_ignore}'.format(
+            out_lines.append('{bind_to} = _coconut_lazy_module("{module}"{attr_param}) {type_ignore}'.format(
                 bind_to=bind_to,
                 module=imp_from if imp_from is not None else imp,
-                attr="." + imp if imp_from is not None else "",
-                type_ignore=self.type_ignore_comment() if "." in bind_to else "",
+                attr_param=', attr="' + imp + '"' if imp_from is not None else "",
+                type_ignore=self.type_ignore_comment(),
             ))
             return "\n".join(out_lines)
         else:
@@ -4257,7 +4257,7 @@ raise {raise_from_var}
                 from_expr=from_expr,
             )
 
-    def normal_dict_comp_handle(self, original, loc, tokens):
+    def normal_dict_comp_handle(self, tokens):
         """Process standard dictionary comprehension."""
         key, val, comp = tokens
         # on < 3.9 have to use _coconut.dict since it's different than py_dict

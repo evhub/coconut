@@ -89,9 +89,6 @@ try:
 except ImportError:
     def _deprecated(message: _t.Text) -> _t.Callable[[_T], _T]: ...  # type: ignore
 
-import importlib as _importlib
-_coconut_lazy_module = _importlib.import_module
-
 import _coconut as __coconut  # we mock _coconut as a package since mypy doesn't handle namespace classes very well
 _coconut = __coconut
 
@@ -205,6 +202,7 @@ _coconut_filter = filter
 _coconut_range = range
 _coconut_reversed = reversed
 _coconut_zip = zip
+_coconut_type = type
 
 
 zip_longest = _coconut.zip_longest
@@ -230,6 +228,12 @@ TYPE_CHECKING = _t.TYPE_CHECKING
 
 
 _coconut_sentinel: _t.Any = ...
+
+
+@_t.overload
+def _coconut_lazy_module(name: str) -> _coconut.types.ModuleType: ...
+@_t.overload
+def _coconut_lazy_module(name: str, *, attr: str) -> _t.Any: ...
 
 
 def scan(

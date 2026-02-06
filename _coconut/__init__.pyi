@@ -181,7 +181,6 @@ str = _builtins.str
 sum = _builtins.sum
 super = _builtins.super
 tuple = _builtins.tuple
-type = _builtins.type
 zip = _builtins.zip
 vars = _builtins.vars
 repr = _builtins.repr

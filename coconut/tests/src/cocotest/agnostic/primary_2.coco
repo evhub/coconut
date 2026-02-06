@@ -712,4 +712,34 @@ def primary_test_2() -> bool:
     lazy from queue import Queue
     assert Queue is not None
 
+    # lazy import dunder behavior tests
+    # module path: dunders via ModuleType inheritance
+    lazy import textwrap as lazy_tw
+    assert "textwrap" in repr(lazy_tw)
+    assert bool(lazy_tw) is True
+    assert "dedent" in dir(lazy_tw)
+
+    # attr path with function: __call__, __repr__, __hash__
+    lazy from textwrap import dedent as lazy_dedent
+    assert lazy_dedent("  hi") == "hi"
+    assert "dedent" in repr(lazy_dedent)
+    assert isinstance(hash(lazy_dedent), int)
+
+    # attr path with class: __call__, __instancecheck__, __subclasscheck__
+    lazy from collections import deque as lazy_deque
+    lazy_d = lazy_deque([1, 2, 3])
+    assert list(lazy_d) == [1, 2, 3]
+    assert isinstance(lazy_d, lazy_deque)
+    assert issubclass(type(lazy_d), lazy_deque)
+
+    # deferred ImportError on lazy imports
+    lazy import coconut_nonexistent_test_module
+    assert_raises(=> coconut_nonexistent_test_module.attr, ImportError)
+    lazy import coconut_nonexistent_test_module2.submodule
+    assert_raises(=> coconut_nonexistent_test_module2.submodule + 1, ImportError)
+    lazy from coconut_nonexistent_test_module3 import missing as lazy_missing
+    assert_raises(=> lazy_missing(), ImportError)
+    lazy from coconut_nonexistent_test_module4.submodule import missing as lazy_missing2
+    assert_raises((def => lazy_missing2.attr = 1), ImportError)
+
     return True

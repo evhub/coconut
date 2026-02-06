@@ -73,9 +73,9 @@ def _coconut_wraps(base_func):
 '''
 
 # if a new assignment is added below, a new builtins import should be added alongside it
-_base_py3_header = r'''from builtins import chr, dict, hex, input, int, map, object, oct, open, print, range, str, super, zip, filter, reversed, enumerate, repr
+_base_py3_header = r'''from builtins import chr, dict, hex, input, int, map, object, oct, open, print, range, str, super, zip, filter, reversed, enumerate, repr, min, max, type
 py_bytes, py_chr, py_dict, py_hex, py_input, py_int, py_map, py_object, py_oct, py_open, py_print, py_range, py_str, py_super, py_zip, py_filter, py_reversed, py_enumerate, py_repr, py_min, py_max = bytes, chr, dict, hex, input, int, map, object, oct, open, print, range, str, super, zip, filter, reversed, enumerate, repr, min, max
-_coconut_py_str, _coconut_py_super, _coconut_py_dict, _coconut_py_min, _coconut_py_max = str, super, dict, min, max
+_coconut_py_str, _coconut_py_super, _coconut_py_dict, _coconut_py_min, _coconut_py_max, _coconut_type = str, super, dict, min, max, type
 exec("_coconut_exec = exec")
 class _coconut_partial(_coconut_functools.partial):
     __slots__ = ()
@@ -95,9 +95,9 @@ class _coconut_partial(_coconut_functools.partial):
 '''
 
 # if a new assignment is added below, a new builtins import should be added alongside it
-_base_py2_header = r'''from __builtin__ import chr, dict, hex, input, int, map, object, oct, open, print, range, str, super, zip, filter, reversed, enumerate, raw_input, xrange, repr, long
+_base_py2_header = r'''from __builtin__ import chr, dict, hex, input, int, map, object, oct, open, print, range, str, super, zip, filter, reversed, enumerate, raw_input, xrange, repr, long, min, max, type
 py_bytes, py_chr, py_dict, py_hex, py_input, py_int, py_map, py_object, py_oct, py_open, py_print, py_range, py_str, py_super, py_zip, py_filter, py_reversed, py_enumerate, py_raw_input, py_xrange, py_repr, py_min, py_max = bytes, chr, dict, hex, input, int, map, object, oct, open, print, range, str, super, zip, filter, reversed, enumerate, raw_input, xrange, repr, min, max
-_coconut_py_raw_input, _coconut_py_xrange, _coconut_py_int, _coconut_py_long, _coconut_py_print, _coconut_py_str, _coconut_py_super, _coconut_py_unicode, _coconut_py_repr, _coconut_py_dict, _coconut_py_bytes, _coconut_py_min, _coconut_py_max = raw_input, xrange, int, long, print, str, super, unicode, repr, dict, bytes, min, max
+_coconut_py_raw_input, _coconut_py_xrange, _coconut_py_int, _coconut_py_long, _coconut_py_print, _coconut_py_str, _coconut_py_super, _coconut_py_unicode, _coconut_py_repr, _coconut_py_dict, _coconut_py_bytes, _coconut_py_min, _coconut_py_max, _coconut_type = raw_input, xrange, int, long, print, str, super, unicode, repr, dict, bytes, min, max, type
 from collections import Sequence as _coconut_Sequence
 from future_builtins import *
 chr, str = unichr, unicode
@@ -123,7 +123,7 @@ class object(object):
         if _coconut.hasattr(self, "__bool__"):
             got = self.__bool__()
             if not _coconut.isinstance(got, _coconut.bool):
-                raise _coconut.TypeError("__bool__ should return bool, returned " + _coconut.type(got).__name__)
+                raise _coconut.TypeError("__bool__ should return bool, returned " + _coconut_type(got).__name__)
             return got
         return True
 class int(_coconut_py_int):
@@ -137,7 +137,7 @@ class int(_coconut_py_int):
         def __eq__(cls, other):
             if other is _coconut_py_int or other is _coconut_py_long:
                 return True
-            return _coconut.type.__eq__(cls, other)
+            return _coconut_type.__eq__(cls, other)
         def __hash__(cls):
             return _coconut.hash(_coconut_py_int)
 class bytes(_coconut_py_bytes):
@@ -151,7 +151,7 @@ class bytes(_coconut_py_bytes):
         def __eq__(cls, other):
             if other is _coconut_py_bytes:
                 return True
-            return _coconut.type.__eq__(cls, other)
+            return _coconut_type.__eq__(cls, other)
         def __hash__(cls):
             return _coconut.hash(_coconut_py_bytes)
     def __new__(self, *args):
