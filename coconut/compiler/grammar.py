@@ -2010,7 +2010,7 @@ class Grammar(object):
             - keyword("import").suppress() - from_import_names
         )
         import_stmt = Forward()
-        import_stmt_ref = Optional(keyword("lazy"), default="") + (from_import | basic_import)
+        import_stmt_ref = Optional(keyword("lazy")) + (from_import | basic_import)
 
         augassign_stmt = Forward()
         augassign_rhs = (

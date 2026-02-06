@@ -4005,7 +4005,7 @@ def __hash__(self):
 
         return self.make_namedtuple_call(None, names, types, of_args=items)
 
-    def single_import(self, loc, path, imp_as, type_ignore=False):
+    def single_import(self, loc, path, imp_as, type_ignore=False, lazy=False):
         """Generate import statements from a fully qualified import and the name to bind it to."""
         out = []
 
@@ -4023,7 +4023,20 @@ def __hash__(self):
             imp_from += imp.rsplit("." + imp_as, 1)[0]
             imp, imp_as = imp_as, None
 
-        if imp_as is not None and "." in imp_as:
+        if lazy:
+            bind_name = imp_as if imp_as is not None else imp.split(".", 1)[0]
+            if imp_from is not None:
+                out.append('{name} = _coconut_lazy_module("{module}").{attr}'.format(
+                    name=bind_name,
+                    module=imp_from,
+                    attr=imp,
+                ))
+            else:
+                out.append('{name} = _coconut_lazy_module("{module}")'.format(
+                    name=bind_name,
+                    module=imp,
+                ))
+        elif imp_as is not None and "." in imp_as:
             import_as_var = self.get_temp_var("import", loc)
             out.append(import_stmt(imp_from, imp, import_as_var))
             fake_mods = imp_as.split(".")
@@ -4048,7 +4061,7 @@ def __hash__(self):
 
         return out
 
-    def universal_import(self, loc, imports, imp_from=None):
+    def universal_import(self, loc, imports, imp_from=None, lazy=False):
         """Generate code for a universal import of imports from imp_from.
         imports = [[imp1], [imp2, as], ...]"""
         importmap = []  # [((imp | old_imp, imp, version_check), imp_as), ...]
@@ -4095,7 +4108,7 @@ def __hash__(self):
         stmts = []
         for paths, imp_as, type_ignore in importmap:
             if len(paths) == 1:
-                more_stmts = self.single_import(loc, paths[0], imp_as)
+                more_stmts = self.single_import(loc, paths[0], imp_as, lazy=lazy)
                 stmts.extend(more_stmts)
             else:
                 old_imp, new_imp, version_check = paths
@@ -4116,60 +4129,42 @@ if {store_var} is not _coconut_sentinel:
                 """).format(
                         store_var=self.get_temp_var("sys", loc),
                         version_check=version_check,
-                        new_imp="\n".join(self.single_import(loc, new_imp, imp_as)),
+                        new_imp="\n".join(self.single_import(loc, new_imp, imp_as, lazy=lazy)),
                         # should only type: ignore the old import
-                        old_imp="\n".join(self.single_import(loc, old_imp, imp_as, type_ignore=type_ignore)),
+                        old_imp="\n".join(self.single_import(loc, old_imp, imp_as, type_ignore=type_ignore, lazy=lazy)),
                         type_ignore=self.type_ignore_comment(),
                     ),
                 )
         return "\n".join(stmts)
 
-    def lazy_import(self, loc, imports, imp_from=None):
-        """Generate code for lazy imports using _coconut_lazy_module.
-        imports = [[imp1], [imp2, as], ...]"""
-        stmts = []
-        for imps in imports:
-            if len(imps) == 1:
-                imp, imp_as = imps[0], imps[0]
-            else:
-                imp, imp_as = imps
-            if imp_from is not None:
-                # from x import y -> y = _coconut_lazy_module("x", attr="y")
-                # from x import y as z -> z = _coconut_lazy_module("x", attr="y")
-                stmts.append('{name} = _coconut_lazy_module("{module}", attr="{attr}")'.format(
-                    name=imp_as,
-                    module=imp_from,
-                    attr=imp,
-                ))
-            else:
-                # import x -> x = _coconut_lazy_module("x")
-                # import x as y -> y = _coconut_lazy_module("x")
-                # import x.y.z -> x = _coconut_lazy_module("x.y.z")  (binds to first part)
-                # import x.y.z as w -> w = _coconut_lazy_module("x.y.z")
-                bind_name = imp_as.split(".", 1)[0] if imp_as == imp else imp_as
-                stmts.append('{name} = _coconut_lazy_module("{module}")'.format(
-                    name=bind_name,
-                    module=imp,
-                ))
-        return "\n".join(stmts)
-
     def import_handle(self, original, loc, tokens):
         """Universalizes imports."""
-        # Extract lazy prefix (first token is either "lazy" or "")
-        lazy = tokens[0] == "lazy"
-        tokens = tokens[1:]
-
+        # Detect lazy prefix by number of tokens:
+        #   basic_import: 1 token (imports)
+        #   from_import: 2 tokens (imp_from, imports)
+        #   lazy basic_import: 2 tokens ("lazy", imports)
+        #   lazy from_import: 3 tokens ("lazy", imp_from, imports)
         if len(tokens) == 1:
+            lazy = False
             imp_from, imports = None, tokens[0]
         elif len(tokens) == 2:
-            imp_from, imports = tokens
-            if imp_from == "__future__":
-                if lazy:
-                    raise self.make_err(CoconutSyntaxError, "lazy imports not allowed for __future__", original, loc)
-                self.strict_err_or_warn("unnecessary from __future__ import (Coconut does these automatically)", original, loc, noqa_able=True)
-                return ""
+            if tokens[0] == "lazy":
+                lazy = True
+                imp_from, imports = None, tokens[1]
+            else:
+                lazy = False
+                imp_from, imports = tokens
+        elif len(tokens) == 3:
+            lazy = True
+            imp_from, imports = tokens[1], tokens[2]
         else:
             raise CoconutInternalException("invalid import tokens", tokens)
+
+        if imp_from == "__future__":
+            if lazy:
+                raise self.make_err(CoconutSyntaxError, "lazy imports not allowed for __future__", original, loc)
+            self.strict_err_or_warn("unnecessary from __future__ import (Coconut does these automatically)", original, loc, noqa_able=True)
+            return ""
         imports = list(imports)
         imported_names, star_import = get_imported_names(imports)
         self.star_import = self.star_import or star_import
@@ -4185,8 +4180,9 @@ if {store_var} is not _coconut_sentinel:
         for imp_name in imported_names:
             self.name_info[imp_name]["imported"].add(loc)
         if lazy:
-            return self.lazy_import(loc, imports, imp_from=imp_from)
-        return self.universal_import(loc, imports, imp_from=imp_from)
+            return self.universal_import(loc, imports, imp_from=imp_from, lazy=True)
+        else:
+            return self.universal_import(loc, imports, imp_from=imp_from)
 
     def complex_raise_stmt_handle(self, loc, tokens):
         """Process Python 3 raise from statement."""
