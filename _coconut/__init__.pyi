@@ -116,9 +116,6 @@ numpy = _numpy
 npt = _npt  # Fake, like typing
 zip_longest = _zip_longest
 
-import importlib as _importlib
-_coconut_lazy_module = _importlib.import_module
-
 numpy_modules: _t.Any = ...
 xarray_modules: _t.Any = ...
 pandas_modules: _t.Any = ...

@@ -4140,6 +4140,7 @@ if {store_var} is not _coconut_sentinel:
     def import_handle(self, original, loc, tokens):
         """Universalizes imports."""
         # First token is always either "lazy" or "" (from Optional default)
+        internal_assert(tokens[0] in ("lazy", ""), original, loc, "invalid import type token", tokens[0])
         lazy = tokens[0] == "lazy"
         tokens = tokens[1:]
 
@@ -4169,10 +4170,7 @@ if {store_var} is not _coconut_sentinel:
             return special_starred_import_handle(imp_all=bool(imp_from))
         for imp_name in imported_names:
             self.name_info[imp_name]["imported"].add(loc)
-        if lazy:
-            return self.universal_import(loc, imports, imp_from=imp_from, lazy=True)
-        else:
-            return self.universal_import(loc, imports, imp_from=imp_from)
+        return self.universal_import(loc, imports, imp_from=imp_from, lazy=lazy)
 
     def complex_raise_stmt_handle(self, loc, tokens):
         """Process Python 3 raise from statement."""

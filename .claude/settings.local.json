@@ -23,9 +23,10 @@
       "WebFetch(domain:pypi.org)",
       "WebFetch(domain:discuss.python.org)",
       "WebFetch(domain:doc.pypy.org)",
+      "Bash(git status:*)",
+      "Bash(make test-tests:*)",
       "Bash(conda:*)",
-      "Bash(xonsh:*)",
-      "Bash(make test-tests:*)"
+      "Bash(xonsh:*)"
     ]
   }
 }
