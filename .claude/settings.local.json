@@ -15,6 +15,7 @@
       "Bash(pip:*)",
       "Bash(log \")",
       "Bash(test:*)",
+      "Bash(done)",
       "WebFetch(domain:github.com)",
       "WebFetch(domain:raw.githubusercontent.com)",
       "WebFetch(domain:coconut.readthedocs.io)",
