@@ -22,7 +22,7 @@ def _coconut_lazy_module(name, on_import=None, attr=None):
                 return _coconut.getattr(load(), name)
             def __dir__(self):
                 return _coconut.dir(load())
-        return lazy_mod(name)
+        return lazy_mod(_coconut_py_str(name))
     else:
         class meta(type):
             def __getattr__(cls, name):
@@ -31,7 +31,7 @@ def _coconut_lazy_module(name, on_import=None, attr=None):
                 _coconut.setattr(load(), name, value)
             def __dir__(cls):
                 return _coconut.dir(load())
-        return meta({py_str_module}, (), {{}})
+        return meta(_coconut_py_str(name), (), {{}})
 @_coconut_wraps(_coconut_py_super)
 def _coconut_super(type=None, object_or_type=None):
     if type is None:

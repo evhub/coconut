@@ -288,7 +288,6 @@ def process_header_args(which, use_hash, target, no_tco, strict, no_wrap):
         __coconut__=make_py_str("__coconut__", target, after_py_str_defined=False),
         _coconut_cached__coconut__=make_py_str("_coconut_cached__coconut__", target, after_py_str_defined=False),
         coconut_cache_dir=make_py_str(coconut_cache_dir, target, after_py_str_defined=False),
-        py_str_module=make_py_str("module", target, after_py_str_defined=True),
         py_str_typing=make_py_str("typing", target, after_py_str_defined=True),
         py_str_MatchError=make_py_str("MatchError", target, after_py_str_defined=True),
         object="" if target.startswith("3") else "(object)",

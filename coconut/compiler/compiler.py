@@ -261,19 +261,6 @@ def strip_raw_and_b(string):
     return raw, has_b, string
 
 
-def ensure_module_or_create_fake(mod_name):
-    """Create a fake module if it does not already exist."""
-    return handle_indentation("""
-try:
-    {mod_name}
-except:
-    {mod_name} = _coconut.types.ModuleType(_coconut_py_str("{mod_name}"))
-else:
-    if not _coconut.isinstance({mod_name}, _coconut.types.ModuleType):
-        {mod_name} = _coconut.types.ModuleType(_coconut_py_str("{mod_name}"))
-    """).format(mod_name=mod_name)
-
-
 def get_imported_names(imports):
     """Returns all the names imported by imports = [[imp1], [imp2, as], ...] and whether there is a star import."""
     saw_names = []
@@ -420,6 +407,60 @@ def call_decorators(decorators, func_name):
         base_decorator = rem_comment(decorator[1:])
         out = "(" + base_decorator + ")(" + out + ")"
     return out
+
+
+def dedent_d_string(text, loc, placeholder=None):
+    """Apply PEP 822 dedentation to string contents.
+    The text must start with a newline (the required newline after opening quotes).
+    If placeholder is given, it is treated as non-whitespace for indentation calculation
+    but preserved in the output."""
+
+    if not text.startswith("\n"):
+        raise CoconutDeferredSyntaxError("d-string contents must start with a newline after opening quotes", loc)
+    text = text[1:]  # remove leading newline (not included in result)
+
+    lines = text.split("\n")
+
+    # determine common indentation
+    # blank lines are ignored except the last line (closing quotes line)
+    indent = None
+    for i, line in enumerate(lines):
+        is_last = i == len(lines) - 1
+        # X is an arbitrary non-whitespace character
+        check_line = line.replace(placeholder, "X") if placeholder else line
+        if not is_last and check_line.strip() == "":
+            continue
+        stripped = check_line.lstrip()
+        line_indent = check_line[:len(check_line) - len(stripped)]
+        if indent is None:
+            indent = line_indent
+        else:
+            common = ""
+            for a, b in zip(indent, line_indent):
+                if a == b:
+                    common += a
+                else:
+                    break
+            indent = common
+
+    if indent is None:
+        indent = ""
+
+    # apply dedentation
+    result_lines = []
+    for i, line in enumerate(lines):
+        is_last = i == len(lines) - 1
+        check_line = line.replace(placeholder, "X") if placeholder else line
+        if check_line.strip() == "" and not is_last:
+            result_lines.append("")
+        elif line.startswith(indent):
+            result_lines.append(line[len(indent):])
+        elif indent.startswith(check_line) and check_line.strip() == "":
+            result_lines.append("")
+        else:
+            raise CoconutDeferredSyntaxError("inconsistent indentation in d-string", loc)
+
+    return "\n".join(result_lines)
 
 
 def get_cache_path(codepath):
@@ -4002,6 +4043,21 @@ def __hash__(self):
 
         return self.make_namedtuple_call(None, names, types, of_args=items)
 
+    def ensure_module_or_create_fake(self, mod_name):
+        """Create a fake module if it does not already exist."""
+        return handle_indentation("""
+try:
+    {mod_name} {type_ignore}
+except:
+    {mod_name} = _coconut.types.ModuleType(_coconut_py_str("{mod_name}"))
+else:
+    if not _coconut.isinstance({mod_name}, _coconut.types.ModuleType): {type_ignore}
+        {mod_name} = _coconut.types.ModuleType(_coconut_py_str("{mod_name}"))
+        """).format(
+            mod_name=mod_name,
+            type_ignore=self.type_ignore_comment(),
+        )
+
     def _make_import_stmt(self, imp_from, imp, imp_as, raw=False, lazy=False):
         """Generate an import statement."""
         if not raw and imp != "*":
@@ -4028,7 +4084,7 @@ else:
             fake_mods = (imp_from if imp_from is not None else imp).split(".")
             for i in range(1, len(fake_mods)):
                 mod_name = ".".join(fake_mods[:i])
-                out_lines.append(ensure_module_or_create_fake(mod_name))
+                out_lines.append(self.ensure_module_or_create_fake(mod_name))
             bind_to = imp_as if imp_as is not None else imp
             out_lines.append('{bind_to} = _coconut_lazy_module("{module}"){attr} {type_ignore}'.format(
                 bind_to=bind_to,
@@ -4069,7 +4125,7 @@ else:
             fake_mods = imp_as.split(".")
             for i in range(1, len(fake_mods)):
                 mod_name = ".".join(fake_mods[:i])
-                out.append(ensure_module_or_create_fake(mod_name))
+                out.append(self.ensure_module_or_create_fake(mod_name))
             out.append(".".join(fake_mods) + " = " + import_as_var)
         else:
             out.append(self._make_import_stmt(imp_from, imp, imp_as, lazy=lazy))
@@ -4131,22 +4187,14 @@ else:
                 stmts.extend(more_stmts)
             else:
                 old_imp, new_imp, version_check = paths
-                # we have to do this craziness to get mypy to statically handle the version check
+                # TODO: we have to do this craziness to get mypy to statically handle the version check
                 stmts.append(
                     handle_indentation("""
-try:
-    {store_var} = sys {type_ignore}
-except _coconut.NameError:
-    {store_var} = _coconut_sentinel
-sys = _coconut_sys
-if sys.version_info >= {version_check}:
-    {new_imp}
+if _coconut.typing.TYPE_CHECKING or _coconut_sys.version_info >= {version_check}:
+    {new_imp} {type_ignore}
 else:
     {old_imp}
-if {store_var} is not _coconut_sentinel:
-    sys = {store_var}
                 """).format(
-                        store_var=self.get_temp_var("sys", loc),
                         version_check=version_check,
                         new_imp="\n".join(self.single_import(loc, new_imp, imp_as, lazy=lazy)),
                         # should only type: ignore the old import
@@ -4158,17 +4206,16 @@ if {store_var} is not _coconut_sentinel:
 
     def import_handle(self, original, loc, tokens):
         """Universalizes imports."""
-        # First token is always either "lazy" or "" (from Optional default)
-        internal_assert(tokens[0] in ("lazy", ""), original, loc, "invalid import type token", tokens[0])
-        lazy = tokens[0] == "lazy"
-        tokens = tokens[1:]
-
-        if len(tokens) == 1:
-            imp_from, imports = None, tokens[0]
-        elif len(tokens) == 2:
-            imp_from, imports = tokens
+        if len(tokens) == 2:
+            imp_from = None
+            lazy, imports = tokens
+        elif len(tokens) == 3:
+            lazy, imp_from, imports = tokens
         else:
             raise CoconutInternalException("invalid import tokens", tokens)
+
+        internal_assert(lazy in ("lazy", ""), original, loc, "invalid import type token", lazy)
+        lazy = lazy == "lazy"
 
         if imp_from == "__future__":
             if lazy:
@@ -4893,61 +4940,7 @@ __annotations__["{name}"] = {annotation}
         """Process Python 3.14 template strings."""
         return self.f_string_handle(original, loc, tokens, is_t=True)
 
-    @staticmethod
-    def dedent_d_string(text, loc, placeholder=None):
-        """Apply PEP 822 dedentation to string contents.
-        The text must start with a newline (the required newline after opening quotes).
-        If placeholder is given, it is treated as non-whitespace for indentation calculation
-        but preserved in the output."""
-
-        if not text.startswith("\n"):
-            raise CoconutDeferredSyntaxError("d-string contents must start with a newline after opening quotes", loc)
-        text = text[1:]  # remove leading newline (not included in result)
-
-        lines = text.split("\n")
-
-        # determine common indentation
-        # blank lines are ignored except the last line (closing quotes line)
-        indent = None
-        for i, line in enumerate(lines):
-            is_last = i == len(lines) - 1
-            # X is an arbitrary non-whitespace character
-            check_line = line.replace(placeholder, "X") if placeholder else line
-            if not is_last and check_line.strip() == "":
-                continue
-            stripped = check_line.lstrip()
-            line_indent = check_line[:len(check_line) - len(stripped)]
-            if indent is None:
-                indent = line_indent
-            else:
-                common = ""
-                for a, b in zip(indent, line_indent):
-                    if a == b:
-                        common += a
-                    else:
-                        break
-                indent = common
-
-        if indent is None:
-            indent = ""
-
-        # apply dedentation
-        result_lines = []
-        for i, line in enumerate(lines):
-            is_last = i == len(lines) - 1
-            check_line = line.replace(placeholder, "X") if placeholder else line
-            if check_line.strip() == "" and not is_last:
-                result_lines.append("")
-            elif line.startswith(indent):
-                result_lines.append(line[len(indent):])
-            elif indent.startswith(check_line) and check_line.strip() == "":
-                result_lines.append("")
-            else:
-                raise CoconutDeferredSyntaxError("inconsistent indentation in d-string", loc)
-
-        return "\n".join(result_lines)
-
-    def d_string_handle(self, original, loc, tokens):
+    def d_string_handle(self, loc, tokens):
         """Process PEP 822 d-strings (dedented strings)."""
         string, = tokens
 
@@ -4962,7 +4955,7 @@ __annotations__["{name}"] = {annotation}
             raise CoconutDeferredSyntaxError("d-string prefix requires triple-quoted string", loc)
 
         # apply dedentation
-        text = self.dedent_d_string(text, loc)
+        text = dedent_d_string(text, loc)
 
         # Python 2 only supports br"..." not rb"..."
         return ("b" if has_b else "") + ("r" if raw else "") + self.wrap_str(text, strchar)
@@ -4989,7 +4982,7 @@ __annotations__["{name}"] = {annotation}
         placeholder = "\x00"
         full_text = placeholder.join(string_parts)
         internal_assert(lambda: full_text.count(placeholder) == len(string_parts) - 1, "placeholder character found in d-string contents", string_parts)
-        new_parts = self.dedent_d_string(full_text, loc, placeholder=placeholder).split(placeholder)
+        new_parts = dedent_d_string(full_text, loc, placeholder=placeholder).split(placeholder)
 
         # re-wrap as f-string ref and delegate to f_string_handle
         new_ref = self.wrap_f_str(strchar, new_parts, exprs)

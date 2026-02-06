@@ -703,6 +703,9 @@ def primary_test_2() -> bool:
     assert l(d([3])) == [3]
     assert "OrderedDict" in dir(collections)
     assert OrderedDict([("a", 1)]) |> dict == {"a": 1}
+    lazy import os.path
+    lazy from os.path import join
+    assert os.path.join("a", "b") == ("a/b" if sys.platform != "win32" else "a\\b") == join("a", "b")
     # test remapped imports (queue -> Queue on py2)
     lazy import queue
     assert hasattr(queue, "Queue")
