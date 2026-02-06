@@ -116,6 +116,9 @@ numpy = _numpy
 npt = _npt  # Fake, like typing
 zip_longest = _zip_longest
 
+import importlib as _importlib
+_coconut_lazy_module = _importlib.import_module
+
 numpy_modules: _t.Any = ...
 xarray_modules: _t.Any = ...
 pandas_modules: _t.Any = ...
@@ -147,6 +150,7 @@ any = _builtins.any
 bool = _builtins.bool
 bytes = _builtins.bytes
 dict = _builtins.dict
+dir = _builtins.dir
 enumerate = _builtins.enumerate
 filter = _builtins.filter
 float = _builtins.float
