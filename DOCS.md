@@ -1165,7 +1165,7 @@ depth: 1
 
 Coconut provides fully-featured, functional pattern-matching through its `match` statements. Coconut `match` syntax is a strict superset of [Python's `match` syntax](https://peps.python.org/pep-0636/).
 
-_Note: In describing Coconut's pattern-matching syntax, this section focuses on `match` statements, but Coconut's pattern-matching can also be used in many other places, such as [pattern-matching function definition](#pattern-matching-functions), [`case` statements](#case), [destructuring assignment](#destructuring-assignment), [`match data`](#match-data), and [`match for`](#match-for)._
+_Note: In describing Coconut's pattern-matching syntax, this section focuses on `match` statements, but Coconut's pattern-matching can also be used in many other places, such as [pattern-matching function definition](#pattern-matching-functions), [`case` statements](#case), [destructuring assignment](#destructuring-assignment), [`match data`](#match-data), [`match for`](#match-for), and [match comprehensions](#match-comprehensions)._
 
 ##### Overview
 
@@ -1771,7 +1771,7 @@ od = OrderedDict()  # collections is loaded here
 ```
 
 **Python:**
-_Can't be done without a custom lazy import implementation. See the compiled code for the Python syntax._
+_Only supported on Python 3.15+._
 
 
 ### Handling Keyword/Variable Name Overlap
@@ -2243,6 +2243,41 @@ array([[[1, 2],
 _General showcase of how the different concatenation operators work using `numpy` arrays._
 
 **Python:** _The equivalent Python array literals can be seen in the printed representations in each example._
+
+
+### Match Comprehensions
+
+Coconut supports [pattern-matching](#match) in comprehensions, where the pattern is matched against each item in the iterable. The syntax is
+```coconut
+[<expr> [match] for <pattern> in <iterable>]
+```
+which is equivalent to
+```coconut
+[(def (<pattern>) => <expr>)(item) for item in <iterable>]
+```
+
+The `match` keyword is optional, just as in [`match for`](#match-for) loops. Match comprehensions work with all comprehension types: list, set, dict, and generator comprehensions. If the pattern does not match an element, a [`MatchError`](#matcherror) is raised.
+
+##### Example
+
+**Coconut:**
+```coconut
+data Pair(a, b)
+pairs = [Pair(1, 2), Pair(3, 4)]
+result = [a + b for Pair(a, b) in pairs]
+```
+
+**Python:**
+```python
+# using coconut's Pair data type
+result = []
+for p in pairs:
+    match p:
+        case Pair(a, b):
+            result.append(a + b)
+        case _:
+            raise MatchError(...)
+```
 
 
 ### Lazy Lists

@@ -261,46 +261,17 @@ def strip_raw_and_b(string):
     return raw, has_b, string
 
 
-def import_stmt(imp_from, imp, imp_as, raw=False, lazy=False):
-    """Generate an import statement."""
-    if not raw and imp != "*":
-        module_path = (imp if imp_from is None else imp_from).split(".", 1)
-        existing_imp = import_existing.get(module_path[0])
-        if existing_imp is not None:
-            return handle_indentation(
-                """
-if _coconut.typing.TYPE_CHECKING:
-    {raw_import}
+def ensure_module_or_create_fake(mod_name):
+    """Create a fake module if it does not already exist."""
+    return handle_indentation("""
+try:
+    {mod_name}
+except:
+    {mod_name} = _coconut.types.ModuleType(_coconut_py_str("{mod_name}"))
 else:
-    try:
-        {imp_name} = {imp_lookup}
-    except _coconut.AttributeError as _coconut_imp_err:
-        raise _coconut.ImportError(_coconut.str(_coconut_imp_err))
-                """,
-            ).format(
-                raw_import=import_stmt(imp_from, imp, imp_as, raw=True),
-                imp_name=imp_as if imp_as is not None else imp,
-                imp_lookup=".".join([existing_imp] + module_path[1:] + ([imp] if imp_from is not None else [])),
-            )
-    if lazy:
-        bind_name = imp_as if imp_as is not None else imp.split(".", 1)[0]
-        if imp_from is not None:
-            return '{name} = _coconut_lazy_module("{module}").{attr}'.format(
-                name=bind_name,
-                module=imp_from,
-                attr=imp,
-            )
-        else:
-            return '{name} = _coconut_lazy_module("{module}")'.format(
-                name=bind_name,
-                module=imp,
-            )
-    else:
-        return (
-            ("from " + imp_from + " " if imp_from is not None else "")
-            + "import " + imp
-            + (" as " + imp_as if imp_as is not None else "")
-        )
+    if not _coconut.isinstance({mod_name}, _coconut.types.ModuleType):
+        {mod_name} = _coconut.types.ModuleType(_coconut_py_str("{mod_name}"))
+    """).format(mod_name=mod_name)
 
 
 def get_imported_names(imports):
@@ -846,14 +817,26 @@ class Compiler(Grammar, pickleable_obj):
             cls.method("has_expr_setname_manage"),
             include_in_packrat_context=True,
         )
-        cls.comprehension_expr <<= manage(
-            cls.comprehension_expr_ref,
+        cls.match_comp_expr <<= handle_and_manage(
+            cls.match_comp_expr_ref,
+            cls.method("match_comp_expr_handle"),
             cls.method("has_expr_setname_manage"),
             include_in_packrat_context=True,
         )
-        cls.dict_comp <<= handle_and_manage(
-            cls.dict_comp_ref,
-            cls.method("dict_comp_handle"),
+        cls.normal_comp_expr <<= manage(
+            cls.normal_comp_expr_ref,
+            cls.method("has_expr_setname_manage"),
+            include_in_packrat_context=True,
+        )
+        cls.normal_dict_comp <<= handle_and_manage(
+            cls.normal_dict_comp_ref,
+            cls.method("normal_dict_comp_handle"),
+            cls.method("has_expr_setname_manage"),
+            include_in_packrat_context=True,
+        )
+        cls.match_dict_comp <<= handle_and_manage(
+            cls.match_dict_comp_ref,
+            cls.method("match_dict_comp_handle"),
             cls.method("has_expr_setname_manage"),
             include_in_packrat_context=True,
         )
@@ -4019,6 +4002,49 @@ def __hash__(self):
 
         return self.make_namedtuple_call(None, names, types, of_args=items)
 
+    def _make_import_stmt(self, imp_from, imp, imp_as, raw=False, lazy=False):
+        """Generate an import statement."""
+        if not raw and imp != "*":
+            module_path = (imp if imp_from is None else imp_from).split(".", 1)
+            existing_imp = import_existing.get(module_path[0])
+            if existing_imp is not None:
+                return handle_indentation(
+                    """
+if _coconut.typing.TYPE_CHECKING:
+    {raw_import}
+else:
+    try:
+        {imp_name} = {imp_lookup}
+    except _coconut.AttributeError as _coconut_imp_err:
+        raise _coconut.ImportError(_coconut.str(_coconut_imp_err))
+                    """,
+                ).format(
+                    raw_import=self._make_import_stmt(imp_from, imp, imp_as, raw=True),
+                    imp_name=imp_as if imp_as is not None else imp,
+                    imp_lookup=".".join([existing_imp] + module_path[1:] + ([imp] if imp_from is not None else [])),
+                )
+        if lazy and self.target_info < (3, 15):
+            out_lines = []
+            fake_mods = (imp_from if imp_from is not None else imp).split(".")
+            for i in range(1, len(fake_mods)):
+                mod_name = ".".join(fake_mods[:i])
+                out_lines.append(ensure_module_or_create_fake(mod_name))
+            bind_to = imp_as if imp_as is not None else imp
+            out_lines.append('{bind_to} = _coconut_lazy_module("{module}"){attr} {type_ignore}'.format(
+                bind_to=bind_to,
+                module=imp_from if imp_from is not None else imp,
+                attr="." + imp if imp_from is not None else "",
+                type_ignore=self.type_ignore_comment() if "." in bind_to else "",
+            ))
+            return "\n".join(out_lines)
+        else:
+            return (
+                ("lazy " if lazy else "")
+                + ("from " + imp_from + " " if imp_from is not None else "")
+                + "import " + imp
+                + (" as " + imp_as if imp_as is not None else "")
+            )
+
     def single_import(self, loc, path, imp_as, type_ignore=False, lazy=False):
         """Generate import statements from a fully qualified import and the name to bind it to."""
         out = []
@@ -4039,22 +4065,14 @@ def __hash__(self):
 
         if imp_as is not None and "." in imp_as:
             import_as_var = self.get_temp_var("import", loc)
-            out.append(import_stmt(imp_from, imp, import_as_var, lazy=lazy))
+            out.append(self._make_import_stmt(imp_from, imp, import_as_var, lazy=lazy))
             fake_mods = imp_as.split(".")
             for i in range(1, len(fake_mods)):
                 mod_name = ".".join(fake_mods[:i])
-                out += [
-                    "try:",
-                    openindent + mod_name,
-                    closeindent + "except:",
-                    openindent + mod_name + ' = _coconut.types.ModuleType(_coconut_py_str("' + mod_name + '"))',
-                    closeindent + "else:",
-                    openindent + "if not _coconut.isinstance(" + mod_name + ", _coconut.types.ModuleType):",
-                    openindent + mod_name + ' = _coconut.types.ModuleType(_coconut_py_str("' + mod_name + '"))' + closeindent * 2,
-                ]
+                out.append(ensure_module_or_create_fake(mod_name))
             out.append(".".join(fake_mods) + " = " + import_as_var)
         else:
-            out.append(import_stmt(imp_from, imp, imp_as, lazy=lazy))
+            out.append(self._make_import_stmt(imp_from, imp, imp_as, lazy=lazy))
 
         if type_ignore:
             for i, line in enumerate(out):
@@ -4192,14 +4210,19 @@ raise {raise_from_var}
                 from_expr=from_expr,
             )
 
-    def dict_comp_handle(self, loc, tokens):
-        """Process Python 2.7 dictionary comprehension."""
+    def normal_dict_comp_handle(self, original, loc, tokens):
+        """Process standard dictionary comprehension."""
         key, val, comp = tokens
         # on < 3.9 have to use _coconut.dict since it's different than py_dict
         if self.target_info >= (3, 9):
             return "{" + key + ": " + val + " " + comp + "}"
         else:
             return "_coconut.dict(((" + key + "), (" + val + ")) " + comp + ")"
+
+    def match_dict_comp_handle(self, original, loc, tokens):
+        """Process match dictionary comprehension."""
+        key, val, comp = tokens
+        return self.match_comp_expr_handle(original, loc, [key, comp], dict_val=val)
 
     def pattern_error(self, original, loc, value_var, check_var, match_error_class='_coconut_MatchError'):
         """Construct a pattern-matching error message."""
@@ -4492,12 +4515,10 @@ def {name}({match_func_paramdef}):
             else:
                 colon = self.typedef_handle([typedef])
             if isinstance(params, str):
-                decorators = ""
                 funcdef = "def " + name + params + colon + "\n" + body
             else:
                 match_tokens = [name] + list(params)
                 before_colon, after_docstring = self.name_match_funcdef_handle(original, loc, match_tokens)
-                decorators = "@_coconut_mark_as_match\n"
                 funcdef = (
                     before_colon
                     + colon
@@ -4506,10 +4527,60 @@ def {name}({match_func_paramdef}):
                     + body
                 )
 
+            decorators = ""
             funcdef = " ".join(add_kwds + [funcdef])
 
             self.add_code_before[name] = self.decoratable_funcdef_stmt_handle(original, loc, [decorators, funcdef], is_async, is_stmt_lambda=True)
 
+        return self._handle_expr_scope_closure(name, loc)
+
+    def match_comp_expr_handle(self, original, loc, tokens, dict_val=None):
+        """Build a match comprehension by creating a temp match function.
+        For dict comps, expr is the key and dict_val is the value."""
+        expr, (matches, iterable) = tokens
+
+        func_name = self.get_temp_var("match_comp", loc)
+        iter_var = self.get_temp_var("match_comp_iter", loc)
+        check_var = self.get_temp_var("match_check", loc)
+
+        matcher = self.get_matcher(original, loc, check_var)
+        matcher.match(matches, iter_var)
+
+        match_code = matcher.build()
+        match_error = self.pattern_error(original, loc, iter_var, check_var)
+
+        if dict_val is not None:
+            return_expr = "(" + expr + ", " + dict_val + ")"
+        else:
+            return_expr = expr
+
+        funcdef = handle_indentation(
+            """
+def {func_name}({iter_var}):
+    {match_code}
+    {match_error}
+    return {return_expr}
+            """,
+            add_newline=True,
+        ).format(
+            func_name=func_name,
+            iter_var=iter_var,
+            match_code=match_code,
+            match_error=match_error,
+            return_expr=return_expr,
+        )
+
+        self.add_code_before[func_name] = self.decoratable_funcdef_stmt_handle(original, loc, [funcdef], is_stmt_lambda=True)
+
+        func_expr = self._handle_expr_scope_closure(func_name, loc)
+
+        if dict_val is not None:
+            return "_coconut.dict((" + func_expr + "(" + iter_var + ") for " + iter_var + " in " + iterable + "))"
+        else:
+            return func_expr + "(" + iter_var + ") for " + iter_var + " in " + iterable
+
+    def _handle_expr_scope_closure(self, name, loc):
+        """Extracts the definition of a name to a separate function that closes on all local expr setnames."""
         expr_setname_context = self.current_parsing_context("expr_setnames")
         if expr_setname_context is None:
             return name

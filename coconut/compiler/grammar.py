@@ -1038,6 +1038,9 @@ class Grammar(object):
         # for namedexpr locations only supported in Python 3.10
         new_namedexpr_test = Forward()
         comp_for = Forward()
+        match_comp_for = Forward()
+        normal_comp_expr = Forward()
+        match_comp_expr = Forward()
         comprehension_expr = Forward()
 
         typedef = Forward()
@@ -1067,7 +1070,8 @@ class Grammar(object):
         new_testlist_star_expr_ref = testlist_star_expr
 
         yield_from = Forward()
-        dict_comp = Forward()
+        normal_dict_comp = Forward()
+        match_dict_comp = Forward()
         dict_literal = Forward()
         yield_classic = addspace(keyword("yield") + Optional(new_testlist_star_expr))
         yield_from_ref = keyword("yield").suppress() + keyword("from").suppress() + test
@@ -1076,8 +1080,11 @@ class Grammar(object):
             yield_from
             | yield_classic
         )
-        dict_comp_ref = lbrace.suppress() + (
-            test + colon.suppress() + test + comp_for
+        normal_dict_comp_ref = test + colon.suppress() + test + comp_for
+        match_dict_comp_ref = test + colon.suppress() + test + Optional(keyword("match").suppress()) + match_comp_for
+        dict_comp = lbrace.suppress() + (
+            normal_dict_comp
+            | match_dict_comp
             | invalid_syntax(dubstar_expr + comp_for, "dict unpacking cannot be used in dict comprehension")
         ) + rbrace.suppress()
         dict_literal_ref = (
@@ -1208,6 +1215,8 @@ class Grammar(object):
         just_op = just_star | just_slash
 
         match = Forward()
+        many_match = Forward()
+
         args_list = (
             ~just_op
             + addspace(
@@ -1947,8 +1956,17 @@ class Grammar(object):
         comp_for <<= base_comp_for | async_comp_for
         comp_if = addspace(keyword("if") + test_no_cond + Optional(comp_iter))
         comp_iter <<= any_of(comp_for, comp_if)
-        comprehension_expr_ref = (
-            addspace(namedexpr_test + comp_for)
+        match_comp_for <<= Group(
+            keyword("for").suppress()
+            + many_match
+            + keyword("in").suppress()
+            + comp_it_item
+        )
+        match_comp_expr_ref = namedexpr_test + Optional(keyword("match").suppress()) + match_comp_for
+        normal_comp_expr_ref = addspace(namedexpr_test + comp_for)
+        comprehension_expr <<= (
+            normal_comp_expr
+            | match_comp_expr
             | invalid_syntax(star_expr + comp_for, "iterable unpacking cannot be used in comprehension")
         )
 
@@ -2176,8 +2194,7 @@ class Grammar(object):
         )
 
         match <<= kwd_or_match
-
-        many_match = (
+        many_match <<= (
             labeled_group(matchlist_star, "star")
             | labeled_group(matchlist_tuple_items, "implicit_tuple")
             | match

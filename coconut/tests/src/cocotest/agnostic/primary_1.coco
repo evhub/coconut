@@ -1026,6 +1026,27 @@ def primary_test_1() -> bool:
         pass
     else:
         assert False
+    # match comprehension tests
+    data TestPair(fst, snd)
+    test_pairs = [TestPair(1, 2), TestPair(3, 4)]
+    # explicit match keyword
+    assert [fst + snd match for TestPair(fst, snd) in test_pairs] == [3, 7]
+    # implicit match (no match keyword)
+    assert [fst + snd for TestPair(fst, snd) in test_pairs] == [3, 7]
+    # set comprehension
+    assert {fst + snd match for TestPair(fst, snd) in test_pairs} == {3, 7}
+    # generator expression
+    assert list(fst + snd match for TestPair(fst, snd) in test_pairs) == [3, 7]
+    # dict comprehension
+    assert {fst: snd match for TestPair(fst, snd) in test_pairs} == {1: 2, 3: 4}
+    assert {fst: snd for TestPair(fst, snd) in test_pairs} == {1: 2, 3: 4}
+    # match error on non-matching pattern
+    try:
+        [x match for int(x) in ["not", "ints"]]
+    except MatchError:
+        pass
+    else:
+        assert False
     assert consume(range(10)) `isinstance` collections.abc.Sequence
     assert consume(range(10), keep_last=5) `isinstance` collections.abc.Sequence
     assert range(5) |> reduce$((+), ?, 10) == 20

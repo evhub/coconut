@@ -15,17 +15,23 @@ def _coconut_lazy_module(name, on_import=None, attr=None):
         if attr is not None:
             return _coconut.getattr(state[0], attr)
         return state[0]
-    class meta(type):
-        def __getattr__(cls, name):
-            return _coconut.getattr(load(), name)
-        def __setattr__(cls, name, value):
-            _coconut.setattr(load(), name, value)
-        def __dir__(cls):
-            try:
+    if attr is None:
+        from types import ModuleType
+        class lazy_mod(ModuleType):
+            def __getattr__(self, name):
+                return _coconut.getattr(load(), name)
+            def __dir__(self):
                 return _coconut.dir(load())
-            except _coconut.ImportError:
-                return []
-    return meta({py_str_module}, (), {{}})
+        return lazy_mod(name)
+    else:
+        class meta(type):
+            def __getattr__(cls, name):
+                return _coconut.getattr(load(), name)
+            def __setattr__(cls, name, value):
+                _coconut.setattr(load(), name, value)
+            def __dir__(cls):
+                return _coconut.dir(load())
+        return meta({py_str_module}, (), {{}})
 @_coconut_wraps(_coconut_py_super)
 def _coconut_super(type=None, object_or_type=None):
     if type is None:

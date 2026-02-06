@@ -1,6 +1,7 @@
-import collections
+lazy import collections
 # use \collections to avoid shadowing warning since collections is imported above
-import \collections.abc
+lazy import \collections.abc
+lazy from collections import OrderedDict
 import weakref
 import sys
 
@@ -688,9 +689,11 @@ def primary_test_2() -> bool:
         """ == "Hello\\n, World!\n"
 
     # lazy import tests (PEP 810)
-    lazy import json
+    lazy import json, types
+    assert isinstance(json, types.ModuleType)
     assert json.dumps([1, 2, 3]) == "[1, 2, 3]"
     lazy import json as j
+    assert isinstance(j, types.ModuleType)
     assert j.loads("[1]") == [1]
     lazy from json import dumps
     assert dumps({"a": 1}) == '{"a": 1}'
@@ -698,9 +701,7 @@ def primary_test_2() -> bool:
     assert ld("[2]") == [2]
     lazy from json import dumps as d, loads as l
     assert l(d([3])) == [3]
-    lazy import collections
     assert "OrderedDict" in dir(collections)
-    lazy from collections import OrderedDict
     assert OrderedDict([("a", 1)]) |> dict == {"a": 1}
     # test remapped imports (queue -> Queue on py2)
     lazy import queue
