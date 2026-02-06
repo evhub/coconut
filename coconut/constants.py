@@ -448,6 +448,7 @@ reserved_vars = (
     "operator",
     "type",
     "copyclosure",
+    "lazy",
     "\u03bb",  # lambda
 )
 
@@ -1228,7 +1229,6 @@ search_terms = (
     "data types",
     "lambda",
     "lambdas",
-    "lazy",
     "evaluation",
     "lazy list",
     "lazy lists",

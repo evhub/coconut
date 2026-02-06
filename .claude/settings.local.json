@@ -18,6 +18,7 @@
       "Bash(done)",
       "WebFetch(domain:github.com)",
       "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:gist.github.com)",
       "WebFetch(domain:coconut.readthedocs.io)",
       "WebFetch(domain:peps.python.org)",
       "WebFetch(domain:pypi.org)",

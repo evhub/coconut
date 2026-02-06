@@ -263,19 +263,6 @@ def strip_raw_and_b(string):
 
 def import_stmt(imp_from, imp, imp_as, raw=False, lazy=False):
     """Generate an import statement."""
-    if lazy:
-        bind_name = imp_as if imp_as is not None else imp.split(".", 1)[0]
-        if imp_from is not None:
-            return '{name} = _coconut_lazy_module("{module}").{attr}'.format(
-                name=bind_name,
-                module=imp_from,
-                attr=imp,
-            )
-        else:
-            return '{name} = _coconut_lazy_module("{module}")'.format(
-                name=bind_name,
-                module=imp,
-            )
     if not raw and imp != "*":
         module_path = (imp if imp_from is None else imp_from).split(".", 1)
         existing_imp = import_existing.get(module_path[0])
@@ -295,11 +282,25 @@ else:
                 imp_name=imp_as if imp_as is not None else imp,
                 imp_lookup=".".join([existing_imp] + module_path[1:] + ([imp] if imp_from is not None else [])),
             )
-    return (
-        ("from " + imp_from + " " if imp_from is not None else "")
-        + "import " + imp
-        + (" as " + imp_as if imp_as is not None else "")
-    )
+    if lazy:
+        bind_name = imp_as if imp_as is not None else imp.split(".", 1)[0]
+        if imp_from is not None:
+            return '{name} = _coconut_lazy_module("{module}").{attr}'.format(
+                name=bind_name,
+                module=imp_from,
+                attr=imp,
+            )
+        else:
+            return '{name} = _coconut_lazy_module("{module}")'.format(
+                name=bind_name,
+                module=imp,
+            )
+    else:
+        return (
+            ("from " + imp_from + " " if imp_from is not None else "")
+            + "import " + imp
+            + (" as " + imp_as if imp_as is not None else "")
+        )
 
 
 def get_imported_names(imports):
@@ -4153,15 +4154,16 @@ if {store_var} is not _coconut_sentinel:
 
         if imp_from == "__future__":
             if lazy:
-                raise self.make_err(CoconutSyntaxError, "lazy imports not allowed for __future__", original, loc)
+                raise self.make_err(CoconutSyntaxError, "cannot lazy import from __future__", original, loc)
             self.strict_err_or_warn("unnecessary from __future__ import (Coconut does these automatically)", original, loc, noqa_able=True)
             return ""
+
         imports = list(imports)
         imported_names, star_import = get_imported_names(imports)
         self.star_import = self.star_import or star_import
         if star_import:
             if lazy:
-                raise self.make_err(CoconutSyntaxError, "lazy imports not allowed for star imports", original, loc)
+                raise self.make_err(CoconutSyntaxError, "cannot lazy import *", original, loc)
             self.strict_warn("found * import; these disable Coconut's undefined name detection", original, loc)
         if imp_from == "*" or (imp_from is None and star_import):
             if not (len(imports) == 1 and imports[0] == "*"):

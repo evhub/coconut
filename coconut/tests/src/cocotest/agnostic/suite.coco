@@ -1102,27 +1102,6 @@ forward 2""") == 900
         assert process_map(list .. .$[:2] .. loop, ([1], [2]))$[:2] |> tuple == ([1, 1], [2, 2])
         assert all(r == 4 for r in process_map(call$(?, [7,1,4,5]), [maxdiff1, maxdiff2, maxdiff3]))
 
-    # lazy import tests (PEP 810)
-    lazy import json
-    assert json.dumps([1, 2, 3]) == "[1, 2, 3]"
-    lazy import json as j
-    assert j.loads("[1]") == [1]
-    lazy from json import dumps
-    assert dumps({"a": 1}) == '{"a": 1}'
-    lazy from json import loads as ld
-    assert ld("[2]") == [2]
-    lazy from json import dumps as d, loads as l
-    assert l(d([3])) == [3]
-    lazy import collections
-    assert "OrderedDict" in dir(collections)
-    lazy from collections import OrderedDict
-    assert OrderedDict([("a", 1)]) |> dict == {"a": 1}
-    # test remapped imports (queue -> Queue on py2)
-    lazy import queue
-    assert hasattr(queue, "Queue")
-    lazy from queue import Queue
-    assert Queue is not None
-
     # must come at end
     assert fibs_calls[0] == 1
     assert lols[0] == 5

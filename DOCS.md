@@ -1743,6 +1743,37 @@ async with my_generator() as agen:
 ```
 
 
+### `lazy import`
+
+Coconut supports [PEP 810](https://peps.python.org/pep-0810/) lazy import syntax on all Python versions. Lazy imports defer module loading until the imported name is first used, rather than executing the import immediately. This can improve startup time and reduce memory usage, especially in modules with large dependency graphs.
+
+Coconut supports all standard lazy import forms:
+```coconut
+lazy import module_name
+lazy import module_name as alias
+lazy from module import name
+lazy from module import name as alias
+lazy from module import name1, name2
+```
+
+When a lazy import is encountered, Coconut creates a proxy object instead of immediately loading the module. The actual import only occurs when the name is first accessed (e.g. by accessing an attribute). Import errors are also deferred—if the module doesn't exist, the `ImportError` will be raised at the point of first use, not at the import statement.
+
+##### Example
+
+**Coconut:**
+```coconut
+lazy import json
+lazy from collections import OrderedDict
+
+# json is not loaded yet
+data = json.dumps({"key": "value"})  # json is loaded here
+od = OrderedDict()  # collections is loaded here
+```
+
+**Python:**
+_Can't be done without a custom lazy import implementation. See the compiled code for the Python syntax._
+
+
 ### Handling Keyword/Variable Name Overlap
 
 In Coconut, the following keywords are also valid variable names:
