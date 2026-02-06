@@ -261,8 +261,21 @@ def strip_raw_and_b(string):
     return raw, has_b, string
 
 
-def import_stmt(imp_from, imp, imp_as, raw=False):
+def import_stmt(imp_from, imp, imp_as, raw=False, lazy=False):
     """Generate an import statement."""
+    if lazy:
+        bind_name = imp_as if imp_as is not None else imp.split(".", 1)[0]
+        if imp_from is not None:
+            return '{name} = _coconut_lazy_module("{module}").{attr}'.format(
+                name=bind_name,
+                module=imp_from,
+                attr=imp,
+            )
+        else:
+            return '{name} = _coconut_lazy_module("{module}")'.format(
+                name=bind_name,
+                module=imp,
+            )
     if not raw and imp != "*":
         module_path = (imp if imp_from is None else imp_from).split(".", 1)
         existing_imp = import_existing.get(module_path[0])
@@ -4023,22 +4036,9 @@ def __hash__(self):
             imp_from += imp.rsplit("." + imp_as, 1)[0]
             imp, imp_as = imp_as, None
 
-        if lazy:
-            bind_name = imp_as if imp_as is not None else imp.split(".", 1)[0]
-            if imp_from is not None:
-                out.append('{name} = _coconut_lazy_module("{module}").{attr}'.format(
-                    name=bind_name,
-                    module=imp_from,
-                    attr=imp,
-                ))
-            else:
-                out.append('{name} = _coconut_lazy_module("{module}")'.format(
-                    name=bind_name,
-                    module=imp,
-                ))
-        elif imp_as is not None and "." in imp_as:
+        if imp_as is not None and "." in imp_as:
             import_as_var = self.get_temp_var("import", loc)
-            out.append(import_stmt(imp_from, imp, import_as_var))
+            out.append(import_stmt(imp_from, imp, import_as_var, lazy=lazy))
             fake_mods = imp_as.split(".")
             for i in range(1, len(fake_mods)):
                 mod_name = ".".join(fake_mods[:i])
@@ -4053,7 +4053,7 @@ def __hash__(self):
                 ]
             out.append(".".join(fake_mods) + " = " + import_as_var)
         else:
-            out.append(import_stmt(imp_from, imp, imp_as))
+            out.append(import_stmt(imp_from, imp, imp_as, lazy=lazy))
 
         if type_ignore:
             for i, line in enumerate(out):
@@ -4139,24 +4139,14 @@ if {store_var} is not _coconut_sentinel:
 
     def import_handle(self, original, loc, tokens):
         """Universalizes imports."""
-        # Detect lazy prefix by number of tokens:
-        #   basic_import: 1 token (imports)
-        #   from_import: 2 tokens (imp_from, imports)
-        #   lazy basic_import: 2 tokens ("lazy", imports)
-        #   lazy from_import: 3 tokens ("lazy", imp_from, imports)
+        # First token is always either "lazy" or "" (from Optional default)
+        lazy = tokens[0] == "lazy"
+        tokens = tokens[1:]
+
         if len(tokens) == 1:
-            lazy = False
             imp_from, imports = None, tokens[0]
         elif len(tokens) == 2:
-            if tokens[0] == "lazy":
-                lazy = True
-                imp_from, imports = None, tokens[1]
-            else:
-                lazy = False
-                imp_from, imports = tokens
-        elif len(tokens) == 3:
-            lazy = True
-            imp_from, imports = tokens[1], tokens[2]
+            imp_from, imports = tokens
         else:
             raise CoconutInternalException("invalid import tokens", tokens)
 
