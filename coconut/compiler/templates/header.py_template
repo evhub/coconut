@@ -8,6 +8,14 @@ def _coconut_lazy_module(name, on_import=None, attr=None):
                 state[1] = err
             else:
                 state[0] = mod
+                loaded = _coconut.getattr(state[0], attr) if attr is not None else state[0]
+                for cls in _coconut_type(loaded).__mro__:
+                    for attr_name, attr_val in _coconut.vars(cls).items():
+                        if attr_name.startswith("__") and attr_name.endswith("__") and _coconut.callable(attr_val):
+                            try:
+                                _coconut_type.__setattr__(lazy_obj, attr_name, make_lazy_method(attr_name))
+                            except _coconut.Exception:
+                                pass
                 if on_import is not None:
                     on_import(mod)
         if state[1] is not None:
@@ -30,16 +38,14 @@ def _coconut_lazy_module(name, on_import=None, attr=None):
             return _coconut.isinstance(inst, load())
         def __subclasscheck__(cls, sub):
             return _coconut.issubclass(sub, load())
-    def _coconut_make_lazy_dunder(_coconut_n):
-        def _coconut_lazy_dunder(cls, *args, **kwargs):
-            return _coconut.getattr(load(), _coconut_n)(*args, **kwargs)
-        return _coconut_lazy_dunder
-    for _coconut_dunder in ("__call__", "__hash__", "__repr__", "__str__", "__format__", "__bytes__", "__bool__", "__nonzero__", "__int__", "__float__", "__complex__", "__index__", "__round__", "__eq__", "__ne__", "__lt__", "__le__", "__gt__", "__ge__", "__len__", "__contains__", "__iter__", "__next__", "__reversed__", "__getitem__", "__setitem__", "__delitem__", "__missing__", "__add__", "__radd__", "__iadd__", "__sub__", "__rsub__", "__isub__", "__mul__", "__rmul__", "__imul__", "__floordiv__", "__rfloordiv__", "__ifloordiv__", "__truediv__", "__rtruediv__", "__itruediv__", "__mod__", "__rmod__", "__imod__", "__pow__", "__rpow__", "__ipow__", "__matmul__", "__rmatmul__", "__imatmul__", "__divmod__", "__rdivmod__", "__neg__", "__pos__", "__abs__", "__invert__", "__and__", "__rand__", "__iand__", "__or__", "__ror__", "__ior__", "__xor__", "__rxor__", "__ixor__", "__lshift__", "__rlshift__", "__ilshift__", "__rshift__", "__rrshift__", "__irshift__", "__enter__", "__exit__", "__aiter__", "__anext__", "__await__", "__aenter__", "__aexit__", "__reduce__", "__reduce_ex__", "__copy__", "__deepcopy__"):
-        _coconut_type.__setattr__(lazy_obj, _coconut_dunder, _coconut_make_lazy_dunder(_coconut_dunder))
-    if attr is None:
-        return lazy_obj(_coconut_py_str(name))
-    else:
-        return lazy_obj(_coconut_py_str(name), (), {{}})
+    def make_lazy_method(method_name):
+        def lazy_method(cls, *args, **kwargs):
+            loaded = load()
+            return _coconut.getattr(_coconut_type(loaded), method_name)(loaded, *args, **kwargs)
+        return lazy_method
+    for method_name in ("__repr__", "__call__", "__or__", "__ror__", "__reduce__", "__reduce_ex__", "__str__", "__hash__", "__format__", "__eq__", "__lt__", "__le__", "__gt__", "__ge__", "__contains__", "__iter__", "__reversed__", "__getitem__", "__setitem__", "__delitem__", "__missing__", "__add__", "__sub__", "__mul__", "__floordiv__", "__truediv__", "__mod__", "__pow__", "__matmul__", "__divmod__", "__neg__", "__pos__", "__abs__", "__invert__", "__and__", "__xor__",  "__lshift__", "__rshift__", "__enter__", "__exit__", "__aiter__", "__await__", "__aenter__", "__aexit__", "__copy__", "__deepcopy__"):
+        _coconut_type.__setattr__(lazy_obj, method_name, make_lazy_method(method_name))
+    return lazy_obj(_coconut_py_str(name)) if attr is None else lazy_obj(_coconut_py_str(name), (), {empty_dict})
 @_coconut_wraps(_coconut_py_super)
 def _coconut_super(type=None, object_or_type=None):
     if type is None:
