@@ -772,7 +772,7 @@ def _coconut_trollius_coroutine(func):
         def raise_import_error(*args, **kwargs):
             raise err
         return raise_import_error
-asyncio.coroutine = _coconut_trollius_coroutine
+types.ModuleType.__setattr__(asyncio, "coroutine", _coconut_trollius_coroutine)
 asyncio_Return = _coconut_lazy_module("trollius", attr="Return")
             ''',
             if_ge='''
