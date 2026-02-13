@@ -143,6 +143,10 @@ def test_setup_none() -> bool:
     assert_raises(-> parse("def f(x) = return x"), CoconutSyntaxError)
     assert_raises(-> parse("def f(x) =\n return x"), CoconutSyntaxError)
     assert_raises(-> parse("10 20"), CoconutSyntaxError)
+    assert_raises(-> parse('x + "1" + (=="2") = "test"'), CoconutSyntaxError)
+    assert_raises(-> parse('(==x) + "1" + y = "test"'), CoconutSyntaxError)
+    assert_raises(-> parse(r'd"\n    hello"'), CoconutSyntaxError)
+    assert_raises(-> parse('d"""    hello"""'), CoconutSyntaxError)
 
     assert_raises(-> parse("()[(())"), CoconutSyntaxError, err_has="""
 unclosed open '[' (line 1)

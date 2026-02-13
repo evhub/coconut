@@ -732,6 +732,22 @@ def primary_test_2() -> bool:
     assert isinstance(lazy_d, lazy_deque)
     assert issubclass(type(lazy_d), lazy_deque)
 
+    # Issue #882: parenthesized match patterns in string captures
+    (int -> n882) + "G" = "8G"
+    assert n882 == 8
+    "G" + (int -> n882b) = "G8"
+    assert n882b == 8
+    "[" + (int -> n882c) + "]" = "[42]"
+    assert n882c == 42
+
+    a882 = "hello"
+    (==a882) + " world" = "hello world"
+
+    match (int -> mv882) + "px" in "100px":
+        assert mv882 == 100
+    else:
+        assert False
+
     # deferred ImportError on lazy imports
     lazy import coconut_nonexistent_test_module
     assert_raises(=> coconut_nonexistent_test_module.attr, ImportError)

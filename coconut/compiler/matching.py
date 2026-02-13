@@ -812,6 +812,8 @@ if {assign_to} is _coconut_sentinel:
                 if len(seq_groups) == 3:
                     (front_gtype, front_match), mid_group, (back_gtype, back_match) = seq_groups
                     internal_assert(front_gtype == "capture" == back_gtype, "invalid sequence match middle groups", seq_groups)
+                    if "paren" in front_match or "paren" in back_match:
+                        raise CoconutDeferredSyntaxError("parenthesized match patterns cannot be used in sequence search patterns", self.loc)
                     mid_gtype, mid_contents = mid_group
 
                     if iter_match:

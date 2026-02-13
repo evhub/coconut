@@ -2056,6 +2056,10 @@ class Grammar(object):
         del_stmt = addspace(keyword("del") - simple_assignlist)
 
         interior_name_match = labeled_group(setname, "var")
+        interior_capture_match = (
+            interior_name_match
+            | labeled_group(lparen.suppress() + match + rparen.suppress(), "paren")
+        )
         matchlist_anon_named_tuple_item = (
             Group(Optional(dot) + unsafe_name) + equals + match
             | Group(Optional(dot) + interior_name_match) + equals
@@ -2103,18 +2107,18 @@ class Grammar(object):
         match_string = interleaved_tokenlist(
             # f_string_atom must come first
             f_string_atom("f_string") | fixed_len_string_tokens("string"),
-            interior_name_match("capture"),
+            interior_capture_match("capture"),
             plus,
             at_least_two=True,
         )("string_sequence")
         sequence_match = interleaved_tokenlist(
             (match_list | match_tuple)("literal"),
-            interior_name_match("capture"),
+            interior_capture_match("capture"),
             plus,
         )("sequence")
         iter_match = interleaved_tokenlist(
             (match_list | match_tuple | match_lazy)("literal"),
-            interior_name_match("capture"),
+            interior_capture_match("capture"),
             unsafe_dubcolon,
             at_least_two=True,
         )("iter")

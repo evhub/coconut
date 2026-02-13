@@ -1197,6 +1197,8 @@ infix_pattern ::= bar_or_pattern ("`" EXPR "`" [EXPR])*  # infix check
 
 bar_or_pattern ::= pattern ("|" pattern)*  # match any
 
+capture ::= NAME | "(" pattern ")"  # in unambiguous capture positions
+
 base_pattern ::= (
     "(" pattern ")"                  # parentheses
     | "None" | "True" | "False"      # constants
@@ -1230,29 +1232,29 @@ base_pattern ::= (
     | [(                             # sequence splits
         "(" patterns ")"
         | "[" patterns "]"
-      ) "+"] NAME ["+" (
+      ) "+"] capture ["+" (
         "(" patterns ")"                 # this match must be the same
         | "[" patterns "]"               #  construct as the first match
-      )] ["+" NAME ["+" (
-        "(" patterns ")"                 # and same here
+      )] ["+" NAME ["+" (              # search splits require NAME
+        "(" patterns ")"                 # must be same as first match
         | "[" patterns "]"
       )]]
     | [(                             # iterable splits
         "(" patterns ")"
         | "[" patterns "]"
         | "(|" patterns "|)"
-      ) "::"] NAME ["::" (
+      ) "::"] capture ["::" (
         "(" patterns ")"
         | "[" patterns "]"
         | "(|" patterns "|)"
-      )] [ "::" NAME [
+      )] [ "::" NAME [               # search splits require NAME
         "(" patterns ")"
         | "[" patterns "]"
         | "(|" patterns "|)"
       ]]
-    | [STRING "+"] NAME              # complex string matching
+    | [STRING "+"] capture           # complex string matching
         ["+" STRING]
-        ["+" NAME ["+" STRING]]
+        ["+" NAME ["+" STRING]]      # search splits require NAME
 )
 ```
 
@@ -1287,13 +1289,13 @@ base_pattern ::= (
 - Sequence Destructuring:
   - Lists (`[<patterns>]`), Tuples (`(<patterns>)`): will only match a sequence (`collections.abc.Sequence`) of the same length, and will check the contents against `<patterns>` (Coconut automatically registers `numpy` arrays and `collections.deque` objects as sequences).
   - Lazy lists (`(|<patterns>|)`): same as list or tuple matching, but checks for an Iterable (`collections.abc.Iterable`) instead of a Sequence.
-  - Head-Tail Splits (`<list/tuple> + <var>` or `(<patterns>, *<var>)`): will match the beginning of the sequence against the `<list/tuple>`/`<patterns>`, then bind the rest to `<var>`, and make it the type of the construct used.
-  - Init-Last Splits (`<var> + <list/tuple>` or `(*<var>, <patterns>)`): exactly the same as head-tail splits, but on the end instead of the beginning of the sequence.
-  - Head-Last Splits (`<list/tuple> + <var> + <list/tuple>` or `(<patterns>, *<var>, <patterns>)`): the combination of a head-tail and an init-last split.
-  - Search Splits (`<var1> + <list/tuple> + <var2>` or `(*<var1>, <patterns>, *<var2>)`): searches for the first occurrence of the `<list/tuple>`/`<patterns>` in the sequence, then puts everything before into `<var1>` and everything after into `<var2>`.
+  - Head-Tail Splits (`<list/tuple> + <capture>` or `(<patterns>, *<var>)`): will match the beginning of the sequence against the `<list/tuple>`/`<patterns>`, then bind the rest to `<capture>`, and make it the type of the construct used. `<capture>` can be a variable name or a parenthesized match pattern (e.g. `(int -> x)`).
+  - Init-Last Splits (`<capture> + <list/tuple>` or `(*<var>, <patterns>)`): exactly the same as head-tail splits, but on the end instead of the beginning of the sequence.
+  - Head-Last Splits (`<list/tuple> + <capture> + <list/tuple>` or `(<patterns>, *<var>, <patterns>)`): the combination of a head-tail and an init-last split.
+  - Search Splits (`<var1> + <list/tuple> + <var2>` or `(*<var1>, <patterns>, *<var2>)`): searches for the first occurrence of the `<list/tuple>`/`<patterns>` in the sequence, then puts everything before into `<var1>` and everything after into `<var2>`. Search split captures must be variable names, not parenthesized patterns.
   - Head-Last Search Splits (`<list/tuple> + <var> + <list/tuple> + <var> + <list/tuple>` or `(<patterns>, *<var>, <patterns>, *<var>, <patterns>)`): the combination of a head-tail split and a search split.
-  - Iterable Splits (`<list/tuple/lazy list> :: <var> :: <list/tuple/lazy list> :: <var> :: <list/tuple/lazy list>`): same as other sequence destructuring, but works on any iterable (`collections.abc.Iterable`), including infinite iterators (note that if an iterator is matched against it will be modified unless it is [`reiterable`](#reiterable)).
-  - Complex String Matching (`<string> + <var> + <string> + <var> + <string>`): string matching supports the same destructuring options as above.
+  - Iterable Splits (`<list/tuple/lazy list> :: <capture> :: <list/tuple/lazy list> :: <var> :: <list/tuple/lazy list>`): same as other sequence destructuring, but works on any iterable (`collections.abc.Iterable`), including infinite iterators (note that if an iterator is matched against it will be modified unless it is [`reiterable`](#reiterable)).
+  - Complex String Matching (`<string> + <capture> + <string> + <var> + <string>`): string matching supports the same destructuring options as above. In unambiguous positions (single capture), `<capture>` can be a variable name or a parenthesized match pattern (e.g. `(int -> n) + "px"`).
 
 _Note: Like [iterator slicing](#iterator-slicing), iterator and lazy list matching make no guarantee that the original iterator matched against be preserved (to preserve the iterator, use Coconut's [`reiterable`](#reiterable) built-in)._
 
