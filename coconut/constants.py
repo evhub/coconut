@@ -119,6 +119,7 @@ py_version_str = sys.version.split()[0]
 use_fast_pyparsing_reprs = get_bool_env_var("COCONUT_FAST_PYPARSING_REPRS", True)
 
 warn_on_multiline_regex = False
+warn_on_undefined_ParseResults_name = False
 
 default_whitespace_chars = " \t\f"  # the only non-newline whitespace Python allows
 

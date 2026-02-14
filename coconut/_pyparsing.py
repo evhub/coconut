@@ -45,6 +45,7 @@ from coconut.constants import (
     default_incremental_cache_size,
     never_clear_incremental_cache,
     warn_on_multiline_regex,
+    warn_on_undefined_ParseResults_name,
     num_displayed_timing_items,
     use_pyparsing_cache_file,
     use_line_by_line_parser,
@@ -274,6 +275,7 @@ if DEVELOP:
         _pyparsing._enable_all_warnings()
     _pyparsing.__diag__.warn_name_set_on_empty_Forward = False
     _pyparsing.__diag__.warn_on_incremental_multiline_regex = warn_on_multiline_regex
+    _pyparsing.__diag__.warn_on_undefined_ParseResults_name = warn_on_undefined_ParseResults_name
 
 if MODERN_PYPARSING and use_left_recursion_if_available:
     ParserElement.enable_left_recursion()

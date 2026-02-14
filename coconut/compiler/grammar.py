@@ -863,16 +863,20 @@ class Grammar(object):
         nonfinal_setname = Forward()
         final_classname = Forward()
         nonfinal_classname = Forward()
+        final_funcname = Forward()
+        nonfinal_funcname = Forward()
 
         name_ref = combine(Optional(backslash) + base_name)
         final_setname_ref = keyword("final").suppress() + name_ref
         setname = final_setname | nonfinal_setname
         classname = final_classname | nonfinal_classname
+        funcname = final_funcname | nonfinal_funcname
         unsafe_name = combine(Optional(backslash.suppress()) + base_name)
 
         # use unsafe_name for dotted components since name should only be used for base names
         dotted_refname = condense(refname + ZeroOrMore(dot + unsafe_name))
         dotted_setname = condense(setname + ZeroOrMore(dot + unsafe_name))
+        dotted_funcname = condense(funcname + ZeroOrMore(dot + unsafe_name))
         unsafe_dotted_name = condense(unsafe_name + ZeroOrMore(dot + unsafe_name))
         must_be_dotted_name = condense(refname + OneOrMore(dot + unsafe_name))
 
@@ -2310,7 +2314,7 @@ class Grammar(object):
         with_stmt = Forward()
 
         funcname_typeparams = Forward()
-        funcname_typeparams_tokens = dotted_setname + Optional(type_params)
+        funcname_typeparams_tokens = dotted_funcname + Optional(type_params)
         name_funcdef = condense(funcname_typeparams + parameters)
         op_tfpdef = unsafe_typedef_default | condense(setname + Optional(default))
         op_funcdef_arg = setname | condense(lparen.suppress() + op_tfpdef + rparen.suppress())

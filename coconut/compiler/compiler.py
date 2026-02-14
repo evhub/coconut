@@ -632,18 +632,21 @@ class Compiler(Grammar, pickleable_obj):
     temp_var_counts = None
     operators = None
 
-    def get_empty_scope(self):
+    def get_empty_scope(self, inner=False):
         """Get an empty scope for the parsing_context."""
+        parent = self.current_parsing_context("scope")
         return {
             "final_vars": {},
             "pure_vars": {},
+            "all_vars": None if inner else set(),
+            "parent": parent,
         }
 
-    def init_parsing_context(self):
+    def init_parsing_context(self, inner=False):
         """Initialize parsing context."""
         self.parsing_context = defaultdict(list)
         # initialize module-level scopes
-        self.parsing_context["scope"].append(self.get_empty_scope())
+        self.parsing_context["scope"].append(self.get_empty_scope(inner=inner))
         return self.parsing_context
 
     def reset(self, keep_state=False, filename=None):
@@ -680,6 +683,7 @@ class Compiler(Grammar, pickleable_obj):
         self.shown_warnings = set()
         if not keep_state:
             self.computation_graph_caches = defaultdict(staledict)
+        self.final_checks = []
         self.init_parsing_context()
 
     @contextmanager
@@ -699,7 +703,7 @@ class Compiler(Grammar, pickleable_obj):
         remaining_original, self.remaining_original = self.remaining_original, None
         shown_warnings, self.shown_warnings = self.shown_warnings, set()
         parsing_context = self.parsing_context
-        self.init_parsing_context()
+        self.init_parsing_context(inner=True)
         try:
             with ComputationNode.using_overrides():
                 yield
@@ -890,10 +894,22 @@ class Compiler(Grammar, pickleable_obj):
 
         # name handlers
         cls.refname <<= attach(cls.name_ref, cls.method("name_handle"))
-        cls.nonfinal_setname <<= attach(cls.name_ref, cls.method("name_handle", assign=True))
+        cls.nonfinal_setname <<= attach(
+            cls.name_ref,
+            cls.method("name_handle", assign=True),
+        )
         cls.final_setname <<= attach(
             cls.final_setname_ref,
             cls.method("name_handle", assign=True, is_final=True),
+            greedy=True,
+        )
+        cls.nonfinal_funcname <<= attach(
+            cls.name_ref,
+            cls.method("name_handle", assign=True, funcname=True),
+        )
+        cls.final_funcname <<= attach(
+            cls.final_setname_ref,
+            cls.method("name_handle", assign=True, funcname=True, is_final=True),
             greedy=True,
         )
         cls.nonfinal_classname <<= attach(
@@ -1541,10 +1557,8 @@ class Compiler(Grammar, pickleable_obj):
                 if info["imported"] and not info["referenced"]:
                     for loc in info["imported"]:
                         self.strict_err_or_warn("found unused import " + repr(self.reformat(name, ignore_errors=True)), original, loc, noqa_able=True, endpoint=False)
-                if not self.star_import:  # only check for undefined names when there are no * imports
-                    if name not in all_builtins and info["referenced"] and not (info["assigned"] or info["imported"]):
-                        for loc in info["referenced"]:
-                            self.strict_err_or_warn("found undefined name " + repr(self.reformat(name, ignore_errors=True)), original, loc, noqa_able=True, endpoint=False)
+            for final_check in self.final_checks:
+                final_check()
 
     def pickle_cache(self, original, cache_path, include_incremental=True):
         """Pickle the pyparsing cache for original to cache_path."""
@@ -5569,10 +5583,10 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
         ):
             yield
 
-    def name_handle(self, original, loc, tokens, assign=False, classname=False, expr_setname=False, is_final=False):
+    def name_handle(self, original, loc, tokens, assign=False, classname=False, funcname=False, expr_setname=False, is_final=False):
         """Handle the given base name."""
-        if expr_setname:
-            internal_assert(assign, "expr_setname should always imply assign", (expr_setname, assign))
+        if classname or funcname or expr_setname:
+            internal_assert(assign, "classname/funcname/expr_setname should always imply assign", (classname, funcname, expr_setname, assign))
         if is_final:
             internal_assert(assign and not expr_setname, "only setnames should ever be final", (assign, is_final))
 
@@ -5633,17 +5647,25 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
                         # note that this is the one case where we return early that isn't an error
                         return typevars[name]
 
+        scope = self.current_parsing_context("scope")
+        self.internal_assert(scope is not None, original, loc, "no scope context")
+
         # track assigned/referenced early so that even if we return early with an
         #  error, the name is marked as used (e.g. for unused import checking)
         if assign:
             is_new = loc not in self.name_info[name]["assigned"]
             self.name_info[name]["assigned"].add(loc)
+            if (
+                (classname or funcname)
+                and scope["parent"] is not None
+                and scope["parent"]["all_vars"] is not None
+            ):
+                scope["parent"]["all_vars"].add(name)
+            elif scope["all_vars"] is not None:
+                scope["all_vars"].add(name)
         else:
             is_new = loc not in self.name_info[name]["referenced"]
             self.name_info[name]["referenced"].add(loc)
-
-        scope = self.current_parsing_context("scope")
-        self.internal_assert(scope is not None, original, loc, "no scope context")
 
         # final variable checking (setting final_vars happens at the end)
         final_vars = scope["final_vars"]
@@ -5693,7 +5715,8 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
                     return err
 
         is_class_attr = (
-            self.current_parsing_context("class")
+            assign
+            and self.current_parsing_context("class")
             and not self.in_method
             and (
                 # for classnames, we need special handling for nested classes
@@ -5712,14 +5735,14 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
         if (
             assign
             and not escaped
-            # if we're creating a class attribute, then we're not actually shadowing anything
-            and not is_class_attr
             # if we're not using the computation graph, then name is handled
             #  greedily, which means this might be an invalid parse, in which
             #  case we can't be sure this is actually shadowing a builtin;
             #  BUT if we're on strict mode, then it's an actual error, rather
             #  than a warning, which means we can just wrap it
             and safe_to_show_warnings
+            # if we're creating a class attribute, then we're not actually shadowing anything
+            and not is_class_attr
         ):
             if name in all_builtins:
                 err = self.strict_err_or_warn(
@@ -5735,13 +5758,24 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
             # the import statement itself, not an assignment shadowing an import
             if any(not same_line(original, loc, imp_loc) for imp_loc in self.name_info[name]["imported"]):
                 err = self.strict_err_or_warn(
-                    "assignment shadows imported name '{name}' (use explicit '\\{name}' syntax when purposefully redefining imported names)".format(name=name),
+                    "assignment shadows import '{name}' (use explicit '\\{name}' syntax when purposefully redefining imported names)".format(name=name),
                     original,
                     loc,
                     raise_err_func=local_raise_or_wrap_error,
                 )
                 if err is not None:
                     return err
+
+        # undefined name checking
+        if (
+            not assign
+            and not escaped
+            and safe_to_show_warnings
+            and not self.star_import
+            and scope["all_vars"] is not None
+            and name not in all_builtins
+        ):
+            self.final_checks.append(partial(self.check_undefined_name, original, loc, name, scope, self.outer_ln))
 
         # only mark as final after all checks pass
         if is_final:
@@ -5786,6 +5820,25 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
             )
         else:
             return name
+
+    def check_undefined_name(self, original, loc, name, scope, outer_ln):
+        """Run a deferred check for name being undefined in the scope chain.
+
+        We need outer_ln=self.outer_ln to be put in the partial so we know what
+        the outer_ln was when this check was set up."""
+        current_scope = scope
+        while current_scope is not None:
+            if current_scope["all_vars"] is None or name in current_scope["all_vars"]:
+                return
+            current_scope = current_scope["parent"]
+        self.strict_err_or_warn(
+            "found undefined name '{name}' (use explicit '\\{name}' syntax to bypass)".format(name=name),
+            original,
+            loc,
+            ln=outer_ln,
+            noqa_able=True,
+            endpoint=False,
+        )
 
 # end: MANAGERS
 # -----------------------------------------------------------------------------------------------------------------------

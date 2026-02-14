@@ -437,7 +437,7 @@ line 6''')
         3
         """)
     except CoconutStyleError as err:
-        assert str(err) == """found undefined name 'x' (add '# NOQA' to suppress) (remove --strict to downgrade to a warning) (line 2)
+        assert str(err) == """found undefined name 'x' (use explicit '\\x' syntax to bypass) (add '# NOQA' to suppress) (remove --strict to downgrade to a warning) (line 2)
   2 + x
       ^"""
     assert_raises(-> parse(d"""
@@ -459,6 +459,32 @@ line 6''')
         15
     """), CoconutStyleError, **(dict(err_has="\n ...\n") if not PYPY else {}))
     assert_raises(-> parse('["abc", "def" "ghi"]'), CoconutStyleError, err_has="implicit string concatenation")
+
+    # scope-aware undefined name tests
+    assert_raises(-> parse(d"""
+    def f():
+        x = 1
+    y = x
+    """), CoconutStyleError, err_has="undefined name")
+    assert_raises(-> parse(d"""
+    def f():
+        x = 1
+    def g():
+        y = x
+    """), CoconutStyleError, err_has="undefined name")
+    assert parse(d"""
+    x = 1
+    def f():
+        y = x
+    """)
+    assert parse(d"""
+    x = 1
+    y = x
+    """)
+    assert parse(d"""
+    import abc
+    abc.ABCMeta
+    """)
 
     # imported name shadowing tests
     assert_raises(-> parse(d"""
