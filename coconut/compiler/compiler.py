@@ -903,23 +903,23 @@ class Compiler(Grammar, pickleable_obj):
             cls.method("name_handle", assign=True, is_final=True),
             greedy=True,
         )
-        cls.nonfinal_funcname <<= attach(
+        cls.nonfinal_outer_setname <<= attach(
             cls.name_ref,
-            cls.method("name_handle", assign=True, funcname=True),
+            cls.method("name_handle", assign=True, outer_setname=True),
         )
-        cls.final_funcname <<= attach(
+        cls.final_outer_setname <<= attach(
             cls.final_setname_ref,
-            cls.method("name_handle", assign=True, funcname=True, is_final=True),
+            cls.method("name_handle", assign=True, outer_setname=True, is_final=True),
             greedy=True,
         )
         cls.nonfinal_classname <<= attach(
             cls.name_ref,
-            cls.method("name_handle", assign=True, classname=True),
+            cls.method("name_handle", assign=True, outer_setname=True, classname=True),
             greedy=True,
         )
         cls.final_classname <<= attach(
             cls.final_setname_ref,
-            cls.method("name_handle", assign=True, classname=True, is_final=True),
+            cls.method("name_handle", assign=True, outer_setname=True, classname=True, is_final=True),
             greedy=True,
         )
         cls.expr_setname <<= attach(
@@ -4072,7 +4072,7 @@ else:
             type_ignore=self.type_ignore_comment(),
         )
 
-    def _make_import_stmt(self, imp_from, imp, imp_as, raw=False, lazy=False):
+    def make_import_stmt(self, imp_from, imp, imp_as, raw=False, lazy=False):
         """Generate an import statement."""
         if not raw and imp != "*":
             module_path = (imp if imp_from is None else imp_from).split(".", 1)
@@ -4089,7 +4089,7 @@ else:
         raise _coconut.ImportError(_coconut.str(_coconut_imp_err))
                     """,
                 ).format(
-                    raw_import=self._make_import_stmt(imp_from, imp, imp_as, raw=True),
+                    raw_import=self.make_import_stmt(imp_from, imp, imp_as, raw=True),
                     imp_name=imp_as if imp_as is not None else imp,
                     imp_lookup=".".join([existing_imp] + module_path[1:] + ([imp] if imp_from is not None else [])),
                 )
@@ -4135,14 +4135,14 @@ else:
 
         if imp_as is not None and "." in imp_as:
             import_as_var = self.get_temp_var("import", loc)
-            out.append(self._make_import_stmt(imp_from, imp, import_as_var, lazy=lazy))
+            out.append(self.make_import_stmt(imp_from, imp, import_as_var, lazy=lazy))
             fake_mods = imp_as.split(".")
             for i in range(1, len(fake_mods)):
                 mod_name = ".".join(fake_mods[:i])
                 out.append(self.ensure_module_or_create_fake(mod_name))
             out.append(".".join(fake_mods) + " = " + import_as_var)
         else:
-            out.append(self._make_import_stmt(imp_from, imp, imp_as, lazy=lazy))
+            out.append(self.make_import_stmt(imp_from, imp, imp_as, lazy=lazy))
 
         if type_ignore:
             for i, line in enumerate(out):
@@ -4593,7 +4593,7 @@ def {name}({match_func_paramdef}):
 
             self.add_code_before[name] = self.decoratable_funcdef_stmt_handle(original, loc, [decorators, funcdef], is_async, is_stmt_lambda=True)
 
-        return self._handle_expr_scope_closure(name, loc)
+        return self.handle_expr_scope_closure(name, loc)
 
     def match_comp_expr_handle(self, original, loc, tokens, dict_val=None):
         """Build a match comprehension by creating a temp match function.
@@ -4633,26 +4633,31 @@ def {func_name}({iter_var}):
 
         self.add_code_before[func_name] = self.decoratable_funcdef_stmt_handle(original, loc, [funcdef], is_stmt_lambda=True)
 
-        func_expr = self._handle_expr_scope_closure(func_name, loc)
+        func_expr = self.handle_expr_scope_closure(func_name, loc)
 
         if dict_val is not None:
             return "_coconut.dict((" + func_expr + "(" + iter_var + ") for " + iter_var + " in " + iterable + "))"
         else:
             return func_expr + "(" + iter_var + ") for " + iter_var + " in " + iterable
 
-    def _handle_expr_scope_closure(self, name, loc):
+    def get_parent_expr_setnames(self):
+        """Get all expr_setnames in parent contexts, but not the current context."""
+        expr_setname_context = self.current_parsing_context("expr_setnames")
+        parent_context = expr_setname_context["parent"]
+        parent_setnames = set()
+        while parent_context:
+            parent_setnames |= parent_context["new_names"]
+            parent_context = parent_context["parent"]
+        return parent_setnames
+
+    def handle_expr_scope_closure(self, name, loc):
         """Extracts the definition of a name to a separate function that closes on all local expr setnames."""
         expr_setname_context = self.current_parsing_context("expr_setnames")
         if expr_setname_context is None:
             return name
         else:
             builder_name = self.get_temp_var("lambda_builder", loc)
-
-            parent_context = expr_setname_context["parent"]
-            parent_setnames = set()
-            while parent_context:
-                parent_setnames |= parent_context["new_names"]
-                parent_context = parent_context["parent"]
+            parent_setnames = self.get_parent_expr_setnames()
 
             def stmt_lambdef_callback():
                 expr_setnames = parent_setnames | expr_setname_context["new_names"]
@@ -5583,12 +5588,14 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
         ):
             yield
 
-    def name_handle(self, original, loc, tokens, assign=False, classname=False, funcname=False, expr_setname=False, is_final=False):
+    def name_handle(self, original, loc, tokens, assign=False, outer_setname=False, expr_setname=False, classname=False, is_final=False):
         """Handle the given base name."""
-        if classname or funcname or expr_setname:
-            internal_assert(assign, "classname/funcname/expr_setname should always imply assign", (classname, funcname, expr_setname, assign))
+        if classname:
+            internal_assert(outer_setname and not expr_setname, "classname should always imply outer_setname", tokens)
+        if outer_setname or expr_setname:
+            internal_assert(assign, "classname/funcname/expr_setname should always imply assign", tokens)
         if is_final:
-            internal_assert(assign and not expr_setname, "only setnames should ever be final", (assign, is_final))
+            internal_assert(assign and not expr_setname, "only setnames should ever be final", tokens)
 
         name, = tokens
 
@@ -5608,24 +5615,6 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
             self.raise_or_wrap_error,
             always_wrap=is_greedy,
         )
-
-        # register non-mid-expression variable assignments inside of where statements for later mangling
-        if assign and not expr_setname:
-            where_context = self.current_parsing_context("where")
-            if where_context is not None:
-                where_assigns = where_context["assigns"]
-                if where_assigns is not None:
-                    where_assigns.add(name)
-
-        if classname:
-            cls_context = self.current_parsing_context("class")
-            self.internal_assert(cls_context is not None, original, loc, "found classname outside of class", tokens)
-            cls_context["name"] = name
-
-        if expr_setname:
-            expr_setnames_context = self.current_parsing_context("expr_setnames")
-            self.internal_assert(expr_setnames_context is not None, original, loc, "found expr_setname outside of has_expr_setname_manage", tokens)
-            expr_setnames_context["new_names"].add(name)
 
         if not escaped:
             typevar_info = self.current_parsing_context("typevars")
@@ -5647,6 +5636,25 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
                         # note that this is the one case where we return early that isn't an error
                         return typevars[name]
 
+        # register non-mid-expression variable assignments inside of where statements for later mangling
+        if assign and not expr_setname:
+            where_context = self.current_parsing_context("where")
+            if where_context is not None:
+                where_assigns = where_context["assigns"]
+                if where_assigns is not None:
+                    where_assigns.add(name)
+
+        cls_context = self.current_parsing_context("class")
+        expr_setnames_context = self.current_parsing_context("expr_setnames")
+
+        if classname:
+            self.internal_assert(cls_context is not None, original, loc, "found classname outside of class", tokens)
+            cls_context["name"] = name
+
+        if expr_setname:
+            self.internal_assert(expr_setnames_context is not None, original, loc, "found expr_setname outside of has_expr_setname_manage", tokens)
+            expr_setnames_context["new_names"].add(name)
+
         scope = self.current_parsing_context("scope")
         self.internal_assert(scope is not None, original, loc, "no scope context")
 
@@ -5656,12 +5664,12 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
             is_new = loc not in self.name_info[name]["assigned"]
             self.name_info[name]["assigned"].add(loc)
             if (
-                (classname or funcname)
+                outer_setname
                 and scope["parent"] is not None
                 and scope["parent"]["all_vars"] is not None
             ):
                 scope["parent"]["all_vars"].add(name)
-            elif scope["all_vars"] is not None:
+            elif not expr_setname and scope["all_vars"] is not None:
                 scope["all_vars"].add(name)
         else:
             is_new = loc not in self.name_info[name]["referenced"]
@@ -5716,7 +5724,7 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
 
         is_class_attr = (
             assign
-            and self.current_parsing_context("class")
+            and cls_context
             and not self.in_method
             and (
                 # for classnames, we need special handling for nested classes
@@ -5758,7 +5766,7 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
             # the import statement itself, not an assignment shadowing an import
             if any(not same_line(original, loc, imp_loc) for imp_loc in self.name_info[name]["imported"]):
                 err = self.strict_err_or_warn(
-                    "assignment shadows import '{name}' (use explicit '\\{name}' syntax when purposefully redefining imported names)".format(name=name),
+                    "assignment shadows imported '{name}' (use explicit '\\{name}' syntax when purposefully redefining imported names)".format(name=name),
                     original,
                     loc,
                     raise_err_func=local_raise_or_wrap_error,
@@ -5774,6 +5782,11 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
             and not self.star_import
             and scope["all_vars"] is not None
             and name not in all_builtins
+            and name != wildcard
+            and (expr_setnames_context is None or (
+                name not in expr_setnames_context["new_names"]
+                and name not in self.get_parent_expr_setnames()
+            ))
         ):
             self.final_checks.append(partial(self.check_undefined_name, original, loc, name, scope, self.outer_ln))
 
@@ -5806,7 +5819,6 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
                 return "_coconut_exec"
         elif not assign and name in super_names and not self.target.startswith("3"):
             if self.in_method:
-                cls_context = self.current_parsing_context("class")
                 enclosing_cls = cls_context["name_prefix"] + cls_context["name"]
                 return self.add_code_before_marker_with_replacement(name, "__class__ = " + enclosing_cls + "\n", add_spaces=False)
             else:

@@ -445,10 +445,10 @@ def primary_test_1() -> bool:
     price = 100
     assert 0 == (requested_quantity ?? default_quantity) * price
     assert range(10) |> .[1] .. .[1:] == 2 == range(10) |> .[1:] |> .[1]
-    assert None?.herp(derp) is None  # type: ignore
-    assert None?[herp].derp is None  # type: ignore
-    assert None?(derp)[herp] is None  # type: ignore
-    assert None?$(herp)(derp) is None  # type: ignore
+    assert None?.herp(derp) is None  # type: ignore  # NOQA
+    assert None?[herp].derp is None  # type: ignore  # NOQA
+    assert None?(derp)[herp] is None  # type: ignore  # NOQA
+    assert None?$(herp)(derp) is None  # type: ignore  # NOQA
     a: int[]? = None  # type: ignore
     assert a is None
     assert range(5) |> iter |> reiterable |> .[1] == 1
@@ -962,7 +962,7 @@ def primary_test_1() -> bool:
     def ret_abc():
         return "abc"
     )
-    assert ret_abc() == "abc"
+    assert ret_abc() == "abc"  # NOQA
     assert """" """ == '" '
     assert "" == """"""
     assert (,)(*(1, 2), 3) == (1, 2, 3)

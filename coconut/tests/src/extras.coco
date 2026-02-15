@@ -490,28 +490,28 @@ line 6''')
     assert_raises(-> parse(d"""
     import abc
     abc: int = 1
-    """), CoconutStyleError, err_has="shadows imported name")
+    """), CoconutStyleError, err_has="shadows import")
     assert_raises(-> parse(d"""
     from os import path
     path = 'test'
-    """), CoconutStyleError, err_has="shadows imported name")
+    """), CoconutStyleError, err_has="shadows import")
     assert_raises(-> parse(d"""
     from collections import OrderedDict
     def OrderedDict() = None
-    """), CoconutStyleError, err_has="shadows imported name")
+    """), CoconutStyleError, err_has="shadows import")
     assert_raises(-> parse(d"""
     import abc
     class abc:
         pass
-    """), CoconutStyleError, err_has="shadows imported name")
+    """), CoconutStyleError, err_has="shadows import")
     assert_raises(-> parse(d"""
     from os import path
     [path for path in []]
-    """), CoconutStyleError, err_has="shadows imported name")
+    """), CoconutStyleError, err_has="shadows import")
     assert_raises(-> parse(d"""
     import abc
     final abc = 1
-    """), CoconutStyleError, err_has="shadows imported name")
+    """), CoconutStyleError, err_has="shadows import")
     # class attribute shadowing should be allowed (not module-level shadowing)
     # (use NOQA to suppress unused import warning since we're intentionally shadowing)
     assert parse(d"""
@@ -531,7 +531,7 @@ line 6''')
     class Foo:
         def bar(self):
             abc = 1
-    """), CoconutStyleError, err_has="shadows imported name")
+    """), CoconutStyleError, err_has="shadows import")
     assert_raises(-> parse(d"""
     class Foo:
         def bar(self):
@@ -575,7 +575,7 @@ line 6''')
         def foo(self):
             class abc:
                 pass
-    """), CoconutStyleError, err_has="shadows imported name")
+    """), CoconutStyleError, err_has="shadows import")
     # deeply nested: class inside class inside method - no error because super is a class attribute of B
     assert parse(d"""
     class A:

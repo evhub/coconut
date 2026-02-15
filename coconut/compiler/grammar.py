@@ -861,22 +861,23 @@ class Grammar(object):
         expr_setname = Forward()
         final_setname = Forward()
         nonfinal_setname = Forward()
+        # classname and outer_setname define their vars in the outer scope
         final_classname = Forward()
         nonfinal_classname = Forward()
-        final_funcname = Forward()
-        nonfinal_funcname = Forward()
+        final_outer_setname = Forward()
+        nonfinal_outer_setname = Forward()
 
         name_ref = combine(Optional(backslash) + base_name)
         final_setname_ref = keyword("final").suppress() + name_ref
         setname = final_setname | nonfinal_setname
         classname = final_classname | nonfinal_classname
-        funcname = final_funcname | nonfinal_funcname
+        outer_setname = final_outer_setname | nonfinal_outer_setname
         unsafe_name = combine(Optional(backslash.suppress()) + base_name)
 
         # use unsafe_name for dotted components since name should only be used for base names
         dotted_refname = condense(refname + ZeroOrMore(dot + unsafe_name))
         dotted_setname = condense(setname + ZeroOrMore(dot + unsafe_name))
-        dotted_funcname = condense(funcname + ZeroOrMore(dot + unsafe_name))
+        dotted_outer_setname = condense(outer_setname + ZeroOrMore(dot + unsafe_name))
         unsafe_dotted_name = condense(unsafe_name + ZeroOrMore(dot + unsafe_name))
         must_be_dotted_name = condense(refname + OneOrMore(dot + unsafe_name))
 
@@ -1570,7 +1571,7 @@ class Grammar(object):
         type_params = Group(lbrack.suppress() + tokenlist(type_param, comma) + rbrack.suppress())
 
         type_alias_stmt = Forward()
-        type_alias_stmt_ref = keyword("type").suppress() + setname + Optional(type_params) + equals.suppress() + typedef_test
+        type_alias_stmt_ref = keyword("type").suppress() + outer_setname + Optional(type_params) + equals.suppress() + typedef_test
 
         await_expr = Forward()
         await_expr_ref = keyword("await").suppress() + atom_item
@@ -2314,7 +2315,7 @@ class Grammar(object):
         with_stmt = Forward()
 
         funcname_typeparams = Forward()
-        funcname_typeparams_tokens = dotted_funcname + Optional(type_params)
+        funcname_typeparams_tokens = dotted_outer_setname + Optional(type_params)
         name_funcdef = condense(funcname_typeparams + parameters)
         op_tfpdef = unsafe_typedef_default | condense(setname + Optional(default))
         op_funcdef_arg = setname | condense(lparen.suppress() + op_tfpdef + rparen.suppress())

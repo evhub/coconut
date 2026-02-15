@@ -845,6 +845,7 @@ coconut_specific_builtins = (
     "and_then",
     "and_then_await",
     "async_map",
+    "py_bytes",
     "py_chr",
     "py_dict",
     "py_hex",
