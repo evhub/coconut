@@ -38,7 +38,7 @@ class CoconutException(Exception):
 GLOBAL_STATE: Optional[Command] = None
 
 
-def get_state(state: Optional[Command] = None) -> Command:
+def get_state(state: Optional[Command] | bool = None) -> Command:
     """Get a Coconut state object; None gets a new state, False gets the global state."""
     ...
 
@@ -46,7 +46,7 @@ def get_state(state: Optional[Command] = None) -> Command:
 def cmd(
     args: Text | bytes | Iterable,
     *,
-    state: Command | None = ...,
+    state: Optional[Command] | bool = ...,
     argv: Iterable[Text] | None = None,
     interact: bool = False,
     default_target: Text | None = None,
@@ -81,7 +81,7 @@ def setup(
     no_tco: bool = False,
     no_wrap: bool = False,
     pure: bool = False,
-    state: Optional[Command] = ...,
+    state: Optional[Command] | bool = ...,
 ) -> None:
     """Set up the given state object."""
     ...
@@ -91,7 +91,7 @@ def warm_up(
     streamline: bool = False,
     enable_incremental_mode: bool = False,
     *,
-    state: Optional[Command] = ...,
+    state: Optional[Command] | bool = ...,
 ) -> None:
     """Warm up the given state object."""
     ...
@@ -103,7 +103,7 @@ PARSERS: Dict[Text, Callable] = ...
 def parse(
     code: Text,
     mode: Text = ...,
-    state: Optional[Command] = ...,
+    state: Optional[Command] | bool = ...,
     keep_internal_state: Optional[bool] = None,
 ) -> Text:
     """Compile Coconut code."""
@@ -114,7 +114,7 @@ def coconut_exec(
     expression: Text,
     globals: Optional[Dict[Text, Any]] = None,
     locals: Optional[Dict[Text, Any]] = None,
-    state: Optional[Command] = ...,
+    state: Optional[Command] | bool = ...,
     keep_internal_state: Optional[bool] = None,
 ) -> None:
     """Compile and evaluate Coconut code."""
@@ -125,7 +125,7 @@ def coconut_eval(
     expression: Text,
     globals: Optional[Dict[Text, Any]] = None,
     locals: Optional[Dict[Text, Any]] = None,
-    state: Optional[Command] = ...,
+    state: Optional[Command] | bool = ...,
     keep_internal_state: Optional[bool] = None,
 ) -> Any:
     """Compile and evaluate Coconut code."""

@@ -53,10 +53,10 @@ from coconut.constants import (
 GLOBAL_STATE = None
 
 
-def get_state(state=None):
-    """Get a Coconut state object; None gets a new state, False gets the global state."""
+def get_state(state=True):
+    """Get a Coconut state object; True gets a new state, False gets the global state."""
     global GLOBAL_STATE
-    if state is None:
+    if state is None or state is True:
         return Command()
     elif state is False:
         if GLOBAL_STATE is None:

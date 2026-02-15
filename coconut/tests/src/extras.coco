@@ -33,6 +33,9 @@ from coconut.convenience import (
 )
 
 
+parse_with_state = parse$(keep_internal_state=True)
+
+
 def assert_raises(c, Exc, not_Exc=None, err_has=None) -> None:
     """Test whether callable c raises an exception of type Exc."""
     if not_Exc is None and Exc is CoconutSyntaxError:
@@ -98,87 +101,87 @@ def test_setup_none() -> bool:
     coconut_exec("def f(x) = x", exec_vars)
     assert exec_vars["f"](10) == 10
 
-    assert parse("abc") == parse("abc", "sys")
-    assert parse("abc", "file")
-    assert parse("abc", "package")
-    assert parse("abc", "block") == "abc\n" == parse("abc", "single")
-    assert parse("abc", "eval") == "abc" == parse(" abc", "eval")
-    assert parse("abc", "lenient") == "abc" == parse(" abc", "lenient")
-    assert parse("x |> map$(f)", "lenient") == "(map)(f, x)"
-    assert "_coconut" not in parse("a |> .b |> .m() |> f$(x) |> .[0]", "block")
-    assert "_coconut" not in parse("a |>= f$(x)", "block")
-    assert parse("abc # derp", "lenient") == "abc  # derp"
-    assert parse("def f(x):\n \t pass")
-    assert parse("lambda x: x")
-    assert parse("u''")
-    assert parse("def f(x):\\\n pass")
-    assert parse("abc ")
-    assert parse("abc # derp", "lenient") == "abc  # derp"
-    assert "==" not in parse("None = None")
-    assert parse("(1\f+\f2)", "lenient") == "(1 + 2)" == parse("(1\f+\f2)", "eval")
-    assert "Ellipsis" not in parse("x: ... = 1")
-    assert parse("linebreaks = '\x0b\x0c\x1c\x1d\x1e'")
+    assert parse_with_state("abc") == parse_with_state("abc", "sys")
+    assert parse_with_state("abc", "file")
+    assert parse_with_state("abc", "package")
+    assert parse_with_state("abc", "block") == "abc\n" == parse_with_state("abc", "single")
+    assert parse_with_state("abc", "eval") == "abc" == parse_with_state(" abc", "eval")
+    assert parse_with_state("abc", "lenient") == "abc" == parse_with_state(" abc", "lenient")
+    assert parse_with_state("x |> map$(f)", "lenient") == "(map)(f, x)"
+    assert "_coconut" not in parse_with_state("a |> .b |> .m() |> f$(x) |> .[0]", "block")
+    assert "_coconut" not in parse_with_state("a |>= f$(x)", "block")
+    assert parse_with_state("abc # derp", "lenient") == "abc  # derp"
+    assert parse_with_state("def f(x):\n \t pass")
+    assert parse_with_state("lambda x: x")
+    assert parse_with_state("u''")
+    assert parse_with_state("def f(x):\\\n pass")
+    assert parse_with_state("abc ")
+    assert parse_with_state("abc # derp", "lenient") == "abc  # derp"
+    assert "==" not in parse_with_state("None = None")
+    assert parse_with_state("(1\f+\f2)", "lenient") == "(1 + 2)" == parse_with_state("(1\f+\f2)", "eval")
+    assert "Ellipsis" not in parse_with_state("x: ... = 1")
+    assert parse_with_state("linebreaks = '\x0b\x0c\x1c\x1d\x1e'")
 
     # things that don't parse correctly without the computation graph
     if USE_COMPUTATION_GRAPH:
-        exec(parse("assert (1,2,3,4) == ([1, 2], [3, 4]) |*> def (x, y) -> *x, *y"), {})
+        exec(parse_with_state("assert (1,2,3,4) == ([1, 2], [3, 4]) |*> def (x, y) -> *x, *y"), {})
 
-    assert_raises(-> parse("(a := b)"), CoconutTargetError)
-    assert_raises(-> parse("async def f() = 1"), CoconutTargetError)
-    assert_raises(-> parse("exec = 1"), CoconutTargetError)
+    assert_raises(-> parse_with_state("(a := b)"), CoconutTargetError)
+    assert_raises(-> parse_with_state("async def f() = 1"), CoconutTargetError)
+    assert_raises(-> parse_with_state("exec = 1"), CoconutTargetError)
 
-    assert_raises(-> parse(" abc", "file"), CoconutSyntaxError)
-    assert_raises(-> parse("'"), CoconutSyntaxError)
-    assert_raises(-> parse("("), CoconutSyntaxError)
-    assert_raises(-> parse("\\("), CoconutSyntaxError)
-    assert_raises(-> parse("if a:\n  b\n c"), CoconutSyntaxError)
-    assert_raises(-> parse("_coconut"), CoconutSyntaxError)
-    assert_raises(-> parse("[; ;]"), CoconutSyntaxError)
-    assert_raises(-> parse("[; ;; ;]"), CoconutSyntaxError)
-    assert_raises(-> parse("[; ; ;;]"), CoconutSyntaxError)
-    assert_raises(-> parse("[[] ;;; ;; [] ;]"), CoconutSyntaxError)
-    assert_raises(-> parse("[; []]"), CoconutSyntaxError)
-    assert_raises(-> parse("f$()"), CoconutSyntaxError)
-    assert_raises(-> parse("f(**x, y)"), CoconutSyntaxError)
-    assert_raises(-> parse("def f(x) = return x"), CoconutSyntaxError)
-    assert_raises(-> parse("def f(x) =\n return x"), CoconutSyntaxError)
-    assert_raises(-> parse("10 20"), CoconutSyntaxError)
-    assert_raises(-> parse('x + "1" + (=="2") = "test"'), CoconutSyntaxError)
-    assert_raises(-> parse('(==x) + "1" + y = "test"'), CoconutSyntaxError)
-    assert_raises(-> parse(r'd"\n    hello"'), CoconutSyntaxError)
-    assert_raises(-> parse('d"""    hello"""'), CoconutSyntaxError)
+    assert_raises(-> parse_with_state(" abc", "file"), CoconutSyntaxError)
+    assert_raises(-> parse_with_state("'"), CoconutSyntaxError)
+    assert_raises(-> parse_with_state("("), CoconutSyntaxError)
+    assert_raises(-> parse_with_state("\\("), CoconutSyntaxError)
+    assert_raises(-> parse_with_state("if a:\n  b\n c"), CoconutSyntaxError)
+    assert_raises(-> parse_with_state("_coconut"), CoconutSyntaxError)
+    assert_raises(-> parse_with_state("[; ;]"), CoconutSyntaxError)
+    assert_raises(-> parse_with_state("[; ;; ;]"), CoconutSyntaxError)
+    assert_raises(-> parse_with_state("[; ; ;;]"), CoconutSyntaxError)
+    assert_raises(-> parse_with_state("[[] ;;; ;; [] ;]"), CoconutSyntaxError)
+    assert_raises(-> parse_with_state("[; []]"), CoconutSyntaxError)
+    assert_raises(-> parse_with_state("f$()"), CoconutSyntaxError)
+    assert_raises(-> parse_with_state("f(**x, y)"), CoconutSyntaxError)
+    assert_raises(-> parse_with_state("def f(x) = return x"), CoconutSyntaxError)
+    assert_raises(-> parse_with_state("def f(x) =\n return x"), CoconutSyntaxError)
+    assert_raises(-> parse_with_state("10 20"), CoconutSyntaxError)
+    assert_raises(-> parse_with_state('x + "1" + (=="2") = "test"'), CoconutSyntaxError)
+    assert_raises(-> parse_with_state('(==x) + "1" + y = "test"'), CoconutSyntaxError)
+    assert_raises(-> parse_with_state(r'd"\n    hello"'), CoconutSyntaxError)
+    assert_raises(-> parse_with_state('d"""    hello"""'), CoconutSyntaxError)
 
-    assert_raises(-> parse("()[(())"), CoconutSyntaxError, err_has="""
+    assert_raises(-> parse_with_state("()[(())"), CoconutSyntaxError, err_has="""
 unclosed open '[' (line 1)
   ()[(())
     ^
     """.strip())
-    assert_raises(-> parse("{}(([])"), CoconutSyntaxError, err_has="""
+    assert_raises(-> parse_with_state("{}(([])"), CoconutSyntaxError, err_has="""
 unclosed open '(' (line 1)
   {}(([])
     ^
     """.strip())
-    assert_raises(-> parse("{[]{}}}()"), CoconutSyntaxError, err_has="""
+    assert_raises(-> parse_with_state("{[]{}}}()"), CoconutSyntaxError, err_has="""
 unmatched close '}' (line 1)
   {[]{}}}()
         ^
     """.strip())
-    assert_raises(-> parse("[([){[}"), CoconutSyntaxError, err_has="""
+    assert_raises(-> parse_with_state("[([){[}"), CoconutSyntaxError, err_has="""
 mismatched open '[' and close ')' (line 1)
   [([){[}
     ~^
     """.strip())
-    assert_raises(-> parse("[())]"), CoconutSyntaxError, err_has=r"""
+    assert_raises(-> parse_with_state("[())]"), CoconutSyntaxError, err_has=r"""
 mismatched open '[' and close ')' (line 1)
   [())]
   \~~^
     """.strip())
-    assert_raises(-> parse("[[\n])"), CoconutSyntaxError, err_has="""
+    assert_raises(-> parse_with_state("[[\n])"), CoconutSyntaxError, err_has="""
 mismatched open '[' and close ')' (line 1)
   ])
    ^
     """.strip())
-    assert_raises(-> parse(d"""
+    assert_raises(-> parse_with_state(d"""
     a = 1
     b = f"{1+}"
     c = 3
@@ -188,30 +191,30 @@ parsing failed for format string expression: 1+ (line 2)
       ^
       """.strip())
 
-    assert_raises(-> parse(d"""
+    assert_raises(-> parse_with_state(d"""
 case def f[T]:
     case(x) = x
 """), CoconutSyntaxError)
-    assert_raises(-> parse(d"""
+    assert_raises(-> parse_with_state(d"""
 case def f[T]:
     type(x: T) -> T
 """), CoconutSyntaxError)
 
-    assert_raises(-> parse("(|*?>)"), CoconutSyntaxError, err_has="'|?*>'")
-    assert_raises(-> parse("(|**?>)"), CoconutSyntaxError, err_has="'|?**>'")
-    assert_raises(-> parse("(<?*|)"), CoconutSyntaxError, err_has="'<*?|'")
-    assert_raises(-> parse("(<?**|)"), CoconutSyntaxError, err_has="'<**?|'")
-    assert_raises(-> parse("(..*?>)"), CoconutSyntaxError, err_has="'..?*>'")
-    assert_raises(-> parse("(..**?>)"), CoconutSyntaxError, err_has="'..?**>'")
-    assert_raises(-> parse("(<?*..)"), CoconutSyntaxError, err_has="'<*?..'")
-    assert_raises(-> parse("(<?**..)"), CoconutSyntaxError, err_has="'<**?..'")
-    assert_raises(-> parse("(.+1) .. x -> x * 2"), CoconutSyntaxError, err_has="<..")
-    assert_raises(-> parse('f"Black holes {*all_black_holes} and revelations"'), CoconutSyntaxError, err_has="format string")
+    assert_raises(-> parse_with_state("(|*?>)"), CoconutSyntaxError, err_has="'|?*>'")
+    assert_raises(-> parse_with_state("(|**?>)"), CoconutSyntaxError, err_has="'|?**>'")
+    assert_raises(-> parse_with_state("(<?*|)"), CoconutSyntaxError, err_has="'<*?|'")
+    assert_raises(-> parse_with_state("(<?**|)"), CoconutSyntaxError, err_has="'<**?|'")
+    assert_raises(-> parse_with_state("(..*?>)"), CoconutSyntaxError, err_has="'..?*>'")
+    assert_raises(-> parse_with_state("(..**?>)"), CoconutSyntaxError, err_has="'..?**>'")
+    assert_raises(-> parse_with_state("(<?*..)"), CoconutSyntaxError, err_has="'<*?..'")
+    assert_raises(-> parse_with_state("(<?**..)"), CoconutSyntaxError, err_has="'<**?..'")
+    assert_raises(-> parse_with_state("(.+1) .. x -> x * 2"), CoconutSyntaxError, err_has="<..")
+    assert_raises(-> parse_with_state('f"Black holes {*all_black_holes} and revelations"'), CoconutSyntaxError, err_has="format string")
     assert_raises(-> parse("operator ++\noperator ++"), CoconutSyntaxError, err_has="custom operator already declared")
-    assert_raises(-> parse("type HasIn = (in)"), CoconutSyntaxError, err_has="not supported")
+    assert_raises(-> parse_with_state("type HasIn = (in)"), CoconutSyntaxError, err_has="not supported")
 
     assert_raises(
-        -> parse("type abc[T,T] = T | T"),
+        -> parse_with_state("type abc[T,T] = T | T"),
         CoconutSyntaxError,
         err_has=r"""
 cannot reassign type variable 'T' (use explicit '\T' syntax if intended) (line 1)
@@ -220,24 +223,24 @@ cannot reassign type variable 'T' (use explicit '\T' syntax if intended) (line 1
         """.strip(),
     )
 
-    assert_raises(-> parse("$"), CoconutParseError)
-    assert_raises(-> parse("@"), CoconutParseError)
-    assert_raises(-> parse("range(1,10) |> reduce$(*, initializer = 1000) |> print"), CoconutParseError, err_has=(
+    assert_raises(-> parse_with_state("$"), CoconutParseError)
+    assert_raises(-> parse_with_state("@"), CoconutParseError)
+    assert_raises(-> parse_with_state("range(1,10) |> reduce$(*, initializer = 1000) |> print"), CoconutParseError, err_has=(
         "\n                       \\~~^",
         "\n  \\~~~~~~~~~~~~~~~~~~~~~~~^",
     ) + (
         ("\n  \\~~~~~~~~~~~~^",)
         if PYPY else ()
     ))
-    assert_raises(-> parse("a := b"), CoconutParseError, err_has=(
+    assert_raises(-> parse_with_state("a := b"), CoconutParseError, err_has=(
         "\n    ^",
         "\n  \\~^",
     ))
-    assert_raises(-> parse("1 + return"), CoconutParseError, err_has=(
+    assert_raises(-> parse_with_state("1 + return"), CoconutParseError, err_has=(
         "\n    \\~~^",
         "\n  \\~~~~^",
     ))
-    assert_raises(-> parse(d"""
+    assert_raises(-> parse_with_state(d"""
     def f() =
         assert 1
         assert 2
@@ -252,41 +255,41 @@ cannot reassign type variable 'T' (use explicit '\T' syntax if intended) (line 1
          ~^
         """.strip(),
     ))
-    assert_raises(-> parse('b"abc" "def"'), CoconutParseError, err_has=(
+    assert_raises(-> parse_with_state('b"abc" "def"'), CoconutParseError, err_has=(
         "\n         ^",
         "\n  \\~~~~~~^",
     ))
-    assert_raises(-> parse('"abc" b"def"'), CoconutParseError, err_has=(
+    assert_raises(-> parse_with_state('"abc" b"def"'), CoconutParseError, err_has=(
         "\n        ^",
         "\n  \\~~~~~^",
     ))
-    assert_raises(-> parse("A. ."), CoconutParseError, err_has=(
+    assert_raises(-> parse_with_state("A. ."), CoconutParseError, err_has=(
         "\n   \\~^",
         "\n  \\~~^",
     ))
-    assert_raises(-> parse("f([] {})"), CoconutParseError, err_has=(
+    assert_raises(-> parse_with_state("f([] {})"), CoconutParseError, err_has=(
         "\n   \\~~~^",
         "\n  \\~~~~^",
     ))
-    assert_raises(-> parse("0xfgf"), CoconutParseError, err_has=(
+    assert_raises(-> parse_with_state("0xfgf"), CoconutParseError, err_has=(
         "\n     ^",
         "\n     \\~^",
         "\n  \\~~^",
     ))
-    assert_raises(-> parse("(. if 1)"), CoconutParseError, err_has=(
+    assert_raises(-> parse_with_state("(. if 1)"), CoconutParseError, err_has=(
         "\n     ^",
         "\n  \\~~^",
     ))
 
-    assert_raises(-> parse('''f"""{
+    assert_raises(-> parse_with_state('''f"""{
 }"""'''), CoconutSyntaxError, err_has="parsing failed for format string expression")
-    assert_raises(-> parse("if a = b: pass"), CoconutParseError, err_has="misplaced assignment")
-    assert_raises(-> parse("while a == b"), CoconutParseError, err_has="misplaced newline")
+    assert_raises(-> parse_with_state("if a = b: pass"), CoconutParseError, err_has="misplaced assignment")
+    assert_raises(-> parse_with_state("while a == b"), CoconutParseError, err_has="misplaced newline")
     # implicit coefficient followed by subscript in list should be a parse error, not internal error
-    assert_raises(-> parse("[(0)foo[0] for _ in [0]]"), CoconutParseError)
+    assert_raises(-> parse_with_state("[(0)foo[0] for _ in [0]]"), CoconutParseError)
 
     try:
-        parse(d"""
+        parse_with_state(d"""
         def gam_eps_rate(bitarr) = (
             bitarr
             |*> zip
@@ -315,7 +318,7 @@ cannot reassign type variable 'T' (use explicit '\T' syntax if intended) (line 1
         assert False
 
     try:
-        parse(d"""
+        parse_with_state(d"""
         def f(x=1, y) = x, y
 
         class A
@@ -329,27 +332,27 @@ cannot reassign type variable 'T' (use explicit '\T' syntax if intended) (line 1
     else:
         assert False
 
-    assert parse("def f(x):\n ${var}", "xonsh") == "def f(x):\n    ${var}\n"
-    assert "data ABC" not in parse("data ABC:\n ${var}", "xonsh")
-    assert "builder" not in parse("def x -> x", "lenient")
-    assert parse("def x -> x", "lenient").count("def") == 1
-    assert "builder" in parse("x -> def y -> (x, y)", "lenient")
-    assert parse("x -> def y -> (x, y)", "lenient").count("def") == 2
-    assert "builder" in parse("[def x -> (x, y) for y in range(10)]", "lenient")
-    assert parse("[def x -> (x, y) for y in range(10)]", "lenient").count("def") == 2
-    assert parse("123  # derp", "lenient") == "123  # derp"
+    assert parse_with_state("def f(x):\n ${var}", "xonsh") == "def f(x):\n    ${var}\n"
+    assert "data ABC" not in parse_with_state("data ABC:\n ${var}", "xonsh")
+    assert "builder" not in parse_with_state("def x -> x", "lenient")
+    assert parse_with_state("def x -> x", "lenient").count("def") == 1
+    assert "builder" in parse_with_state("x -> def y -> (x, y)", "lenient")
+    assert parse_with_state("x -> def y -> (x, y)", "lenient").count("def") == 2
+    assert "builder" in parse_with_state("[def x -> (x, y) for y in range(10)]", "lenient")
+    assert parse_with_state("[def x -> (x, y) for y in range(10)]", "lenient").count("def") == 2
+    assert parse_with_state("123  # derp", "lenient") == "123  # derp"
 
-    assert_raises(-> parse("final x = 1\nx = 2"), CoconutSyntaxError, err_has="final")
-    assert_raises(-> parse("final x = 1\nx += 1"), CoconutSyntaxError, err_has="final")
-    assert_raises(-> parse("final x = 1\ndel x"), CoconutSyntaxError, err_has="final")
-    assert_raises(-> parse("final x = 1\nfor x in [1]: pass"), CoconutSyntaxError, err_has="final")
-    assert_raises(-> parse("final x = 1\nwith foo() as x: pass"), CoconutSyntaxError, err_has="final")
-    assert_raises(-> parse("final e = 1\ntry: pass\nexcept E as e: pass"), CoconutSyntaxError, err_has="final")
-    assert_raises(-> parse("final os = 1\nimport os"), CoconutSyntaxError, err_has="final")
-    assert_raises(-> parse("final path = 1\nfrom os import path"), CoconutSyntaxError, err_has="final")
-    assert_raises(-> parse("def f(final x): x = 2"), CoconutSyntaxError, err_has="final")
-    assert_raises(-> parse("final x = 1\nmatch y:\n    case x: pass"), CoconutSyntaxError, err_has="final")
-    assert_raises(-> parse("final x = 1\nfinal x = 2"), CoconutSyntaxError, err_has="final")
+    assert_raises(-> parse_with_state("final x = 1\nx = 2"), CoconutSyntaxError, err_has="final")
+    assert_raises(-> parse_with_state("final x = 1\nx += 1"), CoconutSyntaxError, err_has="final")
+    assert_raises(-> parse_with_state("final x = 1\ndel x"), CoconutSyntaxError, err_has="final")
+    assert_raises(-> parse_with_state("final x = 1\nfor x in [1]: pass"), CoconutSyntaxError, err_has="final")
+    assert_raises(-> parse_with_state("final x = 1\nwith foo() as x: pass"), CoconutSyntaxError, err_has="final")
+    assert_raises(-> parse_with_state("final e = 1\ntry: pass\nexcept E as e: pass"), CoconutSyntaxError, err_has="final")
+    assert_raises(-> parse_with_state("final os = 1\nimport os"), CoconutSyntaxError, err_has="final")
+    assert_raises(-> parse_with_state("final path = 1\nfrom os import path"), CoconutSyntaxError, err_has="final")
+    assert_raises(-> parse_with_state("def f(final x): x = 2"), CoconutSyntaxError, err_has="final")
+    assert_raises(-> parse_with_state("final x = 1\nmatch y:\n    case x: pass"), CoconutSyntaxError, err_has="final")
+    assert_raises(-> parse_with_state("final x = 1\nfinal x = 2"), CoconutSyntaxError, err_has="final")
 
     return True
 
@@ -364,12 +367,12 @@ def test_api() -> bool:
     assert_raises(-> cmd("-n . ."), SystemExit)
 
     setup()
-    assert parse("abc", "lenient") == "abc  #1 (line in Coconut source)"
+    assert parse_with_state("abc", "lenient") == "abc  #1 (line in Coconut source)"
     setup(line_numbers=False, keep_lines=True)
-    assert parse("abc", "lenient") == "abc  # abc"
+    assert parse_with_state("abc", "lenient") == "abc  # abc"
     setup(keep_lines=True)
-    assert parse("abc", "lenient") == "abc  #1: abc"
-    assert "#6:" in parse('''line 1
+    assert parse_with_state("abc", "lenient") == "abc  #1: abc"
+    assert "#6:" in parse_with_state('''line 1
 f"""{"""
 """}""" + """
 """ + f"""{\'\'\'
@@ -377,24 +380,24 @@ f"""{"""
 line 6''')
 
     setup(line_numbers=False)
-    assert "Deprecated Coconut built-in 'prepattern' disabled by --strict compilation" not in parse("\n", mode="file")
-    assert "Deprecated Coconut built-in 'datamaker' disabled by --strict compilation" not in parse("\n", mode="file")
-    assert "Deprecated Coconut built-in 'of' disabled by --strict compilation" not in parse("\n", mode="file")
+    assert "Deprecated Coconut built-in 'prepattern' disabled by --strict compilation" not in parse_with_state("\n", mode="file")
+    assert "Deprecated Coconut built-in 'datamaker' disabled by --strict compilation" not in parse_with_state("\n", mode="file")
+    assert "Deprecated Coconut built-in 'of' disabled by --strict compilation" not in parse_with_state("\n", mode="file")
 
     setup(line_numbers=False, strict=True)
-    assert "Deprecated Coconut built-in 'prepattern' disabled by --strict compilation" in parse("\n", mode="file")
-    assert "Deprecated Coconut built-in 'datamaker' disabled by --strict compilation" in parse("\n", mode="file")
-    assert "Deprecated Coconut built-in 'of' disabled by --strict compilation" in parse("\n", mode="file")
+    assert "Deprecated Coconut built-in 'prepattern' disabled by --strict compilation" in parse_with_state("\n", mode="file")
+    assert "Deprecated Coconut built-in 'datamaker' disabled by --strict compilation" in parse_with_state("\n", mode="file")
+    assert "Deprecated Coconut built-in 'of' disabled by --strict compilation" in parse_with_state("\n", mode="file")
 
-    assert_raises(-> parse("def f(x):\n \t pass"), CoconutStyleError)
-    assert_raises(-> parse("lambda x: x"), CoconutStyleError)
-    assert_raises(-> parse("u''"), CoconutStyleError)
-    assert_raises(-> parse("def f(x):\\\n pass"), CoconutStyleError)
-    assert_raises(-> parse("abc "), CoconutStyleError, err_has="\n     ^")
-    assert_raises(-> parse("abc", "file"), CoconutStyleError)
-    assert_raises(-> parse("class derp(object)"), CoconutStyleError)
-    assert_raises(-> parse("def f(a.b) = True"), CoconutStyleError, err_has="\n        ^")
-    assert_raises(-> parse("match def kwd_only_x_is_int_def_0(*, x is int = 0) = x"), CoconutStyleError, err_has=(
+    assert_raises(-> parse_with_state("def f(x):\n \t pass"), CoconutStyleError)
+    assert_raises(-> parse_with_state("lambda x: x"), CoconutStyleError)
+    assert_raises(-> parse_with_state("u''"), CoconutStyleError)
+    assert_raises(-> parse_with_state("def f(x):\\\n pass"), CoconutStyleError)
+    assert_raises(-> parse_with_state("abc "), CoconutStyleError, err_has="\n     ^")
+    assert_raises(-> parse_with_state("abc", "file"), CoconutStyleError)
+    assert_raises(-> parse_with_state("class derp(object)"), CoconutStyleError)
+    assert_raises(-> parse_with_state("def f(a.b) = True"), CoconutStyleError, err_has="\n        ^")
+    assert_raises(-> parse_with_state("match def kwd_only_x_is_int_def_0(*, x is int = 0) = x"), CoconutStyleError, err_has=(
         "\n        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|",
         "\n        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~/",
     ) + (
@@ -402,7 +405,7 @@ line 6''')
         if PYPY else ()
     ))
     try:
-        parse(d"""
+        parse_with_state(d"""
         try:
             x is int is str = x
         except MatchError:
@@ -413,13 +416,13 @@ line 6''')
     except CoconutStyleError as err:
         assert str(err).startswith("""found deprecated isinstance-checking 'x is int is str' pattern; rewrite to use class patterns (try 'int(x) and str(x)') or explicit isinstance-checking ('x `isinstance` int and x `isinstance` str' should always work) (remove --strict to downgrade to a warning) (line 2)
   x is int is str = x"""), err
-    assert_raises(-> parse("""case x:
+    assert_raises(-> parse_with_state("""case x:
     match x:
         pass"""), CoconutStyleError, err_has="case x:")
-    assert_raises(-> parse("obj."), CoconutStyleError, err_has="getattr")
-    assert_raises(-> parse("def x -> pass, 1"), CoconutStyleError, err_has="statement lambda")
-    assert_raises(-> parse("abc = f'abc'"), CoconutStyleError, err_has="\n        ^")
-    assert_raises(-> parse('f"{f"{f"infinite"}"}"'), CoconutStyleError, err_has="f-string with no expressions")
+    assert_raises(-> parse_with_state("obj."), CoconutStyleError, err_has="getattr")
+    assert_raises(-> parse_with_state("def x -> pass, 1"), CoconutStyleError, err_has="statement lambda")
+    assert_raises(-> parse_with_state("abc = f'abc'"), CoconutStyleError, err_has="\n        ^")
+    assert_raises(-> parse_with_state('f"{f"{f"infinite"}"}"'), CoconutStyleError, err_has="f-string with no expressions")
     try:
         parse(d"""
         import abc
@@ -440,7 +443,7 @@ line 6''')
         assert str(err) == """found undefined name 'x' (use explicit '\\x' syntax to bypass) (add '# NOQA' to suppress) (remove --strict to downgrade to a warning) (line 2)
   2 + x
       ^"""
-    assert_raises(-> parse(d"""
+    assert_raises(-> parse_with_state(d"""
     class A(object):
         1
         2
@@ -458,9 +461,10 @@ line 6''')
         14
         15
     """), CoconutStyleError, **(dict(err_has="\n ...\n") if not PYPY else {}))
-    assert_raises(-> parse('["abc", "def" "ghi"]'), CoconutStyleError, err_has="implicit string concatenation")
+    assert_raises(-> parse_with_state('["abc", "def" "ghi"]'), CoconutStyleError, err_has="implicit string concatenation")
 
     # scope-aware undefined name tests
+    assert_raises(-> parse("abc"), CoconutStyleError, err_has="undefined name")
     assert_raises(-> parse(d"""
     def f():
         x = 1
@@ -594,7 +598,7 @@ line 6''')
     """), CoconutStyleError, err_has="shadows builtin")
 
     setup(line_numbers=False, strict=True, target="sys")
-    assert_raises(-> parse("await f x"), CoconutParseError)
+    assert_raises(-> parse_with_state("await f x"), CoconutParseError)
 
     # pure tests
     setup(line_numbers=False, strict=True, pure=True, target="sys")

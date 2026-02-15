@@ -635,19 +635,15 @@ class Compiler(Grammar, pickleable_obj):
     def get_empty_scope(self, inner=False):
         """Get an empty scope for the parsing_context."""
         parent = self.current_parsing_context("scope")
+        if parent is not None and parent["all_vars"] is None:
+            inner = True
         return {
             "final_vars": {},
             "pure_vars": {},
             "all_vars": None if inner else set(),
             "parent": parent,
+            "callbacks": [],
         }
-
-    def init_parsing_context(self, inner=False):
-        """Initialize parsing context."""
-        self.parsing_context = defaultdict(list)
-        # initialize module-level scopes
-        self.parsing_context["scope"].append(self.get_empty_scope(inner=inner))
-        return self.parsing_context
 
     def reset(self, keep_state=False, filename=None):
         """Reset references.
@@ -683,8 +679,7 @@ class Compiler(Grammar, pickleable_obj):
         self.shown_warnings = set()
         if not keep_state:
             self.computation_graph_caches = defaultdict(staledict)
-        self.final_checks = []
-        self.init_parsing_context()
+        self.parsing_context = defaultdict(list)
 
     @contextmanager
     def inner_environment(self, ln=None):
@@ -702,11 +697,13 @@ class Compiler(Grammar, pickleable_obj):
         num_lines, self.num_lines = self.num_lines, 0
         remaining_original, self.remaining_original = self.remaining_original, None
         shown_warnings, self.shown_warnings = self.shown_warnings, set()
-        parsing_context = self.parsing_context
-        self.init_parsing_context(inner=True)
+        parsing_context, self.parsing_context = self.parsing_context, defaultdict(list)
         try:
-            with ComputationNode.using_overrides():
-                yield
+            with self.add_to_parsing_context({
+                "scope": self.get_empty_scope(inner=True),
+            }):
+                with ComputationNode.using_overrides():
+                    yield
         finally:
             self.outer_ln = outer_ln
             self.line_numbers = line_numbers
@@ -1525,8 +1522,8 @@ class Compiler(Grammar, pickleable_obj):
         """Acquire the lock and reset the parser."""
         filename = None if codepath is None else os.path.basename(codepath)
         with self.lock:
-            self.reset(keep_state, filename)
             Compiler.current_compiler = self
+            self.reset(keep_state, filename)
             yield
 
     def streamline(self, grammars, inputstring=None, force=False, inner=False):
@@ -1557,8 +1554,6 @@ class Compiler(Grammar, pickleable_obj):
                 if info["imported"] and not info["referenced"]:
                     for loc in info["imported"]:
                         self.strict_err_or_warn("found unused import " + repr(self.reformat(name, ignore_errors=True)), original, loc, noqa_able=True, endpoint=False)
-            for final_check in self.final_checks:
-                final_check()
 
     def pickle_cache(self, original, cache_path, include_incremental=True):
         """Pickle the pyparsing cache for original to cache_path."""
@@ -1838,11 +1833,15 @@ class Compiler(Grammar, pickleable_obj):
                 with logger.gather_parsing_stats():
                     try:
                         pre_procd = self.pre(inputstring, keep_state=keep_state, **preargs)
-                        if isinstance(parser, tuple):
-                            init_parser, line_parser = parser
-                            parsed = self.parse_line_by_line(init_parser, line_parser, pre_procd)
-                        else:
-                            parsed = parse(parser, pre_procd, inner=False)
+                        # handle module-level scope
+                        with self.add_to_parsing_context({
+                            "scope": self.get_empty_scope(inner=keep_state),
+                        }):
+                            if isinstance(parser, tuple):
+                                init_parser, line_parser = parser
+                                parsed = self.parse_line_by_line(init_parser, line_parser, pre_procd)
+                            else:
+                                parsed = parse(parser, pre_procd, inner=False)
                         out = self.post(parsed, keep_state=keep_state, **postargs)
                     except ParseBaseException as err:
                         raise self.make_parse_err(err)
@@ -4643,11 +4642,12 @@ def {func_name}({iter_var}):
     def get_parent_expr_setnames(self):
         """Get all expr_setnames in parent contexts, but not the current context."""
         expr_setname_context = self.current_parsing_context("expr_setnames")
-        parent_context = expr_setname_context["parent"]
         parent_setnames = set()
-        while parent_context:
-            parent_setnames |= parent_context["new_names"]
-            parent_context = parent_context["parent"]
+        if expr_setname_context is not None:
+            parent_context = expr_setname_context["parent"]
+            while parent_context:
+                parent_setnames |= parent_context["new_names"]
+                parent_context = parent_context["parent"]
         return parent_setnames
 
     def handle_expr_scope_closure(self, name, loc):
@@ -5303,7 +5303,7 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
             return default
 
     @contextmanager
-    def add_to_parsing_context(self, name_obj_dict, callbacks_keys_dict=None):
+    def add_to_parsing_context(self, name_obj_dict):
         """Put all the given objects on their respective parsing context stacks."""
         for name, obj in name_obj_dict.items():
             self.parsing_context[name].append(obj)
@@ -5312,11 +5312,9 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
         finally:
             for name in name_obj_dict:
                 popped_ctx = self.parsing_context[name].pop()
-                if callbacks_keys_dict is not None:
-                    callbacks_key = callbacks_keys_dict.get(name)
-                    if callbacks_key is not None:
-                        for callback in popped_ctx[callbacks_key]:
-                            callback()
+                if "callbacks" in popped_ctx:
+                    for callback in popped_ctx["callbacks"]:
+                        callback()
 
     def funcname_typeparams_handle(self, tokens):
         """Handle function names with type parameters."""
@@ -5584,7 +5582,6 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
                 "callbacks": [],
                 "loc": loc,
             }},
-            callbacks_keys_dict={"expr_setnames": "callbacks"},
         ):
             yield
 
@@ -5788,7 +5785,10 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
                 and name not in self.get_parent_expr_setnames()
             ))
         ):
-            self.final_checks.append(partial(self.check_undefined_name, original, loc, name, scope, self.outer_ln))
+            parent_scope = scope
+            while parent_scope["parent"] is not None:
+                parent_scope = parent_scope["parent"]
+            parent_scope["callbacks"].append(partial(self.check_undefined_name, original, loc, name, scope, self.outer_ln))
 
         # only mark as final after all checks pass
         if is_final:

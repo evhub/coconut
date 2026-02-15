@@ -4913,11 +4913,11 @@ _Deprecated: `coconut.convenience` is a deprecated alias for `coconut.api`._
 
 #### `get_state`
 
-**coconut.api.get\_state**(_state_=`None`)
+**coconut.api.get\_state**(_state_=`True`)
 
 Gets a state object which stores the current compilation parameters. State objects can be configured with [**setup**](#setup) or [**cmd**](#cmd) and then used in [**parse**](#parse) or other endpoints.
 
-If _state_ is `None`, gets a new state object, whereas if _state_ is `False`, the global state object is returned.
+If _state_ is `True`, gets a new state object, whereas if _state_ is `False`, the global state object is returned.
 
 #### `parse`
 
