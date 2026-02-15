@@ -13,6 +13,7 @@
       "Bash(python3:*)",
       "Bash(gh:*)",
       "Bash(pip:*)",
+      "Bash(conda:*)",
       "Bash(log \")",
       "Bash(test:*)",
       "Bash(done)",
@@ -26,7 +27,6 @@
       "WebFetch(domain:doc.pypy.org)",
       "Bash(git status:*)",
       "Bash(make test-tests:*)",
-      "Bash(conda:*)",
       "Bash(xonsh:*)"
     ]
   }
