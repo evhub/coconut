@@ -6,7 +6,7 @@
 # -----------------------------------------------------------------------------------------------------------------------
 
 """
-Author: Evan Hubinger
+Author: Evan Hubinger, Adam Forest
 License: Apache 2.0
 Description: Compiles Coconut code into Python code.
 """
@@ -845,6 +845,12 @@ class Compiler(Grammar, pickleable_obj):
             cls.method("where_stmt_manage"),
             include_in_packrat_context=False,
         )
+        cls.block_where_stmt <<= handle_and_manage(
+            cls.block_where_stmt_ref,
+            cls.method("block_where_stmt_handle"),
+            cls.method("where_stmt_manage"),
+            include_in_packrat_context=False,
+        )
 
         # handle parsing_context for expr_setnames
         #  (we need include_in_packrat_context here because some parses will be in an expr_setname context and some won't)
@@ -887,6 +893,7 @@ class Compiler(Grammar, pickleable_obj):
         cls.type_param <<= attach(cls.type_param_ref, cls.method("type_param_handle"), greedy=True)
         cls.where_item <<= attach(cls.where_item_ref, cls.method("where_item_handle"), greedy=True)
         cls.implicit_return_where_item <<= attach(cls.implicit_return_where_item_ref, cls.method("where_item_handle"), greedy=True)
+        cls.block_where_item <<= attach(cls.block_where_item_ref, cls.method("where_item_handle"), greedy=True)
 
         # name handlers
         cls.refname <<= attach(cls.name_ref, cls.method("name_handle"))
@@ -5466,6 +5473,43 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
 
         where_init = "".join(body_stmts)
         where_final = main_stmt + "\n"
+        out = where_init + where_final
+        if not where_assigns:
+            return out
+
+        name_regexes = {
+            name: compile_regex(r"\b" + name + r"\b")
+            for name in where_assigns
+        }
+        name_replacements = {
+            name: self.get_temp_var(("where", name), loc)
+            for name in where_assigns
+        }
+
+        where_init = self.deferred_code_proc(where_init)
+        where_final = self.deferred_code_proc(where_final)
+        out = where_init + where_final
+
+        out = sub_all(out, name_regexes, name_replacements)
+
+        return self.wrap_passthrough(out, early=True)
+
+    def block_where_stmt_handle(self, loc, tokens):
+        """Process block where statements (lhs = where: <body with last stmt as result>)."""
+        lhs_group, body_stmts = tokens
+        lhs = "".join(lhs_group)
+
+        body_list = list(body_stmts)
+        internal_assert(body_list, "block where body must not be empty")
+        *where_stmts, result_stmt = body_list
+
+        where_assigns = self.current_parsing_context("where")["assigns"]
+        internal_assert(where_assigns is not None, "missing block_where assigns")
+
+        where_init = "".join(where_stmts)
+        result_expr = result_stmt.rstrip("\n")
+        where_final = lhs + " = " + result_expr + "\n"
+
         out = where_init + where_final
         if not where_assigns:
             return out
