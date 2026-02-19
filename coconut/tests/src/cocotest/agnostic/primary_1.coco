@@ -481,10 +481,10 @@ def primary_test_1() -> bool:
         x1 + x2
     assert out == 10
     total = where:
-    x1 = 1 + 2 + 3
-    x2 = 4 + 5 + 6
-    x3 = 7 + 8 + 9
-    x1 + x2 + x3
+        x1 = 1 + 2 + 3
+        x2 = 4 + 5 + 6
+        x3 = 7 + 8 + 9
+        x1 + x2 + x3
     assert total == 45
     product = where:
         a = 2 * 3
@@ -513,10 +513,10 @@ def primary_test_1() -> bool:
         x1 + x2
     assert out == 10
     total = do:
-    x1 = 1 + 2 + 3
-    x2 = 4 + 5 + 6
-    x3 = 7 + 8 + 9
-    x1 + x2 + x3
+        x1 = 1 + 2 + 3
+        x2 = 4 + 5 + 6
+        x3 = 7 + 8 + 9
+        x1 + x2 + x3
     assert total == 45
     product = do:
         a = 2 * 3
