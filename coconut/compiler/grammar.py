@@ -1966,6 +1966,7 @@ class Grammar(object):
             + many_match
             + keyword("in").suppress()
             + comp_it_item
+            + Optional(comp_iter)
         )
         match_comp_expr_ref = namedexpr_test + Optional(keyword("match").suppress()) + match_comp_for
         normal_comp_expr_ref = addspace(namedexpr_test + comp_for)

@@ -4597,28 +4597,50 @@ def {name}({match_func_paramdef}):
     def match_comp_expr_handle(self, original, loc, tokens, dict_val=None):
         """Build a match comprehension by creating a temp match function.
         For dict comps, expr is the key and dict_val is the value."""
-        expr, (matches, iterable) = tokens
+        expr = tokens[0]
+        match_for_group = tokens[1]
+
+        if len(match_for_group) == 2:
+            matches, iterable = match_for_group
+            extra_comp_clauses = ""
+        else:
+            matches = match_for_group[0]
+            iterable = match_for_group[1]
+            extra_comp_clauses = " " + "".join(match_for_group[2:])
 
         func_name = self.get_temp_var("match_comp", loc)
         iter_var = self.get_temp_var("match_comp_iter", loc)
         check_var = self.get_temp_var("match_check", loc)
+        val_var = self.get_temp_var("match_comp_val", loc)
 
         matcher = self.get_matcher(original, loc, check_var)
         matcher.match(matches, iter_var)
 
         match_code = matcher.build()
-        match_error = self.pattern_error(original, loc, iter_var, check_var)
 
         if dict_val is not None:
-            return_expr = "(" + expr + ", " + dict_val + ")"
+            inner_expr = "(" + expr + ", " + dict_val + ")"
         else:
-            return_expr = expr
+            inner_expr = expr
+
+        # Always return a list: [] on no match, [inner_expr] (or a comprehension) on match.
+        # This filters non-matching elements instead of raising MatchError.
+        if extra_comp_clauses and extra_comp_clauses.lstrip().startswith("if "):
+            # `if` guard: use dummy var trick so the guard is a proper comprehension filter
+            guard_dummy_var = self.get_temp_var("guard_dummy", loc)
+            return_expr = "[" + inner_expr + " for " + guard_dummy_var + " in [None]" + extra_comp_clauses + "]"
+        elif extra_comp_clauses:
+            # `for` clause(s): put them inside the function so pattern vars are in scope
+            return_expr = "[" + inner_expr + extra_comp_clauses + "]"
+        else:
+            return_expr = "[" + inner_expr + "]"
 
         funcdef = handle_indentation(
             """
 def {func_name}({iter_var}):
     {match_code}
-    {match_error}
+    if not {check_var}:
+        return []
     return {return_expr}
             """,
             add_newline=True,
@@ -4626,19 +4648,26 @@ def {func_name}({iter_var}):
             func_name=func_name,
             iter_var=iter_var,
             match_code=match_code,
-            match_error=match_error,
+            check_var=check_var,
             return_expr=return_expr,
         )
 
         self.add_code_before[func_name] = self.decoratable_funcdef_stmt_handle(original, loc, [funcdef], is_stmt_lambda=True)
 
+
+        if extra_comp_clauses:
+            expr_setname_ctx = self.current_parsing_context("expr_setnames")
+            if expr_setname_ctx is not None:
+                comp_for_vars = set()
+                for m in re.finditer(r"\bfor\s+(.*?)\s+in\b", extra_comp_clauses):
+                    comp_for_vars.update(re.findall(r"[a-zA-Z_]\w*", m.group(1)))
+                expr_setname_ctx["new_names"] -= comp_for_vars
         func_expr = self.handle_expr_scope_closure(func_name, loc)
 
         if dict_val is not None:
-            return "_coconut.dict((" + func_expr + "(" + iter_var + ") for " + iter_var + " in " + iterable + "))"
+            return "_coconut.dict(" + val_var + " for " + iter_var + " in " + iterable + " for " + val_var + " in " + func_expr + "(" + iter_var + "))"
         else:
-            return func_expr + "(" + iter_var + ") for " + iter_var + " in " + iterable
-
+            return val_var + " for " + iter_var + " in " + iterable + " for " + val_var + " in " + func_expr + "(" + iter_var + ")"
     def get_parent_expr_setnames(self):
         """Get all expr_setnames in parent contexts, but not the current context."""
         expr_setname_context = self.current_parsing_context("expr_setnames")
