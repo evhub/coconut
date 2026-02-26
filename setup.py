@@ -85,6 +85,9 @@ setuptools.setup(
         "xonsh.xontribs": [
             "coconut = coconut.integrations",
         ],
+        "pytest11": [
+            "coconut = coconut.pytest_plugin",
+        ],
     },
     classifiers=list(classifiers),
     keywords=list(search_terms),
