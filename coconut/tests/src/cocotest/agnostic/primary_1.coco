@@ -475,6 +475,43 @@ def primary_test_1() -> bool:
     where = ten where:
         ten = 10
     assert where == 10 == \where
+    out = where:
+        x1 = 1 + 2
+        x2 = 3 + 4
+        x1 + x2
+    assert out == 10
+    total = where:
+        x1 = 1 + 2 + 3
+        x2 = 4 + 5 + 6
+        x3 = 7 + 8 + 9
+        x1 + x2 + x3
+    assert total == 45
+    product = where:
+        a = 2 * 3
+        b = 4 * 5
+        a * b
+    assert product == 120
+    text = where:
+        x = 'Hello '
+        y = 'World'
+        x + y
+    assert text == 'Hello World'
+    chain = where:
+        a = 5
+        b = a + 10
+        c = b * 2
+        c - a
+    assert chain == 25
+    div_result = where:
+        x = 100
+        y = 10
+        x / y
+    assert div_result == 10.0
+    scope_sentinel = "outer"
+    _ignored = where:
+        scope_sentinel = "inner"
+        scope_sentinel + "!"
+    assert scope_sentinel == "outer"  # block where: variables must not leak to enclosing scope
     assert true where: true = True
     assert a == 5 where:
         {"a": a} = {"a": 5}

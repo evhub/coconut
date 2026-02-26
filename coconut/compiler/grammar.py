@@ -6,7 +6,7 @@
 # -----------------------------------------------------------------------------------------------------------------------
 
 """
-Author: Evan Hubinger
+Author: Evan Hubinger, Adam Forest
 License: Apache 2.0
 Description: Defines the Coconut grammar.
 """
@@ -2372,12 +2372,18 @@ class Grammar(object):
         )
         match_funcdef = addspace(match_def_modifiers + def_match_funcdef)
 
-        where_suite = keyword("where").suppress() - full_suite
+        where_keyword = keyword("where").suppress()
+        where_suite = where_keyword - full_suite
 
         where_stmt = Forward()
         where_item = Forward()
         where_item_ref = unsafe_simple_stmt_item
         where_stmt_ref = where_item + where_suite
+
+        block_where_item = Forward()
+        block_where_item_ref = Group(assignlist)
+        block_where_stmt = Forward()
+        block_where_stmt_ref = block_where_item + equals.suppress() + where_keyword + full_suite
 
         implicit_return = (
             invalid_syntax(return_stmt, "assignment function expected expression as last statement but got return instead")
@@ -2738,6 +2744,7 @@ class Grammar(object):
             | simple_stmt  # includes destructuring
             | cases_stmt  # must be after destructuring due to ambiguity
             | where_stmt  # slows down parsing when put before simple_stmt
+            | block_where_stmt  # lhs = where: <body with last stmt as result>
             # at the very end as a fallback case for the anything parser
             | anything_stmt
         )
