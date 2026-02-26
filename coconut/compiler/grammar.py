@@ -2363,7 +2363,7 @@ class Grammar(object):
         )
         match_funcdef = addspace(match_def_modifiers + def_match_funcdef)
 
-        where_keyword = (keyword("where") | keyword("do")).suppress()
+        where_keyword = keyword("where").suppress()
         where_suite = where_keyword - full_suite
 
         where_stmt = Forward()
