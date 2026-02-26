@@ -507,6 +507,11 @@ def primary_test_1() -> bool:
         y = 10
         x / y
     assert div_result == 10.0
+    scope_sentinel = "outer"
+    _ignored = where:
+        scope_sentinel = "inner"
+        scope_sentinel + "!"
+    assert scope_sentinel == "outer"  # block where: variables must not leak to enclosing scope
     assert true where: true = True
     assert a == 5 where:
         {"a": a} = {"a": 5}
