@@ -1044,6 +1044,8 @@ class Grammar(object):
         new_namedexpr_test = Forward()
         comp_for = Forward()
         match_comp_for = Forward()
+        inner_match_comp_for = Forward()
+        implicit_inner_match_comp_for = Forward()
         normal_comp_expr = Forward()
         match_comp_expr = Forward()
         comprehension_expr = Forward()
@@ -1086,7 +1088,7 @@ class Grammar(object):
             | yield_classic
         )
         normal_dict_comp_ref = test + colon.suppress() + test + comp_for
-        match_dict_comp_ref = test + colon.suppress() + test + Optional(keyword("match").suppress()) + match_comp_for
+        match_dict_comp_ref = test + colon.suppress() + test + match_comp_for
         dict_comp = lbrace.suppress() + (
             normal_dict_comp
             | match_dict_comp
@@ -1960,14 +1962,31 @@ class Grammar(object):
         async_comp_for_ref = addspace(keyword("async") + base_comp_for)
         comp_for <<= base_comp_for | async_comp_for
         comp_if = addspace(keyword("if") + test_no_cond + Optional(comp_iter))
-        comp_iter <<= any_of(comp_for, comp_if)
-        match_comp_for <<= Group(
+        inner_match_comp_for_ref = Group(
+            keyword("for").suppress()
+            + keyword("match").suppress()
+            + many_match
+            + keyword("in").suppress()
+            + comp_it_item
+            + Optional(comp_iter)
+        )
+        implicit_inner_match_comp_for_ref = Group(
             keyword("for").suppress()
             + many_match
             + keyword("in").suppress()
             + comp_it_item
+            + Optional(comp_iter)
         )
-        match_comp_expr_ref = namedexpr_test + Optional(keyword("match").suppress()) + match_comp_for
+        comp_iter <<= any_of(comp_for, comp_if, inner_match_comp_for, implicit_inner_match_comp_for)
+        match_comp_for <<= Group(
+            keyword("for").suppress()
+            + Optional(keyword("match").suppress())
+            + many_match
+            + keyword("in").suppress()
+            + comp_it_item
+            + Optional(comp_iter)
+        )
+        match_comp_expr_ref = namedexpr_test + match_comp_for
         normal_comp_expr_ref = addspace(namedexpr_test + comp_for)
         comprehension_expr <<= (
             normal_comp_expr

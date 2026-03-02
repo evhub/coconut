@@ -758,4 +758,86 @@ def primary_test_2() -> bool:
     lazy from coconut_nonexistent_test_module4.submodule import missing as lazy_missing2
     assert_raises((def => lazy_missing2.attr = 1), ImportError)
 
+    # pattern-matching comprehensions (issue #887)
+    data CompPair(a, b)
+    data CompTriple(x, y, z)
+    comp_pairs = [CompPair(1, 2), CompPair(3, 4), CompPair(5, 6)]
+    comp_triples = [CompTriple(1, 2, 3), CompTriple(4, 5, 6)]
+
+    # basic match comp
+    assert [a + b for CompPair(a, b) in comp_pairs] == [3, 7, 11]
+
+    # extra for clause
+    assert [a + b for CompPair(a, b) in comp_pairs for _ in range(3)] == [3, 3, 3, 7, 7, 7, 11, 11, 11]
+
+    # for + if on the loop variable (not pattern variable)
+    assert [a + b for CompPair(a, b) in comp_pairs for x in range(4) if x % 2 == 0] == [3, 3, 7, 7, 11, 11]
+
+    # for with extra list
+    assert [a + b + i for CompPair(a, b) in comp_pairs for i in [10, 20]] == [13, 23, 17, 27, 21, 31]
+
+    # triple data type, basic match comp
+    assert [x + y + z for CompTriple(x, y, z) in comp_triples] == [6, 15]
+
+    # triple + extra for
+    assert [x * y for CompTriple(x, y, z) in comp_triples for _ in range(2)] == [2, 2, 20, 20]
+
+    # if True (no filtering)
+    assert [a + b for CompPair(a, b) in comp_pairs if True] == [3, 7, 11]
+
+    # for + if, only first iteration kept
+    assert [a + b for CompPair(a, b) in comp_pairs for x in range(2) if x == 0] == [3, 7, 11]
+
+    # generator expression with sum
+    assert sum(a + b for CompPair(a, b) in comp_pairs) == 21
+
+    # if filtering on pattern variables
+    assert [a + b for CompPair(a, b) in comp_pairs if a > 1] == [7, 11]
+
+    # if with multiple conditions on pattern variables
+    assert [a + b for CompPair(a, b) in comp_pairs if a > 1 if b < 6] == [7]
+
+    # if with combined condition on pattern variables
+    assert [a for CompPair(a, b) in comp_pairs if a % 2 == 1 and b % 2 == 0] == [1, 3, 5]
+
+    # dict comprehension with pattern match and if on pattern variable
+    assert {a: b for CompPair(a, b) in comp_pairs if a != 3} == {1: 2, 5: 6}
+
+    # set comprehension with pattern match and if on pattern variable
+    assert {a + b for CompPair(a, b) in comp_pairs if b > 2} == {7, 11}
+
+    # generator expression with if on pattern variable
+    assert list(a * b for CompPair(a, b) in comp_pairs if a > 2) == [12, 30]
+
+    # triple with if filtering on pattern variable
+    assert [x + y + z for CompTriple(x, y, z) in comp_triples if z > 3] == [15]
+
+    # arbitrary mixing: normal for followed by pattern-matching for
+    assert [a + b for z in [comp_pairs] for match CompPair(a, b) in z] == [3, 7, 11]
+
+    # arbitrary mixing: pattern-matching for followed by another pattern-matching for
+    nested_pairs = [[CompPair(1, 2), "x"], [CompPair(3, 4), "y"]]
+    assert [a + b for [CompPair(a, b), _] in nested_pairs] == [3, 7]
+
+    # inner PM for with if guard on outer loop variable
+    assert [a for z in [1, 3] for match CompPair(a, b) in comp_pairs if a == z] == [1, 3]
+
+    # inner PM for: pattern variable available in subsequent clause
+    assert [a + i for match CompPair(a, b) in comp_pairs for i in range(b - a)] == [1, 3, 3, 5, 5]
+
+    # inner PM for with dict comprehension
+    assert {a: b for z in [comp_pairs] for match CompPair(a, b) in z} == {1: 2, 3: 4, 5: 6}
+
+    # implicit inner PM for (no 'match' keyword) in non-first position
+    assert [a + b for z in [comp_pairs] for CompPair(a, b) in z] == [3, 7, 11]
+
+    # implicit inner PM for with if filter
+    assert [a + b for z in [comp_pairs] for CompPair(a, b) in z if a > 1] == [7, 11]
+
+    # implicit inner PM for: two consecutive pattern-matching clauses (first via match_comp_for, second via implicit_inner_match_comp_for)
+    assert [a + b + x for CompPair(a, b) in comp_pairs for CompTriple(x, y, z) in comp_triples] == [4, 7, 8, 11, 12, 15]
+
+    # implicit inner PM for: dict comprehension
+    assert {a: b for z in [comp_pairs] for CompPair(a, b) in z} == {1: 2, 3: 4, 5: 6}
+
     return True

@@ -865,6 +865,14 @@ class Compiler(Grammar, pickleable_obj):
             cls.method("has_expr_setname_manage"),
             include_in_packrat_context=True,
         )
+        cls.inner_match_comp_for <<= attach(
+            cls.inner_match_comp_for_ref,
+            cls.method("inner_match_comp_for_handle"),
+        )
+        cls.implicit_inner_match_comp_for <<= attach(
+            cls.implicit_inner_match_comp_for_ref,
+            cls.method("inner_match_comp_for_handle"),
+        )
         cls.normal_comp_expr <<= manage(
             cls.normal_comp_expr_ref,
             cls.method("has_expr_setname_manage"),
@@ -4594,50 +4602,130 @@ def {name}({match_func_paramdef}):
 
         return self.handle_expr_scope_closure(name, loc)
 
-    def match_comp_expr_handle(self, original, loc, tokens, dict_val=None):
-        """Build a match comprehension by creating a temp match function.
-        For dict comps, expr is the key and dict_val is the value."""
-        expr, (matches, iterable) = tokens
+    def _build_match_comp_filter_func(self, original, loc, matches, iterable):
+        """Generate a filter function for a pattern-matching comprehension clause.
 
+        Returns (func_expr, iter_var, unpack, extra_func_setup) where:
+          - func_expr: the compiled function reference (possibly a closure)
+          - iter_var: temp var to use as the outer loop variable over iterable
+          - unpack: the target expression to use in 'for unpack in func_expr(iter_var)'
+        The generated function takes one item and returns [] on no match or
+        [(bound_var1, bound_var2, ...)] on match, so it can be used as:
+          for iter_var in iterable for unpack in func_expr(iter_var)
+        """
         func_name = self.get_temp_var("match_comp", loc)
+        item_param = self.get_temp_var("match_comp_item", loc)
         iter_var = self.get_temp_var("match_comp_iter", loc)
         check_var = self.get_temp_var("match_check", loc)
 
-        matcher = self.get_matcher(original, loc, check_var)
-        matcher.match(matches, iter_var)
-
+        bound_names = []
+        matcher = self.get_matcher(original, loc, check_var, name_list=bound_names)
+        matcher.match(matches, item_param)
         match_code = matcher.build()
-        match_error = self.pattern_error(original, loc, iter_var, check_var)
-
-        if dict_val is not None:
-            return_expr = "(" + expr + ", " + dict_val + ")"
+        if bound_names:
+            bound_tuple = "(" + ", ".join(bound_names) + ("," if len(bound_names) == 1 else "") + ")"
+            unpack = bound_tuple
         else:
-            return_expr = expr
+            bound_tuple = "None"
+            dummy_var = self.get_temp_var("match_comp_dummy", loc)
+            unpack = dummy_var
 
         funcdef = handle_indentation(
             """
-def {func_name}({iter_var}):
+def {func_name}({item_param}):
     {match_code}
-    {match_error}
-    return {return_expr}
+    if not {check_var}:
+        return []
+    return [{bound_tuple}]
             """,
             add_newline=True,
         ).format(
             func_name=func_name,
-            iter_var=iter_var,
+            item_param=item_param,
             match_code=match_code,
-            match_error=match_error,
-            return_expr=return_expr,
+            check_var=check_var,
+            bound_tuple=bound_tuple,
         )
 
         self.add_code_before[func_name] = self.decoratable_funcdef_stmt_handle(original, loc, [funcdef], is_stmt_lambda=True)
 
-        func_expr = self.handle_expr_scope_closure(func_name, loc)
+        # Update expr_setnames context to exclude variables bound by the pattern.
+        expr_setname_ctx = self.current_parsing_context("expr_setnames")
+        if expr_setname_ctx is not None and bound_names:
+            expr_setname_ctx["new_names"] -= set(bound_names)
 
-        if dict_val is not None:
-            return "_coconut.dict((" + func_expr + "(" + iter_var + ") for " + iter_var + " in " + iterable + "))"
+        func_expr = self.handle_expr_scope_closure(func_name, loc)
+        return func_expr, iter_var, unpack
+
+    def match_comp_expr_handle(self, original, loc, tokens, dict_val=None):
+        """Build a match comprehension by creating a per-item filter function.
+        For dict comps, expr is the key and dict_val is the value.
+
+        The generated comprehension expands to:
+          expr for iter_var in iterable for unpack in func(iter_var) [extra_comp_clauses]
+        This puts all extra clauses (for/if) outside the filter function so they
+        have access to both pattern-bound variables and any outer loop variables.
+        """
+        expr = tokens[0]
+        match_for_group = tokens[1]
+
+        if len(match_for_group) == 2:
+            matches, iterable = match_for_group
+            extra_comp_clauses = ""
         else:
-            return func_expr + "(" + iter_var + ") for " + iter_var + " in " + iterable
+            matches = match_for_group[0]
+            iterable = match_for_group[1]
+            extra_comp_clauses = " " + "".join(match_for_group[2:])
+
+        func_expr, iter_var, unpack = self._build_match_comp_filter_func(original, loc, matches, iterable)
+
+        # Update expr_setnames for variables introduced by extra comprehension clauses.
+        if extra_comp_clauses:
+            expr_setname_ctx = self.current_parsing_context("expr_setnames")
+            if expr_setname_ctx is not None:
+                comp_for_vars = set()
+                for m in re.finditer(r"\bfor\s+(.*?)\s+in\b", extra_comp_clauses):
+                    comp_for_vars.update(re.findall(r"[a-zA-Z_]\w*", m.group(1)))
+                expr_setname_ctx["new_names"] -= comp_for_vars
+
+        # Build the comprehension body: extra_comp_clauses go OUTSIDE the function
+        # so they can reference both pattern-bound variables and outer loop variables.
+        if dict_val is not None:
+            inner_expr = "(" + expr + ", " + dict_val + ")"
+            return "_coconut.dict(" + inner_expr + " for " + iter_var + " in " + iterable + " for " + unpack + " in " + func_expr + "(" + iter_var + ")" + extra_comp_clauses + ")"
+        else:
+            return expr + " for " + iter_var + " in " + iterable + " for " + unpack + " in " + func_expr + "(" + iter_var + ")" + extra_comp_clauses
+
+    def inner_match_comp_for_handle(self, original, loc, tokens):
+        """Handle a pattern-matching for clause in a non-first position.
+
+        Generates a per-item filter function and returns the for-clause string:
+          for iter_var in iterable for unpack in func(iter_var) [extra_clauses]
+        This string is inserted into the surrounding comprehension by the grammar,
+        allowing full access to any outer loop variables in subsequent clauses.
+        """
+        match_for_group = tokens[0]
+
+        if len(match_for_group) == 2:
+            matches, iterable = match_for_group
+            extra_clauses = ""
+        else:
+            matches = match_for_group[0]
+            iterable = match_for_group[1]
+            extra_clauses = " " + "".join(match_for_group[2:])
+
+        func_expr, iter_var, unpack = self._build_match_comp_filter_func(original, loc, matches, iterable)
+
+        # Update expr_setnames for variables introduced by extra comprehension clauses.
+        if extra_clauses:
+            expr_setname_ctx = self.current_parsing_context("expr_setnames")
+            if expr_setname_ctx is not None:
+                comp_for_vars = set()
+                for m in re.finditer(r"\bfor\s+(.*?)\s+in\b", extra_clauses):
+                    comp_for_vars.update(re.findall(r"[a-zA-Z_]\w*", m.group(1)))
+                expr_setname_ctx["new_names"] -= comp_for_vars
+
+        return "for " + iter_var + " in " + iterable + " for " + unpack + " in " + func_expr + ("(""") + iter_var + ")" + extra_clauses
 
     def get_parent_expr_setnames(self):
         """Get all expr_setnames in parent contexts, but not the current context."""
