@@ -309,6 +309,21 @@ def auto_compilation(on=True, args=None, use_cache_dir=None):
 auto_compilation()
 
 
+def install_pytest_plugin():
+    """Install Coconut's pytest plugin. Call this at the top of your conftest.py.
+
+    Injects pytest hook functions directly into the calling module's namespace,
+    which works in any conftest.py regardless of its location. This is the
+    recommended fallback when Coconut is not installed via pip (which would
+    register the plugin automatically via the pytest11 entry point).
+    """
+    import inspect
+    from coconut import pytest_plugin as _plugin
+    frame = inspect.currentframe().f_back
+    for name in ("pytest_configure", "pytest_collect_file", "pytest_ignore_collect"):
+        frame.f_globals[name] = getattr(_plugin, name)
+
+
 # -----------------------------------------------------------------------------------------------------------------------
 # ENCODING:
 # -----------------------------------------------------------------------------------------------------------------------
