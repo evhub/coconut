@@ -354,6 +354,16 @@ cannot reassign type variable 'T' (use explicit '\T' syntax if intended) (line 1
     assert_raises(-> parse_with_state("final x = 1\nmatch y:\n    case x: pass"), CoconutSyntaxError, err_has="final")
     assert_raises(-> parse_with_state("final x = 1\nfinal x = 2"), CoconutSyntaxError, err_has="final")
 
+    # typing.Unpack syntax: **Type -> _coconut.typing.Unpack[Type]
+    assert "_coconut.typing.Unpack[int]" in parse_with_state("def f(**kwargs: **int): pass", "block")
+    assert "_coconut.typing.Unpack[MyDict]" in parse_with_state("def f(**kwargs: **MyDict): pass", "block")
+    assert "_coconut.typing.Unpack[MyDict]" in parse_with_state("def f(x: **MyDict): pass", "block")
+    assert "_coconut.typing.Unpack[dict[str, int]]" in parse_with_state("def f(**kwargs: **dict[str, int]): pass", "block")
+    assert "_coconut.typing.Unpack[" in parse_with_state("def f(a: int, **kwargs: **MyDict): pass", "block")
+    # ensure normal type annotations are not affected
+    assert "Unpack" not in parse_with_state("def f(**kwargs: str): pass", "block")
+    assert "Unpack" not in parse_with_state("def f(x: int): pass", "block")
+
     return True
 
 
