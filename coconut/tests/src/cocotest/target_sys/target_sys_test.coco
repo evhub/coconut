@@ -21,8 +21,9 @@ def un_treable_iter(x):
         return un_treable_iter(x)
 
 def it_ret(x):
+    if False:
+        yield None
     return x
-    yield None
 
 def yield_from_return(x):
     yield x
@@ -32,12 +33,14 @@ def yield_from_return(x):
         return (yield from yield_from_return(x-1))
 
 def it_ret_none():
+    if False:
+        yield None
     return
-    yield None
 
 def it_ret_tuple(x, y):
+    if False:
+        yield None
     return x, y
-    yield None
 
 
 # Main

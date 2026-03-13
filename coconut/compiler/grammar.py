@@ -2810,6 +2810,7 @@ class Grammar(object):
 
         tco_disable_regex = compile_regex(r"\b(try\b|(async\s+)?(with\b|for\b)|while\b)")
         return_regex = compile_regex(r"\breturn\b")
+        terminator_stmt_regex = compile_regex(r"\b(return|raise)\b")
 
         noqa_regex = compile_regex(r"\b[Nn][Oo][Qq][Aa]\b")
 
