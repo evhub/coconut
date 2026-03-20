@@ -6,7 +6,7 @@
 # -----------------------------------------------------------------------------------------------------------------------
 
 """
-Author: Evan Hubinger
+Authors: Evan Hubinger, Naetirat Songsomboon
 License: Apache 2.0
 Description: Compiles Coconut code into Python code.
 """
@@ -194,6 +194,7 @@ from coconut.compiler.util import (
     should_trim_arity,
     rem_and_count_indents,
     normalize_indent_markers,
+    is_blank,
     prep_grammar,
     ordered,
     tuple_str_of_str,
@@ -2613,6 +2614,57 @@ else:
 
         return False
 
+    def detect_unreachable_code(self, original, loc, raw_lines):
+        """Detect unreachable code after unconditional terminator statements."""
+        level = 0
+        func_until_level = None
+        disabled_until_level = None
+        last_terminator = None
+
+        for line in normalize_indent_markers(list(raw_lines)):
+            indent, body, dedent = split_leading_trailing_indent(line)
+            base, comment = split_comment(body)
+
+            level += ind_change(indent)
+
+            # leave inner function/class scope
+            if func_until_level is not None and level <= func_until_level:
+                func_until_level = None
+            # leave disabled flow-control block
+            if disabled_until_level is not None and level <= disabled_until_level:
+                disabled_until_level = None
+
+            # entering a nested def, inner terminators don't affect outer scope
+            if func_until_level is None and self.def_regex.match(base):
+                func_until_level = level
+                if disabled_until_level is None:
+                    disabled_until_level = level
+            # entering a loop/try/with, disable checking inside
+            if disabled_until_level is None and self.tco_disable_regex.match(base):
+                disabled_until_level = level
+
+            # only analyze at top level of function body, outside suppressed scopes
+            if level == 1 and disabled_until_level is None and base and not is_blank(line):
+                if last_terminator is not None:
+                    term_kwd, term_ln = last_terminator
+                    self.strict_err_or_warn(
+                        "found unreachable code after " + term_kwd + " statement",
+                        original,
+                        loc,
+                        ln=term_ln,
+                        noqa_able=False,
+                        endpoint=False,
+                    )
+                    last_terminator = None
+
+                m = self.terminator_stmt_regex.match(base)
+                if m:
+                    last_terminator = (m.group(1), None)
+                else:
+                    last_terminator = None
+
+            level += ind_change(dedent)
+
     def transform_returns(self, original, loc, raw_lines, tre_return_grammar=None, is_async=False, is_gen=False):
         """Apply TCO, TRE, async, and generator return universalization to the given function."""
         lines = []  # transformed lines
@@ -2864,6 +2916,9 @@ except _coconut.NameError:
         # modify function definition to use def_name
         if def_name != func_name:
             def_stmt = compile_regex(r"\b" + re.escape(func_name) + r"\b").sub(def_name, def_stmt)
+
+        # detect unreachable code
+        self.detect_unreachable_code(original, loc, raw_lines)
 
         # detect generators
         is_gen = self.detect_is_gen(raw_lines)
@@ -5258,14 +5313,27 @@ async with {iter_item} as {temp_var}:
         keywords, funcdef = tokens
         for kwd in keywords:
             if kwd == "yield":
-                funcdef += handle_indentation(
+                yield_snippet = handle_indentation(
                     """
 if False:
     yield
                     """,
                     add_newline=True,
-                    extra_indent=1,
                 )
+                # Insert yield snippet at the top of the function body
+                # to avoid false positives from
+                # the unreachable code detector
+                oi_idx = funcdef.index(openindent)
+                insert_pos = oi_idx + 1
+
+                # If the first line in the body is a docstring
+                # skip past it to preserve the docstring
+                first_nl = funcdef.index("\n", insert_pos)
+                first_line = funcdef[insert_pos:first_nl]
+                if strwrapper in first_line:
+                    insert_pos = first_nl + 1
+
+                funcdef = funcdef[:insert_pos] + yield_snippet + funcdef[insert_pos:]
             else:
                 # new keywords here must be replicated in def_regex and handled in proc_funcdef
                 internal_assert(kwd in ("addpattern", "copyclosure"), "unknown deferred funcdef keyword", kwd)
