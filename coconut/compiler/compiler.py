@@ -2619,7 +2619,7 @@ else:
         level = 0
         func_until_level = None
         disabled_until_level = None
-        last_terminator = None  # (keyword_str, adjusted_source_ln) or None
+        last_terminator = None
 
         for line in normalize_indent_markers(list(raw_lines)):
             indent, body, dedent = split_leading_trailing_indent(line)
@@ -2627,7 +2627,6 @@ else:
 
             level += ind_change(indent)
 
-            # scope-exit checks
             # leave inner function/class scope
             if func_until_level is not None and level <= func_until_level:
                 func_until_level = None
@@ -2635,13 +2634,12 @@ else:
             if disabled_until_level is not None and level <= disabled_until_level:
                 disabled_until_level = None
 
-            # scope-entry checks
-            # entering a nested def — inner terminators don't affect outer scope
+            # entering a nested def, inner terminators don't affect outer scope
             if func_until_level is None and self.def_regex.match(base):
                 func_until_level = level
                 if disabled_until_level is None:
                     disabled_until_level = level
-            # entering a loop/try/with — disable checking inside
+            # entering a loop/try/with, disable checking inside
             if disabled_until_level is None and self.tco_disable_regex.match(base):
                 disabled_until_level = level
 
@@ -2919,7 +2917,7 @@ except _coconut.NameError:
         if def_name != func_name:
             def_stmt = compile_regex(r"\b" + re.escape(func_name) + r"\b").sub(def_name, def_stmt)
 
-        # detect unreachable code (strict/warn mode)
+        # detect unreachable code
         self.detect_unreachable_code(original, loc, raw_lines)
 
         # detect generators

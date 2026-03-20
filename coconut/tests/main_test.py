@@ -1125,8 +1125,6 @@ class TestCompilation(unittest.TestCase):
             assert_output_only_at_end=False,
         )
 
-    # -- Positive tests: unreachable code SHOULD be detected --
-
     def test_strict_unreachable_code_raise(self):
         """raise is a terminator; code after it should be detected as unreachable."""
         call_coconut(
@@ -1154,8 +1152,6 @@ class TestCompilation(unittest.TestCase):
             assert_output="after raise statement",
             assert_output_only_at_end=False,
         )
-
-    # -- Negative tests: unreachable code should NOT be detected --
 
     def test_strict_unreachable_code_nested_def(self):
         """return inside a nested def should not trigger detection in outer function."""
