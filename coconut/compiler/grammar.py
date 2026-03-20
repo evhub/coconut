@@ -6,7 +6,7 @@
 # -----------------------------------------------------------------------------------------------------------------------
 
 """
-Author: Evan Hubinger
+Authors: Evan Hubinger, Naetirat Songsomboon
 License: Apache 2.0
 Description: Defines the Coconut grammar.
 """

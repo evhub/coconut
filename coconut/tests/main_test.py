@@ -6,7 +6,7 @@
 # -----------------------------------------------------------------------------------------------------------------------
 
 """
-Authors: Evan Hubinger, Fred Buchanan
+Authors: Evan Hubinger, Fred Buchanan, Naetirat Songsomboon
 License: Apache 2.0
 Description: Main Coconut tests.
 """
@@ -1256,15 +1256,25 @@ class TestCompilation(unittest.TestCase):
             """)],
         )
 
-    # TODO: Find a way to handle case yield syntax triggers unreachable code checker
-    # def test_strict_unreachable_code_yield_def(self):
-    #     """yield def appends compiler-generated 'if False: yield' after the body;
-    #     the detector should skip it because it has no source line number."""
-    #     call_coconut(
-    #         ["--strict", "-c", textwrap.dedent("""\
-    #             yield def f(x) = x
-    #         """)],
-    #     )
+    def test_strict_unreachable_code_yield_def(self):
+        """yield def prepends compiler-generated 'if False: yield' before the body
+        (after any docstring), so the detector should not flag it."""
+        call_coconut(
+            ["--strict", "-c", textwrap.dedent("""\
+                yield def f(x) = x
+            """)],
+        )
+
+    def test_strict_unreachable_code_yield_def_with_docstring(self):
+        """yield def with docstring should preserve PEP 257 compliance
+        and not trigger unreachable code detection."""
+        call_coconut(
+            ["--strict", "-c", textwrap.dedent("""\
+                yield def f(x):
+                    "docstring"
+                    return x
+            """)],
+        )
 
     if get_bool_env_var("COCONUT_TEST_VERBOSE"):
         def test_verbose(self):

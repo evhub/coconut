@@ -6,7 +6,7 @@
 # -----------------------------------------------------------------------------------------------------------------------
 
 """
-Author: Evan Hubinger
+Authors: Evan Hubinger, Naetirat Songsomboon
 License: Apache 2.0
 Description: Compiles Coconut code into Python code.
 """
@@ -5315,14 +5315,27 @@ async with {iter_item} as {temp_var}:
         keywords, funcdef = tokens
         for kwd in keywords:
             if kwd == "yield":
-                funcdef += handle_indentation(
+                yield_snippet = handle_indentation(
                     """
 if False:
     yield
                     """,
                     add_newline=True,
-                    extra_indent=1,
                 )
+                # Insert yield snippet at the top of the function body
+                # to avoid false positives from
+                # the unreachable code detector
+                oi_idx = funcdef.index(openindent)
+                insert_pos = oi_idx + 1
+
+                # If the first line in the body is a docstring
+                # skip past it to preserve the docstring
+                first_nl = funcdef.index("\n", insert_pos)
+                first_line = funcdef[insert_pos:first_nl]
+                if strwrapper in first_line:
+                    insert_pos = first_nl + 1
+
+                funcdef = funcdef[:insert_pos] + yield_snippet + funcdef[insert_pos:]
             else:
                 # new keywords here must be replicated in def_regex and handled in proc_funcdef
                 internal_assert(kwd in ("addpattern", "copyclosure"), "unknown deferred funcdef keyword", kwd)
