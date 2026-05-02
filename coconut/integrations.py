@@ -91,6 +91,94 @@ def load_ipython_extension(ipython):
 # XONSH:
 # -----------------------------------------------------------------------------------------------------------------------
 
+def _collapse_xonsh_line_continuations(src):
+    """Collapse ``\\<newline><indent>`` line continuations into a single space.
+
+    The Coconut compiler's ``reind_proc`` step intentionally splits
+    backslash-continued source into two physical lines and indents the
+    continuation tail by ``tabideal`` spaces "for readability".  That is
+    fine for standalone Coconut output, but when the xonsh xontrib
+    feeds the compiled output back into xonsh's own parser the indented
+    tail surfaces as ``SyntaxError: unexpected indent`` after the
+    standalone first half of the statement (it is not even valid
+    CPython, since ``echo a  #...\\n    b`` is an INDENT after a
+    complete statement).
+
+    Collapsing the continuation *before* compile keeps the source as a
+    single physical line, so the compiler emits one physical line on
+    the other side and the host parser is happy.  This walks the source
+    manually so backslash sequences inside string literals and comments
+    are left alone — a plain ``re.sub`` would also rewrite ``"a\\\nb"``
+    (a Python implicit-string line continuation) which would silently
+    change semantics.
+    """
+    out = []
+    i = 0
+    while i < len(src):
+        ch = src[i]
+
+        # String literals — preserve as-is, including any embedded
+        # backslash-newline (those are literal-string line continuations
+        # whose semantics we must not touch).  Triple-quoted strings
+        # are matched first because their delimiter is longer than a
+        # single quote.
+        if ch in ("'", '"'):
+            triple = src[i:i + 3]
+            if triple in ('"""', "'''"):
+                end = src.find(triple, i + 3)
+                if end == -1:
+                    # Unterminated triple-quote — bail and copy the rest
+                    # as-is rather than reach into it.
+                    out.append(src[i:])
+                    i = len(src)
+                    continue
+                out.append(src[i:end + 3])
+                i = end + 3
+                continue
+            # Single-quoted string — find matching quote, respecting
+            # backslash escapes.  Stop at an unescaped newline (treat
+            # the string as unterminated and leave the rest alone).
+            j = i + 1
+            while j < len(src):
+                if src[j] == "\\" and j + 1 < len(src):
+                    j += 2
+                    continue
+                if src[j] == ch:
+                    j += 1
+                    break
+                if src[j] == "\n":
+                    break
+                j += 1
+            out.append(src[i:j])
+            i = j
+            continue
+
+        # Comment — copy until end of physical line.  Backslash inside
+        # a comment is just text, never a continuation, so we must not
+        # touch it.
+        if ch == "#":
+            j = src.find("\n", i)
+            if j == -1:
+                out.append(src[i:])
+                i = len(src)
+                continue
+            out.append(src[i:j])
+            i = j
+            continue
+
+        # Backslash + newline + optional indent at top level — collapse.
+        if ch == "\\" and i + 1 < len(src) and src[i + 1] == "\n":
+            i += 2
+            while i < len(src) and src[i] in " \t":
+                i += 1
+            out.append(" ")
+            continue
+
+        out.append(ch)
+        i += 1
+    return "".join(out)
+
+
 class CoconutXontribLoader(object):
     """Implements Coconut's _load_xontrib_."""
     loaded = False
@@ -113,6 +201,13 @@ class CoconutXontribLoader(object):
         parse_start_time = get_clock_time()
         quiet, logger.quiet = logger.quiet, True
         success = False
+        # Collapse `\<newline><indent>` line continuations before
+        # parsing — see _collapse_xonsh_line_continuations.  Without
+        # this step, source like ``echo a \<newline>b`` produces a
+        # compiled output that xonsh's host parser rejects as
+        # ``unexpected indent`` (the reindent pass intentionally
+        # indents the continuation tail).
+        code = _collapse_xonsh_line_continuations(code)
         try:
             # .strip() outside the memoization
             compiled = self.memoized_parse_xonsh(code.strip())
