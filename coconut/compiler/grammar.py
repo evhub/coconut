@@ -2780,7 +2780,7 @@ class Grammar(object):
             )
         )
         unsafe_xonsh_parser, _impl_call_ref = disable_inside(
-            single_input - end_marker,
+            file_input - end_marker,
             unsafe_impl_call_ref,
         )
         impl_call_ref <<= _impl_call_ref

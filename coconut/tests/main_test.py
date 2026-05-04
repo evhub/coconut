@@ -978,7 +978,7 @@ class TestShell(unittest.TestCase):
                     pexpect(p, "abc")
                     pexpect(p, "2")
                 p.sendline('execx("10 |> print")')
-                pexpect(p, ["subprocess mode", "IndexError"])
+                pexpect(p, "10")
             p.sendline("xontrib unload coconut")
             pexpect(p, "$")
             if (not PYPY or PY39) and PY36:
