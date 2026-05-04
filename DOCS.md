@@ -518,7 +518,7 @@ user@computer ~ @ $(ls -la) |> .splitlines() |> len
 
 Compilation always uses the same parameters as in the [Coconut Jupyter kernel](#kernel).
 
-Note that the way that Coconut integrates with `xonsh`, `@(<code>)` syntax and the `execx` command will only work with Python code, not Coconut code. Additionally, Coconut will only compile individual commands—Coconut will not touch the `.xonshrc` or any other `.xsh` files.
+Note that the way that Coconut integrates with `xonsh`, `@(<code>)` syntax and `evalx` will only work with Python code, not Coconut code. Coconut compilation is enabled for interactive commands, `.xsh` scripts, and `execx`, but not for `eval`-mode contexts.
 
 
 ## Operators
