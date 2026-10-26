@@ -396,7 +396,7 @@ class Command(object):
             elif getattr(args, "and"):
                 raise CoconutException("--and should only be used for extra source/dest pairs, not the first source/dest pair")
             elif (
-                args.run
+                (args.run and not args.interact)
                 or args.no_write
                 or args.force
                 or args.package
