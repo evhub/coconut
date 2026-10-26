@@ -913,6 +913,9 @@ class TestShell(unittest.TestCase):
     def test_pipe(self):
         call('echo ' + escape(coconut_snip) + "| coconut -s", shell=True, assert_output=True)
 
+    def test_code_interact(self):
+        call(["coconut", "-s", "-c", coconut_snip, "--interact"], assert_output=True, assert_output_only_at_end=False)
+
     def test_api(self):
         call_python(["-c", 'from coconut.api import parse; exec(parse("' + coconut_snip + '"))'], assert_output=True)
 
