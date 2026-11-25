@@ -34,6 +34,8 @@ After you've tested your changes locally, you'll want to add more permanent test
 
 ## File Layout
 
+- `.gitattributes`
+    + Tells git and GitHub how to treat Coconut's non-Python source files, e.g. `*.coco linguist-language=python` so that GitHub syntax highlights `.coco` files (and counts them) as Python. If you add a new file extension containing Python-like code (such as `.coco` or `.py_template`), you should add `diff=python` and `linguist-language=python` rules for it here.
 - `DOCS.md`
     + Markdown file containing detailed documentation on every Coconut feature. If you are adding a new feature, you should also add documentation on it to this file.
 - `FAQ.md`

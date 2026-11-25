@@ -701,6 +701,19 @@ Coconut uses pipe operators for pipeline-style function application. All the ope
 (<**?|) => None-aware keyword arg pipe backward
 ```
 
+Each pipe operator also has an in-place version formed by adding `=` at the end (`|>=`, `|*>=`, `|**>=`, `<|=`, `<*|=`, `<**|=`, `|?>=`, `|?*>=`, `|?**>=`, `<?|=`, `<*?|=`, `<**?|=`). As with all in-place operators in Python, `a <op>= b` is equivalent to `a = a <op> b`, and is a statement rather than an expression, so in-place pipes can't be used in the middle of a pipeline. Thus, forward in-place pipes reassign the piped object (`x |>= f` is `x = f(x)`), while backward in-place pipes reassign the function (`f <|= x` is `f = f(x)`), which is mostly useful for successively applying functions that return functions:
+```coconut
+x = "1"
+x |>= int  # x = int(x)
+x |>= (.+1)  # x = x + 1
+assert x == 2
+
+f = (a => b => c => a + b + c)
+f <|= 1  # f = f(1)
+f <|= 2  # f = f(2)
+assert f(3) == 6
+```
+
 The None-aware pipe operators here are equivalent to a [monadic bind](https://en.wikipedia.org/wiki/Monad_(functional_programming)) treating the object as a `Maybe` monad composed of either `None` or the given object. Thus, `x |?> f` is equivalent to `None if x is None else f(x)`. Note that only the object being piped, not the function being piped into, may be `None` for `None`-aware pipes.
 
 Additionally, some special syntax constructs are only available in pipes to enable doing as many operations as possible via pipes if so desired:
