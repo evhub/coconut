@@ -1673,6 +1673,19 @@ Coconut's `where` statement is fairly straightforward. The syntax for a `where` 
 ```
 which executes `<body>` followed by `<stmt>`, with the exception that any new variables defined in `<body>` are available _only_ in `<stmt>` (though they are only mangled, not deleted, such that e.g. lambdas can still capture them).
 
+Coconut also supports an alternative block form of `where` for assignments, which puts the result at the end:
+```
+<var> = where:
+    <body>
+    <expr>
+```
+which is equivalent to
+```
+<var> = <expr> where:
+    <body>
+```
+such that the last statement in the block must be an expression, which is assigned to `<var>`.
+
 ##### Example
 
 **Coconut:**
@@ -1680,6 +1693,12 @@ which executes `<body>` followed by `<stmt>`, with the exception that any new va
 result = a + b where:
     a = 1
     b = 2
+
+# or equivalently
+result = where:
+    a = 1
+    b = 2
+    a + b
 ```
 
 **Python:**

@@ -5543,41 +5543,10 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
         return self.wrap_passthrough(out, early=True)
 
     def block_where_stmt_handle(self, loc, tokens):
-        """Process block where statements (lhs = where: <body with last stmt as result>)."""
-        lhs_group, body_stmts = tokens
-        lhs = "".join(lhs_group)
-
-        body_list = list(body_stmts)
-        internal_assert(body_list, "block where body must not be empty")
-        *where_stmts, result_stmt = body_list
-
-        where_assigns = self.current_parsing_context("where")["assigns"]
-        internal_assert(where_assigns is not None, "missing block_where assigns")
-
-        where_init = "".join(where_stmts)
-        result_expr = result_stmt.rstrip("\n")
-        where_final = lhs + " = " + result_expr + "\n"
-
-        out = where_init + where_final
-        if not where_assigns:
-            return out
-
-        name_regexes = {
-            name: compile_regex(r"\b" + name + r"\b")
-            for name in where_assigns
-        }
-        name_replacements = {
-            name: self.get_temp_var(("where", name), loc)
-            for name in where_assigns
-        }
-
-        where_init = self.deferred_code_proc(where_init)
-        where_final = self.deferred_code_proc(where_final)
-        out = where_init + where_final
-
-        out = sub_all(out, name_regexes, name_replacements)
-
-        return self.wrap_passthrough(out, early=True)
+        """Process block where statements (<lhs> = where: <stmts> <result expr>)."""
+        lhs_tokens, body_stmts, result = tokens
+        main_stmt = "".join(lhs_tokens) + " = " + result.rstrip("\n")
+        return self.where_stmt_handle(loc, [main_stmt, body_stmts])
 
     @property
     def in_method(self):

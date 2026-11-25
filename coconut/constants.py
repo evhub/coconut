@@ -6,7 +6,7 @@
 # -----------------------------------------------------------------------------------------------------------------------
 
 """
-Authors: Evan Hubinger, Fred Buchanan, Adam Forest
+Authors: Evan Hubinger, Fred Buchanan
 License: Apache 2.0
 Description: This file contains all the global constants used across Coconut.
 """
@@ -447,7 +447,6 @@ reserved_vars = (
     "case",
     "cases",
     "where",
-    "do",
     "final",
     "addpattern",
     "then",
