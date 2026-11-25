@@ -361,12 +361,16 @@ cannot reassign type variable 'T' (use explicit '\T' syntax if intended) (line 1
     # typing.Unpack syntax: **Type -> _coconut.typing.Unpack[Type]
     assert "_coconut.typing.Unpack[int]" in parse_with_state("def f(**kwargs: **int): pass", "block")
     assert "_coconut.typing.Unpack[MyDict]" in parse_with_state("def f(**kwargs: **MyDict): pass", "block")
-    assert "_coconut.typing.Unpack[MyDict]" in parse_with_state("def f(x: **MyDict): pass", "block")
+    assert_raises(-> parse_with_state("def f(x: **MyDict): pass", "block"), CoconutParseError)
     assert "_coconut.typing.Unpack[dict[str, int]]" in parse_with_state("def f(**kwargs: **dict[str, int]): pass", "block")
     assert "_coconut.typing.Unpack[" in parse_with_state("def f(a: int, **kwargs: **MyDict): pass", "block")
     # ensure normal type annotations are not affected
     assert "Unpack" not in parse_with_state("def f(**kwargs: str): pass", "block")
     assert "Unpack" not in parse_with_state("def f(x: int): pass", "block")
+    # *args: *Ts (PEP 646) is native on 3.11+ and Unpack[Ts] otherwise
+    assert "_coconut.typing.Unpack[Ts]" in parse_with_state("def f(*args: *Ts): pass", "block")
+    assert "Unpack" not in parse_with_state("def f(*args: int): pass", "block")
+    assert_raises(-> parse_with_state("def f(x: *Ts): pass", "block"), CoconutParseError)
 
     return True
 

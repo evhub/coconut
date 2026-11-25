@@ -1005,6 +1005,9 @@ class Compiler(Grammar, pickleable_obj):
         cls.async_with_for_stmt <<= attach(cls.async_with_for_stmt_ref, cls.method("async_with_for_stmt_handle"))
         cls.unsafe_typedef_tuple <<= attach(cls.unsafe_typedef_tuple_ref, cls.method("unsafe_typedef_tuple_handle"))
         cls.unpack_typedef <<= attach(cls.unpack_typedef_ref, cls.method("unpack_typedef_handle"))
+        cls.star_unpack_typedef <<= attach(cls.star_unpack_typedef_ref, cls.method("star_unpack_typedef_handle"))
+        cls.varargs_typedef <<= attach(cls.varargs_typedef_ref, cls.method("typedef_handle"))
+        cls.kwargs_typedef <<= attach(cls.kwargs_typedef_ref, cls.method("typedef_handle"))
         cls.impl_call <<= attach(cls.impl_call_ref, cls.method("impl_call_handle"))
         cls.protocol_intersect_expr <<= attach(cls.protocol_intersect_expr_ref, cls.method("protocol_intersect_expr_handle"))
 
@@ -5245,9 +5248,17 @@ async with {iter_item} as {temp_var}:
         return "_coconut.typing.Tuple[" + tuple_items + "]"
 
     def unpack_typedef_handle(self, tokens):
-        """Handle **Type -> Unpack[Type] in type annotations."""
+        """Handle **kwargs: **Type -> Unpack[Type] in type annotations."""
         typedef, = tokens
         return "_coconut.typing.Unpack[" + typedef + "]"
+
+    def star_unpack_typedef_handle(self, tokens):
+        """Handle *args: *Type -> Unpack[Type] in type annotations on < 3.11."""
+        typedef, = tokens
+        if self.target_info >= (3, 11):
+            return "*" + typedef
+        else:
+            return "_coconut.typing.Unpack[" + typedef + "]"
 
     def term_handle(self, tokens):
         """Handle terms seperated by mul-like operators."""

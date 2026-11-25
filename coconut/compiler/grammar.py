@@ -1071,6 +1071,9 @@ class Grammar(object):
         typedef_ellipsis = Forward()
         typedef_op_item = Forward()
         unpack_typedef = Forward()
+        star_unpack_typedef = Forward()
+        varargs_typedef = Forward()
+        kwargs_typedef = Forward()
 
         expr_lambdef = Forward()
         stmt_lambdef = Forward()
@@ -1214,10 +1217,14 @@ class Grammar(object):
         # we include (var)arg_comma to ensure the pattern matches the whole arg
         arg_comma = comma | fixto(FollowedBy(rparen), "")
         setarg_comma = arg_comma | fixto(FollowedBy(colon), "")
+        typedef_ref = setname + colon.suppress() + typedef_test + arg_comma
+        # *args: *Ts (PEP 646) and **kwargs: **TD (PEP 692)
+        star_unpack_typedef_ref = star.suppress() + typedef_test
+        varargs_typedef_ref = setname + colon.suppress() + (star_unpack_typedef | typedef_test) + arg_comma
         unpack_typedef_ref = dubstar.suppress() + typedef_test
-        typedef_ref = setname + colon.suppress() + (unpack_typedef | typedef_test) + arg_comma
+        kwargs_typedef_ref = setname + colon.suppress() + (unpack_typedef | typedef_test) + arg_comma
         default = condense(equals + test)
-        unsafe_typedef_default_ref = setname + colon.suppress() + (unpack_typedef | typedef_test) + Optional(default)
+        unsafe_typedef_default_ref = setname + colon.suppress() + typedef_test + Optional(default)
         typedef_default_ref = unsafe_typedef_default_ref + arg_comma
         tfpdef = condense(setname + arg_comma) | typedef
         tfpdef_default = condense(setname + Optional(default) + arg_comma) | typedef_default
@@ -1246,7 +1253,8 @@ class Grammar(object):
                     condense(
                         # everything here must end with arg_comma
                         tfpdef_default
-                        | (star | dubstar) + tfpdef
+                        | star + (condense(setname + arg_comma) | varargs_typedef)
+                        | dubstar + (condense(setname + arg_comma) | kwargs_typedef)
                         | star_sep_arg
                         | slash_sep_arg
                     )

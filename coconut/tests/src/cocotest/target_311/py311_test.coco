@@ -9,4 +9,14 @@ def py311_test() -> bool:
     assert repr(got_err) == repr(multi_err), (got_err, multi_err)
     assert [1, 2, 3][x := 1] == 2
     assert x == 1
+
+    # *args: *Ts (PEP 646) and **kwargs: **TD (PEP 692)
+    import typing
+    Ts = typing.TypeVarTuple("Ts")
+    def variadic(*args: *Ts) -> tuple[*Ts] = args
+    assert variadic(1, "a") == (1, "a")
+    class KW(typing.TypedDict):
+        a: int
+    def kwfunc(**kwargs: **KW) -> int = kwargs["a"]
+    assert kwfunc(a=1) == 1
     return True

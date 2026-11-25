@@ -2070,6 +2070,15 @@ Additionally, many of Coconut's [operator functions](#operator-functions) will c
 
 _Note: The transformation to `Union` is not done on Python 3.10 as Python 3.10 has native [PEP 604](https://www.python.org/dev/peps/pep-0604) support._
 
+Coconut also supports special syntax for annotating variadic arguments with [`typing.Unpack`](https://docs.python.org/3/library/typing.html#typing.Unpack):
+```coconut
+def f(*args: *<TypeVarTuple>)
+    => def f(*args: typing.Unpack[<TypeVarTuple>])
+def f(**kwargs: **<TypedDict>)
+    => def f(**kwargs: typing.Unpack[<TypedDict>])
+```
+The first form is [PEP 646](https://peps.python.org/pep-0646/) syntax, which Coconut supports on all targets (and compiles to native syntax on `--target 3.11` and above), while the second is used to type `**kwargs` with a `TypedDict` as in [PEP 692](https://peps.python.org/pep-0692/).
+
 To use these transformations in a [type alias](https://peps.python.org/pep-0484/#type-aliases), use the syntax
 ```
 type <name> = <type>
