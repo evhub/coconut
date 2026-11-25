@@ -2,7 +2,8 @@ name: Coconut Test Suite
 on: [push]
 jobs:
   build:
-    runs-on: ubuntu-latest
+    # EOL Pythons have to be built from source, which fails on newer Ubuntus (e.g. missing lzma-dev on 26.04)
+    runs-on: ${{ contains(fromJSON('["2.7", "3.7", "3.8", "3.9"]'), matrix.python-version) && 'ubuntu-24.04' || 'ubuntu-latest' }}
     strategy:
       matrix:
         python-version:
@@ -15,6 +16,7 @@ jobs:
           - '3.12'
           - '3.13'
           - '3.14'
+          - '3.15'
           - 'pypy-2.7'
           - 'pypy-3.9'
           - 'pypy-3.10'
