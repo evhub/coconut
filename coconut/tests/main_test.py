@@ -1001,6 +1001,22 @@ class TestShell(unittest.TestCase):
                 expect_retcode=0 if not WINDOWS else None,
             )
 
+        def test_kernel_run_cell_kwargs(self):
+            # newer ipykernels pass extra kwargs (cell_id, cell_meta) that older IPythons don't accept (#908)
+            call_python(
+                ["-c", "\n".join((
+                    "from coconut.icoconut.root import CoconutShell, filter_kwargs_for",
+                    "def old_run_cell(self, raw_cell, store_history=False, silent=False, shell_futures=True, cell_id=None): pass",
+                    "assert filter_kwargs_for(old_run_cell, dict(cell_id=1, cell_meta=2)) == dict(cell_id=1)",
+                    "assert filter_kwargs_for(lambda **kwargs: None, dict(cell_id=1, cell_meta=2)) == dict(cell_id=1, cell_meta=2)",
+                    "res = CoconutShell.instance().run_cell('x = 1 |> (.+1)', cell_id='abc', cell_meta=dict(cellId='abc'))",
+                    "assert res.success, res",
+                    "assert CoconutShell.instance().user_ns['x'] == 2",
+                    "print('<success>')",
+                ))],
+                assert_output="<success>",
+            )
+
         def test_kernel_installation(self):
             assert icoconut_custom_kernel_name in list_kernel_names()
             call(["coconut", "--jupyter"], assert_output=kernel_installation_msg)

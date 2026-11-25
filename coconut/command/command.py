@@ -6,7 +6,7 @@
 # -----------------------------------------------------------------------------------------------------------------------
 
 """
-Authors: Evan Hubinger, Fred Buchanan, Noah Lipsyc, Ishaan Verma
+Authors: Evan Hubinger, Fred Buchanan, Noah Lipsyc, Ishaan Verma, Claude
 License: Apache 2.0
 Description: The Coconut command-line utility.
 """
@@ -54,6 +54,7 @@ from coconut.constants import (
     icoconut_default_kernel_names,
     icoconut_default_kernel_dirs,
     icoconut_custom_kernel_name,
+    icoconut_custom_kernel_dir,
     icoconut_old_kernel_names,
     exit_chars,
     verbose_mypy_args,
@@ -1116,10 +1117,14 @@ class Command(object):
         install_args = args if just_install else []
 
         # always update the custom kernel, but only reinstall it if it isn't already there or just installing
-        custom_kernel_dir = install_custom_kernel(logger=logger)
-        if custom_kernel_dir is not None and (icoconut_custom_kernel_name not in kernel_list or just_install):
+        custom_kernel_installed = install_custom_kernel(logger=logger) is not None
+        if custom_kernel_installed and (icoconut_custom_kernel_name not in kernel_list or just_install):
             logger.show_sig("Installing Jupyter kernel {name!r}...".format(name=icoconut_custom_kernel_name))
-            if self.install_jupyter_kernel(jupyter, custom_kernel_dir, install_args):
+            # we install from icoconut_custom_kernel_dir rather than the directory returned by
+            #  install_custom_kernel since the latter might be the same as the destination
+            #  jupyter installs to (e.g. when sys.exec_prefix is /usr/local), in which case
+            #  jupyter would delete the kernel before copying it
+            if self.install_jupyter_kernel(jupyter, icoconut_custom_kernel_dir, install_args):
                 newly_installed_kernels.append(icoconut_custom_kernel_name)
 
         if just_install:

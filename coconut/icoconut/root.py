@@ -6,7 +6,7 @@
 # -----------------------------------------------------------------------------------------------------------------------
 
 """
-Author: Evan Hubinger
+Authors: Evan Hubinger, Claude
 License: Apache 2.0
 Description: The Coconut IPython kernel.
 """
@@ -22,6 +22,7 @@ from coconut.root import *  # NOQA
 import os
 import sys
 import logging
+import inspect
 
 try:
     import asyncio
@@ -52,7 +53,7 @@ from coconut.compiler.util import should_indent, paren_change, get_comment
 from coconut.command.util import Runner
 
 try:
-    from IPython.core.interactiveshell import InteractiveShellABC
+    from IPython.core.interactiveshell import InteractiveShell, InteractiveShellABC
     from IPython.core.compilerop import CachingCompiler
     from IPython.terminal.embed import InteractiveShellEmbed
     from ipykernel.ipkernel import IPythonKernel
@@ -108,6 +109,33 @@ def syntaxerr_memoized_parse_block(code):
     except CoconutException as err:
         syntax_err = err.syntax_err()
     raise syntax_err
+
+
+def filter_kwargs_for(func, kwargs):
+    """Remove any kwargs that func can't accept.
+
+    ipykernel decides whether to pass new keyword arguments (e.g. cell_id, cell_meta)
+    to run_cell by inspecting our signature, so we need to accept **kwargs, but then
+    only forward the ones that the underlying IPython method actually supports."""
+    if not kwargs:
+        return kwargs
+    try:
+        if hasattr(inspect, "signature"):
+            params = inspect.signature(func).parameters
+            if any(p.kind == p.VAR_KEYWORD for p in params.values()):
+                return kwargs
+            accepted = set(
+                name for name, p in params.items()
+                if p.kind in (p.POSITIONAL_OR_KEYWORD, p.KEYWORD_ONLY)
+            )
+        else:
+            argspec = inspect.getargspec(func)
+            if argspec.keywords is not None:
+                return kwargs
+            accepted = set(argspec.args)
+    except (TypeError, ValueError):
+        return kwargs
+    return dict((k, v) for k, v in kwargs.items() if k in accepted)
 
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -256,17 +284,20 @@ def init_user_ns(self):
     RUNNER.update_vars(self.user_ns_hidden)
 
 @override
-def run_cell(self, raw_cell, store_history=False, silent=False, shell_futures=True, cell_id=None, **kwargs):
+def run_cell(self, raw_cell, store_history=False, silent=False, shell_futures=True, **kwargs):
     """Version of run_cell that always uses shell_futures."""
-    # cell_id is just ignored because we don't use it but we have to have it because
-    #  the presence of **kwargs means ipykernel.kernelbase._accepts_cell_id thinks we do
+    # the presence of **kwargs means ipykernel thinks we accept new arguments like
+    #  cell_id and cell_meta, so we have to filter out any that IPython doesn't support
+    #  (we check InteractiveShell since ZMQInteractiveShell.run_cell just forwards *args, **kwargs)
+    kwargs = filter_kwargs_for(InteractiveShell.run_cell, kwargs)
     return super({cls}, self).run_cell(raw_cell, store_history, silent, shell_futures=True, **kwargs)
 
-if asyncio is not None:
+if asyncio is not None and hasattr(InteractiveShell, "run_cell_async"):
     @override
-    {coroutine}def run_cell_async(self, raw_cell, store_history=False, silent=False, shell_futures=True, cell_id=None, **kwargs):
+    {coroutine}def run_cell_async(self, raw_cell, store_history=False, silent=False, shell_futures=True, **kwargs):
         """Version of run_cell_async that always uses shell_futures."""
         # same as above
+        kwargs = filter_kwargs_for(InteractiveShell.run_cell_async, kwargs)
         return super({cls}, self).run_cell_async(raw_cell, store_history, silent, shell_futures=True, **kwargs)
 
 @override
