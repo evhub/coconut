@@ -276,7 +276,7 @@ def primary_test_2() -> bool:
     assert not (is not)(False, False)
     assert (True is not .)(1)
     assert (. is not True)(1)
-    a_dict = {}
+    a_dict: dict = {}
     a_dict[1] = 1
     a_dict[3] = 2
     a_dict[2] = 3

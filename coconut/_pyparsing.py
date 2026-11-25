@@ -6,7 +6,7 @@
 # -----------------------------------------------------------------------------------------------------------------------
 
 """
-Author: Evan Hubinger
+Authors: Evan Hubinger, Claude
 License: Apache 2.0
 Description: Wrapper around PyParsing that selects the best available implementation.
 """
@@ -248,7 +248,7 @@ USE_COMPUTATION_GRAPH = get_bool_env_var(
         #  it breaks some features and balloons the memory footprint
         # and not PYPY
     ),
-)
+)  # type: bool
 
 SUPPORTS_ADAPTIVE = (
     USE_COMPUTATION_GRAPH
