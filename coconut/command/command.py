@@ -25,6 +25,8 @@ import time
 import shutil
 import random
 import sysconfig
+import json
+import subprocess
 from contextlib import contextmanager
 from subprocess import CalledProcessError
 
@@ -110,6 +112,7 @@ from coconut.command.util import (
 from coconut.compiler.util import (
     should_indent,
     get_target_info_smart,
+    extract_line_num_from_comment,
 )
 from coconut.compiler.header import gethash
 from coconut.command.cli import arguments, cli_version
@@ -135,6 +138,7 @@ class Command(object):
     stack_size = 0  # corresponds to --stack-size flag
     use_cache = USE_CACHE  # corresponds to --no-cache flag
     fail_fast = False  # corresponds to --fail-fast flag
+    dest_to_source = {}  # maps compiled file paths to their Coconut source paths
 
     prompt = Prompt()
 
@@ -578,6 +582,8 @@ class Command(object):
                         "found destination path with " + dest_ext + " extension; aborting compilation",
                         extra="pass --force to override",
                     )
+        if destpath is not None:
+            self.dest_to_source[fixpath(destpath)] = filepath
         self.compile(filepath, destpath, package, force=force, **kwargs)
         return destpath
 
@@ -1011,14 +1017,79 @@ class Command(object):
                 logger.warn("--pyright only works on files, not code snippets or at the interpreter (use --mypy instead)")
             if paths:
                 try:
-                    from pyright import main
+                    from pyright import run as pyright_run
                 except ImportError:
                     raise CoconutException(
                         "coconut --pyright requires Pyright",
                         extra="run '{python} -m pip install coconut[pyright]' to fix".format(python=sys.executable),
                     )
-                args = ["--project", pyright_config_file, "--pythonversion", self.type_checking_version] + list(paths)
-                self.register_exit_code(main(args), errmsg="Pyright error")
+                args = ["--project", pyright_config_file, "--pythonversion", self.type_checking_version, "--outputjson"] + list(paths)
+                result = pyright_run(*args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+                logger.log("[Pyright:out]", result.stdout)
+                try:
+                    diagnostics = json.loads(result.stdout)["generalDiagnostics"]
+                except (ValueError, KeyError, TypeError):
+                    # if we can't parse pyright's output, just show it as-is
+                    logger.printerr((result.stdout or "") + (result.stderr or ""))
+                    self.register_exit_code(result.returncode, errmsg="Pyright error")
+                else:
+                    compiled_lines_cache = {}
+                    for diagnostic in diagnostics:
+                        msg = self.format_type_checking_diagnostic(diagnostic, compiled_lines_cache)
+                        if diagnostic.get("severity") == "error":
+                            logger.printerr(msg)
+                            self.register_exit_code(errmsg="Pyright error")
+                        else:
+                            logger.print(msg)
+
+    def format_type_checking_diagnostic(self, diagnostic, compiled_lines_cache):
+        """Format a pyright JSON diagnostic, pointing to the Coconut source when possible."""
+        compiled_path = diagnostic.get("file", "")
+        start = diagnostic.get("range", {}).get("start", {})
+        line_ind = start.get("line", 0)
+        col_ind = start.get("character", 0)
+        severity = diagnostic.get("severity", "error")
+        message = diagnostic.get("message", "").rstrip()
+        rule = diagnostic.get("rule")
+        if rule:
+            message += " [" + rule + "]"
+
+        # look up the Coconut line number from the line number comment on the compiled line
+        source_path = self.dest_to_source.get(fixpath(compiled_path)) if compiled_path else None
+        coconut_ln = None
+        if source_path is not None:
+            if compiled_path not in compiled_lines_cache:
+                try:
+                    with univ_open(compiled_path, "r") as compiled_file:
+                        compiled_lines_cache[compiled_path] = compiled_file.read().splitlines()
+                except IOError:
+                    compiled_lines_cache[compiled_path] = []
+            compiled_lines = compiled_lines_cache[compiled_path]
+            if line_ind < len(compiled_lines):
+                coconut_ln = extract_line_num_from_comment(compiled_lines[line_ind])
+
+        if coconut_ln is None:
+            return "{path}:{ln}:{col}: {severity}: {message}".format(
+                path=showpath(compiled_path),
+                ln=line_ind + 1,
+                col=col_ind + 1,
+                severity=severity,
+                message=message,
+            )
+        msg = "{path}:{ln}: {severity}: {message}".format(
+            path=showpath(source_path),
+            ln=coconut_ln,
+            severity=severity,
+            message=message,
+        )
+        try:
+            with univ_open(source_path, "r") as source_file:
+                source_lines = source_file.read().splitlines()
+        except IOError:
+            source_lines = []
+        if 1 <= coconut_ln <= len(source_lines):
+            msg += "\n    " + source_lines[coconut_ln - 1].strip()
+        return msg
 
     def run_silent_cmd(self, *args):
         """Same as run_cmd$(show_output=logger.verbose)."""

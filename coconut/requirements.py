@@ -253,6 +253,7 @@ extras.update({
         extras["numpy"] if NUMPY else [],
         extras["jupyter"] if IPY else [],
         extras["mypy"] if MYPY else [],
+        extras["pyright"] if MYPY else [],
         extras["xonsh"] if XONSH else [],
     ),
 })

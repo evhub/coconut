@@ -461,7 +461,7 @@ To distribute your code with checkable type annotations, you'll need to include 
 
 ##### Pyright Integration
 
-Though not as well-supported as MyPy, Coconut also has built-in [Pyright](https://github.com/microsoft/pyright) support. Simply pass `--pyright` to automatically run Pyright on all compiled code. To adjust Pyright options, rather than pass them at the command-line, add your settings to the file `~/.coconut_pyrightconfig.json` (automatically generated the first time `coconut --pyright` is run).
+Coconut also has built-in [Pyright](https://github.com/microsoft/pyright) support. Simply pass `--pyright` to automatically run Pyright on all compiled code. Pyright errors are reported with the file name and line number of the original Coconut source (along with the offending line of Coconut code) rather than the compiled Python. To adjust Pyright options, rather than pass them at the command-line, add your settings to the file `~/.coconut_pyrightconfig.json` (automatically generated the first time `coconut --pyright` is run).
 
 ##### Syntax
 

@@ -24,6 +24,7 @@ import sys
 import os
 import shutil
 import functools
+import tempfile
 from contextlib import contextmanager
 if sys.version_info >= (2, 7):
     import importlib
@@ -909,6 +910,23 @@ class TestShell(unittest.TestCase):
                 check_errors=False,
                 check_mypy=False,
             )
+
+        def test_pyright(self):
+            pyright_dir = tempfile.mkdtemp()
+            try:
+                pyright_coco = os.path.join(pyright_dir, "pyright_test.coco")
+                with open(pyright_coco, "w") as pyright_file:
+                    pyright_file.write("def f(x: int) -> int = x + 1\n\ny: str = f(1)\n")
+                # errors should point to the Coconut source line rather than the compiled line
+                call(
+                    ["coconut", pyright_coco, "--pyright"],
+                    assert_output=("pyright_test.coco:3: error:", "y: str = f(1)"),
+                    assert_output_only_at_end=False,
+                    check_errors=False,
+                    expect_retcode=1,
+                )
+            finally:
+                shutil.rmtree(pyright_dir)
 
     def test_pipe(self):
         call('echo ' + escape(coconut_snip) + "| coconut -s", shell=True, assert_output=True)

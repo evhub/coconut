@@ -96,8 +96,6 @@ MYPY = (
     PY39
     and not WINDOWS
     and not PYPY
-    # TODO: disabled until MyPy supports PEP 695
-    and not PY312
 )
 XONSH = (
     PY35
