@@ -1013,6 +1013,7 @@ class Compiler(Grammar, pickleable_obj):
         cls.unsafe_typedef_tuple <<= attach(cls.unsafe_typedef_tuple_ref, cls.method("unsafe_typedef_tuple_handle"))
         cls.unpack_typedef <<= attach(cls.unpack_typedef_ref, cls.method("unpack_typedef_handle"))
         cls.star_unpack_typedef <<= attach(cls.star_unpack_typedef_ref, cls.method("star_unpack_typedef_handle"))
+        cls.star_subscript <<= attach(cls.star_subscript_ref, cls.method("star_unpack_typedef_handle"))
         cls.varargs_typedef <<= attach(cls.varargs_typedef_ref, cls.method("typedef_handle"))
         cls.kwargs_typedef <<= attach(cls.kwargs_typedef_ref, cls.method("typedef_handle"))
         cls.impl_call <<= attach(cls.impl_call_ref, cls.method("impl_call_handle"))
@@ -5260,7 +5261,7 @@ async with {iter_item} as {temp_var}:
         return "_coconut.typing.Unpack[" + typedef + "]"
 
     def star_unpack_typedef_handle(self, tokens):
-        """Handle *args: *Type -> Unpack[Type] in type annotations on < 3.11."""
+        """Handle *Type -> Unpack[Type] in type annotations (*args: *Ts and X[*Ts]) on < 3.11."""
         typedef, = tokens
         if self.target_info >= (3, 11):
             return "*" + typedef

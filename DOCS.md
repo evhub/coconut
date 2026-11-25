@@ -2109,7 +2109,7 @@ def f(*args: *<TypeVarTuple>)
 def f(**kwargs: **<TypedDict>)
     => def f(**kwargs: typing.Unpack[<TypedDict>])
 ```
-The first form is [PEP 646](https://peps.python.org/pep-0646/) syntax, which Coconut supports on all targets (and compiles to native syntax on `--target 3.11` and above), while the second is used to type `**kwargs` with a `TypedDict` as in [PEP 692](https://peps.python.org/pep-0692/).
+The first form is [PEP 646](https://peps.python.org/pep-0646/) syntax, which Coconut supports on all targets (and compiles to native syntax on `--target 3.11` and above), while the second is used to type `**kwargs` with a `TypedDict` as in [PEP 692](https://peps.python.org/pep-0692/). Similarly, starred `TypeVarTuple`s in subscripts inside of type annotations or class bases (e.g. `class Array(Generic[*Shape])` or `def f(x: tuple[int, *Shape])`) are compiled to `typing.Unpack[Shape]` on targets below 3.11.
 
 To use these transformations in a [type alias](https://peps.python.org/pep-0484/#type-aliases), use the syntax
 ```

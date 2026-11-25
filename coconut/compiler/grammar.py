@@ -1071,6 +1071,9 @@ class Grammar(object):
         typedef_ellipsis = Forward()
         typedef_op_item = Forward()
         unpack_typedef = Forward()
+        star_subscript = Forward()
+        typedef_star_subscript = Forward()
+        class_star_subscript = Forward()
         star_unpack_typedef = Forward()
         varargs_typedef = Forward()
         kwargs_typedef = Forward()
@@ -1329,8 +1332,12 @@ class Grammar(object):
         subscript_star_ref = star
         slicetest = Optional(test_no_chain)
         sliceop = condense(indexing_colon + slicetest)
+        # *Ts in subscripts in type annotations and class bases (compiled to Unpack[Ts] on < 3.11)
+        star_subscript_ref = star.suppress() + new_namedexpr_test
         subscript = condense(
             slicetest + sliceop + Optional(sliceop)
+            | typedef_star_subscript
+            | class_star_subscript
             | Optional(subscript_star) + new_namedexpr_test
         )
         subscriptlist = itemlist(subscript, comma, suppress_trailing=False)
@@ -1908,7 +1915,7 @@ class Grammar(object):
 
         unsafe_typedef_op_item = attach(base_op_item, typedef_op_item_handle)
 
-        unsafe_typedef_test, typedef_callable, _typedef_trailer, _typedef_or_expr, _typedef_tuple, _typedef_ellipsis, _typedef_op_item = disable_outside(
+        unsafe_typedef_test, typedef_callable, _typedef_trailer, _typedef_or_expr, _typedef_tuple, _typedef_ellipsis, _typedef_op_item, _typedef_star_subscript = disable_outside(
             test,
             unsafe_typedef_callable,
             unsafe_typedef_trailer,
@@ -1916,7 +1923,9 @@ class Grammar(object):
             unsafe_typedef_tuple,
             unsafe_typedef_ellipsis,
             unsafe_typedef_op_item,
+            star_subscript,
         )
+        typedef_star_subscript <<= _typedef_star_subscript
         typedef_trailer <<= _typedef_trailer
         typedef_or_expr <<= _typedef_or_expr
         typedef_tuple <<= _typedef_tuple
@@ -1961,8 +1970,13 @@ class Grammar(object):
 
         classdef = Forward()
         decorators = Forward()
+        class_function_call_tokens, _class_star_subscript = disable_outside(
+            function_call_tokens,
+            star_subscript,
+        )
+        class_star_subscript <<= _class_star_subscript
         classlist = Group(
-            Optional(function_call_tokens)
+            Optional(class_function_call_tokens)
             + ~equals,  # don't match class destructuring assignment
         )
         class_suite = suite | attach(newline, class_suite_handle)

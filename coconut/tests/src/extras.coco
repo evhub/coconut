@@ -730,6 +730,10 @@ line 6''')
     assert "@" not in parse("async def f(x): yield x")
 
     setup(line_numbers=False, target="3.8")
+    # *Ts in subscripts in types and class bases compiles to Unpack (#662)
+    assert "Generic[_coconut.typing.Unpack[Shape]]" in parse("class Array(Generic[*Shape]): pass")
+    assert "tuple[int, _coconut.typing.Unpack[Shape]]" in parse("def f(x: tuple[int, *Shape]) -> None: pass")
+    assert_raises(-> parse("a[*b]"), CoconutTargetError)
     assert parse("(a := b)")
     assert parse("print(a := 1, b := 2)")
     assert parse("def f(a, /, b) = a, b")
@@ -737,6 +741,7 @@ line 6''')
 
     setup(line_numbers=False, target="3.11")
     assert parse("a[x, *y]")
+    assert "Generic[*Shape]" in parse("class Array(Generic[*Shape]): pass")
 
     setup(line_numbers=False, target="3.12")
     assert parse("type Num = int | float", "lenient").strip() == """
