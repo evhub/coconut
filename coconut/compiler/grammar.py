@@ -2096,6 +2096,7 @@ class Grammar(object):
         )
         matchlist_data_item = (
             matchlist_anon_named_tuple_item
+            | dubstar + match
             | Optional(star) + match
         )
         matchlist_data = Group(Optional(tokenlist(Group(matchlist_data_item), comma)))

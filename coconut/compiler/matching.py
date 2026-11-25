@@ -6,7 +6,7 @@
 # -----------------------------------------------------------------------------------------------------------------------
 
 """
-Author: Evan Hubinger
+Authors: Evan Hubinger, Claude
 License: Apache 2.0
 Description: Handles Coconut pattern-matching.
 """
@@ -1061,11 +1061,14 @@ if {assign_to} is _coconut_sentinel:
                 self.add_check(const + " in " + item)
 
     def split_data_or_class_matches(self, matches):
-        """Split data/class match tokens into pos_matches, name_matches, star_match."""
+        """Split data/class match tokens into pos_matches, name_matches, star_match, dubstar_match."""
         pos_matches = []
         name_matches = {}
         star_match = None
+        dubstar_match = None
         for match_arg in matches:
+            if dubstar_match is not None:
+                raise CoconutDeferredSyntaxError("double-starred arg must come last in data/class match", self.loc)
             # positional arg
             if len(match_arg) == 1:
                 match, = match_arg
@@ -1082,6 +1085,12 @@ if {assign_to} is _coconut_sentinel:
                 if name_matches:
                     raise CoconutDeferredSyntaxError("both starred arg and keyword arg in data/class match", self.loc)
                 star_match = match
+            # double-starred arg
+            elif len(match_arg) == 2 and match_arg[0] == "**":
+                _, match = match_arg
+                if star_match is not None:
+                    raise CoconutDeferredSyntaxError("both starred arg and double-starred arg in data/class match", self.loc)
+                dubstar_match = match
             # keyword arg
             else:
                 internal_assert(match_arg[1] == "=", "invalid keyword data/class match arg tokens", match_arg)
@@ -1107,7 +1116,28 @@ if {assign_to} is _coconut_sentinel:
                     raise CoconutDeferredSyntaxError("duplicate keyword arg {name!r} in data/class match".format(name=name), self.loc)
                 name_matches[name] = (match, strict)
 
-        return pos_matches, name_matches, star_match
+        return pos_matches, name_matches, star_match, dubstar_match
+
+    def match_rest_names(self, dubstar_match, item, match_args, num_pos_matches, name_matches):
+        """Match a double-starred data/class pattern against a dict of all the remaining match_args attributes."""
+        rest_var = self.get_temp_var()
+        attr_var = self.get_temp_var()
+        self.add_def(
+            "{rest_var} = _coconut.dict(({attr_var}, _coconut.getattr({item}, {attr_var})) for {attr_var} in {match_args}[{num_pos_matches}:]{name_filter}) {type_ignore}".format(
+                rest_var=rest_var,
+                attr_var=attr_var,
+                item=item,
+                match_args=match_args,
+                num_pos_matches=num_pos_matches,
+                name_filter=(
+                    " if " + attr_var + " not in " + tuple_str_of(name_matches, add_quotes=True)
+                    if name_matches else ""
+                ),
+                type_ignore=self.comp.type_ignore_comment(),
+            )
+        )
+        with self.down_a_level():
+            self.match(dubstar_match, rest_var)
 
     def match_class_attr(self, match, attr, item):
         """Match an attribute for a class match where attr is an expression that evaluates to the attribute name."""
@@ -1128,7 +1158,7 @@ if {assign_to} is _coconut_sentinel:
     def match_class(self, tokens, item):
         """Matches a class PEP-622-style."""
         cls_name, matches = tokens
-        pos_matches, name_matches, star_match = self.split_data_or_class_matches(matches)
+        pos_matches, name_matches, star_match, dubstar_match = self.split_data_or_class_matches(matches)
 
         self.add_check("_coconut.isinstance(" + item + ", " + cls_name + ")")
 
@@ -1198,10 +1228,20 @@ if _coconut.len({match_args_var}) < {num_pos_matches}:
         # handle keyword args
         self.match_class_names(name_matches, item)
 
+        # handle double-starred arg
+        if dubstar_match is not None:
+            self.match_rest_names(
+                dubstar_match,
+                item,
+                "_coconut.getattr(" + cls_name + ", '__match_args__', ())",
+                len(pos_matches),
+                name_matches,
+            )
+
     def match_data(self, tokens, item):
         """Matches a data type."""
         cls_name, matches = tokens
-        pos_matches, name_matches, star_match = self.split_data_or_class_matches(matches)
+        pos_matches, name_matches, star_match, dubstar_match = self.split_data_or_class_matches(matches)
 
         self.add_check("_coconut.isinstance(" + item + ", " + cls_name + ")")
 
@@ -1222,8 +1262,18 @@ if _coconut.len({match_args_var}) < {num_pos_matches}:
         # handle keyword args
         self.match_class_names(name_matches, item)
 
+        # handle double-starred arg
+        if dubstar_match is not None:
+            self.match_rest_names(
+                dubstar_match,
+                item,
+                "_coconut.getattr(" + item + ", '__match_args__', ())",
+                len(pos_matches),
+                name_matches,
+            )
+
         # handle data types with defaults for some arguments
-        if star_match is None:
+        elif star_match is None:
             # use a def so we can type ignore it
             temp_var = self.get_temp_var()
             self.add_def(
@@ -1252,8 +1302,8 @@ if _coconut.len({match_args_var}) < {num_pos_matches}:
 
     def match_anon_named_tuple(self, tokens, item):
         """Matches an anonymous named tuple pattern."""
-        pos_matches, name_matches, star_match = self.split_data_or_class_matches(tokens)
-        internal_assert(not pos_matches and not star_match, "got invalid pos/star matches in anon named tuple pattern", (pos_matches, star_match))
+        pos_matches, name_matches, star_match, dubstar_match = self.split_data_or_class_matches(tokens)
+        internal_assert(not pos_matches and not star_match and not dubstar_match, "got invalid pos/star matches in anon named tuple pattern", (pos_matches, star_match, dubstar_match))
         self.add_check("_coconut.isinstance(" + item + ", tuple)")
         self.add_check("_coconut.len({item}) == {expected_len}".format(
             item=item,

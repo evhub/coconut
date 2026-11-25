@@ -758,4 +758,39 @@ def primary_test_2() -> bool:
     lazy from coconut_nonexistent_test_module4.submodule import missing as lazy_missing2
     assert_raises((def => lazy_missing2.attr = 1), ImportError)
 
+
+    # double-starred data/class patterns (issue #899)
+    data DubStarT(a: int, b: int)
+    dst = DubStarT(1, 2)
+    match DubStarT(a=dst_a, **_) in dst:
+        assert dst_a == 1
+    else:
+        assert False
+    match DubStarT(dst_a, **dst_rest) in dst:
+        assert dst_a == 1
+        assert dst_rest == {"b": 2}
+    else:
+        assert False
+    match DubStarT(**dst_rest) in dst:
+        assert dst_rest == {"a": 1, "b": 2}
+    else:
+        assert False
+    match DubStarT(1, 2, **dst_rest) in dst:
+        assert dst_rest == {}
+    else:
+        assert False
+    match DubStarT(a=1, **{"b": 3}) in dst:
+        assert False
+    match DubStarT(a=_) in dst:
+        assert False
+    class DubStarC:
+        __match_args__ = ("p", "q")
+        def __init__(self):
+            self.p, self.q = 10, 20
+    match class DubStarC(dsc_p, **dsc_rest) in DubStarC():
+        assert dsc_p == 10
+        assert dsc_rest == {"q": 20}
+    else:
+        assert False
+
     return True
