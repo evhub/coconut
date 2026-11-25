@@ -6,7 +6,7 @@
 # -----------------------------------------------------------------------------------------------------------------------
 
 """
-Author: Evan Hubinger
+Authors: Evan Hubinger, Claude
 License: Apache 2.0
 Description: Defines the Coconut grammar.
 """
@@ -27,6 +27,7 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 from coconut.root import *  # NOQA
 
+import re
 from collections import defaultdict
 from contextlib import contextmanager
 from coconut.root import _coconut_partial as partial
@@ -63,6 +64,7 @@ from coconut.terminal import (
     internal_assert,
 )
 from coconut.constants import (
+    non_syntactic_newline,
     openindent,
     closeindent,
     strwrapper,
@@ -265,6 +267,19 @@ def add_bracks_handle(tokens):
     """Add brackets."""
     item, = tokens
     return "[" + item + "]"
+
+
+collapse_non_syntactic_newlines_regex = re.compile(re.escape(non_syntactic_newline) + r"[ \t]*")
+
+
+def collapse_non_syntactic_newlines_handle(tokens):
+    """Collapse line continuations in raw text into single spaces.
+
+    Raw text (e.g. xonsh shell commands) is passed through verbatim, so any line continuations in it,
+    which are represented by non_syntactic_newline, need to be collapsed, otherwise they'd be expanded
+    back out into (indented) separate lines without their original backslashes."""
+    item, = tokens
+    return collapse_non_syntactic_newlines_regex.sub(" ", item)
 
 
 def strip_parens_handle(tokens):
@@ -2768,16 +2783,22 @@ class Grammar(object):
         brackets = originalTextFor(nestedExpr("[", "]", ignoreExpr=None))
         braces = originalTextFor(nestedExpr("{", "}", ignoreExpr=None))
 
-        unsafe_anything_stmt = originalTextFor(regex_item("[^\n]+\n+"))
-        unsafe_xonsh_command = originalTextFor(
-            (Optional(at) + dollar | bang)
-            + ~(lparen + rparen | lbrack + rbrack | lbrace + rbrace)
-            + any_of(
-                parens,
-                brackets,
-                braces,
-                unsafe_name,
-            )
+        unsafe_anything_stmt = attach(
+            originalTextFor(regex_item("[^\n]+\n+")),
+            collapse_non_syntactic_newlines_handle,
+        )
+        unsafe_xonsh_command = attach(
+            originalTextFor(
+                (Optional(at) + dollar | bang)
+                + ~(lparen + rparen | lbrack + rbrack | lbrace + rbrace)
+                + any_of(
+                    parens,
+                    brackets,
+                    braces,
+                    unsafe_name,
+                )
+            ),
+            collapse_non_syntactic_newlines_handle,
         )
         unsafe_xonsh_parser, _impl_call_ref = disable_inside(
             single_input - end_marker,
