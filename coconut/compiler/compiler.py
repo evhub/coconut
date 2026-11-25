@@ -6,7 +6,7 @@
 # -----------------------------------------------------------------------------------------------------------------------
 
 """
-Author: Evan Hubinger
+Authors: Evan Hubinger, Claude
 License: Apache 2.0
 Description: Compiles Coconut code into Python code.
 """
@@ -4092,7 +4092,7 @@ else:
                     imp_name=imp_as if imp_as is not None else imp,
                     imp_lookup=".".join([existing_imp] + module_path[1:] + ([imp] if imp_from is not None else [])),
                 )
-        if lazy and self.target_info < (3, 15):
+        if lazy == "emulated":
             out_lines = []
             fake_mods = (imp_from if imp_from is not None else imp).split(".")
             for i in range(1, len(fake_mods)):
@@ -4107,6 +4107,7 @@ else:
             ))
             return "\n".join(out_lines)
         else:
+            internal_assert(not lazy or lazy == "native", "invalid lazy import type", lazy)
             return (
                 ("lazy " if lazy else "")
                 + ("from " + imp_from + " " if imp_from is not None else "")
@@ -4217,6 +4218,11 @@ else:
                 )
         return "\n".join(stmts)
 
+    def stmt_at_top_level(self, original, loc):
+        """Determine whether the statement starting at loc is unindented."""
+        line_start = original.rfind("\n", 0, loc) + 1
+        return not original[line_start:loc].replace(closeindent, "")
+
     def import_handle(self, original, loc, tokens):
         """Universalizes imports."""
         if len(tokens) == 2:
@@ -4228,7 +4234,15 @@ else:
             raise CoconutInternalException("invalid import tokens", tokens)
 
         internal_assert(lazy in ("lazy", ""), original, loc, "invalid import type token", lazy)
-        lazy = lazy == "lazy"
+        if not lazy:
+            lazy = None
+        # native lazy imports are only allowed at the top level (not inside
+        #  functions, classes, or try/except blocks), so we only use them for
+        #  unindented statements and otherwise emulate them
+        elif self.target_info >= (3, 15) and self.stmt_at_top_level(original, loc):
+            lazy = "native"
+        else:
+            lazy = "emulated"
 
         if imp_from == "__future__":
             if lazy:

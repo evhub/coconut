@@ -733,6 +733,20 @@ def f[T](x):
     return x
 """.strip()
 
+    setup(line_numbers=False, target="3.15")
+    # native lazy imports are only allowed at the top level
+    assert parse("lazy import json", "lenient").strip() == "lazy import json"
+    assert parse("lazy from json import dumps", "lenient").strip() == "lazy from json import dumps"
+    for lazy_src in (
+        "def f():\n    lazy import json",
+        "class A:\n    lazy import json",
+        "try:\n    lazy import json\nexcept ImportError:\n    pass",
+        "def f(): lazy import json",
+    ):
+        lazy_out = parse(lazy_src, "lenient")
+        assert "lazy import" not in lazy_out, lazy_out
+        assert "_coconut_lazy_module" in lazy_out, lazy_out
+
     setup(line_numbers=False, minify=True)
     assert parse("123  # derp", "lenient") == "123# derp"
 

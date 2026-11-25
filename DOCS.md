@@ -1760,6 +1760,8 @@ lazy from module import name1, name2
 
 When a lazy import is encountered, Coconut creates a proxy object instead of immediately loading the module. The actual import only occurs when the name is first accessed (e.g. by accessing an attribute). Import errors are also deferred—if the module doesn't exist, the `ImportError` will be raised at the point of first use, not at the import statement.
 
+When targeting Python 3.15+, Coconut compiles unindented (top-level) lazy imports to native Python lazy imports. Since Python only allows lazy imports at the top level of a module (not inside functions, classes, or `try`/`except` blocks), Coconut still supports lazy imports in those places by compiling indented lazy imports to the same proxy objects used on older targets.
+
 ##### Example
 
 **Coconut:**
