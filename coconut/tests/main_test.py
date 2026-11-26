@@ -976,6 +976,26 @@ class TestShell(unittest.TestCase):
         finally:
             shutil.rmtree(warn_dir)
 
+    if sys.version_info >= (3, 5):
+        def test_zipapp(self):
+            zipapp_dir = tempfile.mkdtemp()
+            try:
+                src_dir = os.path.join(zipapp_dir, "src")
+                build_dir = os.path.join(zipapp_dir, "build")
+                os.makedirs(os.path.join(src_dir, "zipapp_pkg"))
+                with open(os.path.join(src_dir, "zipapp_pkg", "__init__.coco"), "w") as init_file:
+                    init_file.write("\n")
+                with open(os.path.join(src_dir, "zipapp_pkg", "mod.coco"), "w") as mod_file:
+                    mod_file.write("def run() = range(3) |> map$(.*2) |> list\n")
+                with open(os.path.join(src_dir, "__main__.coco"), "w") as main_file:
+                    main_file.write("from zipapp_pkg.mod import run\nprint(run())\n")
+                call(["coconut", src_dir, build_dir, "--force"])
+                app_path = os.path.join(zipapp_dir, "app.pyz")
+                call([sys.executable, "-m", "zipapp", build_dir, "-o", app_path])
+                call([sys.executable, app_path], assert_output="[0, 2, 4]", convert_to_import=False)
+            finally:
+                shutil.rmtree(zipapp_dir)
+
     def test_pipe(self):
         call('echo ' + escape(coconut_snip) + "| coconut -s", shell=True, assert_output=True)
 
