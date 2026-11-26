@@ -119,6 +119,19 @@ class CoconutLanguageServer(LanguageServer):
 server = CoconutLanguageServer("coconut-lsp", VERSION_STR)
 
 
+def word_range(compiled, line, character):
+    """Get the range of the identifier starting at the given position."""
+    end = character
+    if line < len(compiled.source_lines):
+        source_line = compiled.source_lines[line]
+        while end < len(source_line) and (source_line[end].isalnum() or source_line[end] == "_"):
+            end += 1
+    return types.Range(
+        start=types.Position(line=line, character=character),
+        end=types.Position(line=line, character=end),
+    )
+
+
 @server.feature(types.INITIALIZED)
 async def initialized(ls, params):
     """Warm up the compiler in the background as soon as the client is ready."""
@@ -177,6 +190,64 @@ async def definition(ls, params):
         )
         for path, line, character in locations
     ]
+
+
+@server.feature(types.TEXT_DOCUMENT_REFERENCES)
+async def references(ls, params):
+    uri = params.text_document.uri
+    compiled = ls.analyzer.get_compiled(uri)
+    if compiled is None:
+        return None
+    locations = await ls.run_in_compile_thread(
+        compiled.references,
+        params.position.line,
+        params.position.character,
+        params.context.include_declaration,
+    )
+    return [
+        types.Location(uri=uri, range=word_range(compiled, line, character))
+        for line, character in locations
+    ]
+
+
+@server.feature(types.TEXT_DOCUMENT_DOCUMENT_HIGHLIGHT)
+async def document_highlight(ls, params):
+    compiled = ls.analyzer.get_compiled(params.text_document.uri)
+    if compiled is None:
+        return None
+    locations = await ls.run_in_compile_thread(compiled.references, params.position.line, params.position.character)
+    return [
+        types.DocumentHighlight(range=word_range(compiled, line, character))
+        for line, character in locations
+    ]
+
+
+@server.feature(
+    types.TEXT_DOCUMENT_SIGNATURE_HELP,
+    types.SignatureHelpOptions(trigger_characters=["(", ","]),
+)
+async def signature_help(ls, params):
+    uri = params.text_document.uri
+    compiled = ls.analyzer.get_compiled(uri)
+    if compiled is None:
+        return None
+    current_source = ls.workspace.get_text_document(uri).source
+    result = await ls.run_in_compile_thread(compiled.signature_help, current_source, params.position.line, params.position.character)
+    if result is None:
+        return None
+    signatures, active_signature, active_parameter = result
+    return types.SignatureHelp(
+        signatures=[
+            types.SignatureInformation(
+                label=label,
+                documentation=types.MarkupContent(kind=types.MarkupKind.PlainText, value=docstring) if docstring else None,
+                parameters=[types.ParameterInformation(label=param) for param in params_labels],
+            )
+            for label, params_labels, docstring in signatures
+        ],
+        active_signature=active_signature,
+        active_parameter=active_parameter,
+    )
 
 
 @server.feature(

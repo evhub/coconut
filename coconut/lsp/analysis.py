@@ -233,7 +233,10 @@ class CompiledDocument(object):
         return word, candidates[min(occurrence, len(candidates) - 1)]
 
     def coconut_position(self, compiled_line, compiled_col, name=None):
-        """Map a position in the compiled code back to the Coconut source."""
+        """Map a position in the compiled code back to the Coconut source.
+
+        If name is given, the position is mapped to the same occurrence of name in the
+        Coconut source line as the given position is in the compiled code for that line."""
         coconut_ind = self.coconut_line_for.get(compiled_line)
         if coconut_ind is None or coconut_ind >= len(self.source_lines):
             return None
@@ -242,7 +245,16 @@ class CompiledDocument(object):
         if name is not None:
             occurrences = find_word_occurrences(source_line, name)
             if occurrences:
-                col = occurrences[0]
+                compiled_occurrences = [
+                    (compiled_ind, col)
+                    for compiled_ind in self.compiled_lines_for.get(coconut_ind, ())
+                    for col in find_word_occurrences(self.compiled_lines[compiled_ind], name)
+                ]
+                try:
+                    occurrence = compiled_occurrences.index((compiled_line, compiled_col))
+                except ValueError:
+                    occurrence = 0
+                col = occurrences[min(occurrence, len(occurrences) - 1)]
         else:
             col = len(leading_whitespace(source_line))
         return (coconut_ind, col)
@@ -307,6 +319,75 @@ class CompiledDocument(object):
                 locations.append(map_compiled_file_location(module_path, name.line - 1, name.column, name.name))
         return locations
 
+    def references(self, line, character, include_declaration=True):
+        """Get the locations of all references in this document to the name at the given position as (line, character) tuples."""
+        word, compiled_pos = self.compiled_position(line, character)
+        if compiled_pos is None:
+            return []
+        compiled_ind, col = compiled_pos
+        try:
+            names = self.script.get_references(compiled_ind + 1, col, include_builtins=False, scope="file")
+        except Exception:
+            logger.log_exc()
+            return []
+        locations = []
+        for name in names:
+            if name.line is None or name.name != word:
+                continue
+            if not include_declaration and name.is_definition():
+                continue
+            coconut_pos = self.coconut_position(name.line - 1, name.column, name.name)
+            if coconut_pos is not None and coconut_pos not in locations:
+                locations.append(coconut_pos)
+        return sorted(locations)
+
+    def signature_help(self, current_source, line, character):
+        """Get signature help for the call the given position in current_source is in.
+
+        Returns (signatures, active signature index, active parameter index) or None,
+        where signatures is a list of (label, parameter labels, docstring) tuples."""
+        current_lines = current_source.splitlines()
+        if line >= len(current_lines):
+            return None
+        prefix_text = current_lines[line][:character]
+        call_start = innermost_open_call(prefix_text)
+        if call_start is None:
+            return None
+        call_text = prefix_text[call_start:]
+
+        # like completions, insert a synthetic line with the call in the right scope
+        old_line = map_line_through_diff(current_lines, self.source_lines, line)
+        insert_at, indent = self.insertion_point(old_line)
+        if insert_at is None:
+            return None
+        new_compiled_lines = list(self.compiled_lines)
+        new_compiled_lines.insert(insert_at, indent + call_text)
+        try:
+            import jedi
+            sigs = jedi.Script("\n".join(new_compiled_lines), path=self.jedi_path).get_signatures(insert_at + 1, len(indent) + len(call_text))
+        except Exception:
+            logger.log_exc()
+            return None
+        if not sigs:
+            return None
+        signatures = []
+        active_param = None
+        for sig in sigs:
+            try:
+                signatures.append((
+                    sig.to_string().replace("_coconut.typing.", "typing."),
+                    [param.to_string().replace("_coconut.typing.", "typing.") for param in sig.params],
+                    sig.docstring(raw=True),
+                ))
+            except Exception:
+                logger.log_exc()
+                continue
+            if active_param is None:
+                active_param = sig.index
+        if not signatures:
+            return None
+        return signatures, 0, active_param
+
     def completions(self, current_source, line, character):
         """Get completions as (name, kind, description) tuples for the given position in current_source.
 
@@ -368,6 +449,39 @@ class CompiledDocument(object):
                         indent += "    "
                 return insert_at, indent
         return None, None
+
+
+def innermost_open_call(text):
+    """Find the start index of the callee of the innermost unclosed call in text, or None."""
+    in_str = None
+    open_parens = []
+    i = 0
+    while i < len(text):
+        c = text[i]
+        if in_str is not None:
+            if c == "\\":
+                i += 1
+            elif c == in_str:
+                in_str = None
+        elif c in "\"'":
+            in_str = c
+        elif c == "#":
+            break
+        elif c in "([{":
+            open_parens.append((c, i))
+        elif c in ")]}":
+            if open_parens:
+                open_parens.pop()
+        i += 1
+    while open_parens:
+        c, paren_ind = open_parens.pop()
+        if c != "(":
+            continue
+        callee = trailing_dotted_name_regex.search(text[:paren_ind]).group()
+        if callee and not callee.endswith("."):
+            return paren_ind - len(callee)
+        return None
+    return None
 
 
 def keyword_completions(prefix):

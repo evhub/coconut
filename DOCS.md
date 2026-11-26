@@ -538,7 +538,9 @@ Coconut includes a [language server](https://microsoft.github.io/language-server
 - live error and warning diagnostics as you type (using the actual Coconut compiler),
 - hover information (signatures and docstrings),
 - go to definition (including into other Coconut files and Python libraries),
-- completions (including attribute completions), and
+- find references and highlighting of other uses of the name under the cursor (within the current file),
+- completions (including attribute completions),
+- signature help while typing function calls, and
 - document outlines/symbols.
 
 To use it, install `coconut[lsp]` (requires Python 3.9+), then configure your editor to run `coconut --lsp` (or `python -m coconut.lsp`) as the language server for `.coco` files; the server communicates over stdio. For example, in Neovim:
@@ -547,7 +549,7 @@ vim.lsp.config("coconut", {cmd = {"coconut", "--lsp"}, filetypes = {"coconut"}})
 vim.lsp.enable("coconut")
 ```
 
-Hover, go to definition, and completions work by analyzing the compiled Python with [`jedi`](https://github.com/davidhalter/jedi) and mapping the results back to the Coconut source, so they're based on the most recent version of the file that compiled successfully.
+Hover, go to definition, references, signature help, and completions work by analyzing the compiled Python with [`jedi`](https://github.com/davidhalter/jedi) and mapping the results back to the Coconut source, so they're based on the most recent version of the file that compiled successfully.
 
 #### AI Coding Assistant Support
 

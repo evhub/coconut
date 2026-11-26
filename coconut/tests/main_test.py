@@ -1068,7 +1068,7 @@ class TestShell(unittest.TestCase):
                 uri = "file:///lsp_test.coco"
                 src = "import json\n\ndata Point(x, y)\n\ndef total(ps) =\n    ps |> map$(p => p.x + p.y) |> sum\n\nresult = total([Point(1, 2)])\nencoded = json.dumps(result)\n"
                 capabilities = request("initialize", {"processId": None, "rootUri": None, "capabilities": {}})["capabilities"]
-                for capability in ("hoverProvider", "definitionProvider", "completionProvider", "documentSymbolProvider"):
+                for capability in ("hoverProvider", "definitionProvider", "completionProvider", "documentSymbolProvider", "referencesProvider", "documentHighlightProvider", "signatureHelpProvider"):
                     assert capabilities.get(capability), capabilities
                 notify("initialized", {})
 
@@ -1083,6 +1083,13 @@ class TestShell(unittest.TestCase):
                 definition = request("textDocument/definition", {"textDocument": {"uri": uri}, "position": {"line": 7, "character": 17}})
                 assert definition[0]["range"]["start"] == {"line": 2, "character": 5}, definition
 
+                # references and highlights
+                result_refs = [((7, 0), (7, 6)), ((8, 21), (8, 27))]
+                references = request("textDocument/references", {"textDocument": {"uri": uri}, "position": {"line": 8, "character": 23}, "context": {"includeDeclaration": True}})
+                assert [((ref["range"]["start"]["line"], ref["range"]["start"]["character"]), (ref["range"]["end"]["line"], ref["range"]["end"]["character"])) for ref in references] == result_refs, references
+                highlights = request("textDocument/documentHighlight", {"textDocument": {"uri": uri}, "position": {"line": 7, "character": 2}})
+                assert [((hl["range"]["start"]["line"], hl["range"]["start"]["character"]), (hl["range"]["end"]["line"], hl["range"]["end"]["character"])) for hl in highlights] == result_refs, highlights
+
                 # error diagnostics
                 bad_src = src.replace("json.dumps(result)", "json.dumps(result")
                 notify("textDocument/didChange", {"textDocument": {"uri": uri, "version": 2}, "contentChanges": [{"text": bad_src}]})
@@ -1094,6 +1101,13 @@ class TestShell(unittest.TestCase):
                 notify("textDocument/didChange", {"textDocument": {"uri": uri, "version": 3}, "contentChanges": [{"text": typing_src}]})
                 completions = request("textDocument/completion", {"textDocument": {"uri": uri}, "position": {"line": 8, "character": 17}})
                 assert "dumps" in [item["label"] for item in completions["items"]], completions
+
+                # signature help in the middle of typing
+                sig_src = src.replace("json.dumps(result)", "total(")
+                notify("textDocument/didChange", {"textDocument": {"uri": uri, "version": 4}, "contentChanges": [{"text": sig_src}]})
+                sig_help = request("textDocument/signatureHelp", {"textDocument": {"uri": uri}, "position": {"line": 8, "character": len("encoded = total(")}})
+                assert sig_help["signatures"][0]["label"].startswith("total(ps"), sig_help
+                assert sig_help["activeParameter"] == 0, sig_help
 
                 # document symbols
                 symbols = request("textDocument/documentSymbol", {"textDocument": {"uri": uri}})
