@@ -609,6 +609,18 @@ def _coconut_assert(cond, msg=None):
     """Assert operator (assert). Asserts condition with optional message."""
     if not cond:
         assert False, msg if msg is not None else "(assert) got falsey value " + _coconut.repr(cond)
+def _coconut_assert_msg(expr, *names_and_values):
+    """Build the error message for a failed assert of a simple comparison."""
+    shown_values = []
+    for i in _coconut.range(0, _coconut.len(names_and_values), 2):
+        try:
+            value_repr = _coconut.repr(names_and_values[i + 1])
+        except _coconut.Exception:
+            value_repr = "<unrepresentable value>"
+        if _coconut.len(value_repr) > {max_assert_msg_repr_len}:
+            value_repr = value_repr[:{max_assert_msg_repr_len}] + "..."
+        shown_values.append(names_and_values[i] + " = " + value_repr)
+    return "assert " + expr + " failed (" + ", ".join(shown_values) + ")"
 def _coconut_raise(exc=None, from_exc=None):
     """Raise operator (raise). Raises exception with optional cause."""
     if exc is None:

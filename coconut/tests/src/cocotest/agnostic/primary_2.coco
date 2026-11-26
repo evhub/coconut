@@ -807,4 +807,31 @@ def primary_test_2() -> bool:
     else:
         assert False
 
+    # informative assert messages
+    def assert_msg_of(f):
+        try:
+            f()
+        except AssertionError as err:
+            return str(err)
+        return None
+    class AssertMsgC:
+        attr = 3
+    amc = AssertMsgC()
+    am_xs = [1, 2, 3]
+    am_d = {"a": 1}
+    am_x = 1
+    if __debug__:
+        assert assert_msg_of(def -> assert am_x == 2) == "assert am_x == 2 failed (am_x = 1)"
+        assert assert_msg_of(def -> assert amc.attr < am_xs[0]) == "assert amc.attr < am_xs[0] failed (amc.attr = 3, am_xs[0] = 1)"
+        assert assert_msg_of(def -> assert am_d["a"] != 1) == 'assert am_d["a"] != 1 failed (am_d["a"] = 1)'
+        assert assert_msg_of(def -> assert 4 in am_xs) == "assert 4 in am_xs failed (am_xs = [1, 2, 3])"
+        assert assert_msg_of(def -> assert am_x is None) == "assert am_x is None failed (am_x = 1)"
+        assert assert_msg_of(def -> assert am_xs[am_x] == 3) == "assert am_xs[am_x] == 3 failed (am_xs[am_x] = 2)"
+        assert assert_msg_of(def -> assert am_x == am_x + 1) == ""  # not simple
+        assert assert_msg_of(def -> assert am_x == 2, "custom") == "custom"
+        assert assert_msg_of(def -> assert am_x == 1) is None
+        am_y: int? = 1
+        assert am_y is not None
+        am_z: int = am_y  # type checkers should still narrow based on simple asserts
+
     return True

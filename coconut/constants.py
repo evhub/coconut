@@ -219,6 +219,9 @@ non_syntactic_newline = "\f"  # must be a single character
 
 lazy_get_func = "_coconut_lazy_get"
 
+# how long the repr of a value shown in the error message of a failed assert can be
+max_assert_msg_repr_len = 1000
+
 # both must be in ascending order and must be unbroken with no missing 2 num vers
 #  and must be kept in sync with eols and targets below
 supported_py2_vers = (

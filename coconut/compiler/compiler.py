@@ -1049,6 +1049,7 @@ class Compiler(Grammar, pickleable_obj):
         cls.async_stmt <<= attach(cls.async_stmt_ref, cls.method("async_stmt_check"))
         cls.async_comp_for <<= attach(cls.async_comp_for_ref, cls.method("async_comp_check"))
         cls.match_comp_for <<= attach(cls.match_comp_for_ref, cls.method("match_comp_for_handle"))
+        cls.simple_assert_stmt <<= attach(cls.simple_assert_stmt_ref, cls.method("simple_assert_stmt_handle"))
         cls.namedexpr <<= attach(cls.namedexpr_ref, cls.method("namedexpr_check"))
         cls.new_namedexpr <<= attach(cls.new_namedexpr_ref, cls.method("new_namedexpr_check"))
         cls.match_dotted_name_const <<= attach(cls.match_dotted_name_const_ref, cls.method("match_dotted_name_const_check"))
@@ -4692,6 +4693,28 @@ def {name}({match_func_paramdef}):
             self.add_code_before[name] = self.decoratable_funcdef_stmt_handle(original, loc, [decorators, funcdef], is_async, is_stmt_lambda=True)
 
         return self.handle_expr_scope_closure(name, loc)
+
+    def simple_assert_stmt_handle(self, tokens):
+        """Add a more informative error message to asserts of simple comparisons.
+
+        Compiles assert <left> <op> <right> into
+            assert <left> <op> <right>, _coconut_assert_msg("<left> <op> <right>", "<left>", <left>, ...)
+        where only operands that aren't literals are shown. Since the operands
+        are just names, attributes, and constant subscripts, re-evaluating them
+        on failure is safe (and since the condition is left unchanged, type
+        checkers can still narrow based on it)."""
+        left, op, right = tokens
+        expr = left[0] + " " + op + " " + right[0]
+        shown_operands = []
+        for operand in (left, right):
+            if "ref" in operand and operand[0] not in shown_operands:
+                shown_operands.append(operand[0])
+        if not shown_operands:
+            return "assert " + expr
+        msg_args = [self.wrap_str_of(self.reformat(expr, ignore_errors=True))]
+        for operand in shown_operands:
+            msg_args += [self.wrap_str_of(self.reformat(operand, ignore_errors=True)), operand]
+        return "assert " + expr + ", _coconut_assert_msg(" + ", ".join(msg_args) + ")"
 
     def match_comp_for_handle(self, original, loc, tokens):
         """Build a pattern-matching comprehension for clause.

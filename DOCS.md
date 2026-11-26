@@ -3157,6 +3157,22 @@ except (SyntaxError, ValueError) as err:
 ```
 
 
+### Informative `assert` Messages
+
+When an `assert` statement with no error message checks a single comparison (`==`, `!=`, `<`, `<=`, `>`, `>=`, `in`, `not in`, `is`, or `is not`) of simple operands, Coconut adds an error message showing the values of the operands, so that `assert result == expected` fails with `AssertionError: assert result == expected failed (result = 2, expected = 3)` rather than a bare `AssertionError`. Simple operands are names, attribute accesses, and subscripts by names or constants (e.g. `xs[0]` or `obj.attr`), which are shown, and literals, which aren't. Coconut only does this for simple operands since the operands are evaluated again to build the message, which only happens if the assertion fails. The condition itself is left unchanged, so type checkers can still narrow types based on it (e.g. with `assert x is not None`), and running with `python -O` still removes the whole statement.
+
+##### Example
+
+**Coconut:**
+```coconut
+assert result == expected
+```
+
+**Python:**
+```coconut_python
+assert result == expected, "assert result == expected failed (result = {!r}, expected = {!r})".format(result, expected)
+```
+
 ### In-line `global` And `nonlocal` Assignment
 
 Coconut allows for `global` or `nonlocal` to precede assignment to a list of variables or (augmented) assignment to a variable to make that assignment `global` or `nonlocal`, respectively.

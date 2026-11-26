@@ -2303,11 +2303,41 @@ class Grammar(object):
         cases_stmt = Forward()
         cases_stmt_ref = cases_stmt_co_syntax | cases_stmt_py_syntax
 
-        assert_stmt = addspace(
-            keyword("assert")
-            - (
-                lparen.suppress() + testlist + rparen.suppress() + end_simple_stmt_item
-                | testlist
+        # simple comparisons get better error messages, but only if re-evaluating
+        #  the operands to show their values can't have any side effects
+        assert_literal_operand = (
+            const_atom
+            | string_atom
+            | condense(neg_minus + num_atom)
+        )
+        assert_ref_operand = condense(
+            refname
+            + ZeroOrMore(
+                condense(dot + unsafe_name)
+                | condense(lbrack + (assert_literal_operand | refname) + rbrack)
+            )
+        )
+        assert_simple_operand = Group(
+            # literal must come first to properly parse string prefixes
+            assert_literal_operand("literal")
+            | assert_ref_operand("ref")
+        )
+        simple_assert_stmt = Forward()
+        simple_assert_stmt_ref = (
+            keyword("assert").suppress()
+            + assert_simple_operand
+            + comp_op
+            + assert_simple_operand
+            + end_simple_stmt_item
+        )
+        assert_stmt = (
+            simple_assert_stmt
+            | addspace(
+                keyword("assert")
+                - (
+                    lparen.suppress() + testlist + rparen.suppress() + end_simple_stmt_item
+                    | testlist
+                )
             )
         )
         if_stmt = condense(
