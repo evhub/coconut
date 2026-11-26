@@ -475,6 +475,11 @@ def primary_test_1() -> bool:
     where = ten where:
         ten = 10
     assert where == 10 == \where
+    # function definitions directly after where statements (used to produce invalid code)
+    where_then_def_result = where_then_def_a + 1 where:
+        where_then_def_a = 1
+    def where_then_def(x) = x + where_then_def_result
+    assert where_then_def(1) == 3
     out = where:
         x1 = 1 + 2
         x2 = 3 + 4

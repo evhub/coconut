@@ -85,6 +85,7 @@ from coconut.constants import (
     funcwrapper,
     non_syntactic_newline,
     lazy_get_func,
+    reserved_vars,
     early_passthrough_wrapper,
     super_names,
     custom_op_var,
@@ -5599,7 +5600,10 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
 
         out = sub_all(out, name_regexes, name_replacements)
 
-        return self.wrap_passthrough(out, early=True)
+        # keep the final newline outside of the passthrough so that the next statement
+        #  starts on its own line (otherwise e.g. a following function definition breaks)
+        internal_assert(out.endswith("\n"), "invalid where statement output", out)
+        return self.wrap_passthrough(out[:-1], early=True) + "\n"
 
     def block_where_stmt_handle(self, loc, tokens):
         """Process block where statements (<lhs> = where: <stmts> <result expr>)."""
@@ -5960,6 +5964,10 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
             if current_scope["all_vars"] is None or name in current_scope["all_vars"]:
                 return
             current_scope = current_scope["parent"]
+        # keywords that can be used as names (e.g. where) might have been speculatively
+        #  parsed as names when they're actually being used as keywords (e.g. x = where:)
+        if name in reserved_vars and original[loc + len(name):].lstrip(" \t").startswith(":"):
+            return
         self.strict_err_or_warn(
             "found undefined name '{name}' (use explicit '\\{name}' syntax to bypass)".format(name=name),
             original,
