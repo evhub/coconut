@@ -1119,6 +1119,9 @@ class TestShell(unittest.TestCase):
 
     if not WINDOWS and XONSH:
         def test_xontrib(self):
+            # xonsh generates its parser tables the first time it parses anything (which can take
+            #  a very long time), so make sure that happens before the interactive session
+            call(["xonsh", "-c", "echo xonsh_warmup"], assert_output="xonsh_warmup", check_errors=False)
             p = spawn_cmd("xonsh")
             pexpect(p, "$")
             p.sendline("xontrib load coconut")

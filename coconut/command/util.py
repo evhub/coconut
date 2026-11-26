@@ -611,6 +611,14 @@ def run_with_stack_size(stack_kbs, func, *args, **kwargs):
     return out[0]
 
 
+def stdin_is_tty():
+    """Determine whether stdin is an interactive terminal."""
+    try:
+        return sys.stdin is not None and sys.stdin.isatty()
+    except (ValueError, OSError):  # e.g. if stdin is closed
+        return False
+
+
 def proc_run_args(args=()):
     """Process args to use for coconut-run or the import hook."""
     args = list(args)
@@ -726,7 +734,8 @@ class Prompt(object):
             msg = more_prompt
         else:
             msg = main_prompt
-        if self.style is not None:
+        # only use prompt_toolkit if we're actually reading from a terminal
+        if self.style is not None and stdin_is_tty():
             internal_assert(prompt_toolkit is not None, "without prompt_toolkit cannot highlight style", self.style)
             try:
                 return self.prompt(msg)
