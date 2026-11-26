@@ -13,9 +13,9 @@ def non_py26_test() -> bool:
     assert test["a"] == 1
     exec("a = 2", globals(), test)
     assert test["a"] == 2
-    test = {}
-    exec("b = mod(5, 3)", globals(), test)
-    assert test["b"] == 2
+    test2: dict = {}
+    exec("b = mod(5, 3)", globals(), test2)
+    assert test2["b"] == 2
     assert 5 .bit_length() == 3
     assert 5 .imag == 0
     return True
