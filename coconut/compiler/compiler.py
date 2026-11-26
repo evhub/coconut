@@ -86,6 +86,8 @@ from coconut.constants import (
     non_syntactic_newline,
     lazy_get_func,
     reserved_vars,
+    generated_file_comment,
+    generated_file_from_source_comment,
     early_passthrough_wrapper,
     super_names,
     custom_op_var,
@@ -3256,6 +3258,12 @@ else:
     def header_proc(self, inputstring, header="file", initial="initial", use_hash=None, **kwargs):
         """Add the header."""
         pre_header = self.getheader(initial, use_hash=use_hash, polish=False)
+        if self.filename is not None:
+            pre_header = pre_header.replace(
+                generated_file_comment,
+                generated_file_from_source_comment.format(source=self.filename),
+                1,
+            )
         main_header = self.getheader(header, polish=False)
         if self.minify:
             main_header = minify_header(main_header)

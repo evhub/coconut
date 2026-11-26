@@ -22,6 +22,7 @@ from coconut.root import *  # NOQA
 import unittest
 import sys
 import os
+import re
 import shutil
 import functools
 import tempfile
@@ -33,7 +34,7 @@ else:
 
 import pytest
 
-from coconut.util import noop_ctx, get_target_info
+from coconut.util import noop_ctx, get_target_info, univ_open
 from coconut.terminal import (
     logger,
     LoggingStringIO,
@@ -47,6 +48,7 @@ from coconut.compiler.util import (
     get_psf_target,
 )
 from coconut.constants import (
+    ai_docs_file,
     WINDOWS,
     PYPY,
     IPY,
@@ -957,6 +959,27 @@ class TestShell(unittest.TestCase):
                 )
             finally:
                 shutil.rmtree(plugin_dir)
+
+    def test_ai_docs(self):
+        call(["coconut", "--ai-docs"], assert_output="Common pitfalls", assert_output_only_at_end=False)
+        # all the code examples in the AI guide should actually work
+        with univ_open(ai_docs_file, "r") as ai_docs:
+            guide = ai_docs.read()
+        code_blocks = re.findall(r"```coconut\n(.*?)```", guide, re.DOTALL)
+        assert code_blocks, guide
+        guide_dir = tempfile.mkdtemp()
+        try:
+            guide_coco = os.path.join(guide_dir, "ai_guide_examples.coco")
+            with univ_open(guide_coco, "w") as guide_file:
+                guide_file.write("\n".join(code_blocks) + '\nprint("<success>")\n')
+            call_coconut([guide_coco, "--target", "sys", "--force", "--run"], assert_output=True, check_errors=False)
+            # compiled files should point back to their source and the guide
+            with univ_open(os.path.join(guide_dir, "ai_guide_examples.py"), "r") as compiled_file:
+                compiled_header = compiled_file.read(1024)
+            assert "compiled from ai_guide_examples.coco" in compiled_header, compiled_header
+            assert "coconut --ai-docs" in compiled_header, compiled_header
+        finally:
+            shutil.rmtree(guide_dir)
 
     if not WINDOWS:
         def test_import_hook_preserves_stdin(self):

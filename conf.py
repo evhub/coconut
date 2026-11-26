@@ -68,6 +68,9 @@ source_suffix = [".rst", ".md"]
 
 exclude_patterns = list(exclude_docs_dirs)
 
+# serve the condensed guide for AI coding assistants at the root of the docs
+html_extra_path = ["coconut/llms.txt"]
+
 default_role = "code"
 
 extensions = ["myst_parser"]

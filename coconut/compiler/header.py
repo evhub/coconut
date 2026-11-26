@@ -29,6 +29,8 @@ from coconut.root import (
 from coconut.exceptions import CoconutInternalException
 from coconut.terminal import internal_assert
 from coconut.constants import (
+    generated_file_comment,
+    coconut_guide_comment,
     hash_prefix,
     tabideal,
     default_encoding,
@@ -284,6 +286,7 @@ def process_header_args(which, use_hash, target, no_tco, strict, no_wrap):
         typing_line="# type: ignore\n" if which == "__coconut__" else "",
         _coconut_="_coconut_" if which != "__coconut__" else "",  # only for aliases defined at the end of the header
         VERSION_STR=VERSION_STR,
+        generated_comments=generated_file_comment + coconut_guide_comment if which != "__coconut__" else "",
         module_docstring='"""Built-in Coconut utilities."""\n\n' if which == "__coconut__" else "",
         __coconut__=make_py_str("__coconut__", target, after_py_str_defined=False),
         _coconut_cached__coconut__=make_py_str("_coconut_cached__coconut__", target, after_py_str_defined=False),
@@ -940,7 +943,7 @@ def getheader(which, use_hash, target, no_tco, strict, no_wrap):
 # -*- coding: {default_encoding} -*-
 {hash_line}{typing_line}
 # Compiled with Coconut version {VERSION_STR}
-
+{generated_comments}
 {module_docstring}'''.format(**format_dict)
     elif use_hash is not None:
         raise CoconutInternalException("can only add a hash to an initial or __coconut__ header, not", which)

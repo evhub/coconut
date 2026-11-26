@@ -57,6 +57,7 @@ from coconut.constants import (
     icoconut_default_kernel_dirs,
     icoconut_custom_kernel_name,
     icoconut_custom_kernel_dir,
+    ai_docs_file,
     icoconut_old_kernel_names,
     exit_chars,
     verbose_mypy_args,
@@ -313,6 +314,9 @@ class Command(object):
                 launch_documentation()
             if args.tutorial:
                 launch_tutorial()
+            if args.ai_docs:
+                with univ_open(ai_docs_file, "r") as ai_docs:
+                    print(ai_docs.read())
             if args.site_uninstall:
                 self.site_uninstall()
             if args.site_install:
@@ -432,6 +436,7 @@ class Command(object):
                     or args.code
                     or args.tutorial
                     or args.docs
+                    or args.ai_docs
                     or args.watch
                     or args.site_uninstall
                     or args.site_install

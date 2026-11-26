@@ -1,0 +1,200 @@
+# Coconut
+
+> Coconut is a functional programming language that compiles to Python. All valid Python 3 code is valid Coconut, and Coconut adds pipes, partial application, pattern matching, algebraic data types, lazy iterators, tail call optimization, and more. Compiled code runs on any Python version (2.7 and 3.x).
+
+This is a condensed guide to writing idiomatic Coconut, intended for AI coding assistants. Full documentation: https://coconut.readthedocs.io/en/latest/DOCS.html (tutorial: https://coconut.readthedocs.io/en/latest/HELP.html). Run `coconut --ai-docs` to print this guide.
+
+## Working with Coconut code
+
+- Source files end in `.coco`. **Compiled `.py` files are generated: always edit the `.coco` source, never the compiled `.py` file.** Compiled files start with a comment saying which source file they were compiled from, and every compiled line ends with a `# <n> (line in Coconut source)` comment pointing back to the source line.
+- Compile: `coconut src_dir dest_dir` (or `coconut file.coco`); compile and run: `coconut-run file.coco`; run code directly: `coconut -c "code"`; type check: add `--mypy` (or `--pyright`); target a Python version: `--target 3.11` (default output is universal).
+- Importing `coconut.api` enables automatic compilation of `.coco` files on import. For tests, `pytest -p coconut.pytest_plugin` collects `test_*.coco` files.
+- `coconut --strict` enables style checks; fix the warnings rather than suppressing them.
+
+## Writing idiomatic Coconut
+
+Prefer Coconut's functional features over Python-style imperative code. Good Coconut code:
+- passes data through **pipelines** (`|>`) of small functions instead of nesting calls or building lists in loops,
+- uses **implicit partials** (`.attr`, `.method()`, `.[i]`, `(.+1)`) and **operator functions** (`(+)`, `(==)`) instead of lambdas where possible,
+- defines functions with **assignment function syntax** (`def f(x) = ...`) when the body is a single expression,
+- uses **pattern matching** (`match`/`case`, pattern-matching function definitions, destructuring assignment) instead of chains of `if isinstance(...)`/indexing,
+- models data with immutable **`data` types** instead of mutable classes,
+- uses **recursion** freely (tail calls are optimized automatically) and **lazy iterators** instead of materializing lists,
+- avoids reassigning variables (`--pure` mode can enforce this).
+
+```coconut
+# Python-style (works, but not idiomatic)
+def total_lengths(words):
+    result = 0
+    for w in words:
+        if len(w) > 2:
+            result += len(w)
+    return result
+
+# idiomatic Coconut
+def total_lengths(words) = words |> map$(len) |> filter$(.>2) |> sum
+```
+
+## Lambdas, partials, and operator functions
+
+```coconut
+add = (x, y) => x + y            # lambda (=> is preferred; old -> syntax is deprecated)
+inc = (.+1)                      # implicit partial: same as x => x + 1
+upper_all = map$(.upper())       # partial application with $: f$(a) is functools.partial(f, a)
+square = pow$(?, 2)              # ? marks positional placeholders: x => pow(x, 2)
+first = .[0]                     # x => x[0]; also .attr and .method(args)
+assert (+)(1, 2) == 3            # operator functions: (+), (*), (==), (in), (not in), (is), (.), etc.
+f = def (x, y=1) => x + y        # statement lambda (supports default args, multiple statements)
+```
+
+## Pipes and composition
+
+```coconut
+assert range(5) |> map$(x => x * 2) |> filter$(.>2) |> list == [4, 6, 8]
+assert (1, 2) |*> add == 3                          # |*> unpacks positional args
+assert dict(x=1, y=2) |**> ((x, y) => x - y) == -1  # |**> unpacks keyword args
+assert str <| 1 == "1"                              # backward pipes: <|, <*|, <**|
+assert None |?> (.+1) is None                       # None-aware pipes: |?>, |?*>, |?**>
+f = (.+1) ..> (.*2)                                 # forward composition: f(3) == 8
+g = (.*2) <.. (.+1)                                 # backward composition (also ..): g(3) == 8
+xs = [3, 1, 2]
+xs |>= sorted                                       # in-place pipe: xs = sorted(xs)
+```
+
+Pipes bind more loosely than arithmetic but more tightly than comparisons, so `x + 1 |> f == y` means `f(x + 1) == y`. Inside a pipe, `x |> await` awaits, and `x |> (name := .)` binds the intermediate value.
+
+## Function definitions
+
+```coconut
+def square(x) = x ** 2                       # assignment function: body is a single expression
+
+def norm(x, y) =                             # assignment function with a block body:
+    sq = x**2 + y**2                         #  the last line must be an expression
+    sq ** 0.5
+
+def factorial(0) = 1                         # pattern-matching function definition
+addpattern def factorial(int(n) if n > 0) = n * factorial(n - 1)   # add another case
+
+def head_tail([x] + xs) = (x, xs)            # patterns in arguments
+
+case def fib:                                # many cases at once (with optional type signatures)
+    type(n: int) -> int
+    case(0) = 0
+    case(1) = 1
+    case(n) = fib(n - 1) + fib(n - 2)
+
+def count_down(n):                           # tail calls are optimized, so deep recursion is fine
+    if n <= 0:
+        return "done"
+    return count_down(n - 1)
+```
+
+Tail call optimization only applies to `return f(...)` where the returned value is directly a call (not `f(...) if c else x` and not `f(...) + 1`). A pattern-matching function that fails to match raises `MatchError`.
+
+## Data types
+
+```coconut
+data Point(x: float, y: float):              # immutable, hashable, with __eq__/__repr__ (a namedtuple)
+    def __add__(self, other: Point) -> Point = Point(self.x + other.x, self.y + other.y)
+    def norm(self) -> float = (self.x**2 + self.y**2) ** 0.5
+
+p = Point(3, 4)
+assert p.norm() == 5 and p + Point(1, 1) == Point(4, 5)
+assert p._replace(x=0) == Point(0, 4)        # "modify" by creating a new value
+
+data Empty()                                 # algebraic data types via several data types
+data Leaf(n)
+data Node(l, r)
+def size(Empty()) = 0
+addpattern def size(Leaf(_)) = 1
+addpattern def size(Node(l, r)) = size(l) + size(r)
+```
+
+## Pattern matching
+
+```coconut
+def describe(obj):
+    match obj:
+        case Point(x, y) if x == y:          # data type patterns, with guards
+            return "diagonal point"
+        case {"type": "point", "x": x, **_}: # dict patterns (**_ allows extra keys)
+            return f"point at {x}"
+        case []:
+            return "empty"
+        case [x]:                            # sequence patterns
+            return f"one: {x}"
+        case [x, *rest]:                     # star patterns
+            return f"many, starting with {x}"
+    return "unknown"
+```
+
+Python 3.10 `match`/`case` syntax works on every target version. Other pattern forms:
+- `[x] + xs` / `xs + [x]` (head/tail and init/last splits), `"prefix_" + rest` (string splits), `(| x, y |)` (lazy lists), `[x] :: rest` (any iterable, lazily)
+- `int(n)` / ``n `isinstance` int`` (type checks), `x if x > 0` (guards), `pat as name`, `pat1 | pat2`, `==expr` (equality checks), `(f) -> pat` (view patterns: match `f(item)` against `pat`)
+- data patterns `Point(x=x, **rest)` (`**rest` collects the remaining fields), class patterns `class C(a, b)`
+
+```coconut
+match (x, y) in (1, 2):                      # one-line match with else
+    print(x + y)
+else:
+    print("no match")
+
+[first] + rest = [1, 2, 3]                   # destructuring assignment (raises MatchError on failure)
+{"name": name, **_} = {"name": "x", "age": 3}
+
+pairs = [Point(1, 2), Point(3, 4)]
+xs = [x for Point(x, y) in pairs if y > 2]   # match comprehensions (raise MatchError on non-matches)
+```
+
+## Iterators and laziness
+
+```coconut
+nums = (| 1, 2, 3 |)                                  # lazy list
+def naturals(n=0) = (n,) :: naturals(n + 1)           # :: lazily chains iterators (infinite is fine)
+assert naturals()$[:5] |> list == [0, 1, 2, 3, 4]     # $[...] slices any iterator lazily
+assert range(10) |> groupsof$(3) |> map$(list) |> list == [[0, 1, 2], [3, 4, 5], [6, 7, 8], [9]]
+assert range(4) |> windowsof$(2) |> list == [(0, 1), (1, 2), (2, 3)]
+assert range(5) |> reduce$((+)) == 10                 # reduce and scan are built in
+assert range(4) |> scan$((+)) |> list == [0, 1, 3, 6]
+assert [[1, 2], [3]] |> flatten |> list == [1, 2, 3]
+assert [1, 2, 3] |> fmap$(.*10) == [10, 20, 30]       # fmap preserves the container type
+assert ["a", "bb", "c"] |> collectby$(len) == {1: ["a", "c"], 2: ["bb"]}
+```
+
+Other useful built-ins: `takewhile`, `dropwhile`, `count`, `cycle`, `cartesian_product`, `multi_enumerate`, `consume`, `reiterable`, `ident`, `const`, `flip`, `lift`, `memoize` (decorator), `recursive_generator`, `process_map`/`thread_map` (parallel map), `mapreduce`, `multiset`, `safe_call`/`Expected` (error handling without exceptions). Coconut's `map`, `zip`, and `enumerate` support `len` and indexing when their inputs do.
+
+## Other features
+
+```coconut
+result = a + b where:                        # where: local definitions after the expression
+    a = 1
+    b = 2
+
+result = where:                              # or with the result at the end
+    a = 1
+    a + 1
+
+def mod_(a, b) = a % b
+assert 5 `mod_` 3 == 2                       # backticks: infix function call
+
+operator <+>                                 # custom operators
+(<+>) = (a, b) => a + b + 1
+
+def first(xs: int[]) -> int? = xs[0] if xs else None   # int[] = Sequence[int], int? = Optional[int]
+def apply(f: int -> str, x: int) -> str = f(x)         # int -> str = Callable[[int], str]
+pair: (int; str) = (1, "a")                            # (int; str) = Tuple[int, str]
+
+lazy import json                             # PEP 810 lazy imports, on every Python version
+assert json.loads("[1]") == [1]
+def double(x) = x * 2
+assert double 3 == 6                         # implicit function application: f x is f(x)
+```
+
+## Common pitfalls
+
+- An assignment function's block body must end in an expression: `def f(x) =` followed by a `match` statement or `if` statement is an error. Use a normal `def` with `return` instead.
+- Star and sequence patterns (`[x, *rest]`, `[x, y]`) match any iterable or sequence, including strings, dicts (their keys), and `data` types (which are tuples). Put more specific patterns (data types, dicts, strings) before general sequence patterns in a `match`.
+- Coconut keywords like `data`, `match`, `case`, `where`, and `addpattern` can still be used as names, but writing `match[a, b] = x` is a subscript assignment to a variable named `match`. Since normal assignment takes precedence over destructuring assignment, use patterns that aren't valid Python assignment targets (e.g. `[first] + rest = xs`) when you need destructuring.
+- To use a name that conflicts with a Coconut keyword or would be flagged by `--strict`, escape it with a backslash: `\data`, `\match`.
+- `f x` is a function call, so `print x` prints `x`. Don't put an expression directly after a name unless you mean to call it.
+- Coconut's `map`/`filter`/`zip` are lazy (like Python 3), so convert with `|> list` or `|> tuple` when you need a concrete sequence.

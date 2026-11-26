@@ -30,6 +30,7 @@ To help you get started, check out these links for more information about Coconu
 - Tutorial_: If you're new to Coconut, a good place to start is Coconut's **tutorial**.
 - Documentation_: If you're looking for info about a specific feature, check out Coconut's **documentation**.
 - `Online Interpreter`_: If you want to try Coconut in your browser, check out Coconut's **online interpreter**.
+- `AI Guide`_: If you're using an AI coding assistant, point it to Coconut's condensed **guide for AI assistants** (also available by running ``coconut --ai-docs``).
 - FAQ_: If you have general questions about Coconut—like who Coconut is built for and whether or not you should use it—Coconut's frequently asked questions are often the best place to start.
 - `Create a New Issue <https://github.com/evhub/coconut/issues/new>`_: If you're having a problem with Coconut, creating a new issue detailing the problem will allow it to be addressed as soon as possible. Creating a new issue is also absolutely welcome as a way to ask any questions you might have about Coconut.
 - Releases_: Want to know what's been added in recent Coconut versions? Check out the release log for all the new features and fixes.
@@ -40,6 +41,7 @@ To help you get started, check out these links for more information about Coconu
 .. _Documentation: http://coconut.readthedocs.io/en/latest/DOCS.html
 .. _`Online Interpreter`: https://cs121-team-panda.github.io/coconut-interpreter
 .. _FAQ: http://coconut.readthedocs.io/en/latest/FAQ.html
+.. _`AI Guide`: http://coconut.readthedocs.io/en/latest/llms.txt
 .. _GitHub: https://github.com/evhub/coconut
 .. _Releases: https://github.com/evhub/coconut/releases
 

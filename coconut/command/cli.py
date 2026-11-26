@@ -248,6 +248,12 @@ arguments.add_argument(
 )
 
 arguments.add_argument(
+    "--ai-docs",
+    action="store_true",
+    help="print a condensed guide to writing idiomatic Coconut (intended for AI coding assistants)",
+)
+
+arguments.add_argument(
     "--style",
     metavar="name",
     type=str,

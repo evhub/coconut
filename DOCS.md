@@ -124,7 +124,7 @@ depth: 1
 coconut [-h] [--and source [dest ...]] [-v] [-t version] [-i] [-p] [-a] [-l]
         [--no-line-numbers] [-k] [-w] [-r] [-n] [-d] [-q] [-s] [--pure] [--no-tco]
         [--no-wrap-types] [-c code] [-j processes] [-f] [--minify] [--jupyter ...]
-        [--mypy ...] [--pyright] [--argv ...] [--tutorial] [--docs] [--style name] [--vi-mode]
+        [--mypy ...] [--pyright] [--argv ...] [--tutorial] [--docs] [--ai-docs] [--style name] [--vi-mode]
         [--recursion-limit limit] [--stack-size kbs] [--fail-fast] [--no-cache]
         [--site-install] [--site-uninstall] [--verbose] [--trace] [--profile]
         [source] [dest]
@@ -190,6 +190,8 @@ dest                destination directory for compiled files (defaults to
 --tutorial            open Coconut's tutorial in the default web browser
 --docs, --documentation
                       open Coconut's documentation in the default web browser
+--ai-docs             print a condensed guide to writing idiomatic Coconut (intended for AI coding
+                      assistants)
 --style name          set Pygments syntax highlighting style (or 'list' to list styles) (defaults
                       to COCONUT_STYLE environment variable if it exists, otherwise 'default')
 --vi-mode, --vimode   enable vi mode in the interpreter (currently set to False) (can be modified
@@ -519,6 +521,12 @@ user@computer ~ @ $(ls -la) |> .splitlines() |> len
 Compilation always uses the same parameters as in the [Coconut Jupyter kernel](#kernel).
 
 Note that the way that Coconut integrates with `xonsh`, `@(<code>)` syntax and the `execx` command will only work with Python code, not Coconut code. Additionally, Coconut will only compile individual commands—Coconut will not touch the `.xonshrc` or any other `.xsh` files.
+
+#### AI Coding Assistant Support
+
+Coconut ships with a condensed guide to writing idiomatic Coconut that's designed to be given to AI coding assistants, available by running `coconut --ai-docs` or online at [`llms.txt`](./llms.txt). To make sure that AI assistants that come across compiled Coconut code know what it is, every compiled file starts with a comment noting the Coconut source file it was compiled from (which should be edited instead of the compiled file) and pointing to that guide.
+
+If you're using an AI coding assistant on a Coconut project, it's recommended to point it at that guide, e.g. by adding a line like "This project is written in Coconut; run `coconut --ai-docs` to learn how to write idiomatic Coconut code, and always edit `.coco` files rather than compiled `.py` files." to your project's `CLAUDE.md`/`AGENTS.md`.
 
 #### `pytest` Support
 
