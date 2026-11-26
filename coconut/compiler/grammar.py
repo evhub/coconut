@@ -2889,7 +2889,9 @@ class Grammar(object):
         original_function_call_tokens = (
             lparen.suppress() + rparen.suppress()
             # we need to keep the parens here, since f(x for x in y) is fine but tail_call(f, x for x in y) is not
-            | condense(lparen + originalTextFor(comprehension_expr) + rparen)
+            #  (but we only check for a comprehension if there's a for in the line, since otherwise
+            #  we'd be fully parsing every argument list just to find out it isn't a comprehension)
+            | condense(lparen + FollowedBy(regex_item(r"[^\n]*\bfor\b")) + originalTextFor(comprehension_expr) + rparen)
             | attach(parens, strip_parens_handle)
         )
 
