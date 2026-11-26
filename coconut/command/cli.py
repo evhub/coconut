@@ -6,7 +6,7 @@
 # -----------------------------------------------------------------------------------------------------------------------
 
 """
-Authors: Evan Hubinger, Ishaan Verma
+Authors: Evan Hubinger, Ishaan Verma, Claude
 License: Apache 2.0
 Description: Defines arguments for the Coconut CLI.
 """
@@ -19,6 +19,7 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 from coconut.root import *  # NOQA
 
+import re
 import argparse
 
 from coconut._pyparsing import PYPARSING_INFO
@@ -46,6 +47,14 @@ cli_version_str = main_sig + cli_version
 # -----------------------------------------------------------------------------------------------------------------------
 # MAIN:
 # -----------------------------------------------------------------------------------------------------------------------
+
+def warning_regex(regex):
+    """Compile a --silence-warnings regex."""
+    try:
+        return re.compile(regex)
+    except re.error as err:
+        raise argparse.ArgumentTypeError("invalid regex {regex!r}: {err}".format(regex=regex, err=err))
+
 
 arguments = argparse.ArgumentParser(
     prog="coconut",
@@ -162,6 +171,14 @@ arguments.add_argument(
     "-s", "--strict",
     action="store_true",
     help="enforce code cleanliness standards",
+)
+
+arguments.add_argument(
+    "--silence-warnings",
+    metavar="regex",
+    type=warning_regex,
+    action="append",
+    help="don't show warnings whose message matches the given regex (can be passed multiple times)",
 )
 
 arguments.add_argument(

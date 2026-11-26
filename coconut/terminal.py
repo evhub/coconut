@@ -6,7 +6,7 @@
 # -----------------------------------------------------------------------------------------------------------------------
 
 """
-Author: Evan Hubinger
+Authors: Evan Hubinger, Claude
 License: Apache 2.0
 Description: logger utilities.
 """
@@ -21,6 +21,7 @@ from coconut.root import *  # NOQA
 
 import sys
 import os
+import re
 import traceback
 import logging
 from contextlib import contextmanager
@@ -212,6 +213,7 @@ class Logger(object):
     name = None
     tracing = False
     trace_ind = 0
+    silenced_warnings = ()
 
     recorded_stats = defaultdict(lambda: [0, 0])
 
@@ -238,6 +240,7 @@ class Logger(object):
     def copy_from(self, other):
         """Copy other onto self."""
         self.verbose, self.quiet, self.path, self.name, self.tracing, self.trace_ind = other.verbose, other.quiet, other.path, other.name, other.tracing, other.trace_ind
+        self.silenced_warnings = other.silenced_warnings
 
     def reset(self):
         """Completely reset the logger."""
@@ -247,10 +250,19 @@ class Logger(object):
         """Make a copy of the logger."""
         return Logger(self)
 
-    def setup(self, quiet=None, verbose=None, tracing=None):
-        """Set up the logger with the given parameters."""
+    def setup(self, quiet=None, verbose=None, tracing=None, silence_warnings=None):
+        """Set up the logger with the given parameters.
+
+        silence_warnings should be an iterable of regexes; warnings whose first line
+        (e.g. "CoconutSyntaxWarning: <message> (line <n> in '<file>')") matches
+        (via re.search) any of them won't be shown."""
         if quiet is not None:
             self.quiet = quiet
+        if silence_warnings is not None:
+            self.silenced_warnings = tuple(
+                regex if hasattr(regex, "search") else re.compile(regex)
+                for regex in silence_warnings
+            )
         if not self.force_verbose and verbose is not None:
             self.verbose = verbose
         if tracing is not None:
@@ -431,9 +443,18 @@ class Logger(object):
         """Creates and displays a warning."""
         return self.warn_err(CoconutWarning(*args, **kwargs))
 
+    def is_silenced(self, warning):
+        """Determine whether the given warning has been silenced."""
+        if not self.silenced_warnings:
+            return False
+        # match against the first line of the warning (its type, message, and
+        #  location), but not the snippet of code that follows it
+        warning_str = format_error(warning).split("\n", 1)[0]
+        return any(regex.search(warning_str) for regex in self.silenced_warnings)
+
     def warn_err(self, warning, force=False):
         """Displays a warning."""
-        if not self.quiet or force:
+        if (not self.quiet or force) and not self.is_silenced(warning):
             try:
                 raise warning
             except Exception:

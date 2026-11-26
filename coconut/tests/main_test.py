@@ -949,6 +949,33 @@ class TestShell(unittest.TestCase):
             finally:
                 shutil.rmtree(pyright_dir)
 
+    def test_silence_warnings(self):
+        warn_dir = tempfile.mkdtemp()
+        try:
+            warn_coco = os.path.join(warn_dir, "silence_warnings_test.coco")
+            with open(warn_coco, "w") as warn_file:
+                warn_file.write("class A(object):\n    pass\nf = getattr.\n")
+            base_cmd = ["coconut", warn_coco, "--force", "--no-cache"]
+
+            def get_output(*extra_args):
+                stdout, stderr, retcode = call_output(base_cmd + list(extra_args), color=False)
+                assert retcode == 0, (stdout, stderr)
+                return "".join(stdout + stderr)
+
+            unsilenced = get_output()
+            assert "inheriting from object" in unsilenced, unsilenced
+            assert "getattr" in unsilenced, unsilenced
+            partly_silenced = get_output("--silence-warnings", "inheriting from")
+            assert "inheriting from object" not in partly_silenced, partly_silenced
+            assert "getattr" in partly_silenced, partly_silenced
+            # only the warning message should be matched, not the code snippet that follows it
+            snippet_silenced = get_output("--silence-warnings", "class A")
+            assert "inheriting from object" in snippet_silenced, snippet_silenced
+            fully_silenced = get_output("--silence-warnings", "object", "--silence-warnings", r"silence_warnings_test\.coco")
+            assert "CoconutSyntaxWarning" not in fully_silenced, fully_silenced
+        finally:
+            shutil.rmtree(warn_dir)
+
     def test_pipe(self):
         call('echo ' + escape(coconut_snip) + "| coconut -s", shell=True, assert_output=True)
 

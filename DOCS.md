@@ -123,7 +123,8 @@ depth: 1
 
 ```
 coconut [-h] [--and source [dest ...]] [-v] [-t version] [-i] [-p] [-a] [-l]
-        [--no-line-numbers] [-k] [-w] [-r] [-n] [-d] [-q] [-s] [--pure] [--no-tco]
+        [--no-line-numbers] [-k] [-w] [-r] [-n] [-d] [-q] [-s]
+        [--silence-warnings regex] [--pure] [--no-tco]
         [--no-wrap-types] [-c code] [-j processes] [-f] [--minify] [--jupyter ...]
         [--mypy ...] [--pyright] [--argv ...] [--tutorial] [--docs] [--lsp] [--ai-docs] [--style name] [--vi-mode]
         [--recursion-limit limit] [--stack-size kbs] [--fail-fast] [--no-cache]
@@ -169,6 +170,9 @@ dest                destination directory for compiled files (defaults to
 -q, --quiet           suppress all informational output (combine with --display to write runnable
                       code to stdout)
 -s, --strict          enforce code cleanliness standards
+--silence-warnings regex
+                      don't show warnings whose message matches the given
+                      regex (can be passed multiple times)
 --pure                enforce functional programming norms
 --no-tco, --notco     disable tail call optimization
 --no-wrap-types, --nowraptypes
@@ -353,6 +357,8 @@ The style issues which will cause `--strict` to throw an error are:
 - use of `:` instead of `<:` to specify upper bounds in [Coconut's type parameter syntax](#type-parameter-syntax)
 
 Note that many of the above style issues will still show a warning if `--strict` is not present.
+
+To hide particular warnings without adding `# NOQA` comments, pass `--silence-warnings <regex>` (which can be passed multiple times). It hides any warning whose first line matches the regex (via `re.search`). That line holds the warning type, message, and location, as in `CoconutSyntaxWarning: <message> (line <n> in '<file>')`, so you can silence warnings either by message or by file. `--silence-warnings` only affects warnings: in `--strict` mode, style issues are still errors.
 
 #### `pure` Mode
 
