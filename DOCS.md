@@ -456,6 +456,8 @@ _Note: Unlike the normal Coconut command-line, `%%coconut` defaults to the `sys`
 
 Coconut has the ability to integrate with [MyPy](http://mypy-lang.org/) to provide optional static type_checking, including for all Coconut built-ins. Simply pass `--mypy` to `coconut` to enable MyPy integration, though be careful to pass it only as the last argument, since all arguments after `--mypy` are passed to `mypy`, not Coconut.
 
+When compiling files, MyPy errors are reported with the file name and line number of the original Coconut source, followed by the location in the compiled Python in parentheses.
+
 You can also run `mypy`—or any other static type checker—directly on the compiled Coconut. If the static type checker is unable to find the necessary stub files, however, then you may need to:
 
 1. run `coconut --mypy install` and

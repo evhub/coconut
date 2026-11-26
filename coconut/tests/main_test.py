@@ -914,6 +914,24 @@ class TestShell(unittest.TestCase):
                 check_mypy=False,
             )
 
+        def test_mypy_source_lines(self):
+            mypy_dir = tempfile.mkdtemp()
+            try:
+                mypy_coco = os.path.join(mypy_dir, "mypy_lines_test.coco")
+                with open(mypy_coco, "w") as mypy_file:
+                    mypy_file.write("def f(x: int) -> int = x + 1\n\ny: str = f(1)\n")
+                # errors should point to the Coconut source line rather than the compiled line
+                call(
+                    ["coconut", mypy_coco, "--force", "--mypy"],
+                    assert_output=("mypy_lines_test.coco:3: error:",),
+                    assert_output_only_at_end=False,
+                    check_errors=False,
+                    check_mypy=False,
+                    expect_retcode=1,
+                )
+            finally:
+                shutil.rmtree(mypy_dir)
+
         def test_pyright(self):
             pyright_dir = tempfile.mkdtemp()
             try:

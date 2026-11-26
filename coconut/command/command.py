@@ -25,6 +25,7 @@ import time
 import shutil
 import random
 import sysconfig
+import re
 import json
 import subprocess
 from contextlib import contextmanager
@@ -117,6 +118,12 @@ from coconut.compiler.util import (
 )
 from coconut.compiler.header import gethash
 from coconut.command.cli import arguments, cli_version
+
+# matches the location at the start of a MyPy error line (path.py:line: or path.py:line:col:)
+mypy_location_regex = re.compile(r"^(?P<color>(?:\x1b\[[0-9;]*m)*)(?P<path>[^:\n\x1b]+\.pyi?):(?P<ln>\d+)(?::\d+)?(?P<rest>: .*)$")
+
+# matches ANSI color codes
+ansii_escape_regex = re.compile(r"\x1b\[[0-9;]*m")
 
 # -----------------------------------------------------------------------------------------------------------------------
 # MAIN:
@@ -1012,8 +1019,11 @@ class Command(object):
             args = list(paths) + self.mypy_args
             if code is not None:  # interpreter
                 args += ["-c", code]
+            compiled_lines_cache = {}
             for line, is_err in mypy_run(args):
                 line = line.rstrip()
+                if code is None:  # file
+                    line = self.map_mypy_line(line, compiled_lines_cache)
                 logger.log("[MyPy:{std}]".format(std="err" if is_err else "out"), line)
                 if line.startswith(mypy_silent_err_prefixes):
                     if code is None:  # file
@@ -1061,6 +1071,51 @@ class Command(object):
                         else:
                             logger.print(msg)
 
+    def coconut_location_for(self, compiled_path, line_ind, compiled_lines_cache):
+        """Get the (Coconut source path, Coconut line number) for the given compiled location, or (None, None)."""
+        source_path = self.dest_to_source.get(fixpath(compiled_path)) if compiled_path else None
+        if source_path is None:
+            return None, None
+        if compiled_path not in compiled_lines_cache:
+            try:
+                with univ_open(compiled_path, "r") as compiled_file:
+                    compiled_lines_cache[compiled_path] = compiled_file.read().splitlines()
+            except IOError:
+                compiled_lines_cache[compiled_path] = []
+        compiled_lines = compiled_lines_cache[compiled_path]
+        if line_ind >= len(compiled_lines):
+            return None, None
+        coconut_ln = extract_line_num_from_comment(compiled_lines[line_ind])
+        if coconut_ln is None:
+            return None, None
+        return source_path, coconut_ln
+
+    def map_mypy_line(self, line, compiled_lines_cache):
+        """Rewrite the location at the start of a MyPy output line to point to the Coconut source if possible."""
+        # MyPy messages can span multiple lines (with --pretty, the message is wrapped
+        #  and followed by an indented snippet of the offending code), but the
+        #  location is always at the start of the first line
+        msg_lines = line.split("\n")
+        match = mypy_location_regex.match(msg_lines[0])
+        if not match:
+            return line
+        compiled_path, ln = match.group("path"), int(match.group("ln"))
+        source_path, coconut_ln = self.coconut_location_for(compiled_path, ln - 1, compiled_lines_cache)
+        if coconut_ln is None:
+            return line
+        msg_lines[0] = "{color}{source}:{coconut_ln}{rest}".format(
+            color=match.group("color"),
+            source=showpath(source_path),
+            coconut_ln=coconut_ln,
+            rest=match.group("rest"),
+        )
+        # put the compiled location at the end of the message, before any code snippet
+        end_of_msg_ind = 0
+        while end_of_msg_ind + 1 < len(msg_lines) and not ansii_escape_regex.sub("", msg_lines[end_of_msg_ind + 1])[:1].isspace():
+            end_of_msg_ind += 1
+        msg_lines[end_of_msg_ind] += " (compiled: {compiled}:{ln})".format(compiled=compiled_path, ln=ln)
+        return "\n".join(msg_lines)
+
     def format_type_checking_diagnostic(self, diagnostic, compiled_lines_cache):
         """Format a pyright JSON diagnostic, pointing to the Coconut source when possible."""
         compiled_path = diagnostic.get("file", "")
@@ -1073,20 +1128,7 @@ class Command(object):
         if rule:
             message += " [" + rule + "]"
 
-        # look up the Coconut line number from the line number comment on the compiled line
-        source_path = self.dest_to_source.get(fixpath(compiled_path)) if compiled_path else None
-        coconut_ln = None
-        if source_path is not None:
-            if compiled_path not in compiled_lines_cache:
-                try:
-                    with univ_open(compiled_path, "r") as compiled_file:
-                        compiled_lines_cache[compiled_path] = compiled_file.read().splitlines()
-                except IOError:
-                    compiled_lines_cache[compiled_path] = []
-            compiled_lines = compiled_lines_cache[compiled_path]
-            if line_ind < len(compiled_lines):
-                coconut_ln = extract_line_num_from_comment(compiled_lines[line_ind])
-
+        source_path, coconut_ln = self.coconut_location_for(compiled_path, line_ind, compiled_lines_cache)
         if coconut_ln is None:
             return "{path}:{ln}:{col}: {severity}: {message}".format(
                 path=showpath(compiled_path),
