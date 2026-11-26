@@ -2713,6 +2713,7 @@ class Grammar(object):
                 (unsafe_name + arg_comma.suppress())("name")
                 | (unsafe_name + equals.suppress() + test + arg_comma.suppress())("default")
                 | (star.suppress() + unsafe_name + arg_comma.suppress())("star")
+                | (star.suppress() + unsafe_name + colon.suppress() + typedef_test + arg_comma.suppress())("type star")
                 | (unsafe_name + colon.suppress() + typedef_test + equals.suppress() + test + arg_comma.suppress())("type default")
                 | (unsafe_name + colon.suppress() + typedef_test + arg_comma.suppress())("type")
             )) + rparen.suppress()

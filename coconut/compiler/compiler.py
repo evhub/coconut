@@ -3865,10 +3865,11 @@ def __new__(_coconut_cls, {match_func_paramdef}):
         else:
             raise CoconutInternalException("invalid datadef tokens", tokens)
 
-        all_args = []  # string definitions for all args
+        all_args = []  # (string definition, typedef or None) for all args
         base_args = []  # names of all the non-starred args
         req_args = 0  # number of required arguments
         starred_arg = None  # starred arg if there is one else None
+        starred_typedef = None  # typedef for the starred arg if there is one else None
         types = {}  # arg position to typedef for arg
         arg_defaults = {}  # arg position to default for arg
         for i, arg in enumerate(original_args):
@@ -3880,6 +3881,9 @@ def __new__(_coconut_cls, {match_func_paramdef}):
                 argname, default = arg
             elif "star" in arg:
                 argname, = arg
+                star = True
+            elif "type star" in arg:
+                argname, typedef = arg
                 star = True
             elif "type" in arg:
                 argname, typedef = arg
@@ -3895,6 +3899,7 @@ def __new__(_coconut_cls, {match_func_paramdef}):
                 if i != len(original_args) - 1:
                     raise CoconutDeferredSyntaxError("starred data field must come last", loc)
                 starred_arg = argname
+                starred_typedef = typedef
             else:
                 if default is not None:
                     arg_defaults[i] = "__new__.__defaults__[{i}]".format(i=len(arg_defaults))
@@ -3904,13 +3909,20 @@ def __new__(_coconut_cls, {match_func_paramdef}):
                     req_args += 1
                 base_args.append(argname)
             if typedef:
-                internal_assert(not star, "invalid typedef in starred data field", typedef)
-                types[i] = typedef
+                types[i] = "_coconut.typing.Tuple[" + typedef + ", ...]" if star else typedef
             arg_str = ("*" if star else "") + argname + ("=" + default if default else "")
-            all_args.append(arg_str)
+            all_args.append((arg_str, typedef))
 
         extra_stmts = ""
         if starred_arg is not None:
+            # type checkers think the starred field holds a tuple of the starred args rather than the args themselves
+            starred_arg_type_ignore = "" if starred_typedef is None else " " + self.type_ignore_comment()
+            if starred_typedef is None:
+                starred_arg_property_def = "def " + starred_arg + "(self):"
+            elif self.target.startswith("3"):
+                starred_arg_property_def = "def " + starred_arg + "(self) -> " + self.wrap_typedef(types[len(original_args) - 1], for_py_typedef=True) + ":"
+            else:
+                starred_arg_property_def = "def " + starred_arg + "(self):" + self.wrap_type_comment(types[len(original_args) - 1], is_return=True)
             if base_args:
                 extra_stmts += handle_indentation(
                     '''
@@ -3927,20 +3939,22 @@ def _asdict(self):
 def __repr__(self):
     return "{name}({args_for_repr})".format(**self._asdict())
 def _replace(_self, **kwds):
-    result = _self._make(_coconut.tuple(_coconut.map(kwds.pop, {quoted_base_args_tuple}, _self)) + kwds.pop("{starred_arg}", self.{starred_arg}))
+    result = _self._make(_coconut.tuple(_coconut.map(kwds.pop, {quoted_base_args_tuple}, _self)) + kwds.pop("{starred_arg}", _self.{starred_arg}))
     if kwds:
         raise _coconut.ValueError("Got unexpected field names: " + _coconut.repr(kwds.keys()))
     return result
 @_coconut.property
-def {starred_arg}(self):
-    return self[{num_base_args}:]
+{starred_arg_property_def}
+    return self[{num_base_args}:]{starred_arg_type_ignore}
                     ''',
                     add_newline=True,
                 ).format(
                     name=name,
                     args_for_repr=", ".join(arg + "={" + arg.lstrip("*") + "!r}" for arg in base_args + ["*" + starred_arg]),
                     starred_arg=starred_arg,
-                    all_args=", ".join(all_args),
+                    starred_arg_property_def=starred_arg_property_def,
+                    starred_arg_type_ignore=starred_arg_type_ignore,
+                    all_args=self.join_data_new_args(all_args),
                     req_args=req_args,
                     num_base_args=str(len(base_args)),
                     base_args_tuple=tuple_str_of(base_args),
@@ -3950,7 +3964,7 @@ def {starred_arg}(self):
             else:
                 extra_stmts += handle_indentation(
                     '''
-def __new__(_coconut_cls, *{arg}):
+def __new__(_coconut_cls, {all_args}):
     return _coconut.tuple.__new__(_coconut_cls, {arg})
 @_coconut.classmethod
 def _make(cls, iterable, {kwd_only}new=_coconut.tuple.__new__, len=None):
@@ -3965,13 +3979,16 @@ def _replace(_self, **kwds):
         raise _coconut.ValueError("Got unexpected field names: " + _coconut.repr(kwds.keys()))
     return result
 @_coconut.property
-def {arg}(self):
-    return self[:]
+{starred_arg_property_def}
+    return self[:]{starred_arg_type_ignore}
                     ''',
                     add_newline=True,
                 ).format(
                     name=name,
                     arg=starred_arg,
+                    all_args=self.join_data_new_args(all_args),
+                    starred_arg_property_def=starred_arg_property_def,
+                    starred_arg_type_ignore=starred_arg_type_ignore,
                     kwd_only=("*, " if self.target.startswith("3") else ""),
                 )
         elif arg_defaults:
@@ -3982,7 +3999,7 @@ def __new__(_coconut_cls, {all_args}):
                 ''',
                 add_newline=True,
             ).format(
-                all_args=", ".join(all_args),
+                all_args=self.join_data_new_args(all_args),
                 base_args_tuple=tuple_str_of(base_args),
             )
 
@@ -4002,6 +4019,29 @@ def __new__(_coconut_cls, {all_args}):
         namedtuple_call = self.make_namedtuple_call(name, namedtuple_args, types)
 
         return self.assemble_data(decorators, name, namedtuple_call, inherit, extra_stmts, stmts, base_args, paramdefs)
+
+    def join_data_new_args(self, all_args):
+        """Join the (arg definition, typedef or None) pairs for a data type's __new__ into a typed argument list."""
+        if self.target.startswith("3"):
+            out = []
+            for arg_str, typedef in all_args:
+                if typedef is not None:
+                    argname, eq, default = arg_str.partition("=")
+                    arg_str = argname + ": " + self.wrap_typedef(typedef, for_py_typedef=True) + eq + default
+                out.append(arg_str)
+            return ", ".join(out)
+        else:
+            # Python 2 doesn't support annotations (or trailing commas after *args), so use type comments
+            out = ""
+            for i, (arg_str, typedef) in enumerate(all_args):
+                out += arg_str
+                if i < len(all_args) - 1:
+                    out += ","
+                if typedef is not None:
+                    out += self.wrap_type_comment(typedef, add_newline=True)
+                elif i < len(all_args) - 1:
+                    out += " "
+            return out
 
     def make_namedtuple_call(self, name, namedtuple_args, types=None, of_args=None):
         """Construct a namedtuple call."""

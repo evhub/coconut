@@ -834,4 +834,29 @@ def primary_test_2() -> bool:
         assert am_y is not None
         am_z: int = am_y  # type checkers should still narrow based on simple asserts
 
+    # typed starred data fields
+    data TypedStarData(tsd_x: int, *tsd_ys: str)
+    data OnlyTypedStarData(*otsd_xs: float)
+    data TypedDefaultData(tdd_x: int, tdd_y: str = "a")
+    tsd = TypedStarData(1, "a", "b")
+    assert tsd.tsd_x == 1
+    assert tsd.tsd_ys == ("a", "b")
+    tsd_ys: tuple[str, ...] = tsd.tsd_ys
+    assert tsd == TypedStarData(1, "a", "b")
+    assert tuple(tsd) == (1, "a", "b")
+    assert repr(tsd) == "TypedStarData(tsd_x=1, *tsd_ys=('a', 'b'))"
+    assert tsd._replace(tsd_ys=("c",)) == TypedStarData(1, "c")
+    data UntypedStarData(usd_x, *usd_ys)
+    assert UntypedStarData(1, 2, 3)._replace(usd_x=4) == UntypedStarData(4, 2, 3)
+    otsd = OnlyTypedStarData(1.0, 2.0)
+    otsd_xs: tuple[float, ...] = otsd.otsd_xs
+    assert otsd_xs == (1.0, 2.0)
+    assert tuple(OnlyTypedStarData()) == ()
+    match TypedStarData(tsd_x_, *tsd_ys_) in tsd:
+        assert tsd_x_ == 1
+        assert tsd_ys_ == ("a", "b")
+    else:
+        assert False
+    assert TypedDefaultData(1) == TypedDefaultData(1, "a")
+
     return True

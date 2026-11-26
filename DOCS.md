@@ -1551,7 +1551,7 @@ data <name>(<args>) [from <inherits>]:
 ```
 `<name>` is the name of the new data type, `<args>` are the arguments to its constructor as well as the names of its attributes, `<body>` contains the data type's methods, and `<inherits>` optionally contains any desired base classes.
 
-Coconut allows data fields in `<args>` to have defaults and/or [type annotations](#enhanced-type-annotation) attached to them, and supports a starred parameter at the end to collect extra arguments. Additionally, Coconut allows type parameters to be specified in brackets after `<name>` using Coconut's [type parameter syntax](#type-parameter-syntax).
+Coconut allows data fields in `<args>` to have defaults and/or [type annotations](#enhanced-type-annotation) attached to them, and supports a starred parameter at the end to collect extra arguments. As with functions, a type annotation on the starred parameter (e.g. `data Vec(*coords: float)`) gives the type of each extra argument, such that the attribute itself (`coords`) has type `tuple[float, ...]`. Additionally, Coconut allows type parameters to be specified in brackets after `<name>` using Coconut's [type parameter syntax](#type-parameter-syntax).
 
 Writing constructors for `data` types must be done using the `__new__` method instead of the `__init__` method. For helping to easily write `__new__` methods, Coconut provides the [makedata](#makedata) built-in.
 
