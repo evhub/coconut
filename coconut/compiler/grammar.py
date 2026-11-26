@@ -1940,8 +1940,13 @@ class Grammar(object):
         lambda_arrow <<= _lambda_arrow
 
         alt_ternary_expr = attach(keyword("if").suppress() + test_item + keyword("then").suppress() + test_item + keyword("else").suppress() + test, alt_ternary_handle)
+        # fast path for the very common case of a bare name followed by a delimiter,
+        #  which would otherwise have to go through every level of the expression grammar
+        #  (all of which just pass a single name through unchanged)
+        fast_name_test = refname + FollowedBy(regex_item(r"[,)\]}\n]"))
         test <<= (
-            typedef_callable
+            fast_name_test
+            | typedef_callable
             | lambdef
             # must come near end since it includes plain test_item
             | addspace(test_item + Optional(keyword("if") + test_item + keyword("else") + test))
