@@ -1198,44 +1198,48 @@ class TestShell(unittest.TestCase):
 
     if not WINDOWS and XONSH:
         def test_xontrib(self):
-            # xonsh generates its parser tables the first time it parses anything (which can take
-            #  a very long time), so make sure that happens before the interactive session
-            call(["xonsh", "-c", "echo xonsh_warmup"], assert_output="xonsh_warmup", check_errors=False)
-            p = spawn_cmd("xonsh")
-            pexpect(p, "$")
-            p.sendline("xontrib load coconut")
-            pexpect(p, "$")
-            p.sendline("!(ls -la) |> bool")
-            pexpect(p, "True")
-            p.sendline("'1; 2' |> print")
-            pexpect(p, "1; 2")
-            p.sendline('$ENV_VAR = "ABC"')
-            pexpect(p, "$")
-            p.sendline('echo f"{$ENV_VAR}"; echo f"{$ENV_VAR}"')
-            pexpect(p, "ABC")
-            pexpect(p, "ABC")
-            p.sendline('len("""1\n3\n5""")\n')
-            pexpect(p, "5")
-            if not PYPY or PY39:
-                if PY36:
-                    p.sendline("echo 123;; 123")
-                    pexpect(p, "123;; 123")
-                    p.sendline("echo abc; echo abc")
-                    pexpect(p, "abc")
-                    pexpect(p, "abc")
-                    p.sendline("echo abc; print(1 |> (.+1))")
-                    pexpect(p, "abc")
-                    pexpect(p, "2")
-                p.sendline('execx("10 |> print")')
-                pexpect(p, ["subprocess mode", "IndexError"])
-            p.sendline("xontrib unload coconut")
-            pexpect(p, "$")
-            if (not PYPY or PY39) and PY36:
-                p.sendline("1 |> print")
-                pexpect(p, ["subprocess mode", "IndexError"])
-            p.sendeof()
-            if p.isalive():
-                p.terminate()
+            # don't let xonsh history (from this or earlier sessions) affect the session, since
+            #  history-based autosuggestions change how input is echoed
+            with using_env_vars({"XONSH_HISTORY_BACKEND": "dummy"}):
+                # xonsh generates its parser tables the first time it parses anything (which can take
+                #  a very long time), so make sure that happens before the interactive session
+                call(["xonsh", "-c", "echo xonsh_warmup"], assert_output="xonsh_warmup", check_errors=False)
+                p = spawn_cmd("xonsh")
+                pexpect(p, "$")
+                p.sendline("xontrib load coconut")
+                pexpect(p, "$")
+                p.sendline("!(ls -la) |> bool")
+                pexpect(p, "True")
+                p.sendline("'1; 2' |> print")
+                pexpect(p, "1; 2")
+                p.sendline('$ENV_VAR = "ABC"')
+                pexpect(p, "$")
+                p.sendline('echo f"{$ENV_VAR}"; echo f"{$ENV_VAR}"')
+                pexpect(p, "ABC")
+                pexpect(p, "ABC")
+                p.sendline('len("""1\n3\n5""")\n')
+                pexpect(p, "5")
+                if not PYPY or PY39:
+                    if PY36:
+                        p.sendline("echo 123;; 123")
+                        # match the output (123; then 123, possibly with color codes in between) rather than the echoed input
+                        pexpect(p, r"123;\r?\n(?:\x1b\[[0-9;?>]*[A-Za-z])*123")
+                        p.sendline("echo abc; echo abc")
+                        pexpect(p, "abc")
+                        pexpect(p, "abc")
+                        p.sendline("echo abc; print(1 |> (.+1))")
+                        pexpect(p, "abc")
+                        pexpect(p, "2")
+                    p.sendline('execx("10 |> print")')
+                    pexpect(p, ["subprocess mode", "IndexError"])
+                p.sendline("xontrib unload coconut")
+                pexpect(p, "$")
+                if (not PYPY or PY39) and PY36:
+                    p.sendline("1 |> print")
+                    pexpect(p, ["subprocess mode", "IndexError"])
+                p.sendeof()
+                if p.isalive():
+                    p.terminate()
 
     if IPY and (not WINDOWS or PY35):
         def test_ipython_extension(self):
