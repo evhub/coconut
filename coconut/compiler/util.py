@@ -35,6 +35,7 @@ import inspect
 import __future__
 import itertools
 import weakref
+import warnings
 import datetime as dt
 from functools import reduce
 from collections import defaultdict
@@ -136,6 +137,15 @@ from coconut.exceptions import (
     CoconutException,
     CoconutInternalException,
     CoconutDeferredSyntaxError,
+)
+
+# cPyparsing calls os.path.commonprefix, which is deprecated on Python 3.15+, producing a deprecation
+#  warning for every parse (attributed to the parse calls in this module), so we silence those here
+warnings.filterwarnings(
+    "ignore",
+    message=r"os\.path\.commonprefix\(\) is deprecated",
+    category=DeprecationWarning,
+    module=r"coconut\.compiler\.util",
 )
 
 # -----------------------------------------------------------------------------------------------------------------------
