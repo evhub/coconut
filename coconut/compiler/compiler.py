@@ -656,7 +656,7 @@ class Compiler(Grammar, pickleable_obj):
         self.filename = filename
         self.outer_ln = None
         self.indchar = None
-        self.comments = defaultdict(set)
+        self.comments = defaultdict(dictset)
         self.wrapped_type_ignore = None
         self.refs = []
         self.skips = []
