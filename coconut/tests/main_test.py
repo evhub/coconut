@@ -1222,8 +1222,10 @@ class TestShell(unittest.TestCase):
                 if not PYPY or PY39:
                     if PY36:
                         p.sendline("echo 123;; 123")
-                        # match the output (123; then 123, possibly with color codes in between) rather than the echoed input
-                        pexpect(p, r"123;\r?\n(?:\x1b\[[0-9;?>]*[A-Za-z])*123")
+                        # match the output rather than the echoed input: newer xonshes print 123; and 123 on separate
+                        #  lines (possibly with color codes in between) while older ones print 123;; 123, but
+                        #  either way the output starts right after a newline or escape code, unlike the echoed input
+                        pexpect(p, r"(?:\n|\x1b\[[0-9;?>]*[A-Za-z])123;(?:; |\r?\n(?:\x1b\[[0-9;?>]*[A-Za-z])*)123")
                         p.sendline("echo abc; echo abc")
                         pexpect(p, "abc")
                         pexpect(p, "abc")
