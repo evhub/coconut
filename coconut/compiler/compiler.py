@@ -84,6 +84,7 @@ from coconut.constants import (
     data_defaults_var,
     funcwrapper,
     non_syntactic_newline,
+    lazy_get_func,
     early_passthrough_wrapper,
     super_names,
     custom_op_var,
@@ -214,6 +215,7 @@ from coconut.compiler.util import (
     add_packrat_cache_items,
     parse_elem_to_identifier,
     identifier_to_parse_elem,
+    validate_parse_elem_identifiers,
     _lookup_loc,
     _value_exc_loc_or_ret,
 )
@@ -664,6 +666,7 @@ class Compiler(Grammar, pickleable_obj):
         # but always overwrite temp_vars_by_key since they store locs that will be invalidated
         self.temp_vars_by_key = {}
         self.name_info = defaultdict(lambda: {"imported": set(), "referenced": set(), "assigned": set()})
+        self.lazy_from_import_locs = {}
         self.star_import = False
         self.kept_lines = []
         self.num_lines = 0
@@ -995,6 +998,12 @@ class Compiler(Grammar, pickleable_obj):
         )
         cls.yield_from <<= attach(cls.yield_from_ref, cls.method("yield_from_handle"))
         cls.typedef <<= attach(cls.typedef_ref, cls.method("typedef_handle"))
+        # handle parsing_context for type annotations (used to avoid lazy import reference resolution in them)
+        cls.typedef_test <<= manage(
+            cls.typedef_test_ref,
+            cls.method("typedef_manage"),
+            include_in_packrat_context=True,
+        )
         cls.typedef_default <<= attach(cls.typedef_default_ref, cls.method("typedef_handle"))
         cls.unsafe_typedef_default <<= attach(cls.unsafe_typedef_default_ref, cls.method("unsafe_typedef_handle"))
         cls.typed_assign_stmt <<= attach(cls.typed_assign_stmt_ref, cls.method("typed_assign_stmt_handle"))
@@ -1663,6 +1672,11 @@ class Compiler(Grammar, pickleable_obj):
 
         # unpack pickle_info_obj
         validation_dict = pickle_info_obj["validation_dict"]
+
+        # if the grammar has changed (e.g. during development), the cache is invalid
+        if not validate_parse_elem_identifiers(validation_dict):
+            logger.log("Ignoring incremental cache with inconsistent grammar:", cache_path)
+            return False
         if ParserElement._incrementalEnabled:
             pickleable_cache_items = pickle_info_obj["pickleable_cache_items"]
         else:
@@ -3737,7 +3751,12 @@ while True:
         if not classlist_toks and not self.target.startswith("3"):
             base_classes.append("_coconut.object")
 
-        out += "(" + ", ".join(base_classes) + ")" + body
+        joined_bases = ", ".join(base_classes)
+        if lazy_get_func + "(" in joined_bases:
+            # type checkers can't handle lazily-imported base classes
+            internal_assert(body.startswith(":"), "invalid class body", body)
+            body = ":" + self.type_ignore_comment() + body[1:]
+        out += "(" + joined_bases + ")" + body
 
         # add override detection
         if self.target_info < (3, 6):
@@ -4062,7 +4081,10 @@ def __hash__(self):
                 item = name
             elif name == "...":
                 self.strict_err_or_warn("'...={item}' shorthand is deprecated, use '{item}=' shorthand instead".format(item=item), original, loc, noqa_able=True)
-                name = item
+                if item.startswith(lazy_get_func + "(") and item.endswith(")"):
+                    name = item[len(lazy_get_func) + 1:-1]
+                else:
+                    name = item
             names.append(name)
             items.append(item)
 
@@ -4105,7 +4127,12 @@ else:
                     imp_lookup=".".join([existing_imp] + module_path[1:] + ([imp] if imp_from is not None else [])),
                 )
         if lazy == "emulated":
-            out_lines = []
+            out_lines = [
+                "if _coconut.typing.TYPE_CHECKING:",
+                openindent + self.make_import_stmt(imp_from, imp, imp_as, raw=True),
+                closeindent + "else:",
+                openindent,
+            ]
             fake_mods = (imp_from if imp_from is not None else imp).split(".")
             for i in range(1, len(fake_mods)):
                 mod_name = ".".join(fake_mods[:i])
@@ -4117,6 +4144,7 @@ else:
                 attr_param=', attr="' + imp + '"' if imp_from is not None else "",
                 type_ignore=self.type_ignore_comment(),
             ))
+            out_lines.append(closeindent)
             return "\n".join(out_lines)
         else:
             internal_assert(not lazy or lazy == "native", "invalid lazy import type", lazy)
@@ -4276,6 +4304,10 @@ else:
             return special_starred_import_handle(imp_all=bool(imp_from))
         for imp_name in imported_names:
             self.name_info[imp_name]["imported"].add(loc)
+            # references to emulated lazy from-imports are resolved at the reference
+            #  site (see name_handle), matching native lazy import reification
+            if lazy == "emulated" and imp_from is not None:
+                self.lazy_from_import_locs.setdefault(imp_name, loc)
         return self.universal_import(loc, imports, imp_from=imp_from, lazy=lazy)
 
     def complex_raise_stmt_handle(self, loc, tokens):
@@ -5875,8 +5907,22 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
                 original,
                 loc,
             )
+        elif (
+            not assign
+            and not escaped
+            and name in self.lazy_from_import_locs
+            and loc > self.lazy_from_import_locs[name]
+            and self.current_parsing_context("typedef") is None
+        ):
+            return lazy_get_func + "(" + name + ")"
         else:
             return name
+
+    @contextmanager
+    def typedef_manage(self, original, loc, item):
+        """Manage type annotations."""
+        with self.add_to_parsing_context({"typedef": {}}):
+            yield
 
     def check_undefined_name(self, original, loc, name, scope, outer_ln):
         """Run a deferred check for name being undefined in the scope chain.

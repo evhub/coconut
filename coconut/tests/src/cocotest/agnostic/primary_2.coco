@@ -757,6 +757,20 @@ def primary_test_2() -> bool:
     assert_raises(=> lazy_missing(), ImportError)
     lazy from coconut_nonexistent_test_module4.submodule import missing as lazy_missing2
     assert_raises((def => lazy_missing2.attr = 1), ImportError)
+    # lazy from-imports resolve to the real object at the reference site (#890)
+    import math as eager_math, json as eager_json, pickle, collections as eager_collections
+    lazy from math import pi as lazy_pi
+    assert float(lazy_pi) == eager_math.pi
+    lazy from json import dumps as lazy_dumps
+    assert lazy_dumps is eager_json.dumps
+    assert pickle.loads(pickle.dumps(lazy_dumps)) is eager_json.dumps
+    lazy from collections import Counter as LazyCounter
+    class MyLazyCounter(LazyCounter):
+        pass
+    assert MyLazyCounter("aab")["a"] == 2
+    assert issubclass(MyLazyCounter, eager_collections.Counter)
+    def shadows_lazy(\lazy_pi) = lazy_pi + 1
+    assert shadows_lazy(1) == 2
 
 
     # double-starred data/class patterns (issue #899)

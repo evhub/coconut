@@ -215,6 +215,8 @@ legal_indent_chars = " \t"  # the only Python-legal indent chars
 
 non_syntactic_newline = "\f"  # must be a single character
 
+lazy_get_func = "_coconut_lazy_get"
+
 # both must be in ascending order and must be unbroken with no missing 2 num vers
 #  and must be kept in sync with eols and targets below
 supported_py2_vers = (

@@ -236,6 +236,9 @@ def _coconut_lazy_module(name: str) -> _coconut.types.ModuleType: ...
 def _coconut_lazy_module(name: str, *, attr: str) -> _t.Any: ...
 
 
+def _coconut_lazy_get(obj: _T) -> _T: ...
+
+
 def scan(
     func: _t.Callable[[_T, _U], _T],
     iterable: _t.Iterable[_U],

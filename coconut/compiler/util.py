@@ -1254,6 +1254,16 @@ def parse_elem_to_identifier(elem, validation_dict=None):
     return identifier
 
 
+def validate_parse_elem_identifiers(validation_dict):
+    """Check that all the identifiers in the given validation_dict refer to the same kinds of parse elements."""
+    for identifier, elem_name in validation_dict.items():
+        if identifier < len(all_parse_elements):
+            maybe_elem = all_parse_elements[identifier]()
+            if maybe_elem is not None and maybe_elem.__class__.__name__ != elem_name:
+                return False
+    return True
+
+
 def identifier_to_parse_elem(identifier, validation_dict=None):
     """Get the parse element for the given identifier."""
     if identifier < len(all_parse_elements):

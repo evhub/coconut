@@ -1936,7 +1936,7 @@ class Grammar(object):
             unsafe_typedef_test,
             unsafe_lambda_arrow,
         )
-        typedef_test <<= _typedef_test
+        typedef_test_ref = _typedef_test
         lambda_arrow <<= _lambda_arrow
 
         alt_ternary_expr = attach(keyword("if").suppress() + test_item + keyword("then").suppress() + test_item + keyword("else").suppress() + test, alt_ternary_handle)
