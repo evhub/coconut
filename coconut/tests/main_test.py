@@ -1030,28 +1030,54 @@ class TestShell(unittest.TestCase):
         def test_lsp(self):
             import json
             import subprocess
+            import threading
+            try:
+                import queue
+            except ImportError:
+                import Queue as queue  # type: ignore
+
+            # how long to wait for any single response from the server before failing
+            lsp_timeout = 300
 
             proc = subprocess.Popen(["coconut", "--lsp"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             next_id = [0]
+            messages = queue.Queue()
 
             def send(msg):
                 data = json.dumps(msg).encode("utf-8")
                 proc.stdin.write(("Content-Length: %d\r\n\r\n" % len(data)).encode("ascii") + data)
                 proc.stdin.flush()
 
-            def read_message():
-                headers = {}
-                while True:
-                    line = proc.stdout.readline().decode("ascii").strip()
-                    if not line:
-                        break
-                    key, val = line.split(":", 1)
-                    headers[key.strip().lower()] = val.strip()
-                return json.loads(proc.stdout.read(int(headers["content-length"])))
+            def read_messages():
+                # read messages on a separate thread so that a server that stops
+                #  responding fails the test rather than hanging it
+                try:
+                    while True:
+                        headers = {}
+                        while True:
+                            line = proc.stdout.readline()
+                            if not line:
+                                return  # server exited
+                            line = line.decode("ascii").strip()
+                            if not line:
+                                break
+                            key, val = line.split(":", 1)
+                            headers[key.strip().lower()] = val.strip()
+                        messages.put(json.loads(proc.stdout.read(int(headers["content-length"]))))
+                finally:
+                    messages.put(None)
+            reader = threading.Thread(target=read_messages)
+            reader.daemon = True
+            reader.start()
 
             def wait_for(pred):
                 while True:
-                    msg = read_message()
+                    try:
+                        msg = messages.get(timeout=lsp_timeout)
+                    except queue.Empty:
+                        raise AssertionError("timed out waiting for the language server to respond")
+                    if msg is None:
+                        raise AssertionError("language server exited unexpectedly:\n" + proc.stderr.read().decode("utf-8", "replace"))
                     if pred(msg):
                         return msg
 
