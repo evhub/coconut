@@ -27,6 +27,11 @@ jobs:
           - 'pypy-3.11'
       fail-fast: false
     name: Python ${{ matrix.python-version }}
+    # a normal run takes about an hour, so anything much longer means something is hanging
+    timeout-minutes: 150
+    env:
+      # make sure the log shows exactly where things got to if a job does hang
+      PYTHONUNBUFFERED: "1"
     steps:
       - uses: actions/checkout@v4
       - name: Setup python
