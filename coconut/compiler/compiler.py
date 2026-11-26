@@ -111,6 +111,7 @@ from coconut.constants import (
 )
 from coconut.util import (
     pickle,
+    disabled_gc,
     pickleable_obj,
     checksum,
     clip,
@@ -1546,7 +1547,10 @@ class Compiler(Grammar, pickleable_obj):
         with self.lock:
             Compiler.current_compiler = self
             self.reset(keep_state, filename)
-            yield
+            # parsing creates very little cyclic garbage but a huge number of
+            #  objects, so the cyclic garbage collector is pure overhead here
+            with disabled_gc():
+                yield
 
     def streamline(self, grammars, inputstring=None, force=False, inner=False):
         """Streamline the given grammar(s) for the given inputstring."""

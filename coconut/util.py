@@ -6,7 +6,7 @@
 # -----------------------------------------------------------------------------------------------------------------------
 
 """
-Author: Evan Hubinger
+Authors: Evan Hubinger, Claude
 License: Apache 2.0
 Description: Base Coconut utilities.
 """
@@ -25,6 +25,7 @@ import shutil
 import json
 import traceback
 import time
+import gc
 from zlib import crc32
 from warnings import warn
 from types import MethodType
@@ -158,6 +159,18 @@ def clip(num, min=None, max=None):
         max if max is not None and num > max else
         num
     )
+
+
+@contextmanager
+def disabled_gc():
+    """Temporarily disable the cyclic garbage collector."""
+    was_enabled = gc.isenabled()
+    gc.disable()
+    try:
+        yield
+    finally:
+        if was_enabled:
+            gc.enable()
 
 
 def literal_lines(text, keep_newlines=False, yield_next_line_is_real=False):
