@@ -53,6 +53,7 @@ from coconut.constants import (
     icoconut_custom_kernel_install_loc,
     icoconut_custom_kernel_file_loc,
     WINDOWS,
+    CPYTHON,
     non_syntactic_newline,
     setuptools_distribution_names,
 )
@@ -163,7 +164,14 @@ def clip(num, min=None, max=None):
 
 @contextmanager
 def disabled_gc():
-    """Temporarily disable the cyclic garbage collector."""
+    """Temporarily disable the cyclic garbage collector.
+
+    Only does anything on CPython, since other implementations (e.g. PyPy)
+    don't use reference counting and so rely on the garbage collector to
+    free everything, not just cyclic garbage."""
+    if not CPYTHON:
+        yield
+        return
     was_enabled = gc.isenabled()
     gc.disable()
     try:
