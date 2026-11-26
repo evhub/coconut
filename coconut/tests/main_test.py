@@ -934,6 +934,30 @@ class TestShell(unittest.TestCase):
     def test_code_interact(self):
         call(["coconut", "-s", "-c", coconut_snip, "--interact"], assert_output=True, assert_output_only_at_end=False)
 
+    if not PY2 and int(pytest.__version__.split(".")[0]) >= 7:
+        def test_pytest_plugin(self):
+            plugin_dir = tempfile.mkdtemp()
+            try:
+                with open(os.path.join(plugin_dir, "plugin_helpers.coco"), "w") as helper_file:
+                    helper_file.write("def double(x) = x * 2\n")
+                with open(os.path.join(plugin_dir, "test_plugin_example.coco"), "w") as test_file:
+                    test_file.write(
+                        "from plugin_helpers import double\n"
+                        "def test_double():\n"
+                        "    assert range(3) |> map$(double) |> list == [0, 2, 4]\n"
+                        "def test_fails():\n"
+                        "    assert double(2) == 5\n"
+                    )
+                call(
+                    [sys.executable, "-m", "pytest", "-p", "coconut.pytest_plugin", "-p", "no:cacheprovider", plugin_dir],
+                    assert_output=("assert 4 == 5", "1 failed, 1 passed"),
+                    assert_output_only_at_end=False,
+                    check_errors=False,
+                    expect_retcode=1,
+                )
+            finally:
+                shutil.rmtree(plugin_dir)
+
     if not WINDOWS:
         def test_import_hook_preserves_stdin(self):
             hook_dir = tempfile.mkdtemp()

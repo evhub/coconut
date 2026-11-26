@@ -520,6 +520,14 @@ Compilation always uses the same parameters as in the [Coconut Jupyter kernel](#
 
 Note that the way that Coconut integrates with `xonsh`, `@(<code>)` syntax and the `execx` command will only work with Python code, not Coconut code. Additionally, Coconut will only compile individual commands—Coconut will not touch the `.xonshrc` or any other `.xsh` files.
 
+#### `pytest` Support
+
+Coconut includes a [`pytest`](https://docs.pytest.org/) plugin that lets you write your tests in Coconut. The plugin is opt-in; to enable it, either run `pytest -p coconut.pytest_plugin`, or add
+```coconut_python
+pytest_plugins = ["coconut.pytest_plugin"]
+```
+to your top-level `conftest.py`. With the plugin enabled, `pytest` will collect Coconut test files matching its normal [`python_files`](https://docs.pytest.org/en/stable/reference/reference.html#confval-python_files) patterns (e.g. `test_*.coco` and `*_test.coco`), and any Coconut modules imported during the test session will be compiled automatically. Coconut test files (and any Coconut modules they import) are compiled in-place, such that `pytest` (including its assertion introspection) works on them exactly as it does on Python files. The plugin requires `pytest` 7 or later.
+
 
 ## Operators
 
