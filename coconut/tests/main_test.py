@@ -934,6 +934,24 @@ class TestShell(unittest.TestCase):
     def test_code_interact(self):
         call(["coconut", "-s", "-c", coconut_snip, "--interact"], assert_output=True, assert_output_only_at_end=False)
 
+    if not WINDOWS:
+        def test_import_hook_preserves_stdin(self):
+            hook_dir = tempfile.mkdtemp()
+            try:
+                with open(os.path.join(hook_dir, "stdin_hook_mod.coco"), "w") as mod_file:
+                    mod_file.write("x = 1 |> (.+1)\n")
+                # importing a Coconut module shouldn't consume (and execute) the program's piped stdin
+                call(
+                    "cd " + hook_dir + " && echo 'print(\"HIJACKED\")' | " + sys.executable + ' -c "'
+                    + "import sys, coconut.api; import stdin_hook_mod; "
+                    + "assert stdin_hook_mod.x == 2; assert 'HIJACKED' in sys.stdin.read(); print('<success>')"
+                    + '"',
+                    shell=True,
+                    assert_output=True,
+                )
+            finally:
+                shutil.rmtree(hook_dir)
+
     def test_api(self):
         call_python(["-c", 'from coconut.api import parse; exec(parse("' + coconut_snip + '"))'], assert_output=True)
 

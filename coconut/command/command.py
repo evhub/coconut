@@ -417,7 +417,9 @@ class Command(object):
             got_stdin = False
             if args.jupyter is not None:
                 self.start_jupyter(args.jupyter)
-            elif stdin_readable():
+            # only read piped stdin when running from the command line, since otherwise
+            #  (e.g. when using the import hook) the stdin belongs to the user's program
+            elif interact and stdin_readable():
                 logger.log("Reading piped input from stdin...")
                 read_stdin = sys.stdin.read()
                 if read_stdin:
