@@ -242,6 +242,10 @@ match_func_paramdef = "{match_first_arg_var}=_coconut_sentinel, *{match_to_args_
 )
 
 
+comment_marker_regex = re.compile(r"#(\d+)" + re.escape(unwrapper))
+type_ignore_comment_regex = re.compile(r"^\s*type:\s*ignore(\[[^\]]*\])?\s*$")
+
+
 def set_to_tuple(tokens):
     """Converts set literal tokens to tuples."""
     internal_assert(len(tokens) == 1, "invalid set maker tokens", tokens)
@@ -1338,6 +1342,34 @@ class Compiler(Grammar, pickleable_obj):
         if self.wrapped_type_ignore is None:
             self.wrapped_type_ignore = self.wrap_comment(" type: ignore")
         return self.wrapped_type_ignore
+
+    def is_type_ignore_comment(self, comment_marker):
+        """Determine whether the given wrapped comment is just a type: ignore comment."""
+        if not (comment_marker.startswith("#") and comment_marker.endswith(unwrapper)):
+            return False
+        try:
+            text = self.get_ref("comment", comment_marker[1:-1])
+        except CoconutInternalException:
+            return False
+        return bool(type_ignore_comment_regex.match(text))
+
+    def comments_to_add_to(self, line, comments):
+        """Get the comments to add to the given line, skipping redundant type: ignore comments
+        (since type checkers don't allow multiple type: ignore comments on the same line)."""
+        if not comments:
+            return comments
+        has_type_ignore = any(
+            self.is_type_ignore_comment("#" + marker + unwrapper)
+            for marker in comment_marker_regex.findall(line)
+        )
+        out = []
+        for comment in comments:
+            if self.is_type_ignore_comment(comment):
+                if has_type_ignore:
+                    continue
+                has_type_ignore = True
+            out.append(comment)
+        return out
 
     def wrap_line_number(self, ln):
         """Wrap a line number."""
@@ -2451,7 +2483,7 @@ class Compiler(Grammar, pickleable_obj):
                 # add comments based on source line number
                 src_ln = self.adjust(ln)
                 if not reformatting or has_wrapped_ln:
-                    line += " ".join(self.comments[src_ln])
+                    line += " ".join(self.comments_to_add_to(line, self.comments[src_ln]))
                 if not reformatting and line.rstrip() and not line.lstrip().startswith("#"):
                     line += self.ln_comment(src_ln)
 
