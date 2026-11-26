@@ -97,6 +97,8 @@ MYPY = (
     and not WINDOWS
     and not PYPY
 )
+LSP = PY39
+
 XONSH = (
     PY35
     and not (PYPY and PY39)
@@ -1036,6 +1038,10 @@ all_reqs = {
         "types-backports",
         ("typing", "py<35"),
     ),
+    "lsp": (
+        ("pygls", "py39"),
+        ("jedi", "py>=39"),
+    ),
     "watch": (
         "watchdog",
     ),
@@ -1096,6 +1102,7 @@ unpinned_min_versions = {
     "sphinxcontrib_applehelp": (2,),
     "sphinxcontrib_htmlhelp": (2,),
     "pyright": (1, 1),
+    ("pygls", "py39"): (2, 0),
     ("jupyter-console", "py>=37"): (6, 6),
     ("typing", "py<35"): (3, 10),
     ("ipykernel", "py>=310"): (7,),

@@ -28,6 +28,7 @@ from coconut.constants import (
     NUMPY,
     IPY,
     MYPY,
+    LSP,
     XONSH,
     WINDOWS,
     PURE_PYTHON,
@@ -225,6 +226,7 @@ extras = {
     "watch": get_reqs("watch"),
     "mypy": get_reqs("mypy"),
     "pyright": get_reqs("pyright"),
+    "lsp": get_reqs("lsp"),
     "xonsh": get_reqs("xonsh"),
     "numpy": get_reqs("numpy"),
 }
@@ -254,6 +256,7 @@ extras.update({
         extras["jupyter"] if IPY else [],
         extras["mypy"] if MYPY else [],
         extras["pyright"] if MYPY else [],
+        extras["lsp"] if LSP else [],
         extras["xonsh"] if XONSH else [],
     ),
 })

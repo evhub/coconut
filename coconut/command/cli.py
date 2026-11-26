@@ -248,6 +248,12 @@ arguments.add_argument(
 )
 
 arguments.add_argument(
+    "--lsp",
+    action="store_true",
+    help="start the Coconut language server (communicates over stdio; requires coconut[lsp])",
+)
+
+arguments.add_argument(
     "--ai-docs",
     action="store_true",
     help="print a condensed guide to writing idiomatic Coconut (intended for AI coding assistants)",

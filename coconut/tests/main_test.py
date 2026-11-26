@@ -49,6 +49,7 @@ from coconut.compiler.util import (
 )
 from coconut.constants import (
     ai_docs_file,
+    LSP,
     WINDOWS,
     PYPY,
     IPY,
@@ -959,6 +960,86 @@ class TestShell(unittest.TestCase):
                 )
             finally:
                 shutil.rmtree(plugin_dir)
+
+    if LSP:
+        def test_lsp(self):
+            import json
+            import subprocess
+
+            proc = subprocess.Popen(["coconut", "--lsp"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            next_id = [0]
+
+            def send(msg):
+                data = json.dumps(msg).encode("utf-8")
+                proc.stdin.write(("Content-Length: %d\r\n\r\n" % len(data)).encode("ascii") + data)
+                proc.stdin.flush()
+
+            def read_message():
+                headers = {}
+                while True:
+                    line = proc.stdout.readline().decode("ascii").strip()
+                    if not line:
+                        break
+                    key, val = line.split(":", 1)
+                    headers[key.strip().lower()] = val.strip()
+                return json.loads(proc.stdout.read(int(headers["content-length"])))
+
+            def wait_for(pred):
+                while True:
+                    msg = read_message()
+                    if pred(msg):
+                        return msg
+
+            def request(method, params):
+                next_id[0] += 1
+                req_id = next_id[0]
+                send({"jsonrpc": "2.0", "id": req_id, "method": method, "params": params})
+                return wait_for(lambda msg: msg.get("id") == req_id and "method" not in msg)["result"]
+
+            def notify(method, params):
+                send({"jsonrpc": "2.0", "method": method, "params": params})
+
+            try:
+                uri = "file:///lsp_test.coco"
+                src = "import json\n\ndata Point(x, y)\n\ndef total(ps) =\n    ps |> map$(p => p.x + p.y) |> sum\n\nresult = total([Point(1, 2)])\nencoded = json.dumps(result)\n"
+                capabilities = request("initialize", {"processId": None, "rootUri": None, "capabilities": {}})["capabilities"]
+                for capability in ("hoverProvider", "definitionProvider", "completionProvider", "documentSymbolProvider"):
+                    assert capabilities.get(capability), capabilities
+                notify("initialized", {})
+
+                # diagnostics
+                notify("textDocument/didOpen", {"textDocument": {"uri": uri, "languageId": "coconut", "version": 1, "text": src}})
+                diagnostics = wait_for(lambda msg: msg.get("method") == "textDocument/publishDiagnostics")["params"]["diagnostics"]
+                assert diagnostics == [], diagnostics
+
+                # hover and go to definition
+                hover = request("textDocument/hover", {"textDocument": {"uri": uri}, "position": {"line": 7, "character": 10}})
+                assert "total(ps)" in hover["contents"]["value"], hover
+                definition = request("textDocument/definition", {"textDocument": {"uri": uri}, "position": {"line": 7, "character": 17}})
+                assert definition[0]["range"]["start"] == {"line": 2, "character": 5}, definition
+
+                # error diagnostics
+                bad_src = src.replace("json.dumps(result)", "json.dumps(result")
+                notify("textDocument/didChange", {"textDocument": {"uri": uri, "version": 2}, "contentChanges": [{"text": bad_src}]})
+                diagnostics = wait_for(lambda msg: msg.get("method") == "textDocument/publishDiagnostics" and msg["params"].get("version") == 2)["params"]["diagnostics"]
+                assert len(diagnostics) == 1 and diagnostics[0]["range"]["start"]["line"] == 8, diagnostics
+
+                # completion in the middle of typing
+                typing_src = src.replace("json.dumps(result)", "json.du")
+                notify("textDocument/didChange", {"textDocument": {"uri": uri, "version": 3}, "contentChanges": [{"text": typing_src}]})
+                completions = request("textDocument/completion", {"textDocument": {"uri": uri}, "position": {"line": 8, "character": 17}})
+                assert "dumps" in [item["label"] for item in completions["items"]], completions
+
+                # document symbols
+                symbols = request("textDocument/documentSymbol", {"textDocument": {"uri": uri}})
+                assert [sym["name"] for sym in symbols] == ["Point", "total"], symbols
+
+                request("shutdown", None)
+                notify("exit", None)
+                assert proc.wait(timeout=30) == 0
+            finally:
+                if proc.poll() is None:
+                    proc.kill()
 
     def test_ai_docs(self):
         call(["coconut", "--ai-docs"], assert_output="Common pitfalls", assert_output_only_at_end=False)

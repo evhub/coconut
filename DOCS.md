@@ -93,6 +93,7 @@ The full list of optional dependencies is:
 - `watch`: enables use of the `--watch` flag.
 - `mypy`: enables use of the `--mypy` flag.
 - `pyright`: enables use of the `--pyright` flag.
+- `lsp`: enables use of the `--lsp` flag (the Coconut [language server](#language-server)).
 - `xonsh`: enables use of Coconut's [`xonsh` support](#xonsh-support).
 - `numpy`: installs everything necessary for making use of Coconut's [`numpy` integration](#numpy-integration).
 - `jupyterlab`: installs everything necessary to use [JupyterLab](https://github.com/jupyterlab/jupyterlab) with Coconut.
@@ -124,7 +125,7 @@ depth: 1
 coconut [-h] [--and source [dest ...]] [-v] [-t version] [-i] [-p] [-a] [-l]
         [--no-line-numbers] [-k] [-w] [-r] [-n] [-d] [-q] [-s] [--pure] [--no-tco]
         [--no-wrap-types] [-c code] [-j processes] [-f] [--minify] [--jupyter ...]
-        [--mypy ...] [--pyright] [--argv ...] [--tutorial] [--docs] [--ai-docs] [--style name] [--vi-mode]
+        [--mypy ...] [--pyright] [--argv ...] [--tutorial] [--docs] [--lsp] [--ai-docs] [--style name] [--vi-mode]
         [--recursion-limit limit] [--stack-size kbs] [--fail-fast] [--no-cache]
         [--site-install] [--site-uninstall] [--verbose] [--trace] [--profile]
         [source] [dest]
@@ -190,6 +191,7 @@ dest                destination directory for compiled files (defaults to
 --tutorial            open Coconut's tutorial in the default web browser
 --docs, --documentation
                       open Coconut's documentation in the default web browser
+--lsp                 start the Coconut language server (communicates over stdio; requires coconut[lsp])
 --ai-docs             print a condensed guide to writing idiomatic Coconut (intended for AI coding
                       assistants)
 --style name          set Pygments syntax highlighting style (or 'list' to list styles) (defaults
@@ -521,6 +523,23 @@ user@computer ~ @ $(ls -la) |> .splitlines() |> len
 Compilation always uses the same parameters as in the [Coconut Jupyter kernel](#kernel).
 
 Note that the way that Coconut integrates with `xonsh`, `@(<code>)` syntax and the `execx` command will only work with Python code, not Coconut code. Additionally, Coconut will only compile individual commands—Coconut will not touch the `.xonshrc` or any other `.xsh` files.
+
+#### Language Server
+
+Coconut includes a [language server](https://microsoft.github.io/language-server-protocol/) that provides editor support for Coconut code, including:
+- live error and warning diagnostics as you type (using the actual Coconut compiler),
+- hover information (signatures and docstrings),
+- go to definition (including into other Coconut files and Python libraries),
+- completions (including attribute completions), and
+- document outlines/symbols.
+
+To use it, install `coconut[lsp]` (requires Python 3.9+), then configure your editor to run `coconut --lsp` (or `python -m coconut.lsp`) as the language server for `.coco` files; the server communicates over stdio. For example, in Neovim:
+```coconut_python
+vim.lsp.config("coconut", {cmd = {"coconut", "--lsp"}, filetypes = {"coconut"}})
+vim.lsp.enable("coconut")
+```
+
+Hover, go to definition, and completions work by analyzing the compiled Python with [`jedi`](https://github.com/davidhalter/jedi) and mapping the results back to the Coconut source, so they're based on the most recent version of the file that compiled successfully.
 
 #### AI Coding Assistant Support
 

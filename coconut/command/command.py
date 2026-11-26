@@ -260,6 +260,18 @@ class Command(object):
                 logger.log("Directly passed args:", original_args)
             logger.log("Parsed args:", args)
 
+            # the language server takes over stdin/stdout, so it has to be handled before anything else
+            if args.lsp:
+                try:
+                    from coconut.lsp.server import main as start_language_server
+                except ImportError:
+                    raise CoconutException(
+                        "coconut --lsp requires pygls and jedi",
+                        extra="run '{python} -m pip install coconut[lsp]' to fix".format(python=sys.executable),
+                    )
+                start_language_server()
+                return
+
             type_checking_arg = "--mypy" if args.mypy else "--pyright" if args.pyright else None
 
             # validate args and show warnings
