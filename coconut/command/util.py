@@ -6,7 +6,7 @@
 # -----------------------------------------------------------------------------------------------------------------------
 
 """
-Authors: Evan Hubinger, Fred Buchanan
+Authors: Evan Hubinger, Fred Buchanan, Claude
 License: Apache 2.0
 Description: Utility functions for the main command module.
 """
@@ -56,6 +56,8 @@ from coconut.util import (
 from coconut.constants import (
     WINDOWS,
     CPYTHON,
+    kill_children_max_rounds,
+    kill_children_timeout,
     PY26,
     PY32,
     PY34,
@@ -252,14 +254,26 @@ def kill_children():
         )
     else:
         parent = psutil.Process()
-        children = parent.children(recursive=True)
-        while children:
+        # keep going for a few rounds in case any children get respawned (e.g. by a
+        #  multiprocessing pool), but don't loop forever, since some children (e.g.
+        #  multiprocessing's resource tracker) ignore SIGTERM
+        for _ in range(kill_children_max_rounds):
+            children = parent.children(recursive=True)
+            if not children:
+                break
             for child in children:
                 try:
                     child.terminate()
                 except psutil.NoSuchProcess:
                     pass  # process is already dead, so do nothing
-            children = parent.children(recursive=True)
+            # waiting also reaps zombie children, which would otherwise still show up
+            _, still_alive = psutil.wait_procs(children, timeout=kill_children_timeout)
+            for child in still_alive:
+                try:
+                    child.kill()
+                except psutil.NoSuchProcess:
+                    pass
+            psutil.wait_procs(still_alive, timeout=kill_children_timeout)
 
 
 def splitname(path):

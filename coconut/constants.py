@@ -219,6 +219,11 @@ non_syntactic_newline = "\f"  # must be a single character
 
 lazy_get_func = "_coconut_lazy_get"
 
+# how many times to try to terminate child processes on exit (they can get respawned),
+#  and how long to wait for them to exit each time before killing them
+kill_children_max_rounds = 5
+kill_children_timeout = 3
+
 # how long the repr of a value shown in the error message of a failed assert can be
 max_assert_msg_repr_len = 1000
 
