@@ -1,5 +1,9 @@
 name: Coconut Test Suite
 on: [push]
+concurrency:
+  # cancel superseded runs on the same branch
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   build:
     # EOL Pythons have to be built from source, which fails on newer Ubuntus (e.g. missing lzma-dev on 26.04)
