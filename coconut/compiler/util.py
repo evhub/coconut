@@ -1254,6 +1254,20 @@ def parse_elem_to_identifier(elem, validation_dict=None):
     return identifier
 
 
+identifier_regex = re.compile(r"^[A-Za-z_]\w*$")
+
+
+def iter_identifiers(tokens):
+    """Iterate over all the identifier strings in the given (possibly nested) tokens."""
+    if isinstance(tokens, str):
+        if identifier_regex.match(tokens):
+            yield tokens
+    else:
+        for tok in tokens:
+            for ident in iter_identifiers(tok):
+                yield ident
+
+
 def validate_parse_elem_identifiers(validation_dict):
     """Check that all the identifiers in the given validation_dict refer to the same kinds of parse elements."""
     for identifier, elem_name in validation_dict.items():

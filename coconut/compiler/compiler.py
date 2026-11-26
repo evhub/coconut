@@ -216,6 +216,7 @@ from coconut.compiler.util import (
     parse_elem_to_identifier,
     identifier_to_parse_elem,
     validate_parse_elem_identifiers,
+    iter_identifiers,
     _lookup_loc,
     _value_exc_loc_or_ret,
 )
@@ -868,9 +869,8 @@ class Compiler(Grammar, pickleable_obj):
             cls.method("has_expr_setname_manage"),
             include_in_packrat_context=True,
         )
-        cls.match_comp_expr <<= handle_and_manage(
+        cls.match_comp_expr <<= manage(
             cls.match_comp_expr_ref,
-            cls.method("match_comp_expr_handle"),
             cls.method("has_expr_setname_manage"),
             include_in_packrat_context=True,
         )
@@ -887,7 +887,7 @@ class Compiler(Grammar, pickleable_obj):
         )
         cls.match_dict_comp <<= handle_and_manage(
             cls.match_dict_comp_ref,
-            cls.method("match_dict_comp_handle"),
+            cls.method("normal_dict_comp_handle"),
             cls.method("has_expr_setname_manage"),
             include_in_packrat_context=True,
         )
@@ -1040,6 +1040,7 @@ class Compiler(Grammar, pickleable_obj):
         cls.endline_semicolon <<= attach(cls.endline_semicolon_ref, cls.method("endline_semicolon_check"))
         cls.async_stmt <<= attach(cls.async_stmt_ref, cls.method("async_stmt_check"))
         cls.async_comp_for <<= attach(cls.async_comp_for_ref, cls.method("async_comp_check"))
+        cls.match_comp_for <<= attach(cls.match_comp_for_ref, cls.method("match_comp_for_handle"))
         cls.namedexpr <<= attach(cls.namedexpr_ref, cls.method("namedexpr_check"))
         cls.new_namedexpr <<= attach(cls.new_namedexpr_ref, cls.method("new_namedexpr_check"))
         cls.match_dotted_name_const <<= attach(cls.match_dotted_name_const_ref, cls.method("match_dotted_name_const_check"))
@@ -4337,11 +4338,6 @@ raise {raise_from_var}
         else:
             return "_coconut.dict(((" + key + "), (" + val + ")) " + comp + ")"
 
-    def match_dict_comp_handle(self, original, loc, tokens):
-        """Process match dictionary comprehension."""
-        key, val, comp = tokens
-        return self.match_comp_expr_handle(original, loc, [key, comp], dict_val=val)
-
     def pattern_error(self, original, loc, value_var, check_var, match_error_class='_coconut_MatchError'):
         """Construct a pattern-matching error message."""
         base_line = clean(self.reformat(getline(loc, original), ignore_errors=True)).strip()
@@ -4652,50 +4648,76 @@ def {name}({match_func_paramdef}):
 
         return self.handle_expr_scope_closure(name, loc)
 
-    def match_comp_expr_handle(self, original, loc, tokens, dict_val=None):
-        """Build a match comprehension by creating a temp match function.
-        For dict comps, expr is the key and dict_val is the value."""
-        expr, (matches, iterable) = tokens
+    def match_comp_for_handle(self, original, loc, tokens):
+        """Build a pattern-matching comprehension for clause.
+
+        Compiles [match] for <pattern> in <iterable> into
+            for <item> in <iterable> for (<bound names>,) in (<match func>(<item>),)
+        such that the names bound by the pattern become normal comprehension
+        variables usable in the result and in any subsequent clauses."""
+        (matches, iterable), rest = tokens
 
         func_name = self.get_temp_var("match_comp", loc)
-        iter_var = self.get_temp_var("match_comp_iter", loc)
+        item_var = self.get_temp_var("match_comp_item", loc)
         check_var = self.get_temp_var("match_check", loc)
 
-        matcher = self.get_matcher(original, loc, check_var)
-        matcher.match(matches, iter_var)
+        bound_names = []
+        matcher = self.get_matcher(original, loc, check_var, name_list=bound_names)
+        matcher.match(matches, item_var)
 
         match_code = matcher.build()
-        match_error = self.pattern_error(original, loc, iter_var, check_var)
+        match_error = self.pattern_error(original, loc, item_var, check_var)
 
-        if dict_val is not None:
-            return_expr = "(" + expr + ", " + dict_val + ")"
+        # the names bound by the pattern become comprehension variables; also, other names
+        #  in the pattern (e.g. the 'Pair' in 'Pair(a, b)') might have been spuriously recorded
+        #  as comprehension variables by trying to parse the pattern as a normal for target
+        expr_setnames_context = self.current_parsing_context("expr_setnames")
+        if expr_setnames_context is not None:
+            expr_setnames_context["new_names"] -= set(iter_identifiers(matches)) - set(bound_names)
+            expr_setnames_context["new_names"] |= set(bound_names)
+
+        if bound_names:
+            bound_tuple = "(" + ", ".join(bound_names) + ",)"
+            unpack = bound_tuple
         else:
-            return_expr = expr
+            bound_tuple = "None"
+            unpack = self.get_temp_var("match_comp_dummy", loc)
 
         funcdef = handle_indentation(
             """
-def {func_name}({iter_var}):
+def {func_name}({item_var}):
     {match_code}
     {match_error}
-    return {return_expr}
+    return {bound_tuple}
             """,
             add_newline=True,
         ).format(
             func_name=func_name,
-            iter_var=iter_var,
+            item_var=item_var,
             match_code=match_code,
             match_error=match_error,
-            return_expr=return_expr,
+            bound_tuple=bound_tuple,
         )
 
-        self.add_code_before[func_name] = self.decoratable_funcdef_stmt_handle(original, loc, [funcdef], is_stmt_lambda=True)
-
-        func_expr = self.handle_expr_scope_closure(func_name, loc)
-
-        if dict_val is not None:
-            return "_coconut.dict((" + func_expr + "(" + iter_var + ") for " + iter_var + " in " + iterable + "))"
+        # the match function only needs to evaluate the pattern (the result expression and
+        #  any other clauses stay in the comprehension), so it doesn't need to close over any
+        #  comprehension variables (note that this means patterns can't reference variables
+        #  bound by earlier comprehension clauses)
+        func_code = self.decoratable_funcdef_stmt_handle(original, loc, [funcdef], is_stmt_lambda=True)
+        # comprehensions can't see class-level names, so inside of class bodies we bind the function globally
+        #  (and look it up via globals() since type checkers don't understand that)
+        cls_context = self.current_parsing_context("class")
+        if cls_context is not None and not self.in_method:
+            func_code = "global " + func_name + "\n" + func_code
+            func_ref = "_coconut.globals()[" + repr(func_name) + "]"
         else:
-            return func_expr + "(" + iter_var + ") for " + iter_var + " in " + iterable
+            func_ref = func_name
+        self.add_code_before[func_name] = func_code
+
+        out = "for " + item_var + " in " + iterable + " for " + unpack + " in (" + func_ref + "(" + item_var + "),)"
+        if rest:
+            out += " " + rest
+        return out
 
     def get_parent_expr_setnames(self):
         """Get all expr_setnames in parent contexts, but not the current context."""

@@ -1084,6 +1084,25 @@ def primary_test_1() -> bool:
         pass
     else:
         assert False
+    # mixing pattern-matching and normal clauses (#887)
+    assert [fst + snd for TestPair(fst, snd) in test_pairs if fst > 1] == [7]
+    assert [fst + i for TestPair(fst, snd) in test_pairs for i in range(snd - fst + 1)] == [1, 2, 3, 4]
+    assert [fst + snd for ps in [test_pairs] for TestPair(fst, snd) in ps] == [3, 7]
+    assert [fst for z in [1, 3] match for TestPair(fst, snd) in test_pairs if fst == z] == [1, 3]
+    assert [fst * x for TestPair(fst, snd) in test_pairs for TestPair(x, _) in test_pairs[:1]] == [1, 3]
+    assert {fst: snd for ps in [test_pairs] for TestPair(fst, snd) in ps if snd > 2} == {3: 4}
+    assert [1 for TestPair(_, _) in test_pairs] == [1, 1]
+    assert [(def -> fst)() for TestPair(fst, snd) in test_pairs] == [1, 3]
+    assert [x for x in range(2) for y in range(2)] == [0, 0, 1, 1]
+    try:
+        [fst for ps in [test_pairs] for TestPair(fst, snd) in ps + [10]]
+    except MatchError:
+        pass
+    else:
+        assert False
+    class MatchCompInClass:
+        fsts = [fst for TestPair(fst, snd) in test_pairs]
+    assert MatchCompInClass.fsts == [1, 3]
     assert consume(range(10)) `isinstance` collections.abc.Sequence
     assert consume(range(10), keep_last=5) `isinstance` collections.abc.Sequence
     assert range(5) |> reduce$((+), ?, 10) == 20

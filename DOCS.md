@@ -2303,6 +2303,8 @@ which is equivalent to
 
 The `match` keyword is optional, just as in [`match for`](#match-for) loops. Match comprehensions work with all comprehension types: list, set, dict, and generator comprehensions. If the pattern does not match an element, a [`MatchError`](#matcherror) is raised.
 
+Pattern-matching `for` clauses can also be freely mixed with normal `for` and `if` clauses in any order, as in `[a + i for Pair(a, b) in pairs if a > 0 for i in range(b)]`, with the variables bound by the pattern available in the result expression and in all subsequent clauses. Note that a `for` clause is only treated as a pattern-matching `for` clause if it uses the `match` keyword (`match for <pattern> in <iterable>`) or its target isn't a valid Python assignment target. Additionally, patterns cannot reference variables bound by earlier clauses in the same comprehension.
+
 ##### Example
 
 **Coconut:**

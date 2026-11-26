@@ -1108,7 +1108,7 @@ class Grammar(object):
             | yield_classic
         )
         normal_dict_comp_ref = test + colon.suppress() + test + comp_for
-        match_dict_comp_ref = test + colon.suppress() + test + Optional(keyword("match").suppress()) + match_comp_for
+        match_dict_comp_ref = test + colon.suppress() + test + match_comp_for
         dict_comp = lbrace.suppress() + (
             normal_dict_comp
             | match_dict_comp
@@ -1999,14 +1999,16 @@ class Grammar(object):
         async_comp_for_ref = addspace(keyword("async") + base_comp_for)
         comp_for <<= base_comp_for | async_comp_for
         comp_if = addspace(keyword("if") + test_no_cond + Optional(comp_iter))
-        comp_iter <<= any_of(comp_for, comp_if)
-        match_comp_for <<= Group(
-            keyword("for").suppress()
+        # pattern-matching for clauses only get used if the target isn't a valid assignment target
+        comp_iter <<= any_of(comp_for, comp_if) | match_comp_for
+        match_comp_for_ref = Group(
+            Optional(keyword("match")).suppress()
+            + keyword("for").suppress()
             + many_match
             + keyword("in").suppress()
             + comp_it_item
-        )
-        match_comp_expr_ref = namedexpr_test + Optional(keyword("match").suppress()) + match_comp_for
+        ) + Optional(comp_iter, default="")
+        match_comp_expr_ref = addspace(namedexpr_test + match_comp_for)
         normal_comp_expr_ref = addspace(namedexpr_test + comp_for)
         comprehension_expr <<= (
             normal_comp_expr
