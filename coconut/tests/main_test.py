@@ -1147,7 +1147,8 @@ class TestShell(unittest.TestCase):
                     proc.kill()
 
     def test_ai_docs(self):
-        call(["coconut", "--ai-docs"], assert_output="Common pitfalls", assert_output_only_at_end=False)
+        # (the guide mentions exception names, so don't check for errors in its text)
+        call(["coconut", "--ai-docs"], assert_output="Common pitfalls", assert_output_only_at_end=False, check_errors=False)
         # all the code examples in the AI guide should actually work
         with univ_open(ai_docs_file, "r") as ai_docs:
             guide = ai_docs.read()

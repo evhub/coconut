@@ -2,7 +2,7 @@
 
 > Coconut is a functional programming language that compiles to Python. All valid Python 3 code is valid Coconut, and Coconut adds pipes, partial application, pattern matching, algebraic data types, lazy iterators, tail call optimization, and more. Compiled code runs on any Python version (2.7 and 3.x).
 
-This is a condensed guide to writing idiomatic Coconut, intended for AI coding assistants. Full documentation: https://coconut.readthedocs.io/en/latest/DOCS.html (tutorial: https://coconut.readthedocs.io/en/latest/HELP.html). Run `coconut --ai-docs` to print this guide.
+This is a condensed guide to writing idiomatic Coconut, intended for AI coding assistants. Full documentation: https://coconut.readthedocs.io/en/latest/DOCS.html (tutorial: https://coconut.readthedocs.io/en/latest/HELP.html). Run `coconut --ai-docs` to print this guide. For a much larger collection of examples of what Coconut can do, see the test suite's https://github.com/evhub/coconut/blob/develop/coconut/tests/src/cocotest/agnostic/util.coco.
 
 ## Working with Coconut code
 
@@ -16,6 +16,7 @@ This is a condensed guide to writing idiomatic Coconut, intended for AI coding a
 Prefer Coconut's functional features over Python-style imperative code. Good Coconut code:
 - passes data through **pipelines** (`|>`) of small functions instead of nesting calls or building lists in loops,
 - uses **implicit partials** (`.attr`, `.method()`, `.[i]`, `(.+1)`) and **operator functions** (`(+)`, `(==)`) instead of lambdas where possible,
+- builds simple transformations **point-free** by composing functions (`..>`, `lift`) rather than writing wrapper functions,
 - defines functions with **assignment function syntax** (`def f(x) = ...`) when the body is a single expression,
 - uses **pattern matching** (`match`/`case`, pattern-matching function definitions, destructuring assignment) instead of chains of `if isinstance(...)`/indexing,
 - models data with immutable **`data` types** instead of mutable classes,
@@ -45,6 +46,8 @@ square = pow$(?, 2)              # ? marks positional placeholders: x => pow(x, 
 first = .[0]                     # x => x[0]; also .attr and .method(args)
 assert (+)(1, 2) == 3            # operator functions: (+), (*), (==), (in), (not in), (is), (.), etc.
 f = def (x, y=1) => x + y        # statement lambda (supports default args, multiple statements)
+sign = (=> if _ > 0 then 1 else if _ < 0 then -1 else 0)   # implicit lambda (argument is _), if/then/else expression
+assert [-5, 0, 5] |> map$(sign) |> list == [-1, 0, 1]
 ```
 
 ## Pipes and composition
@@ -63,6 +66,31 @@ xs |>= sorted                                       # in-place pipe: xs = sorted
 
 Pipes bind more loosely than arithmetic but more tightly than comparisons, so `x + 1 |> f == y` means `f(x + 1) == y`. Inside a pipe, `x |> await` awaits, and `x |> (name := .)` binds the intermediate value.
 
+## Point-free style
+
+Composition (`..>`, `..*>` to unpack into the next function) together with `lift` lets you define functions without naming their arguments:
+
+```coconut
+sum_evens = range ..> filter$((.%2) ..> (.==0)) ..> sum
+assert sum_evens(10) == 20
+
+min_and_max = lift(,)(min, max)              # lift(f)(g, h)(x) == f(g(x), h(x))
+assert min_and_max([3, 1, 2]) == (1, 3)
+add_pair = lift_apart(+)(len, abs)           # lift_apart(f)(g, h)(x, y) == f(g(x), h(y))
+assert add_pair("ab", -3) == 5
+
+maxdiff = (                                  # largest later-minus-earlier difference
+    ident `lift(zip)` scan$(min)             #  (x => zip(x, scan(min, x)))
+    ..> starmap$(-)
+    ..> filter$(.!=0)
+    ..> reduce$(max, ?, -1)
+)
+assert maxdiff([7, 1, 5, 4]) == 4
+
+dict_zip = (,) ..> map$(.items()) ..> flatten ..> collectby$(.[0], value_func=.[1])
+assert dict_zip({"a": 1}, {"a": 2, "b": 3}) == {"a": [1, 2], "b": [3]}
+```
+
 ## Function definitions
 
 ```coconut
@@ -77,11 +105,16 @@ addpattern def factorial(int(n) if n > 0) = n * factorial(n - 1)   # add another
 
 def head_tail([x] + xs) = (x, xs)            # patterns in arguments
 
-case def fib:                                # many cases at once (with optional type signatures)
-    type(n: int) -> int
-    case(0) = 0
-    case(1) = 1
-    case(n) = fib(n - 1) + fib(n - 2)
+def fact(0, acc=1) = acc                     # patterns can have defaults and guards
+addpattern def fact(int() as n, acc=1 if n > 0) = fact(n - 1, acc * n)
+
+case def my_min[T]:                          # many cases at once, with type parameters and
+    type(xs: T[]) -> T                       #  optional (overloaded) type signatures
+    case([x]) = x
+    case([x] + xs) = my_min(x, my_min(xs))
+    type(x: T, y: T) -> T
+    case(x, y if x <= y) = x
+    case(x, y) = y
 
 def count_down(n):                           # tail calls are optimized, so deep recursion is fine
     if n <= 0:
@@ -102,12 +135,15 @@ p = Point(3, 4)
 assert p.norm() == 5 and p + Point(1, 1) == Point(4, 5)
 assert p._replace(x=0) == Point(0, 4)        # "modify" by creating a new value
 
-data Empty()                                 # algebraic data types via several data types
-data Leaf(n)
-data Node(l, r)
-def size(Empty()) = 0
-addpattern def size(Leaf(_)) = 1
-addpattern def size(Node(l, r)) = size(l) + size(r)
+class Tree                                   # algebraic data types: data types sharing a base class
+data Leaf(value) from Tree
+data Node(*children) from Tree               # a starred field collects the remaining arguments
+def depth(Leaf(_)) = 0
+addpattern def depth(Node(*children)) = children |> map$(depth) |> max |> (.+1)
+assert depth(Node(Leaf(1), Node(Leaf(2), Leaf(3)))) == 2
+
+data Interval(int() as lo, int() as hi if hi >= lo)   # patterns validate constructor arguments
+assert Interval(1, 3).hi == 3                         #  (Interval(3, 1) raises MatchError)
 ```
 
 ## Pattern matching
@@ -144,6 +180,11 @@ else:
 
 pairs = [Point(1, 2), Point(3, 4)]
 xs = [x for Point(x, y) in pairs if y > 2]   # match comprehensions (raise MatchError on non-matches)
+
+def first_twin(_ + [p, (.-2) -> p] + _) = (p, p + 2)  # search pattern with a view pattern:
+assert first_twin([2, 3, 5, 7, 11, 13]) == (3, 5)     #  (.-2) -> p matches items equal to p + 2
+match key + "=" + value in "name=coconut":            # string search patterns
+    assert (key, value) == ("name", "coconut")
 ```
 
 ## Iterators and laziness
@@ -159,6 +200,16 @@ assert range(4) |> scan$((+)) |> list == [0, 1, 3, 6]
 assert [[1, 2], [3]] |> flatten |> list == [1, 2, 3]
 assert [1, 2, 3] |> fmap$(.*10) == [10, 20, 30]       # fmap preserves the container type
 assert ["a", "bb", "c"] |> collectby$(len) == {1: ["a", "c"], 2: ["bb"]}
+
+@recursive_generator                                  # memoizes so self-reference is efficient
+def fibs() = (0, 1) :: map((+), fibs(), fibs()$[1:])
+assert fibs()$[:8] |> list == [0, 1, 1, 2, 3, 5, 8, 13]
+
+def odd_primes(p=3) = (p,) :: filter((=> _ % p != 0), odd_primes(p + 2))
+def primes() = (2,) :: odd_primes()
+def twin_primes(_ :: [p, (.-2) -> p] :: ps) =         # :: patterns lazily match infinite iterators
+    [(p, p + 2)] :: twin_primes([p + 2] :: ps)
+assert twin_primes(primes())$[:3] |> list == [(3, 5), (5, 7), (11, 13)]
 ```
 
 Other useful built-ins: `takewhile`, `dropwhile`, `count`, `cycle`, `cartesian_product`, `multi_enumerate`, `consume`, `reiterable`, `ident`, `const`, `flip`, `lift`, `memoize` (decorator), `recursive_generator`, `process_map`/`thread_map` (parallel map), `mapreduce`, `multiset`, `safe_call`/`Expected` (error handling without exceptions). Coconut's `map`, `zip`, and `enumerate` support `len` and indexing when their inputs do.
@@ -177,12 +228,36 @@ result = where:                              # or with the result at the end
 def mod_(a, b) = a % b
 assert 5 `mod_` 3 == 2                       # backticks: infix function call
 
-operator <+>                                 # custom operators
-(<+>) = (a, b) => a + b + 1
+operator <$                                  # custom operators
+def x <$ xs = fmap((=> x), xs)
+assert 0 <$ [1, 2] == [0, 0]
+def (a: int) `divides` (b: int) -> bool = b % a == 0   # infix function definition
+assert 3 `divides` 12
+
+def make_getters() =
+    getters = []
+    for i in range(3):
+        copyclosure def get() = i            # copyclosure captures the current value of i
+        getters.append(get)
+    getters
+assert [get() for get in make_getters()] == [0, 1, 2]
+
+class Counter:
+    count: int
+def Counter.inc(self) -> Counter =           # define a method outside its class
+    self.count = getattr(self, "count", 0) + 1
+    self
+assert Counter().inc().inc().count == 2
+
+def safe_div(x, y) = safe_call((=> x / y))   # Expected(result) or Expected(error=...)
+assert safe_div(4, 2) |> fmap$(.*10) == Expected(20.0)
+assert safe_div(1, 0).error `isinstance` ZeroDivisionError
 
 def first(xs: int[]) -> int? = xs[0] if xs else None   # int[] = Sequence[int], int? = Optional[int]
 def apply(f: int -> str, x: int) -> str = f(x)         # int -> str = Callable[[int], str]
 pair: (int; str) = (1, "a")                            # (int; str) = Tuple[int, str]
+def lens(xs: int$[]) -> int = xs |> map$(.bit_length()) |> sum   # int$[] = Iterator[int]
+num: (+) &: (*) = 1                                    # &: intersects protocols; (+) supports +
 
 lazy import json                             # PEP 810 lazy imports, on every Python version
 assert json.loads("[1]") == [1]
