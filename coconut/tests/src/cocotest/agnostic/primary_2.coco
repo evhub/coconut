@@ -953,6 +953,14 @@ def primary_test_2() -> bool:
     match (| _, *_ |) in iter(()):
         assert False
 
+    # chain operands that are just names are evaluated eagerly (#410)
+    chain_x: Iterable[int] = [0]
+    chain_x = chain_x :: [1]
+    assert list(chain_x) == [0, 1]
+    chain_y: Iterable[int] = (| 1 |)
+    chain_y = [0] :: chain_y :: (| 2 |)
+    assert list(chain_y) == [0, 1, 2]
+
     # bare returns in generators (which used to compile to raise StopIteration() on old targets)
     def bare_return_gen(x):
         if not x:

@@ -610,6 +610,13 @@ def _coconut_assert(cond, msg=None):
     """Assert operator (assert). Asserts condition with optional message."""
     if not cond:
         assert False, msg if msg is not None else "(assert) got falsey value " + _coconut.repr(cond)
+def _coconut_eager_thunk(thunk):
+    """Evaluate thunk now if it doesn't raise NameError (used for iterator chain operands that are just names)."""
+    try:
+        value = thunk()
+    except _coconut.NameError:
+        return thunk
+    return lambda: value
 def _coconut_assert_msg(expr, *names_and_values):
     """Build the error message for a failed assert of a simple comparison."""
     shown_values = []

@@ -895,7 +895,7 @@ _Can't be done without a complicated iterator slicing function and inspection of
 
 ### Iterator Chaining
 
-Coconut uses the `::` operator for iterator chaining. Coconut's iterator chaining is done lazily, in that the arguments are not evaluated until they are needed. It has a precedence in-between bitwise or and infix calls. Chains are reiterable (can be iterated over multiple times and get the same result) only when the iterators passed in are reiterable. The in-place operator is `::=`.
+Coconut uses the `::` operator for iterator chaining. Coconut's iterator chaining is done lazily, in that the arguments are not evaluated until they are needed. The exception is arguments that are just variable names that are already defined, which are looked up immediately, since there's nothing to gain from delaying them and doing so would make e.g. `x = x :: y` refer to itself rather than to the previous value of `x`. It has a precedence in-between bitwise or and infix calls. Chains are reiterable (can be iterated over multiple times and get the same result) only when the iterators passed in are reiterable. The in-place operator is `::=`.
 
 _Note that [lazy lists](#lazy-lists) and [flatten](#flatten) are used under the hood to implement chaining such that `a :: b` is equivalent to `flatten((|a, b|))`._
 

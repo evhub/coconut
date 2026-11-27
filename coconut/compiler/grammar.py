@@ -360,12 +360,26 @@ def attrgetter_atom_handle(loc, tokens):
         return '_coconut.operator.methodcaller("' + name + '", ' + args + ")"
 
 
-def lazy_list_handle(loc, tokens):
-    """Process lazy lists."""
+plain_name_regex = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+
+
+def lazy_list_handle(loc, tokens, eager_names=False):
+    """Process lazy lists.
+
+    If eager_names, operands that are just names are looked up immediately if they're
+    defined (there's no benefit to delaying the lookup, and doing so would make e.g.
+    'x = x :: y' refer to itself), but are still looked up lazily if they aren't yet
+    defined (so that e.g. 'xs = [1] :: xs' can still refer to itself)."""
     if len(tokens) == 0:
         return "_coconut_reiterable(())"
     else:
-        lambda_exprs = "lambda: " + ", lambda: ".join(tokens)
+        lambda_exprs = ", ".join(
+            (
+                "_coconut_eager_thunk(lambda: " + tok + ")"
+                if eager_names and plain_name_regex.match(tok) and tok not in keyword_vars
+                else "lambda: " + tok
+            ) for tok in tokens
+        )
         # := changes meaning inside lambdas, so we must disallow it when wrapping
         #  user expressions in lambdas (and naive string analysis is safe here)
         if ":=" in lambda_exprs:
@@ -382,7 +396,7 @@ def chain_handle(loc, tokens):
     if len(tokens) == 1:
         return tokens[0]
     else:
-        return "_coconut_flatten(" + lazy_list_handle(loc, tokens) + ")"
+        return "_coconut_flatten(" + lazy_list_handle(loc, tokens, eager_names=True) + ")"
 
 
 chain_handle.ignore_one_token = True

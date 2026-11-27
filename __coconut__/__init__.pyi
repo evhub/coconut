@@ -1168,6 +1168,7 @@ def _coconut_back_none_dubstar_pipe(
 
 
 def _coconut_assert_msg(expr: _t.Text, *names_and_values: _t.Any) -> _t.Text: ...
+def _coconut_eager_thunk(thunk: _t.Callable[[], _T]) -> _t.Callable[[], _T]: ...
 def _coconut_assert(cond: _t.Any, msg: _t.Optional[_t.Text] = None) -> None:
     """Assert operator (assert). Asserts condition with optional message."""
     assert cond, msg
