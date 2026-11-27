@@ -9,8 +9,8 @@ This is a condensed guide to writing idiomatic Coconut, intended for AI coding a
 - Source files end in `.coco`. **Compiled `.py` files are generated: always edit the `.coco` source, never the compiled `.py` file.** Compiled files start with a comment saying which source file they were compiled from, and every compiled line ends with a `# <n> (line in Coconut source)` comment pointing back to the source line.
 - Compile: `coconut src_dir dest_dir` (or `coconut file.coco`); compile and run: `coconut-run file.coco`; run code directly: `coconut -c "code"`; type check: add `--mypy` (or `--pyright`); target a Python version: `--target 3.11` (default output is universal).
 - Importing `coconut.api` enables automatic compilation of `.coco` files on import. For tests, `pytest -p coconut.pytest_plugin` collects `test_*.coco` files.
-- `coconut --strict` enables style checks and `coconut --pure` enforces functional style (no reassignment or mutation); fix what they report by restructuring the code rather than suppressing it with `# NOQA`.
-- Check your work: after editing `.coco` files, compile them with `coconut file.coco --strict --pure --no-write` (or pass a directory) to catch errors without writing output. Write new code to pass `--pure`; in an existing project whose code doesn't, check your new code with `--pure` but don't rewrite unrelated code to satisfy it. Options set in the `[tool.coconut]` table of the project's `pyproject.toml` (e.g. `strict = true`, `pure = true`, `target = "3.10"`) apply automatically. When you're unsure what a construct does, look at the Python it compiles to with `coconut file.coco --no-write --display --quiet --target sys` (or `coconut -c "code" --display`).
+- `coconut --strict` enables style checks; fix what it reports by restructuring the code rather than suppressing it with `# NOQA`. `coconut --pure` additionally enforces functional purity (no reassignment or mutation); it's optional, so use it when the project enables it or the user asks for it.
+- Check your work: after editing `.coco` files, compile them with `coconut file.coco --strict --no-write` (or pass a directory) to catch errors without writing output, adding `--pure` if the project uses it. Options set in the `[tool.coconut]` table of the project's `pyproject.toml` (e.g. `strict = true`, `pure = true`, `target = "3.10"`) apply automatically. When you're unsure what a construct does, look at the Python it compiles to with `coconut file.coco --no-write --display --quiet --target sys` (or `coconut -c "code" --display`).
 
 ## Writing idiomatic Coconut
 
@@ -22,7 +22,7 @@ Prefer Coconut's functional features over Python-style imperative code. Good Coc
 - uses **pattern matching** (`match`/`case`, pattern-matching function definitions, destructuring assignment) instead of chains of `if isinstance(...)`/indexing,
 - models data with immutable **`data` types** instead of mutable classes,
 - uses **recursion** freely (tail calls are optimized automatically) and **lazy iterators** instead of materializing lists,
-- never reassigns variables or mutates objects (`--pure` mode enforces this).
+- avoids reassigning variables and mutating objects (`--pure` mode can enforce this).
 
 ```coconut
 # Python-style (works, but not idiomatic)
@@ -42,7 +42,7 @@ def total_lengths(words) = words |> map$(len) |> filter$(.>2) |> sum
 Write code that reads at a glance:
 - **Expressions, not steps.** Most functions should be a single `def f(...) = expr`. Name intermediate values in a `where:` block or a short block body rather than reassigning a variable step by step.
 - **One stage per line.** Put a pipeline with more than about three stages in parentheses, one `|>` stage per line, so it reads top to bottom.
-- **No mutation.** Build new values with comprehensions, pipelines, `fmap`, `reduce`/`scan`, and `._replace` on `data` types. Mutable state belongs only at a program's edges (I/O, caches), marked with `# NOQA` and a comment saying why.
+- **Avoid mutation.** Build new values with comprehensions, pipelines, `fmap`, `reduce`/`scan`, and `._replace` on `data` types, and keep mutable state at a program's edges (I/O, caches). (Under `--pure`, mark any such mutation with `# NOQA` and a comment saying why.)
 - **Data first.** Model the domain with `data` types and write functions on them with pattern matching (`case def`, `match`, or `addpattern def`) instead of `isinstance` chains, tag strings, or flag attributes.
 - **Types on top-level definitions**, written in Coconut's type syntax (`int[]`, `int?`, `int -> str`, `(int; str)`), checked with `--mypy` when it's available.
 - **Errors as values** for expected failures: return `Expected` (or `Optional`) values, wrap raising calls in `safe_call`, and chain with `.and_then`/`fmap`; keep `try`/`except` for truly exceptional cases.
@@ -60,7 +60,7 @@ def top_words(text, n):
     ranked = sorted(counts.items(), key=lambda kv: -kv[1])
     return [w for w, c in ranked[:n]]
 
-# after: idiomatic Coconut (passes --strict --pure and mypy)
+# after: idiomatic Coconut (passes --strict, --pure, and mypy)
 from collections import Counter
 
 def top_words(text: str, n: int) -> str[] = (

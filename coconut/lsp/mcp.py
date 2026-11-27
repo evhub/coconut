@@ -62,8 +62,8 @@ TOOLS = [
             SOURCE_PROPS,
             strict={"type": "boolean", "description": "Enable Coconut's --strict style checks"},
             pure={"type": "boolean", "description": (
-                "Enable Coconut's --pure checks, which flag reassignment, mutation, and other impure code; "
-                "recommended for new code")},
+                "Enable Coconut's --pure checks, which flag reassignment, mutation, and other impure code "
+                "(optional; use it for projects that enable --pure)")},
             mypy={"type": "boolean", "description": "Also type-check the compiled code with mypy (must be installed)"},
         ), "additionalProperties": False},
         "annotations": {"readOnlyHint": True, "openWorldHint": False},

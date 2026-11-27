@@ -584,7 +584,7 @@ Coconut ships with a condensed guide to writing idiomatic Coconut that's designe
 
 If you're using an AI coding assistant on a Coconut project, it's recommended to point it at that guide, e.g. by adding a line like "This project is written in Coconut; run `coconut --ai-docs` to learn how to write idiomatic Coconut code, and always edit `.coco` files rather than compiled `.py` files." to your project's `CLAUDE.md`/`AGENTS.md`.
 
-To hold AI-written code to a consistent, functional style, it's also recommended to turn on [`strict`](#strict-mode) and [`pure`](#pure-mode) checks in your [project configuration](#project-configuration), so that every compile (and the language server) reports reassignment, mutation, and style problems no matter how the assistant invokes Coconut.
+To hold AI-written code to a consistent style, it's also recommended to turn on [`strict`](#strict-mode) checks in your [project configuration](#project-configuration), so that every compile (and the language server) reports style problems no matter how the assistant invokes Coconut. If you want to enforce functional purity as well, you can also turn on [`pure`](#pure-mode) checks there.
 
 AI coding assistants can also use Coconut's [language server](#language-server) tools directly. For [Claude Code](https://code.claude.com), this repository is a plugin marketplace with a Coconut plugin that gives Claude the language server (so it sees Coconut errors right after each edit and can navigate Coconut code), MCP tools for checking and compiling Coconut and looking up its documentation, and a skill pointing it to the guide above. To install it (after installing `coconut[lsp]`), run
 ```
