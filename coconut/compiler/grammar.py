@@ -364,8 +364,14 @@ def attrgetter_atom_handle(loc, tokens):
 plain_name_regex = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 
-def lazy_list_handle(loc, tokens, eager_names=False):
-    """Process lazy lists.
+def lazy_list_handle(loc, tokens):
+    """Process lazy lists."""
+    # (parse actions mustn't take extra arguments, since pure-Python pyparsing infers their arity)
+    return make_lazy_list(loc, tokens)
+
+
+def make_lazy_list(loc, tokens, eager_names=False):
+    """Make a lazy list.
 
     If eager_names, operands that are just names are looked up immediately if they're
     defined (there's no benefit to delaying the lookup, and doing so would make e.g.
@@ -397,7 +403,7 @@ def chain_handle(loc, tokens):
     if len(tokens) == 1:
         return tokens[0]
     else:
-        return "_coconut_flatten(" + lazy_list_handle(loc, tokens, eager_names=True) + ")"
+        return "_coconut_flatten(" + make_lazy_list(loc, tokens, eager_names=True) + ")"
 
 
 chain_handle.ignore_one_token = True
