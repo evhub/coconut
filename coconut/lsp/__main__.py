@@ -6,9 +6,9 @@
 # -----------------------------------------------------------------------------------------------------------------------
 
 """
-Author: Claude
+Authors: Evan Hubinger, Claude
 License: Apache 2.0
-Description: Starts the Coconut language server (python -m coconut.lsp).
+Description: The Coconut language server and its command-line interface (python -m coconut.lsp).
 """
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -19,11 +19,13 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 
 from coconut.root import *  # NOQA
 
-from coconut.lsp.server import main
+import sys
+
+from coconut.lsp.cli import main
 
 # -----------------------------------------------------------------------------------------------------------------------
 # MAIN:
 # -----------------------------------------------------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

@@ -268,16 +268,19 @@ class Command(object):
                 logger.log("Directly passed args:", original_args)
             logger.log("Parsed args:", args)
 
-            # the language server takes over stdin/stdout, so it has to be handled before anything else
-            if args.lsp:
-                try:
-                    from coconut.lsp.server import main as start_language_server
-                except ImportError:
+            # the language and MCP servers take over stdin/stdout, so they have to be handled before anything else
+            if args.lsp or args.mcp:
+                if sys.version_info < (3, 8):
                     raise CoconutException(
-                        "coconut --lsp requires pygls and jedi",
-                        extra="run '{python} -m pip install coconut[lsp]' to fix".format(python=sys.executable),
+                        "coconut {flag} requires Python 3.8 or later".format(flag="--lsp" if args.lsp else "--mcp"),
+                        extra="run it with a newer Python (the code it checks can still target any Python version)",
                     )
-                start_language_server()
+                if args.lsp:
+                    from coconut.lsp.server import main as start_language_server
+                    start_language_server()
+                else:
+                    from coconut.lsp.mcp import serve_mcp
+                    serve_mcp()
                 return
 
             type_checking_arg = "--mypy" if args.mypy else "--pyright" if args.pyright else None

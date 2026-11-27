@@ -126,7 +126,7 @@ coconut [-h] [--and source [dest ...]] [-v] [-t version] [-i] [-p] [-a] [-l]
         [--no-line-numbers] [-k] [-w] [-r] [-n] [-d] [-q] [-s]
         [--silence-warnings regex] [--pure] [--no-tco]
         [--no-wrap-types] [-c code] [-j processes] [-f] [--minify] [--jupyter ...]
-        [--mypy ...] [--pyright] [--argv ...] [--tutorial] [--docs] [--lsp] [--ai-docs] [--style name] [--vi-mode]
+        [--mypy ...] [--pyright] [--argv ...] [--tutorial] [--docs] [--lsp] [--mcp] [--ai-docs] [--style name] [--vi-mode]
         [--recursion-limit limit] [--stack-size kbs] [--fail-fast] [--no-cache]
         [--site-install] [--site-uninstall] [--verbose] [--trace] [--profile]
         [source] [dest]
@@ -195,7 +195,11 @@ dest                destination directory for compiled files (defaults to
 --tutorial            open Coconut's tutorial in the default web browser
 --docs, --documentation
                       open Coconut's documentation in the default web browser
---lsp                 start the Coconut language server (communicates over stdio; requires coconut[lsp])
+--lsp                 start the Coconut language server (communicates over stdio; install coconut[lsp]
+                      for completions, hover, go to definition, and linting)
+--mcp                 start a Model Context Protocol server with tools for AI coding assistants to
+                      check and compile Coconut code and look up its documentation (communicates over
+                      stdio)
 --ai-docs             print a condensed guide to writing idiomatic Coconut (intended for AI coding
                       assistants)
 --style name          set Pygments syntax highlighting style (or 'list' to list styles) (defaults
@@ -535,27 +539,37 @@ Note that the way that Coconut integrates with `xonsh`, `@(<code>)` syntax and t
 #### Language Server
 
 Coconut includes a [language server](https://microsoft.github.io/language-server-protocol/) that provides editor support for Coconut code, including:
-- live error and warning diagnostics as you type (using the actual Coconut compiler),
-- hover information (signatures and docstrings),
-- go to definition (including into other Coconut files and Python libraries),
-- find references and highlighting of other uses of the name under the cursor (within the current file),
-- completions (including attribute completions),
-- signature help while typing function calls, and
-- document outlines/symbols.
+- live error and warning diagnostics as you type (using the actual Coconut compiler), plus linting of the compiled code with [`pyflakes`](https://github.com/PyCQA/pyflakes) (undefined names, unused imports and variables, ...) and optional type checking with [MyPy](#mypy-integration), all mapped back to the Coconut source;
+- hover information (types, signatures, and docstrings, plus Coconut's own documentation for built-ins, keywords, and operators like `fmap`, `match`, and `|>`);
+- completions (including while the line being typed doesn't compile yet) and signature help;
+- go to definition (including into other Coconut files, even ones that haven't been compiled), go to type definition, find references, highlighting of other uses of the name under the cursor, and rename;
+- document outlines and workspace symbol search; and
+- quick fixes for removing unused imports and suppressing warnings with `# NOQA`.
 
-To use it, install `coconut[lsp]` (requires Python 3.9+), then configure your editor to run `coconut --lsp` (or `python -m coconut.lsp`) as the language server for `.coco` files; the server communicates over stdio. For example, in Neovim:
+To use it, install `coconut[lsp]` (the server itself runs on Python 3.8+; the extra installs [`jedi`](https://github.com/davidhalter/jedi) and `pyflakes` on Python 3.9+), then configure your editor to run `coconut --lsp` (or `python -m coconut.lsp`) as the language server for `.coco` files; the server communicates over stdio. The [VS Code extension](https://marketplace.visualstudio.com/items?itemName=evhub.coconut) and [Sublime Text package](https://packagecontrol.io/packages/Coconut) use it automatically. In Neovim:
 ```coconut_python
 vim.lsp.config("coconut", {cmd = {"coconut", "--lsp"}, filetypes = {"coconut"}})
 vim.lsp.enable("coconut")
 ```
 
-Hover, go to definition, references, signature help, and completions work by analyzing the compiled Python with [`jedi`](https://github.com/davidhalter/jedi) and mapping the results back to the Coconut source, so they're based on the most recent version of the file that compiled successfully.
+The server accepts the initialization options (also accepted through `workspace/didChangeConfiguration`) `target` (the Python version to target, defaulting to `"sys"`), `strict` (enable [`--strict`](#strict-mode) checks), `lint` (pyflakes linting, on by default), `mypy` (type checking on open and save, off by default; requires `mypy`), and `compileTimeout` (in seconds, default `60`).
+
+Hover, completions, go to definition, and the other code intelligence features work by analyzing the compiled Python with `jedi` and mapping the results back to the Coconut source. Compilation happens in a background process that reuses parsing work between edits, and when the current version of a file doesn't compile, the server analyzes it with the broken lines neutralized, so the rest of the file stays analyzable.
+
+The same analysis is also available from the command line, for scripts, CI, and AI agents: `python -m coconut.lsp check <files or dirs>` reports errors and warnings (exiting with code 1 on errors; add `--mypy` to type check), `python -m coconut.lsp compile <file>` prints the compiled Python, `hover`, `definition`, `references`, and `symbols` query code intelligence at a (1-based) position, and `python -m coconut.lsp docs <name>` looks up Coconut's documentation for a built-in, keyword, or operator. Add `--json` for machine-readable output, and run `python -m coconut.lsp --help` for details. `coconut --mcp` serves the same tools over the [Model Context Protocol](https://modelcontextprotocol.io) for AI coding assistants (see [below](#ai-coding-assistant-support)).
 
 #### AI Coding Assistant Support
 
 Coconut ships with a condensed guide to writing idiomatic Coconut that's designed to be given to AI coding assistants, available by running `coconut --ai-docs` or online at [`llms.txt`](./llms.txt). To make sure that AI assistants that come across compiled Coconut code know what it is, every compiled file starts with a comment noting the Coconut source file it was compiled from (which should be edited instead of the compiled file) and pointing to that guide.
 
 If you're using an AI coding assistant on a Coconut project, it's recommended to point it at that guide, e.g. by adding a line like "This project is written in Coconut; run `coconut --ai-docs` to learn how to write idiomatic Coconut code, and always edit `.coco` files rather than compiled `.py` files." to your project's `CLAUDE.md`/`AGENTS.md`.
+
+AI coding assistants can also use Coconut's [language server](#language-server) tools directly. For [Claude Code](https://code.claude.com), this repository is a plugin marketplace with a Coconut plugin that gives Claude the language server (so it sees Coconut errors right after each edit and can navigate Coconut code), MCP tools for checking and compiling Coconut and looking up its documentation, and a skill pointing it to the guide above. To install it (after installing `coconut[lsp]`), run
+```
+/plugin marketplace add evhub/coconut
+/plugin install coconut@coconut
+```
+in Claude Code. For other MCP-capable assistants, configure `coconut --mcp` as a stdio MCP server, which provides the tools `coconut_check`, `coconut_compile`, `coconut_docs`, `coconut_hover`, `coconut_definition`, `coconut_references`, and `coconut_symbols`.
 
 #### `pytest` Support
 

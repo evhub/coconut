@@ -48,6 +48,7 @@ cli_version_str = main_sig + cli_version
 # MAIN:
 # -----------------------------------------------------------------------------------------------------------------------
 
+
 def warning_regex(regex):
     """Compile a --silence-warnings regex."""
     try:
@@ -267,7 +268,13 @@ arguments.add_argument(
 arguments.add_argument(
     "--lsp",
     action="store_true",
-    help="start the Coconut language server (communicates over stdio; requires coconut[lsp])",
+    help="start the Coconut language server (communicates over stdio; install coconut[lsp] for completions, hover, go to definition, and linting)",
+)
+
+arguments.add_argument(
+    "--mcp",
+    action="store_true",
+    help="start a Model Context Protocol server with tools for AI coding assistants to check and compile Coconut code and look up its documentation (communicates over stdio)",
 )
 
 arguments.add_argument(

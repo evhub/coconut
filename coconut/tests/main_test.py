@@ -6,7 +6,7 @@
 # -----------------------------------------------------------------------------------------------------------------------
 
 """
-Authors: Evan Hubinger, Fred Buchanan
+Authors: Evan Hubinger, Fred Buchanan, Claude
 License: Apache 2.0
 Description: Main Coconut tests.
 """
@@ -1094,7 +1094,7 @@ class TestShell(unittest.TestCase):
                 uri = "file:///lsp_test.coco"
                 src = "import json\n\ndata Point(x, y)\n\ndef total(ps) =\n    ps |> map$(p => p.x + p.y) |> sum\n\nresult = total([Point(1, 2)])\nencoded = json.dumps(result)\n"
                 capabilities = request("initialize", {"processId": None, "rootUri": None, "capabilities": {}})["capabilities"]
-                for capability in ("hoverProvider", "definitionProvider", "completionProvider", "documentSymbolProvider", "referencesProvider", "documentHighlightProvider", "signatureHelpProvider"):
+                for capability in ("hoverProvider", "definitionProvider", "completionProvider", "documentSymbolProvider", "referencesProvider", "documentHighlightProvider", "signatureHelpProvider", "renameProvider", "workspaceSymbolProvider", "typeDefinitionProvider", "codeActionProvider"):
                     assert capabilities.get(capability), capabilities
                 notify("initialized", {})
 
@@ -1137,7 +1137,8 @@ class TestShell(unittest.TestCase):
 
                 # document symbols
                 symbols = request("textDocument/documentSymbol", {"textDocument": {"uri": uri}})
-                assert [sym["name"] for sym in symbols] == ["Point", "total"], symbols
+                # (the line being typed, 'encoded = total(', doesn't compile yet, so it isn't a symbol yet)
+                assert [sym["name"] for sym in symbols] == ["Point", "total", "result"], symbols
 
                 request("shutdown", None)
                 notify("exit", None)
