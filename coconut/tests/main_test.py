@@ -1474,8 +1474,7 @@ if TEST_ALL:
         if not PYPY or PY2:
             def test_prelude(self):
                 with using_paths(prelude):
-                    # (coconut-prelude predates --pure checking for mutation, so it's compiled without --pure)
-                    comp_prelude(["--strict"], expect_retcode=None)
+                    comp_prelude(["--strict", "--pure"], expect_retcode=None)
                     if MYPY and PY38:
                         run_prelude()
 
