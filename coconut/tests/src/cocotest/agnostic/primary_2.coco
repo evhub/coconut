@@ -961,6 +961,56 @@ def primary_test_2() -> bool:
     chain_y = [0] :: chain_y :: (| 2 |)
     assert list(chain_y) == [0, 1, 2]
 
+    # f-string = specifier defaults to repr only without a conversion or format spec
+    fs_s = "hi"
+    fs_x = 3.14159
+    assert f"{fs_s=}" == "fs_s='hi'"
+    assert f"{fs_s=!s}" == "fs_s=hi"
+    assert f"{fs_x=:.2f}" == "fs_x=3.14"
+    assert f"{1+1=}" == "1+1=2"
+
+    # PEP 798 unpacking in comprehensions
+    unpack_xss = [[1, 2], [3], []]
+    assert [*xs for xs in unpack_xss] == [1, 2, 3]
+    assert {*xs for xs in unpack_xss} == {1, 2, 3}
+    assert list(*xs for xs in unpack_xss) == [1, 2, 3]
+    assert [*(x, -x) for x in range(3) if x] == [1, -1, 2, -2]
+    assert {**ud for ud in [{"a": 1}, {"b": 2}, {"a": 3}]} == {"a": 3, "b": 2}
+
+    # unary + in literal patterns (Python 3.15)
+    match +1 in 1:
+        pass
+    else:
+        assert False
+
+    # parenthesized context managers (Python 3.9+ semantics on every target)
+    entered: list = []
+    class RecordCM:
+        def __init__(self, name):
+            self.name = name
+        def __enter__(self):
+            entered.append(self.name)
+            return self
+        def __exit__(self, *args):
+            return False
+    with (RecordCM("a"), RecordCM("b")):
+        pass
+    assert entered == ["a", "b"]
+
+    # override marks methods like typing.override
+    class OverrideBase:
+        def meth(self) = 1
+    class OverrideChild(OverrideBase):
+        @override
+        def meth(self) = 2
+    assert OverrideChild().meth() == 2
+    assert OverrideChild.meth.__override__
+
+    # nested multiple_sequential_calls with a new max_workers
+    with thread_map.multiple_sequential_calls():
+        with thread_map.multiple_sequential_calls(max_workers=2):
+            assert thread_map(abs, [-1, -2]) |> list == [1, 2]
+
     # bare returns in generators (which used to compile to raise StopIteration() on old targets)
     def bare_return_gen(x):
         if not x:

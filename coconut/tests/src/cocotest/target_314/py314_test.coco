@@ -32,4 +32,13 @@ def py314_test() -> bool:
     assert template5.interpolations[1].value == 2
     assert template5.interpolations[2].value == 3
 
+    # constrained type parameters must stay constraints, not become extra type parameters
+    def constrained[T: (int, str)](x: T) -> T = x
+    assert constrained.__type_params__[0].__constraints__ == (int, str)
+    assert len(constrained.__type_params__) == 1
+
+    # the = specifier defaults to repr
+    tx = "hi"
+    assert t"{tx=}".interpolations[0].conversion == "r"
+
     return True

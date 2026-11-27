@@ -1113,6 +1113,7 @@ class Grammar(object):
         yield_from = Forward()
         normal_dict_comp = Forward()
         match_dict_comp = Forward()
+        unpack_dict_comp = Forward()
         dict_literal = Forward()
         yield_classic = addspace(keyword("yield") + Optional(new_testlist_star_expr))
         yield_from_ref = keyword("yield").suppress() + keyword("from").suppress() + test
@@ -1123,10 +1124,12 @@ class Grammar(object):
         )
         normal_dict_comp_ref = test + colon.suppress() + test + comp_for
         match_dict_comp_ref = test + colon.suppress() + test + match_comp_for
+        # PEP 798 dict unpacking in dict comprehensions
+        unpack_dict_comp_ref = dubstar.suppress() + expr + comp_for
         dict_comp = lbrace.suppress() + (
             normal_dict_comp
             | match_dict_comp
-            | invalid_syntax(dubstar_expr + comp_for, "dict unpacking cannot be used in dict comprehension")
+            | unpack_dict_comp
         ) + rbrace.suppress()
         dict_literal_ref = (
             lbrace.suppress()
@@ -2029,10 +2032,13 @@ class Grammar(object):
         ) + Optional(comp_iter, default="")
         match_comp_expr_ref = addspace(namedexpr_test + match_comp_for)
         normal_comp_expr_ref = addspace(namedexpr_test + comp_for)
+        # PEP 798 iterable unpacking in comprehensions
+        unpack_comp_expr = Forward()
+        unpack_comp_expr_ref = star.suppress() + expr + comp_for
         comprehension_expr <<= (
             normal_comp_expr
             | match_comp_expr
-            | invalid_syntax(star_expr + comp_for, "iterable unpacking cannot be used in comprehension")
+            | unpack_comp_expr
         )
 
         return_stmt = addspace(keyword("return") - Optional(new_testlist_star_expr))
@@ -2141,12 +2147,14 @@ class Grammar(object):
         match_check_equals_ref = equals
 
         match_dotted_name_const = Forward()
-        complex_number = condense(Optional(neg_minus) + number + (plus | sub_minus) + Optional(neg_minus) + imag_num)
+        # Python 3.15 allows a unary plus as well as a unary minus in literal patterns
+        match_number_sign = neg_minus | plus.suppress()
+        complex_number = condense(Optional(match_number_sign) + number + (plus | sub_minus) + Optional(neg_minus) + imag_num)
         match_const = condense(
             (eq | match_check_equals).suppress() + negable_atom_item
             | string_atom
             | complex_number
-            | Optional(neg_minus) + number
+            | Optional(match_number_sign) + number
             | match_dotted_name_const
         )
         empty_const = fixto(
@@ -2403,7 +2411,11 @@ class Grammar(object):
         )
 
         with_item = addspace(test + Optional(keyword("as") + base_assign_item))
-        with_item_list = Group(maybeparens(lparen, tokenlist(with_item, comma), rparen))
+        with_item_list = Group(
+            # like Python 3.9+, parse 'with (a, b):' as two context managers rather than a tuple
+            lparen.suppress() + tokenlist(with_item, comma) + rparen.suppress() + FollowedBy(colon)
+            | maybeparens(lparen, tokenlist(with_item, comma), rparen)
+        )
         with_stmt_ref = keyword("with").suppress() + with_item_list + suite
         with_stmt = Forward()
 

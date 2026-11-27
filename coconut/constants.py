@@ -594,7 +594,17 @@ new_to_old_stdlib = {
     "typing.Self": ("typing_extensions./Self", (3, 11)),
     "typing.TypeVarTuple": ("typing_extensions./TypeVarTuple", (3, 11)),
     "typing.Unpack": ("typing_extensions./Unpack", (3, 11)),
-    "typing.TypeForm": ("typing_extensions./TypeForm", (3, 14)),
+    "typing.override": ("typing_extensions./override", (3, 12)),
+    "typing.TypeAliasType": ("typing_extensions./TypeAliasType", (3, 12)),
+    "typing.get_original_bases": ("typing_extensions./get_original_bases", (3, 12)),
+    "collections.abc.Buffer": ("typing_extensions./Buffer", (3, 12)),
+    "typing.TypeIs": ("typing_extensions./TypeIs", (3, 13)),
+    "typing.ReadOnly": ("typing_extensions./ReadOnly", (3, 13)),
+    "typing.NoDefault": ("typing_extensions./NoDefault", (3, 13)),
+    "typing.get_protocol_members": ("typing_extensions./get_protocol_members", (3, 13)),
+    "typing.is_protocol": ("typing_extensions./is_protocol", (3, 13)),
+    "warnings.deprecated": ("typing_extensions./deprecated", (3, 13)),
+    "typing.TypeForm": ("typing_extensions./TypeForm", (3, 15)),
 }
 
 import_existing = {
@@ -908,6 +918,21 @@ all_builtins = frozenset(
     + coconut_specific_builtins
     + coconut_exceptions
 )
+
+# builtins that are defined (so using them isn't an undefined name) but that are new
+#  or uncommon enough that assigning to them shouldn't warn about shadowing a builtin
+unshadow_checked_builtins = frozenset((
+    "override",  # Coconut's, which is fine to replace with typing.override
+    "frozendict",  # 3.15
+    "sentinel",  # 3.15
+    "ImportCycleError",  # 3.15
+    "PythonFinalizationError",  # 3.13
+    "exit",
+    "quit",
+    "copyright",
+    "credits",
+    "license",
+))
 
 magic_methods = (
     "__fmap__",

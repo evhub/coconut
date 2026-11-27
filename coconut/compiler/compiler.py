@@ -97,6 +97,7 @@ from coconut.constants import (
     reserved_command_symbols,
     streamline_grammar_for_len,
     all_builtins,
+    unshadow_checked_builtins,
     in_place_op_funcs,
     match_first_arg_var,
     import_existing,
@@ -290,7 +291,6 @@ def special_starred_import_handle(imp_all=False):
     """Handles the [from *] import * Coconut Easter egg."""
     out = handle_indentation(
         """
-import imp as _coconut_imp
 try:
     _coconut_norm_file = _coconut.os.path.normpath(_coconut.os.path.realpath(__file__))
     _coconut_norm_dir = _coconut.os.path.normpath(_coconut.os.path.realpath(_coconut.os.path.dirname(__file__)))
@@ -316,8 +316,7 @@ for _coconut_base_path in _coconut_sys.path:
             _coconut_seen_imports.add(_coconut_imp_name)
             _coconut.print("Importing {}...".format(_coconut_imp_name), end="", flush=True)
             try:
-                descr = _coconut_imp.find_module(_coconut_imp_name, [_coconut.os.path.dirname(_coconut_imp_path)])
-                _coconut_imp.load_module(_coconut_imp_name, *descr)
+                __import__(_coconut_imp_name)
             except:
                 _coconut.print(" Failed.")
             else:
@@ -898,6 +897,18 @@ class Compiler(Grammar, pickleable_obj):
         cls.match_dict_comp <<= handle_and_manage(
             cls.match_dict_comp_ref,
             cls.method("normal_dict_comp_handle"),
+            cls.method("has_expr_setname_manage"),
+            include_in_packrat_context=True,
+        )
+        cls.unpack_dict_comp <<= handle_and_manage(
+            cls.unpack_dict_comp_ref,
+            cls.method("unpack_dict_comp_handle"),
+            cls.method("has_expr_setname_manage"),
+            include_in_packrat_context=True,
+        )
+        cls.unpack_comp_expr <<= handle_and_manage(
+            cls.unpack_comp_expr_ref,
+            cls.method("unpack_comp_expr_handle"),
             cls.method("has_expr_setname_manage"),
             include_in_packrat_context=True,
         )
@@ -4471,6 +4482,26 @@ raise {raise_from_var}
         else:
             return "_coconut.dict(((" + key + "), (" + val + ")) " + comp + ")"
 
+    def unpack_comp_expr_handle(self, loc, tokens):
+        """Process PEP 798 iterable unpacking in list/set/generator comprehensions."""
+        item, comp = tokens
+        if self.target_info >= (3, 15):
+            return "*" + item + " " + comp
+        # [*e for x in xs] is equivalent to [y for x in xs for y in e]
+        unpack_var = self.get_temp_var("unpack_item", loc)
+        return unpack_var + " " + comp + " for " + unpack_var + " in " + item
+
+    def unpack_dict_comp_handle(self, loc, tokens):
+        """Process PEP 798 dict unpacking in dict comprehensions."""
+        item, comp = tokens
+        if self.target_info >= (3, 15):
+            return "{**" + item + " " + comp + "}"
+        # {**e for x in xs} is equivalent to {k: m[k] for x in xs for m in (e,) for k in m.keys()}
+        map_var = self.get_temp_var("unpack_mapping", loc)
+        key_var = self.get_temp_var("unpack_key", loc)
+        unpack_comp = comp + " for " + map_var + " in (" + item + ",) for " + key_var + " in " + map_var + ".keys()"
+        return self.normal_dict_comp_handle([key_var, map_var + "[" + key_var + "]", unpack_comp])
+
     def pattern_error(self, original, loc, value_var, check_var, match_error_class='_coconut_MatchError'):
         """Construct a pattern-matching error message."""
         base_line = clean(self.reformat(getline(loc, original), ignore_errors=True)).strip()
@@ -5148,6 +5179,9 @@ __annotations__["{name}"] = {annotation}
                 before = string_parts[i]
                 string_parts[i] = assert_remove_suffix(before, "{") + expr + "{"
                 exprs[i] = assert_remove_suffix(expr_rstrip, "=")
+                # with no conversion or format spec, the = specifier uses repr
+                if string_parts[i + 1].startswith("}"):
+                    string_parts[i + 1] = "!r" + string_parts[i + 1]
 
         # compile Coconut expressions
         compiled_exprs = []
@@ -5170,7 +5204,7 @@ __annotations__["{name}"] = {annotation}
                 # Use tstr backport - tstr.t() uses caller's frame for variable lookup
                 # Will raise runtime error if tstr not available (works with universal target)
                 template_str = ("r" if raw else "") + self.wrap_str(new_text, strchar)
-                return "_coconut.tstr.t(" + template_str + ")" + self.type_ignore_comment()
+                return "_coconut.tstr.t(" + template_str + ")"
 
         else:
             # reconstitute string
@@ -5606,7 +5640,8 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
             bound_op_type = "constraint"
             name_loc, name, bound_op, constraints = tokens
             # for_py_typedef is different in the two cases here as above
-            raw_bound = ", ".join(self.wrap_typedef(c, for_py_typedef=True) for c in constraints)
+            # constraints must be parenthesized (a tuple), else they'd be parsed as multiple type params
+            raw_bound = "(" + ", ".join(self.wrap_typedef(c, for_py_typedef=True) for c in constraints) + ")"
             args = ", " + ", ".join(self.wrap_typedef(c, for_py_typedef=False) for c in constraints)
         elif "TypeVarTuple" in tokens:
             TypeVarFunc = "TypeVarTuple"
@@ -6013,7 +6048,7 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
             # if we're creating a class attribute, then we're not actually shadowing anything
             and not is_class_attr
         ):
-            if name in all_builtins:
+            if name in all_builtins and name not in unshadow_checked_builtins:
                 err = self.strict_err_or_warn(
                     "assignment shadows builtin '{name}' (use explicit '\\{name}' syntax when purposefully assigning to builtin names)".format(name=name),
                     original,
@@ -6047,6 +6082,7 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
             and not self.star_import
             and scope["all_vars"] is not None
             and name not in all_builtins
+            and name not in unshadow_checked_builtins
             and name != wildcard
             and (expr_setnames_context is None or (
                 name not in expr_setnames_context["new_names"]

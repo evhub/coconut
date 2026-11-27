@@ -964,7 +964,7 @@ class _coconut_base_parallel_map(map):
                 cls._get_pool_stack()[-1].terminate()
                 cls._get_pool_stack()[-1] = None
         elif max_workers is not None:
-            self.map_cls._get_pool_stack().append(cls._make_pool(max_workers))
+            cls._get_pool_stack().append(cls._make_pool(max_workers))
             try:
                 yield
             finally:
@@ -991,7 +991,7 @@ class _coconut_base_parallel_map(map):
     def to_stream(self):
         """Stream the map operation, yielding results one at a time."""
         if self._get_pool_stack()[-1] is None:
-            raise _coconut.RuntimeError("cannot stream outside of " + cls.__name__ + ".multiple_sequential_calls context")
+            raise _coconut.RuntimeError("cannot stream outside of " + self.__class__.__name__ + ".multiple_sequential_calls context")
         return self._execute_map()
     def __iter__(self):
         if self.stream:
@@ -1770,6 +1770,11 @@ class override(_coconut_baseclass):
     __slots__ = ("func",)
     def __init__(self, func):
         self.func = func
+        # mark the function as an override like typing.override does
+        try:
+            func.__override__ = True
+        except (_coconut.AttributeError, _coconut.TypeError):
+            pass
     def __get__(self, obj, objtype=None):
         self_func_get = _coconut.getattr(self.func, "__get__", None)
         if self_func_get is not None:
