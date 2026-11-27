@@ -1004,11 +1004,11 @@ def primary_test_2() -> bool:
         @override
         def meth(self) = 2
     assert OverrideChild().meth() == 2
-    assert OverrideChild.meth.__override__
+    assert getattr(OverrideChild.meth, "__override__", False)
 
     # nested multiple_sequential_calls with a new max_workers
-    with thread_map.multiple_sequential_calls():
-        with thread_map.multiple_sequential_calls(max_workers=2):
+    with thread_map.multiple_sequential_calls():  # type: ignore
+        with thread_map.multiple_sequential_calls(max_workers=2):  # type: ignore
             assert thread_map(abs, [-1, -2]) |> list == [1, 2]
 
     # bare returns in generators (which used to compile to raise StopIteration() on old targets)
