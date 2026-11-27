@@ -194,6 +194,7 @@ from coconut.compiler.util import (
     compile_regex,
     append_it,
     interleaved_join,
+    strip_comments_and_join_lines,
     handle_indentation,
     tuple_str_of,
     join_args,
@@ -2065,8 +2066,19 @@ class Compiler(Grammar, pickleable_obj):
                     if hold.get("in_expr", False):
                         internal_assert(is_f, "in_expr should only be for f string holds, not", hold)
                         remaining_text = inputstring[i:]
-                        str_start, str_stop = self.cached_parse_where("str_proc", self.string_start, remaining_text, cache_prefixes=True)
-                        if str_start is not None:  # str_start >= 0; if > 0 means there is whitespace before the string
+                        if c == "#":
+                            # comments are allowed in f string exprs (PEP 701), and quotes in them don't start strings
+                            comment_end = inputstring.find("\n", i)
+                            if comment_end == -1:
+                                comment_end = len(inputstring)
+                            hold["exprs"][-1] += inputstring[i:comment_end]
+                            i = comment_end - 1
+                            str_start = None
+                        else:
+                            str_start, str_stop = self.cached_parse_where("str_proc", self.string_start, remaining_text, cache_prefixes=True)
+                        if c == "#":
+                            pass
+                        elif str_start is not None:  # str_start >= 0; if > 0 means there is whitespace before the string
                             hold["exprs"][-1] += remaining_text[:str_stop]
                             # add any skips from where we're fast-forwarding (except don't include c since we handle that below)
                             for j in range(1, str_stop):
@@ -2596,6 +2608,8 @@ class Compiler(Grammar, pickleable_obj):
 
         return "".join(out)
 
+    comment_marker_regex = compile_regex(r"#[0-9]+" + unwrapper)
+
     def str_repl(self, inputstring, reformatting=False, ignore_errors=False, **kwargs):
         """Add back strings and comments."""
         out = []
@@ -2628,7 +2642,9 @@ class Compiler(Grammar, pickleable_obj):
                     else:
                         raise CoconutInternalException("invalid string marker in", getline(i, inputstring))
                 elif c is not None:
-                    if c == "#":
+                    # a '#' that doesn't start a comment marker is a literal '#' (e.g. in a
+                    #  string in a passthrough, as with f"{'#' + x}" on targets below 3.12)
+                    if c == "#" and self.comment_marker_regex.match(inputstring, i):
                         comment = ""
                     elif c == strwrapper:
                         string = ""
@@ -5238,6 +5254,9 @@ __annotations__["{name}"] = {annotation}
         # compile Coconut expressions
         compiled_exprs = []
         for co_expr in exprs:
+            # line breaks and comments are allowed in replacement fields (PEP 701)
+            if "\n" in co_expr or "#" in co_expr:
+                co_expr = strip_comments_and_join_lines(co_expr)
             try:
                 py_expr = self.inner_parse_eval(original, loc, co_expr)
             except ParseBaseException:

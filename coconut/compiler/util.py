@@ -2149,6 +2149,46 @@ def final_indentation_level(code):
     return level
 
 
+def strip_comments_and_join_lines(code):
+    """Remove comments and line breaks outside of strings from the given expression.
+
+    Inside f-string replacement fields (as inside brackets), line breaks and comments
+    are insignificant (PEP 701), so this gives an equivalent single-line expression."""
+    out = []
+    i = 0
+    quote = None
+    while i < len(code):
+        c = code[i]
+        if quote is None:
+            if c == "#":
+                while i < len(code) and code[i] != "\n":
+                    i += 1
+            elif c == "\\" and code[i + 1:i + 2] == "\n":
+                out.append(" ")
+                i += 2
+            elif c in "\r\n":
+                out.append(" ")
+                i += 1
+            elif c in "'\"":
+                quote = c * 3 if code.startswith(c * 3, i) else c
+                out.append(quote)
+                i += len(quote)
+            else:
+                out.append(c)
+                i += 1
+        elif c == "\\":
+            out.append(code[i:i + 2])
+            i += 2
+        elif code.startswith(quote, i):
+            out.append(quote)
+            i += len(quote)
+            quote = None
+        else:
+            out.append(c)
+            i += 1
+    return "".join(out)
+
+
 def interleaved_join(first_list, second_list):
     """Interleaves two lists of strings and joins the result.
 

@@ -618,6 +618,16 @@ def primary_test_1() -> bool:
     def f(x) = x + 1  # type: ignore
     assert f"{1 |> f=}" == "1 |> f=2"
     assert f"{'abc'=}" == "'abc'='abc'"
+    assert f"{a  # PEP 701 comment
+    }" == "1"
+    assert f"{
+        a
+        |> f
+    }" == "2"
+    assert f"{"#" + str(a)  # comment with "quotes"
+    }" == "#1"
+    assert f"{'#' * 3}" == "###"
+    assert f"{'#1' + '#2'}" == "#1#2"
     assert a == 3 where:
         (1, 2, a) = (1, 2, 3)
     assert a == 2 == b where:
