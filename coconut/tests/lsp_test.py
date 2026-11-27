@@ -758,8 +758,34 @@ def test_claude_code_plugin():
         lsp = json.load(f)
     assert [lsp["coconut"]["command"]] + lsp["coconut"]["args"] == ["coconut", "--lsp"]
     assert lsp["coconut"]["extensionToLanguage"][".coco"] == "coconut"
-    assert plugin["mcpServers"]["coconut"]["args"] == ["-m", "coconut.lsp", "mcp"]
+    # both go through the same 'coconut' entry point, so they run in the same environment
+    mcp = plugin["mcpServers"]["coconut"]
+    assert [mcp["command"]] + mcp["args"] == ["coconut", "--mcp"]
     # the skill defers to the maintained AI guide rather than duplicating it
     with open(os.path.join(plugin_dir, "skills", "coconut", "SKILL.md")) as f:
         skill = f.read()
     assert "coconut --ai-docs" in skill
+
+
+def test_worker_env_never_shadows_stdlib(monkeypatch):
+    from coconut.lsp import worker
+    package_parent = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(worker.__file__))))
+    # installed in a site directory: PYTHONPATH must be left alone (it would come before the stdlib)
+    monkeypatch.setattr(worker, "_site_dirs", lambda: {os.path.normcase(os.path.abspath(package_parent))})
+    env = worker.worker_env({"PYTHONPATH": "/existing"})
+    assert env["PYTHONPATH"] == "/existing"
+    # e.g. a source checkout: the worker needs to find this copy of Coconut
+    monkeypatch.setattr(worker, "_site_dirs", lambda: set())
+    env = worker.worker_env({})
+    assert env["PYTHONPATH"] == package_parent
+
+
+def test_hover_docs_up_to_date():
+    from coconut.lsp import generate_docs
+    if not os.path.exists(generate_docs.DEFAULT_SOURCE):
+        pytest.skip("not running from a source checkout")
+    with open(generate_docs.DEFAULT_SOURCE, encoding="utf-8") as f:
+        expected = json.dumps(generate_docs.generate(f.read()), indent=2, sort_keys=True) + "\n"
+    with open(generate_docs.OUT_PATH, encoding="utf-8") as f:
+        actual = f.read()
+    assert actual == expected, "coconut/lsp/data/docs.json is out of date with DOCS.md; run: python -m coconut.lsp.generate_docs"

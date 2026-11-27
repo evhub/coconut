@@ -15,11 +15,9 @@
   "mcpServers": {
     "coconut": {
       "args": [
-        "-m",
-        "coconut.lsp",
-        "mcp"
+        "--mcp"
       ],
-      "command": "python3"
+      "command": "coconut"
     }
   },
   "name": "coconut",

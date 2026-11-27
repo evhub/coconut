@@ -11,7 +11,7 @@ License: Apache 2.0
 Description: Regenerates coconut/lsp/data/docs.json, the documentation the language server shows on
 hover and completion for Coconut built-ins, keywords, and operators, from DOCS.md.
 
-Run from a source checkout after changing DOCS.md:
+Run from a source checkout after changing DOCS.md (coconut/tests/lsp_test.py checks that it's up to date):
 
     python -m coconut.lsp.generate_docs [path/or/url/to/DOCS.md]
 """

@@ -126,7 +126,7 @@ coconut [-h] [--and source [dest ...]] [-v] [-t version] [-i] [-p] [-a] [-l]
         [--no-line-numbers] [-k] [-w] [-r] [-n] [-d] [-q] [-s]
         [--silence-warnings regex] [--pure] [--no-tco]
         [--no-wrap-types] [-c code] [-j processes] [-f] [--minify] [--jupyter ...]
-        [--mypy ...] [--pyright] [--argv ...] [--tutorial] [--docs] [--lsp] [--ai-docs] [--style name] [--vi-mode]
+        [--mypy ...] [--pyright] [--argv ...] [--tutorial] [--docs] [--lsp] [--mcp] [--ai-docs] [--style name] [--vi-mode]
         [--recursion-limit limit] [--stack-size kbs] [--fail-fast] [--no-cache]
         [--site-install] [--site-uninstall] [--verbose] [--trace] [--profile]
         [source] [dest]
@@ -197,6 +197,9 @@ dest                destination directory for compiled files (defaults to
                       open Coconut's documentation in the default web browser
 --lsp                 start the Coconut language server (communicates over stdio; install coconut[lsp]
                       for completions, hover, go to definition, and linting)
+--mcp                 start a Model Context Protocol server with tools for AI coding assistants to
+                      check and compile Coconut code and look up its documentation (communicates over
+                      stdio)
 --ai-docs             print a condensed guide to writing idiomatic Coconut (intended for AI coding
                       assistants)
 --style name          set Pygments syntax highlighting style (or 'list' to list styles) (defaults
@@ -553,7 +556,7 @@ The server accepts the initialization options (also accepted through `workspace/
 
 Hover, completions, go to definition, and the other code intelligence features work by analyzing the compiled Python with `jedi` and mapping the results back to the Coconut source. Compilation happens in a background process that reuses parsing work between edits, and when the current version of a file doesn't compile, the server analyzes it with the broken lines neutralized, so the rest of the file stays analyzable.
 
-The same analysis is also available from the command line, for scripts, CI, and AI agents: `python -m coconut.lsp check <files or dirs>` reports errors and warnings (exiting with code 1 on errors; add `--mypy` to type check), `python -m coconut.lsp compile <file>` prints the compiled Python, `hover`, `definition`, `references`, and `symbols` query code intelligence at a (1-based) position, and `python -m coconut.lsp docs <name>` looks up Coconut's documentation for a built-in, keyword, or operator. Add `--json` for machine-readable output, and run `python -m coconut.lsp --help` for details. `python -m coconut.lsp mcp` serves the same tools over the [Model Context Protocol](https://modelcontextprotocol.io) for AI coding assistants (see [below](#ai-coding-assistant-support)).
+The same analysis is also available from the command line, for scripts, CI, and AI agents: `python -m coconut.lsp check <files or dirs>` reports errors and warnings (exiting with code 1 on errors; add `--mypy` to type check), `python -m coconut.lsp compile <file>` prints the compiled Python, `hover`, `definition`, `references`, and `symbols` query code intelligence at a (1-based) position, and `python -m coconut.lsp docs <name>` looks up Coconut's documentation for a built-in, keyword, or operator. Add `--json` for machine-readable output, and run `python -m coconut.lsp --help` for details. `coconut --mcp` serves the same tools over the [Model Context Protocol](https://modelcontextprotocol.io) for AI coding assistants (see [below](#ai-coding-assistant-support)).
 
 #### AI Coding Assistant Support
 
@@ -566,7 +569,7 @@ AI coding assistants can also use Coconut's [language server](#language-server) 
 /plugin marketplace add evhub/coconut
 /plugin install coconut@coconut
 ```
-in Claude Code. For other MCP-capable assistants, configure `python -m coconut.lsp mcp` as a stdio MCP server, which provides the tools `coconut_check`, `coconut_compile`, `coconut_docs`, `coconut_hover`, `coconut_definition`, `coconut_references`, and `coconut_symbols`.
+in Claude Code. For other MCP-capable assistants, configure `coconut --mcp` as a stdio MCP server, which provides the tools `coconut_check`, `coconut_compile`, `coconut_docs`, `coconut_hover`, `coconut_definition`, `coconut_references`, and `coconut_symbols`.
 
 #### `pytest` Support
 

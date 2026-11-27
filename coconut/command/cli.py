@@ -272,6 +272,12 @@ arguments.add_argument(
 )
 
 arguments.add_argument(
+    "--mcp",
+    action="store_true",
+    help="start a Model Context Protocol server with tools for AI coding assistants to check and compile Coconut code and look up its documentation (communicates over stdio)",
+)
+
+arguments.add_argument(
     "--ai-docs",
     action="store_true",
     help="print a condensed guide to writing idiomatic Coconut (intended for AI coding assistants)",

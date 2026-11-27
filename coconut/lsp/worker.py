@@ -63,6 +63,43 @@ def worker_main():
         out.flush()
 
 
+def _site_dirs():
+    """The directories Python itself puts on sys.path for installed packages."""
+    import site
+    import sysconfig
+    dirs = set()
+    try:
+        dirs.update(site.getsitepackages())
+    except Exception:  # e.g. old virtualenvs without getsitepackages
+        pass
+    try:
+        dirs.add(site.getusersitepackages())
+    except Exception:
+        pass
+    for key in ("purelib", "platlib"):
+        try:
+            dirs.add(sysconfig.get_paths()[key])
+        except Exception:
+            pass
+    return set(os.path.normcase(os.path.abspath(d)) for d in dirs if d)
+
+
+def worker_env(environ=None):
+    """The environment for the compile worker, which must import this same copy of Coconut.
+
+    When Coconut isn't installed in a site directory (e.g. running from a source checkout),
+    its parent directory has to be put on PYTHONPATH. That must never be done for a site
+    directory: PYTHONPATH entries come before the standard library on sys.path, so any
+    installed module with a standard library name (enum34's enum, old typing/dataclasses
+    backports, ...) would then shadow the real one."""
+    env = dict(os.environ if environ is None else environ)
+    package_parent = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    if os.path.normcase(os.path.abspath(package_parent)) not in _site_dirs():
+        env["PYTHONPATH"] = package_parent + (os.pathsep + env["PYTHONPATH"] if env.get("PYTHONPATH") else "")
+    env["PYTHONIOENCODING"] = "utf-8"
+    return env
+
+
 class CompileTimeout(Exception):
     pass
 
@@ -78,17 +115,12 @@ class WorkerClient(object):
         self.next_id = 0
 
     def _start(self):
-        # make sure the worker imports this same copy of Coconut (e.g. when running from a source checkout)
-        package_parent = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        env = dict(os.environ)
-        env["PYTHONPATH"] = package_parent + (os.pathsep + env["PYTHONPATH"] if env.get("PYTHONPATH") else "")
-        env["PYTHONIOENCODING"] = "utf-8"
         self.proc = subprocess.Popen(
             [self.python, "-u", "-m", "coconut.lsp.worker"],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=sys.stderr,
-            env=env,
+            env=worker_env(),
             universal_newlines=True,
             encoding="utf-8",
             bufsize=1,

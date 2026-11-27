@@ -38,7 +38,7 @@ examples:
     python -m coconut.lsp references a.coco 12 5
     python -m coconut.lsp symbols a.coco         # outline of a file
     python -m coconut.lsp docs "|>"              # Coconut documentation for a built-in/keyword/operator
-    python -m coconut.lsp mcp                    # run as an MCP server (for AI agents)
+    coconut --mcp                                # run as an MCP server (for AI agents)
 
 Lines and columns on the command line are 1-based; JSON output (--json) uses 1-based lines and
 columns too, so results can be fed straight back into these commands.
