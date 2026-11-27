@@ -827,7 +827,7 @@ def f[T](x):
 
 def test_incremental() -> bool:
     setup()
-    assert use_incremental_parsing() is SUPPORTS_INCREMENTAL
+    assert use_incremental_parsing() is SUPPORTS_INCREMENTAL  # type: ignore
     assert use_incremental_parsing(False) is False
     warm_up(enable_incremental_mode=True)
     assert parse("""

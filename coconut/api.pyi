@@ -99,7 +99,7 @@ def warm_up(
     ...
 
 
-def collect_warnings() -> ContextManager[List[CoconutException]]:
+def collect_warnings() -> ContextManager[List[Any]]:
     """Context manager that collects the CoconutSyntaxWarnings (and other CoconutWarnings)
     issued in its block into the list it yields instead of showing them."""
     ...
