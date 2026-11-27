@@ -1201,7 +1201,12 @@ class Compiler(Grammar, pickleable_obj):
     def has_noqa_comment(self, original, loc):
         """Check if the given location has a NOQA comment."""
         ln = self.adjust(lineno(loc, original))
-        comment = self.reformat(" ".join(self.comments[ln]), ignore_errors=True)
+        comment_markers = self.comments[ln]
+        if not comment_markers:
+            # the comment may not have been parsed yet (e.g. when checking code inside a
+            #  parenthesized statement lambda), so look for it directly in the line
+            comment_markers = self.comment_marker_regex.findall(getline(loc, original))
+        comment = self.reformat(" ".join(comment_markers), ignore_errors=True)
         return self.noqa_regex.search(comment)
 
     def strict_err_or_warn(self, msg, original, loc, noqa_able=False, **kwargs):

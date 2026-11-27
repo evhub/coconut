@@ -755,6 +755,12 @@ line 6''')
     xs[0] = 3  # NOQA
     def f(x=[]) = x  # NOQA
     """)
+    # NOQA also works for code inside a parenthesized statement lambda (checked before the comment is parsed)
+    parse(d"""
+    ys = [1]
+    assert ys == (def y -> ys[0] = 2; ys)([1])  # NOQA (deliberate)
+    """)
+    assert_raises(-> parse("ys = [1]\nf = (def y -> ys[0] = 2; ys)"), CoconutStyleError)
     # nonlocal requires target="3" since it's Python 3 only
     setup(line_numbers=False, strict=True, pure=True, target="3")
     parse(d"""
