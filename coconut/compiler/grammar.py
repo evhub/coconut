@@ -2794,6 +2794,29 @@ class Grammar(object):
             + data_suite
         )
 
+        # case data blocks define a sum type whose variants are data types inheriting from it
+        case_data_variant = Forward()
+        case_data_variant_ref = keyword("case").suppress() + classname + data_args + data_suite
+        case_datadef = Forward()
+        case_datadef_ref = (
+            keyword("case").suppress()
+            + keyword("data").suppress()
+            + classname
+            + Optional(type_params, default=())
+            + Optional(keyword("from").suppress() + testlist, default="")
+            + colon.suppress()
+            - newline.suppress()
+            - indent.suppress()
+            - Optional(docstring, default="")
+            - Group(OneOrMore(
+                # variants must come first so that case lines aren't parsed as statements
+                # (with locations so that line numbers can be kept accurate after reordering)
+                labeled_group(stores_loc_item + case_data_variant, "variant")
+                | labeled_group(stores_loc_item + stmt, "stmt")
+            ))
+            - dedent.suppress()
+        )
+
         simple_decorator = condense(dotted_refname + Optional(function_call) + newline)("simple")
         complex_decorator = condense(namedexpr_test + newline)("complex")
         decorators_ref = OneOrMore(
@@ -2833,6 +2856,7 @@ class Grammar(object):
             any_for_stmt,
             async_stmt,
             decoratable_data_stmt,
+            case_datadef,
             match_stmt,
             passthrough_stmt,
         )

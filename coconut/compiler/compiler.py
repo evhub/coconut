@@ -81,6 +81,7 @@ from coconut.constants import (
     format_var,
     none_coalesce_var,
     is_data_var,
+    case_data_base_prefix,
     data_defaults_var,
     funcwrapper,
     non_syntactic_newline,
@@ -818,6 +819,17 @@ class Compiler(Grammar, pickleable_obj):
             cls.match_datadef_ref,
             cls.method("match_datadef_handle"),
             cls.method("class_manage"),
+            include_in_packrat_context=False,
+        )
+        cls.case_datadef <<= handle_and_manage(
+            cls.case_datadef_ref,
+            cls.method("case_datadef_handle"),
+            cls.method("class_manage"),
+            include_in_packrat_context=False,
+        )
+        cls.case_data_variant <<= manage(
+            cls.case_data_variant_ref,
+            cls.method("case_data_variant_manage"),
             include_in_packrat_context=False,
         )
 
@@ -3988,6 +4000,102 @@ def __new__(_coconut_cls, {match_func_paramdef}):
         namedtuple_call = self.make_namedtuple_call(name, matcher.name_list)
         return self.assemble_data(decorators, name, namedtuple_call, inherit, extra_stmts, stmts, matcher.name_list)
 
+    def case_datadef_handle(self, original, loc, tokens):
+        """Process case data blocks, which define a sum type whose variants are data types.
+
+        At runtime, the sum type is a base class of all of its variants; for type checkers,
+        it's the Union of its variants (which is what allows them to check exhaustiveness)."""
+        name, paramdefs, inherit, docstring, body = tokens
+        base_name = case_data_base_prefix + name
+
+        # since the base class has to come before the variants, statements get reordered,
+        #  so make sure the first line of each piece has the right line number
+        def with_ln(code, item_loc):
+            """Mark the first line of code with the line number of item_loc."""
+            first_line, sep, rest = code.partition("\n")
+            if split_leading_trailing_indent(first_line)[1].startswith(funcwrapper):
+                # deferred function definitions are expanded later, so we can't add to their line,
+                #  but marking the line before (which ends up blank) sets the line number for them
+                return self.wrap_line_number(lineno(item_loc, original) - 1) + "\n" + code
+            return first_line + self.wrap_loc(original, item_loc) + sep + rest
+        endline = self.wrap_loc(original, loc) + "\n"
+
+        # handle type parameters (type params on >= 3.12 and type var assignments on < 3.12)
+        native_params = typevar_code = ""
+        param_args = []
+        if paramdefs:
+            if self.target_info >= (3, 12):
+                native_params = "[" + ", ".join(paramdefs) + "]"
+                for paramdef in paramdefs:
+                    param_name = paramdef.split(":", 1)[0].split("=", 1)[0].strip()
+                    param_args.append(param_name.lstrip("*") if param_name.startswith("**") else param_name)
+            else:
+                typevar_code = "".join(paramdefs)
+                param_args = self.get_typevar_args()
+        params_subscript = "[" + ", ".join(param_args) + "]" if param_args else ""
+
+        # base class (with all the non-variant statements)
+        shared_stmts = []
+        variants = []
+        for item in body:
+            if "variant" in item:
+                variants.append(item)
+            elif "stmt" in item:
+                item_loc, stmt = item
+                shared_stmts.append(with_ln(stmt, int(item_loc)))
+            else:
+                raise CoconutInternalException("invalid case data body item", item)
+        if not variants:
+            raise CoconutDeferredSyntaxError("case data must have at least one case", loc)
+        base_bases = ["_coconut.case_data"]
+        if inherit:
+            base_bases.append(inherit)
+        if paramdefs and self.target_info < (3, 12):
+            base_bases.append(self.get_generic_for_typevars())
+        out = [
+            typevar_code,
+            "class ", base_name, native_params, "(", ", ".join(base_bases), "):", endline,
+            openindent,
+            docstring,
+            "__slots__ = ()", endline,
+        ] + shared_stmts + [
+            closeindent,
+            base_name, ".__name__ = ", base_name, ".__qualname__ = _coconut_py_str(", repr(name), ")", endline,
+        ]
+
+        # variants, which are data types inheriting from the base class
+        variant_names = []
+        for variant in variants:
+            variant_loc, variant_name, variant_args, variant_stmts = variant
+            variant_names.append(variant_name)
+            out.append(with_ln(self.datadef_handle(int(variant_loc), [
+                "",
+                variant_name,
+                paramdefs if self.target_info >= (3, 12) else (),
+                variant_args,
+                base_name + params_subscript + ", _coconut.case_data_variant",
+                variant_stmts,
+            ]), int(variant_loc)))
+
+        # the type checker sees the Union of the variants, while the runtime sees the base class
+        union_members = [variant_name + params_subscript for variant_name in variant_names]
+        if paramdefs and self.target_info >= (3, 12):
+            type_checking_def = "type " + name + native_params + " = " + " | ".join(union_members)
+        elif paramdefs:
+            type_checking_def = name + " = _coconut.typing.Union[" + ", ".join(union_members) + "]"
+        else:
+            # (the X | Y form, rather than Union[X, Y], also lets type checkers accept isinstance(x, name);
+            #  it's fine on any target since it's only seen by type checkers, which require 3.10+ anyway)
+            type_checking_def = name + " = " + " | ".join(union_members)
+        out += [
+            # (the header defines TYPE_CHECKING, and pyright only recognizes the bare name, not _coconut.typing.TYPE_CHECKING)
+            "if TYPE_CHECKING:", endline,
+            openindent, type_checking_def, endline, closeindent,
+            "else:", endline,
+            openindent, name, " = ", base_name, endline, closeindent,
+        ]
+        return "".join(out)
+
     def datadef_handle(self, loc, tokens):
         """Process data blocks."""
         if len(tokens) == 5:
@@ -5823,9 +5931,13 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
 
     def get_generic_for_typevars(self):
         """Get the Generic instances for the current typevars."""
-        internal_assert(self.target_info < (3, 12), "get_generic_for_typevars should only be used on targets < 3.12")
+        return "_coconut.typing.Generic[" + ", ".join(self.get_typevar_args()) + "]"
+
+    def get_typevar_args(self):
+        """Get the arguments to subscript a generic class with for the current typevars."""
+        internal_assert(self.target_info < (3, 12), "get_typevar_args should only be used on targets < 3.12")
         typevar_info = self.current_parsing_context("typevars")
-        internal_assert(typevar_info is not None, "get_generic_for_typevars called with no typevars")
+        internal_assert(typevar_info is not None, "get_typevar_args called with no typevars")
         generics = []
         for TypeVarFunc, name in typevar_info["new_typevars"]:
             if TypeVarFunc in ("TypeVar", "ParamSpec"):
@@ -5837,7 +5949,7 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
                     generics.append("_coconut.typing.Unpack[" + name + "]")
             else:
                 raise CoconutInternalException("invalid TypeVarFunc", TypeVarFunc, "(", name, ")")
-        return "_coconut.typing.Generic[" + ", ".join(generics) + "]"
+        return generics
 
     def type_alias_stmt_handle(self, tokens):
         """Handle type alias statements."""
@@ -5960,6 +6072,29 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
                 yield
         finally:
             cls_stack.pop()
+
+    @contextmanager
+    def case_data_variant_manage(self, original, loc, item):
+        """Manage the class parsing context for case data variants, which are
+        defined alongside their base class rather than inside of it."""
+        # variants are defined in the scope enclosing the case data block,
+        #  but they still see its type parameters (which live in "typevars")
+        cls_stack = self.parsing_context["class"]
+        scope_stack = self.parsing_context["scope"]
+        outer_class = cls_stack.pop() if cls_stack else None
+        outer_scope = scope_stack.pop() if scope_stack else None
+        try:
+            with self.class_manage(original, loc, item):
+                # names visible in the case data block (e.g. its type parameters) are visible in its variants
+                variant_scope = self.current_parsing_context("scope")
+                if outer_scope is not None and outer_scope["all_vars"] is not None and variant_scope["all_vars"] is not None:
+                    variant_scope["all_vars"].update(outer_scope["all_vars"])
+                yield
+        finally:
+            if outer_scope is not None:
+                scope_stack.append(outer_scope)
+            if outer_class is not None:
+                cls_stack.append(outer_class)
 
     @contextmanager
     def func_manage(self, original, loc, item):

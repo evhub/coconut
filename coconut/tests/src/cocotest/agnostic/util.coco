@@ -2150,3 +2150,48 @@ case def my_min[T]:
     type(x: T, y: T) -> T
     case(x, y if x <= y) = x
     case(x, y) = y
+
+
+# case data
+
+case data Shape:
+    """A shape."""
+    case Circle(r: float)
+    case Square(side: float)
+    case Rect(w: float, h: float):
+        def is_square(self) -> bool = self.w == self.h
+
+    def kind(self) -> str = type(self).__name__.lower()
+
+def shape_area(shape: Shape) -> float:
+    match shape:
+        case Circle(r):
+            return 3 * r ** 2
+        case Square(s):
+            return s ** 2
+        case Rect(w, h):
+            return w * h
+    raise TypeError(shape)
+
+case def shape_sides:
+    type(shape: Shape) -> int
+    case(Circle(_)) = 0
+    case(Square(_)) = 4
+    case(Rect(_, _)) = 4
+
+case data BinTree[T]:
+    case BinLeaf(value: T)
+    case BinNode(left: BinTree[T], right: BinTree[T])
+
+def tree_sum(t: BinTree[int]) -> int:
+    match t:
+        case BinLeaf(v):
+            return v
+        case BinNode(l, r):
+            return tree_sum(l) + tree_sum(r)
+    raise TypeError(t)
+
+case data Token from object:
+    case Num(n: int)
+    case Op(sym: str)
+    case Empty()

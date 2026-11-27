@@ -72,6 +72,7 @@ EXTRA_KEYS = {
     "Tail Call Optimization": ["tco"],
     "`match for`": ["match for"],
     "`match data`": ["match data"],
+    "`case data`": ["case data"],
     "`async with for`": ["async with for"],
     "`strict` Mode": ["strict"],
     "Enhanced Built-Ins": ["map", "zip", "filter", "reversed", "enumerate"],

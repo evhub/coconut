@@ -815,6 +815,14 @@ line 6''')
     # *Ts in subscripts in types and class bases compiles to Unpack (#662)
     assert "Generic[_coconut.typing.Unpack[Shape]]" in parse("class Array(Generic[*Shape]): pass")
     assert "tuple[int, _coconut.typing.Unpack[Shape]]" in parse("def f(x: tuple[int, *Shape]) -> None: pass")
+    # case data: a base class at runtime, the Union of the variants for type checkers
+    case_data_out = parse("case data Opt[T]:\n    case Some(x: T)\n    case Nada()\n", "lenient")
+    assert "class _coconut_case_data_Opt(_coconut.case_data, _coconut.typing.Generic[" in case_data_out
+    assert "class Some(" in case_data_out and "_coconut_case_data_Opt[_coconut_typevar_T_0], _coconut.case_data_variant)" in case_data_out
+    assert "Opt = _coconut.typing.Union[Some[_coconut_typevar_T_0], Nada[_coconut_typevar_T_0]]" in case_data_out
+    assert "Opt = _coconut_case_data_Opt" in case_data_out
+    assert "Shape = Circle | Square" in parse("case data Shape:\n    case Circle(r)\n    case Square(s)\n", "lenient")
+    assert_raises(-> parse("case data Empty:\n    def f(self) = 1\n"), CoconutSyntaxError, err_has="at least one case")
     # PEP 696 type parameter defaults are backported with typing_extensions
     assert 'TypeVar("_coconut_typevar_T_0", default=\'int\')' in parse("class Box[T = int]: pass")
     assert "default=_coconut.typing.Unpack['tuple[int, ...]']" in parse("class Box[*Ts = *tuple[int, ...]]: pass")
@@ -846,6 +854,9 @@ def f[T](x):
 """.strip()
 
     setup(line_numbers=False, target="3.13")
+    native_case_data = parse("case data Opt[T]:\n    case Some(x: T)\n    case Nada()\n", "lenient")
+    assert "class _coconut_case_data_Opt[T](_coconut.case_data):" in native_case_data
+    assert "class Some[T](" in native_case_data and "type Opt[T] = Some[T] | Nada[T]" in native_case_data
     assert "class Box[T = int, *Ts = *tuple[int, ...], **P = [int" in parse("class Box[T = int, *Ts = *tuple[int, ...], **P = [int]]: pass")
     assert "def f[T: (int, str) = int]" in parse("def f[T: (int, str) = int](x: T) -> T = x")
 

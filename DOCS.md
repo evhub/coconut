@@ -1705,6 +1705,54 @@ data namedpt(name `isinstance` str, x `isinstance` int, y `isinstance` int):
 **Python:**
 _Can't be done without a series of method definitions for each data type. See the compiled code for the Python syntax._
 
+#### `case data`
+
+`case data` defines a sum type (also called a tagged union, sealed class, or enum with data): a type whose values are exactly the values of a fixed set of `data` types, called its variants. The syntax is
+```
+case data <name>[<type params>] [from <base class>]:
+    [<docstring>]
+    case <variant>(<args>) [: <body>]
+    case <variant>(<args>) [: <body>]
+    ...
+    [<shared statements>]
+```
+where each `case` line defines a variant exactly like a [`data`](#data) statement (with the same `<args>` and optional `<body>`), and any other statements in the block (such as method definitions) are shared by all the variants.
+
+Each variant is an ordinary data type inheriting from `<name>`, so variants support everything data types do, including pattern matching, `._replace`, and [`fmap`](#fmap). At runtime, `<name>` is a base class of all of its variants, such that e.g. `isinstance(x, <name>)` and the class pattern `<name>()` check for any variant. For type checkers, however, `<name>` is the `Union` of its variants, which is what allows them to narrow a `<name>` down to the variants a pattern-match hasn't yet handled.
+
+Type parameters given to the `case data` block (e.g. `case data Tree[T]:`) are shared by all the variants, which can use them in their fields and can refer to the sum type itself recursively (e.g. `case Node(left: Tree[T], right: Tree[T])`).
+
+Note that, since type checkers see `<name>` as a `Union` rather than a class, they will reject class-specific uses of it such as `<name>.__name__` (as well as `isinstance(x, <name>)` for sum types with type parameters, which some type checkers don't support), and that inside of shared methods, `self` has the type of the base class rather than the `Union` of the variants.
+
+##### Example
+
+**Coconut:**
+```coconut
+case data Shape:
+    case Circle(r: float)
+    case Square(side: float)
+    case Rect(w: float, h: float):
+        def is_square(self) -> bool = self.w == self.h
+
+    def kind(self) -> str = type(self).__name__.lower()
+
+case def area:
+    type(shape: Shape) -> float
+    case(Circle(r)) = math.pi * r**2
+    case(Square(s)) = s**2
+    case(Rect(w, h)) = w * h
+
+case data Tree[T]:
+    case Leaf(value: T)
+    case Node(left: Tree[T], right: Tree[T])
+
+def tree_sum(Leaf(v)) = v
+addpattern def tree_sum(Node(l, r)) = tree_sum(l) + tree_sum(r)
+```
+
+**Python:**
+_Can't be done without defining a base class, a class for each variant, and a separate `Union` type alias for type checkers. See the compiled code for the Python syntax._
+
 
 ### `final`
 

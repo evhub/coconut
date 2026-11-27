@@ -140,6 +140,10 @@ def keyword_entry(line, start, end):
         return None
     if word == "match" and next_word in ("for", "data"):
         return "match " + next_word
+    if word == "case" and next_word == "data" and before == "":
+        return "case data"
+    if word == "data" and line[:start].strip() == "case":
+        return "case data"
     if word in ("match", "case") and statement_start:
         return word
     if word == "data" and statement_start and next_word:

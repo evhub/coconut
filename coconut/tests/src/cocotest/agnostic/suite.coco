@@ -1102,6 +1102,26 @@ forward 2""") == 900
         assert process_map(list .. .$[:2] .. loop, ([1], [2]))$[:2] |> tuple == ([1, 1], [2, 2])
         assert all(r == 4 for r in process_map(call$(?, [7,1,4,5]), [maxdiff1, maxdiff2, maxdiff3]))
 
+    # case data
+    assert shape_area(Circle(1)) == 3 and shape_area(Square(2)) == 4 and shape_area(Rect(2, 3)) == 6
+    assert shape_sides(Circle(1)) == 0 and shape_sides(Rect(1, 2)) == 4
+    assert Rect(2, 2).is_square() and not Rect(1, 2).is_square()
+    assert Square(1).kind() == "square"
+    assert Circle(1) `isinstance` Shape and Rect(1, 2) `isinstance` Shape and not (1 `isinstance` Shape)
+    assert repr(Rect(1, 2)) == "Rect(w=1, h=2)"
+    assert Rect(1, 2)._replace(h=3) == Rect(1, 3)
+    assert Circle(1) != Square(1)
+    match Square(5):
+        case Shape():
+            pass
+        case _:
+            assert False
+    assert tree_sum(BinNode(BinLeaf(1), BinNode(BinLeaf(2), BinLeaf(3)))) == 6
+    assert BinLeaf(1) `isinstance` BinTree  # type: ignore
+    assert [Num(1), Op("+"), Empty()] |> map$(.__class__.__name__) |> list == ["Num", "Op", "Empty"]
+    assert Empty() `isinstance` Token
+    assert pickle_round_trip(BinNode(BinLeaf(1), BinLeaf(2))) == BinNode(BinLeaf(1), BinLeaf(2))
+
     # must come at end
     assert fibs_calls[0] == 1
     assert lols[0] == 5

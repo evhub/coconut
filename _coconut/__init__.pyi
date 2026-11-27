@@ -125,6 +125,10 @@ tee_type: _t.Any = ...
 reiterables: _t.Any = ...
 fmappables: _t.Any = ...
 str_like_types: _t.Tuple[_t.Type[_t.Any], ...] = ...
+class case_data:
+    """Base class of the base classes of all case data types."""
+class case_data_variant:
+    """Base class of all case data variants."""
 
 Ellipsis = _builtins.Ellipsis
 NotImplemented = _builtins.NotImplemented
@@ -158,7 +162,12 @@ hasattr = _builtins.hasattr
 hash = _builtins.hash
 id = _builtins.id
 int = _builtins.int
-isinstance = _builtins.isinstance
+# re-exported (rather than assigned) so that type checkers narrow types after _coconut.isinstance checks,
+#  which pattern-matching relies on (e.g. for indexing into one data type out of a Union of them)
+if sys.version_info >= (3,):
+    from builtins import isinstance as isinstance
+else:
+    from __builtin__ import isinstance as isinstance
 issubclass = _builtins.issubclass
 iter = _builtins.iter
 len: _t.Callable[..., int] = ...  # pattern-matching needs an untyped _coconut.len to avoid type errors
