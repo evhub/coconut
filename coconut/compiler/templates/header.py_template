@@ -109,6 +109,10 @@ class _coconut{object}:{COMMENT.EVERYTHING_HERE_MUST_BE_COPIED_TO_STUB_FILE}
     class case_data_variant{object}:
         """Base class of all case data variants."""
         __slots__ = ()
+    @staticmethod
+    def match_must_be_total(unhandled):
+        """Only ever used by type checkers, for exhaustiveness checking."""
+    match_must_handle_case_data = case_data_leftover = match_unhandled = match_must_be_total
 def _coconut_handle_cls_kwargs(**kwargs):
     """Some code taken from six under the terms of its MIT license."""
     metaclass = kwargs.pop("metaclass", None)

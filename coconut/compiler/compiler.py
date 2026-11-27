@@ -230,6 +230,10 @@ from coconut.compiler.util import (
     _lookup_loc,
     _value_exc_loc_or_ret,
 )
+from coconut.compiler.exhaustiveness import (
+    exhaustiveness_check,
+    exhaustiveness_tree,
+)
 from coconut.compiler.header import (
     minify_header,
     getheader,
@@ -1212,16 +1216,23 @@ class Compiler(Grammar, pickleable_obj):
             logger.warn_err(self.make_err(CoconutSyntaxWarning, message, original, loc, **kwargs))
             self.shown_warnings.add(key)
 
-    def has_noqa_comment(self, original, loc):
-        """Check if the given location has a NOQA comment."""
+    def get_comment_at(self, original, loc):
+        """Get the comment on the line at the given location."""
         ln = self.adjust(lineno(loc, original))
         comment_markers = self.comments[ln]
         if not comment_markers:
             # the comment may not have been parsed yet (e.g. when checking code inside a
             #  parenthesized statement lambda), so look for it directly in the line
             comment_markers = self.comment_marker_regex.findall(getline(loc, original))
-        comment = self.reformat(" ".join(comment_markers), ignore_errors=True)
-        return self.noqa_regex.search(comment)
+        return self.reformat(" ".join(comment_markers), ignore_errors=True)
+
+    def has_noqa_comment(self, original, loc):
+        """Check if the given location has a NOQA comment."""
+        return self.noqa_regex.search(self.get_comment_at(original, loc))
+
+    def has_type_ignore_comment(self, original, loc):
+        """Check if the given location has a type: ignore comment."""
+        return self.type_ignore_regex.search(self.get_comment_at(original, loc))
 
     def strict_err_or_warn(self, msg, original, loc, noqa_able=False, **kwargs):
         """Raises an error if in strict mode, otherwise raises a warning.
@@ -2937,7 +2948,7 @@ else:
             elif def_stmt.startswith("case "):
                 def_stmt = assert_remove_prefix(def_stmt, "case ")
                 case_def_ref, def_stmt = def_stmt.split(unwrapper, 1)
-                type_param_code, all_type_defs = self.get_ref("case_def", case_def_ref)
+                type_param_code, all_type_defs, check_defs = self.get_ref("case_def", case_def_ref)
                 typed_case_def = True
             elif def_stmt.startswith("def"):
                 done = True
@@ -3200,7 +3211,11 @@ def {mock_var}({mock_paramdef}):
                     func_name=func_name,
                     def_name=def_name,
                 ))
-            type_code = self.deferred_code_proc(type_param_code) + "\n".join(type_def_lines)
+            if check_defs and in_method and undotted_name is None:
+                # the exhaustiveness checks need to bind their arguments the same way the function does
+                method_kind_decorators = "".join("@" + kind + "\n" for kind in self.method_kind_decorator_regex.findall(decorators))
+                check_defs = [method_kind_decorators + check_def for check_def in check_defs]
+            type_code = self.deferred_code_proc(type_param_code) + "\n".join(type_def_lines + check_defs)
 
         # handle dotted function definition
         if undotted_name is not None:
@@ -4806,13 +4821,15 @@ if not {check_var}:
             raise CoconutInternalException("invalid case function definition tokens", tokens)
 
         type_param_code = ""
+        type_params = ""
         if len(name_toks) == 1:
             name, = name_toks
         else:
             name, paramdefs = name_toks
             # paramdefs are type params on >= 3.12 and type var assignments on < 3.12
             if self.target_info >= (3, 12):
-                name += "[" + ", ".join(paramdefs) + "]"
+                type_params = "[" + ", ".join(paramdefs) + "]"
+                name += type_params
             else:
                 type_param_code = "".join(paramdefs)
 
@@ -4820,6 +4837,9 @@ if not {check_var}:
 
         all_case_code = []
         all_type_defs = []
+        all_typed_params = []
+        # the positional patterns of each case (None for cases that handle nothing), or None if they can't be analyzed
+        case_patterns = []
         for case_toks in cases:
             if "match" in case_toks:
                 if len(case_toks) == 2:
@@ -4827,6 +4847,10 @@ if not {check_var}:
                     cond = None
                 else:
                     matches, cond, body = case_toks
+                if case_patterns is not None:
+                    case_patterns.append(self.get_case_def_patterns(matches, cond, loc))
+                    if case_patterns[-1] is False:
+                        case_patterns = None
                 matcher = self.get_matcher(original, loc, check_var)
                 matcher.match_function_toks(matches, include_setup=False)
                 if cond is not None:
@@ -4845,6 +4869,7 @@ if not {check_var}:
                 ))
             elif "type" in case_toks:
                 typed_params, typed_ret = case_toks
+                all_typed_params.append(typed_params)
                 all_type_defs.append(handle_indentation("""
 def {name}{typed_params}{typed_ret}
     {docstring}
@@ -4897,7 +4922,54 @@ def {name}({match_func_paramdef}):
         if not (type_param_code or all_type_defs):
             return func_code
 
-        return "case " + self.add_ref("case_def", (type_param_code, all_type_defs)) + unwrapper + func_code
+        check_defs = []
+        # type: ignore on the case def line ignores the type errors there, including exhaustiveness errors
+        if case_patterns is not None and not self.has_type_ignore_comment(original, loc):
+            for i, typed_params in enumerate(all_typed_params):
+                check_def = self.case_def_exhaustiveness_check(original, loc, i, type_params, typed_params, case_patterns)
+                if check_def is not None:
+                    check_defs.append(check_def)
+
+        return "case " + self.add_ref("case_def", (type_param_code, all_type_defs, check_defs)) + unwrapper + func_code
+
+    def get_case_def_patterns(self, matches, cond, loc):
+        """Get the positional patterns of a case def case for exhaustiveness checking.
+        Returns None for cases that handle nothing and False if the case can't be analyzed."""
+        if cond is not None:
+            return None
+        pos_only_args, req_args, default_args, star_arg, kwd_only_args, dubstar_arg = split_args_list(matches, loc)
+        if default_args or star_arg is not None or kwd_only_args or dubstar_arg is not None:
+            return False
+        return pos_only_args + req_args
+
+    def case_def_exhaustiveness_check(self, original, loc, sig_index, type_params, typed_params, case_patterns):
+        """Get a type-checker-only function checking that the cases of a case def handle
+        everything that the given type signature says they do."""
+        split_func_tokens = self.cached_try_parse("case_def_exhaustiveness_check", self.split_func, "def _" + typed_params)
+        if split_func_tokens is None:
+            return None
+        _, func_arg_tokens = split_func_tokens
+        pos_only_args, req_args, default_args, star_arg, kwd_only_args, dubstar_arg = split_args_list(func_arg_tokens, loc)
+        if default_args or star_arg is not None or kwd_only_args or dubstar_arg is not None:
+            return None
+        param_names = pos_only_args + req_args
+        if not param_names:
+            return None
+        # cases taking a different number of arguments can't handle calls with this signature
+        tree = exhaustiveness_tree(
+            param_names,
+            [patterns if patterns is not None and len(patterns) == len(param_names) else None for patterns in case_patterns],
+            True,
+            self.data_type_names,
+            self.get_temp_var,
+            self.wrap_loc(original, loc),
+        )
+        if tree is None:
+            return None
+        return (
+            "def " + self.get_temp_var(("case_def_exhaustiveness_check", str(sig_index)), loc) + type_params + typed_params + " -> None:" + self.wrap_loc(original, loc) + "\n"
+            + openindent + tree + closeindent
+        )
 
     def set_literal_handle(self, tokens):
         """Converts set literals to the right form for the target Python."""
@@ -5297,6 +5369,65 @@ __annotations__["{name}"] = {annotation}
             matching.add_guard(cond)
         return matching.build(stmts, set_check_var=top)
 
+    def is_assert_never_code(self, code):
+        """Whether the given compiled code is just a call to assert_never."""
+        if not isinstance(code, str):
+            code = "".join(code)
+        content = code.lstrip(":").replace(openindent, "").replace(closeindent, "")
+        content = self.ln_marker_regex.sub("", content).strip()
+        return "\n" not in content and self.assert_never_call_regex.match(content) is not None
+
+    def type_ignore_first_line(self, code):
+        """Add a type: ignore comment to the assert_never call in the given compiled code."""
+        if not isinstance(code, str):
+            code = "".join(code)
+        lines = code.split("\n")
+        for i, line in enumerate(lines):
+            if "assert_never(" in line:
+                # (comments have to come before any line number marker)
+                code_part, sep, ln_part = line.partition(lnwrapper)
+                lines[i] = code_part + self.type_ignore_comment() + sep + ln_part
+                break
+        return "\n".join(lines)
+
+    def match_exhaustiveness_check(self, original, loc, match_var, cases, default):
+        """Get type-checker-only code checking the exhaustiveness of the given match cases.
+        Returns (code, cases, default), with any assert_never in cases or default marked to not be type checked."""
+        total = self.pure
+        cases = list(cases)
+        case_patterns = []
+        for i, case in enumerate(cases):
+            if len(case) == 3:
+                case_loc, matches, stmts = case
+                cond = None
+            else:
+                case_loc, matches, cond, stmts = case
+            # match x: ... case _: assert_never(x) means the match must be total (and that the check is ours)
+            if (
+                i == len(cases) - 1
+                and len(cases) > 1
+                and default is None
+                and cond is None
+                and "var" in matches
+                and matches[0] == wildcard
+                and self.is_assert_never_code(stmts)
+            ):
+                total = True
+                cases[i] = [case_loc, matches, self.type_ignore_first_line(stmts)]
+                continue
+            case_patterns.append(None if cond else [matches])
+        if default is not None:
+            if not self.is_assert_never_code(default):
+                # the else handles everything
+                return "", cases, default
+            total = True
+            default = self.type_ignore_first_line(default)
+        # type: ignore on the match line ignores the type errors there, including exhaustiveness errors
+        if self.has_type_ignore_comment(original, loc):
+            return "", cases, default
+        code = exhaustiveness_check([match_var], case_patterns, total, self.data_type_names, self.get_temp_var, self.wrap_loc(original, loc))
+        return code or "", cases, default
+
     def cases_stmt_handle(self, original, loc, tokens):
         """Process case blocks."""
         if len(tokens) == 3:
@@ -5326,8 +5457,10 @@ __annotations__["{name}"] = {annotation}
         check_var = self.get_temp_var("case_match_check", loc)
         match_var = self.get_temp_var("case_match_to", loc)
 
+        exhaustiveness_code, cases, default = self.match_exhaustiveness_check(original, loc, match_var, cases, default)
         out = (
             match_var + " = " + item + "\n"
+            + exhaustiveness_code
             + self.match_case_tokens(match_var, check_var, original, cases[0], True)
         )
         for case in cases[1:]:

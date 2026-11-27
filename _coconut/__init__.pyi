@@ -130,6 +130,29 @@ class case_data:
 class case_data_variant:
     """Base class of all case data variants."""
 
+# type-checker-only exhaustiveness checking (see coconut/compiler/exhaustiveness.py);
+#  these are only ever called behind TYPE_CHECKING, so at runtime they're just no-ops
+def match_must_be_total(unhandled: _t.NoReturn) -> None:
+    """Rejects anything left unhandled by a match that must be total."""
+class ExhaustiveMatch:
+    """What case_data_leftover returns when no case data variants are left unhandled."""
+_T_variant = _t.TypeVar("_T_variant", bound=case_data_variant)
+class UnhandledCaseDataVariants(_t.Generic[_T_variant]):
+    """What case_data_leftover returns when the given case data variants are left unhandled."""
+# (an empty leftover has to come first, since otherwise some type checkers would match it to the next overload)
+@_t.overload
+def case_data_leftover(unhandled: _t.NoReturn) -> ExhaustiveMatch: ...  # type: ignore[overload-overlap]
+@_t.overload
+def case_data_leftover(unhandled: _T_variant) -> UnhandledCaseDataVariants[_T_variant]: ...  # type: ignore[overload-overlap]
+@_t.overload
+def case_data_leftover(unhandled: object) -> ExhaustiveMatch: ...
+def match_must_handle_case_data(leftover: ExhaustiveMatch) -> None:
+    """Rejects any case data variants left unhandled by a match."""
+@_t.overload
+def match_unhandled(unhandled: _t.NoReturn) -> _t.NoReturn: ...
+@_t.overload
+def match_unhandled(unhandled: object) -> None: ...
+
 Ellipsis = _builtins.Ellipsis
 NotImplemented = _builtins.NotImplemented
 NotImplementedError = _builtins.NotImplementedError

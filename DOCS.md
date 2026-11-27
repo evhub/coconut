@@ -377,6 +377,8 @@ The following are disallowed in `--pure` mode:
 - calling in-place mutating methods of built-in types as statements, e.g. `xs.append(x)`, `xs.sort()`, or `d.update(other)` (using the result of such a call, as with persistent data structures whose methods return new objects, is fine)
 - mutable default arguments, e.g. `def f(xs=[])`
 
+Additionally, in `--pure` mode, every multi-case `match` block must be total: Coconut generates [exhaustiveness checks](#exhaustiveness-checking) that make it a type error for any value to get through a `match` block without being handled by one of its cases. Since these are type errors, they're only reported when the code is type-checked (e.g. with `--mypy` or `--pyright`), and since they're only seen by type checkers, they never change what the code does. One-line `match <pattern> in <value>:` statements and destructuring assignments are exempt, since they're partial by design.
+
 Instead of mutating objects, `--pure` code should build new ones: use [data types](#data) and `._replace` instead of mutable classes, and comprehensions, [pipelines](#pipes), and [`fmap`](#fmap) instead of loops that mutate.
 
 #### Project Configuration
@@ -1511,6 +1513,24 @@ where `<pattern>` is any `match` pattern, `<value>` is the item to match against
 
 _Deprecated: Additionally, `cases` or `case` can be used as the top-level keyword instead of `match`, and in such a block `match` is used for each case rather than `case`._
 
+##### Exhaustiveness Checking
+
+Coconut can't know the types of the values being matched against, but type checkers can, so for each `match` block, Coconut also generates code that only type checkers ever see, checking that the cases handle everything they need to. Nothing about this changes what the code does at runtime: the checks only produce type errors, which are reported by [MyPy](#mypy-integration) or Pyright (e.g. through `--mypy`, `--pyright`, or the [language server](#language-server)), pointing at the line of the `match`.
+
+Coconut checks for one of two things, depending on the match:
+- **Every match on a [`case data`](#case-data) type must handle all of its variants.** If some variant could get through a `match` block without being handled by any case, that's a type error, e.g. `UnhandledCaseDataVariants[Square]` for a match on a `Shape` that's missing a `Square` case. Matches on any other type (e.g. a match on an `int | str` that only handles `int`) are unaffected, since Python allows partial matches.
+- **Some matches must be total, meaning they must handle every possible value of the type being matched**, such that anything that gets through unhandled is a type error. That applies to:
+  - `match` blocks whose last case is `case _: assert_never(<value>)` (or whose `else` is just `assert_never(<value>)`), which is Python's standard way of asking for a total match (`from typing import assert_never` works on every target, since Coconut imports it from `typing_extensions` before Python 3.11);
+  - [`case def`](#case-functions) functions, for each of their `type(...)` signatures, since a call that matches a signature but none of the cases is always a bug; and
+  - every `match` block in [`--pure`](#pure-mode) mode (except for one-line `match <pattern> in <value>:` statements and destructuring assignments, which are partial by design).
+
+A case only counts as handling a value when its pattern is guaranteed to match it, so:
+- cases with an `if <cond>` guard don't count as handling anything, since the guard might fail;
+- capture patterns (e.g. `x` or `_`), class and data patterns (including through `|` and `as`), `isinstance` checks, and `None`, `True`, `False`, string, number, and dotted-name constants (e.g. enum members) are all understood, including nested inside of class and data patterns (e.g. `Node(Leaf(_), r)`); and
+- if any case uses a pattern that can't be expressed to a type checker (such as sequence, mapping, string, view, or iterator patterns), Coconut skips the check for that match entirely rather than risk a spurious error.
+
+To skip the check for a particular match, add a catch-all case such as `case _: pass`, or put a `# type: ignore` comment on its `match` (or `case def`) line.
+
 ##### Examples
 
 **Coconut:**
@@ -1719,6 +1739,8 @@ case data <name>[<type params>] [from <base class>]:
 where each `case` line defines a variant exactly like a [`data`](#data) statement (with the same `<args>` and optional `<body>`), and any other statements in the block (such as method definitions) are shared by all the variants.
 
 Each variant is an ordinary data type inheriting from `<name>`, so variants support everything data types do, including pattern matching, `._replace`, and [`fmap`](#fmap). At runtime, `<name>` is a base class of all of its variants, such that e.g. `isinstance(x, <name>)` and the class pattern `<name>()` check for any variant. For type checkers, however, `<name>` is the `Union` of its variants, which is what allows them to narrow a `<name>` down to the variants a pattern-match hasn't yet handled.
+
+That's what lets Coconut [check that matches on a `case data` type handle every variant](#exhaustiveness-checking): if a `match` block or [`case def`](#case-functions) can let some variant through unhandled, your type checker will report it as a type error (e.g. `UnhandledCaseDataVariants[Rect]`), such that adding a new variant to a `case data` type will point out everywhere that needs to handle it.
 
 Type parameters given to the `case data` block (e.g. `case data Tree[T]:`) are shared by all the variants, which can use them in their fields and can refer to the sum type itself recursively (e.g. `case Node(left: Tree[T], right: Tree[T])`).
 
@@ -2917,6 +2939,8 @@ case def <name>[<type vars>]:
     ...
 ```
 which can be interspersed with the `case(...)` statements.
+
+Since a call to a `case def` that matches one of its `type(...)` signatures but none of its `case(...)` statements is always a bug, Coconut also generates [exhaustiveness checks](#exhaustiveness-checking) for type checkers that require the cases to handle every possible value that each signature accepts (for each signature with only positional arguments, considering just the cases that take the same number of arguments). For example, a `case def` with `type(x: int | str) -> int` but only a `case(int(n))` case will produce a type error saying `str` is unhandled, while one with `type(shape: Shape) -> float` for a [`case data`](#case-data) `Shape` must handle every variant of `Shape`.
 
 ##### Example
 

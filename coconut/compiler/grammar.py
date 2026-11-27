@@ -69,6 +69,7 @@ from coconut.constants import (
     closeindent,
     strwrapper,
     unwrapper,
+    lnwrapper,
     keyword_vars,
     pure_mutating_methods,
     const_vars,
@@ -2986,6 +2987,10 @@ class Grammar(object):
         return_regex = compile_regex(r"\breturn\b")
 
         noqa_regex = compile_regex(r"\b[Nn][Oo][Qq][Aa]\b")
+        type_ignore_regex = compile_regex(r"\btype:\s*ignore\b")
+        method_kind_decorator_regex = compile_regex(r"^@\s*(staticmethod|classmethod)\b(?![.(])", options=re.M)
+        assert_never_call_regex = compile_regex(r"^(?:[\w.]+\.)?assert_never\(.*\)$")
+        ln_marker_regex = compile_regex(re.escape(lnwrapper) + r"[0-9]+" + re.escape(unwrapper))
 
         # --pure mode checks
         funcdef_name_regex = compile_regex(r"\bdef\s+([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)")

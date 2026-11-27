@@ -174,6 +174,108 @@ ignore_error_lines_with = (
 )
 
 mypy_snip = "a: str = count()[0]"
+
+exhaustiveness_snip = """
+from typing import assert_never
+
+case data Shape:
+    case Circle(r: float)
+    case Square(side: float)
+
+case data Tree:
+    case Leaf(value: int)
+    case Node(left: Tree, right: Tree)
+
+def shape_missing(shape: Shape) -> None:
+    match shape:  # ERR
+        case Circle(r):
+            pass
+
+def shape_complete(shape: Shape) -> None:
+    match shape:
+        case Circle(r):
+            pass
+        case Square(s):
+            pass
+
+def shape_guarded(shape: Shape) -> None:
+    match shape:  # ERR
+        case Circle(r) if r > 0:
+            pass
+        case Square(s):
+            pass
+
+def shape_ignored(shape: Shape) -> None:
+    match shape:  # type: ignore
+        case Circle(r):
+            pass
+
+def tree_missing(t: Tree) -> None:
+    match t:  # ERR
+        case Leaf(_):
+            pass
+        case Node(Leaf(_), _):
+            pass
+
+def tree_complete(t: Tree) -> None:
+    match t:
+        case Leaf(_):
+            pass
+        case Node(Leaf(_), _) | Node(_, Leaf(_)):
+            pass
+        case Node(Node(_, _), _):
+            pass
+
+def int_partial(x: int | str) -> None:
+    match x:  # PURE
+        case int(_):
+            pass
+
+def int_total_missing(x: int | str) -> None:
+    match x:  # ERR
+        case int(_):
+            pass
+        case _:
+            assert_never(x)
+
+def int_total_complete(x: int | str) -> None:
+    match x:
+        case int(_):
+            pass
+        case str(_):
+            pass
+        case _:
+            assert_never(x)
+
+def sequence(x: Shape | list[int]) -> None:
+    match x:
+        case [_]:
+            pass
+        case Circle(_):
+            pass
+
+def one_line(x: int | str) -> None:
+    match int(_) in x:
+        pass
+
+case def area_missing:  # ERR
+    type(shape: Shape) -> float
+    case(Circle(r)) = r
+
+case def area_complete:
+    type(shape: Shape) -> float
+    case(Circle(r)) = r
+    case(Square(s)) = s
+
+case def area_ignored:  # type: ignore
+    type(shape: Shape) -> float
+    case(Circle(r)) = r
+
+case def int_missing:  # ERR
+    type(x: int) -> int
+    type(x: str) -> int
+    case(int(n)) = n
+"""
 mypy_snip_err = '''error: Incompatible types in assignment (expression has type'''
 
 mypy_args = ["--follow-imports", "silent", "--ignore-missing-imports", "--allow-redefinition"]
@@ -945,6 +1047,45 @@ class TestShell(unittest.TestCase):
                 )
             finally:
                 shutil.rmtree(mypy_dir)
+
+        def test_exhaustiveness(self):
+            exhaustiveness_dir = tempfile.mkdtemp()
+            try:
+                exhaustiveness_coco = os.path.join(exhaustiveness_dir, "exhaustiveness_test.coco")
+                with open(exhaustiveness_coco, "w") as exhaustiveness_file:
+                    exhaustiveness_file.write(exhaustiveness_snip)
+
+                def get_error_lines(*extra_args, **kwargs):
+                    pyright = kwargs.pop("pyright", False)
+                    if pyright:
+                        type_checking_args = ["--pyright"]
+                        # (Pyright reports other issues with the compiled pattern-matching code, so only look at ours)
+                        error_regex = r"exhaustiveness_test\.coco:([0-9]+): error: [^\n]*match_must"
+                    else:
+                        # (MyPy's cache can report stale errors for files of the same name in other directories)
+                        type_checking_args = ["--mypy", "--cache-dir", os.path.join(exhaustiveness_dir, ".mypy_cache")]
+                        error_regex = r"exhaustiveness_test\.coco:([0-9]+): error:"
+                    stdout, stderr, retcode = call_output(
+                        ["coconut", exhaustiveness_coco, "--force", "--no-cache", "--target", "sys"] + list(extra_args) + type_checking_args,
+                        color=False,
+                    )
+                    output = "".join(stdout + stderr)
+                    error_lines = set(int(ln) for ln in re.findall(error_regex, output))
+                    return error_lines, output
+
+                snip_lines = exhaustiveness_snip.splitlines()
+                # lines marked "# ERR" should get exhaustiveness errors, and lines marked "# PURE" only under --pure
+                expected_errors = set(i + 1 for i, line in enumerate(snip_lines) if "# ERR" in line)
+                expected_pure_errors = expected_errors | set(i + 1 for i, line in enumerate(snip_lines) if "# PURE" in line)
+
+                error_lines, output = get_error_lines()
+                assert error_lines == expected_errors, (error_lines, expected_errors, output)
+                pure_error_lines, pure_output = get_error_lines("--pure")
+                assert pure_error_lines == expected_pure_errors, (pure_error_lines, expected_pure_errors, pure_output)
+                pyright_error_lines, pyright_output = get_error_lines(pyright=True)
+                assert pyright_error_lines == expected_errors, (pyright_error_lines, expected_errors, pyright_output)
+            finally:
+                shutil.rmtree(exhaustiveness_dir)
 
         def test_pyright(self):
             pyright_dir = tempfile.mkdtemp()

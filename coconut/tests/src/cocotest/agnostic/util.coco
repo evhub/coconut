@@ -1454,7 +1454,7 @@ class HasDefs:
 
     @staticmethod
     case def case_def:
-        type(_: int) -> int
+        type(_: typing.Literal[0, 1]) -> int
         case(0) = 1
         case(1) = 0
 
@@ -2195,3 +2195,76 @@ case data Token from object:
     case Num(n: int)
     case Op(sym: str)
     case Empty()
+
+# exhaustive matches (any missing case would be a type error in the MyPy tests)
+def token_str(tok: Token) -> str:
+    match tok:
+        case Num(n):
+            return str(n)
+        case Op(sym):
+            return sym
+        case Empty():
+            return ""
+    raise TypeError(tok)
+
+def leftmost(t: BinTree[int]) -> int:
+    match t:
+        case BinLeaf(v):
+            return v
+        case BinNode(BinLeaf(v), _):
+            return v
+        case BinNode(BinNode(l, _), _):
+            return leftmost(l)
+    raise TypeError(t)
+
+def tree_shape(t: BinTree[int]) -> str:
+    match t:
+        case BinNode(BinLeaf(0), right=BinLeaf(_)):
+            return "zero and leaf"
+        case BinNode(_, BinNode(_, _)):
+            return "right-deep"
+        case BinNode(x, x):
+            return "twins"
+        case BinNode(_, _):
+            return "node"
+        case BinLeaf(_):
+            return "leaf"
+    raise TypeError(t)
+
+def shape_or_bool(x: Shape | bool) -> str:
+    match x:
+        case True:
+            return "yes"
+        case False:
+            return "no"
+        case Circle(_) | Square(_):
+            return "round or square"
+        case Rect(w, h):
+            return "rect"
+    raise TypeError(x)
+
+def int_or_str(x: int | str) -> str:
+    match x:
+        case int(n):
+            return "int"
+        case str(s):
+            return "str"
+        case _:
+            typing.assert_never(x)
+    raise TypeError(x)
+
+case def shape_kind:
+    type(shape: Shape) -> str
+    type(shape: Shape, short: bool) -> str
+    case(Circle(_)) = "circle"
+    case(Square(_) | Rect(_, _)) = "polygon"
+    case(Circle(_), True) = "c"
+    case(Circle(_), False) = "circle"
+    case(Square(_) | Rect(_, _), _) = "polygon"
+
+class ShapeNamer:
+    case def name:
+        type(self, shape: Shape) -> str
+        case(self, Circle(_)) = "circle"
+        case(self, Square(_)) = "square"
+        case(self, Rect(_, _)) = "rect"

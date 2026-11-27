@@ -1120,6 +1120,16 @@ forward 2""") == 900
     assert BinLeaf(1) `isinstance` BinTree  # type: ignore
     assert [Num(1), Op("+"), Empty()] |> map$(.__class__.__name__) |> list == ["Num", "Op", "Empty"]
     assert Empty() `isinstance` Token
+    assert token_str(Num(1)) == "1" and token_str(Op("+")) == "+" and token_str(Empty()) == ""
+    assert leftmost(BinNode(BinNode(BinLeaf(1), BinLeaf(2)), BinLeaf(3))) == 1
+    assert shape_or_bool(True) == "yes" and shape_or_bool(Square(1)) == "round or square" and shape_or_bool(Rect(1, 2)) == "rect"
+    assert int_or_str(1) == "int" and int_or_str("a") == "str"
+    assert tree_shape(BinNode(BinLeaf(0), BinLeaf(1))) == "zero and leaf" and tree_shape(BinNode(BinLeaf(1), BinLeaf(1))) == "twins"
+    assert tree_shape(BinNode(BinLeaf(1), BinNode(BinLeaf(2), BinLeaf(3)))) == "right-deep" and tree_shape(BinNode(BinLeaf(1), BinLeaf(2))) == "node"
+    assert tree_shape(BinLeaf(1)) == "leaf"
+    assert shape_kind(Circle(1)) == "circle" == shape_kind(Circle(1), False) and shape_kind(Circle(1), True) == "c"
+    assert shape_kind(Rect(1, 2)) == "polygon" == shape_kind(Square(1), True)
+    assert ShapeNamer().name(Rect(1, 2)) == "rect"
     assert pickle_round_trip(BinNode(BinLeaf(1), BinLeaf(2))) == BinNode(BinLeaf(1), BinLeaf(2))
 
     # must come at end

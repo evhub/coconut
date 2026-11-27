@@ -654,6 +654,9 @@ line 6''')
 
     # pure tests
     setup(line_numbers=False, strict=True, pure=True, target="sys")
+    # under --pure, multi-case matches must be total, but one-line matches don't have to be
+    assert "_coconut.match_must_be_total(" in parse("def f(x):\n    match x:\n        case int(n):\n            pass\n        case str(s):\n            pass\n")
+    assert "match_must" not in parse("def f(x):\n    match int(n) in x:\n        pass\n")
     assert parse(d"""
     class A:
         def mk_int(x) = int(x)
@@ -823,6 +826,19 @@ line 6''')
     assert "Opt = _coconut_case_data_Opt" in case_data_out
     assert "Shape = Circle | Square" in parse("case data Shape:\n    case Circle(r)\n    case Square(s)\n", "lenient")
     assert_raises(-> parse("case data Empty:\n    def f(self) = 1\n"), CoconutSyntaxError, err_has="at least one case")
+    # type-checker-only exhaustiveness checks (see test_exhaustiveness in main_test.py for the type checking itself)
+    two_cases = "def f(x):\n    match x:\n        case Circle(r):\n            pass\n        case Square(s):\n            pass\n"
+    assert "_coconut.match_must_handle_case_data(_coconut.case_data_leftover(" in parse(two_cases, "lenient")
+    assert "match_must" not in parse(two_cases.replace("Square(s)", "y"), "lenient")
+    assert "match_must" not in parse(two_cases.replace("Square(s)", "[y]"), "lenient")
+    assert "match_must" not in parse(two_cases.replace("match x:", "match x:  # type: ignore"), "lenient")
+    never_match = parse("def f(x):\n    match x:\n        case int(n):\n            pass\n        case _:\n            assert_never(x)\n", "lenient")
+    assert "_coconut.match_must_be_total(" in never_match and "assert_never(x)  # type: ignore" in never_match
+    never_else = parse("def f(x):\n    match x:\n        case int(n):\n            pass\n    else:\n        typing.assert_never(x)\n", "lenient")
+    assert "_coconut.match_must_be_total(" in never_else and "typing.assert_never(x)  # type: ignore" in never_else
+    assert "_coconut.match_must_be_total(" in parse("case def f:\n    type(x: int) -> int\n    case(0) = 1\n", "lenient")
+    assert "match_must" not in parse("case def f:\n    case(0) = 1\n", "lenient")
+    assert "match_must" not in parse("case def f:  # type: ignore\n    type(x: int) -> int\n    case(0) = 1\n", "lenient")
     # PEP 696 type parameter defaults are backported with typing_extensions
     assert 'TypeVar("_coconut_typevar_T_0", default=\'int\')' in parse("class Box[T = int]: pass")
     assert "default=_coconut.typing.Unpack['tuple[int, ...]']" in parse("class Box[*Ts = *tuple[int, ...]]: pass")

@@ -138,6 +138,7 @@ class Matcher(object):
         "guards",
         "parent_names",
         "old_rule_flags",
+        "hidden_from_type_checkers",
     )
     matchers = {
         "dict": lambda self: self.match_dict,
@@ -190,6 +191,7 @@ class Matcher(object):
         self.guards = []
         self.child_groups = []
         self.old_rule_flags = []
+        self.hidden_from_type_checkers = False
         self.increment()
 
     def make_child(self):
@@ -1228,7 +1230,7 @@ if {assign_to} is _coconut_sentinel:
         if cls_name not in self_match_types:
             # only built-in types can be self-match types, so type checkers shouldn't consider this
             #  (it would e.g. bind the whole object to the first positional pattern of a data type)
-            self_match_matcher.add_check("not TYPE_CHECKING")
+            self_match_matcher.hidden_from_type_checkers = True
         if pos_matches:
             if len(pos_matches) > 1:
                 self_match_matcher.add_def(
@@ -1317,51 +1319,64 @@ if _coconut.len({match_args_var}) < {num_pos_matches}:
                 )
             )
 
-        self.match_all_in(pos_matches, item)
+        # refutable sub-patterns get checked outside of the block where item is known to be
+        #  an instance of cls_name, so to let type checkers see that, give them a new name for it
+        #  (and do all the sub-pattern matching after that name has been defined)
+        sub_matches = pos_matches + [match for match, _ in name_matches.values()] + ([star_match] if star_match is not None else [])
+        if any("var" not in match for match in sub_matches):
+            narrowed_item = self.get_temp_var()
+            self.add_def(narrowed_item + " = " + item)
+            item = narrowed_item
+            sub_match_ctx = self.down_a_level()
+        else:
+            sub_match_ctx = noop_ctx()
 
-        if star_match is not None:
-            self.match(star_match, item + "[" + str(len(pos_matches)) + ":]")
+        with sub_match_ctx:
+            self.match_all_in(pos_matches, item)
 
-        # handle keyword args
-        self.match_class_names(name_matches, item)
+            if star_match is not None:
+                self.match(star_match, item + "[" + str(len(pos_matches)) + ":]")
 
-        # handle double-starred arg
-        if dubstar_match is not None:
-            self.match_rest_names(
-                dubstar_match,
-                item,
-                "_coconut.getattr(" + item + ", '__match_args__', ())",
-                len(pos_matches),
-                name_matches,
-            )
+            # handle keyword args
+            self.match_class_names(name_matches, item)
 
-        # handle data types with defaults for some arguments
-        elif star_match is None:
-            # use a def so we can type ignore it
-            temp_var = self.get_temp_var()
-            self.add_def(
-                (
-                    '{temp_var} ='
-                    ' _coconut.len({item}) <= _coconut.max({min_len}, _coconut.len({item}.__match_args__))'
-                    ' and _coconut.all('
-                    'i in _coconut.getattr({item}, "{data_defaults_var}", {{}})'
-                    ' and {item}[i] == _coconut.getattr({item}, "{data_defaults_var}", {{}})[i]'
-                    ' for i in _coconut.range({min_len}, _coconut.len({item}.__match_args__))'
-                    + (' if {item}.__match_args__[i] not in {name_matches}' if name_matches else '')
-                    + ') if _coconut.hasattr({item}, "__match_args__")'
-                    ' else _coconut.len({item}) == {min_len}'
-                    ' {type_ignore}'
-                ).format(
-                    item=item,
-                    temp_var=temp_var,
-                    data_defaults_var=data_defaults_var,
-                    min_len=len(pos_matches),
-                    name_matches=tuple_str_of(name_matches, add_quotes=True),
-                    type_ignore=self.comp.type_ignore_comment(),
+            # handle double-starred arg
+            if dubstar_match is not None:
+                self.match_rest_names(
+                    dubstar_match,
+                    item,
+                    "_coconut.getattr(" + item + ", '__match_args__', ())",
+                    len(pos_matches),
+                    name_matches,
                 )
-            )
-            with self.down_a_level():
-                self.add_check(temp_var)
+
+            # handle data types with defaults for some arguments
+            elif star_match is None:
+                # use a def so we can type ignore it
+                temp_var = self.get_temp_var()
+                self.add_def(
+                    (
+                        '{temp_var} ='
+                        ' _coconut.len({item}) <= _coconut.max({min_len}, _coconut.len({item}.__match_args__))'
+                        ' and _coconut.all('
+                        'i in _coconut.getattr({item}, "{data_defaults_var}", {{}})'
+                        ' and {item}[i] == _coconut.getattr({item}, "{data_defaults_var}", {{}})[i]'
+                        ' for i in _coconut.range({min_len}, _coconut.len({item}.__match_args__))'
+                        + (' if {item}.__match_args__[i] not in {name_matches}' if name_matches else '')
+                        + ') if _coconut.hasattr({item}, "__match_args__")'
+                        ' else _coconut.len({item}) == {min_len}'
+                        ' {type_ignore}'
+                    ).format(
+                        item=item,
+                        temp_var=temp_var,
+                        data_defaults_var=data_defaults_var,
+                        min_len=len(pos_matches),
+                        name_matches=tuple_str_of(name_matches, add_quotes=True),
+                        type_ignore=self.comp.type_ignore_comment(),
+                    )
+                )
+                with self.down_a_level():
+                    self.add_check(temp_var)
 
     def match_anon_named_tuple(self, tokens, item):
         """Matches an anonymous named tuple pattern."""
@@ -1404,9 +1419,9 @@ if _coconut.len({match_args_var}) < {num_pos_matches}:
         # type checkers can't tell which of these will be taken, and each is wrong (e.g. indexing
         #  into a non-data class) for the other case, so only show them the one that should apply
         if cls_name in self.comp.data_type_names:
-            if_class.add_check("not TYPE_CHECKING")
+            if_class.hidden_from_type_checkers = True
         else:
-            if_data.add_check("not TYPE_CHECKING")
+            if_data.hidden_from_type_checkers = True
 
         if_data.match_data(tokens, item)
         if_class.match_class(tokens, item)
@@ -1573,12 +1588,15 @@ if {check_var}:
                 children_checks = "".join(
                     handle_indentation(
                         """
-if not {check_var}:
+if not {check_var}{hide_from_type_checkers}:
     {child_out}
                         """,
                         add_newline=True,
                     ).format(
                         check_var=self.check_var,
+                        # hide the whole child, including everything checked after its first level
+                        #  (which can use names it defines), not just the child's first-level checks
+                        hide_from_type_checkers=" and not TYPE_CHECKING" if child.hidden_from_type_checkers else "",
                         child_out=child.out(child_flag),
                     ) for child, child_flag in zip(children, child_flags)
                 )
