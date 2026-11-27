@@ -271,7 +271,7 @@ case def area_ignored:  # type: ignore
     type(shape: Shape) -> float
     case(Circle(r)) = r
 
-case def int_missing:  # ERR
+case def int_missing:  # PURE
     type(x: int) -> int
     type(x: str) -> int
     case(int(n)) = n

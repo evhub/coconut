@@ -654,7 +654,8 @@ line 6''')
 
     # pure tests
     setup(line_numbers=False, strict=True, pure=True, target="sys")
-    # under --pure, multi-case matches must be total, but one-line matches don't have to be
+    # under --pure, multi-case matches and case defs must be total, but one-line matches don't have to be
+    assert "_coconut.match_must_be_total(" in parse("case def f:\n    type(x: int) -> int\n    case(0) = 1\n")
     assert "_coconut.match_must_be_total(" in parse("def f(x):\n    match x:\n        case int(n):\n            pass\n        case str(s):\n            pass\n")
     assert "match_must" not in parse("def f(x):\n    match int(n) in x:\n        pass\n")
     assert parse(d"""
@@ -806,6 +807,9 @@ line 6''')
 
     setup(line_numbers=False, target="3.5")
     assert parse("async def f(): yield 1")
+    # case def exhaustiveness checks have to handle annotations the same way the case def's type signatures do
+    case_def_35 = parse("case def f:\n    type(x: int, y: str) -> int\n    case(int(n), _) = n\n", "lenient")
+    assert "match_must_handle_case_data" in case_def_35 and "add_code_before" not in case_def_35
     assert_raises(-> parse("""async def agen():
     yield from range(5)"""), CoconutSyntaxError, err_has="async generator")
 
@@ -836,7 +840,8 @@ line 6''')
     assert "_coconut.match_must_be_total(" in never_match and "assert_never(x)  # type: ignore" in never_match
     never_else = parse("def f(x):\n    match x:\n        case int(n):\n            pass\n    else:\n        typing.assert_never(x)\n", "lenient")
     assert "_coconut.match_must_be_total(" in never_else and "typing.assert_never(x)  # type: ignore" in never_else
-    assert "_coconut.match_must_be_total(" in parse("case def f:\n    type(x: int) -> int\n    case(0) = 1\n", "lenient")
+    # (case def only has to handle everything its signatures accept under --pure)
+    assert "_coconut.match_must_handle_case_data(" in parse("case def f:\n    type(x: int) -> int\n    case(0) = 1\n", "lenient")
     assert "match_must" not in parse("case def f:\n    case(0) = 1\n", "lenient")
     assert "match_must" not in parse("case def f:  # type: ignore\n    type(x: int) -> int\n    case(0) = 1\n", "lenient")
     # PEP 696 type parameter defaults are backported with typing_extensions

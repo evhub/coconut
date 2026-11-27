@@ -40,7 +40,7 @@ from coconut.constants import (
 # the largest number of branches we'll generate for a single exhaustiveness check
 max_exhaustiveness_branches = 128
 
-# full mode: anything left over is an error (for case def, --pure, and assert_never)
+# full mode: anything left over is an error (for --pure and assert_never)
 total_check_func = "_coconut.match_must_be_total"
 
 # case data mode: only case data variants left over are an error

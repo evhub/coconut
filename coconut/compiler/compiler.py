@@ -3211,6 +3211,7 @@ def {mock_var}({mock_paramdef}):
                     func_name=func_name,
                     def_name=def_name,
                 ))
+            check_defs = [self.deferred_code_proc(check_def) for check_def in check_defs]
             if check_defs and in_method and undotted_name is None:
                 # the exhaustiveness checks need to bind their arguments the same way the function does
                 method_kind_decorators = "".join("@" + kind + "\n" for kind in self.method_kind_decorator_regex.findall(decorators))
@@ -4944,7 +4945,8 @@ def {name}({match_func_paramdef}):
 
     def case_def_exhaustiveness_check(self, original, loc, sig_index, type_params, typed_params, case_patterns):
         """Get a type-checker-only function checking that the cases of a case def handle
-        everything that the given type signature says they do."""
+        everything that the given type signature says they do (just the case data variants
+        it says they do, unless in --pure mode)."""
         split_func_tokens = self.cached_try_parse("case_def_exhaustiveness_check", self.split_func, "def _" + typed_params)
         if split_func_tokens is None:
             return None
@@ -4959,7 +4961,7 @@ def {name}({match_func_paramdef}):
         tree = exhaustiveness_tree(
             param_names,
             [patterns if patterns is not None and len(patterns) == len(param_names) else None for patterns in case_patterns],
-            True,
+            self.pure,
             self.data_type_names,
             self.get_temp_var,
             self.wrap_loc(original, loc),
