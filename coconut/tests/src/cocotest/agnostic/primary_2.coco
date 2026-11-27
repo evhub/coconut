@@ -1033,7 +1033,6 @@ def primary_test_2() -> bool:
     zl = zip_longest([1, 2, 3], [4], fillvalue=0)
     assert reversed(zl) |> list == [(3, 0), (2, 0), (1, 4)]
     assert zl[1:] |> list == [(2, 0), (3, 0)]
-    import pickle
     from copy import copy
     filled_groups = groupsof(2, [1, 2, 3], fillvalue=0)
     assert copy(filled_groups) |> list == [(1, 2), (3, 0)] == pickle.loads(pickle.dumps(filled_groups)) |> list

@@ -617,7 +617,7 @@ def primary_test_1() -> bool:
     assert f"xx{a=}yy" == "xxa=1yy"
     def f(x) = x + 1  # type: ignore
     assert f"{1 |> f=}" == "1 |> f=2"
-    assert f"{'abc'=}" == "'abc'='abc'"
+    assert f"{'abc'=}" in ("'abc'='abc'", "'abc'=u'abc'")  # (repr adds a u on Python 2)
     assert f"{a  # PEP 701 comment
     }" == "1"
     assert f"{

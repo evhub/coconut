@@ -894,8 +894,10 @@ class TestShell(unittest.TestCase):
     def test_code(self):
         call(["coconut", "-s", "-c", coconut_snip], assert_output=True)
 
-    def test_pickle_main(self):
-        call(["coconut", "-c", pickle_main_snip], assert_output=True)
+    # (on Python 2, Coconut's pickle is cPickle, which can't find the substitute __main__ module)
+    if not PY2:
+        def test_pickle_main(self):
+            call(["coconut", "-c", pickle_main_snip], assert_output=True)
 
     if not PY2:
         def test_target_3_snip(self):
@@ -1472,7 +1474,8 @@ if TEST_ALL:
         if not PYPY or PY2:
             def test_prelude(self):
                 with using_paths(prelude):
-                    comp_prelude(["--strict", "--pure"], expect_retcode=None)
+                    # (coconut-prelude predates --pure checking for mutation, so it's compiled without --pure)
+                    comp_prelude(["--strict"], expect_retcode=None)
                     if MYPY and PY38:
                         run_prelude()
 
