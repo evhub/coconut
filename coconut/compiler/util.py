@@ -1241,10 +1241,18 @@ def get_cache_items_for(original, only_useful=False, exclude_stale=True):
 def get_highest_parse_loc(original):
     """Get the highest observed parse location.
     Note that there's no point in filtering for successes/failures, since we always see both at the same locations."""
+    # this is called for every error and warning, so it avoids get_cache_items_for's per-item overhead,
+    #  and checks the location before doing a potentially expensive comparison of the original string
     highest_loc = 0
-    for lookup, _ in get_cache_items_for(original):
+    incremental = ParserElement._incrementalEnabled
+    for lookup, value in get_pyparsing_cache().items():
         loc = lookup[_lookup_loc]
-        if loc > highest_loc:
+        if loc <= highest_loc:
+            continue
+        # skip stale entries, as in get_cache_items_for
+        if incremental and value[_value_useful][0] >= 2:
+            continue
+        if lookup[_lookup_orig] == original:
             highest_loc = loc
     return highest_loc
 
