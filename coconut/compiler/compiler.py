@@ -680,6 +680,8 @@ class Compiler(Grammar, pickleable_obj):
         self.temp_vars_by_key = {}
         self.name_info = defaultdict(lambda: {"imported": set(), "referenced": set(), "assigned": set(), "expr_assigned": set()})
         self.lazy_from_import_locs = {}
+        # names of data types defined so far, which pattern-matching uses to tell type checkers how they'll be matched
+        self.data_type_names = set()
         self.star_import = False
         self.kept_lines = []
         self.num_lines = 0
@@ -3965,6 +3967,7 @@ while True:
             decorators, name, match_tokens, inherit, stmts = tokens
         else:
             raise CoconutInternalException("invalid match_datadef tokens", tokens)
+        self.data_type_names.add(name)
 
         if len(match_tokens) == 1:
             matches, = match_tokens
@@ -4105,6 +4108,7 @@ def __new__(_coconut_cls, {match_func_paramdef}):
             decorators, name, paramdefs, original_args, inherit, stmts = tokens
         else:
             raise CoconutInternalException("invalid datadef tokens", tokens)
+        self.data_type_names.add(name)
 
         all_args = []  # (string definition, typedef or None) for all args
         base_args = []  # names of all the non-starred args

@@ -1225,6 +1225,10 @@ if {assign_to} is _coconut_sentinel:
 
         # handle instances of _coconut_self_match_types
         self_match_matcher.add_check("_coconut_type(" + item + ") in _coconut_self_match_types")
+        if cls_name not in self_match_types:
+            # only built-in types can be self-match types, so type checkers shouldn't consider this
+            #  (it would e.g. bind the whole object to the first positional pattern of a data type)
+            self_match_matcher.add_check("not TYPE_CHECKING")
         if pos_matches:
             if len(pos_matches) > 1:
                 self_match_matcher.add_def(
@@ -1374,6 +1378,10 @@ if _coconut.len({match_args_var}) < {num_pos_matches}:
         """Matches an ambiguous data or class match."""
         cls_name, matches = tokens
 
+        # built-in types like int can't be data types
+        if cls_name in self_match_types:
+            return self.match_class(tokens, item)
+
         is_data_result_var = self.get_temp_var()
         self.add_def(
             handle_indentation(
@@ -1391,9 +1399,16 @@ if _coconut.len({match_args_var}) < {num_pos_matches}:
         if_data, if_class = self.branches(2)
 
         if_data.add_check(is_data_result_var)
-        if_data.match_data(tokens, item)
-
         if_class.add_check("not " + is_data_result_var)
+
+        # type checkers can't tell which of these will be taken, and each is wrong (e.g. indexing
+        #  into a non-data class) for the other case, so only show them the one that should apply
+        if cls_name in self.comp.data_type_names:
+            if_class.add_check("not TYPE_CHECKING")
+        else:
+            if_data.add_check("not TYPE_CHECKING")
+
+        if_data.match_data(tokens, item)
         if_class.match_class(tokens, item)
 
     def match_paren(self, tokens, item):
@@ -1506,6 +1521,11 @@ except _coconut.Exception as _coconut_view_func_exc:
         is the top-level matcher and will issue a deprecation warning if it succeeds using those rules."""
         out = []
         old_rule_flags = self.old_rule_flags[:]
+
+        # initialize our own old rules flags (they're only checked after they're set, but they're
+        #  set deep inside the checks, which type checkers might not see, e.g. due to TYPE_CHECKING guards)
+        for flag_var in self.old_rule_flags:
+            out.append(flag_var + " = False\n")
 
         # set match_set_name_vars to sentinels
         for name in self.names:
