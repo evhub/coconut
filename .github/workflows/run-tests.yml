@@ -43,6 +43,8 @@ jobs:
       - run: make test-all
       - run: make build
       - name: Publish to PyPI
+        # only publish from the release and development branches, never from feature branches
+        if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop'
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           user: __token__
