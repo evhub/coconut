@@ -6,7 +6,7 @@
 # -----------------------------------------------------------------------------------------------------------------------
 
 """
-Authors: Evan Hubinger, Claude, Adam Forest
+Authors: Evan Hubinger, Claude, Adam Forest, Sam (esvanha)
 License: Apache 2.0
 Description: Defines the Coconut grammar.
 """

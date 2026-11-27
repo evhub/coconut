@@ -6,7 +6,7 @@
 # -----------------------------------------------------------------------------------------------------------------------
 
 """
-Authors: Evan Hubinger, Claude, Adam Forest
+Authors: Evan Hubinger, Claude, Adam Forest, Sam (esvanha)
 License: Apache 2.0
 Description: Compiles Coconut code into Python code.
 """

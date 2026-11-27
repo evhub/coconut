@@ -6,7 +6,7 @@
 # -----------------------------------------------------------------------------------------------------------------------
 
 """
-Authors: Evan Hubinger, Fred Buchanan, Noah Lipsyc, Ishaan Verma, Claude
+Authors: Evan Hubinger, Fred Buchanan, Noah Lipsyc, Ishaan Verma, Claude, Bortlesboat
 License: Apache 2.0
 Description: The Coconut command-line utility.
 """
