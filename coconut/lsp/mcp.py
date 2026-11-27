@@ -10,11 +10,15 @@ Authors: Evan Hubinger, Claude
 License: Apache 2.0
 Description: A Model Context Protocol (MCP) server exposing Coconut tooling to AI agents.
 
-Run with:  python3 server/coconut_language_server.py mcp
+Run with:  coconut --mcp  (or: python -m coconut.lsp mcp)
 
 Tools: check Coconut code for errors, compile it to Python, look up Coconut documentation, and
 query code intelligence (hover, definition, references, symbols). Speaks MCP's stdio transport
 (newline-delimited JSON-RPC 2.0) with no dependencies beyond Coconut itself.
+
+Don't rename this module: the VS Code and Sublime Text packages (evhub/sublime-coconut) check
+whether coconut.lsp.mcp is importable to decide whether the installed Coconut has this language
+server, and use their own bundled copy of it otherwise.
 """
 
 # -----------------------------------------------------------------------------------------------------------------------
