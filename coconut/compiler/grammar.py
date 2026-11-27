@@ -70,6 +70,7 @@ from coconut.constants import (
     strwrapper,
     unwrapper,
     keyword_vars,
+    pure_mutating_methods,
     const_vars,
     reserved_vars,
     none_coalesce_var,
@@ -1244,10 +1245,13 @@ class Grammar(object):
         unpack_typedef_ref = dubstar.suppress() + typedef_test
         kwargs_typedef_ref = setname + colon.suppress() + (unpack_typedef | typedef_test) + arg_comma
         default = condense(equals + test)
-        unsafe_typedef_default_ref = setname + colon.suppress() + typedef_test + Optional(default)
+        # defaults for parameters (as opposed to keyword arguments in calls), which --pure checks
+        param_default = Forward()
+        param_default_ref = default
+        unsafe_typedef_default_ref = setname + colon.suppress() + typedef_test + Optional(param_default)
         typedef_default_ref = unsafe_typedef_default_ref + arg_comma
         tfpdef = condense(setname + arg_comma) | typedef
-        tfpdef_default = condense(setname + Optional(default) + arg_comma) | typedef_default
+        tfpdef_default = condense(setname + Optional(param_default) + arg_comma) | typedef_default
 
         star_sep_arg = Forward()
         star_sep_arg_ref = condense(star + arg_comma)
@@ -1288,7 +1292,7 @@ class Grammar(object):
                 ZeroOrMore(
                     condense(
                         # everything here must end with setarg_comma
-                        expr_setname + Optional(default) + setarg_comma
+                        expr_setname + Optional(param_default) + setarg_comma
                         | (star | dubstar) + expr_setname + setarg_comma
                         | star_sep_setarg
                         | slash_sep_setarg
@@ -1604,7 +1608,8 @@ class Grammar(object):
             # bare annotation, use unsafe_simple_assign
             | unsafe_simple_assign + colon.suppress() + typedef_test
         )
-        basic_stmt = addspace(ZeroOrMore(assignlist + equals) + test_expr)
+        basic_stmt = Forward()
+        basic_stmt_ref = addspace(ZeroOrMore(assignlist + equals) + test_expr)
 
         type_param = Forward()
         type_param_bound_op = lt_colon | colon | le
@@ -2422,7 +2427,7 @@ class Grammar(object):
         funcname_typeparams = Forward()
         funcname_typeparams_tokens = dotted_outer_setname + Optional(type_params)
         name_funcdef = condense(funcname_typeparams + parameters)
-        op_tfpdef = unsafe_typedef_default | condense(setname + Optional(default))
+        op_tfpdef = unsafe_typedef_default | condense(setname + Optional(param_default))
         op_funcdef_arg = setname | condense(lparen.suppress() + op_tfpdef + rparen.suppress())
         op_funcdef_name = unsafe_backtick.suppress() + funcname_typeparams + unsafe_backtick.suppress()
         op_funcdef_name_tokens = unsafe_backtick.suppress() + funcname_typeparams_tokens + unsafe_backtick.suppress()
@@ -2947,6 +2952,17 @@ class Grammar(object):
         return_regex = compile_regex(r"\breturn\b")
 
         noqa_regex = compile_regex(r"\b[Nn][Oo][Qq][Aa]\b")
+
+        # --pure mode checks
+        funcdef_name_regex = compile_regex(r"\bdef\s+([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)")
+        mutable_default_regex = compile_regex(
+            r"=\s*(?:\[.*\]|\{.*\}|(?:_coconut\.)?(?:collections\.)?(?:list|dict|set|bytearray|deque|defaultdict|OrderedDict|Counter)\(.*\))\s*$",
+        )
+        mutating_method_call_regex = compile_regex(
+            r"^\(?[\w.\[\]'\"]+\.(?P<method>"
+            + "|".join(pure_mutating_methods)
+            + r")\)?\(.*\)\s*$",
+        )
 
         just_non_none_atom = StartOfStrGrammar(~keyword("None") + known_atom + end_marker)
 

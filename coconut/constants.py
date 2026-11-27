@@ -919,6 +919,44 @@ all_builtins = frozenset(
     + coconut_exceptions
 )
 
+# in-place mutating methods of built-in types that --pure disallows calling as statements
+pure_mutating_methods = (
+    "append",
+    "extend",
+    "insert",
+    "remove",
+    "pop",
+    "popitem",
+    "clear",
+    "sort",
+    "reverse",
+    "update",
+    "setdefault",
+    "add",
+    "discard",
+    "difference_update",
+    "intersection_update",
+    "symmetric_difference_update",
+    "appendleft",
+    "extendleft",
+    "popleft",
+    "rotate",
+    "__setitem__",
+    "__delitem__",
+    "__setattr__",
+    "__delattr__",
+)
+
+# methods where --pure allows initializing attributes on self/cls
+pure_mutation_ok_methods = (
+    "__init__",
+    "__new__",
+    "__post_init__",
+    "__init_subclass__",
+    "__set_name__",
+    "__setstate__",
+)
+
 # builtins that are defined (so using them isn't an undefined name) but that are new
 #  or uncommon enough that assigning to them shouldn't warn about shadowing a builtin
 unshadow_checked_builtins = frozenset((

@@ -55,9 +55,9 @@ else:
 
 class LspClient(object):
 
-    def __init__(self, root, init_options=None):
+    def __init__(self, root, init_options=None, cmd=None):
         self.proc = subprocess.Popen(
-            SERVER_CMD,
+            cmd or SERVER_CMD,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -432,6 +432,36 @@ def test_settings_change_recompiles(client, project):
     assert [d for d in client.diagnostics(uri) if d["severity"] == 1] == []
 
 
+PURE_CODE = textwrap.dedent('''\
+    def total(xs):
+        acc = []
+        acc.append(sum(xs))
+        return acc
+''')
+
+
+def test_pure_setting(client, project):
+    uri = client.open(os.path.join(project, "impure.coco"), PURE_CODE)
+    assert not any("--pure" in d["message"] for d in client.diagnostics(uri))
+    client.notify("workspace/didChangeConfiguration", {"settings": {"coconut": {"pure": True}}})
+    diags = [d for d in client.diagnostics(uri) if "mutating method" in d["message"]]
+    assert len(diags) == 1 and diags[0]["range"]["start"]["line"] == 2, diags
+    client.notify("workspace/didChangeConfiguration", {"settings": {"coconut": {"pure": False}}})
+    assert not any("--pure" in d["message"] for d in client.diagnostics(uri))
+
+
+def test_coconut_lsp_flags_set_defaults(project):
+    # flags passed to 'coconut --lsp' become the server's default settings
+    c = LspClient(project, cmd=[sys.executable, "-m", "coconut", "--lsp", "--strict", "--pure"])
+    try:
+        uri = c.open(os.path.join(project, "impure_cli.coco"), PURE_CODE)
+        diags = [d for d in c.diagnostics(uri) if "mutating method" in d["message"]]
+        # reported once (as a style error), even though the server also recompiles without --strict
+        assert len(diags) == 1 and diags[0]["code"] == "CoconutStyleError", diags
+    finally:
+        c.close()
+
+
 def test_cross_module_intelligence(client, project):
     # helpers.coco has no compiled helpers.py, so jedi only sees it through the overlay
     assert not os.path.exists(os.path.join(project, "helpers.py"))
@@ -580,6 +610,13 @@ def test_mcp_check(mcp, coco_file):
     assert "1 error" in text and ":1:5: error: unclosed" in text
 
 
+def test_mcp_check_pure(mcp):
+    text, err = tool(mcp, "coconut_check", code=PURE_CODE)
+    assert "mutating method" not in text
+    text, err = tool(mcp, "coconut_check", code=PURE_CODE, pure=True)
+    assert "3:5" in text and "mutating method 'append'" in text, text
+
+
 def test_mcp_compile(mcp):
     text, err = tool(mcp, "coconut_compile", code="x = [1, 2] |> map$(.+1) |> list\n")
     assert not err
@@ -636,6 +673,15 @@ def test_cli_check(coco_file, tmp_path):
     assert code == 1
     data = json.loads(out)
     assert data["files_checked"] == 1 and data["diagnostics"][0]["severity"] == "error"
+
+
+def test_cli_check_pure(tmp_path):
+    impure = tmp_path / "impure.coco"
+    impure.write_text(PURE_CODE)
+    code, out, err = run_cli("check", str(impure), "--pure")
+    assert "mutating method 'append'" in out, out + err
+    code, out, err = run_cli("check", str(impure))
+    assert "mutating method" not in out
 
 
 def test_cli_position_commands(coco_file):
@@ -764,7 +810,7 @@ def test_claude_code_plugin():
     # the plugin runs the language server and the MCP server that this package provides
     with open(os.path.join(plugin_dir, ".lsp.json")) as f:
         lsp = json.load(f)
-    assert [lsp["coconut"]["command"]] + lsp["coconut"]["args"] == ["coconut", "--lsp"]
+    assert [lsp["coconut"]["command"]] + lsp["coconut"]["args"] == ["coconut", "--lsp", "--strict"]
     assert lsp["coconut"]["extensionToLanguage"][".coco"] == "coconut"
     # both go through the same 'coconut' entry point, so they run in the same environment
     mcp = plugin["mcpServers"]["coconut"]

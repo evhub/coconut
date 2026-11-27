@@ -277,7 +277,15 @@ class Command(object):
                     )
                 if args.lsp:
                     from coconut.lsp.server import main as start_language_server
-                    start_language_server()
+                    # flags passed alongside --lsp become the server's default settings
+                    default_settings = {}
+                    if args.strict:
+                        default_settings["strict"] = True
+                    if args.pure:
+                        default_settings["pure"] = True
+                    if args.target is not None:
+                        default_settings["target"] = args.target
+                    start_language_server(default_settings=default_settings)
                 else:
                     from coconut.lsp.mcp import serve_mcp
                     serve_mcp()

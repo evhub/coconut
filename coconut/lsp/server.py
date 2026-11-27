@@ -91,12 +91,14 @@ class Document(object):
 
 class CoconutLanguageServer(object):
 
-    def __init__(self, conn, compiler=None):
+    def __init__(self, conn, compiler=None, default_settings=None):
         self.conn = conn
         self.compiler = compiler or WorkerClient()
         self.docs = {}
         self.cond = threading.Condition()
         self.settings = dict(DEFAULT_SETTINGS)
+        if default_settings:
+            self.settings.update(default_settings)
         self.roots = []
         self.initialized = False
         self.shutting_down = False
@@ -863,12 +865,15 @@ def remove_import_action(uri, lines, line, name, diag):
     }
 
 
-def serve_stdio():
+def serve_stdio(default_settings=None):
     conn = stdio_connection()
-    server = CoconutLanguageServer(conn)
+    server = CoconutLanguageServer(conn, default_settings=default_settings)
     return server.run()
 
 
-def main(args=None):
-    """Start the Coconut language server over stdio (the entry point for 'coconut --lsp')."""
-    return serve_stdio()
+def main(args=None, default_settings=None):
+    """Start the Coconut language server over stdio (the entry point for 'coconut --lsp').
+
+    default_settings (e.g. from 'coconut --lsp --strict --pure --target 3.10') are used unless
+    the client overrides them with its initialization options or configuration."""
+    return serve_stdio(default_settings)

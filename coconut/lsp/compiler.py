@@ -38,9 +38,12 @@ SEVERITY_HINT = 4
 TAG_UNNECESSARY = 1
 TAG_DEPRECATED = 2
 
+STRICT_HINT_RE = re.compile(r"\s*\((?:remove --pure to dismiss; )?remove --strict to downgrade to a warning\)")
+
 DEFAULT_SETTINGS = {
     "target": "sys",
     "strict": False,
+    "pure": False,
     "lint": True,
     "mypy": False,
 }
@@ -87,9 +90,9 @@ def _set_incremental(code):
 def _setup(settings):
     global _current_setup
     from coconut.api import setup
-    key = (str(settings.get("target") or "sys"), bool(settings.get("strict")))
+    key = (str(settings.get("target") or "sys"), bool(settings.get("strict")), bool(settings.get("pure")))
     if key != _current_setup:
-        setup(target=key[0], strict=key[1], line_numbers=True, keep_lines=False, no_wrap=True, minify=False)
+        setup(target=key[0], strict=key[1], pure=key[2], line_numbers=True, keep_lines=False, no_wrap=True, minify=False)
         _current_setup = key
 
 
@@ -223,10 +226,14 @@ def compile_coconut(code, settings=None):
             })
             traceback.print_exc(file=sys.stderr)
 
-    seen = set()
+    # a --strict style error is reported once from the strict compile and again as a
+    #  warning from the non-strict recompile, so dedupe ignoring --strict's hint
+    def dedupe_key(diag):
+        return (STRICT_HINT_RE.sub("", diag["message"]), diag["range"]["start"]["line"])
+    seen = set(dedupe_key(diag) for diag in diagnostics)
     for warning in warnings:
         diag = _err_to_diagnostic(warning, source_lines, SEVERITY_WARNING)
-        key = (diag["message"], diag["range"]["start"]["line"])
+        key = dedupe_key(diag)
         if key not in seen:
             seen.add(key)
             diagnostics.append(diag)

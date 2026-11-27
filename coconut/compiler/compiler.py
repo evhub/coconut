@@ -97,6 +97,7 @@ from coconut.constants import (
     reserved_command_symbols,
     streamline_grammar_for_len,
     all_builtins,
+    pure_mutation_ok_methods,
     unshadow_checked_builtins,
     in_place_op_funcs,
     match_first_arg_var,
@@ -966,9 +967,11 @@ class Compiler(Grammar, pickleable_obj):
         # handle all atom + trailers constructs with item_handle
         cls.trailer_atom <<= attach(cls.trailer_atom_ref, cls.method("item_handle"))
         cls.no_partial_trailer_atom <<= attach(cls.no_partial_trailer_atom_ref, cls.method("item_handle"))
-        cls.simple_assign <<= attach(cls.simple_assign_ref, cls.method("item_handle"))
-        cls.expr_simple_assign <<= attach(cls.expr_simple_assign_ref, cls.method("item_handle"))
-        cls.unsafe_simple_assign <<= attach(cls.unsafe_simple_assign_ref, cls.method("item_handle"))
+        cls.simple_assign <<= attach(cls.simple_assign_ref, cls.method("simple_assign_handle"))
+        cls.expr_simple_assign <<= attach(cls.expr_simple_assign_ref, cls.method("simple_assign_handle"))
+        cls.unsafe_simple_assign <<= attach(cls.unsafe_simple_assign_ref, cls.method("simple_assign_handle"))
+        cls.param_default <<= attach(cls.param_default_ref, cls.method("param_default_handle"))
+        cls.basic_stmt <<= attach(cls.basic_stmt_ref, cls.method("basic_stmt_handle"))
 
         # handle all star assignments with star_assign_item_check
         cls.star_assign_item <<= attach(cls.star_assign_item_ref, cls.method("star_assign_item_check"))
@@ -3602,6 +3605,55 @@ else:
             else:
                 raise CoconutInternalException("invalid pipe operator direction", direction)
 
+    def simple_assign_handle(self, original, loc, tokens):
+        """Process assignment targets, checking for mutation in --pure mode."""
+        if self.pure and len(tokens) > 1:
+            base, first_trailer = tokens[0], tokens[1]
+            func_context = self.current_parsing_context("func")
+            func_name = None if func_context is None else func_context["name"]
+            # allow initializing attributes on self/cls in constructors
+            is_constructor_init = (
+                base in ("self", "cls")
+                and isinstance(first_trailer, str)
+                and first_trailer.startswith(".")
+                and func_name is not None
+                and func_name.rsplit(".", 1)[-1] in pure_mutation_ok_methods
+            )
+            if not is_constructor_init:
+                self.pure_error(
+                    "disallowed mutation of an attribute or item (mutating objects is prohibited in --pure mode; make a new object instead, e.g. with data types and ._replace)",
+                    original,
+                    loc,
+                    noqa_able=True,
+                )
+        return self.item_handle(original, loc, tokens)
+
+    def param_default_handle(self, original, loc, tokens):
+        """Process parameter defaults, checking for mutable defaults in --pure mode."""
+        default, = tokens
+        if self.pure and self.mutable_default_regex.match(default):
+            self.pure_error(
+                "disallowed mutable default argument (it would be shared across calls; use an immutable default like a tuple or None instead)",
+                original,
+                loc,
+                noqa_able=True,
+            )
+        return default
+
+    def basic_stmt_handle(self, original, loc, tokens):
+        """Process basic statements, checking for in-place mutating method calls in --pure mode."""
+        stmt, = tokens
+        if self.pure:
+            match = self.mutating_method_call_regex.match(stmt)
+            if match:
+                self.pure_error(
+                    "disallowed call to in-place mutating method '{method}' (mutating objects is prohibited in --pure mode; build a new value instead, e.g. with a comprehension or pipeline)".format(method=match.group("method")),
+                    original,
+                    loc,
+                    noqa_able=True,
+                )
+        return stmt
+
     def item_handle(self, original, loc, tokens):
         """Process trailers."""
         out = tokens.pop(0)
@@ -5853,10 +5905,14 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
         cls_context = self.current_parsing_context("class")
         if cls_context is not None:
             in_method, cls_context["in_method"] = cls_context["in_method"], True
+        func_name_match = self.funcdef_name_regex.search(original, loc)
         try:
             # handles support for function type variables and opens a new scope
             with self.scope_manage():
-                yield
+                with self.add_to_parsing_context({
+                    "func": {"name": func_name_match.group(1) if func_name_match else None},
+                }):
+                    yield
         finally:
             if cls_context is not None:
                 cls_context["in_method"] = in_method

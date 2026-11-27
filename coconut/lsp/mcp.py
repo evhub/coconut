@@ -61,6 +61,9 @@ TOOLS = [
         "inputSchema": {"type": "object", "properties": dict(
             SOURCE_PROPS,
             strict={"type": "boolean", "description": "Enable Coconut's --strict style checks"},
+            pure={"type": "boolean", "description": (
+                "Enable Coconut's --pure checks, which flag reassignment, mutation, and other impure code; "
+                "recommended for new code")},
             mypy={"type": "boolean", "description": "Also type-check the compiled code with mypy (must be installed)"},
         ), "additionalProperties": False},
         "annotations": {"readOnlyHint": True, "openWorldHint": False},
@@ -133,15 +136,17 @@ class McpServer(object):
         self.writer = writer or sys.stdout
         self.engines = {}
 
-    def engine(self, target=None, strict=False, mypy=False):
+    def engine(self, target=None, strict=False, mypy=False, pure=False):
         from coconut.lsp.cli import Engine
-        key = (target or "", bool(strict), bool(mypy))
+        key = (target or "", bool(strict), bool(mypy), bool(pure))
         if key not in self.engines:
             settings = {}
             if target:
                 settings["target"] = target
             if strict:
                 settings["strict"] = True
+            if pure:
+                settings["pure"] = True
             if mypy:
                 settings["mypy"] = True
             self.engines[key] = Engine(settings)
@@ -236,7 +241,7 @@ class McpServer(object):
 
     def tool_check(self, args):
         from coconut.lsp.cli import collect_files, diag_to_json
-        engine = self.engine(args.get("target"), args.get("strict"), args.get("mypy"))
+        engine = self.engine(args.get("target"), args.get("strict"), args.get("mypy"), args.get("pure"))
         path, code = self._source(args)
         files = [path] if code is not None else collect_files([path])
         lines = []

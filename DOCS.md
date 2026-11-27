@@ -373,6 +373,11 @@ If the `--pure` flag is enabled, Coconut will enforce functional programming nor
 The following are disallowed in `--pure` mode:
 - variable reassignment (all variables are implicitly [`final`](#final))
 - `global` and `nonlocal` statements
+- mutating attributes or items, e.g. `obj.attr = x`, `xs[i] = x`, `xs[i] += x`, or `del d[k]` (except for initializing attributes of `self`/`cls` in constructors such as `__init__`, `__new__`, and `__post_init__`)
+- calling in-place mutating methods of built-in types as statements, e.g. `xs.append(x)`, `xs.sort()`, or `d.update(other)` (using the result of such a call, as with persistent data structures whose methods return new objects, is fine)
+- mutable default arguments, e.g. `def f(xs=[])`
+
+Instead of mutating objects, `--pure` code should build new ones: use [data types](#data) and `._replace` instead of mutable classes, and comprehensions, [pipelines](#pipes), and [`fmap`](#fmap) instead of loops that mutate.
 
 #### Backports
 
@@ -554,7 +559,7 @@ vim.lsp.config("coconut", {cmd = {"coconut", "--lsp"}, filetypes = {"coconut"}})
 vim.lsp.enable("coconut")
 ```
 
-The server accepts the initialization options (also accepted through `workspace/didChangeConfiguration`) `target` (the Python version to target, defaulting to `"sys"`), `strict` (enable [`--strict`](#strict-mode) checks), `lint` (pyflakes linting, on by default), `mypy` (type checking on open and save, off by default; requires `mypy`), and `compileTimeout` (in seconds, default `60`).
+Flags passed along with `--lsp` set the server's defaults, so e.g. `coconut --lsp --strict --pure --target 3.10` checks code with [`--strict`](#strict-mode) and [`--pure`](#pure-mode) for Python 3.10 unless the editor overrides those settings. The server also accepts the initialization options (also accepted through `workspace/didChangeConfiguration`) `target` (the Python version to target, defaulting to `"sys"`), `strict` (enable [`--strict`](#strict-mode) checks), `pure` (enable [`--pure`](#pure-mode) checks), `lint` (pyflakes linting, on by default), `mypy` (type checking on open and save, off by default; requires `mypy`), and `compileTimeout` (in seconds, default `60`).
 
 Hover, completions, go to definition, and the other code intelligence features work by analyzing the compiled Python with `jedi` and mapping the results back to the Coconut source. Compilation happens in a background process that reuses parsing work between edits, and when the current version of a file doesn't compile, the server analyzes it with the broken lines neutralized, so the rest of the file stays analyzable.
 

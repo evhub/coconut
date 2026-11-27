@@ -1,7 +1,8 @@
 {
   "coconut": {
     "args": [
-      "--lsp"
+      "--lsp",
+      "--strict"
     ],
     "command": "coconut",
     "extensionToLanguage": {

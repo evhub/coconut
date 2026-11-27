@@ -685,6 +685,43 @@ line 6''')
     x = 1
     \x = 2
     """)
+    # mutation is disallowed in pure mode
+    assert_raises(-> parse(d"""
+    xs = [1]
+    xs.append(2)
+    """), CoconutStyleError, err_has="mutating method 'append'")
+    assert_raises(-> parse(d"""
+    xs = [1]
+    [2] |> xs.extend
+    """), CoconutStyleError, err_has="mutating method 'extend'")
+    assert_raises(-> parse(d"""
+    xs = [1]
+    xs[0] = 2
+    """), CoconutStyleError, err_has="mutation")
+    assert_raises(-> parse(d"""
+    d = {"a": 1}
+    del d["a"]
+    """), CoconutStyleError, err_has="mutation")
+    assert_raises(-> parse(d"""
+    class C:
+        def set_x(self):
+            self.x = 1
+    """), CoconutStyleError, err_has="mutation")
+    assert_raises(-> parse("def f(x=[]) = x"), CoconutStyleError, err_has="mutable default")
+    assert_raises(-> parse("f = (x={}) => x"), CoconutStyleError, err_has="mutable default")
+    # but initializing attributes in constructors, using the results of
+    #  methods like append (e.g. on persistent data structures), and passing
+    #  mutable keyword arguments are fine
+    assert parse(d"""
+    class C:
+        def __init__(self):
+            self.x = 1
+    """)
+    assert parse(d"""
+    def f(v) = v.append(1)
+    def g(x=()) = x
+    g(x=[1])
+    """)
     # nonlocal requires target="3" since it's Python 3 only
     setup(line_numbers=False, strict=True, pure=True, target="3")
     assert_raises(-> parse(d"""
@@ -711,6 +748,12 @@ line 6''')
     parse(d"""
     def f():
         global x  # NOQA
+    """)
+    parse(d"""
+    xs = [1]
+    xs.append(2)  # NOQA
+    xs[0] = 3  # NOQA
+    def f(x=[]) = x  # NOQA
     """)
     # nonlocal requires target="3" since it's Python 3 only
     setup(line_numbers=False, strict=True, pure=True, target="3")

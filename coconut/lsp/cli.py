@@ -173,6 +173,7 @@ def make_parser():
     def common(p, json_flag=True):
         p.add_argument("--target", default=None, help="Python version to target (default: sys)")
         p.add_argument("--strict", action="store_true", help="enable Coconut's --strict style checks")
+        p.add_argument("--pure", action="store_true", help="enable Coconut's --pure functional-purity checks")
         p.add_argument("--no-lint", action="store_true", help="don't run pyflakes on the compiled code")
         if json_flag == "check":
             p.add_argument("--mypy", action="store_true", help="also type-check the compiled code with mypy")
@@ -218,6 +219,8 @@ def settings_from(args):
         settings["target"] = args.target
     if getattr(args, "strict", False):
         settings["strict"] = True
+    if getattr(args, "pure", False):
+        settings["pure"] = True
     if getattr(args, "no_lint", False):
         settings["lint"] = False
     if getattr(args, "mypy", False):
