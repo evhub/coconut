@@ -35,7 +35,7 @@ def package_test(outer_MatchError) -> bool:
     assert MatchError() `isinstance` outer_MatchError, (MatchError, outer_MatchError)
     assert outer_MatchError() `isinstance` MatchError, (outer_MatchError, MatchError)
     assert_raises((raise)$(outer_MatchError), MatchError)
-    assert_raises((raise)$(MatchError), outer_MatchError)  # type: ignore
+    assert_raises((raise)$(MatchError), outer_MatchError)
     def raises_outer_MatchError(obj=None):
         raise outer_MatchError("raises_outer_MatchError")
     match raises_outer_MatchError -> None in 10:
@@ -126,6 +126,9 @@ def run_main(outer_MatchError, test_easter_eggs=False) -> bool:
     if TEST_ASYNCIO:
         assert test_asyncio() is True
     assert target_sys_test() is True
+    if sys.version_info >= (3,):
+        from .builtins_typing_test import builtins_typing_test
+        assert builtins_typing_test() is True
 
     print_dot()  # .........
     from .non_strict_test import non_strict_test

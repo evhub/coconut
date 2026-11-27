@@ -48,7 +48,7 @@ def pickle_round_trip(obj) = (
 try:
     prepattern()  # type: ignore
 except NameError, TypeError:
-    def prepattern(base_func, **kwargs):  # type: ignore
+    def prepattern(base_func, **kwargs):
         """Decorator to add a new case to a pattern-matching function,
         where the new case is checked first."""
         def pattern_prepender(func):
@@ -139,7 +139,7 @@ product = reduce$((*), ?, 1)
 product_ = reduce$(*)
 def zipwith(f, *args) = map((items) -> f(*items), zip(*args))
 def zipwith_(f, *args) = starmap$(f)..zip <*| args
-zipsum = zip ..> map$(sum)  # type: ignore
+zipsum = zip ..> map$(sum)
 ident_ = (x) -> x
 @ ident .. ident  # type: ignore
 def plus1_(x: int) -> int = x + 1
@@ -1368,7 +1368,7 @@ def ridiculously_recursive2(n):
         result += ridiculously_recursive2(n-i)
     return result
 
-@memoize(memoize.RECURSIVE)  # type: ignore
+@memoize(memoize.RECURSIVE)
 def ridiculously_recursive3(n):
     """Requires maxsize=None when called on large numbers."""
     if n <= 0:
@@ -1624,13 +1624,13 @@ branched = lift_apart(,)
 
 sq_and_t2p1 = (
     branch(ident, (.*2))
-    ..*> branched((.**2), (.+1))  # type: ignore
+    ..*> branched((.**2), (.+1))
 )
 
 first_false_and_last_true = (
     lift(,)(ident, reversed)
-    ..*> lift_apart(,)(dropwhile$(bool), dropwhile$(not))  # type: ignore
-    ..*> lift_apart(,)(.$[0], .$[0])  # type: ignore
+    ..*> lift_apart(,)(dropwhile$(bool), dropwhile$(not))
+    ..*> lift_apart(,)(.$[0], .$[0])
 )
 
 
@@ -1654,7 +1654,7 @@ maxdiff2 = (
 )
 
 maxdiff3 = (
-    ident `lift(zip)` scan$(min)  # type: ignore
+    ident `lift(zip)` scan$(min)
     ..> starmap$(-)
     ..> filter$(ne_zero)
     ..> reduce$(max, ?, -1)
@@ -1876,7 +1876,7 @@ max_sum_partition = (
 split_in_half = lift(groupsof)(
     len ..> (.+1) ..> (.//2),
     ident,
-)  # type: ignore
+)
 
 def arr_of_prod(arr) = (
     range(len(arr))
@@ -1928,7 +1928,7 @@ left_right_diff = (
     lift(zip)(shifted_left_sum, shifted_right_sum)
     ..> starmap$(-)
     ..> map$(abs)
-)  # type: ignore
+)
 
 num_until_neg_sum = (
     sorted

@@ -4,7 +4,7 @@ import asyncio
 def py36_test() -> bool:
     """Performs Python-3.6-specific tests."""
     assert f"{[] |> len}" == "0"
-    assert (a=1, b=2) == _namedtuple_of(a=1, b=2) == (1, 2)  # type: ignore
+    assert (a=1, b=2) == _namedtuple_of(a=1, b=2) == (1, 2)
 
     loop = asyncio.new_event_loop()
 

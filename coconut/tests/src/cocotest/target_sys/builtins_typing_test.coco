@@ -1,0 +1,714 @@
+"""Tests that the type stubs for Coconut's built-ins (__coconut__/__init__.pyi) are precise.
+
+Everything inside of an `if TYPE_CHECKING:` block is only ever seen by type checkers.
+Those blocks use typing_extensions.assert_type to check the exact inferred types, and
+mark expected type errors (invalid uses that the stubs should reject) with
+`# type: ignore[<error code>]` comments, such that an unexpected kind of error fails
+the test. To also check that every expected error still happens, run MyPy on this file
+with --warn-unused-ignores and make sure it doesn't report any unused "type: ignore"
+comments on lines in this file.
+
+Everything else is run normally, and checks that the runtime behavior matches what the
+stubs say. Note that the type checks come before the runtime checks, since asserting
+things like `x == 1` narrows the type of x.
+"""
+
+if TYPE_CHECKING:
+    from typing import (
+        Any,
+        AsyncIterator,
+        Callable,
+        Coroutine,
+        DefaultDict,
+        Deque,
+        Dict,
+        FrozenSet,
+        Iterable,
+        Iterator,
+        List,
+        NoReturn,
+        Optional,
+        Set,
+        Tuple,
+        Union,
+    )
+    from contextlib import AbstractContextManager
+    from typing_extensions import assert_type
+
+
+# helpers with precise types (since lambda arguments are untyped)
+def inc(x: int) -> int = x + 1
+def add(x: int, y: int) -> int = x + y
+def concat(x: str, y: str) -> str = x + y
+def append_to(xs: List[int], x: int) -> List[int] = xs + [x]
+def show(x: int) -> str = str(x)
+def is_pos(x: int) -> bool = x > 0
+def neg_float(x: int) -> float = -x / 1
+def to_upper(s: str) -> str = s.upper()
+def three(a: int, b: str, c: float) -> Tuple[int, str, float] = (a, b, c)
+def safe_div(x: int, y: int) -> float = x / y
+def kv_swap(kv: Tuple[int, str]) -> Tuple[str, int] = (kv[1], kv[0])
+def swap(k: int, v: str) -> Tuple[str, int] = (v, k)
+def neg_err(err: BaseException) -> int = -1
+def err_args(err: Exception) -> Tuple[Any, ...] = err.args
+def wrap_err(err: BaseException) -> BaseException = RuntimeError(err)
+def recover(err: BaseException) -> Expected[str] = Expected("recovered")
+def maybe_show(x: int) -> Expected[str] = Expected(str(x))
+def is_pos_and_show(x: int) -> Tuple[bool, str] = (is_pos(x), show(x))
+def pos_or_none(x: int) -> Optional[int] = x if x > 0 else None
+def int_and_str() -> Tuple[int, str] = (1, "a")
+def int_gen(n: int) -> Iterator[int]:
+    yield from range(n)
+if TYPE_CHECKING:
+    async def ainc(x: int) -> int = x + 1
+    async def ashow(x: int) -> str = str(x)
+    async def aadd(x: int, y: int) -> int = x + y
+
+data Vec2(x: int, y: int)
+
+class Box[T]:
+    def __init__(self, item: T) -> None:
+        self.item = item
+    def __fmap__[U](self, func: T -> U) -> Box[U] = Box(func(self.item))
+
+class OverrideBase:
+    def meth(self) -> int = 1
+
+class MemoClass:
+    @memoize
+    def meth(self, x: int) -> str = str(x)
+
+
+def enhanced_builtins_typing_test() -> bool:
+    """Coconut's enhanced map, zip, zip_longest, filter, enumerate, reversed, and starmap."""
+    # map
+    m = map(show, [1, 2, 3])
+    if TYPE_CHECKING:
+        assert_type(m, map[str])
+        assert_type(m[0], str)
+        assert_type(m[1:], map[str])
+        assert_type(len(m), int)
+        assert_type(reversed(m), map[str])
+        assert_type(m.iters, Tuple[Iterable[Any], ...])
+        assert_type(map(add, [1], [2]), map[int])
+        assert_type(map(add, [1], [2], strict=True), starmap[int])
+        assert_type(map(three, [1], ["a"], [1.0]), map[Tuple[int, str, float]])
+        assert_type(fmap(len, m), map[int])
+        assert_type(iter(m), Iterator[str])
+        assert_type(next(m), str)
+        assert_type(m.__copy__(), map[str])
+        map(show, ["a"])  # type: ignore[arg-type]
+        map(add, [1], [2], strict="yes")  # type: ignore[call-overload]
+    assert m[0] == "1"
+    assert m[1:] |> list == ["2", "3"]
+    assert len(m) == 3
+    assert reversed(m) |> list == ["3", "2", "1"]
+    assert m.func(4) == "4"
+    assert m.iters == ([1, 2, 3],)
+    assert map(add, [1, 2], [3, 4], strict=True) `isinstance` starmap
+    assert map(add, [1, 2], [3, 4]) `isinstance` map
+    assert fmap(len, m) |> list == [1, 1, 1]
+
+    # zip and zip_longest
+    z = zip([1, 2], ["a", "b"])
+    zl = zip_longest([1, 2], ["a"])
+    if TYPE_CHECKING:
+        assert_type(z, zip[Tuple[int, str]])
+        assert_type(z[0], Tuple[int, str])
+        assert_type(z[1:], zip[Tuple[int, str]])
+        assert_type(zip([1], ["a"], [1.0], strict=True), zip[Tuple[int, str, float]])
+        assert_type(fmap(len, z), map[int])
+        assert_type(zl, zip_longest[Tuple[Optional[int], Optional[str]]])
+        assert_type(zip_longest([1], ["a"], fillvalue=0), zip_longest[Tuple[int, Union[str, int]]])
+        assert_type(zl.fillvalue, Any)
+        zl[0][0] + 1  # type: ignore[operator]
+    assert z[0] == (1, "a")
+    assert z[1:] |> list == [(2, "b")]
+    assert len(z) == 2
+    assert reversed(z) |> list == [(2, "b"), (1, "a")]
+    assert z.iters == ([1, 2], ["a", "b"])
+    assert zl |> list == [(1, "a"), (2, None)]
+    assert zip_longest([1, 2], ["a"], fillvalue=0) |> list == [(1, "a"), (2, 0)]
+
+    # filter
+    f = filter(is_pos, [-1, 1, 2])
+    if TYPE_CHECKING:
+        assert_type(f, filter[int])
+        assert_type(reversed(f), filter[int])
+        assert_type(filter(None, [0, None, 3]), filter[int])
+        assert_type(fmap(show, f), map[str])
+        len(f)  # type: ignore[arg-type]
+    assert f |> list == [1, 2]
+    assert reversed(f) |> list == [2, 1]
+    assert filter(None, [0, None, 3]) |> list == [3]
+
+    # enumerate
+    e = enumerate(["a", "b"], start=1)
+    if TYPE_CHECKING:
+        assert_type(e, enumerate[str])
+        assert_type(e[0], Tuple[int, str])
+        assert_type(e[1:], enumerate[str])
+        assert_type(next(e), Tuple[int, str])
+    assert e[0] == (1, "a")
+    assert e[1:] |> list == [(2, "b")]
+    assert len(e) == 2
+    assert e.start == 1
+
+    # reversed (returns a range for ranges, and calls __reversed__ for non-list/tuple objects)
+    r = reversed([1, 2, 3])
+    if TYPE_CHECKING:
+        assert_type(r, reversed[int])
+        assert_type(r[0], int)
+        assert_type(reversed("abc"), reversed[str])
+        assert_type(reversed(range(3)), range)
+        assert_type(reversed(map(inc, [1])), map[int])
+        assert_type(reversed({1: "a"}), Iterator[int])
+        next(r)  # type: ignore[call-overload]
+        reversed(int_gen(3))  # type: ignore[call-overload]
+    assert r[0] == 3
+    assert len(r) == 3
+    assert 2 in r
+    assert r.index(3) == 0
+    assert reversed(range(3)) `isinstance` range
+    assert reversed(map(inc, [1, 2])) `isinstance` map
+
+    # starmap
+    s = starmap(add, [(1, 2), (3, 4)])
+    if TYPE_CHECKING:
+        assert_type(s, starmap[int])
+        assert_type(s[0], int)
+        assert_type(s[1:], starmap[int])
+        assert_type(starmap(three, [(1, "a", 1.0)]), starmap[Tuple[int, str, float]])
+        assert_type(fmap(show, s), starmap[str])
+    assert s[0] == 3
+    assert len(s) == 2
+    assert s.func(1, 1) == 2
+    assert starmap(add, iterable=[(1, 1)]) |> list == [2]
+
+    # takewhile and dropwhile (which, unlike the itertools versions, take keyword arguments)
+    if TYPE_CHECKING:
+        assert_type(takewhile(predicate=is_pos, iterable=[1]), takewhile[int])
+        assert_type(dropwhile(is_pos, [1]), dropwhile[int])
+    assert takewhile(predicate=is_pos, iterable=[1, 0, 1]) |> list == [1]
+    assert dropwhile(predicate=is_pos, iterable=[1, 0, 1]) |> list == [0, 1]
+
+    return True
+
+
+def iterator_builtins_typing_test() -> bool:
+    """Coconut's other iterator built-ins."""
+    # reiterable (which returns already-reiterable objects unchanged)
+    it = reiterable(int_gen(3))
+    ls = [1, 2]
+    if TYPE_CHECKING:
+        assert_type(it, reiterable[int])
+        assert_type(it[1], int)
+        assert_type(it.count(1), int)
+        assert_type(reiterable(ls), List[int])
+        assert_type(reiterable(int_and_str()), Tuple[int, str])
+        assert_type(reiterable({"a": 1}), Dict[str, int])
+        assert_type(reiterable(it), reiterable[int])
+        assert_type(fmap(show, it), map[str])
+        next(it)  # type: ignore[call-overload]
+    assert it |> list == [0, 1, 2] == it |> list
+    assert it[1] == 1
+    assert len(reiterable([1, 2])) == 2
+    assert reiterable(ls) is ls
+
+    # scan
+    sc = scan(add, [1, 2, 3])
+    if TYPE_CHECKING:
+        assert_type(sc, scan[int])
+        assert_type(scan(function=concat, iterable=["a"]), scan[str])
+        assert_type(scan(append_to, [1, 2], [0]), scan[List[int]])
+        assert_type(fmap(show, sc), map[str])
+        scan(func=add, iterable=[1])  # type: ignore[call-overload]
+    assert sc |> list == [1, 3, 6]
+    assert len(sc) == 3
+    assert scan(function=(acc, x) -> acc + str(x), iterable=[1, 2], initial="") |> list == ["", "1", "12"]
+
+    # count
+    c = count()
+    if TYPE_CHECKING:
+        assert_type(c, count[int])
+        assert_type(c[5], int)
+        assert_type(c$[:3], Iterable[int])
+        assert_type(c.start, int)
+        assert_type(count(1.5, 0.5), count[float])
+        assert_type(count(0, 0.5), count[float])
+        assert_type(c.count(1), Union[int, float])
+        assert_type(fmap(show, c), map[str])
+    assert c[5] == 5
+    assert c$[:3] |> list == [0, 1, 2]
+    assert 3 in c
+    assert count(1.5, 0.5)[1] == 2.0
+    assert c.index(2) == 2
+    assert fmap(show, count())$[0] == "0"
+
+    # cycle
+    cy = cycle([1, 2], times=2)
+    if TYPE_CHECKING:
+        assert_type(cy, cycle[int])
+        assert_type(cy[3], int)
+        assert_type(cy[:2], map[int])
+        assert_type(cy.count(1), Union[int, float])
+        assert_type(reversed(cy), cycle[int])
+    assert cy |> list == [1, 2, 1, 2]
+    assert len(cy) == 4
+    assert cy[3] == 2
+    assert reversed(cy) |> list == [2, 1, 2, 1]
+
+    # groupsof and windowsof
+    g = groupsof(2, [1, 2, 3])
+    w = windowsof(2, "abc")
+    if TYPE_CHECKING:
+        assert_type(g, groupsof[int])
+        assert_type(iter(g), Iterator[Tuple[int, ...]])
+        assert_type(groupsof(2, [1], fillvalue=None), groupsof[Optional[int]])
+        assert_type(w, windowsof[str])
+        assert_type(windowsof(2, [1], step=2), windowsof[int])
+        assert_type(windowsof(2, [1], "x", 2), windowsof[Union[int, str]])
+        g[0]  # type: ignore[index]
+    assert g |> list == [(1, 2), (3,)]
+    assert len(g) == 2
+    assert groupsof(2, [1, 2, 3], fillvalue=None) |> list == [(1, 2), (3, None)]
+    assert w |> list == [("a", "b"), ("b", "c")]
+    assert windowsof(2, [1, 2, 3], fillvalue=0, step=2) |> list == [(1, 2), (3, 0)]
+
+    # flatten (which has no len or indexing)
+    fl = flatten([[1, 2], [3]])
+    if TYPE_CHECKING:
+        assert_type(fl, flatten[int])
+        assert_type(fl$[1], int)
+        assert_type(flatten([[1], [2]], 0), List[List[int]])
+        assert_type(flatten([[[1]], [[2]]], 2), flatten[int])
+        assert_type(flatten([[1], 2], None), flatten[Any])
+        assert_type(fmap(show, fl), Union[flatten[str], map[str]])
+        len(fl)  # type: ignore[arg-type]
+        fl[0]  # type: ignore[index]
+    assert fl |> list == [1, 2, 3]
+    assert 2 in fl
+    assert fl.count(3) == 1
+    assert reversed(fl) |> list == [3, 2, 1]
+    assert flatten([[1], [2]], 0) == [[1], [2]]
+    assert flatten([[[1]], [[2]]], 2) |> list == [1, 2]
+    assert fl$[1] == 2
+
+    # cartesian_product
+    cp = cartesian_product([1, 2], "ab")
+    if TYPE_CHECKING:
+        assert_type(cp, cartesian_product[Tuple[int, str]])
+        assert_type(cartesian_product([1, 2], repeat=2), cartesian_product[Tuple[int, ...]])
+        assert_type(cartesian_product(), cartesian_product[Tuple[()]])
+        assert_type(fmap(len, cp), map[int])
+    assert len(cp) == 4
+    assert (1, "a") in cp
+    assert cp.count((2, "b")) == 1
+    assert cartesian_product([1, 2], repeat=2) |> list == [(1, 1), (1, 2), (2, 1), (2, 2)]
+
+    # multi_enumerate
+    me = multi_enumerate([[1, 2], [3]])
+    if TYPE_CHECKING:
+        assert_type(me, multi_enumerate)
+        assert_type(me[1], Tuple[Tuple[int, ...], Any])
+    assert me |> list == [((0, 0), 1), ((0, 1), 2), ((1, 0), 3)]
+    assert me[1] == ((0, 1), 2)
+
+    # tee (which returns reiterables unchanged)
+    t1, t2 = tee(int_gen(2))
+    if TYPE_CHECKING:
+        assert_type(t1, Iterator[int])
+        assert_type(tee([1, 2]), Tuple[List[int], ...])
+        assert_type(tee(multiset([1]), 3), Tuple[multiset[int], ...])
+    assert t1 |> list == [0, 1] == t2 |> list
+    assert tee([1, 2]) == ([1, 2], [1, 2])
+
+    # consume
+    if TYPE_CHECKING:
+        assert_type(consume(range(5), keep_last=2), Deque[int])
+    assert consume(range(5), keep_last=2) |> list == [3, 4]
+
+    # reduce (which, unlike functools.reduce, takes keyword arguments)
+    if TYPE_CHECKING:
+        assert_type(reduce(add, [1, 2, 3]), int)
+        assert_type(reduce(function=append_to, iterable=[1, 2], initial=[0]), List[int])
+        reduce(add, ["a"])  # type: ignore[arg-type]
+    assert reduce(add, [1, 2, 3]) == 6
+    assert reduce(function=(acc, x) -> acc + str(x), iterable=[1, 2], initial="") == "12"
+
+    return True
+
+
+def parallel_builtins_typing_test() -> bool:
+    """process_map, thread_map, collectby, mapreduce, and async_map."""
+    if TYPE_CHECKING:
+        assert_type(thread_map(show, [1]), thread_map[str])
+        assert_type(process_map(show, [1], chunksize=10, ordered=False), process_map[str])
+        assert_type(process_map(add, [1], [2], strict=True), process_map[int])
+        assert_type(process_map(show, [1]).to_tuple(), Tuple[str, ...])
+        assert_type(process_map(show, [1]).to_stream(), Iterator[str])
+        assert_type(process_map(show, [1])[0], str)
+        assert_type(process_map(show, [1]).result, Optional[Tuple[str, ...]])
+        with process_map.multiple_sequential_calls() as nothing:
+            assert_type(nothing, None)
+        assert_type(thread_map.multiple_sequential_calls(max_workers=4), AbstractContextManager[None, Optional[bool]])
+        process_map(show, [1], chunksize="10")  # type: ignore[call-overload]
+        process_map.multiple_sequential_calls(max_workers="4")  # type: ignore[arg-type]
+    with thread_map.multiple_sequential_calls(max_workers=2):
+        assert thread_map(show, [1, 2], chunksize=2, ordered=True) |> list == ["1", "2"]
+        assert thread_map(inc, [1, 2], stream=True).to_stream() |> list == [2, 3]
+    tm = thread_map(add, [1, 2], [3, 4], strict=True)
+    assert tm.to_tuple() == (4, 6)
+    assert tm.chunksize == 1 and tm.strict and not tm.stream and tm.ordered
+
+    # collectby and mapreduce
+    if TYPE_CHECKING:
+        assert_type(collectby(is_pos, [1]), DefaultDict[bool, List[int]])
+        assert_type(collectby(is_pos, [1], value_func=show), DefaultDict[bool, List[str]])
+        assert_type(collectby(is_pos, [1], reduce_func=add), Dict[bool, int])
+        assert_type(collectby(is_pos, [1], reduce_func=False), Dict[bool, int])
+        assert_type(collectby(is_pos, [1], show, reduce_func=concat), Dict[bool, str])
+        assert_type(collectby(is_pos, [1], reduce_func=append_to, reduce_func_init=[0]), Dict[bool, List[int]])
+        assert_type(collectby(is_pos, [1], collect_in={True: 0}), Dict[bool, int])
+        assert_type(collectby(is_pos, [1], map_using=thread_map), DefaultDict[bool, List[int]])
+        assert_type(collectby.using_processes(is_pos, [1], chunksize=10), DefaultDict[bool, List[int]])
+        assert_type(mapreduce(is_pos_and_show, [1]), DefaultDict[bool, List[str]])
+        assert_type(mapreduce(is_pos_and_show, [1], reduce_func=concat), Dict[bool, str])
+        assert_type(mapreduce.using_threads(is_pos_and_show, [1], max_workers=2), DefaultDict[bool, List[str]])
+        collectby(is_pos, [1], max_workers=2)  # type: ignore[call-overload]
+        collectby.using_threads(is_pos, [1], map_using=map)  # type: ignore[call-overload]
+        collectby(is_pos, [1], reduce_func=concat)  # type: ignore[arg-type]
+    assert collectby(is_pos, [-1, 1, 2]) == {False: [-1], True: [1, 2]}
+    assert collectby(is_pos, [-1, 1, 2], value_func=show) == {False: ["-1"], True: ["1", "2"]}
+    assert collectby(is_pos, [-1, 1, 2], reduce_func=add) == {False: -1, True: 3}
+    assert collectby(is_pos, [-1, 1, 2], reduce_func=append_to, reduce_func_init=[0]) == {False: [0, -1], True: [0, 1, 2]}
+    assert mapreduce(is_pos_and_show, [-1, 1, 2]) == {False: ["-1"], True: ["1", "2"]}
+    assert collectby.using_threads(is_pos, [-1, 1, 2], value_func=show, ordered=True, max_workers=2) == {False: ["-1"], True: ["1", "2"]}
+
+    # async_map, and_then, and_then_await
+    if TYPE_CHECKING:
+        async def async_typing_test() -> None:
+            assert_type(await async_map(ainc, [1, 2]), List[int])
+            assert_type(await async_map(aadd, [1], [2], strict=True), List[int])
+            coro = assert_type((ainc `and_then` show)(1), Coroutine[Any, Any, str])
+            assert_type(await coro, str)
+            assert_type(await (ainc `and_then_await` ashow)(1), str)
+            await async_map(ainc, [1], True)  # type: ignore[call-overload]
+            await async_map(inc, [1])  # type: ignore[arg-type]
+            await (ainc `and_then` show)("1")  # type: ignore[arg-type]
+
+    return True
+
+
+def fmap_typing_test() -> bool:
+    """fmap over all the different kinds of supported objects."""
+    if TYPE_CHECKING:
+        assert_type(fmap(inc, [1, 2]), List[int])
+        assert_type(fmap(show, [1, 2]), List[str])
+        assert_type(fmap(x -> x + 1, [1, 2]), List[int])
+        assert_type(fmap(show, (1, 2)), Tuple[str, ...])
+        assert_type(fmap(show, {1, 2}), Set[str])
+        assert_type(fmap(show, frozenset((1, 2))), FrozenSet[str])
+        assert_type(fmap(kv_swap, {1: "a"}), Dict[str, int])
+        assert_type(fmap(swap, {1: "a"}, starmap_over_mappings=True), Dict[str, int])
+        assert_type(fmap(to_upper, "ab"), str)
+        assert_type(fmap(inc, b"ab"), bytes)
+        assert_type(fmap(show, range(2)), map[str])
+        assert_type(fmap(show, int_gen(2)), map[str])
+        assert_type(fmap(inc, Vec2(1, 2)), Vec2)
+        assert_type(fmap(show, Expected(1)), Expected[str])
+        assert_type(fmap(x -> x + 1, Expected(1)), Expected[int])
+        assert_type(fmap(show, m{1}), multiset[str])
+        assert_type(fmap(show, Box(1)), Box[str])
+        assert_type(fmap(x -> str(x), Box(1)), Box[str])
+        def int_agen() -> AsyncIterator[int]:
+            raise NotImplementedError
+        assert_type(fmap(show, int_agen()), AsyncIterator[str])
+        fmap(to_upper, [1])  # type: ignore[arg-type]
+        fmap(show, "ab")  # type: ignore[arg-type]
+        fmap(show, Box("a"))  # type: ignore[misc]
+    assert fmap(inc, [1, 2]) == [2, 3]
+    assert fmap(inc, (1, 2)) == (2, 3)
+    assert fmap(inc, {1, 2}) == {2, 3}
+    assert fmap(kv_swap, {1: "a"}) == {"a": 1}
+    assert fmap(swap, {1: "a"}, starmap_over_mappings=True) == {"a": 1}
+    assert fmap(to_upper, "ab") == "AB"
+    assert fmap(inc, b"ab") == b"bc"
+    assert fmap(inc, range(2)) `isinstance` map
+    assert fmap(inc, int_gen(2)) `isinstance` map
+    assert fmap(inc, Vec2(1, 2)) == Vec2(2, 3)
+    assert fmap(inc, Expected(1)) == Expected(2)
+    assert fmap(show, m{1, 1}) == m{"1", "1"}
+    assert fmap(show, Box(1)).item == "1"
+    return True
+
+
+def expected_typing_test() -> bool:
+    """Expected and safe_call."""
+    good = Expected(1)
+    bad = Expected(error=ValueError("bad"))
+    res, err = good
+    if TYPE_CHECKING:
+        assert_type(good, Expected[int])
+        assert_type(bad, Expected[NoReturn])
+        assert_type(Expected(None, ValueError()), Expected[NoReturn])
+        assert_type(res, Optional[int])
+        assert_type(err, Optional[BaseException])
+        assert_type(good.result, Optional[int])
+        assert_type(good.error, Optional[BaseException])
+        assert_type(good[0], Optional[int])
+        assert_type(bool(good), bool)
+        assert_type(good.unwrap(), int)
+        assert_type(good.and_then(maybe_show), Expected[str])
+        assert_type(Expected(good).join(), Expected[int])
+        assert_type(good.map_error(wrap_err), Expected[int])
+        assert_type(good.handle(ValueError, err_args), Expected[Union[int, Tuple[Any, ...]]])
+        assert_type(good.handle((TypeError, ValueError), neg_err), Expected[int])
+        assert_type(good.expect_error(ValueError), Expected[int])
+        assert_type(good.or_else(recover), Expected[Union[int, str]])
+        assert_type(good.result_or_else(neg_err), int)
+        assert_type(good.result_or("s"), Union[int, str])
+        assert_type(safe_call(safe_div, 1, 0), Expected[float])
+        assert_type(safe_call(int, "11", base=2), Expected[int])
+        # Expected is covariant, and Expected(error=...) works as any Expected
+        float_exp: Expected[float] = good
+        int_exp: Expected[int] = bad
+        Expected()  # type: ignore[call-overload]
+        Expected(1, ValueError())  # type: ignore[call-overload]
+        good.join()  # type: ignore[misc]
+        good.expect_error(ValueError())  # type: ignore[arg-type]
+        good.handle(ValueError, to_upper)  # type: ignore[arg-type]
+        str_exp: Expected[str] = good  # type: ignore[assignment]
+        safe_call(safe_div, 1)  # type: ignore[call-arg]
+        safe_call(safe_div, 1, "0")  # type: ignore[arg-type]
+        def unwrap_err() -> None:
+            assert_type(bad.unwrap(), NoReturn)
+    assert good and not bad
+    assert res == 1 and err is None
+    assert good.result == 1
+    assert bad.error `isinstance` ValueError
+    assert good.unwrap() == 1
+    assert good.and_then(maybe_show) == Expected("1")
+    assert Expected(good).join() == good
+    assert bad.map_error(wrap_err).error `isinstance` RuntimeError
+    assert bad.handle(ValueError, neg_err) == Expected(-1)
+    assert bad.handle((TypeError, ValueError), neg_err) == Expected(-1)
+    assert bad.expect_error(ValueError, TypeError) is bad
+    assert bad.or_else(recover) == Expected("recovered")
+    assert bad.result_or_else(neg_err) == -1
+    assert bad.result_or("default") == "default"
+    assert safe_call(safe_div, 1, 0).error `isinstance` ZeroDivisionError
+    assert safe_call(int, "11", base=2) == Expected(3)
+    return True
+
+
+def function_builtins_typing_test() -> bool:
+    """call, ident, const, flip, lift, lift_apart, memoize, recursive_generator, override, addpattern, makedata, and all_equal."""
+    # call and ident
+    side_effects: List[int] = []
+    if TYPE_CHECKING:
+        assert_type(call(add, 1, 2), int)
+        assert_type(call(three, 1, "a", c=1.0), Tuple[int, str, float])
+        assert_type(call(int, "11", base=2), int)
+        assert_type(ident("a"), str)
+        assert_type(ident(1, side_effect=side_effects.append), int)
+        call(add, 1)  # type: ignore[call-arg]
+        call(add, 1, "2")  # type: ignore[arg-type]
+        call(three, 1, "a", d=1.0)  # type: ignore[call-arg]
+        ident(1, side_effect=to_upper)  # type: ignore[arg-type]
+    assert call(add, 1, 2) == 3
+    assert call(int, "11", base=2) == 3
+    assert ident(1, side_effect=side_effects.append) == 1 and side_effects == [1]
+
+    # const
+    c = const(10)
+    if TYPE_CHECKING:
+        assert_type(c, const[int])
+        assert_type(c(1, a=2), int)
+        assert_type(c.value, int)
+        const_func: Callable[[str], int] = c
+    assert c() == 10 == c(1, 2, a=3)
+    assert c.value == 10
+
+    # flip
+    if TYPE_CHECKING:
+        assert_type(flip(swap)("a", 1), Tuple[str, int])
+        assert_type(flip(three)(1.0, "a", 1), Tuple[int, str, float])
+        assert_type(flip(three, 2)("a", 1, 1.0), Tuple[int, str, float])
+        assert_type(flip(three, 2)("a", 1, c=1.0), Tuple[int, str, float])
+        assert_type(flip(three, 1)(1, "a", 1.0), Tuple[int, str, float])
+        flipped_swap: Callable[[str, int], Tuple[str, int]] = flip(swap)
+        flip(swap)(1, "a")  # type: ignore[arg-type]
+        flip(three, 2)(1, "a", 1.0)  # type: ignore[arg-type]
+    assert flip(swap)("a", 1) == ("a", 1)
+    assert flip(three)(1.0, "a", 1) == (1, "a", 1.0)
+    assert flip(three, 2)("a", 1, 1.0) == (1, "a", 1.0)
+
+    # lift and lift_apart
+    if TYPE_CHECKING:
+        assert_type(lift(add).func(1, 2), int)
+        assert_type(lift(add)(inc, inc)(1), int)
+        assert_type(lift(add, inc, inc)(1), int)
+        assert_type(lift(three)(inc, show, neg_float)(1), Tuple[int, str, float])
+        assert_type(lift(inc)(len)([1]), int)
+        assert_type(lift_apart(add)(inc, len)(1, "abc"), int)
+        assert_type(lift_apart(three, inc, show, neg_float)(1, 2, 3), Tuple[int, str, float])
+        lifted_add: Callable[[int], int] = lift(add)(inc, inc)
+        lift(add)(inc, inc)("1")  # type: ignore[arg-type]
+        lift_apart(add)(inc, len)(1, 2)  # type: ignore[arg-type]
+    assert lift(add)(inc, inc)(1) == 4
+    assert lift(add, inc, inc)(1) == 4
+    assert lift(three)(ident, show, neg_float)(1) == (1, "1", -1.0)
+    assert lift(add)(x=inc, y=inc)(1) == 4
+    assert lift_apart(add)(inc, len)(1, "abc") == 5
+    assert lift_apart(three, ident, show, float)(1, 2, 3) == (1, "2", 3.0)
+
+    # memoize
+    @memoize
+    def memo_show(x: int) -> str = str(x)
+    @memoize()
+    def memo_show2(x: int) -> str = str(x)
+    @memoize(maxsize=128, typed=True)
+    def memo_show3(x: int) -> str = str(x)
+    @memoize(maxsize=memoize.RECURSIVE)
+    def memo_show4(x: int) -> str = str(x)
+    @memoize$(user_function=?)
+    def memo_show5(x: int) -> str = str(x)
+    if TYPE_CHECKING:
+        assert_type(memo_show(1), str)
+        assert_type(memo_show2(1), str)
+        assert_type(memo_show3(1), str)
+        assert_type(memo_show4(1), str)
+        assert_type(memo_show.cache_info().hits, int)
+        assert_type(memo_show.cache_clear(), None)
+        assert_type(memo_show.__wrapped__(1), str)
+        assert_type(MemoClass().meth(1), str)
+        assert_type(MemoClass.meth(MemoClass(), 1), str)
+        assert_type(MemoClass().meth.cache_info().currsize, int)
+        memo_show("1")  # type: ignore[arg-type]
+        MemoClass().meth("1")  # type: ignore[arg-type]
+        memo_show4.cache_info()  # type: ignore[attr-defined]
+        memoize(maxsize="128")  # type: ignore[call-overload]
+    assert memo_show(1) == memo_show2(1) == memo_show3(1) == memo_show4(1) == memo_show5(1) == "1"
+    assert memo_show.cache_info().hits == 0
+    assert MemoClass().meth(1) == "1"
+
+    # recursive_generator
+    @recursive_generator
+    def nats(n: int) -> Iterable[int] = (n,) :: nats(n + 1)
+    @recursive_generator
+    def nats_list(n: int) -> List[int] = [n]
+    if TYPE_CHECKING:
+        assert_type(nats(0), reiterable[int])
+        assert_type(nats_list(0), List[int])
+        next(nats(0))  # type: ignore[call-overload]
+    assert nats(0)$[:3] |> list == [0, 1, 2]
+    assert nats(0) is nats(0)
+    assert nats_list(0) == [0]
+
+    # override (which type checkers check overrides something)
+    class OverrideChild(OverrideBase):
+        @override
+        def meth(self) -> int = 2
+    if TYPE_CHECKING:
+        class BadOverrideChild(OverrideBase):
+            @override
+            def not_meth(self) -> int:  # type: ignore[misc]
+                return 3
+    assert OverrideChild().meth() == 2
+
+    # addpattern
+    match def zero_func(0) = "zero"
+    def nonzero_func(n: int) -> str = "nonzero"
+    pattern_func = addpattern(zero_func, nonzero_func)
+    if TYPE_CHECKING:
+        assert_type(addpattern(nonzero_func, allow_any_func=True)(show)(1), str)
+        addpattern(inc, True)  # type: ignore[call-overload]
+    assert pattern_func(0) == "zero" and pattern_func(1) == "nonzero"
+    assert addpattern(nonzero_func, ident, allow_any_func=True)(1) == "nonzero"
+
+    # makedata and all_equal
+    if TYPE_CHECKING:
+        assert_type(makedata(Vec2, 1, 2), Vec2)
+        assert_type(makedata(list, 1, 2, fallback_to_init=True), List[Any])
+        assert_type(all_equal([1, 1], to=1), bool)
+    assert makedata(Vec2, 1, 2) == Vec2(1, 2)
+    assert all_equal([1, 1]) and all_equal([1, 1], to=1) and not all_equal([1, 2])
+
+    return True
+
+
+def syntax_typing_test() -> bool:
+    """The internal built-ins that Coconut syntax compiles into."""
+    # pipes and composition
+    if TYPE_CHECKING:
+        assert_type(1 |> inc |> show, str)
+        assert_type((inc ..> show)(1), str)
+        assert_type((show <.. inc)(1), str)
+        assert_type((|>)(1, inc), int)
+        assert_type((|*>)((1, 2), add), int)
+        assert_type((<*|)(add, (1, 2)), int)
+        assert_type((..?>)(inc, show)(1), Optional[str])
+        composed: Callable[[int], str] = inc ..> show
+        (inc ..> show)("1")  # type: ignore[arg-type]
+    assert 1 |> inc |> show == "2"
+    assert (inc ..> show)(1) == "2"
+    assert (show <.. inc)(1) == "2"
+    assert (1, 2) |*> add == 3
+
+    # iterator slicing, lazy lists, iterator chaining, and multiset literals
+    xs = (| 1, 2, 3 |)
+    chained = (1, 2) :: int_gen(2)
+    ms = m{1, 1, 2}
+    if TYPE_CHECKING:
+        assert_type(xs, reiterable[int])
+        assert_type(xs$[1], int)
+        assert_type(xs$[1:], Iterable[int])
+        assert_type(chained, flatten[int])
+        assert_type(ms, multiset[int])
+        assert_type(ms ^ m{"a"}, multiset[Union[int, str]])
+        assert_type(ms + m{1}, multiset[int])
+        assert_type(ms.count(1), int)
+        assert_type(ms.total(), int)
+    assert xs$[1] == 2
+    assert xs$[1:] |> list == [2, 3]
+    assert chained |> list == [1, 2, 0, 1]
+    assert ms.count(1) == 2 and ms.total() == 3
+    ms.add(3)
+    ms.remove(4, allow_missing=True)
+    assert (ms ^ m{1}) == m{1, 2, 3}
+
+    # operator functions
+    if TYPE_CHECKING:
+        assert_type((,)(1, "a"), Tuple[int, str])
+        assert_type((??)(pos_or_none(1), "a"), Union[int, str])
+        assert_type((in)(1, {1}), bool)
+        def raise_value_error() -> int:
+            assert_type((raise)(ValueError), NoReturn)
+    assert (,)(1, "a") == (1, "a")
+    assert (??)(pos_or_none(-1), 1) == 1
+    assert (in)(1, {1}) and (not in)(2, {1})
+
+    # operator Protocols
+    if TYPE_CHECKING:
+        addable: (+) = 1
+        invertible: (~) = 1
+        not_addable: (+) = object()  # type: ignore[assignment]
+
+    return True
+
+
+def builtins_typing_test() -> bool:
+    """Tests the type stubs for Coconut's built-ins (see the module docstring)."""
+    assert enhanced_builtins_typing_test() is True
+    assert iterator_builtins_typing_test() is True
+    assert parallel_builtins_typing_test() is True
+    assert fmap_typing_test() is True
+    assert expected_typing_test() is True
+    assert function_builtins_typing_test() is True
+    assert syntax_typing_test() is True
+    return True
+
+
+if __name__ == "__main__":
+    builtins_typing_test() |> print

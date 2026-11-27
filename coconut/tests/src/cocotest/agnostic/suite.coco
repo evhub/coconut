@@ -50,7 +50,7 @@ def suite_test() -> bool:
         assert 3 `sqplus1` == 10, sqplus1
     test_sqplus1_plus1sq(sqplus1_1, plus1sq_1)
     test_sqplus1_plus1sq(sqplus1_2, plus1sq_2, parallel=False)
-    with process_map.multiple_sequential_calls(max_workers=2):  # type: ignore
+    with process_map.multiple_sequential_calls(max_workers=2):
         test_sqplus1_plus1sq(sqplus1_3, plus1sq_3)
         test_sqplus1_plus1sq(sqplus1_4, plus1sq_4)
         test_sqplus1_plus1sq(sqplus1_5, plus1sq_5)
@@ -60,7 +60,7 @@ def suite_test() -> bool:
     assert sum_([1,7,3,5]) == 16
     assert add([1,2,3], [10,20,30]) |> list == [11,22,33]
     assert add_([1,2,3], [10,20,30]) |> list == [11,22,33]
-    assert zipsum([1,2,3], [10,20,30]) |> list == [11,22,33]  # type: ignore
+    assert zipsum([1,2,3], [10,20,30]) |> list == [11,22,33]
     assert clean("   ab cd ef   ") == "ab cd ef" == "   ab cd ef   " |> clean
     assert add2 <| 2 <| 3 == 5
     qsorts = [qsort1, qsort2, qsort3, qsort4, qsort5, qsort6, qsort7, qsort8]

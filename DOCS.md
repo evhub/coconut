@@ -3665,7 +3665,7 @@ data Expected[T](result: T? = None, error: BaseException? = None):
         if not self and isinstance(self.error, err_type):
             return self.__class__(handler(self.error))
         return self
-    def expect_error(self, *err_types: BaseException) -> Expected[T]:
+    def expect_error(self, *err_types: type[BaseException]) -> Expected[T]:
         """Raise any errors that do not match the given error types."""
         if not self and not isinstance(self.error, err_types):
             raise self.error
@@ -4743,7 +4743,7 @@ _Deprecated: `parallel_map` is available as a deprecated alias for `process_map`
 
 ##### **process\_map\.multiple\_sequential\_calls**(_max\_workers_=`None`)
 
-If multiple sequential calls to `process_map` need to be made, it is highly recommended that they be done inside of a `with process_map.multiple_sequential_calls():` block, which will cause the different calls to use the same process pool and result in `process_map` immediately returning a list rather than a `process_map` object. If multiple sequential calls are necessary and the laziness of process_map is required, then the `process_map` objects should be constructed before the `multiple_sequential_calls` block and then only iterated over once inside the block.
+If multiple sequential calls to `process_map` need to be made, it is highly recommended that they be done inside of a `with process_map.multiple_sequential_calls():` block, which will cause the different calls to use the same process pool and result in `process_map` immediately returning a tuple rather than a `process_map` object (unless `stream=True` is passed). If multiple sequential calls are necessary and the laziness of process_map is required, then the `process_map` objects should be constructed before the `multiple_sequential_calls` block and then only iterated over once inside the block.
 
 `process_map.multiple_sequential_calls` also supports a  _max\_workers_ argument to set the number of processes. If `max_workers=None`, Coconut will pick a suitable _max\_workers_, including reusing worker pools from higher up in the call stack.
 

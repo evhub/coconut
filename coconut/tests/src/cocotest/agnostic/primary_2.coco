@@ -83,8 +83,8 @@ def primary_test_2() -> bool:
     assert cycle((_ for _ in range(2)), 2) |> list == [0, 1, 0, 1]
     assert cycle(range(3)).count(0) == float("inf")
     assert cycle(range(3), 3).index(2) == 2
-    assert zip(range(2), range(2))[0] == (0, 0) == enumerate(range(2))[0]  # type: ignore
-    assert reversed([0,1,3])[0] == 3  # type: ignore
+    assert zip(range(2), range(2))[0] == (0, 0) == enumerate(range(2))[0]
+    assert reversed([0,1,3])[0] == 3
     assert cycle((), 0) |> list == []
     assert "1234" |> windowsof$(2) |> map$("".join) |> list == ["12", "23", "34"]
     assert len(windowsof(2, "1234")) == 3
@@ -119,9 +119,9 @@ def primary_test_2() -> bool:
     assert groupsof(2, "123", fillvalue="") |> len == 2
     assert groupsof(2, "123", fillvalue="") |> repr == "groupsof(2, '123', fillvalue='')"
     assert flip((,), 0)(1, 2) == (1, 2)
-    assert flatten([1, 2, [3, 4]], 0) == [1, 2, [3, 4]]  # type: ignore
-    assert flatten([1, 2, [3, 4]], None) |> list == [1, 2, 3, 4]  # type: ignore
-    assert flatten([1, 2, [3, 4]], None) |> reversed |> list == [4, 3, 2, 1]  # type: ignore
+    assert flatten([1, 2, [3, 4]], 0) == [1, 2, [3, 4]]
+    assert flatten([1, 2, [3, 4]], None) |> list == [1, 2, 3, 4]
+    assert flatten([1, 2, [3, 4]], None) |> reversed |> list == [4, 3, 2, 1]
     assert_raises(-> flatten([1, 2, [3, 4]]) |> list, TypeError)  # type: ignore
     assert flatten([[[1,2]], [[3], [4]]], 2) |> list == [1, 2, 3, 4]
     assert flatten([[[1,2]], [[3], [4]]], 2) |> reversed |> list == [4, 3, 2, 1]
@@ -193,10 +193,10 @@ def primary_test_2() -> bool:
     optx <**?|= {"a": 1, "b": 2}
     assert optx == {"a": 1, "b": 2}
 
-    assert `const None ..?> (.+1)` is None is (..?>)(const None, (.+1))()  # type: ignore
-    assert `(.+1) <?.. const None` is None is (<?..)((.+1), const None)()  # type: ignore
-    assert `const 5 ..?> (.+1)` == 6 == (..?>)(const 5, (.+1))()  # type: ignore
-    assert `(.+1) <?.. const 5` == 6 == (<?..)((.+1), const 5)()  # type: ignore
+    assert `const None ..?> (.+1)` is None is (..?>)(const None, (.+1))()
+    assert `(.+1) <?.. const None` is None is (<?..)((.+1), const None)()
+    assert `const 5 ..?> (.+1)` == 6 == (..?>)(const 5, (.+1))()
+    assert `(.+1) <?.. const 5` == 6 == (<?..)((.+1), const 5)()
     assert `const None ..?*> (+)` is None is (..?*>)(const None, (+))()  # type: ignore
     assert `(+) <*?.. const None` is None is (<*?..)((+), const None)()  # type: ignore
     assert `const((5, 2)) ..?*> (+)` == 7 == (..?*>)(const((5, 2)), (+))()  # type: ignore
@@ -310,7 +310,7 @@ def primary_test_2() -> bool:
     assert {"a":0, "b":1}$[0] == "a"
     assert (|0, NotImplemented, 2|)$[1] is NotImplemented
     assert m{1, 1, 2} |> fmap$(.+1) == m{2, 2, 3}
-    assert (+) ..> ((*) ..> (/)) == (+) ..> (*) ..> (/) == ((+) ..> (*)) ..> (/)  # type: ignore
+    assert (+) ..> ((*) ..> (/)) == (+) ..> (*) ..> (/) == ((+) ..> (*)) ..> (/)
     def f(x, y=1) = x, y  # type: ignore
     f.is_f = True  # type: ignore
     assert (f ..*> (+)).is_f  # type: ignore
@@ -398,13 +398,13 @@ def primary_test_2() -> bool:
         (name="b", val="567"),
     ]
     for mapreducer in (
-        mapreduce.using_processes$(lift(,)(.name, .val)),  # type: ignore
-        mapreduce.using_threads$(lift(,)(.name, .val)),  # type: ignore
-        collectby.using_processes$(.name, value_func=.val),  # type: ignore
-        collectby.using_threads$(.name, value_func=.val),  # type: ignore
+        mapreduce.using_processes$(lift(,)(.name, .val)),
+        mapreduce.using_threads$(lift(,)(.name, .val)),
+        collectby.using_processes$(.name, value_func=.val),
+        collectby.using_threads$(.name, value_func=.val),
     ):
         assert some_data |> mapreducer == {"a": ["123"], "b": ["567"]}
-    assert_raises(-> collectby(.[0], [(0, 1), (0, 2)], reduce_func=False), ValueError)  # type: ignore
+    assert_raises(-> collectby(.[0], [(0, 1), (0, 2)], reduce_func=False), ValueError)
     assert ident$(x=?).__name__ == "ident" == ident$(1).__name__  # type: ignore
     assert collectby(.[0], [(0, 1), (0, 2)], value_func=.[1], reduce_func=(+), reduce_func_init=1) == {0: 4}
     assert ident$(1, ?) |> type == ident$(1) |> type
@@ -462,7 +462,7 @@ def primary_test_2() -> bool:
     assert maybe_dup(1, 2) == (1, 2) == maybe_dup(x=1, y=2)
     assert min((), default=10) == 10 == max((), default=10)
     assert py_min(3, 4) == 3 == py_max(2, 3)
-    assert len(zip()) == 0 == len(zip_longest())  # type: ignore
+    assert len(zip()) == 0 == len(zip_longest())
     assert CoconutWarning `issubclass` Warning
     x = y = 2
     assert f"{x + y = }" == "x + y = 4"
@@ -493,9 +493,9 @@ def primary_test_2() -> bool:
         assert False
     assert x == 12
     assert (x=1).__match_args__ == ('x',)  # type: ignore
-    assert reduce(function=(+), iterable=range(5), initial=-1) == 9  # type: ignore
-    assert takewhile(predicate=ident, iterable=[1, 2, 1, 0, 1]) |> list == [1, 2, 1]  # type: ignore
-    assert dropwhile(predicate=(not), iterable=range(5)) |> list == [1, 2, 3, 4]  # type: ignore
+    assert reduce(function=(+), iterable=range(5), initial=-1) == 9
+    assert takewhile(predicate=ident, iterable=[1, 2, 1, 0, 1]) |> list == [1, 2, 1]
+    assert dropwhile(predicate=(not), iterable=range(5)) |> list == [1, 2, 3, 4]
     assert type(1) == int
     assert type(b"") == bytes
     @memoize(typed=True)
@@ -506,7 +506,7 @@ def primary_test_2() -> bool:
             return (x, typed_memoized_func(1))
     assert typed_memoized_func(1.0) == (1.0, None)
     assert typed_memoized_func(1.0)[0] |> type == float
-    @memoize(memoize.RECURSIVE, typed=True)  # type: ignore
+    @memoize(memoize.RECURSIVE, typed=True)
     def recursive_typed_memoized_func(x=None):
         if x is None:
             return (recursive_typed_memoized_func(1), recursive_typed_memoized_func(1.0))
@@ -515,7 +515,7 @@ def primary_test_2() -> bool:
     assert -1 ?↦ abs == 1
     assert None ?↦ abs is None
 
-    with process_map.multiple_sequential_calls():  # type: ignore
+    with process_map.multiple_sequential_calls():
         assert map((+), range(3), range(4)$[:-1], strict=True) |> list == [0, 2, 4] == process_map((+), range(3), range(4)$[:-1], strict=True) |> list  # type: ignore
         assert range(3) |> map$((.+1), strict=True) |> list == [1, 2, 3] == range(3) |> process_map$((.+1), strict=True) |> list  # type: ignore
         my_match_err = MatchError("my match error", 123)
@@ -1007,8 +1007,8 @@ def primary_test_2() -> bool:
     assert getattr(OverrideChild.meth, "__override__", False)
 
     # nested multiple_sequential_calls with a new max_workers
-    with thread_map.multiple_sequential_calls():  # type: ignore
-        with thread_map.multiple_sequential_calls(max_workers=2):  # type: ignore
+    with thread_map.multiple_sequential_calls():
+        with thread_map.multiple_sequential_calls(max_workers=2):
             assert thread_map(abs, [-1, -2]) |> list == [1, 2]
 
     # bare returns in generators (which used to compile to raise StopIteration() on old targets)
