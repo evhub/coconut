@@ -48,6 +48,7 @@ cli_version_str = main_sig + cli_version
 # MAIN:
 # -----------------------------------------------------------------------------------------------------------------------
 
+
 def warning_regex(regex):
     """Compile a --silence-warnings regex."""
     try:

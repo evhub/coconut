@@ -1,12 +1,14 @@
 {
-    "coconut": {
-        "command": "coconut",
-        "args": ["--lsp"],
-        "extensionToLanguage": {
-            ".coco": "coconut",
-            ".coc": "coconut",
-            ".coconut": "coconut"
-        },
-        "startupTimeout": 30000
-    }
+  "coconut": {
+    "args": [
+      "--lsp"
+    ],
+    "command": "coconut",
+    "extensionToLanguage": {
+      ".coc": "coconut",
+      ".coco": "coconut",
+      ".coconut": "coconut"
+    },
+    "startupTimeout": 30000
+  }
 }

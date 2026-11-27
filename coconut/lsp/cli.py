@@ -27,7 +27,6 @@ import os
 import sys
 
 
-
 USAGE = """\
 examples:
     coconut --lsp                                # run the language server over stdio
@@ -54,7 +53,7 @@ def read_file(path):
 
 
 def collect_files(paths):
-    from coconut.lsp.symbols import COCONUT_EXTENSIONS, iter_coconut_files
+    from coconut.lsp.symbols import iter_coconut_files
     files = []
     for path in paths:
         if os.path.isdir(path):
@@ -266,7 +265,7 @@ def main(argv=None):
             code = good.compiled
             if args.no_line_comments:
                 from coconut.lsp.sourcemap import strip_line_comment
-                code = "\n".join(strip_line_comment(l) for l in code.splitlines()) + "\n"
+                code = "\n".join(strip_line_comment(line) for line in code.splitlines()) + "\n"
             sys.stdout.write(code)
             return 0
         return position_command(engine, command, args)
@@ -338,7 +337,7 @@ def position_command(engine, command, args):
     if command in ("definition", "references"):
         locs = analyzer.definitions(line, col) if command == "definition" else analyzer.references(line, col)
         if args.json:
-            print(json.dumps([loc_to_json(l) for l in locs], indent=2))
+            print(json.dumps([loc_to_json(loc) for loc in locs], indent=2))
         else:
             for loc in locs:
                 print(format_loc(loc))

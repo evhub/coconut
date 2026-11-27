@@ -270,7 +270,7 @@ class McpServer(object):
         lines = good.compiled_lines
         if not args.get("include_header"):
             lines = lines[good.body_start:]
-        return "\n".join(strip_line_comment(l) for l in lines).strip("\n") + "\n"
+        return "\n".join(strip_line_comment(ln) for ln in lines).strip("\n") + "\n"
 
     def tool_docs(self, args):
         query = (args.get("query") or "").strip()

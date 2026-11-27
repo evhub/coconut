@@ -1,18 +1,27 @@
 {
-    "name": "coconut",
-    "description": "Coconut language support: the Coconut language server for .coco files (diagnostics, definitions, references, hover, symbols), MCP tools to check and compile Coconut and look up its documentation, and a skill for writing idiomatic Coconut. Requires Coconut with the language server extra: pip install \"coconut[lsp]\".",
-    "author": {
-        "name": "evhub",
-        "url": "https://github.com/evhub"
-    },
-    "homepage": "https://coconut.readthedocs.io/en/latest/DOCS.html#ai-coding-assistant-support",
-    "repository": "https://github.com/evhub/coconut",
-    "license": "Apache-2.0",
-    "keywords": ["coconut", "python", "functional", "lsp"],
-    "mcpServers": {
-        "coconut": {
-            "command": "python3",
-            "args": ["-m", "coconut.lsp", "mcp"]
-        }
+  "author": {
+    "name": "evhub",
+    "url": "https://github.com/evhub"
+  },
+  "description": "Coconut language support: the Coconut language server for .coco files (diagnostics, definitions, references, hover, symbols), MCP tools to check and compile Coconut and look up its documentation, and a skill for writing idiomatic Coconut. Requires Coconut with the language server extra: pip install \"coconut[lsp]\".",
+  "homepage": "https://coconut.readthedocs.io/en/latest/DOCS.html#ai-coding-assistant-support",
+  "keywords": [
+    "coconut",
+    "python",
+    "functional",
+    "lsp"
+  ],
+  "license": "Apache-2.0",
+  "mcpServers": {
+    "coconut": {
+      "args": [
+        "-m",
+        "coconut.lsp",
+        "mcp"
+      ],
+      "command": "python3"
     }
+  },
+  "name": "coconut",
+  "repository": "https://github.com/evhub/coconut"
 }

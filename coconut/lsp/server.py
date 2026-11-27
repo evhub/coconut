@@ -40,7 +40,7 @@ from coconut.lsp.protocol import (
     stdio_connection,
 )
 from coconut.lsp.sourcemap import CompiledDocument, word_at
-from coconut.lsp.symbols import WorkspaceIndex, document_symbols, flatten_symbols, KIND_FUNCTION
+from coconut.lsp.symbols import WorkspaceIndex, document_symbols, flatten_symbols
 from coconut.lsp.overlay import Overlay
 from coconut.lsp.uris import path_to_uri, uri_to_path
 from coconut.lsp.worker import CompileTimeout, WorkerClient
@@ -819,7 +819,7 @@ def apply_edit(text, rng, new_text):
 
     def offset(pos):
         line = min(pos["line"], len(lines))
-        off = sum(len(l) + 1 for l in lines[:line])
+        off = sum(len(ln) + 1 for ln in lines[:line])
         if line < len(lines):
             off += utf16_to_index(lines[line], pos["character"])
         return min(off, len(text))

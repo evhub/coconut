@@ -30,7 +30,6 @@ import sys
 
 from coconut.lsp import docs
 from coconut.lsp.sourcemap import (
-    CompiledDocument,
     LineDiff,
     leading_whitespace,
     parse_line_map,
@@ -54,6 +53,8 @@ KIND_KEYWORD = 14
 
 # a dotted expression immediately before the cursor, e.g. "os.path.jo" or "self."
 DOTTED_EXPR_RE = re.compile(r"((?:[A-Za-z_]\w*\s*\.\s*)*[A-Za-z_]?\w*)$")
+
+
 def _matching_open(text, close_idx):
     """Index of the bracket opening the one at close_idx (scanning backwards), or None."""
     pairs = {")": "(", "]": "[", "}": "{"}
@@ -495,14 +496,14 @@ class Analyzer(object):
                     shown.append(following.rstrip())
         else:
             pattern = re.compile(r"^\s*(?:(?:async|match|addpattern|case|copyclosure|yield)\s+)*def\s+" + re.escape(name) + r"\b")
-            shown = [l.rstrip() for l in lines if pattern.match(l)]
+            shown = [ln.rstrip() for ln in lines if pattern.match(ln)]
         if not shown:
             return None
         if len(shown) > 12:
             shown = shown[:12] + ["..."]
         text = "\n".join(shown)
-        dedent = min(len(l) - len(l.lstrip()) for l in shown if l.strip())
-        text = "\n".join(l[dedent:] for l in shown)
+        dedent = min(len(ln) - len(ln.lstrip()) for ln in shown if ln.strip())
+        text = "\n".join(ln[dedent:] for ln in shown)
         doc = ""
         try:
             doc = escape_docstring(n.docstring(raw=True).strip())

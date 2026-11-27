@@ -57,7 +57,7 @@ EXTRA_KEYS = {
     "Infix Functions": ["`"],
     "Custom Operators": ["operator"],
     "None Coalescing": ["??", "??="],
-    "Other None-Aware Operators": ["?.", "?[", "?(" ],
+    "Other None-Aware Operators": ["?.", "?[", "?("],
     "Protocol Intersection": ["&:"],
     "Statement Lambdas": ["def ="],
     "Implicit Partial Application": ["."],
@@ -213,7 +213,7 @@ def main(argv):
     entries = generate(read_source(source))
     os.makedirs(os.path.dirname(OUT_PATH), exist_ok=True)
     with open(OUT_PATH, "w", encoding="utf-8") as f:
-        json.dump(entries, f, indent=1, sort_keys=True, ensure_ascii=False)
+        json.dump(entries, f, indent=2, sort_keys=True)  # the format the pretty-format-json pre-commit hook uses
         f.write("\n")
     print("wrote {n} entries to {path}".format(n=len(entries), path=OUT_PATH))
 
