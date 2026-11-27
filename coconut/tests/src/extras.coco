@@ -519,7 +519,22 @@ line 6''')
     abc.ABCMeta
     """)
 
+    # forward references shouldn't hide actual errors later in the file
+    assert_raises(-> parse(d"""
+    def f() = Later()
+    x = 1 +* 2
+    class Later: pass
+    """), CoconutParseError, not_Exc=CoconutStyleError)
+
     # imported name shadowing tests
+    # (an import inside a function doesn't shadow the function's own name)
+    assert parse(d"""
+    def f() = Later()
+    def simplify():
+        from os import path as simplify
+        return simplify
+    class Later: pass
+    """)
     assert_raises(-> parse(d"""
     import abc
     abc: int = 1

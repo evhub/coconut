@@ -5553,12 +5553,17 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
         """Put all the given objects on their respective parsing context stacks."""
         for name, obj in name_obj_dict.items():
             self.parsing_context[name].append(obj)
+        succeeded = False
         try:
             yield
+            succeeded = True
         finally:
             for name in name_obj_dict:
                 popped_ctx = self.parsing_context[name].pop()
-                if "callbacks" in popped_ctx:
+                # scope callbacks are deferred checks (e.g. for undefined names), which
+                #  we skip if an error is propagating, since names defined after the
+                #  error was hit would show up as undefined, hiding the actual error
+                if "callbacks" in popped_ctx and (succeeded or name != "scope"):
                     for callback in popped_ctx["callbacks"]:
                         callback()
 
@@ -6013,10 +6018,14 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
                 )
                 if err is not None:
                     return err
-            # Only check for shadowing if there are imports on different lines;
-            # if all imports are on the same line as the current loc, this is
-            # the import statement itself, not an assignment shadowing an import
-            if any(not same_line(original, loc, imp_loc) for imp_loc in self.name_info[name]["imported"]):
+            # Only check for shadowing by imports on earlier lines; if all imports
+            # are on the same line as the current loc, this is the import statement
+            # itself, and later imports (e.g. 'def f(): from x import y as f') can't
+            # be shadowed by this assignment
+            if any(
+                imp_loc < loc and not same_line(original, loc, imp_loc)
+                for imp_loc in self.name_info[name]["imported"]
+            ):
                 err = self.strict_err_or_warn(
                     "assignment shadows imported '{name}' (use explicit '\\{name}' syntax when purposefully redefining imported names)".format(name=name),
                     original,
