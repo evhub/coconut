@@ -45,6 +45,13 @@ from coconut.lsp.uris import path_to_uri, uri_to_path  # noqa: E402
 
 SERVER_CMD = [sys.executable, "-m", "coconut.lsp"]
 
+try:
+    import pyflakes  # noqa: F401
+except ImportError:
+    HAS_PYFLAKES = False
+else:
+    HAS_PYFLAKES = True
+
 
 class LspClient(object):
 
@@ -266,7 +273,8 @@ def test_lint_diagnostics(client, project):
     messages = [d["message"] for d in diags]
     assert any("sys" in m and "unused" in m for m in messages)
     assert any("undefined_name" in m for m in messages)
-    assert any("unused_local" in m for m in messages)
+    if HAS_PYFLAKES:  # (pyflakes comes with coconut[lsp] on Python 3.9+; the checks above are Coconut's own)
+        assert any("unused_local" in m for m in messages)
     undefined = [d for d in diags if "undefined_name" in d["message"]][0]
     assert undefined["range"]["start"] == {"line": 1, "character": 15}
     # code actions: remove the unused import / suppress with NOQA
