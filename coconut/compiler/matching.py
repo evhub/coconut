@@ -46,7 +46,10 @@ from coconut.constants import (
     match_to_args_var,
     match_to_kwargs_var,
 )
-from coconut.util import noop_ctx
+from coconut.util import (
+    noop_ctx,
+    clean,
+)
 from coconut.compiler.grammar import split_args_list
 from coconut.compiler.util import (
     paren_join,
@@ -54,6 +57,7 @@ from coconut.compiler.util import (
     add_int_and_strs,
     ordered,
     tuple_str_of,
+    getline,
 )
 
 # -----------------------------------------------------------------------------------------------------------------------
@@ -133,12 +137,14 @@ class Matcher(object):
         "child_groups",
         "guards",
         "parent_names",
+        "old_rule_flags",
     )
     matchers = {
         "dict": lambda self: self.match_dict,
         "sequence": lambda self: self.match_sequence,
         "implicit_tuple": lambda self: self.match_implicit_tuple,
         "lazy": lambda self: self.match_lazy,
+        "lazy_star": lambda self: self.match_lazy_star,
         "iter": lambda self: self.match_iter,
         "string_sequence": lambda self: self.match_string_sequence,
         "star": lambda self: self.match_star,
@@ -183,6 +189,7 @@ class Matcher(object):
         self.names = OrderedDict()  # ensures deterministic ordering of name setting code
         self.guards = []
         self.child_groups = []
+        self.old_rule_flags = []
         self.increment()
 
     def make_child(self):
@@ -272,6 +279,39 @@ class Matcher(object):
     def add_guard(self, cond):
         """Adds cond as a guard."""
         self.guards.append(cond)
+
+    def add_old_rule_check(self, cond):
+        """Record that the checks just added only pass under Coconut's old,
+        deprecated sequence matching rules (not Python's PEP 634 rules) when cond is true.
+        If the overall match then succeeds, a deprecation warning is issued at runtime."""
+        flag_var = self.get_temp_var()
+        self.add_def(flag_var + " = " + cond)
+        self.old_rule_flags.append(flag_var)
+
+    def iter_children(self):
+        """Iterate over all child matchers."""
+        for children in self.child_groups:
+            if isinstance(children[0], str):
+                _, child = children
+                yield child
+            else:
+                for child in children:
+                    yield child
+
+    def uses_old_rules(self):
+        """Whether this matcher or any of its children might match using Coconut's old sequence matching rules."""
+        return bool(self.old_rule_flags) or any(child.uses_old_rules() for child in self.iter_children())
+
+    def old_rules_warning(self):
+        """Get code to issue a deprecation warning for a match that only succeeded due to Coconut's old sequence matching rules."""
+        base_line = clean(self.comp.reformat(getline(self.loc, self.original), ignore_errors=True)).strip()
+        message = (
+            "found deprecated non-Python pattern-matching behavior in '{line}':"
+            " a string was matched by a sequence pattern or a non-sequence iterable was matched by a star or tuple pattern,"
+            " which will no longer match in Coconut v4 for consistency with Python pattern-matching"
+            " (use a lazy list pattern like '(| x, *xs |)' to match any iterable or a string pattern like 'a + \",\" + b' to match strings)"
+        ).format(line=base_line)
+        return "_coconut.warnings.warn(" + self.comp.wrap_str_of(message) + ", _coconut_CoconutWarning)"
 
     def set_position(self, position):
         """Sets the if-statement position."""
@@ -917,6 +957,8 @@ if {assign_to} is _coconut_sentinel:
 
         # abc check
         self.add_check("_coconut.isinstance(" + item + ", _coconut.abc.Sequence)")
+        # TODO: in Coconut v4, switch to PEP 634 rules and don't match strings here
+        self.add_old_rule_check("_coconut.isinstance(" + item + ", _coconut.str_like_types)")
 
         # extract groups
         seq_type, seq_groups = self.proc_sequence_match(tokens)
@@ -944,6 +986,8 @@ if {assign_to} is _coconut_sentinel:
 
         # abc check
         self.add_check("_coconut.isinstance(" + item + ", _coconut.abc.Iterable)")
+        # TODO: in Coconut v4, switch to PEP 634 rules and only match non-string sequences here
+        self.add_old_rule_check("not _coconut.isinstance(" + item + ", _coconut.abc.Sequence) or _coconut.isinstance(" + item + ", _coconut.str_like_types)")
 
         # match sequence
         temp_item_var = self.get_temp_var()
@@ -957,7 +1001,22 @@ if {assign_to} is _coconut_sentinel:
 
         # abc check
         self.add_check("_coconut.isinstance(" + item + ", _coconut.abc.Iterable)")
+        # TODO: in Coconut v4, switch to PEP 634 rules and only match non-string sequences here
+        self.add_old_rule_check("not _coconut.isinstance(" + item + ", _coconut.abc.Sequence) or _coconut.isinstance(" + item + ", _coconut.str_like_types)")
 
+        self.handle_star_sequence(tokens, item)
+
+    def match_lazy_star(self, tokens, item):
+        """Matches starred lazy list patterns."""
+        internal_assert(len(tokens) >= 1, "invalid lazy star match tokens", tokens)
+
+        # abc check
+        self.add_check("_coconut.isinstance(" + item + ", _coconut.abc.Iterable)")
+
+        self.handle_star_sequence(tokens, item)
+
+    def handle_star_sequence(self, tokens, item):
+        """Match the contents of a starred pattern against any iterable."""
         # extract groups
         _, seq_groups = self.proc_sequence_match(tokens)
 
@@ -1439,9 +1498,14 @@ except _coconut.Exception as _coconut_view_func_exc:
                 return get_handler(self)(tokens, item)
         raise CoconutInternalException("invalid pattern-matching tokens", tokens)
 
-    def out(self):
-        """Return pattern-matching code assuming check_var starts False."""
+    def out(self, old_rules_flag=None):
+        """Return pattern-matching code assuming check_var starts False.
+
+        If old_rules_flag is passed, this matcher is a child matcher, and old_rules_flag will be set to True
+        if this matcher succeeds using Coconut's old sequence matching rules. Otherwise, this matcher
+        is the top-level matcher and will issue a deprecation warning if it succeeds using those rules."""
         out = []
+        old_rule_flags = self.old_rule_flags[:]
 
         # set match_set_name_vars to sentinels
         for name in self.names:
@@ -1464,6 +1528,7 @@ except _coconut.Exception as _coconut_view_func_exc:
             # handle parameterized child groups
             if isinstance(children[0], str):
                 parameterization, child = children
+                child_flag = self.init_child_old_rules_flag(child, out, old_rule_flags)
                 out.append(
                     handle_indentation(
                         """
@@ -1478,12 +1543,13 @@ if {check_var}:
                     ).format(
                         check_var=self.check_var,
                         parameterization=parameterization,
-                        child_checks=child.out().rstrip(),
+                        child_checks=child.out(child_flag).rstrip(),
                     )
                 )
 
             # handle normal child groups
             else:
+                child_flags = [self.init_child_old_rules_flag(child, out, old_rule_flags) for child in children]
                 children_checks = "".join(
                     handle_indentation(
                         """
@@ -1493,8 +1559,8 @@ if not {check_var}:
                         add_newline=True,
                     ).format(
                         check_var=self.check_var,
-                        child_out=child.out(),
-                    ) for child in children
+                        child_out=child.out(child_flag),
+                    ) for child, child_flag in zip(children, child_flags)
                 )
                 out.append(
                     handle_indentation(
@@ -1553,7 +1619,36 @@ if {check_var} and not ({guards}):
                 )
             )
 
+        # handle use of old sequence matching rules
+        if old_rule_flags:
+            out.append(
+                handle_indentation(
+                    """
+if {check_var} and ({old_rule_flags}):
+    {on_old_rules}
+                    """,
+                    add_newline=True,
+                ).format(
+                    check_var=self.check_var,
+                    old_rule_flags=" or ".join(old_rule_flags),
+                    on_old_rules=(
+                        self.old_rules_warning() if old_rules_flag is None
+                        else old_rules_flag + " = True"
+                    ),
+                )
+            )
+
         return "".join(out)
+
+    def init_child_old_rules_flag(self, child, out, old_rule_flags):
+        """If child might use old sequence matching rules, get a flag for it to set,
+        initialize that flag, and register it in old_rule_flags."""
+        if not child.uses_old_rules():
+            return None
+        child_flag = self.get_temp_var()
+        out.append(child_flag + " = False\n")
+        old_rule_flags.append(child_flag)
+        return child_flag
 
     def build(self, stmts=None, set_check_var=True, invert=False):
         """Construct code for performing the match then executing stmts."""

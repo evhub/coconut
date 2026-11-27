@@ -1280,13 +1280,13 @@ base_pattern ::= (
     | "(" patterns ")"               # sequences can be in tuple form
     | "[" patterns "]"               #  or in list form
     | "(|" patterns "|)"             # lazy lists
-    | ("(" | "[")                    # star splits
+    | ("(" | "[" | "(|")             # star splits
         [patterns ","]
         "*" pattern
         ["," patterns]
         ["*" pattern
         ["," patterns]]
-      (")" | "]")
+      (")" | "]" | "|)")
     | [(                             # sequence splits
         "(" patterns ")"
         | "[" patterns "]"
@@ -1345,8 +1345,8 @@ base_pattern ::= (
   - Frozensets (`f{<constants>}`): will match a `frozenset` (`frozenset`) that contains the given `<constants>`. May use either normal or fixed-length syntax.
   - Multisets (`m{<constants>}`): will match a [`multiset`](#multiset) (`collections.Counter`) that contains at least the given `<constants>`. May use either normal or fixed-length syntax.
 - Sequence Destructuring:
-  - Lists (`[<patterns>]`), Tuples (`(<patterns>)`): will only match a sequence (`collections.abc.Sequence`) of the same length, and will check the contents against `<patterns>` (Coconut automatically registers `numpy` arrays and `collections.deque` objects as sequences).
-  - Lazy lists (`(|<patterns>|)`): same as list or tuple matching, but checks for an Iterable (`collections.abc.Iterable`) instead of a Sequence.
+  - Lists (`[<patterns>]`), Tuples (`(<patterns>)`): will only match a sequence (`collections.abc.Sequence`) of the same length, and will check the contents against `<patterns>` (Coconut automatically registers `numpy` arrays and `collections.deque` objects as sequences). As in Python, strings (`str`, `bytes`, `bytearray`) are not intended to be matched by sequence patterns ([currently deprecated](#deprecated-sequence-matching-behavior) rather than disallowed).
+  - Lazy lists (`(|<patterns>|)`): same as list or tuple matching, but checks for an Iterable (`collections.abc.Iterable`) instead of a Sequence, so it will also match strings, sets, iterators, and other iterables. Lazy lists also support all the star splits below (e.g. `(|<patterns>, *<var>|)`), which bind the starred variables to `list`s.
   - Head-Tail Splits (`<list/tuple> + <capture>` or `(<patterns>, *<var>)`): will match the beginning of the sequence against the `<list/tuple>`/`<patterns>`, then bind the rest to `<capture>`, and make it the type of the construct used. `<capture>` can be a variable name or a parenthesized match pattern (e.g. `(int -> x)`).
   - Init-Last Splits (`<capture> + <list/tuple>` or `(*<var>, <patterns>)`): exactly the same as head-tail splits, but on the end instead of the beginning of the sequence.
   - Head-Last Splits (`<list/tuple> + <capture> + <list/tuple>` or `(<patterns>, *<var>, <patterns>)`): the combination of a head-tail and an init-last split.
@@ -1356,6 +1356,18 @@ base_pattern ::= (
   - Complex String Matching (`<string> + <capture> + <string> + <var> + <string>`): string matching supports the same destructuring options as above. In unambiguous positions (single capture), `<capture>` can be a variable name or a parenthesized match pattern (e.g. `(int -> n) + "px"`).
 
 _Note: Like [iterator slicing](#iterator-slicing), iterator and lazy list matching make no guarantee that the original iterator matched against be preserved (to preserve the iterator, use Coconut's [`reiterable`](#reiterable) built-in)._
+
+###### Deprecated Sequence Matching Behavior
+
+For consistency with [Python's pattern-matching](https://peps.python.org/pep-0634/#sequence-patterns), sequence patterns are intended to only match non-string sequences. For backwards compatibility, however, Coconut currently still accepts some matches that Python would reject:
+- list and tuple patterns (`[<patterns>]`, `(<patterns>)`, and `+` sequence splits) also match strings (`str`, `bytes`, and `bytearray`), and
+- star splits (`[<patterns>, *<var>]`, `(<patterns>, *<var>)`) and unparenthesized tuple patterns (`match a, b in ...`, `case a, *b:`) match any iterable, not just sequences.
+
+Whenever a match succeeds only because of this behavior, Coconut will issue a [`CoconutWarning`](#coconutwarning) naming the pattern. In Coconut v4, these matches will instead fail, as they do in Python. To keep the current behavior, rewrite such patterns as:
+- **any iterable:** lazy list patterns, such as `(| x, y |)` or `(| x, *xs |)`, or iterable splits, such as `[x] :: xs` (which consume only as much of the iterable as they need);
+- **strings:** string patterns, such as `"prefix" + rest` or `a + "," + b`, or a view pattern that converts the string first, such as `(tuple) -> (a, b)`.
+
+To find every such match in your code, turn these warnings into errors with `warnings.simplefilter("error", CoconutWarning)`. Plain Python unpacking assignment, like `a, *b = "abc"`, is not affected, since [normal assignment takes precedence over destructuring assignment](#destructuring-assignment).
 
 When checking whether or not an object can be matched against in a particular fashion, Coconut makes use of Python's abstract base classes. Therefore, to ensure proper matching for a custom object, it's recommended to register it with the proper abstract base classes.
 

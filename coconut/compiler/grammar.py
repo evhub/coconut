@@ -2184,6 +2184,7 @@ class Grammar(object):
             lbrack.suppress() + matchlist_star + rbrack.suppress()
             | lparen.suppress() + matchlist_star + rparen.suppress()
         )("star")
+        lazy_star_match = (lbanana.suppress() + matchlist_star + rbanana.suppress())("lazy_star")
 
         base_match = Group(
             (negable_atom_item + arrow.suppress() + match)("view")
@@ -2193,6 +2194,7 @@ class Grammar(object):
             | (keyword("in").suppress() + negable_atom_item)("in")
             | iter_match
             | match_lazy("lazy")
+            | lazy_star_match
             | sequence_match
             | star_match
             | (lparen.suppress() + match + rparen.suppress())("paren")

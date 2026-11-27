@@ -859,4 +859,98 @@ def primary_test_2() -> bool:
         assert False
     assert TypedDefaultData(1) == TypedDefaultData(1, "a")
 
+    # deprecated non-PEP-634 sequence matching (#911)
+    import warnings
+    def old_rule_warns(f):
+        """Call f, returning its result and the number of old sequence matching rule warnings it issued."""
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            result = f()
+        num_warns = len([
+            w for w in caught
+            if issubclass(w.category, CoconutWarning) and "deprecated non-Python pattern-matching" in str(w.message)
+        ])
+        return result, num_warns
+    def seq_pat(x):
+        match [a, b] in x:
+            return (a, b)
+        return None
+    def star_pat(x):
+        match a, *b in x:
+            return (a, b)
+        return None
+    def tuple_pat(x):
+        match a, b in x:
+            return (a, b)
+        return None
+    def lazy_star_pat(x):
+        match (| a, *b |) in x:
+            return (a, b)
+        return None
+    def case_pat(x):
+        match x:
+            case (a, b):
+                return ("tuple", a, b)
+            case "abc":
+                return "abc"
+        return None
+    assert old_rule_warns(-> seq_pat([1, 2])) == ((1, 2), 0)
+    assert old_rule_warns(-> seq_pat("ab")) == (("a", "b"), 1)
+    assert old_rule_warns(-> seq_pat(b"ab"))[1] == 1
+    assert old_rule_warns(-> seq_pat(bytearray(b"ab")))[1] == 1
+    assert old_rule_warns(-> seq_pat("abc")) == (None, 0)
+    assert old_rule_warns(-> star_pat((1, 2, 3))) == ((1, [2, 3]), 0)
+    assert old_rule_warns(-> star_pat(range(3))) == ((0, [1, 2]), 0)
+    assert old_rule_warns(-> star_pat(iter((1, 2, 3)))) == ((1, [2, 3]), 1)
+    assert old_rule_warns(-> star_pat("xyz")) == (("x", ["y", "z"]), 1)
+    assert old_rule_warns(-> star_pat({1})) == ((1, []), 1)
+    assert old_rule_warns(-> star_pat(())) == (None, 0)
+    assert old_rule_warns(-> tuple_pat([1, 2])) == ((1, 2), 0)
+    assert old_rule_warns(-> tuple_pat(x for x in (1, 2))) == ((1, 2), 1)
+    assert old_rule_warns(-> lazy_star_pat(iter((1, 2, 3)))) == ((1, [2, 3]), 0)
+    assert old_rule_warns(-> lazy_star_pat("xyz")) == (("x", ["y", "z"]), 0)
+    assert old_rule_warns(-> lazy_star_pat([])) == (None, 0)
+    assert old_rule_warns(-> case_pat("ab")) == (("tuple", "a", "b"), 1)
+    assert old_rule_warns(-> case_pat("abc")) == ("abc", 0)
+    assert old_rule_warns(-> case_pat([1, 2])) == (("tuple", 1, 2), 0)
+    def or_pat(x):
+        match [a, b] | c in x:
+            return c
+        return None
+    assert old_rule_warns(-> or_pat("abc")) == ("abc", 0)
+    def guard_pat(x):
+        match [a, b] in x if a == b:
+            return a
+        return None
+    assert old_rule_warns(-> guard_pat("ab")) == (None, 0)
+    assert old_rule_warns(-> guard_pat("aa")) == ("a", 1)
+    def nested_or_pat(x):
+        match (([a, b] | _) and ([c] | [c, _, _])) | nop_whole in x:
+            return nop_whole
+        return None
+    assert old_rule_warns(-> nested_or_pat("ab")) == ("ab", 0)
+    def warns_as_error(f):
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", CoconutWarning)
+            assert_raises(f, CoconutWarning)
+        return True
+    assert warns_as_error(-> seq_pat("ab"))
+    assert old_rule_warns(-> warns_as_error(-> star_pat(iter((1, 2))))) == (True, 0)
+    (| lsp_a, *lsp_b |) = "xyz"
+    assert lsp_a == "x"
+    assert lsp_b == ["y", "z"]
+    (| *lsp_init, lsp_last |) = (x for x in range(4))
+    assert lsp_init == [0, 1, 2]
+    assert lsp_last == 3
+    match (| 1, *lsp_mid, 4 |) in map(int, "1234"):
+        assert lsp_mid == [2, 3]
+    else:
+        assert False
+    match (| *_, 2, *lsp_rest |) in iter((1, 2, 3)):
+        assert lsp_rest == [3]
+    else:
+        assert False
+    match (| _, *_ |) in iter(()):
+        assert False
+
     return True

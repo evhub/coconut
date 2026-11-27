@@ -165,7 +165,7 @@ def describe(obj):
 ```
 
 Python 3.10 `match`/`case` syntax works on every target version. Other pattern forms:
-- `[x] + xs` / `xs + [x]` (head/tail and init/last splits), `"prefix_" + rest` (string splits), `(| x, y |)` (lazy lists), `[x] :: rest` (any iterable, lazily)
+- `[x] + xs` / `xs + [x]` (head/tail and init/last splits), `"prefix_" + rest` (string splits), `(| x, y |)` / `(| x, *rest |)` (lazy lists: match any iterable), `[x] :: rest` (any iterable, lazily)
 - `int(n)` / ``n `isinstance` int`` (type checks), `x if x > 0` (guards), `pat as name`, `pat1 | pat2`, `==expr` (equality checks), `(f) -> pat` (view patterns: match `f(item)` against `pat`)
 - data patterns `Point(x=x, **rest)` (`**rest` collects the remaining fields), class patterns `class C(a, b)`
 
@@ -268,7 +268,8 @@ assert double 3 == 6                         # implicit function application: f 
 ## Common pitfalls
 
 - An assignment function's block body must end in an expression: `def f(x) =` followed by a `match` statement or `if` statement is an error. Use a normal `def` with `return` instead.
-- Star and sequence patterns (`[x, *rest]`, `[x, y]`) match any iterable or sequence, including strings, dicts (their keys), and `data` types (which are tuples). Put more specific patterns (data types, dicts, strings) before general sequence patterns in a `match`.
+- Write sequence patterns (`[x, y]`, `[x, *rest]`, `case x, y:`) as if they follow Python's rules: they're meant to match only non-string sequences. Coconut still lets them match strings, and lets star and unparenthesized tuple patterns match any iterable, but that's deprecated: such matches emit a `CoconutWarning` and will fail in Coconut v4. To match any iterable, use lazy list patterns `(| x, *rest |)` or `[x] :: rest`; to match strings, use string patterns like `"prefix_" + rest`.
+- Sequence patterns also match `data` types (which are tuples), so put data type patterns before general sequence patterns in a `match`.
 - Coconut keywords like `data`, `match`, `case`, `where`, and `addpattern` can still be used as names, but writing `match[a, b] = x` is a subscript assignment to a variable named `match`. Since normal assignment takes precedence over destructuring assignment, use patterns that aren't valid Python assignment targets (e.g. `[first] + rest = xs`) when you need destructuring.
 - To use a name that conflicts with a Coconut keyword or would be flagged by `--strict`, escape it with a backslash: `\data`, `\match`.
 - `f x` is a function call, so `print x` prints `x`. Don't put an expression directly after a name unless you mean to call it.
