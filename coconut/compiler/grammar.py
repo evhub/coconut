@@ -1622,12 +1622,15 @@ class Grammar(object):
         type_param_bound_op = lt_colon | colon | le
         type_var_name = stores_loc_item + setname
         type_param_constraint = lparen.suppress() + Group(tokenlist(typedef_test, comma, require_sep=True)) + rparen.suppress()
+        # PEP 696 type parameter defaults (kept with the "=" so the handler can find them)
+        type_param_default = equals + typedef_test
+        type_var_tuple_default = equals + star.suppress() + typedef_test
         type_param_ref = (
             # constraint must come before test
-            (type_var_name + type_param_bound_op + type_param_constraint)("TypeVar constraint")
-            | (type_var_name + Optional(type_param_bound_op + typedef_test))("TypeVar")
-            | (star.suppress() + type_var_name)("TypeVarTuple")
-            | (dubstar.suppress() + type_var_name)("ParamSpec")
+            (type_var_name + type_param_bound_op + type_param_constraint + Optional(type_param_default))("TypeVar constraint")
+            | (type_var_name + Optional(type_param_bound_op + typedef_test) + Optional(type_param_default))("TypeVar")
+            | (star.suppress() + type_var_name + Optional(type_var_tuple_default))("TypeVarTuple")
+            | (dubstar.suppress() + type_var_name + Optional(type_param_default))("ParamSpec")
         )
         type_params = Group(lbrack.suppress() + tokenlist(type_param, comma) + rbrack.suppress())
 

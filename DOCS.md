@@ -3059,6 +3059,8 @@ Coconut fully supports [Python 3.12 PEP 695](https://peps.python.org/pep-0695/) 
 
 That includes type parameters for classes, [`data` types](#data), and [all types of function definition](#function-definition). For different types of function definition, the type parameters always come in brackets right after the function name. Coconut's [enhanced type annotation syntax](#enhanced-type-annotation) is supported for all type parameter bounds.
 
+Coconut also supports [Python 3.13 PEP 696](https://peps.python.org/pep-0696/) type parameter defaults (e.g. `class Box[T = int]`, `class Shape[*Ts = *tuple[int, ...]]`, or `def f[**P = [int]]`), which compile to native syntax on `--target 3.13` and above and to `TypeVar(..., default=...)` (which requires `typing_extensions` to have any effect at runtime) on targets below 3.12. Since Python 3.12 has type parameter syntax but not defaults, type parameter defaults can't be used with `--target 3.12`.
+
 _Warning: until `mypy` adds support for `infer_variance=True` in `TypeVar`, `TypeVar`s created this way will always be invariant._
 
 Additionally, Coconut supports the alternative bounds syntax of `type NewType[T <: bound] = ...` rather than `type NewType[T: bound] = ...`, to make it more clear that it is an upper bound rather than a type. In `--strict` mode, `<:` is required over `:` for all type parameter bounds. _Deprecated: `<=` can also be used as an alternative to `<:`._

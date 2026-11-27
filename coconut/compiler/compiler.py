@@ -5713,31 +5713,39 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
         bound_op = None
         bound_op_type = ""
         stars = ""
+
+        # PEP 696 defaults come last, after an "="
+        toks = list(tokens)
+        default = None
+        if len(toks) >= 2 and isinstance(toks[-2], str) and toks[-2] == "=":
+            default = toks.pop()
+            toks.pop()
+
         if "TypeVar" in tokens:
             TypeVarFunc = "TypeVar"
             bound_op_type = "bound"
-            if len(tokens) == 2:
-                name_loc, name = tokens
+            if len(toks) == 2:
+                name_loc, name = toks
             else:
-                name_loc, name, bound_op, bound = tokens
+                name_loc, name, bound_op, bound = toks
                 # raw_bound is for >=3.12, so it is for_py_typedef, but args is for <3.12, so it isn't
                 raw_bound = self.wrap_typedef(bound, for_py_typedef=True)
                 args = ", bound=" + self.wrap_typedef(bound, for_py_typedef=False)
         elif "TypeVar constraint" in tokens:
             TypeVarFunc = "TypeVar"
             bound_op_type = "constraint"
-            name_loc, name, bound_op, constraints = tokens
+            name_loc, name, bound_op, constraints = toks
             # for_py_typedef is different in the two cases here as above
             # constraints must be parenthesized (a tuple), else they'd be parsed as multiple type params
             raw_bound = "(" + ", ".join(self.wrap_typedef(c, for_py_typedef=True) for c in constraints) + ")"
             args = ", " + ", ".join(self.wrap_typedef(c, for_py_typedef=False) for c in constraints)
         elif "TypeVarTuple" in tokens:
             TypeVarFunc = "TypeVarTuple"
-            name_loc, name = tokens
+            name_loc, name = toks
             stars = "*"
         elif "ParamSpec" in tokens:
             TypeVarFunc = "ParamSpec"
-            name_loc, name = tokens
+            name_loc, name = toks
             stars = "**"
         else:
             raise CoconutInternalException("invalid type_param tokens", tokens)
@@ -5761,11 +5769,22 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
 
         # on >= 3.12, return a type param
         if self.target_info >= (3, 12):
-            return stars + name + (": " + raw_bound if raw_bound is not None else "")
+            raw_default = ""
+            if default is not None:
+                raw_default = " = " + ("*" if TypeVarFunc == "TypeVarTuple" else "") + self.wrap_typedef(default, for_py_typedef=True)
+                # 3.12 has type parameter syntax but not defaults, which we can't mix with the TypeVar backport
+                if self.target_info < (3, 13):
+                    return self.check_py("313", "type parameter default (or use a target below 3.12)", original, loc, [""])
+            return stars + name + (": " + raw_bound if raw_bound is not None else "") + raw_default
 
         # on < 3.12, return a type variable assignment
 
         kwargs = ""
+        if default is not None:
+            default_type = self.wrap_typedef(default, for_py_typedef=False)
+            if TypeVarFunc == "TypeVarTuple":
+                default_type = "_coconut.typing.Unpack[" + default_type + "]"
+            kwargs += ", default=" + default_type
         # TODO: uncomment these lines whenever mypy adds support for infer_variance in TypeVar
         #  (and remove the warning about it in the DOCS)
         # if TypeVarFunc == "TypeVar":
@@ -5788,11 +5807,13 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
                 typevar_info["typevar_locs"][name] = name_loc
                 name = temp_name
 
-        return '{name} = _coconut.typing.{TypeVarFunc}("{name}"{args}{kwargs})\n'.format(
+        return '{name} = _coconut.typing.{TypeVarFunc}("{name}"{args}{kwargs}){type_ignore}\n'.format(
             name=name,
             TypeVarFunc=TypeVarFunc,
             args=args,
             kwargs=kwargs,
+            # typeshed only allows default= on 3.13+ (it's supported at runtime by typing_extensions)
+            type_ignore=self.type_ignore_comment() if default is not None else "",
         )
 
     def get_generic_for_typevars(self):

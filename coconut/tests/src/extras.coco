@@ -809,6 +809,9 @@ line 6''')
     # *Ts in subscripts in types and class bases compiles to Unpack (#662)
     assert "Generic[_coconut.typing.Unpack[Shape]]" in parse("class Array(Generic[*Shape]): pass")
     assert "tuple[int, _coconut.typing.Unpack[Shape]]" in parse("def f(x: tuple[int, *Shape]) -> None: pass")
+    # PEP 696 type parameter defaults are backported with typing_extensions
+    assert 'TypeVar("_coconut_typevar_T_0", default=\'int\')' in parse("class Box[T = int]: pass")
+    assert "default=_coconut.typing.Unpack['tuple[int, ...]']" in parse("class Box[*Ts = *tuple[int, ...]]: pass")
     # a[*b] is a[(*b,)] (PEP 646), except with slices
     assert "a[(*b,)]" in parse("a[*b]")
     assert "a[(x, *y)]" in parse("a[x, *y]")
@@ -823,6 +826,8 @@ line 6''')
     assert "Generic[*Shape]" in parse("class Array(Generic[*Shape]): pass")
 
     setup(line_numbers=False, target="3.12")
+    # 3.12 has type parameter syntax but no PEP 696 defaults
+    assert_raises(-> parse("class Box[T = int]: pass"), CoconutTargetError, err_has="3.13")
     assert parse("type Num = int | float", "lenient").strip() == """
 type Num = int | float
 """.strip()
@@ -833,6 +838,10 @@ type L[T] = list[T]
 def f[T](x):
     return x
 """.strip()
+
+    setup(line_numbers=False, target="3.13")
+    assert "class Box[T = int, *Ts = *tuple[int, ...], **P = [int" in parse("class Box[T = int, *Ts = *tuple[int, ...], **P = [int]]: pass")
+    assert "def f[T: (int, str) = int]" in parse("def f[T: (int, str) = int](x: T) -> T = x")
 
     setup(line_numbers=False, target="3.15")
     # native lazy imports are only allowed at the top level

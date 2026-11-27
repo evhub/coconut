@@ -765,6 +765,26 @@ if not hasattr(typing, "Unpack"):
             indent=1,
             newline=True,
         ),
+        import_typing_313=pycondition(
+            (3, 13),
+            if_lt='''
+try:
+    typing.TypeVar("_coconut_T", default=None)
+except TypeError:
+    def _coconut_drop_type_param_default(func):
+        """Make type parameter defaults (PEP 696) work when the installed typing_extensions doesn't support them."""
+        def without_default(name, *args, **kwargs):
+            kwargs.pop("default", None)
+            return func(name, *args, **kwargs)
+        return without_default
+    for _name in ("TypeVar", "ParamSpec", "TypeVarTuple"):
+        if hasattr(typing, _name):
+            setattr(typing, _name, _coconut_drop_type_param_default(getattr(typing, _name)))
+    _coconut_drop_type_param_default = staticmethod(_coconut_drop_type_param_default)
+            ''',
+            indent=1,
+            newline=True,
+        ),
         import_asyncio=pycondition(
             (3, 4),
             if_lt='''

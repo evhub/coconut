@@ -37,6 +37,16 @@ def py314_test() -> bool:
     assert constrained.__type_params__[0].__constraints__ == (int, str)
     assert len(constrained.__type_params__) == 1
 
+    # PEP 696 type parameter defaults
+    class DefaultBox[T = int, **P = [int]]:
+        pass
+    assert [p.__default__ for p in DefaultBox.__type_params__] == [int, [int]]
+    class DefaultVariadic[*Ts = *tuple[str, ...]]:
+        pass
+    assert DefaultVariadic.__type_params__[0].__default__ == next(iter(tuple[str, ...]))
+    def default_first[T: (int, str) = int](x: T) -> T = x
+    assert default_first.__type_params__[0].__default__ is int
+
     # the = specifier defaults to repr
     tx = "hi"
     assert t"{tx=}".interpolations[0].conversion == "r"
