@@ -176,9 +176,9 @@ ignore_error_lines_with = (
 
 mypy_snip = "a: str = count()[0]"
 
-tutorial_file = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "HELP.md")
+repo_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+tutorial_file = os.path.join(repo_root, "HELP.md")
 tutorial_exceptions = ("TypeError", "MatchError", "ValueError", "AttributeError", "NameError")
-tutorial_skip_prefixes = ("Coconut Interpreter", ".attr", "reduce(f,", "abc = (|", "return ", "range(1, n+1) |> reduce")
 
 
 def tutorial_statements(block):
@@ -205,6 +205,12 @@ def check_tutorial(tutorial):
     Returns a list of failures. Exercise tests (blocks followed by a solution) are rerun after later
     blocks until they pass, since they're meant to be run with the reader's solution."""
     from coconut.api import parse
+    # (use the same examples as the interactive tutorial does)
+    sys.path.insert(0, repo_root)
+    try:
+        from interactive_tutorial import is_example
+    finally:
+        sys.path.pop(0)
     fence = "`" * 3
     blocks = []
     exercise_tests = set()
@@ -245,7 +251,7 @@ def check_tutorial(tutorial):
 
     failures, pending = [], []
     for i, block in enumerate(blocks):
-        if block.startswith((" ", "\t")) or "<body>" in block or "<name>" in block or block.startswith(tutorial_skip_prefixes):
+        if not is_example(block):
             continue
         to_run = [(i, stmt) for stmt in tutorial_statements(block)] + pending
         pending = []
@@ -1391,8 +1397,25 @@ class TestShell(unittest.TestCase):
         def test_tutorial(self):
             # all the examples in the tutorial should work exactly as the tutorial says they do
             with univ_open(tutorial_file, "r") as tutorial:
-                failures = check_tutorial(tutorial.read())
+                tutorial_text = tutorial.read()
+            failures = check_tutorial(tutorial_text)
             assert not failures, failures
+
+            # and the interactive tutorial should let you run all of them
+            try:
+                import markdown_it  # NOQA
+            except ImportError:
+                return
+            sys.path.insert(0, repo_root)
+            try:
+                from interactive_tutorial import make_interactive_tutorial, is_example, pyodide_packages
+            finally:
+                sys.path.pop(0)
+            page = make_interactive_tutorial(tutorial_text, ["pyparsing==2.4.7", "coconut"])
+            num_examples = len([block for block in re.findall(r"```coconut\n(.*?)```", tutorial_text, re.DOTALL) if is_example(block)])
+            assert page.count('<div class="example">') == num_examples, (page.count('<div class="example">'), num_examples)
+            # Pyodide's setuptools depends on Pyodide's pyparsing, which is pyparsing 3
+            assert "setuptools" not in pyodide_packages, pyodide_packages
 
     def test_ai_docs(self):
         # (the guide mentions exception names, so don't check for errors in its text)

@@ -68,8 +68,12 @@ source_suffix = [".rst", ".md"]
 
 exclude_patterns = list(exclude_docs_dirs)
 
-# serve the condensed guide for AI coding assistants at the root of the docs
-html_extra_path = ["coconut/llms.txt"]
+# serve the condensed guide for AI coding assistants and the interactive tutorial at the root of the docs
+from interactive_tutorial import write_interactive_tutorial  # NOQA
+html_extra_path = [
+    "coconut/llms.txt",
+    write_interactive_tutorial("HELP.md", os.path.join("docs_extra", "interactive.html"), VERSION, bool(DEVELOP)),
+]
 
 default_role = "code"
 

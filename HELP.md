@@ -34,6 +34,8 @@ This tutorial is a series of case studies, each of which shows how to use Coconu
 
 Along the way, you'll see sections marked **Your turn**. Those are exercises for you to try on your own before looking at the solution, which you can show by clicking on it.
 
+_Want to run the examples without installing anything? Try the <a href="https://coconut.readthedocs.io/en/master/interactive.html">interactive version of this tutorial</a>, where you can edit and run every example right in your browser._
+
 _Some of this tutorial's exercises were adapted from the interactive Coconut tutorial written by Thomas Dickstein, Nma Mbeledogu, Maya Minier, Anthony Seto, and Parnika Sharma._
 
 ### Installation

@@ -133,6 +133,7 @@ __pypackages__/
 # Coconut
 /coconut/tests/dest/
 /docs/
+/docs_extra/
 pyston/
 pyprover/
 bbopt/
