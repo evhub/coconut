@@ -722,8 +722,29 @@ class StartOfStrGrammar(object):
         return self.grammar.setName(*args, **kwargs)
 
 
+# maps (id(grammar), for_scan, add_unpack) to (grammar, prepped grammar)
+_prepped_grammar_cache = {}
+
+
 def prep_grammar(grammar, for_scan, streamline=False, add_unpack=False):
-    """Prepare a grammar item to be used as the root of a parse."""
+    """Prepare a grammar item to be used as the root of a parse.
+
+    Results are cached, since preparing a grammar (especially with add_unpack,
+    which copies it) is expensive and the same root grammars are used repeatedly."""
+    if streamline:
+        return _prep_grammar(grammar, for_scan, streamline, add_unpack)
+    cache_key = (id(grammar), for_scan, add_unpack)
+    cached = _prepped_grammar_cache.get(cache_key)
+    # check identity in case the original grammar was garbage collected and its id reused
+    if cached is not None and cached[0] is grammar:
+        return cached[1]
+    prepped = _prep_grammar(grammar, for_scan, streamline, add_unpack)
+    _prepped_grammar_cache[cache_key] = (grammar, prepped)
+    return prepped
+
+
+def _prep_grammar(grammar, for_scan, streamline=False, add_unpack=False):
+    """Prepare a grammar item to be used as the root of a parse (uncached)."""
     if isinstance(grammar, StartOfStrGrammar):
         if for_scan:
             grammar = grammar.with_start_marker()
