@@ -145,6 +145,8 @@ class _coconut_baseclass{object}:
         if getitem is None:
             raise _coconut.NotImplementedError
         return getitem(index)
+    def __bool__(self):{COMMENT.lazy_objects_are_always_truthy_even_if_len_is_zero_or_unknown}
+        return True
 class _coconut_base_callable(_coconut_baseclass):
     __slots__ = ()
     def __get__(self, obj, objtype=None):
@@ -1095,7 +1097,7 @@ class zip_longest(zip):
                 if self_len is _coconut.NotImplemented:
                     return self_len
             new_ind = _coconut.slice(index.start + self_len if index.start is not None and index.start < 0 else index.start, index.stop + self_len if index.stop is not None and index.stop < 0 else index.stop, index.step)
-            return self.__class__(*(_coconut_iter_getitem(it, new_ind) for it in self.iters))
+            return self.__class__(*(_coconut_iter_getitem(it, new_ind) for it in self.iters), fillvalue=self.fillvalue)
         if index < 0:
             if self_len is None:
                 self_len = self.__len__()
@@ -1114,6 +1116,11 @@ class zip_longest(zip):
         if not got_non_default:
             raise _coconut.IndexError("zip_longest index out of range")
         return _coconut.tuple(result)
+    def __reversed__(self):
+        if not _coconut.all(_coconut.isinstance(it, _coconut.abc.Sized) for it in self.iters):
+            raise _coconut.TypeError("can only reverse a zip_longest of sized iterables")
+        n = self.__len__()
+        return self.__class__(*({_coconut_}reversed(_coconut.tuple(it) + (self.fillvalue,) * (n - _coconut.len(it))) for it in self.iters), fillvalue=self.fillvalue)
     def __len__(self):
         if not _coconut.all(_coconut.isinstance(it, _coconut.abc.Sized) for it in self.iters):
             return _coconut.NotImplemented
@@ -1210,7 +1217,7 @@ class multi_enumerate(_coconut_has_iter):
                     ind.pop()
                     its.pop()
                 else:
-                    if _coconut.isinstance(x, _coconut.abc.Iterable):
+                    if _coconut.isinstance(x, _coconut.abc.Iterable) and not _coconut.isinstance(x, _coconut.str_like_types):
                         ind.append(-1)
                         its.append(_coconut.iter(x))
                     else:
@@ -1414,9 +1421,9 @@ class groupsof(_coconut_has_iter):
     def __repr__(self):
         return "groupsof(" + _coconut.repr(self.group_size) + ", " + _coconut.repr(self.iter) + (", fillvalue=" + _coconut.repr(self.fillvalue) if self.fillvalue is not _coconut_sentinel else "") + ")"
     def __reduce__(self):
-        return (self.__class__, (self.group_size, self.iter))
+        return (self.__class__, (self.group_size, self.iter, self.fillvalue))
     def __copy__(self):
-        return self.__class__(self.group_size, self.get_new_iter())
+        return self.__class__(self.group_size, self.get_new_iter(), self.fillvalue)
 class recursive_generator(_coconut_base_callable):
     """Decorator that memoizes a generator (or any function that returns an iterator).
     Particularly useful for recursive generators, which may require recursive_generator to function properly."""
@@ -1594,7 +1601,7 @@ class starmap(_coconut_baseclass, _coconut.itertools.starmap):
             return self.__class__(self.func, _coconut_iter_getitem(self.iter, index))
         return self.func(*_coconut_iter_getitem(self.iter, index))
     def __reversed__(self):
-        return self.__class__(self.func, *{_coconut_}reversed(self.iter))
+        return self.__class__(self.func, {_coconut_}reversed(self.iter))
     def __len__(self):
         if not _coconut.isinstance(self.iter, _coconut.abc.Sized):
             return _coconut.NotImplemented
@@ -1868,7 +1875,7 @@ class Expected(_coconut.collections.namedtuple("Expected", ("result", "error")){
                 if not self and isinstance(self.error, err_type):
                     return self.__class__(handler(self.error))
                 return self
-            def expect_error(self, *err_types: BaseException) -> Expected[T]:
+            def expect_error(self, *err_types: Type[BaseException]) -> Expected[T]:
                 """Raise any errors that do not match the given error types."""
                 if not self and not isinstance(self.error, err_types):
                     raise self.error
@@ -2015,7 +2022,7 @@ class _coconut_lifted(_coconut_base_callable):
         else:
             return self.func(*(g(*args, **kwargs) for g in self.func_args), **_coconut_py_dict((k, h(*args, **kwargs)) for k, h in self.func_kwargs.items()))
     def __repr__(self):
-        return "lift%s(%r)(%s%s)" % (self.func, ("_apart" if self.apart else ""), ", ".join(_coconut.repr(g) for g in self.func_args), ", ".join(k + "=" + _coconut.repr(h) for k, h in self.func_kwargs.items()))
+        return "lift%s(%r)(%s)" % (("_apart" if self.apart else ""), self.func, ", ".join([_coconut.repr(g) for g in self.func_args] + [k + "=" + _coconut.repr(h) for k, h in self.func_kwargs.items()]))
 class lift(_coconut_base_callable):
     """Lift a function up so that all of its arguments are functions that all take the same arguments.
 
@@ -2084,7 +2091,7 @@ def mapreduce(key_value_func, iterable, **kwargs):
     If reduce_func is passed, instead of collecting the values into lists, reduce over
     the values for each key with reduce_func, effectively implementing a MapReduce operation.
 
-    If collect_in is passed, initialize the collection from .
+    If collect_in is passed, collect into it (in place) instead of into a new dictionary.
     """
     collect_in = kwargs.pop("collect_in", None)
     reduce_func = kwargs.pop("reduce_func", None if collect_in is None else False)

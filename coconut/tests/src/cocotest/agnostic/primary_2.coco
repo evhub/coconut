@@ -1026,4 +1026,19 @@ def primary_test_2() -> bool:
     assert star_dict[1, 2] == "a" and star_dict[(0, 1, 2)] == "b"
     assert star_dict[*star_key] == "a"
 
+    # lazy built-ins are always truthy
+    assert bool(map(abs, [])) and bool(map(abs, iter([1]))) and bool(zip([], []))
+    assert bool(enumerate(iter([]))) and bool(scan((+), iter([1]))) and bool(groupsof(2, iter([])))
+    assert reversed(starmap((+), [(1, 2), (3, 4)])) |> list == [7, 3]
+    zl = zip_longest([1, 2, 3], [4], fillvalue=0)
+    assert reversed(zl) |> list == [(3, 0), (2, 0), (1, 4)]
+    assert zl[1:] |> list == [(2, 0), (3, 0)]
+    import pickle
+    from copy import copy
+    filled_groups = groupsof(2, [1, 2, 3], fillvalue=0)
+    assert copy(filled_groups) |> list == [(1, 2), (3, 0)] == pickle.loads(pickle.dumps(filled_groups)) |> list
+    assert multi_enumerate(["ab", ["c"]]) |> list == [((0,), "ab"), ((1, 0), "c")]
+    def lift_add(x, y) = x + y
+    assert repr(lift(lift_add)(ident, (.+1))).startswith("lift(")
+
     return True
