@@ -8,31 +8,33 @@ local:
 
 ## Introduction
 
-Welcome to the tutorial for the [Coconut Programming Language](http://evhub.github.io/coconut/)! Coconut is a variant of [Python](https://www.python.org/) built for **simple, elegant, Pythonic functional programming**. But those are just words; what they mean in practice is that _all valid Python 3 is valid Coconut_ but Coconut builds on top of Python a suite of _simple, elegant utilities for functional programming_.
+Welcome to the tutorial for the [Coconut Programming Language](http://coconut-lang.org/)! Coconut is a variant of [Python](https://www.python.org/) built for **simple, elegant, Pythonic functional programming**. But those are just words; what they mean in practice is that _all valid Python 3 is valid Coconut_ but Coconut builds on top of Python a suite of _simple, elegant utilities for functional programming_.
 
-Why use Coconut? Coconut is built to be useful. Coconut enhances the repertoire of Python programmers to include the tools of modern functional programming, in such a way that those tools are _easy_ to use and immensely _powerful;_ that is, Coconut does to functional programming what Python did to imperative programming. And Coconut code runs the same on _any Python version_, making the Python 2/3 split a thing of the past.
+Why use Coconut? Coconut is built to be useful. Coconut enhances the repertoire of Python programmers to include the tools of modern functional programming, in such a way that those tools are _easy_ to use and immensely _powerful;_ that is, Coconut does to functional programming what Python did to imperative programming. And compiled Coconut code runs the same on _any Python version_, so you can use the latest Python syntax while still supporting older Pythons.
 
 Specifically, Coconut adds to Python _built-in, syntactical support_ for:
-- pattern-matching
-- algebraic data types
+- pipeline-style programming
+- pattern-matching, including multi-case pattern-matching functions
+- algebraic data types, including sum types whose exhaustiveness your type checker can check
 - destructuring assignment
 - partial application
-- lazy lists
+- lazy lists and lazy iterator chaining and slicing
 - function composition
 - prettier lambdas
 - infix notation
-- pipeline-style programming
 - operator functions
 - tail call optimization
 - where statements
 
 and much more!
 
-### Interactive Tutorial
+### How to Use This Tutorial
 
-This tutorial is non-interactive. To get an interactive tutorial instead, check out [Coconut's interactive tutorial](https://hmcfabfive.github.io/coconut-tutorial).
+This tutorial is a series of case studies, each of which shows how to use Coconut to solve a particular problem. The best way to follow along is to try out each example yourself, either by copying and pasting it into the Coconut interpreter (which we'll set up in a moment) or by putting it in a `.coco` file and running it.
 
-Note, however, that the interactive tutorial is less up-to-date than this one and thus may contain old, deprecated syntax (though Coconut will let you know if you encounter such a situation) as well as outdated idioms (meaning that the example code in the interactive tutorial is likely to be much less elegant than the example code here).
+Along the way, you'll see sections marked **Your turn**. Those are exercises for you to try on your own before looking at the solution, which you can show by clicking on it.
+
+_Some of this tutorial's exercises were adapted from the interactive Coconut tutorial written by Thomas Dickstein, Nma Mbeledogu, Maya Minier, Anthony Seto, and Parnika Sharma._
 
 ### Installation
 
@@ -86,6 +88,27 @@ That means that if you're familiar with Python, you're already familiar with a g
 2
 ```
 
+But Coconut is much more than just Python. For a first taste, here's one of Coconut's most commonly-used features: the pipe operator `|>`, which passes the value on its left into the function on its right. So `x |> f` is just `f(x)`, but it lets you write a series of function calls in the order that they actually happen, rather than inside-out. For example, here's some Python that adds up the even numbers below 10:
+```coconut_python
+print(sum(filter(lambda x: x % 2 == 0, range(10))))
+```
+and here's the same thing as a Coconut pipeline:
+```coconut
+range(10) |> filter$(x => x % 2 == 0) |> sum |> print  # 20
+```
+Read left to right: take `range(10)`, filter it down to the even numbers, sum those, and print the result. We'll see exactly what `filter$(...)` (partial application) and `x => ...` (Coconut's lambda syntax) mean later on, but you can probably already guess.
+
+**Your turn:** write a pipeline that prints the squares of the numbers from 1 to 5 as a list, i.e. `[1, 4, 9, 16, 25]`. _Hint: start with `range(1, 6)` and use `map`._
+
+<details>
+<summary>Show solution</summary>
+
+```coconut
+range(1, 6) |> map$(x => x**2) |> list |> print  # [1, 4, 9, 16, 25]
+```
+
+</details>
+
 ### Writing Coconut Files
 
 Of course, while being able to interpret Coconut code on-the-fly is a great thing, it wouldn't be very useful without the ability to write and compile larger programs. To that end, it's time to write our first Coconut program: "hello, world!" Coconut-style.
@@ -118,8 +141,8 @@ coconut hello_world.coco
 ```
 which should give the output
 ```
-Coconut: Compiling       hello_world.coco ...
-Coconut: Compiled to     hello_world.py .
+Compiling         hello_world.coco ...
+Compiled to       hello_world.py .
 ```
 and deposit a new `hello_world.py` file in the same directory as the `hello_world.coco` file. You should then be able to run that file with
 ```
@@ -132,6 +155,8 @@ _Note: You can compile and run your code all in one step if you use Coconut's `-
 Compiling single files is not the only way to use the Coconut command-line utility, however. We can also compile all the Coconut files in a given directory simply by passing that directory as the first argument, which will get rid of the need to run the same Coconut header code in each file by storing it in a `__coconut__.py` file in the same directory.
 
 The Coconut  compiler supports a large variety of different compilation options, the help for which can always be accessed by entering `coconut -h` into the command line. One of the most useful of these is `--line-numbers` (or `-l` for short). Using `--line-numbers` will add the line numbers of your source code as comments in the compiled code, allowing you to see what line in your source code corresponds to a line in the compiled code where an error occurred, for ease of debugging.
+
+_Note: When writing new Coconut code, we recommend compiling with `--strict`, which turns warnings into errors and enables extra style checks to keep your code clean. See [Checking Your Code](#checking-your-code) for more ways to have Coconut check your code._
 
 _Note: If you don't need the full control of the Coconut compiler, you can also [access your Coconut code just by importing it](./DOCS.md#automatic-compilation), either from the Coconut interpreter, or in any Python file where you import [`coconut.api`](./DOCS.md#coconut-api)._
 
@@ -284,6 +309,38 @@ def factorial(n):
 3 |> factorial |> print  # 6
 ```
 
+**Your turn:** before we move on, let's get some more practice with `match`. Say you're writing software for a recycling facility, which needs to know which bin each item goes in: `"aluminum"` goes in the `"metal"` bin, `"paper"` and `"cardboard"` go in the `"paper"` bin, `"plastic"` goes in the `"plastic"` bin, and anything else isn't recyclable. Write a function `bin_for` that uses a `match` statement to return the right bin for an item (or raise a `ValueError` for anything that isn't recyclable), then use it to count how many items go in each bin:
+```coconut
+import collections
+
+items = ["aluminum", "plastic", "plastic", "paper", "plastic", "aluminum", "cardboard"]
+
+# Test cases:
+items |> map$(bin_for) |> collections.Counter |> print  # Counter({'plastic': 3, 'metal': 2, 'paper': 2})
+bin_for("banana peel")  # ValueError
+```
+_Hint: in a pattern, `"paper" | "cardboard"` matches either `"paper"` or `"cardboard"`._
+
+<details>
+<summary>Show solution</summary>
+
+```coconut
+def bin_for(item):
+    """Get the recycling bin that item goes in."""
+    match item:
+        case "aluminum":
+            return "metal"
+        case "paper" | "cardboard":
+            return "paper"
+        case "plastic":
+            return "plastic"
+    else:
+        raise ValueError(f"not recyclable: {item!r}")
+```
+Notice that we didn't need to keep any counts ourselves: `map$(bin_for)` turns the items into bins, and [`collections.Counter`](https://docs.python.org/3/library/collections.html#collections.Counter) does the counting.
+
+</details>
+
 Up until now, for the recursive method, we have only dealt with pattern-matching, but there's actually another way that Coconut allows us to improve our `factorial` function. Coconut performs automatic tail call optimization, which means that whenever a function directly returns a call to another function, Coconut will optimize away the additional call. Thus, we can improve our `factorial` function by rewriting it to use a tail call:
 ```coconut
 def factorial(n, acc=1):
@@ -363,7 +420,7 @@ range(1, n+1) |> reduce$(*)
 ```
 is able to compute the proper factorial, without using any state or loops, only higher-order functions, in true functional style. By supplying the tools we use here like partial application (`$`), pipeline-style programming (`|>`), higher-order functions (`reduce`), and operator functions (`(*)`), Coconut enables this sort of functional programming to be done cleanly, neatly, and easily.
 
-### `addpattern` Method
+### `case def` Method
 
 While the iterative approach is very clean, there are still some bulky pieces—looking at the iterative version below, you can see that it takes three entire indentation levels to get from the function definition to the actual objects being returned:
 ```coconut
@@ -378,13 +435,12 @@ def factorial(n):
         raise TypeError("the argument to factorial must be an integer >= 0")
 ```
 
-By making use of the [Coconut `addpattern` syntax](./DOCS.md#addpattern), we can take that from three indentation levels down to one. Take a look:
+By making use of [Coconut's `case def` syntax](./DOCS.md#case-functions), we can take that from three indentation levels down to two, with each case on a single line. Take a look:
 ```coconut
-def factorial(0) = 1
-
-addpattern def factorial(int() as n if n > 0) =
+case def factorial:
     """Compute n! where n is an integer >= 0."""
-    range(1, n+1) |> reduce$(*)
+    case(0) = 1
+    case(int() as n if n > 0) = range(1, n+1) |> reduce$(*)
 
 # Test cases:
 -1 |> factorial |> print  # MatchError
@@ -392,15 +448,30 @@ addpattern def factorial(int() as n if n > 0) =
 0 |> factorial |> print  # 1
 3 |> factorial |> print  # 6
 ```
-Copy, paste! This should work exactly like before, except now it raises `MatchError` as a fall through instead of `TypeError`. There are three major new concepts to talk about here: `addpattern`, of course, assignment function notation, and pattern-matching function definition—how both of the functions above are defined.
+Copy, paste! This should work exactly like before, except now it raises `MatchError` as a fall through instead of `TypeError`. There are three major new concepts to talk about here: `case def` itself, pattern-matching function definition, and assignment function notation.
 
-First, assignment function notation. This one's pretty straightforward. If a function is defined with an `=` instead of a `:`, the last line is required to be an expression, and is automatically returned.
+First, `case def`. A `case def` defines a function out of a series of `case(...)` lines, each of which gives the patterns to match the function's arguments against, just like the `case` statements in a `match` block. When the function is called, the cases are tried in order, and the first one that matches is the one that gets run. If none of them match, the function raises a `MatchError`.
 
-Second, pattern-matching function definition. Pattern-matching function definition does exactly that—pattern-matches against all the arguments that are passed to the function. Unlike normal function definition, however, if the pattern doesn't match (if for example the wrong number of arguments are passed), your function will raise a `MatchError`. Finally, like destructuring assignment, if you want to be more explicit about using pattern-matching function definition, you can add a `match` before the `def`. In this case, we're also using one new pattern-matching construct, the `as` match, which matches against the pattern on the left and assigns the result to the name on the right.
+Second, pattern-matching function definition. The patterns in each `case(...)` line are matched against the arguments passed to the function, so `case(0)` will only match a call like `factorial(0)`, while `case(int() as n if n > 0)` will match any call with a single positive `int` argument. In this case, we're also using one new pattern-matching construct, the `as` match, which matches against the pattern on the left and assigns the result to the name on the right.
 
-Third, `addpattern`. `addpattern` creates a new pattern-matching function by adding the new pattern as an additional case to the old pattern-matching function it is replacing. Thus, `addpattern` can be thought of as doing exactly what it says—it adds a new pattern to an existing pattern-matching function.
+Third, assignment function notation. This one's pretty straightforward. If a function (or a case) is defined with an `=` instead of a `:`, its body is required to be an expression, which is automatically returned.
 
-Finally, not only can we rewrite the iterative approach using `addpattern`, as we did above, we can also rewrite the recursive approach using `addpattern`, like so:
+Not only can we rewrite the iterative approach using `case def`, as we did above, we can also rewrite the recursive approach, like so:
+```coconut
+case def factorial:
+    """Compute n! where n is an integer >= 0."""
+    case(0) = 1
+    case(int() as n if n > 0) = n * factorial(n - 1)
+
+# Test cases:
+-1 |> factorial |> print  # MatchError
+0.5 |> factorial |> print  # MatchError
+0 |> factorial |> print  # 1
+3 |> factorial |> print  # 6
+```
+Copy, paste! It should work exactly like before, except, as above, with `TypeError` replaced by `MatchError`.
+
+Finally, pattern-matching functions can also be defined one case at a time, which is useful when you want to add cases to a function somewhere other than where it was first defined. Any function definition can use patterns in place of its arguments, and [`addpattern def`](./DOCS.md#addpattern) adds a new case to an existing pattern-matching function:
 ```coconut
 def factorial(0) = 1
 
@@ -414,7 +485,7 @@ addpattern def factorial(int() as n if n > 0) =
 0 |> factorial |> print  # 1
 3 |> factorial |> print  # 6
 ```
-Copy, paste! It should work exactly like before, except, as above, with `TypeError` replaced by `MatchError`.
+This is exactly equivalent to the `case def` version above. In general, `case def` is the clearest way to write a pattern-matching function whose cases are all in one place, while `addpattern def` lets you extend a pattern-matching function after the fact.
 
 ## Case Study 2: `quick_sort`
 
@@ -422,7 +493,7 @@ In the second case study, we will be implementing the [quick sort algorithm](htt
 
 ### Sorting a Sequence
 
-First up is `quick_sort` for lists. We're going to use a recursive `addpattern`-based approach to tackle this problem—a similar approach to the very last `factorial` function we wrote, using `addpattern` to reduce the amount of indentation we're going to need. Without further ado, here's our implementation of `quick_sort` for lists:
+First up is `quick_sort` for lists. We're going to use a recursive pattern-matching approach to tackle this problem—a similar approach to the very last `factorial` function we wrote, using `addpattern` to define our function one case at a time. Without further ado, here's our implementation of `quick_sort` for lists:
 ```coconut
 def quick_sort([]) = []
 
@@ -435,9 +506,9 @@ addpattern def quick_sort([head] + tail) =
 # Test cases:
 [] |> quick_sort |> print  # []
 [3] |> quick_sort |> print  # [3]
-[0,1,2,3,4] |> quick_sort |> print  # [0,1,2,3,4]
-[4,3,2,1,0] |> quick_sort |> print  # [0,1,2,3,4]
-[3,0,4,2,1] |> quick_sort |> print  # [0,1,2,3,4]
+[0,1,2,3,4] |> quick_sort |> print  # [0, 1, 2, 3, 4]
+[4,3,2,1,0] |> quick_sort |> print  # [0, 1, 2, 3, 4]
+[3,0,4,2,1] |> quick_sort |> print  # [0, 1, 2, 3, 4]
 ```
 Copy, paste! Two new feature here: head-tail pattern-matching and `where` statements.
 
@@ -461,9 +532,9 @@ def quick_sort(l):
 # Test cases:
 [] |> quick_sort |> list |> print  # []
 [3] |> quick_sort |> list |> print  # [3]
-[0,1,2,3,4] |> quick_sort |> list |> print  # [0,1,2,3,4]
-[4,3,2,1,0] |> quick_sort |> list |> print  # [0,1,2,3,4]
-[3,0,4,2,1] |> quick_sort |> list |> print  # [0,1,2,3,4]
+[0,1,2,3,4] |> quick_sort |> list |> print  # [0, 1, 2, 3, 4]
+[4,3,2,1,0] |> quick_sort |> list |> print  # [0, 1, 2, 3, 4]
+[3,0,4,2,1] |> quick_sort |> list |> print  # [0, 1, 2, 3, 4]
 ```
 Copy, paste! This `quick_sort` algorithm works uses a bunch of new constructs, so let's go over them.
 
@@ -530,7 +601,7 @@ data vector2(x, y):
 
 # Test cases:
 vector2(1, 2) |> print  # vector2(x=1, y=2)
-vector2(3, 4) |> abs |> print  # 5
+vector2(3, 4) |> abs |> print  # 5.0
 vector2(1, 2) |> fmap$(x => x*2) |> print  # vector2(x=2, y=4)
 v = vector2(2, 3)
 v.x = 7  # AttributeError
@@ -660,7 +731,7 @@ data vector(*pts):
 # Test cases:
 vector(1, 2, 3) |> print  # vector(*pts=(1, 2, 3))
 vector(4, 5) |> vector |> print  # vector(*pts=(4, 5))
-vector(3, 4) |> abs |> print  # 5
+vector(3, 4) |> abs |> print  # 5.0
 vector(1, 2) + vector(2, 3) |> print  # vector(*pts=(3, 5))
 vector(2, 2) - vector(0, 1) |> print  # vector(*pts=(2, 1))
 -vector(1, 3) |> print  # vector(*pts=(-1, -3))
@@ -675,7 +746,7 @@ Copy, paste! Now that was a lot of code. But looking it over, it looks clean, re
 
 ## Case Study 4: `vector_field`
 
-For the final case study, instead of me writing the code, and you looking at it, you'll be writing the code—of course, I won't be looking at it, but I will show you how I would have done it after you give it a shot by yourself.
+For the next case study, instead of me writing the code, and you looking at it, you'll be writing the code—of course, I won't be looking at it, but I will show you how I would have done it after you give it a shot by yourself.
 
 _The bonus challenge for this section is to write each of the functions we'll be defining in just one line. Try using assignment functions to help with that!_
 
@@ -699,7 +770,7 @@ But since we want to be able to iterate over that plane, we're going to need to 
 
 ### `diagonal_line`
 
-Thus, our first function `diagonal_line(n)` should construct an iterator of all the points, represented as coordinate tuples, in the `n`th diagonal, starting with `(0, 0)` as the `0`th diagonal. Like we said at the start of this case study, this is where we I let go and you take over. Using all the tools of functional programming that Coconut provides, give `diagonal_line` a shot. When you're ready to move on, scroll down.
+Thus, our first function `diagonal_line(n)` should construct an iterator of all the points, represented as coordinate tuples, in the `n`th diagonal, starting with `(0, 0)` as the `0`th diagonal. Like we said at the start of this case study, this is where I let go and you take over. Using all the tools of functional programming that Coconut provides, give `diagonal_line` a shot. When you're done, check your work against my solution below.
 
 Here are some tests that you can use:
 ```coconut
@@ -710,26 +781,8 @@ diagonal_line(1) |> list |> print  # [(0, 1), (1, 0)]
 
 _Hint: the `n`th diagonal should contain `n+1` elements, so try starting with `range(n+1)` and then transforming it in some way._
 
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
+<details>
+<summary>Show solution</summary>
 
 That wasn't so bad, now was it? Now, let's take a look at my solution:
 ```coconut
@@ -737,9 +790,11 @@ def diagonal_line(n) = range(n+1) |> map$(i => (i, n-i))
 ```
 Pretty simple, huh? We take `range(n+1)`, and use `map` to transform it into the right sequence of tuples.
 
+</details>
+
 ### `linearized_plane`
 
-Now that we've created our diagonal lines, we need to join them together to make the full linearized plane, and to do that we're going to write the function `linearized_plane()`. `linearized_plane` should produce an iterator that goes through all the points in the plane, in order of all the points in the first `diagonal(0)`, then the second `diagonal(1)`, and so on. `linearized_plane` is going to be, by necessity, an infinite iterator, since it needs to loop through all the points in the plane, which have no end. To help you accomplish this, remember that the `::` operator is lazy, and won't evaluate its operands until they're needed, which means it can be used to construct infinite iterators. When you're ready to move on, scroll down.
+Now that we've created our diagonal lines, we need to join them together to make the full linearized plane, and to do that we're going to write the function `linearized_plane()`. `linearized_plane` should produce an iterator that goes through all the points in the plane, in order of all the points in the first `diagonal(0)`, then the second `diagonal(1)`, and so on. `linearized_plane` is going to be, by necessity, an infinite iterator, since it needs to loop through all the points in the plane, which have no end. To help you accomplish this, remember that the `::` operator is lazy, and won't evaluate its operands until they're needed, which means it can be used to construct infinite iterators. When you're done, check your work against my solution below.
 
 Tests:
 ```coconut
@@ -752,32 +807,16 @@ linearized_plane()$[:3] |> list |> print  # [(0, 0), (0, 1), (1, 0)]
 
 _Hint: instead of defining the function as `linearized_plane()`, try defining it as `linearized_plane(n=0)`, where `n` is the diagonal to start at, and use recursion to build up from there._
 
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
+<details>
+<summary>Show solution</summary>
 
 That was a little bit rougher than the first one, but hopefully still not too bad. Let's compare to my solution:
 ```coconut
 def linearized_plane(n=0) = diagonal_line(n) :: linearized_plane(n+1)
 ```
 As you can see, it's a very fundamentally simple solution: just use `::` and recursion to join all the diagonals together in order.
+
+</details>
 
 ### `vector_field`
 
@@ -792,32 +831,16 @@ vector_field()$[2:3] |> list |> print  # [vector(*pts=(1, 0))]
 
 _Hint: Remember, the way we defined vector it takes the components as separate arguments, not a single tuple. You may find the [Coconut built-in `starmap`](./DOCS.md#starmap) useful in dealing with that._
 
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
+<details>
+<summary>Show solution</summary>
 
 We're making good progress! Before we move on, check your solution against mine:
 ```coconut
 def vector_field() = linearized_plane() |> starmap$(vector)
 ```
 All we're doing is taking our `linearized_plane` and mapping `vector` over it, but using `starmap` instead of `map` so that `vector` gets called with each element of the tuple as a separate argument.
+
+</details>
 
 ### Applications
 
@@ -880,7 +903,7 @@ then use iterator slicing to take out portions and examine them.
 
 ## Case Study 5: `vector` Part II
 
-For the some of the applications you might want to use your `vector_field` for, it might be desirable to add some useful methods to our `vector`. In this case study, we're going to be focusing on one in particular: `.angle`.
+For some of the applications you might want to use your `vector_field` for, it might be desirable to add some useful methods to our `vector`. In this case study, we're going to be focusing on one in particular: `.angle`.
 
 `.angle` will take one argument, another vector, and compute the angle between the two vectors. Mathematically, the formula for the angle between two vectors is the dot product of the vectors' respective unit vectors. Thus, before we can implement `.angle`, we're going to need `.unit`. Mathematically, the formula for the unit vector of a given vector is that vector divided by its magnitude. Thus, before we can implement `.unit`, and by extension `.angle`, we'll need to start by implementing division.
 
@@ -896,31 +919,15 @@ vector(2, 4) / 2 |> print  # vector(*pts=(1.0, 2.0))
 
 _Hint: Look back at how we implemented scalar multiplication._
 
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
+<details>
+<summary>Show solution</summary>
 
 Here's my solution for you to check against:
 ```coconut
     def __truediv__(self, other) = self.pts |> map$(x => x/other) |*> vector
 ```
+
+</details>
 
 ### `.unit`
 
@@ -932,31 +939,15 @@ vector(0, 1).unit() |> print  # vector(*pts=(0.0, 1.0))
 vector(5, 0).unit() |> print  # vector(*pts=(1.0, 0.0))
 ```
 
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
+<details>
+<summary>Show solution</summary>
 
 Here's my solution:
 ```coconut
     def unit(self) = self / abs(self)
 ```
+
+</details>
 
 ### `.angle`
 
@@ -972,31 +963,15 @@ vector(1, 2).angle(5)  # MatchError
 
 _Hint: Look back at how we checked whether the argument to `factorial` was an integer using pattern-matching._
 
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
+<details>
+<summary>Show solution</summary>
 
 Here's my solution—take a look:
 ```coconut
     def angle(self, other `isinstance` vector) = math.acos(self.unit() * other.unit())
 ```
+
+</details>
 
 And now it's time to put it all together. Feel free to substitute in your own versions of the methods we just defined.
 
@@ -1053,6 +1028,96 @@ _One note of warning here: be careful not to leave a blank line when substitutin
 
 Copy, paste! If everything is working, you can try going back to playing around with `vector_field` [applications](#applications) using our new methods.
 
+## Case Study 6: Binary Trees with `case data`
+
+For our last case study, we're going to build a binary tree, and in doing so, introduce a kind of type that's at the heart of functional programming: a _sum type_, a type whose values must be exactly one of a fixed set of alternatives. A binary tree is a perfect example: every tree is either empty, a leaf holding a value, or a node with a left subtree and a right subtree, and nothing else.
+
+### Defining a Sum Type
+
+In Coconut, sum types are defined with `case data`, where each `case` line defines one of the alternatives, called _variants_, as its own `data` type:
+```coconut
+case data Tree:
+    """A binary tree."""
+    case Empty()
+    case Leaf(n)
+    case Node(l, r)
+
+# Test cases:
+Node(Empty(), Leaf(10)) |> print  # Node(l=Empty(), r=Leaf(n=10))
+Leaf(10) `isinstance` Tree |> print  # True
+```
+Copy, paste! Each variant is an ordinary `data` type, just like our `vector` from earlier, so we can construct them, print them, and pattern-match on them. And every variant is a `Tree`, so `` Leaf(10) `isinstance` Tree `` is `True`.
+
+Now let's write a function to compute the size of a tree, meaning the number of leaves in it. Since a `Tree` has exactly three variants, the most natural way to write `size` is with one case for each:
+```coconut
+case def size:
+    """Count the leaves in a tree."""
+    case(Empty()) = 0
+    case(Leaf(_)) = 1
+    case(Node(l, r)) = size(l) + size(r)
+
+# Test cases:
+Empty() |> size |> print  # 0
+Node(Empty(), Leaf(10)) |> size |> print  # 1
+Node(Leaf(1), Node(Leaf(2), Leaf(3))) |> size |> print  # 3
+```
+Copy, paste! Notice how the patterns mirror the definition of `Tree` exactly: to take apart a `Node(l, r)`, we just write the pattern `Node(l, r)`.
+
+**Your turn:** write a function `leaves` that returns an iterator of all the values in a tree's leaves, from left to right. Try to make it lazy, using the `::` operator we saw in the `quick_sort` case study.
+```coconut
+# Test cases:
+Empty() |> leaves |> list |> print  # []
+Node(Leaf(1), Node(Leaf(2), Leaf(3))) |> leaves |> list |> print  # [1, 2, 3]
+```
+
+<details>
+<summary>Show solution</summary>
+
+```coconut
+case def leaves:
+    """Iterate over the values in a tree's leaves."""
+    case(Empty()) = ()
+    case(Leaf(n)) = (n,)
+    case(Node(l, r)) = leaves(l) :: leaves(r)
+```
+An empty tree has no leaves, a leaf has just one, and a node's leaves are its left subtree's leaves followed by its right subtree's, chained together lazily with `::`.
+
+</details>
+
+### Exhaustiveness Checking
+
+The big advantage of a sum type is that it lets the computer check your work: since a `Tree` can only ever be one of three things, a function on `Tree`s that forgets one of them is a bug, and one that can be caught before the code ever runs.
+
+Coconut lets your type checker do exactly that. To see it in action, put the following in a file `tree.coco`. This version of `Tree` adds type annotations to its fields, and gives `depth` a type signature with `type(...)` (which tells type checkers what `depth` accepts and returns), but `depth` is missing its `Node` case:
+```coconut
+case data Tree:
+    """A binary tree."""
+    case Empty()
+    case Leaf(n: int)
+    case Node(l: Tree, r: Tree)
+
+case def depth:
+    """Compute the depth of a tree."""
+    type(t: Tree) -> int
+    case(Empty()) = 0
+    case(Leaf(_)) = 1
+```
+Then compile it with Coconut's [MyPy integration](./DOCS.md#mypy-integration) (which requires installing MyPy, e.g. with `pip install coconut[mypy]`):
+```
+coconut tree.coco --mypy
+```
+and MyPy will tell you exactly what's missing:
+```
+tree.coco:7: error: Argument 1 to "match_must_handle_case_data" has incompatible type "UnhandledCaseDataVariants[Node]"; expected "ExhaustiveMatch"
+```
+That is, `depth` doesn't handle `Node`. Add the missing case,
+```coconut
+    case(Node(l, r)) = 1 + max(depth(l), depth(r))
+```
+and the error goes away.
+
+The same check applies to every `match` on a `case data` type, so if you later add a fourth variant to `Tree`, your type checker will point out every function that needs to handle it. For more on what Coconut checks and when, see the documentation on [exhaustiveness checking](./DOCS.md#exhaustiveness-checking).
+
 ## Filling in the Gaps
 
 And with that, this tutorial is out of case studies—but that doesn't mean Coconut is out of features! In this last section, we'll touch on some of the other useful features of Coconut that we managed to miss in the case studies.
@@ -1079,6 +1144,38 @@ abcd$[1]
 c = 3
 abcd$[2]
 ```
+
+### Infinite Iterators
+
+Laziness is what lets Coconut work with infinite iterators just like finite ones, as we saw in the `vector_field` case study. For example, here's an infinite iterator of all the integers starting from `n`, built up with `::`, which only ever computes as much of itself as you ask for:
+```coconut
+def count_from(n) = (n,) :: count_from(n + 1)
+
+count_from(5)$[:5] |> list |> print  # [5, 6, 7, 8, 9]
+```
+
+Iterator slicing can even take negative indices, which normal Python iterators can't do at all:
+```coconut
+iter("abc")$[-1] |> print  # c
+```
+
+**Your turn:** define `fib()`, an infinite iterator of the [Fibonacci numbers](https://en.wikipedia.org/wiki/Fibonacci_sequence) `0, 1, 1, 2, 3, 5, 8, ...`, where each number is the sum of the two before it. _Hint: the Fibonacci numbers after the first two are what you get by adding together the Fibonacci numbers and the Fibonacci numbers shifted over by one, so try using `map((+), ...)`._
+```coconut
+# Test cases:
+fib()$[:10] |> list |> print  # [0, 1, 1, 2, 3, 5, 8, 13, 21, 34]
+fib()$[20] |> print  # 6765
+```
+
+<details>
+<summary>Show solution</summary>
+
+```coconut
+@recursive_generator
+def fib() = (0, 1) :: map((+), fib(), fib()$[1:])
+```
+The first two Fibonacci numbers are `0` and `1`, and after that, each one is the sum of the corresponding elements of `fib()` and `fib()$[1:]`. Note the [`recursive_generator`](./DOCS.md#recursive_generator) decorator: without it, every call to `fib()` would compute the whole sequence over again from scratch, but with it, all the calls share the same lazily-computed results, so `fib()` only ever computes each Fibonacci number once.
+
+</details>
 
 ### Function Composition
 
@@ -1159,9 +1256,26 @@ def int_map(
     xs |> map$(f) |> list
 ```
 
+### Checking Your Code
+
+Coconut can check your code for a lot more than just syntax errors:
+- **`--strict`** enables a set of style checks (like the ban on Python `lambda` that we mentioned earlier) and turns all of Coconut's warnings into errors. We recommend always using `--strict` for new code.
+- **`--pure`** additionally enforces functional programming norms: no variable reassignment, no mutating objects, and (when type-checking) every multi-case `match` must handle every possible value. It's optional, but if you want to write purely functional code, `--pure` will keep you honest.
+- **`--mypy`** runs [MyPy](http://mypy-lang.org/) on the compiled code, mapping any errors back to your Coconut source, which is how you get the [exhaustiveness checking](#exhaustiveness-checking) we saw in the last case study. (Pyright works too, with `--pyright`.)
+
+You can also turn on any of these for a whole project in your `pyproject.toml`:
+```toml
+[tool.coconut]
+strict = true
+```
+
+And to have your editor check your code as you type, Coconut comes with a [language server](./DOCS.md#language-server) that works with most editors.
+
 ### Further Reading
 
 And that's it for this tutorial! But that's hardly it for Coconut. All of the features examined in this tutorial, as well as a bunch of others, are detailed in Coconut's [documentation](./DOCS.md).
+
+If you're having an AI assistant write Coconut for you, point it at Coconut's [guide for AI assistants](https://coconut.readthedocs.io/en/master/llms.txt) (also available by running `coconut --ai-docs`), which covers idiomatic Coconut style and common pitfalls.
 
 Also, if you have any other questions not covered in this tutorial, feel free to [raise an issue on GitHub](https://github.com/evhub/coconut/issues/new)!
 

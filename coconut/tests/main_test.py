@@ -26,6 +26,7 @@ import re
 import shutil
 import functools
 import tempfile
+from io import StringIO
 from contextlib import contextmanager
 if sys.version_info >= (2, 7):
     import importlib
@@ -174,6 +175,89 @@ ignore_error_lines_with = (
 )
 
 mypy_snip = "a: str = count()[0]"
+
+tutorial_file = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "HELP.md")
+tutorial_exceptions = ("TypeError", "MatchError", "ValueError", "AttributeError", "NameError")
+tutorial_skip_prefixes = ("Coconut Interpreter", ".attr", "reduce(f,", "abc = (|", "return ", "range(1, n+1) |> reduce")
+
+
+def tutorial_statements(block):
+    """Split a tutorial code block into the statements one would enter into the interpreter."""
+    out, cur = [], []
+    for line in block.splitlines():
+        if (
+            line and not line[0].isspace() and cur
+            and not cur[-1].rstrip().endswith(("=", "(", ",", "\\"))
+            and not cur[-1].startswith("@")
+            and not line.startswith((")", "else", "except", "elif", "finally"))
+        ):
+            out.append("\n".join(cur))
+            cur = []
+        cur.append(line)
+    if cur:
+        out.append("\n".join(cur))
+    return [stmt for stmt in out if stmt.strip()]
+
+
+def check_tutorial(tutorial):
+    """Run the tutorial's examples in order, as if entered into the interpreter, checking that each
+    line ending in "|> print  # <output>" prints that output and each "# <Exception>" line raises it.
+    Returns a list of failures. Exercise tests (blocks followed by a solution) are rerun after later
+    blocks until they pass, since they're meant to be run with the reader's solution."""
+    from coconut.api import parse
+    fence = "`" * 3
+    blocks = []
+    exercise_tests = set()
+    for match in re.finditer(fence + r"coconut\n(.*?)" + fence, tutorial, re.DOTALL):
+        rest = tutorial[match.end():]
+        next_block, next_solution = rest.find(fence + "coconut"), rest.find("<details>")
+        if next_solution != -1 and (next_block == -1 or next_solution < next_block):
+            exercise_tests.add(len(blocks))
+        blocks.append(match.group(1))
+
+    namespace = {}
+    exec(parse("pass", "sys"), namespace)
+
+    def run(stmt):
+        first_line = stmt.splitlines()[0]
+        comment_match = re.search(r"#\s*(.*)$", first_line) if "|> print" in first_line or any(exc in first_line for exc in tutorial_exceptions) else None
+        comment = comment_match.group(1).strip() if comment_match else None
+        expected_exc = next((exc for exc in tutorial_exceptions if comment and exc in comment), None)
+        stdout = StringIO()
+        old_stdout, sys.stdout = sys.stdout, stdout
+        try:
+            exec(parse(stmt, "block"), namespace)
+        except Exception as err:
+            if expected_exc and expected_exc in type(err).__name__:
+                return None
+            if isinstance(err, NameError):
+                return "undefined"
+            return "raised {exc}: {err}".format(exc=type(err).__name__, err=err)
+        finally:
+            sys.stdout = old_stdout
+        if expected_exc:
+            return "expected {exc}, but printed {out!r}".format(exc=expected_exc, out=stdout.getvalue())
+        if comment is not None and "|> print" in first_line and "should be the same" not in comment:
+            printed, expected = stdout.getvalue().strip(), comment.split(" (should")[0].strip()
+            if printed != expected:
+                return "printed {printed!r}, but the comment says {expected!r}".format(printed=printed, expected=expected)
+        return None
+
+    failures, pending = [], []
+    for i, block in enumerate(blocks):
+        if block.startswith((" ", "\t")) or "<body>" in block or "<name>" in block or block.startswith(tutorial_skip_prefixes):
+            continue
+        to_run = [(i, stmt) for stmt in tutorial_statements(block)] + pending
+        pending = []
+        for j, stmt in to_run:
+            failure = run(stmt)
+            if failure is not None and (failure == "undefined" or j in exercise_tests):
+                pending.append((j, stmt))
+            elif failure is not None:
+                failures.append((stmt.splitlines()[0], failure))
+    failures += [(stmt.splitlines()[0], "never ran successfully") for _, stmt in pending]
+    return failures
+
 
 exhaustiveness_snip = """
 from typing import assert_never
@@ -1301,6 +1385,14 @@ class TestShell(unittest.TestCase):
             finally:
                 if proc.poll() is None:
                     proc.kill()
+
+    # (Counter reprs and dict ordering differ on older Pythons)
+    if sys.version_info >= (3, 7) and os.path.exists(tutorial_file):
+        def test_tutorial(self):
+            # all the examples in the tutorial should work exactly as the tutorial says they do
+            with univ_open(tutorial_file, "r") as tutorial:
+                failures = check_tutorial(tutorial.read())
+            assert not failures, failures
 
     def test_ai_docs(self):
         # (the guide mentions exception names, so don't check for errors in its text)

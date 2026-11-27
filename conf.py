@@ -6,7 +6,7 @@
 # -----------------------------------------------------------------------------------------------------------------------
 
 """
-Author: Evan Hubinger
+Authors: Evan Hubinger, Claude
 License: Apache 2.0
 Description: Sphinx configuration file for the Coconut Programming Language.
 """
@@ -79,7 +79,7 @@ myst_enable_extensions = [
     "smartquotes",
 ]
 
-myst_heading_anchors = 4
+myst_heading_anchors = 5
 
 html_sidebars = {
     "**": [
