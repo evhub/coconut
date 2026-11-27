@@ -20,6 +20,7 @@ from __future__ import print_function, absolute_import, unicode_literals, divisi
 from coconut.root import *  # NOQA
 
 import sys
+import types
 import os
 import subprocess
 import shutil
@@ -796,7 +797,11 @@ class Runner(object):
         auto_compilation(on=interpreter_uses_auto_compilation, args=comp.get_cli_args() if comp else None)
         use_coconut_breakpoint(on=interpreter_uses_coconut_breakpoint)
         self.exit = exit
-        self.vars = self.build_vars(path, init=True)
+        # run code in a real __main__ module (installed while running code) so that things
+        #  defined in it can be pickled (e.g. for process_map) and found by name like normal
+        self.main_module = types.ModuleType(py_str("__main__"))
+        self.main_module.__dict__.update(self.build_vars(path, init=True))
+        self.vars = self.main_module.__dict__
         self.stored = [] if store else None
         if comp is not None:
             self.store(comp.getheader("package:0"))
@@ -820,6 +825,19 @@ class Runner(object):
                 if var not in dir(builtins):
                     init_vars[var] = None
         return init_vars
+
+    @contextmanager
+    def using_main_module(self):
+        """Install our __main__ module in sys.modules while running code in it."""
+        old_main = sys.modules.get("__main__")
+        sys.modules["__main__"] = self.main_module
+        try:
+            yield
+        finally:
+            if old_main is None:
+                sys.modules.pop("__main__", None)
+            else:
+                sys.modules["__main__"] = old_main
 
     def store(self, line):
         """Store a line."""
@@ -876,7 +894,8 @@ class Runner(object):
         result = None
         with self.handling_errors(all_errors_exit):
             if path is None:
-                result = run_func(code, self.vars)
+                with self.using_main_module():
+                    result = run_func(code, self.vars)
             else:
                 use_vars = self.build_vars(path)
                 try:

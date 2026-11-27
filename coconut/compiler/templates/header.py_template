@@ -1008,8 +1008,33 @@ class process_map(_coconut_base_parallel_map):
     __slots__ = ()
     _threadlocal_ns = _coconut.threading.local()
     @staticmethod
-    def _make_pool(max_workers=None):
+    def _main_is_interactive():
+        """Whether __main__ is interactive (e.g. the Coconut interpreter or a notebook), in which case only forked workers can find things defined in it."""
+        main_module = _coconut_sys.modules.get("__main__")
+        return main_module is not None and _coconut.getattr(main_module, "__file__", None) is None
+    @staticmethod
+    def _start_methods():
+        """The available multiprocessing start methods, or None if they can't be chosen (Python < 3.4)."""
+        get_all_start_methods = _coconut.getattr(_coconut.multiprocessing, "get_all_start_methods", None)
+        return None if get_all_start_methods is None else get_all_start_methods()
+    @classmethod
+    def _make_pool(cls, max_workers=None):
+        # prefer fork when __main__ is interactive (fork was the default on Linux before Python 3.14)
+        start_methods = cls._start_methods()
+        if start_methods is not None and "fork" in start_methods and cls._main_is_interactive():
+            return _coconut.multiprocessing.get_context("fork").Pool(max_workers)
         return _coconut.multiprocessing.Pool(max_workers)
+    def _execute_map(self):
+        # without fork, workers can't find interactively-defined functions and the pool would hang
+        start_methods = self._start_methods()
+        if (
+            start_methods is not None
+            and "fork" not in start_methods
+            and _coconut.getattr(self.func, "__module__", None) == "__main__"
+            and self._main_is_interactive()
+        ):
+            raise _coconut.TypeError("process_map can't use functions defined interactively on platforms without the 'fork' start method, since its worker processes can't find them (define the function in a module instead)")
+        return _coconut_base_parallel_map._execute_map(self)
 class thread_map(_coconut_base_parallel_map):
     """Multi-thread implementation of map.
 

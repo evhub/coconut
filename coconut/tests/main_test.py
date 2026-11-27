@@ -149,6 +149,15 @@ bbopt_git = "https://github.com/evhub/bbopt.git"
 imp_issue_git = "https://github.com/evhub/coconut-issue.git"
 
 coconut_snip = "msg = '<success>'; pmsg = print$(msg); `pmsg`"
+pickle_main_snip = """
+import pickle
+class PickleMainC:
+    pass
+assert pickle.loads(pickle.dumps(PickleMainC())).__class__.__name__ == "PickleMainC"
+def pickle_main_sq(x) = x * x
+assert process_map(pickle_main_sq, range(3)) |> list == [0, 1, 4]
+print("<success>")
+"""
 target_3_snip = "assert super is py_super; print('<success>')"
 
 always_err_strs = (
@@ -884,6 +893,9 @@ class TestShell(unittest.TestCase):
 
     def test_code(self):
         call(["coconut", "-s", "-c", coconut_snip], assert_output=True)
+
+    def test_pickle_main(self):
+        call(["coconut", "-c", pickle_main_snip], assert_output=True)
 
     if not PY2:
         def test_target_3_snip(self):
