@@ -675,7 +675,7 @@ class Compiler(Grammar, pickleable_obj):
             self.temp_var_counts = defaultdict(int)
         # but always overwrite temp_vars_by_key since they store locs that will be invalidated
         self.temp_vars_by_key = {}
-        self.name_info = defaultdict(lambda: {"imported": set(), "referenced": set(), "assigned": set()})
+        self.name_info = defaultdict(lambda: {"imported": set(), "referenced": set(), "assigned": set(), "expr_assigned": set()})
         self.lazy_from_import_locs = {}
         self.star_import = False
         self.kept_lines = []
@@ -2804,7 +2804,9 @@ else:
                     if is_async and self.target_info < (3, 4):
                         ret_err = "_coconut.asyncio_Return"
                     # for both coroutines and generators, use StopIteration if return isn't supported
-                    elif self.target_info < (3, 3):
+                    #  (but bare returns are supported in generators on all versions, and raising
+                    #  StopIteration in a generator is an error on Python >= 3.7, so leave those alone)
+                    elif self.target_info < (3, 3) and to_return:
                         ret_err = "_coconut.StopIteration"
                         # warn about Python 3.7 incompatibility on any target with Python 3 support
                         if not self.target.startswith("2"):
@@ -5920,6 +5922,8 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
         if assign:
             is_new = loc not in self.name_info[name]["assigned"]
             self.name_info[name]["assigned"].add(loc)
+            if expr_setname:
+                self.name_info[name]["expr_assigned"].add(loc)
             if (
                 outer_setname
                 and scope["parent"] is not None
@@ -6052,7 +6056,7 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
             parent_scope = scope
             while parent_scope["parent"] is not None:
                 parent_scope = parent_scope["parent"]
-            parent_scope["callbacks"].append(partial(self.check_undefined_name, original, loc, name, scope, self.outer_ln))
+            parent_scope["callbacks"].append(partial(self.check_undefined_name, original, loc, name, scope, expr_setnames_context, self.outer_ln))
 
         # only mark as final after all checks pass
         if is_final:
@@ -6111,16 +6115,37 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
         with self.add_to_parsing_context({"typedef": {}}):
             yield
 
-    def check_undefined_name(self, original, loc, name, scope, outer_ln):
+    def check_undefined_name(self, original, loc, name, scope, expr_setnames_context, outer_ln):
         """Run a deferred check for name being undefined in the scope chain.
 
         We need outer_ln=self.outer_ln to be put in the partial so we know what
         the outer_ln was when this check was set up."""
+        # expr setnames (e.g. comprehension variables) can be added after the name is referenced
+        current_context = expr_setnames_context
+        while current_context is not None:
+            if name in current_context["new_names"]:
+                return
+            current_context = current_context["parent"]
         current_scope = scope
         while current_scope is not None:
             if current_scope["all_vars"] is None or name in current_scope["all_vars"]:
                 return
             current_scope = current_scope["parent"]
+        # an inner comprehension can use an outer comprehension's variable, which is bound later
+        #  on the same line (e.g. '[tuple(x for x in xs) for xs in xss]'), but the inner
+        #  comprehension can get processed (and cached) in a failed parse attempt before the
+        #  outer comprehension's context exists, which also loses the inner comprehension's
+        #  own context, so for names referenced inside an expr setname context, also allow
+        #  any name bound by an expr setname on the same logical line (real newlines only
+        #  occur in the preprocessed source between logical lines, since newlines inside
+        #  brackets are replaced)
+        #  (excluding the reference's own loc, since speculative parses, e.g. as
+        #  lambda parameters, can record bindings there)
+        if expr_setnames_context is not None and any(
+            assign_loc != loc and "\n" not in original[min(loc, assign_loc):max(loc, assign_loc)]
+            for assign_loc in self.name_info[name]["expr_assigned"]
+        ):
+            return
         # keywords that can be used as names (e.g. where) might have been speculatively
         #  parsed as names when they're actually being used as keywords (e.g. x = where:)
         if name in reserved_vars and original[loc + len(name):].lstrip(" \t").startswith(":"):

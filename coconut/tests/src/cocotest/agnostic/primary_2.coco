@@ -953,4 +953,12 @@ def primary_test_2() -> bool:
     match (| _, *_ |) in iter(()):
         assert False
 
+    # bare returns in generators (which used to compile to raise StopIteration() on old targets)
+    def bare_return_gen(x):
+        if not x:
+            return
+        yield x
+    assert list(bare_return_gen(0)) == []
+    assert list(bare_return_gen(1)) == [1]
+
     return True

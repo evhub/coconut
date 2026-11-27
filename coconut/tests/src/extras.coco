@@ -518,6 +518,14 @@ line 6''')
     import abc
     abc.ABCMeta
     """)
+    # inner comprehensions can use outer comprehension variables
+    assert parse(d"""
+    def f(xss) = [tuple(x for x in xs if x) for xs in xss]
+    def g(cs) = sum(len(set(v for v in c)) for c in cs)
+    """)
+    assert_raises(-> parse(d"""
+    def f(xss) = [tuple(x for x in xs) for ys in xss]
+    """), CoconutStyleError, err_has="undefined name 'xs'")
 
     # forward references shouldn't hide actual errors later in the file
     assert_raises(-> parse(d"""
