@@ -4947,7 +4947,13 @@ def {name}({match_func_paramdef}):
         """Get a type-checker-only function checking that the cases of a case def handle
         everything that the given type signature says they do (just the case data variants
         it says they do, unless in --pure mode)."""
-        split_func_tokens = self.cached_try_parse("case_def_exhaustiveness_check", self.split_func, "def _" + typed_params)
+        # (on targets without annotations, the annotations will have been replaced by markers for the type comments)
+        bare_params = self.word_regex.sub(lambda m: "" if m.group(0) in self.add_code_before else m.group(0), typed_params)
+        bare_params = bare_params.replace(non_syntactic_newline, " ")
+        try:
+            split_func_tokens = self.cached_try_parse("case_def_exhaustiveness_check", self.split_func, "def _" + bare_params)
+        except ParseBaseException:
+            split_func_tokens = None
         if split_func_tokens is None:
             return None
         _, func_arg_tokens = split_func_tokens
@@ -4969,7 +4975,9 @@ def {name}({match_func_paramdef}):
         if tree is None:
             return None
         return (
-            "def " + self.get_temp_var(("case_def_exhaustiveness_check", str(sig_index)), loc) + type_params + typed_params + " -> None:" + self.wrap_loc(original, loc) + "\n"
+            "def " + self.get_temp_var(("case_def_exhaustiveness_check", str(sig_index)), loc) + type_params + typed_params
+            # (works for targets with and without annotations)
+            + self.typedef_handle(["None"]) + "\n"
             + openindent + tree + closeindent
         )
 

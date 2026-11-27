@@ -775,6 +775,9 @@ line 6''')
     """)
 
     setup(line_numbers=False, target="2.7")
+    # typed case defs on targets without annotations need type comments for their exhaustiveness checks too
+    case_def_27 = parse("case def f:\n    type(x: int, y: str) -> int\n    case(int(n), _) = n\n", "lenient")
+    assert "match_must_handle_case_data" in case_def_27 and "# type: (...) -> None" in case_def_27 and "-> None:" not in case_def_27
     assert "a[_coconut.tuple(_coconut.itertools.chain((x,), y))]" in parse("a[x, *y]")
     assert parse("from io import BytesIO", mode="lenient") == "from io import BytesIO"
     assert_raises(-> parse("def f(*, x=None) = x"), CoconutTargetError, err_has="\n        ^")

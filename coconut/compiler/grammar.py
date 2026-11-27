@@ -2988,6 +2988,7 @@ class Grammar(object):
 
         noqa_regex = compile_regex(r"\b[Nn][Oo][Qq][Aa]\b")
         type_ignore_regex = compile_regex(r"\btype:\s*ignore\b")
+        word_regex = compile_regex(r"\w+")
         method_kind_decorator_regex = compile_regex(r"^@\s*(staticmethod|classmethod)\b(?![.(])", options=re.M)
         assert_never_call_regex = compile_regex(r"^(?:[\w.]+\.)?assert_never\(.*\)$")
         ln_marker_regex = compile_regex(re.escape(lnwrapper) + r"[0-9]+" + re.escape(unwrapper))
