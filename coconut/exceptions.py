@@ -6,7 +6,7 @@
 # -----------------------------------------------------------------------------------------------------------------------
 
 """
-Author: Evan Hubinger
+Authors: Evan Hubinger, Claude
 License: Apache 2.0
 Description: Exceptions for use in the compiler.
 """
@@ -100,6 +100,45 @@ class CoconutSyntaxError(CoconutException):
     def kwargs(self):
         """Get the arguments as keyword arguments."""
         return dict(zip(self.argnames, self.args))
+
+    # (line, col, end_line, end_col), all 0-based, of the error in the original source;
+    #  set by the compiler when known (see Compiler.get_err_location)
+    location = None
+
+    @property
+    def line(self):
+        """The 0-based line of the start of the error in the original source, or None if unknown."""
+        return None if self.location is None else self.location[0]
+
+    @property
+    def col(self):
+        """The 0-based column of the start of the error in the original source, or None if unknown."""
+        return None if self.location is None else self.location[1]
+
+    @property
+    def end_line(self):
+        """The 0-based line of the end of the error in the original source, or None if unknown."""
+        return None if self.location is None else self.location[2]
+
+    @property
+    def end_col(self):
+        """The 0-based column of the end of the error in the original source, or None if unknown."""
+        return None if self.location is None else self.location[3]
+
+    @property
+    def bare_message(self):
+        """The error message without its line number or source snippet."""
+        kwargs = self.kwargs
+        for argname in ("source", "point", "ln", "endpoint", "filename"):
+            if argname in kwargs:
+                kwargs[argname] = None
+        return self.message(**kwargs)
+
+    def __reduce__(self):
+        """Get pickling information, including the error location."""
+        if self.location is None:
+            return (self.__class__, self.args)
+        return (self.__class__, self.args, {"location": self.location})
 
     point_to_endpoint = False
     max_err_msg_lines = default_max_err_msg_lines

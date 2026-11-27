@@ -1,5 +1,6 @@
 import os
 import sys
+import pickle
 from collections.abc import Sequence
 
 os.environ["COCONUT_USE_COLOR"] = "False"
@@ -13,7 +14,10 @@ from coconut.constants import (
     PY310,
     PYPY,
 )  # type: ignore
-from coconut._pyparsing import USE_COMPUTATION_GRAPH  # type: ignore
+from coconut._pyparsing import (
+    USE_COMPUTATION_GRAPH,
+    SUPPORTS_INCREMENTAL,
+)  # type: ignore
 from coconut.terminal import logger
 from coconut.exceptions import (
     CoconutSyntaxError,
@@ -30,6 +34,10 @@ from coconut.convenience import (
     coconut_eval,
     coconut_exec,
     warm_up,
+)
+from coconut.api import (
+    collect_warnings,
+    use_incremental_parsing,
 )
 
 
@@ -772,11 +780,55 @@ def f[T](x):
     setup(line_numbers=False, minify=True)
     assert parse("123  # derp", "lenient") == "123# derp"
 
+    # structured error locations
+    setup(line_numbers=False)
+    def error_of(code):
+        try:
+            parse(code)
+        except CoconutSyntaxError as err:
+            return err
+        assert False, code
+    unclosed_err = error_of("x = 1\nif x:\n    y = (1 +\n")
+    assert unclosed_err.location == (2, 8, 2, 8)
+    assert (unclosed_err.line, unclosed_err.col, unclosed_err.end_line, unclosed_err.end_col) == (2, 8, 2, 8)
+    assert unclosed_err.bare_message == "unclosed open '('"
+    assert pickle.loads(pickle.dumps(unclosed_err)).location == (2, 8, 2, 8)
+    # tabs are expanded in error messages, but not in locations
+    assert error_of("if True:\n\tif True:\n\t\tz = (1, 2\n\t\tw = 3\n").location == (2, 6, 2, 6)
+    # the error starts on the first line of the multiline string
+    multiline_err = error_of('x = 1\ns = """a\nb""" + $$\n')
+    assert multiline_err.location[0] == 1, multiline_err.location
+    assert multiline_err.location[2:] == (2, 7), multiline_err.location
+    assert multiline_err.bare_message.startswith("parsing failed"), multiline_err.bare_message
+    # the line number shouldn't point past the end of the source
+    with collect_warnings():
+        trailing_err = error_of("def f(x) =\n    match x:\n        case 1: 1\n")
+    assert "(line 3)" in str(trailing_err), str(trailing_err)
+    assert trailing_err.line == 2, trailing_err.location
+    assert CoconutSyntaxError("derp").location is None
+    assert CoconutSyntaxError("derp").line is None
+
+    # warning collection
+    with collect_warnings() as collected:
+        parse("import os\ndef f():\n\treturn undefined_name\n")
+    collected_locs = {warn.bare_message.split(" (")[0]: warn.location for warn in collected}
+    assert collected_locs["found undefined name 'undefined_name'"] == (2, 8, 2, 8), collected_locs
+    assert collected_locs["found unused import 'os'"][0] == 0, collected_locs
+    assert logger.collected_warnings is None
+    with collect_warnings() as outer_collected:
+        with collect_warnings() as inner_collected:
+            parse("x = y\n")
+    assert len(inner_collected) == 1
+    assert not outer_collected
+
+    setup()
     return True
 
 
 def test_incremental() -> bool:
     setup()
+    assert use_incremental_parsing() is SUPPORTS_INCREMENTAL
+    assert use_incremental_parsing(False) is False
     warm_up(enable_incremental_mode=True)
     assert parse("""
 def f(x):

@@ -5106,7 +5106,26 @@ If _state_ is `False`, the global state object is used.
 
 **coconut.api.warm_up**(_streamline_=`True`, _enable\_incremental\_mode_=`False`, *, _state_=`False`)
 
-Can optionally be called to warm up the compiler and get it ready for parsing. Passing _streamline_ will cause the warm up to take longer but will substantially reduce parsing times (by default, this level of warm up is only done when the compiler encounters a large file). Passing _enable\_incremental\_mode_ will enable the compiler's incremental mdoe, where parsing some string, then later parsing a continuation of that string, will yield substantial performance improvements.
+Can optionally be called to warm up the compiler and get it ready for parsing. Passing _streamline_ will cause the warm up to take longer but will substantially reduce parsing times (by default, this level of warm up is only done when the compiler encounters a large file). Passing _enable\_incremental\_mode_ will enable the compiler's incremental mode, where parsing some string, then later parsing a continuation of that string, will yield substantial performance improvements.
+
+#### `use_incremental_parsing`
+
+**coconut.api.use_incremental_parsing**(_on_=`True`)
+
+Turns the compiler's incremental parsing mode (see [`warm_up`](#warm_up)) on or off, returning whether it is now on (incremental parsing requires [`cPyparsing`](https://github.com/evhub/cpyparsing) on Python 3.8+). Incremental parsing makes recompiling a slightly modified version of previously compiled code much faster, such as when compiling code repeatedly as it is edited, but it uses more memory and is only recommended for inputs under 20 KB (`coconut.constants.disable_incremental_for_len`). Turning it off clears its cache.
+
+#### `collect_warnings`
+
+**coconut.api.collect_warnings**()
+
+Context manager that, instead of showing the warnings issued while its block runs, collects them into the list it yields. Warnings from the compiler are instances of `CoconutSyntaxWarning`, which have the same [location attributes](#coconutexception) as `CoconutSyntaxError`. For example:
+```coconut_python
+from coconut.api import parse, collect_warnings
+with collect_warnings() as warnings:
+    parse("x = y")
+for warning in warnings:
+    print(warning.line, warning.col, warning.bare_message)
+```
 
 #### `cmd`
 
@@ -5190,6 +5209,14 @@ Retrieves a string containing information about the Coconut version. The optiona
 #### `CoconutException`
 
 If an error is encountered in a api function, a `CoconutException` instance may be raised. `coconut.api.CoconutException` is provided to allow catching such errors.
+
+Errors in the code being compiled raise a `CoconutSyntaxError` (a subclass of `CoconutException`, importable from `coconut.exceptions`), which has the following attributes describing where in the compiled source the error is:
+- `line`, `col`: the 0-based line and column of the start of the error,
+- `end_line`, `end_col`: the 0-based line and column of the end of the error,
+- `location`: all four of the above, as a tuple `(line, col, end_line, end_col)`, and
+- `bare_message`: the error message, without the line number and source snippet that `str(err)` includes.
+
+The location attributes are `None` if the location is unknown.
 
 
 ### `coconut.__coconut__`

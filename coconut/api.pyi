@@ -3,7 +3,7 @@
 #-----------------------------------------------------------------------------------------------------------------------
 
 """
-Author: Evan Hubinger
+Authors: Evan Hubinger, Claude
 License: Apache 2.0
 Description: MyPy stub file for api.py.
 """
@@ -15,8 +15,10 @@ Description: MyPy stub file for api.py.
 from typing import (
     Any,
     Callable,
+    ContextManager,
     Dict,
     Iterable,
+    List,
     Optional,
     Text,
 )
@@ -94,6 +96,17 @@ def warm_up(
     state: Optional[Command] | bool = ...,
 ) -> None:
     """Warm up the given state object."""
+    ...
+
+
+def collect_warnings() -> ContextManager[List[CoconutException]]:
+    """Context manager that collects the CoconutSyntaxWarnings (and other CoconutWarnings)
+    issued in its block into the list it yields instead of showing them."""
+    ...
+
+
+def use_incremental_parsing(on: bool = True) -> bool:
+    """Turn incremental parsing mode on or off. Returns whether incremental parsing mode is now enabled."""
     ...
 
 

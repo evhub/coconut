@@ -6,7 +6,7 @@
 # -----------------------------------------------------------------------------------------------------------------------
 
 """
-Author: Evan Hubinger
+Authors: Evan Hubinger, Claude
 License: Apache 2.0
 Description: Utilities for use in the compiler.
 """
@@ -81,6 +81,7 @@ from coconut.integrations import embed
 from coconut.util import (
     pickle,
     override,
+    clip,
     get_name,
     get_target_info,
     memoize,
@@ -1826,6 +1827,29 @@ def pprint_tokens(tokens):
 def getline(loc, original):
     """Get the line at loc in original."""
     return _line(loc, original.replace(non_syntactic_newline, "\n"))
+
+
+def anchor_col(snippet_line, col, real_line):
+    """Convert col in snippet_line into the corresponding column in real_line, where
+    snippet_line is a (possibly reformatted) version of real_line."""
+    snippet_line = snippet_line.rstrip("\r\n")
+    if snippet_line == real_line:
+        return clip(col, 0, len(real_line))
+    snippet_contents = snippet_line.strip()
+    snippet_indent = len(snippet_line) - len(snippet_line.lstrip())
+    if not snippet_contents:
+        return clip(col, 0, len(real_line))
+    # find where the snippet's contents start in real_line (they will usually
+    #  only differ in their indentation, e.g. if real_line uses tabs)
+    if snippet_contents == real_line.strip():
+        contents_start = len(real_line) - len(real_line.lstrip())
+    else:
+        contents_start = real_line.find(snippet_contents)
+        if contents_start == -1:
+            return clip(col, 0, len(real_line))
+    if col < snippet_indent:
+        return clip(col, 0, contents_start)
+    return clip(col - snippet_indent + contents_start, 0, len(real_line))
 
 
 def powerset(items, min_len=0):

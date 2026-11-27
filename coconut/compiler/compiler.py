@@ -162,6 +162,7 @@ from coconut.compiler.grammar import (
     split_args_list,
 )
 from coconut.compiler.util import (
+    anchor_col,
     ExceptionNode,
     ComputationNode,
     StartOfStrGrammar,
@@ -679,6 +680,7 @@ class Compiler(Grammar, pickleable_obj):
         self.star_import = False
         self.kept_lines = []
         self.num_lines = 0
+        self.original_lines = ()
         self.disable_name_check = False
         if self.operators is None or not keep_state:
             self.operators = []
@@ -1519,7 +1521,7 @@ class Compiler(Grammar, pickleable_obj):
         # build the error
         if extra is not None:
             kwargs["extra"] = extra
-        return errtype(
+        err = errtype(
             message,
             snippet,
             loc_in_snip,
@@ -1531,6 +1533,44 @@ class Compiler(Grammar, pickleable_obj):
             point_to_endpoint=True if use_startpoint else None,
             max_err_msg_lines=2 if use_startpoint else None,
         )
+        err.location = self.get_err_location(snippet, loc_in_snip, endpt_in_snip, ln)
+        return err
+
+    def get_err_location(self, snippet, loc_in_snip, endpt_in_snip, ln):
+        """Get the 0-based (line, col, end_line, end_col) of an error in the original source.
+
+        The snippet starts at or before original line ln (1-based) and may differ from the
+        original source lines (e.g. in indentation), so it is re-anchored on the original lines."""
+        if ln is None or not self.original_lines:
+            return None
+        max_line_ind = len(self.original_lines) - 1
+        snippet_lines = snippet.split("\n")
+
+        # ln can point past the first line of the snippet (e.g. if the snippet starts
+        #  with a multiline string), so search backwards for the snippet's first line
+        start_line_ind = clip(ln - 1, 0, max_line_ind)
+        first_snippet_line = snippet_lines[0].strip()
+        for back in range(len(snippet_lines)):
+            check_ind = start_line_ind - back
+            if check_ind < 0:
+                break
+            if self.original_lines[check_ind].strip() == first_snippet_line:
+                start_line_ind = check_ind
+                break
+
+        def get_line_col(ind_in_snip):
+            ind_in_snip = clip(ind_in_snip, 0, len(snippet))
+            before = snippet[:ind_in_snip]
+            line_offset = before.count("\n")
+            col_in_snip = ind_in_snip - (before.rfind("\n") + 1)
+            line_ind = clip(start_line_ind + line_offset, 0, max_line_ind)
+            return line_ind, anchor_col(snippet_lines[line_offset], col_in_snip, self.original_lines[line_ind])
+
+        line, col = get_line_col(loc_in_snip)
+        end_line, end_col = get_line_col(loc_in_snip if endpt_in_snip is None else endpt_in_snip)
+        if (end_line, end_col) < (line, col):
+            end_line, end_col = line, col
+        return line, col, end_line, end_col
 
     def make_syntax_err(self, err, original, after_parsing=False):
         """Make a CoconutSyntaxError from a CoconutDeferredSyntaxError."""
@@ -1541,7 +1581,9 @@ class Compiler(Grammar, pickleable_obj):
         """Make a CoconutParseError from a ParseBaseException."""
         original = err.pstr
         loc = err.loc
-        ln = self.adjust(err.lineno) if include_ln else None
+        # the error can be in trailing indentation markers past the end of the
+        #  actual source, so get the line number of the closest actual text
+        ln = self.adjust(lineno(move_loc_to_non_whitespace(original, loc), original)) if include_ln else None
 
         return self.make_err(CoconutParseError, msg, original, loc, ln, include_causes=True, use_startpoint=None, **kwargs)
 
@@ -1934,10 +1976,13 @@ class Compiler(Grammar, pickleable_obj):
 
     def prepare(self, inputstring, strip=False, nl_at_eof_check=False, **kwargs):
         """Prepare a string for processing."""
+        kept_lines = tuple(literal_lines(inputstring))
+        # save the original source lines for error locations (but not when parsing inner code)
+        if self.outer_ln is None:
+            self.original_lines = kept_lines
         if nl_at_eof_check and inputstring and not inputstring.endswith("\n"):
             end_index = len(inputstring) - 1 if inputstring else 0
             self.strict_err("missing new line at end of file", inputstring, end_index)
-        kept_lines = tuple(literal_lines(inputstring))
         self.num_lines = len(kept_lines)
         if self.keep_lines:
             self.kept_lines = kept_lines

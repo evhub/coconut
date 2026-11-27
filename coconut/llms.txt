@@ -10,6 +10,7 @@ This is a condensed guide to writing idiomatic Coconut, intended for AI coding a
 - Compile: `coconut src_dir dest_dir` (or `coconut file.coco`); compile and run: `coconut-run file.coco`; run code directly: `coconut -c "code"`; type check: add `--mypy` (or `--pyright`); target a Python version: `--target 3.11` (default output is universal).
 - Importing `coconut.api` enables automatic compilation of `.coco` files on import. For tests, `pytest -p coconut.pytest_plugin` collects `test_*.coco` files.
 - `coconut --strict` enables style checks; fix the warnings rather than suppressing them.
+- Check your work: after editing `.coco` files, compile them with `coconut file.coco --strict --no-write` to catch errors without writing output. When you're unsure what a construct does, look at the Python it compiles to with `coconut file.coco --no-write --display --quiet --target sys` (or `coconut -c "code" --display`).
 
 ## Writing idiomatic Coconut
 
@@ -243,9 +244,9 @@ def make_getters() =
 assert [get() for get in make_getters()] == [0, 1, 2]
 
 class Counter:
-    count: int
+    count = 0
 def Counter.inc(self) -> Counter =           # define a method outside its class
-    self.count = getattr(self, "count", 0) + 1
+    self.count += 1
     self
 assert Counter().inc().inc().count == 2
 
@@ -272,5 +273,7 @@ assert double 3 == 6                         # implicit function application: f 
 - Sequence patterns also match `data` types (which are tuples), so put data type patterns before general sequence patterns in a `match`.
 - Coconut keywords like `data`, `match`, `case`, `where`, and `addpattern` can still be used as names, but writing `match[a, b] = x` is a subscript assignment to a variable named `match`. Since normal assignment takes precedence over destructuring assignment, use patterns that aren't valid Python assignment targets (e.g. `[first] + rest = xs`) when you need destructuring.
 - To use a name that conflicts with a Coconut keyword or would be flagged by `--strict`, escape it with a backslash: `\data`, `\match`.
-- `f x` is a function call, so `print x` prints `x`. Don't put an expression directly after a name unless you mean to call it.
+- `f x` is a function call (implicit application) and `2 x` is `2 * x` (implicit coefficients), so a missing comma doesn't cause an error: `foo(1, a b)` is `foo(1, a(b))`. When code compiles but behaves oddly, check argument lists for missing commas.
+- Precedence: pipes bind more loosely than arithmetic but more tightly than comparisons, so `x |> f == y` is `(x |> f) == y`. A lambda in a pipe extends to the end of the pipe, so `xs |> x => x + 1 |> print` is `xs |> (x => x + 1 |> print)`; parenthesize lambdas in pipes.
+- `data` types are immutable (they're tuples): instead of assigning to an attribute, make a new value with `._replace(...)`.
 - Coconut's `map`/`filter`/`zip` are lazy (like Python 3), so convert with `|> list` or `|> tuple` when you need a concrete sequence.

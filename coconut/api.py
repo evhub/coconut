@@ -6,7 +6,7 @@
 # -----------------------------------------------------------------------------------------------------------------------
 
 """
-Author: Evan Hubinger
+Authors: Evan Hubinger, Claude
 License: Apache 2.0
 Description: Coconut's main external API.
 """
@@ -32,7 +32,12 @@ except ImportError:
 from coconut.root import _coconut_exec
 from coconut.util import override
 from coconut.integrations import embed
+from coconut.terminal import logger
 from coconut.exceptions import CoconutException
+from coconut.compiler.util import (
+    enable_incremental_parsing,
+    disable_incremental_parsing,
+)
 from coconut.command.command import Command
 from coconut.command.cli import cli_version
 from coconut.command.util import proc_run_args
@@ -115,6 +120,21 @@ def warm_up(*args, **kwargs):
     """Warm up the given state object."""
     state = kwargs.pop("state", False)
     return get_state(state).comp.warm_up(*args, **kwargs)
+
+
+def collect_warnings():
+    """Context manager that collects the CoconutSyntaxWarnings (and other CoconutWarnings)
+    issued in its block into the list it yields instead of showing them."""
+    return logger.collect_warnings()
+
+
+def use_incremental_parsing(on=True):
+    """Turn incremental parsing mode on or off. Returns whether incremental parsing mode is now enabled."""
+    if on:
+        return enable_incremental_parsing(reason="coconut.api.use_incremental_parsing call")
+    else:
+        disable_incremental_parsing()
+        return False
 
 
 PARSERS = {

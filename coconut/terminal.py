@@ -214,6 +214,8 @@ class Logger(object):
     tracing = False
     trace_ind = 0
     silenced_warnings = ()
+    # if not None, warnings are appended to this list instead of being shown
+    collected_warnings = None
 
     recorded_stats = defaultdict(lambda: [0, 0])
 
@@ -454,11 +456,24 @@ class Logger(object):
 
     def warn_err(self, warning, force=False):
         """Displays a warning."""
-        if (not self.quiet or force) and not self.is_silenced(warning):
+        if self.is_silenced(warning):
+            return
+        if self.collected_warnings is not None:
+            self.collected_warnings.append(warning)
+        elif not self.quiet or force:
             try:
                 raise warning
             except Exception:
                 self.warn_exc()
+
+    @contextmanager
+    def collect_warnings(self):
+        """Collect the warnings issued in the block into a list instead of showing them."""
+        old_collected_warnings, self.collected_warnings = self.collected_warnings, []
+        try:
+            yield self.collected_warnings
+        finally:
+            self.collected_warnings = old_collected_warnings
 
     def log_warn(self, *args, **kwargs):
         """Log a warning."""
