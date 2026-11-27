@@ -765,6 +765,7 @@ line 6''')
     """)
 
     setup(line_numbers=False, target="2.7")
+    assert "a[_coconut.tuple(_coconut.itertools.chain((x,), y))]" in parse("a[x, *y]")
     assert parse("from io import BytesIO", mode="lenient") == "from io import BytesIO"
     assert_raises(-> parse("def f(*, x=None) = x"), CoconutTargetError, err_has="\n        ^")
 
@@ -801,13 +802,17 @@ line 6''')
 
     setup(line_numbers=False, target="3.6")
     assert parse("def f(*, x=None) = x")
+    assert "a[(*b,)]" in parse("a[*b]")
     assert "@" not in parse("async def f(x): yield x")
 
     setup(line_numbers=False, target="3.8")
     # *Ts in subscripts in types and class bases compiles to Unpack (#662)
     assert "Generic[_coconut.typing.Unpack[Shape]]" in parse("class Array(Generic[*Shape]): pass")
     assert "tuple[int, _coconut.typing.Unpack[Shape]]" in parse("def f(x: tuple[int, *Shape]) -> None: pass")
-    assert_raises(-> parse("a[*b]"), CoconutTargetError)
+    # a[*b] is a[(*b,)] (PEP 646), except with slices
+    assert "a[(*b,)]" in parse("a[*b]")
+    assert "a[(x, *y)]" in parse("a[x, *y]")
+    assert_raises(-> parse("a[*b, 1:2]"), CoconutTargetError)
     assert parse("(a := b)")
     assert parse("print(a := 1, b := 2)")
     assert parse("def f(a, /, b) = a, b")

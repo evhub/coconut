@@ -1018,5 +1018,12 @@ def primary_test_2() -> bool:
         yield x
     assert list(bare_return_gen(0)) == []
     assert list(bare_return_gen(1)) == [1]
+    # PEP 646 starred subscripts on every target
+    star_key = (1, 2)
+    star_dict = {}
+    star_dict[*star_key] = "a"
+    star_dict[0, *star_key] = "b"
+    assert star_dict[1, 2] == "a" and star_dict[(0, 1, 2)] == "b"
+    assert star_dict[*star_key] == "a"
 
     return True

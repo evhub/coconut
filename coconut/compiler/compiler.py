@@ -194,6 +194,7 @@ from coconut.compiler.util import (
     compile_regex,
     append_it,
     interleaved_join,
+    add_list_spacing,
     strip_comments_and_join_lines,
     handle_indentation,
     tuple_str_of,
@@ -1071,7 +1072,8 @@ class Compiler(Grammar, pickleable_obj):
         cls.new_namedexpr <<= attach(cls.new_namedexpr_ref, cls.method("new_namedexpr_check"))
         cls.match_dotted_name_const <<= attach(cls.match_dotted_name_const_ref, cls.method("match_dotted_name_const_check"))
         cls.except_star_clause <<= attach(cls.except_star_clause_ref, cls.method("except_star_clause_check"))
-        cls.subscript_star <<= attach(cls.subscript_star_ref, cls.method("subscript_star_check"))
+        cls.subscript_star <<= cls.subscript_star_ref
+        cls.subscriptlist <<= attach(cls.subscriptlist_ref, cls.method("subscriptlist_handle"))
 
         # these checking handlers need to be greedy since they can be suppressed
         cls.match_check_equals <<= attach(cls.match_check_equals_ref, cls.method("match_check_equals_check"), greedy=True)
@@ -5374,6 +5376,21 @@ __annotations__["{name}"] = {annotation}
         else:
             return "_coconut.typing.Union[" + ", ".join(tokens) + "]"
 
+    def subscriptlist_handle(self, original, loc, tokens):
+        """Handle subscripts, universalizing Python 3.11 starred expressions in them."""
+        items = tokens[::2]
+        out = add_list_spacing(tokens)
+        starred = [item.startswith("*") for item in items]
+        if self.target_info >= (3, 11) or not any(starred):
+            return out
+        # x[*a, b] is equivalent to x[(*a, b)] (PEP 646), but that doesn't work with slices
+        if any(":" in item for item in items):
+            return self.check_py("311", "starred expression in indexing with slices", original, loc, [out])
+        if self.target_info >= (3, 5):
+            return "(" + out + ("," if len(tokens) == 1 else "") + ")"
+        to_chain = [item[1:] if is_star else "(" + item + ",)" for item, is_star in zip(items, starred)]
+        return "_coconut.tuple(_coconut.itertools.chain(" + ", ".join(to_chain) + "))"
+
     def testlist_star_expr_handle(self, original, loc, tokens, is_list=False):
         """Handle naked a, *b."""
         groups, has_star, has_comma = split_star_expr_tokens(tokens)
@@ -6386,9 +6403,6 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
         """Check for Python 3.11 except* statements."""
         return self.check_py("311", "except* statement", original, loc, tokens)
 
-    def subscript_star_check(self, original, loc, tokens):
-        """Check for Python 3.11 starred expressions in subscripts."""
-        return self.check_py("311", "starred expression in indexing", original, loc, tokens)
 
 # end: CHECKING HANDLERS
 # -----------------------------------------------------------------------------------------------------------------------

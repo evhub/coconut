@@ -304,7 +304,7 @@ Finally, while Coconut will try to compile Python-3-specific syntax to its unive
 - `async` and `await` statements (requires a specific target; Coconut will attempt different [backports](#backports) based on the targeted version),
 - `:=` assignment expressions (requires `--target 3.8`),
 - positional-only function parameters (use [pattern-matching function definition](#pattern-matching-functions) for universal code) (requires `--target 3.8`),
-- `a[x, *y]` variadic generic syntax (use [type parameter syntax](#type-parameter-syntax) for universal code) (requires `--target 3.11`), and
+- starred subscripts that also contain slices, such as `a[*x, 1:2]` (requires `--target 3.11`; starred subscripts without slices, such as `a[x, *y]`, work on any target, since they're equivalent to `a[(x, *y)]`), and
 - `except*` multi-except statements (requires `--target 3.11`).
 
 _Note: Coconut also universalizes many magic methods, including making `__bool__` and [`__set_name__`](https://docs.python.org/3/reference/datamodel.html#object.__set_name__) work on any Python version._

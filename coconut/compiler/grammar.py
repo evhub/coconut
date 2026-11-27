@@ -1361,7 +1361,8 @@ class Grammar(object):
             | class_star_subscript
             | Optional(subscript_star) + new_namedexpr_test
         )
-        subscriptlist = itemlist(subscript, comma, suppress_trailing=False)
+        subscriptlist = Forward()
+        subscriptlist_ref = tokenlist(subscript, comma, suppress=False, suppress_trailing=False)
 
         # for .$[]
         slicetestgroup = Optional(test_no_chain, default="")
