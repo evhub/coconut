@@ -6,7 +6,7 @@
 # -----------------------------------------------------------------------------------------------------------------------
 
 """
-Authors: Evan Hubinger, Fred Buchanan
+Authors: Evan Hubinger, Fred Buchanan, Claude
 License: Apache 2.0
 Description: This file contains all the global constants used across Coconut.
 """
@@ -1047,8 +1047,8 @@ all_reqs = {
         ("typing", "py<35"),
     ),
     "lsp": (
-        ("pygls", "py39"),
         ("jedi", "py>=39"),
+        ("pyflakes", "py>=39"),
     ),
     "watch": (
         "watchdog",
@@ -1110,7 +1110,7 @@ unpinned_min_versions = {
     "sphinxcontrib_applehelp": (2,),
     "sphinxcontrib_htmlhelp": (2,),
     "pyright": (1, 1),
-    ("pygls", "py39"): (2, 0),
+    ("pyflakes", "py>=39"): (3, 2),
     ("jupyter-console", "py>=37"): (6, 6),
     ("typing", "py<35"): (3, 10),
     ("ipykernel", "py>=310"): (7,),

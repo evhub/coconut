@@ -270,13 +270,12 @@ class Command(object):
 
             # the language server takes over stdin/stdout, so it has to be handled before anything else
             if args.lsp:
-                try:
-                    from coconut.lsp.server import main as start_language_server
-                except ImportError:
+                if sys.version_info < (3, 8):
                     raise CoconutException(
-                        "coconut --lsp requires pygls and jedi",
-                        extra="run '{python} -m pip install coconut[lsp]' to fix".format(python=sys.executable),
+                        "coconut --lsp requires Python 3.8 or later",
+                        extra="run it with a newer Python (the code it checks can still target any Python version)",
                     )
+                from coconut.lsp.server import main as start_language_server
                 start_language_server()
                 return
 

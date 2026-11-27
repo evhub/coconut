@@ -267,7 +267,7 @@ arguments.add_argument(
 arguments.add_argument(
     "--lsp",
     action="store_true",
-    help="start the Coconut language server (communicates over stdio; requires coconut[lsp])",
+    help="start the Coconut language server (communicates over stdio; install coconut[lsp] for completions, hover, go to definition, and linting)",
 )
 
 arguments.add_argument(

@@ -1,0 +1,17 @@
+{
+    "name": "coconut",
+    "owner": {
+        "name": "evhub",
+        "url": "https://github.com/evhub"
+    },
+    "description": "Coconut language support for Claude Code: the Coconut language server (errors after every edit, code navigation), MCP tools for checking and compiling Coconut and looking up its documentation, and a skill pointing Claude to Coconut's AI guide.",
+    "plugins": [
+        {
+            "name": "coconut",
+            "source": "./editors/claude-code",
+            "description": "Coconut language server, MCP tools (check, compile, docs, hover, definitions, references, symbols), and a skill for writing idiomatic Coconut. Requires coconut[lsp].",
+            "category": "development",
+            "tags": ["coconut", "python", "functional", "lsp", "language-server"]
+        }
+    ]
+}
