@@ -462,6 +462,24 @@ def test_coconut_lsp_flags_set_defaults(project):
         c.close()
 
 
+def test_project_config(tmp_path):
+    (tmp_path / "pyproject.toml").write_text('[tool.coconut]\npure = true\n')
+    impure = tmp_path / "impure.coco"
+    impure.write_text(PURE_CODE)
+    c = LspClient(str(tmp_path))
+    try:
+        uri = c.open(str(impure), PURE_CODE)
+        diags = [d for d in c.diagnostics(uri) if "mutating method" in d["message"]]
+        assert len(diags) == 1, diags
+    finally:
+        c.close()
+    code, out, err = run_cli("check", str(impure))
+    assert "mutating method 'append'" in out, out + err
+    (tmp_path / "pyproject.toml").write_text('[tool.coconut]\npure = 1\n')
+    code, out, err = run_cli("check", str(impure))
+    assert "invalid project configuration" in out and "must be true or false" in out, out + err
+
+
 def test_cross_module_intelligence(client, project):
     # helpers.coco has no compiled helpers.py, so jedi only sees it through the overlay
     assert not os.path.exists(os.path.join(project, "helpers.py"))

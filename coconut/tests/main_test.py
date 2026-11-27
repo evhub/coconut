@@ -1181,6 +1181,54 @@ class TestShell(unittest.TestCase):
         finally:
             shutil.rmtree(guide_dir)
 
+    def test_no_write_package(self):
+        pkg_dir = tempfile.mkdtemp()
+        try:
+            os.mkdir(os.path.join(pkg_dir, "pkg"))
+            with univ_open(os.path.join(pkg_dir, "pkg", "mod.coco"), "w") as mod_file:
+                mod_file.write("x = 1\n")
+            # compiling a directory without writing used to fail with an invalid package level
+            call_coconut([pkg_dir, "--no-write"])
+            assert not os.path.exists(os.path.join(pkg_dir, "pkg", "mod.py"))
+        finally:
+            shutil.rmtree(pkg_dir)
+
+    def test_project_config(self):
+        from coconut.project_config import parse_table, _fallback_parse_table, find_project_config
+        toml_text = (
+            '[project]\nname = "pkg"\n\n'
+            '[tool.coconut]  # comment\ntarget = "3.10"\npure = true\nno-tco = false\n\n'
+            '[tool.other]\nstrict = true\n'
+        )
+        expected = {"target": "3.10", "pure": True, "no-tco": False}
+        assert parse_table(toml_text, ("tool", "coconut")) == expected
+        assert _fallback_parse_table(toml_text, ("tool", "coconut"), "<test>") == expected
+        assert parse_table("[project]\n", ("tool", "coconut")) == {}
+
+        proj_dir = tempfile.mkdtemp()
+        try:
+            src_dir = os.path.join(proj_dir, "src")
+            os.mkdir(src_dir)
+            with univ_open(os.path.join(proj_dir, "pyproject.toml"), "w") as config_file:
+                config_file.write('[tool.coconut]\nstrict = true\npure = true\ntarget = "3.10"\n')
+            assert find_project_config(src_dir) == {"strict": True, "pure": True, "target": "3.10"}
+            impure_file = os.path.join(src_dir, "impure.coco")
+            with univ_open(impure_file, "w") as impure:
+                impure.write("x = 1\nx = 2\n")
+            call_coconut(
+                [impure_file, "--no-write"],
+                assert_output="disallowed reassignment",
+                assert_output_only_at_end=False,
+                check_errors=False,
+                expect_retcode=1,
+            )
+            # a pyproject.toml without a [tool.coconut] table means no configuration
+            with univ_open(os.path.join(proj_dir, "pyproject.toml"), "w") as config_file:
+                config_file.write('[project]\nname = "pkg"\n')
+            call_coconut([impure_file, "--no-write"])
+        finally:
+            shutil.rmtree(proj_dir)
+
     if not WINDOWS:
         def test_import_hook_preserves_stdin(self):
             hook_dir = tempfile.mkdtemp()

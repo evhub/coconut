@@ -27,7 +27,7 @@ import time
 import traceback
 
 from coconut.lsp import docs
-from coconut.lsp.compiler import DEFAULT_SETTINGS, SEVERITY_ERROR, first_error_line, make_range, repair_source
+from coconut.lsp.compiler import DEFAULT_SETTINGS, SEVERITY_ERROR, first_error_line, make_range, project_settings, repair_source
 from coconut.lsp.intel import Analyzer, jedi_available
 from coconut.lsp.protocol import (
     INVALID_PARAMS,
@@ -99,6 +99,8 @@ class CoconutLanguageServer(object):
         self.settings = dict(DEFAULT_SETTINGS)
         if default_settings:
             self.settings.update(default_settings)
+        # settings set on the command line or by the editor, which take precedence over the project configuration
+        self.explicit_settings = set(default_settings or ())
         self.roots = []
         self.initialized = False
         self.shutting_down = False
@@ -260,6 +262,7 @@ class CoconutLanguageServer(object):
         for key in DEFAULT_SETTINGS:
             if key in flat and flat[key] is not None and flat[key] != "":
                 new[key] = flat[key]
+                self.explicit_settings.add(key)
         if "compileTimeout" in flat:
             try:
                 self.compiler.timeout = float(flat["compileTimeout"])
@@ -383,6 +386,7 @@ class CoconutLanguageServer(object):
 
     def compile_document(self, doc, text, version, settings):
         started = time.time()
+        settings, config_diagnostics = project_settings(settings, doc.path, self.explicit_settings)
         try:
             result = self.compiler.call("compile", {"code": text, "settings": settings})
         except CompileTimeout as err:
@@ -414,7 +418,7 @@ class CoconutLanguageServer(object):
             doc.compiled_version = version
             current = doc.version == version
             if current:
-                doc.diagnostics = result.get("diagnostics", [])
+                doc.diagnostics = config_diagnostics + result.get("diagnostics", [])
                 doc.compiled_event.set()
         if current:
             self.publish(doc)

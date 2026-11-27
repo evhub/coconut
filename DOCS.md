@@ -379,6 +379,19 @@ The following are disallowed in `--pure` mode:
 
 Instead of mutating objects, `--pure` code should build new ones: use [data types](#data) and `._replace` instead of mutable classes, and comprehensions, [pipelines](#pipes), and [`fmap`](#fmap) instead of loops that mutate.
 
+#### Project Configuration
+
+Coconut reads project-wide defaults from the `[tool.coconut]` table of a project's `pyproject.toml`:
+```toml
+[tool.coconut]
+target = "3.10"
+strict = true
+pure = true
+```
+The supported options are `target`, `strict`, `pure`, `no-tco`, and `no-wrap-types`, which work like the [command-line flags](#usage) of the same names. As with other Python tools, the nearest `pyproject.toml` above the files being compiled (searching upwards) is the one that applies, even if it has no `[tool.coconut]` table, and the search never goes above a `site-packages` directory, so installed packages aren't affected by the configuration of a project they happen to be installed inside.
+
+Project configuration applies whenever Coconut compiles files, whether from the command line (including `coconut-run`), through [`coconut.api`](#coconut-api) (including [automatic compilation](#automatic-compilation)), or in the [language server](#language-server). A `--target` passed on the command line (or set by your editor) takes precedence over the configured `target` (and `coconut-run` and automatic compilation always target the Python they're running on), and `strict`, `pure`, `no-tco`, and `no-wrap-types` can only turn those options on. The configuration doesn't apply to `coconut -c` or the interpreter.
+
 #### Backports
 
 In addition to the newer Python features that Coconut can backport automatically itself to older Python versions, Coconut will also automatically compile code to make use of a variety of external backports as well. These backports are automatically installed with Coconut if needed and Coconut will automatically use them instead of the standard library if the standard library is not available. These backports are:
@@ -559,7 +572,7 @@ vim.lsp.config("coconut", {cmd = {"coconut", "--lsp"}, filetypes = {"coconut"}})
 vim.lsp.enable("coconut")
 ```
 
-Flags passed along with `--lsp` set the server's defaults, so e.g. `coconut --lsp --strict --pure --target 3.10` checks code with [`--strict`](#strict-mode) and [`--pure`](#pure-mode) for Python 3.10 unless the editor overrides those settings. The server also accepts the initialization options (also accepted through `workspace/didChangeConfiguration`) `target` (the Python version to target, defaulting to `"sys"`), `strict` (enable [`--strict`](#strict-mode) checks), `pure` (enable [`--pure`](#pure-mode) checks), `lint` (pyflakes linting, on by default), `mypy` (type checking on open and save, off by default; requires `mypy`), and `compileTimeout` (in seconds, default `60`).
+The server also applies each file's [project configuration](#project-configuration). Flags passed along with `--lsp` set the server's defaults, so e.g. `coconut --lsp --strict --pure --target 3.10` checks code with [`--strict`](#strict-mode) and [`--pure`](#pure-mode) for Python 3.10 unless the editor overrides those settings. The server also accepts the initialization options (also accepted through `workspace/didChangeConfiguration`) `target` (the Python version to target, defaulting to `"sys"`), `strict` (enable [`--strict`](#strict-mode) checks), `pure` (enable [`--pure`](#pure-mode) checks), `lint` (pyflakes linting, on by default), `mypy` (type checking on open and save, off by default; requires `mypy`), and `compileTimeout` (in seconds, default `60`).
 
 Hover, completions, go to definition, and the other code intelligence features work by analyzing the compiled Python with `jedi` and mapping the results back to the Coconut source. Compilation happens in a background process that reuses parsing work between edits, and when the current version of a file doesn't compile, the server analyzes it with the broken lines neutralized, so the rest of the file stays analyzable.
 
@@ -570,6 +583,8 @@ The same analysis is also available from the command line, for scripts, CI, and 
 Coconut ships with a condensed guide to writing idiomatic Coconut that's designed to be given to AI coding assistants, available by running `coconut --ai-docs` or online at [`llms.txt`](./llms.txt). To make sure that AI assistants that come across compiled Coconut code know what it is, every compiled file starts with a comment noting the Coconut source file it was compiled from (which should be edited instead of the compiled file) and pointing to that guide.
 
 If you're using an AI coding assistant on a Coconut project, it's recommended to point it at that guide, e.g. by adding a line like "This project is written in Coconut; run `coconut --ai-docs` to learn how to write idiomatic Coconut code, and always edit `.coco` files rather than compiled `.py` files." to your project's `CLAUDE.md`/`AGENTS.md`.
+
+To hold AI-written code to a consistent, functional style, it's also recommended to turn on [`strict`](#strict-mode) and [`pure`](#pure-mode) checks in your [project configuration](#project-configuration), so that every compile (and the language server) reports reassignment, mutation, and style problems no matter how the assistant invokes Coconut.
 
 AI coding assistants can also use Coconut's [language server](#language-server) tools directly. For [Claude Code](https://code.claude.com), this repository is a plugin marketplace with a Coconut plugin that gives Claude the language server (so it sees Coconut errors right after each edit and can navigate Coconut code), MCP tools for checking and compiling Coconut and looking up its documentation, and a skill pointing it to the guide above. To install it (after installing `coconut[lsp]`), run
 ```

@@ -118,6 +118,7 @@ from coconut.compiler.util import (
 )
 from coconut.compiler.header import gethash
 from coconut.command.cli import arguments, cli_version
+from coconut.project_config import find_project_config_file, load_project_config
 
 # matches the location at the start of a MyPy error line (path.py:line: or path.py:line:col:)
 mypy_location_regex = re.compile(r"^(?P<color>(?:\x1b\[[0-9;]*m)*)(?P<path>[^:\n\x1b]+\.pyi?):(?P<ln>\d+)(?::\d+)?(?P<rest>: .*)$")
@@ -244,6 +245,22 @@ class Command(object):
                 kill_children()
             sys.exit(self.exit_code)
 
+    def apply_project_config(self, args):
+        """Apply the [tool.coconut] configuration in the pyproject.toml that applies to args.source.
+        Explicit command-line arguments take precedence, and boolean options can only turn things on."""
+        config_file = find_project_config_file(args.source)
+        if config_file is None:
+            return
+        config = load_project_config(config_file)
+        if not config:
+            return
+        logger.log("Using [tool.coconut] configuration from", config_file + ":", config)
+        if args.target is None and "target" in config:
+            args.target = config["target"]
+        for key in ("strict", "pure", "no_tco", "no_wrap_types"):
+            if config.get(key):
+                setattr(args, key, True)
+
     def execute_args(self, args, interact=True, original_args=None):
         """Handle command-line arguments."""
         with self.handling_exceptions():
@@ -352,6 +369,10 @@ class Command(object):
                 self.site_uninstall()
             if args.site_install:
                 self.site_install()
+
+            # apply the project's [tool.coconut] configuration, if any
+            if args.source is not None:
+                self.apply_project_config(args)
 
             # process general compiler args
             if args.line_numbers:
@@ -630,15 +651,14 @@ class Command(object):
         with univ_open(codepath, "r") as opened:
             code = opened.read()
 
-        package_level = -1
+        # the package level is needed even when not writing (e.g. with --no-write)
+        package_level = self.get_package_level(codepath) if package is True else -1
         if destpath is not None:
             destpath = fixpath(destpath)
             destdir = os.path.dirname(destpath)
             ensure_dir(destdir, logger=logger)
-            if package is True:
-                package_level = self.get_package_level(codepath)
-                if package_level == 0:
-                    self.create_package(destdir)
+            if package is True and package_level == 0:
+                self.create_package(destdir)
 
         foundhash = None if force else self.has_hash_of(destpath, code, package_level)
         if foundhash:

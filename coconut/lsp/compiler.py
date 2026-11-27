@@ -57,6 +57,33 @@ _coconut_lock = threading.Lock()
 _current_setup = None
 
 
+def project_settings(settings, path, explicit=()):
+    """Apply the [tool.coconut] configuration in the pyproject.toml that applies to the given file.
+
+    Settings named in explicit (set on the command line or by the editor) take precedence for
+    target, and the project configuration can only turn strict and pure checks on. Returns
+    (settings, diagnostics), with a diagnostic if the configuration is invalid."""
+    if not path:
+        return settings, []
+    try:
+        from coconut.project_config import find_project_config
+        config = find_project_config(path)
+    except Exception as err:
+        return settings, [{
+            "range": make_range(0, 0, 0, 0), "severity": SEVERITY_WARNING, "source": "coconut",
+            "message": "ignoring invalid project configuration: " + str(err),
+        }]
+    if not config:
+        return settings, []
+    new = dict(settings)
+    if "target" in config and "target" not in explicit:
+        new["target"] = config["target"]
+    for key in ("strict", "pure"):
+        if config.get(key):
+            new[key] = True
+    return new, []
+
+
 def coconut_info():
     """Information about the Coconut installation available to this interpreter."""
     info = {

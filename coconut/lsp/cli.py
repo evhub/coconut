@@ -80,10 +80,14 @@ class Engine(object):
         path = os.path.abspath(path)
         if text is None:
             text = read_file(path)
-        key = (path, text, json.dumps(self.settings, sort_keys=True))
+        from coconut.lsp.compiler import first_error_line, project_settings, repair_source
+        # only explicitly passed options are in self.settings, so they all take precedence
+        settings, config_diagnostics = project_settings(self.settings, path, set(self.settings))
+        key = (path, text, json.dumps(settings, sort_keys=True))
         if key not in self.cache:
-            from coconut.lsp.compiler import first_error_line, repair_source
-            result = self.compiler.call("compile", {"code": text, "settings": self.settings})
+            result = self.compiler.call("compile", {"code": text, "settings": settings})
+            if config_diagnostics:
+                result = dict(result, diagnostics=config_diagnostics + result.get("diagnostics", []))
             good = CompiledDocument(text, result["compiled"]) if result.get("compiled") is not None else None
             repaired, diags = text, result.get("diagnostics", [])
             for _ in range(3):
@@ -93,7 +97,7 @@ class Engine(object):
                 repaired = repair_source(repaired, line) if line is not None else None
                 if repaired is None:
                     break
-                attempt = self.compiler.call("compile", {"code": repaired, "settings": dict(self.settings, lint=False)})
+                attempt = self.compiler.call("compile", {"code": repaired, "settings": dict(settings, lint=False)})
                 diags = attempt.get("diagnostics", [])
                 if attempt.get("compiled") is not None:
                     good = CompiledDocument(repaired, attempt["compiled"])
