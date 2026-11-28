@@ -20,7 +20,9 @@ def easter_egg_test() -> bool:
     orig_name = __name__
     from * import *  # type: ignore
     assert __name__ == orig_name
-    assert locals()["byteorder"] == _sys.byteorder
+    # (since PEP 667, writing to locals() inside a function no longer persists on Python 3.13+)
+    if _sys.version_info < (3, 13):
+        assert locals()["byteorder"] == _sys.byteorder
     return True
 
 def mypy_test() -> bool:
