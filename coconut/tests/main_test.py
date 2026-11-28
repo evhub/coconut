@@ -170,8 +170,10 @@ always_err_strs = (
 ignore_error_lines_with = (
     # ignore SyntaxWarnings containing assert_raises or raise
     "raise",
-    # ignore Pyright errors
+    # ignore type checker errors (which are checked separately for MyPy with check_mypy),
+    #  both in Pyright's own format and in the file:line: error: format Coconut reports them in
     " - error: ",
+    ": error: ",
 )
 
 mypy_snip = "a: str = count()[0]"
