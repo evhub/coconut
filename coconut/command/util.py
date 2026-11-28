@@ -96,6 +96,8 @@ from coconut.constants import (
     extra_pyright_args,
     pyright_config_file,
     tabideal,
+    code_exts,
+    comp_ext,
 )
 
 if PY26:
@@ -644,6 +646,57 @@ def proc_run_args(args=()):
         if not any(arg.startswith(run_arg_name) for arg in args):
             args.append(run_arg)
     return args
+
+
+def get_run_module_and_argv(args):
+    """If args starts with -m/--module, return (module, the args after the module), else None."""
+    if not args:
+        return None
+    arg = args[0]
+    if arg in ("-m", "--module"):
+        if len(args) < 2:
+            return None  # let argparse report the missing module
+        return args[1], args[2:]
+    if arg.startswith("--module="):
+        return arg[len("--module="):], args[1:]
+    if arg.startswith("-m") and not arg.startswith("--"):
+        return arg[len("-m"):], args[1:]
+    return None
+
+
+def find_module_source(module, search_dirs):
+    """Find the source path to compile to be able to run the given module with python -m.
+
+    That's the module's top-level package (so that its relative imports work), or the module
+    itself if it isn't in a package. Returns None for a Python module with no Coconut source
+    and raises CoconutException if the module can't be found in search_dirs."""
+    parts = module.split(".")
+    if not all(parts):
+        raise CoconutException("invalid module name " + repr(module))
+    module_exts = code_exts + (comp_ext,)
+    for base_dir in search_dirs:
+        module_path = os.path.join(base_dir, *parts)
+        module_file = None
+        for ext in module_exts:
+            if os.path.isfile(module_path + ext):
+                module_file = module_path + ext
+                break
+        # like Python, prefer a regular package over a module, but a module over a namespace package
+        is_package = os.path.isdir(module_path) and (
+            module_file is None
+            or any(os.path.isfile(os.path.join(module_path, "__init__" + ext)) for ext in module_exts)
+        )
+        if is_package or module_file is not None:
+            if is_package or len(parts) > 1:
+                return os.path.join(base_dir, parts[0])
+            elif os.path.splitext(module_file)[1] in code_exts:
+                return module_file
+            else:
+                return None
+    raise CoconutException(
+        "could not find module " + repr(module),
+        extra="-m/--module looks for modules in the current directory and sys.path, just like 'python -m'",
+    )
 
 
 def get_python_lib():

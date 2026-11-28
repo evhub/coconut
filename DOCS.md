@@ -123,7 +123,7 @@ depth: 1
 
 ```
 coconut [-h] [--and source [dest ...]] [-v] [-t version] [-i] [-p] [-a] [-l]
-        [--no-line-numbers] [-k] [-w] [-r] [-n] [-d] [-q] [-s]
+        [--no-line-numbers] [-k] [-w] [-r] [-m module] [-n] [-d] [-q] [-s]
         [--silence-warnings regex] [--pure] [--no-tco]
         [--no-wrap-types] [-c code] [-j processes] [-f] [--minify] [--jupyter ...]
         [--mypy ...] [--pyright] [--argv ...] [--tutorial] [--docs] [--lsp] [--mcp] [--ai-docs] [--style name] [--vi-mode]
@@ -164,6 +164,8 @@ dest                destination directory for compiled files (defaults to
                       include source code in comments for ease of debugging
 -w, --watch           watch a directory and recompile on changes
 -r, --run             execute compiled Python
+-m, --module module   compile the given module (found like an import) along with the rest of its
+                      package, then run it with 'python -m' (pass arguments to it with --argv)
 -n, --no-write, --nowrite
                       disable writing compiled Python
 -d, --display         print compiled Python
@@ -247,6 +249,27 @@ which will quietly compile and run `<source>`, passing any additional arguments 
 `coconut-run` will always enable [automatic compilation](#automatic-compilation), such that Coconut source files can be directly imported from any Coconut files run via `coconut-run`. Additionally, compilation parameters (e.g. `--no-tco`) used in `coconut-run` will be passed along and used for any auto compilation.
 
 On Python 3.4+, `coconut-run` will use a `__coconut_cache__` directory to cache the compiled Python. Note that `__coconut_cache__` will always be removed from `__file__`.
+
+#### Running Modules
+
+The usual way to run Coconut code is to compile it and then run the compiled Python just like any other Python code, e.g. with
+```
+coconut my_package
+python -m my_package.my_module
+```
+or to enable [automatic compilation](#automatic-compilation) (e.g. by running `coconut --site-install` once), after which
+```
+python -m my_package.my_module
+```
+will compile `my_package/my_module.coco` (and anything else in `my_package` that it imports) on the fly before running it. If you can, using automatic compilation like that is the recommended way to run Coconut modules.
+
+As a convenience, Coconut also provides
+```
+coconut -m <module> --argv <args>
+```
+which looks up `<module>` the same way `python -m` would (in the current directory, then the rest of `sys.path`), compiles it along with the rest of the top-level package it's in (in place, exactly as `coconut <package directory>` would, such that the package's relative imports work), and then runs it with `python -m <module> <args>`. If `<module>` isn't in a package, only `<module>` itself is compiled. All the usual compilation options (e.g. `--target`, `--strict`, `--force`, `--mypy`) can be combined with `-m`, but not `--run`, `--interact`, `--watch`, `--no-write`, or a source path, since `-m` determines what to compile and always runs it.
+
+`-m` also works with [`coconut-run`](#coconut-scripts): `coconut-run -m <module> <args>` is equivalent to `coconut --quiet --target sys --keep-lines -m <module> --argv <args>`, passing any arguments after the module name to the module. Unlike `coconut-run <source>`, `coconut-run -m <module>` doesn't use a `__coconut_cache__` directory, since `python -m` has to be able to import the compiled package.
 
 #### Naming Source Files
 
@@ -4324,9 +4347,19 @@ _Can't be done without a long series of checks for each `match` statement. See t
 
 #### `starmap`
 
-**starmap**(_function_, _iterable_)
+**starmap**(_function_, _iterable_, \*, _map\_using_=`None`)
+
+**starmap.using_processes**(_function_, _iterable_, \*, _chunksize_=`1`, _stream_=`False`, _ordered_=`True`)
+
+**starmap.using_threads**(_function_, _iterable_, \*, _chunksize_=`1`, _stream_=`False`, _ordered_=`True`)
 
 Coconut provides a modified version of `itertools.starmap` that supports `reversed`, `repr`, optimized normal (and iterator) slicing, `len`, and `func`/`iter` attributes.
+
+If _map\_using_ is passed, `starmap` instead returns `map_using(args => function(*args), iterable)`, using a version of `args => function(*args)` that, unlike a lambda, can be pickled whenever _function_ can be. That makes it possible to use [`process_map`](#process_map) or [`thread_map`](#thread_map) as _map\_using_ to compute a `starmap` in parallel.
+
+`starmap.using_processes` and `starmap.using_threads` are shortcuts for doing so: `starmap.using_processes(function, iterable, **kwargs)` is equivalent to `starmap(function, iterable, map_using=process_map$(**kwargs))`, which returns a `process_map` object (and similarly for `starmap.using_threads` and `thread_map`). As a result, they take the same keyword arguments as, and work the same way as, [`process_map`/`thread_map`](#process_map-and-thread_map): to make multiple sequential calls share one pool (and to set its _max\_workers_), make them inside a `with process_map.multiple_sequential_calls():` (or `thread_map.multiple_sequential_calls()`) block, which is also required to use _stream_=`True`. Similarly, [`map.using_processes`](#process_map-and-thread_map) and `map.using_threads` are just `process_map` and `thread_map`.
+
+Note that, as with `process_map`, `starmap.using_processes` requires _function_ to be pickleable, so it should be defined at the top level of a module rather than as a lambda.
 
 ##### Python Docs
 
@@ -4352,6 +4385,22 @@ range(1, 5) |> map$(range) |> starmap$(print) |> consume
 ```coconut_python
 import itertools, collections
 collections.deque(itertools.starmap(print, map(range, range(1, 5))), maxlen=0)
+```
+
+**Coconut:**
+```coconut
+def simulate(seed, steps) = ...  # some expensive computation
+
+results = [(1, 1000), (2, 2000)] |> starmap.using_processes$(simulate) |> list
+```
+
+**Python:**
+```coconut_python
+from multiprocessing import Pool
+def simulate(seed, steps): ...  # some expensive computation
+
+with Pool() as pool:
+    results = pool.starmap(simulate, [(1, 1000), (2, 2000)])
 ```
 
 #### `zip_longest`
@@ -4631,6 +4680,100 @@ from itertools import cycle, islice
 print(list(islice(cycle(range(2)), 4)))
 ```
 
+#### `iterate`
+
+**iterate**(_func_, _x_, _times_=`None`)
+
+Coconut's `iterate` built-in (like Haskell's `iterate`) produces the infinite iterator `x, func(x), func(func(x)), ...`. If _times_ is passed, `iterate` instead stops after its first _times_ elements, such that `func` is called `times - 1` times.
+
+`iterate` is the idiomatic way to write a loop that repeatedly updates some state without reassigning any variables: write the update as a function from one state to the next, then take what you need from `iterate` with [iterator slicing](#iterator-slicing), [`takewhile`](#takewhile)/[`dropwhile`](#dropwhile), or Coconut's other iterator built-ins (see the examples below). Since `iterate` is infinite unless _times_ is passed, make sure to only consume as much of it as you need (e.g. `iterate(func, x)$[:n] |> list`, not `iterate(func, x) |> list`).
+
+`iterate` objects are lazy, computing each element only once it's needed, and support:
+- iterating over them multiple times, with each iteration starting over from _x_ (so _func_ should be pure, since it will be called again each time),
+- efficient indexing and slicing, including [iterator slicing](#iterator-slicing): `iterate(func, x)$[n]` just applies `func` to `x` `n` times without storing anything, and slices are lazy and can be iterated over multiple times,
+- [`fmap`](#fmap), `repr`, pickling, `copy`, `.index()`, and `func`/`x`/`times` attributes,
+- if _times_ is passed, `len`, `reversed` (which, like slicing with a negative step, has to store the elements it reverses), and negative indices.
+
+Additionally, since they can be iterated over multiple times, [`reiterable`](#reiterable) and [`tee`](#tee) return `iterate` objects unchanged.
+
+Iterating over `iterate(func, x)` takes time proportional to the number of elements produced. Note that this is not true of the naive recursive definition `def iterate(func, x) = (x,) :: iterate(func, func(x))`, which builds up a chain of nested iterators that makes reaching the _n_th element take time proportional to _n_², such that, for example, it takes seconds just to get to the 20,000th element.
+
+##### Example
+
+**Coconut:**
+```coconut
+# the first power of 2 above 1000, with no loop variables
+assert iterate((.*2), 1) |> dropwhile$(.<=1000) |> .$[0] == 1024
+
+# Newton's method for the square root of 2
+def newton_step(x) = (x + 2/x) / 2
+assert abs(iterate(newton_step, 1.0)$[5] - 2**0.5) < 1e-12
+
+assert iterate((.+3), 0, times=4) |> reversed |> list == [9, 6, 3, 0]
+```
+
+**Python:**
+```coconut_python
+x = 1
+while x <= 1000:
+    x *= 2
+assert x == 1024
+
+def newton_step(x):
+    return (x + 2/x) / 2
+x = 1.0
+for _ in range(5):
+    x = newton_step(x)
+assert abs(x - 2**0.5) < 1e-12
+
+assert list(reversed([3*i for i in range(4)])) == [9, 6, 3, 0]
+```
+
+#### `unfold`
+
+**unfold**(_func_, _seed_=`None`)
+
+Coconut's `unfold` built-in (like Haskell's `unfoldr`) builds up an iterator from a state, starting from _seed_. At each step, `func(state)` should return either a `(value, next_state)` tuple, in which case `unfold` yields `value` and continues from `next_state`, or `None`, in which case `unfold` stops. If no _seed_ is passed, the first call is `func(None)`, letting _func_ produce the initial state itself.
+
+Where [`iterate`](#iterate) always continues forever (or for a fixed number of steps), `unfold` lets the state decide when to stop, and lets the values produced be different from the state that produces them. Like `iterate`, `unfold` is a way to write loops without reassigning variables.
+
+`unfold` objects are lazy, calling _func_ only when the next element is needed, and support:
+- iterating over them multiple times, with each iteration starting over from _seed_ (so _func_ should be pure, since it will be called again each time),
+- [iterator slicing](#iterator-slicing), with slices that are lazy and can be iterated over multiple times (though, since the length of an `unfold` isn't known in advance, negative indices and steps work as they do for any other iterator, by going through the whole thing),
+- [`fmap`](#fmap), `repr`, pickling, `copy`, `.index()`, and `func`/`seed` attributes.
+
+Since an `unfold` object's length isn't known until it has been iterated over, `unfold` doesn't support `len`, `reversed`, or normal indexing; use iterator slicing instead (e.g. `$[::-1]` to reverse). Additionally, since they can be iterated over multiple times, [`reiterable`](#reiterable) and [`tee`](#tee) return `unfold` objects unchanged.
+
+##### Example
+
+**Coconut:**
+```coconut
+# the digits of a number, from the right
+digits = unfold$(n => None if n == 0 else (n % 10, n // 10))
+assert digits(1234) |> list == [4, 3, 2, 1]
+
+# the Fibonacci numbers
+fibs = unfold((def ((a, b)) => (a, (b, a + b))), (0, 1))
+assert fibs$[:8] |> list == [0, 1, 1, 2, 3, 5, 8, 13]
+```
+
+**Python:**
+```coconut_python
+def digits(n):
+    while n != 0:
+        yield n % 10
+        n //= 10
+assert list(digits(1234)) == [4, 3, 2, 1]
+
+import itertools
+def fib_gen():
+    a, b = 0, 1
+    while True:
+        yield a
+        a, b = b, a + b
+assert list(itertools.islice(fib_gen(), 8)) == [0, 1, 1, 2, 3, 5, 8, 13]
+```
+
 #### `cartesian_product`
 
 **cartesian\_product**(*_iterables_, _repeat_=`1`)
@@ -4798,7 +4941,7 @@ Coconut provides an optimized version of `itertools.tee` as a built-in under the
 
 Though `tee` is not deprecated, [`reiterable`](#reiterable) is generally recommended over `tee`.
 
-Custom `tee`/`reiterable` implementations for custom [Containers/Collections](https://docs.python.org/3/library/collections.abc.html) should be put in the `__copy__` method. Note that all [Sequences/Mappings/Sets](https://docs.python.org/3/library/collections.abc.html) are always assumed to be reiterable even without calling `__copy__`.
+Custom `tee`/`reiterable` implementations for custom [Containers/Collections](https://docs.python.org/3/library/collections.abc.html) should be put in the `__copy__` method. Note that all [Sequences/Mappings/Sets](https://docs.python.org/3/library/collections.abc.html), as well as [`iterate`](#iterate) and [`unfold`](#unfold) objects, are always assumed to be reiterable even without calling `__copy__`.
 
 ##### Python Docs
 
@@ -4880,6 +5023,8 @@ Coconut provides a `multiprocessing`-based version of `map` under the name `proc
 Because `process_map` uses multiple processes for its execution, it is necessary that all of its arguments be pickleable. Only objects defined at the module level, and not lambdas, objects defined inside of a function, or objects defined inside of the interpreter, are pickleable. Furthermore, on Windows, it is necessary that all calls to `process_map` occur inside of an `if __name__ == "__main__"` guard.
 
 `process_map` supports a `chunksize` argument, which determines how many items are passed to each process at a time. Larger values of _chunksize_ are recommended when dealing with very long iterables. Additionally, in the multi-iterable case, _strict_ can be set to `True` to ensure that all iterables are the same length.
+
+`process_map` is also available as `map.using_processes` (and `thread_map` as `map.using_threads`). For a parallel version of [`starmap`](#starmap), which is useful when the arguments are already grouped into tuples (since `process_map(t => f(*t), pairs)` doesn't work, as lambdas can't be pickled), use `starmap.using_processes` (or `starmap.using_threads`).
 
 _Deprecated: `parallel_map` is available as a deprecated alias for `process_map`. Note that deprecated features are disabled in `--strict` mode._
 
@@ -5187,6 +5332,8 @@ Recommended usage is as a debugging tool, where the code `from coconut import em
 Automatic compilation lets you simply import Coconut files directly without having to go through a compilation step first. Automatic compilation can be enabled either by importing [`coconut.api`](#coconut-api) before you import anything else, or by running `coconut --site-install`.
 
 Once automatic compilation is enabled, Coconut will check each of your imports to see if you are attempting to import a `.coco` file and, if so, automatically compile it for you. Note that, for Coconut to know what file you are trying to import, it will need to be accessible via `sys.path`, just like a normal import.
+
+If automatic compilation is enabled whenever Python starts (by running `coconut --site-install`), it also applies to `python -m`, such that `python -m my_package.my_module` will compile and run `my_package/my_module.coco`, along with anything it imports from `my_package` (including through relative imports). That makes it the recommended way to [run Coconut modules](#running-modules).
 
 Automatic compilation always compiles with `--target sys --line-numbers --keep-lines` by default. On Python 3.4+, automatic compilation will use a `__coconut_cache__` directory to cache the compiled Python. Note that `__coconut_cache__` will always be removed from `__file__`.
 

@@ -1219,6 +1219,8 @@ class thread_map(_coconut_base_parallel_map):
     @staticmethod
     def _make_pool(max_workers=None):
         return _coconut.multiprocessing_dummy.Pool({cpu_count} * 5 if max_workers is None else max_workers)
+map.using_processes = process_map
+map.using_threads = thread_map
 class zip(_coconut_baseclass, _coconut.zip):
     __slots__ = ("iters", "strict")
     __doc__ = getattr(_coconut.zip, "__doc__", "<see help(py_zip)>")
@@ -1512,6 +1514,205 @@ class cycle(_coconut_has_iter):
         if elem not in self.iter:
             raise _coconut.ValueError(_coconut.repr(elem) + " not in " + _coconut.repr(self))
         return self.iter.index(elem)
+class _coconut_lazy_slice(_coconut_baseclass):
+    """A lazy slice of an iterate or unfold object, which can be iterated over multiple times.
+
+    Gives the elements of iter at indices start, start + step, start + 2*step, ...,
+    either exactly length of them or, if length is None, those before index stop (if not None)."""
+    __slots__ = ("iter", "start", "stop", "step", "length")
+    def __init__(self, iterable, start, stop, step, length):
+        self.iter = iterable
+        self.start = start
+        self.stop = stop
+        self.step = step
+        self.length = length
+    def __reduce__(self):
+        return (self.__class__, (self.iter, self.start, self.stop, self.step, self.length))
+    def __copy__(self):
+        return self.__class__(self.iter, self.start, self.stop, self.step, self.length)
+    def __repr__(self):
+        if self.length is None:
+            stop = self.stop
+        elif not self.length:
+            stop = self.start
+        else:
+            stop = self.start + (self.length - 1) * self.step + (1 if self.step > 0 else -1)
+            if stop < 0:
+                stop = None
+        return "%r$[%s:%s%s]" % (self.iter, "" if self.start == 0 and self.step > 0 else self.start, "" if stop is None else stop, "" if self.step == 1 else ":%s" % (self.step,))
+    def __iter__(self):
+        if self.length is None:
+            return _coconut.itertools.islice(_coconut.iter(self.iter), self.start, self.stop, self.step)
+        if self.step > 0:
+            return _coconut.itertools.islice(_coconut.iter(self.iter), self.start, self.start + self.length * self.step, self.step)
+        return self._iter_backwards()
+    def _iter_backwards(self):
+        """Iterate over a slice with a negative step, which requires storing the elements being sliced."""
+        if self.length:
+            first_index = self.start + (self.length - 1) * self.step
+            for x in _coconut.tuple(_coconut.itertools.islice(_coconut.iter(self.iter), first_index, self.start + 1))[::self.step]:
+                yield x
+    def __len__(self):
+        if self.length is None:
+            return _coconut.NotImplemented
+        return self.length
+    def __getitem__(self, index):
+        if _coconut.isinstance(index, _coconut.slice):
+            if self.length is not None:
+                start, stop, step = index.indices(self.length)
+                return self.__class__(self.iter, self.start + self.step * start, None, self.step * step, _coconut.len(_coconut.range(start, stop, step)))
+            start = 0 if index.start is None else _coconut.operator.index(index.start)
+            stop = None if index.stop is None else _coconut.operator.index(index.stop)
+            step = 1 if index.step is None else _coconut.operator.index(index.step)
+            if start >= 0 and (stop is None or stop >= 0) and step > 0:
+                new_stop = None if stop is None else self.start + self.step * stop
+                if self.stop is not None:
+                    new_stop = self.stop if new_stop is None else _coconut.min(new_stop, self.stop)
+                return _coconut_iter_getitem(self.iter, _coconut.slice(self.start + self.step * start, new_stop, self.step * step))
+            return _coconut_iter_getitem(_coconut.iter(self), index)
+        index = _coconut.operator.index(index)
+        if self.length is not None:
+            if index < 0:
+                index += self.length
+            if not 0 <= index < self.length:
+                raise _coconut.IndexError(_coconut.repr(self) + " index out of range")
+        elif index < 0:
+            return _coconut_iter_getitem(_coconut.iter(self), index)
+        elif self.stop is not None and self.start + self.step * index >= self.stop:
+            raise _coconut.IndexError(_coconut.repr(self) + " index out of range")
+        return _coconut_iter_getitem(self.iter, self.start + self.step * index)
+    def __reversed__(self):
+        if self.length is None:
+            raise _coconut.TypeError(_coconut.repr(self) + " object is not reversible")
+        return self[::-1]
+    def __fmap__(self, func):
+        return {_coconut_}map(func, self)
+class iterate(_coconut_baseclass):
+    """iterate(func, x) returns the infinite iterator x, func(x), func(func(x)), ...
+
+    If times is passed, only the first times elements are produced (so func is called times - 1 times),
+    which additionally enables len, reversed, and negative indices.
+
+    Iterating over an iterate object again starts over from x, so func should be pure.
+    Indexing and slicing are efficient: iterate(func, x)$[n] just applies func n times."""
+    __slots__ = ("func", "x", "times")
+    def __init__(self, func, x, times=None):
+        self.func = func
+        self.x = x
+        if times is None:
+            self.times = None
+        else:
+            self.times = _coconut.operator.index(times)
+            if self.times < 0:
+                raise _coconut.ValueError("iterate: times cannot be negative")
+    def __reduce__(self):
+        return (self.__class__, (self.func, self.x, self.times))
+    def __copy__(self):
+        return self.__class__(self.func, self.x, self.times)
+    def __repr__(self):
+        return "iterate(%r, %s%s)" % (self.func, _coconut.repr(self.x), "" if self.times is None else ", times=%r" % (self.times,))
+    def __iter__(self):
+        func = self.func
+        x = self.x
+        if self.times is None:
+            while True:
+                yield x
+                x = func(x)
+        elif self.times:
+            yield x
+            for _ in _coconut.itertools.repeat(None, self.times - 1):
+                x = func(x)
+                yield x
+    def __len__(self):
+        if self.times is None:
+            return _coconut.NotImplemented
+        return self.times
+    def __getitem__(self, index):
+        if _coconut.isinstance(index, _coconut.slice):
+            if self.times is not None:
+                start, stop, step = index.indices(self.times)
+                return _coconut_lazy_slice(self, start, None, step, _coconut.len(_coconut.range(start, stop, step)))
+            start = None if index.start is None else _coconut.operator.index(index.start)
+            stop = None if index.stop is None else _coconut.operator.index(index.stop)
+            step = 1 if index.step is None else _coconut.operator.index(index.step)
+            if step == 0:
+                raise _coconut.ValueError("slice step cannot be zero")
+            if start is not None and start < 0 or stop is not None and stop < 0 or step < 0 and start is None:
+                raise _coconut.IndexError("negative iterate() indices require times to be passed")
+            if step > 0 and stop is None:
+                return _coconut_lazy_slice(self, 0 if start is None else start, None, step, None)
+            if stop is None:
+                stop = -1
+            start = 0 if start is None else start
+            return _coconut_lazy_slice(self, start, None, step, _coconut.len(_coconut.range(start, stop, step)))
+        index = _coconut.operator.index(index)
+        if index < 0:
+            if self.times is None:
+                raise _coconut.IndexError("negative iterate() indices require times to be passed")
+            index += self.times
+        if index < 0 or self.times is not None and index >= self.times:
+            raise _coconut.IndexError("iterate index out of range")
+        func = self.func
+        x = self.x
+        for _ in _coconut.itertools.repeat(None, index):
+            x = func(x)
+        return x
+    def __reversed__(self):
+        if self.times is None:
+            raise _coconut.TypeError(_coconut.repr(self) + " object is not reversible")
+        return self[::-1]
+    def index(self, elem):
+        """Find the index of the first occurrence of elem in the iterate (if times isn't passed, never returns when elem never appears)."""
+        for i, x in _coconut.enumerate(self):
+            if x == elem:
+                return i
+        raise _coconut.ValueError(_coconut.repr(elem) + " not in " + _coconut.repr(self))
+    def __fmap__(self, func):
+        return {_coconut_}map(func, self)
+class unfold(_coconut_baseclass):
+    """unfold(func, seed) builds an iterator from a state, starting from seed (or None if no seed is passed).
+
+    func(state) should return (value, next_state) to yield value and continue from next_state,
+    or None to stop. For example, the digits of 1234 from the right are
+        unfold(n => None if n == 0 else (n % 10, n // 10), 1234)
+
+    Iterating over an unfold object again starts over from seed, so func should be pure."""
+    __slots__ = ("func", "seed")
+    def __init__(self, func, seed=None):
+        self.func = func
+        self.seed = seed
+    def __reduce__(self):
+        return (self.__class__, (self.func, self.seed))
+    def __copy__(self):
+        return self.__class__(self.func, self.seed)
+    def __repr__(self):
+        return "unfold(%r%s)" % (self.func, "" if self.seed is None else ", " + _coconut.repr(self.seed))
+    def __iter__(self):
+        func = self.func
+        state = self.seed
+        while True:
+            result = func(state)
+            if result is None:
+                return
+            value, state = result
+            yield value
+    def __iter_getitem__(self, index):
+        if _coconut.isinstance(index, _coconut.slice):
+            start = 0 if index.start is None else _coconut.operator.index(index.start)
+            stop = None if index.stop is None else _coconut.operator.index(index.stop)
+            step = 1 if index.step is None else _coconut.operator.index(index.step)
+            if start >= 0 and (stop is None or stop >= 0) and step > 0:
+                return _coconut_lazy_slice(self, start, stop, step, None)
+        raise _coconut.NotImplementedError{COMMENT.falls_back_to_iterator_slicing_over_self}
+    def index(self, elem):
+        """Find the index of the first occurrence of elem in the unfold."""
+        for i, x in _coconut.enumerate(self):
+            if x == elem:
+                return i
+        raise _coconut.ValueError(_coconut.repr(elem) + " not in " + _coconut.repr(self))
+    def __fmap__(self, func):
+        return {_coconut_}map(func, self)
+_coconut.reiterables = _coconut.reiterables + (iterate, unfold, _coconut_lazy_slice)
 class windowsof(_coconut_has_iter):
     """Produces an iterable that effectively mimics a sliding window over iterable of the given size.
     The step determines the spacing between windowsof.
@@ -1760,8 +1961,16 @@ def consume(iterable, keep_last=0):
     return _coconut.collections.deque(iterable, maxlen=keep_last)
 class starmap(_coconut_baseclass, _coconut.itertools.starmap):
     __slots__ = ("func", "iter")
-    __doc__ = getattr(_coconut.itertools.starmap, "__doc__", "starmap(func, iterable) = (func(*args) for args in iterable)")
-    def __new__(cls, function, iterable):
+    __doc__ = getattr(_coconut.itertools.starmap, "__doc__", "starmap(func, iterable) = (func(*args) for args in iterable)") + """
+
+If map_using is passed, instead returns map_using(args => function(*args), iterable)
+(e.g. map_using=process_map), using a function that can be pickled if function can be."""
+    def __new__(cls, function, iterable, **kwargs):
+        map_using = kwargs.pop("map_using", None)
+        if kwargs:
+            raise _coconut.TypeError(cls.__name__ + "() got unexpected keyword arguments " + _coconut.repr(kwargs))
+        if map_using is not None:
+            return map_using(_coconut_partial(_coconut_back_star_pipe, function), iterable)
         self = _coconut.itertools.starmap.__new__(cls, function, iterable)
         self.func = function
         self.iter = iterable
@@ -1787,6 +1996,12 @@ class starmap(_coconut_baseclass, _coconut.itertools.starmap):
         return _coconut.iter(_coconut.itertools.starmap(self.func, self.iter))
     def __fmap__(self, func):
         return self.__class__(_coconut_forward_compose(self.func, func), self.iter)
+def _coconut_parallel_starmap(map_cls, function, iterable, **kwargs):
+    if "map_using" in kwargs:
+        raise _coconut.TypeError("redundant map_using argument to starmap.using_processes/starmap.using_threads")
+    return {_coconut_}starmap(function, iterable, map_using=_coconut_partial(map_cls, **kwargs))
+starmap.using_processes = staticmethod(_coconut_partial(_coconut_parallel_starmap, process_map))
+starmap.using_threads = staticmethod(_coconut_partial(_coconut_parallel_starmap, thread_map))
 class multiset(_coconut.collections.Counter{comma_object}):
     __slots__ = ()
     __doc__ = getattr(_coconut.collections.Counter, "__doc__", "multiset is a version of set that counts the number of times each element is added.")

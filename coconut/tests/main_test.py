@@ -1534,6 +1534,50 @@ class TestShell(unittest.TestCase):
         finally:
             shutil.rmtree(pkg_dir)
 
+    def test_module_arg(self):
+        module_dir = tempfile.mkdtemp()
+        try:
+            pkg_dir = os.path.join(module_dir, "coconut_m_test_pkg")
+            os.mkdir(pkg_dir)
+            for name, contents in (
+                ("__init__.coco", '"""A package to test coconut -m."""\n'),
+                ("helper.coco", "def double(x) = x * 2\n"),
+                ("main.coco", (
+                    "import sys\n"
+                    "from .helper import double\n"  # relative imports should work
+                    "assert __name__ == '__main__' and __package__ == 'coconut_m_test_pkg'\n"
+                    "assert double(sys.argv[1:]) == ['a', 'b'] * 2, sys.argv\n"
+                    "assert sys.stdin.read() == 'stdin for the module', 'got the wrong stdin'\n"  # stdin should be left for the module
+                    "print('<success>')\n"
+                )),
+                ("exits.coco", "import sys\nsys.exit(int(sys.argv[1]))\n"),
+            ):
+                with univ_open(os.path.join(pkg_dir, name), "w") as module_file:
+                    module_file.write(contents)
+
+            call_coconut(["--no-cache", "-m", "coconut_m_test_pkg.main", "--argv", "a", "b"], cwd=module_dir, stdin=b"stdin for the module", assert_output=True)
+            # the whole package is compiled in place so that python -m can find it
+            for name in ("__init__.py", "helper.py", "main.py", "exits.py"):
+                assert os.path.isfile(os.path.join(pkg_dir, name)), os.listdir(pkg_dir)
+            call_python(["-m", "coconut_m_test_pkg.main", "a", "b"], cwd=module_dir, stdin=b"stdin for the module", assert_output=True, convert_to_import=False)
+
+            # coconut-run -m passes everything after the module to it
+            call(["coconut-run", "--no-cache", "-m", "coconut_m_test_pkg.main", "a", "b"], cwd=module_dir, stdin=b"stdin for the module", assert_output=True)
+
+            # the module's exit code is passed through
+            call_coconut(["--no-cache", "-m", "coconut_m_test_pkg.exits", "--argv", "3"], cwd=module_dir, expect_retcode=3)
+            call(["coconut-run", "--no-cache", "--module", "coconut_m_test_pkg.exits", "4"], cwd=module_dir, expect_retcode=4)
+
+            # -m can't be combined with --run or a source, and the module has to exist
+            for bad_args, err_msg in (
+                (["-m", "coconut_m_test_pkg.main", "--run"], "cannot use -m/--module with --run"),
+                (["-m", "coconut_m_test_pkg.main", pkg_dir], "cannot pass a source file/folder with -m/--module"),
+                (["-m", "coconut_m_test_pkg.nonexistent"], "could not find module"),
+            ):
+                call_coconut(bad_args, cwd=module_dir, assert_output=err_msg, assert_output_only_at_end=False, check_errors=False, expect_retcode=1)
+        finally:
+            shutil.rmtree(module_dir)
+
     def test_project_config(self):
         from coconut.project_config import parse_table, _fallback_parse_table, find_project_config
         toml_text = (

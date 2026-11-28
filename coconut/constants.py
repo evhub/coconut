@@ -897,6 +897,8 @@ coconut_specific_builtins = (
     "cartesian_product",
     "multiset",
     "cycle",
+    "iterate",
+    "unfold",
     "windowsof",
     "and_then",
     "and_then_await",
