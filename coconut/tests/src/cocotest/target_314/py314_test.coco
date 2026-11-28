@@ -34,7 +34,7 @@ def py314_test() -> bool:
 
     # constrained type parameters must stay constraints, not become extra type parameters
     def constrained[T: (int, str)](x: T) -> T = x
-    assert constrained.__type_params__[0].__constraints__ == (int, str)
+    assert constrained.__type_params__[0].__constraints__ == (int, str)  # type: ignore
     assert len(constrained.__type_params__) == 1
 
     # PEP 696 type parameter defaults

@@ -24,7 +24,6 @@ import sys
 import json
 import html
 
-from markdown_it import MarkdownIt
 from pygments import highlight
 from pygments.formatters import HtmlFormatter
 from pygments.lexers import get_lexer_by_name
@@ -365,6 +364,8 @@ def coconut_wheels(version_str, develop):
 
 def make_interactive_tutorial(tutorial, wheels, docs_base="", pyodide_url=pyodide_url, codemirror_url=codemirror_url):
     """Turn the Markdown source of the tutorial into the HTML of the interactive tutorial."""
+    # (imported here so that the rest of this module, e.g. is_example, works without markdown_it installed)
+    from markdown_it import MarkdownIt
     md = MarkdownIt("commonmark", {"html": True})
     formatter = HtmlFormatter(cssclass="highlight")
     headings = []

@@ -1568,7 +1568,10 @@ class TestShell(unittest.TestCase):
             guide_coco = os.path.join(guide_dir, "ai_guide_examples.coco")
             with univ_open(guide_coco, "w") as guide_file:
                 guide_file.write("\n".join(code_blocks) + '\nprint("<success>")\n')
-            call_coconut([guide_coco, "--target", "sys", "--force", "--run"], assert_output=True, check_errors=False)
+            # (run it separately, rather than with --run, since on Python 2, process_map can't
+            #  pickle functions defined in code that Coconut runs itself)
+            call_coconut([guide_coco, "--target", "sys", "--force"], check_errors=False)
+            call_python([os.path.join(guide_dir, "ai_guide_examples.py")], assert_output=True, check_errors=False)
             # compiled files should point back to their source and the guide
             with univ_open(os.path.join(guide_dir, "ai_guide_examples.py"), "r") as compiled_file:
                 compiled_header = compiled_file.read(1024)

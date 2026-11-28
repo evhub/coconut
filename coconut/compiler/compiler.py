@@ -4107,9 +4107,10 @@ def __new__(_coconut_cls, {match_func_paramdef}):
     def match_data_replace_def(self, loc, matches, fields):
         """Get a _replace for a pattern-matching data type that reruns its constructor's checks.
 
-        Returns "" (keeping namedtuple's _replace, which doesn't check anything) if the constructor's
-        arguments can't be recovered from the fields, which requires each argument's pattern to bind
-        a field to the whole argument (e.g. x, int() as x, or x `isinstance` int) and each field to be bound that way."""
+        If the constructor's arguments can't be recovered from the fields, which requires each argument's
+        pattern to bind a field to the whole argument (e.g. x, int() as x, or x `isinstance` int) and each
+        field to be bound that way, the _replace just substitutes in the new values without checking them
+        (like namedtuple's, which can't be used since on some Python implementations, e.g. PyPy, it calls __new__)."""
         pos_only_args, req_args, default_args, star_arg, kwd_only_args, dubstar_arg = split_args_list(matches, loc)
         field_inds = dict((field, i) for i, field in enumerate(fields))
         recovered_fields = set()
@@ -4130,22 +4131,22 @@ def __new__(_coconut_cls, {match_func_paramdef}):
         for match in pos_only_args + req_args + [match for match, default in default_args]:
             arg = recover_arg(match)
             if arg is None:
-                return ""
+                return self.match_data_unchecked_replace_def(fields)
             call_args.append(arg)
         for match, default in kwd_only_args:
             arg = recover_arg(match)
             if arg is None:
-                return ""
+                return self.match_data_unchecked_replace_def(fields)
             call_args.append(get_match_names(match)[0] + "=" + arg)
         # star args must come after keyword args to support Python 2
         for star, match in (("*", star_arg), ("**", dubstar_arg)):
             if match is not None:
                 arg = recover_arg(match)
                 if arg is None:
-                    return ""
+                    return self.match_data_unchecked_replace_def(fields)
                 call_args.append(star + arg)
         if recovered_fields != set(fields):
-            return ""
+            return self.match_data_unchecked_replace_def(fields)
 
         return handle_indentation(
             """
@@ -4160,6 +4161,21 @@ def _replace(_self, {kwd_only}_coconut_match_new=__new__, **kwds):
             kwd_only=("*, " if self.target.startswith("3") else ""),
             fields_tuple=tuple_str_of(fields, add_quotes=True),
             call_args=", ".join(call_args),
+        )
+
+    def match_data_unchecked_replace_def(self, fields):
+        """Get a _replace for a pattern-matching data type that substitutes in new values without checking them."""
+        return handle_indentation(
+            """
+def _replace(_self, **kwds):
+    result = _coconut.tuple.__new__(_self.__class__, _coconut.map(kwds.pop, {fields_tuple}, _self))
+    if kwds:
+        raise _coconut.ValueError("Got unexpected field names: " + _coconut.repr(_coconut.list(kwds)))
+    return result
+            """,
+            add_newline=True,
+        ).format(
+            fields_tuple=tuple_str_of(fields, add_quotes=True),
         )
 
     def case_datadef_handle(self, original, loc, tokens):
@@ -4223,6 +4239,11 @@ def _replace(_self, {kwd_only}_coconut_match_new=__new__, **kwds):
         ] + shared_stmts + [
             closeindent,
             base_name, ".__name__ = ", base_name, ".__qualname__ = _coconut_py_str(", repr(name), ")", endline,
+            # the runtime sees the base class, which must be defined before the variants, since
+            #  their field types can refer to it, and aren't always wrapped in strings (e.g. with --no-wrap)
+            # (the header defines TYPE_CHECKING, and pyright only recognizes the bare name, not _coconut.typing.TYPE_CHECKING)
+            "if not TYPE_CHECKING:", endline,
+            openindent, name, " = ", base_name, endline, closeindent,
         ]
 
         # variants, which are data types inheriting from the base class
@@ -4239,7 +4260,7 @@ def _replace(_self, {kwd_only}_coconut_match_new=__new__, **kwds):
                 variant_stmts,
             ]), int(variant_loc)))
 
-        # the type checker sees the Union of the variants, while the runtime sees the base class
+        # while the type checker sees the Union of the variants
         union_members = [variant_name + params_subscript for variant_name in variant_names]
         if paramdefs and self.target_info >= (3, 12):
             type_checking_def = "type " + name + native_params + " = " + " | ".join(union_members)
@@ -4250,11 +4271,8 @@ def _replace(_self, {kwd_only}_coconut_match_new=__new__, **kwds):
             #  it's fine on any target since it's only seen by type checkers, which require 3.10+ anyway)
             type_checking_def = name + " = " + " | ".join(union_members)
         out += [
-            # (the header defines TYPE_CHECKING, and pyright only recognizes the bare name, not _coconut.typing.TYPE_CHECKING)
             "if TYPE_CHECKING:", endline,
             openindent, type_checking_def, endline, closeindent,
-            "else:", endline,
-            openindent, name, " = ", base_name, endline, closeindent,
         ]
         return "".join(out)
 

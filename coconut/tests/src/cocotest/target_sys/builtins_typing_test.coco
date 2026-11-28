@@ -25,7 +25,6 @@ if TYPE_CHECKING:
         FrozenSet,
         Iterable,
         Iterator,
-        List,
         NoReturn,
         Optional,
         Set,
@@ -35,6 +34,9 @@ if TYPE_CHECKING:
     from contextlib import AbstractContextManager
     from typing_extensions import assert_type
 
+
+# (List is used in annotations, which aren't wrapped in strings with --no-wrap, so it has to exist at runtime)
+from typing import List
 
 # helpers with precise types (since lambda arguments are untyped)
 def inc(x: int) -> int = x + 1

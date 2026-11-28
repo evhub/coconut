@@ -971,7 +971,7 @@ def primary_test_2() -> bool:
     # f-string = specifier defaults to repr only without a conversion or format spec
     fs_s = "hi"
     fs_x = 3.14159
-    assert f"{fs_s=}" == "fs_s='hi'"
+    assert f"{fs_s=}" == "fs_s=" + repr("hi")  # (on Python 2, that's u'hi')
     assert f"{fs_s=!s}" == "fs_s=hi"
     assert f"{fs_x=:.2f}" == "fs_x=3.14"
     assert f"{1+1=}" == "1+1=2"

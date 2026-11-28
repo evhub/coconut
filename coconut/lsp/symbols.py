@@ -117,6 +117,18 @@ def document_symbols(doc, line_mapper=None):
     def visit(body, parent_src, in_class):
         symbols = []
         seen = {}
+
+        def add(sym, nested=False):
+            prev = seen.get(sym["name"])
+            if prev is not None and prev["kind"] == sym["kind"]:
+                # pattern-matching functions defined across several 'addpattern'/'case def's
+                #  (later 'addpattern def's are compiled inside an 'if True:' block)
+                if sym["range"]["end"]["line"] > prev["range"]["end"]["line"]:
+                    prev["range"]["end"] = sym["range"]["end"]
+            elif prev is None or not nested:
+                seen[sym["name"]] = sym
+                symbols.append(sym)
+
         for node in body:
             sym = None
             if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
@@ -148,20 +160,11 @@ def document_symbols(doc, line_mapper=None):
                     nested += visit(getattr(node, field, []) or [], parent_src, in_class)
                 for handler in getattr(node, "handlers", []) or []:
                     nested += visit(handler.body, parent_src, in_class)
-                for s in nested:
-                    if s["name"] not in seen:
-                        seen[s["name"]] = s
-                        symbols.append(s)
+                for nested_sym in nested:
+                    add(nested_sym, nested=True)
                 continue
             if sym is not None:
-                if sym["name"] in seen and seen[sym["name"]]["kind"] == sym["kind"]:
-                    # pattern-matching functions defined across several 'addpattern'/'case def's
-                    prev = seen[sym["name"]]
-                    if sym["range"]["end"]["line"] > prev["range"]["end"]["line"]:
-                        prev["range"]["end"] = sym["range"]["end"]
-                    continue
-                seen[sym["name"]] = sym
-                symbols.append(sym)
+                add(sym)
         return symbols
 
     return visit(tree.body, None, False)
