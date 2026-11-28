@@ -4253,9 +4253,19 @@ _Can't be done without a long series of checks for each `match` statement. See t
 
 #### `starmap`
 
-**starmap**(_function_, _iterable_)
+**starmap**(_function_, _iterable_, \*, _map\_using_=`None`)
+
+**starmap.using_processes**(_function_, _iterable_, \*, _chunksize_=`1`, _stream_=`False`, _ordered_=`True`)
+
+**starmap.using_threads**(_function_, _iterable_, \*, _chunksize_=`1`, _stream_=`False`, _ordered_=`True`)
 
 Coconut provides a modified version of `itertools.starmap` that supports `reversed`, `repr`, optimized normal (and iterator) slicing, `len`, and `func`/`iter` attributes.
+
+If _map\_using_ is passed, `starmap` instead returns `map_using(args => function(*args), iterable)`, using a version of `args => function(*args)` that, unlike a lambda, can be pickled whenever _function_ can be. That makes it possible to use [`process_map`](#process_map) or [`thread_map`](#thread_map) as _map\_using_ to compute a `starmap` in parallel.
+
+`starmap.using_processes` and `starmap.using_threads` are shortcuts for doing so: `starmap.using_processes(function, iterable, **kwargs)` is equivalent to `starmap(function, iterable, map_using=process_map$(**kwargs))`, which returns a `process_map` object (and similarly for `starmap.using_threads` and `thread_map`). As a result, they take the same keyword arguments as, and work the same way as, [`process_map`/`thread_map`](#process_map-and-thread_map): to make multiple sequential calls share one pool (and to set its _max\_workers_), make them inside a `with process_map.multiple_sequential_calls():` (or `thread_map.multiple_sequential_calls()`) block, which is also required to use _stream_=`True`. Similarly, [`map.using_processes`](#process_map-and-thread_map) and `map.using_threads` are just `process_map` and `thread_map`.
+
+Note that, as with `process_map`, `starmap.using_processes` requires _function_ to be pickleable, so it should be defined at the top level of a module rather than as a lambda.
 
 ##### Python Docs
 
@@ -4281,6 +4291,22 @@ range(1, 5) |> map$(range) |> starmap$(print) |> consume
 ```coconut_python
 import itertools, collections
 collections.deque(itertools.starmap(print, map(range, range(1, 5))), maxlen=0)
+```
+
+**Coconut:**
+```coconut
+def simulate(seed, steps) = ...  # some expensive computation
+
+results = [(1, 1000), (2, 2000)] |> starmap.using_processes$(simulate) |> list
+```
+
+**Python:**
+```coconut_python
+from multiprocessing import Pool
+def simulate(seed, steps): ...  # some expensive computation
+
+with Pool() as pool:
+    results = pool.starmap(simulate, [(1, 1000), (2, 2000)])
 ```
 
 #### `zip_longest`
@@ -4903,6 +4929,8 @@ Coconut provides a `multiprocessing`-based version of `map` under the name `proc
 Because `process_map` uses multiple processes for its execution, it is necessary that all of its arguments be pickleable. Only objects defined at the module level, and not lambdas, objects defined inside of a function, or objects defined inside of the interpreter, are pickleable. Furthermore, on Windows, it is necessary that all calls to `process_map` occur inside of an `if __name__ == "__main__"` guard.
 
 `process_map` supports a `chunksize` argument, which determines how many items are passed to each process at a time. Larger values of _chunksize_ are recommended when dealing with very long iterables. Additionally, in the multi-iterable case, _strict_ can be set to `True` to ensure that all iterables are the same length.
+
+`process_map` is also available as `map.using_processes` (and `thread_map` as `map.using_threads`). For a parallel version of [`starmap`](#starmap), which is useful when the arguments are already grouped into tuples (since `process_map(t => f(*t), pairs)` doesn't work, as lambdas can't be pickled), use `starmap.using_processes` (or `starmap.using_threads`).
 
 _Deprecated: `parallel_map` is available as a deprecated alias for `process_map`. Note that deprecated features are disabled in `--strict` mode._
 

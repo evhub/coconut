@@ -1059,6 +1059,8 @@ class thread_map(_coconut_base_parallel_map):
     @staticmethod
     def _make_pool(max_workers=None):
         return _coconut.multiprocessing_dummy.Pool({cpu_count} * 5 if max_workers is None else max_workers)
+map.using_processes = process_map
+map.using_threads = thread_map
 class zip(_coconut_baseclass, _coconut.zip):
     __slots__ = ("iters", "strict")
     __doc__ = getattr(_coconut.zip, "__doc__", "<see help(py_zip)>")
@@ -1799,8 +1801,16 @@ def consume(iterable, keep_last=0):
     return _coconut.collections.deque(iterable, maxlen=keep_last)
 class starmap(_coconut_baseclass, _coconut.itertools.starmap):
     __slots__ = ("func", "iter")
-    __doc__ = getattr(_coconut.itertools.starmap, "__doc__", "starmap(func, iterable) = (func(*args) for args in iterable)")
-    def __new__(cls, function, iterable):
+    __doc__ = getattr(_coconut.itertools.starmap, "__doc__", "starmap(func, iterable) = (func(*args) for args in iterable)") + """
+
+If map_using is passed, instead returns map_using(args => function(*args), iterable)
+(e.g. map_using=process_map), using a function that can be pickled if function can be."""
+    def __new__(cls, function, iterable, **kwargs):
+        map_using = kwargs.pop("map_using", None)
+        if kwargs:
+            raise _coconut.TypeError(cls.__name__ + "() got unexpected keyword arguments " + _coconut.repr(kwargs))
+        if map_using is not None:
+            return map_using(_coconut_partial(_coconut_back_star_pipe, function), iterable)
         self = _coconut.itertools.starmap.__new__(cls, function, iterable)
         self.func = function
         self.iter = iterable
@@ -1826,6 +1836,12 @@ class starmap(_coconut_baseclass, _coconut.itertools.starmap):
         return _coconut.iter(_coconut.itertools.starmap(self.func, self.iter))
     def __fmap__(self, func):
         return self.__class__(_coconut_forward_compose(self.func, func), self.iter)
+def _coconut_parallel_starmap(map_cls, function, iterable, **kwargs):
+    if "map_using" in kwargs:
+        raise _coconut.TypeError("redundant map_using argument to starmap.using_processes/starmap.using_threads")
+    return {_coconut_}starmap(function, iterable, map_using=_coconut_partial(map_cls, **kwargs))
+starmap.using_processes = staticmethod(_coconut_partial(_coconut_parallel_starmap, process_map))
+starmap.using_threads = staticmethod(_coconut_partial(_coconut_parallel_starmap, thread_map))
 class multiset(_coconut.collections.Counter{comma_object}):
     __slots__ = ()
     __doc__ = getattr(_coconut.collections.Counter, "__doc__", "multiset is a version of set that counts the number of times each element is added.")

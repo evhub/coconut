@@ -15,10 +15,11 @@ operator !
 from math import factorial as (!)
 
 
-# module-level (and thus pickleable) helpers for testing iterate and unfold
+# module-level (and thus pickleable) helpers for testing iterate, unfold, and parallel starmap
 def next_digit(n: int) -> (int; int)? = None if n == 0 else (n % 10, n // 10)
 def fib_step((a, b)) = (a, (b, a + b))
 def count_up_to_3(n: int?) -> (int; int)? = (0, 1) if n is None else None if n > 3 else (n, n + 1)
+def scale_add(x: int, y: int) -> int = 10 * x + y
 
 
 def primary_test_2() -> bool:
@@ -1159,5 +1160,27 @@ def primary_test_2() -> bool:
     assert fmap((.*2), digits_of_56) |> list == [12, 10]
     assert fmap((.*2), fibs$[5:])$[:2] |> list == [10, 16]
     assert reiterable(fibs) is fibs and tee(digits_of_56)[0] is digits_of_56
+
+    # parallel starmap
+    arg_pairs = [(1, 2), (3, 4), (5, 6)]
+    assert starmap(scale_add, arg_pairs, map_using=map) |> list == [12, 34, 56]
+    assert starmap(scale_add, arg_pairs, map_using=map) `isinstance` map
+    assert starmap.using_threads(scale_add, arg_pairs) |> list == [12, 34, 56]
+    assert starmap.using_threads(scale_add, arg_pairs) `isinstance` thread_map
+    assert starmap.using_processes(scale_add, arg_pairs) |> list == [12, 34, 56]
+    assert starmap.using_processes(scale_add, arg_pairs) `isinstance` process_map
+    assert starmap.using_processes(scale_add, arg_pairs, chunksize=2, ordered=False) |> sorted == [12, 34, 56]
+    assert starmap.using_processes(scale_add, iter(arg_pairs)) |> list == [12, 34, 56]
+    assert fmap(str, starmap.using_threads(scale_add, arg_pairs)) |> list == ["12", "34", "56"]
+    with process_map.multiple_sequential_calls(max_workers=2):  # type: ignore
+        assert starmap.using_processes(scale_add, arg_pairs) == (12, 34, 56)  # type: ignore
+        assert starmap.using_processes(scale_add, arg_pairs, stream=True) |> list == [12, 34, 56]
+        assert starmap.using_processes(pow, [(2, 3), (3, 2)]) == (8, 9)  # type: ignore
+    with thread_map.multiple_sequential_calls():
+        assert starmap.using_threads(scale_add, arg_pairs, stream=True) |> list == [12, 34, 56]
+    assert_raises(-> starmap.using_threads(scale_add, arg_pairs, map_using=map), TypeError)  # type: ignore
+    assert_raises(-> starmap(scale_add, arg_pairs, bad_kwarg=1), TypeError)  # type: ignore
+    assert map.using_processes is process_map and map.using_threads is thread_map
+    assert map.using_threads(scale_add, [1, 3], [2, 4]) |> list == [12, 34]
 
     return True

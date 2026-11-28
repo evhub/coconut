@@ -306,12 +306,43 @@ class reiterable(_coconut_has_iter[_Tco]):
 _coconut_reiterable = reiterable
 
 
+# map.using_processes is process_map and map.using_threads is thread_map
+class _coconut_map_using_processes(_t.Protocol):
+    """The type of map.using_processes, which is process_map."""
+    @_t.overload
+    def __call__(self, function: _t.Callable[[_T1], _T], iter1: _t.Iterable[_T1], /, *, chunksize: int = 1, strict: bool = False, stream: bool = False, ordered: bool = True) -> process_map[_T]: ...
+    @_t.overload
+    def __call__(self, function: _t.Callable[[_T1, _T2], _T], iter1: _t.Iterable[_T1], iter2: _t.Iterable[_T2], /, *, chunksize: int = 1, strict: bool = False, stream: bool = False, ordered: bool = True) -> process_map[_T]: ...
+    @_t.overload
+    def __call__(self, function: _t.Callable[[_T1, _T2, _T3], _T], iter1: _t.Iterable[_T1], iter2: _t.Iterable[_T2], iter3: _t.Iterable[_T3], /, *, chunksize: int = 1, strict: bool = False, stream: bool = False, ordered: bool = True) -> process_map[_T]: ...
+    @_t.overload
+    def __call__(self, function: _t.Callable[[_T1, _T2, _T3, _T4], _T], iter1: _t.Iterable[_T1], iter2: _t.Iterable[_T2], iter3: _t.Iterable[_T3], iter4: _t.Iterable[_T4], /, *, chunksize: int = 1, strict: bool = False, stream: bool = False, ordered: bool = True) -> process_map[_T]: ...
+    @_t.overload
+    def __call__(self, function: _t.Callable[..., _T], iter1: _t.Iterable[_t.Any], /, *iterables: _t.Iterable[_t.Any], chunksize: int = 1, strict: bool = False, stream: bool = False, ordered: bool = True) -> process_map[_T]: ...
+
+class _coconut_map_using_threads(_t.Protocol):
+    """The type of map.using_threads, which is thread_map."""
+    @_t.overload
+    def __call__(self, function: _t.Callable[[_T1], _T], iter1: _t.Iterable[_T1], /, *, chunksize: int = 1, strict: bool = False, stream: bool = False, ordered: bool = True) -> thread_map[_T]: ...
+    @_t.overload
+    def __call__(self, function: _t.Callable[[_T1, _T2], _T], iter1: _t.Iterable[_T1], iter2: _t.Iterable[_T2], /, *, chunksize: int = 1, strict: bool = False, stream: bool = False, ordered: bool = True) -> thread_map[_T]: ...
+    @_t.overload
+    def __call__(self, function: _t.Callable[[_T1, _T2, _T3], _T], iter1: _t.Iterable[_T1], iter2: _t.Iterable[_T2], iter3: _t.Iterable[_T3], /, *, chunksize: int = 1, strict: bool = False, stream: bool = False, ordered: bool = True) -> thread_map[_T]: ...
+    @_t.overload
+    def __call__(self, function: _t.Callable[[_T1, _T2, _T3, _T4], _T], iter1: _t.Iterable[_T1], iter2: _t.Iterable[_T2], iter3: _t.Iterable[_T3], iter4: _t.Iterable[_T4], /, *, chunksize: int = 1, strict: bool = False, stream: bool = False, ordered: bool = True) -> thread_map[_T]: ...
+    @_t.overload
+    def __call__(self, function: _t.Callable[..., _T], iter1: _t.Iterable[_t.Any], /, *iterables: _t.Iterable[_t.Any], chunksize: int = 1, strict: bool = False, stream: bool = False, ordered: bool = True) -> thread_map[_T]: ...
+
+
 class map(_builtins.map[_T]):
     """Coconut's enhanced map. Supports len, indexing, slicing, reversed, fmap, repr,
     multiple iteration (when the underlying iterables can be iterated over multiple times),
-    the strict=True keyword argument, and the func/iters attributes."""
+    the strict=True keyword argument, the func/iters attributes, and the
+    using_processes/using_threads attributes (which are process_map/thread_map)."""
     func: _t.Callable[..., _T]
     iters: _t.Tuple[_t.Iterable[_t.Any], ...]
+    using_processes: _t.ClassVar[_coconut_map_using_processes]
+    using_threads: _t.ClassVar[_coconut_map_using_threads]
     @_t.overload
     def __new__(cls, function: _t.Callable[[_T1], _T], iter1: _t.Iterable[_T1], /, *, strict: bool = False) -> _Self: ...
     @_t.overload
@@ -522,21 +553,66 @@ class reversed(_coconut_has_iter[_Tco]):
 _coconut_reversed = reversed
 
 
+# starmap.using_processes/using_threads return process_map/thread_map objects
+class _coconut_starmap_using_processes(_t.Protocol):
+    """starmap.using_processes(function, iterable, **kwargs) is starmap(function, iterable, map_using=process_map$(**kwargs))."""
+    @_t.overload
+    def __call__(self, function: _t.Callable[[_T1], _T], iterable: _t.Iterable[_t.Tuple[_T1]], *, chunksize: int = 1, stream: bool = False, ordered: bool = True) -> process_map[_T]: ...
+    @_t.overload
+    def __call__(self, function: _t.Callable[[_T1, _T2], _T], iterable: _t.Iterable[_t.Tuple[_T1, _T2]], *, chunksize: int = 1, stream: bool = False, ordered: bool = True) -> process_map[_T]: ...
+    @_t.overload
+    def __call__(self, function: _t.Callable[[_T1, _T2, _T3], _T], iterable: _t.Iterable[_t.Tuple[_T1, _T2, _T3]], *, chunksize: int = 1, stream: bool = False, ordered: bool = True) -> process_map[_T]: ...
+    @_t.overload
+    def __call__(self, function: _t.Callable[[_T1, _T2, _T3, _T4], _T], iterable: _t.Iterable[_t.Tuple[_T1, _T2, _T3, _T4]], *, chunksize: int = 1, stream: bool = False, ordered: bool = True) -> process_map[_T]: ...
+    @_t.overload
+    def __call__(self, function: _t.Callable[..., _T], iterable: _t.Iterable[_t.Iterable[_t.Any]], *, chunksize: int = 1, stream: bool = False, ordered: bool = True) -> process_map[_T]: ...
+
+class _coconut_starmap_using_threads(_t.Protocol):
+    """starmap.using_threads(function, iterable, **kwargs) is starmap(function, iterable, map_using=thread_map$(**kwargs))."""
+    @_t.overload
+    def __call__(self, function: _t.Callable[[_T1], _T], iterable: _t.Iterable[_t.Tuple[_T1]], *, chunksize: int = 1, stream: bool = False, ordered: bool = True) -> thread_map[_T]: ...
+    @_t.overload
+    def __call__(self, function: _t.Callable[[_T1, _T2], _T], iterable: _t.Iterable[_t.Tuple[_T1, _T2]], *, chunksize: int = 1, stream: bool = False, ordered: bool = True) -> thread_map[_T]: ...
+    @_t.overload
+    def __call__(self, function: _t.Callable[[_T1, _T2, _T3], _T], iterable: _t.Iterable[_t.Tuple[_T1, _T2, _T3]], *, chunksize: int = 1, stream: bool = False, ordered: bool = True) -> thread_map[_T]: ...
+    @_t.overload
+    def __call__(self, function: _t.Callable[[_T1, _T2, _T3, _T4], _T], iterable: _t.Iterable[_t.Tuple[_T1, _T2, _T3, _T4]], *, chunksize: int = 1, stream: bool = False, ordered: bool = True) -> thread_map[_T]: ...
+    @_t.overload
+    def __call__(self, function: _t.Callable[..., _T], iterable: _t.Iterable[_t.Iterable[_t.Any]], *, chunksize: int = 1, stream: bool = False, ordered: bool = True) -> thread_map[_T]: ...
+
+
 class starmap(_itertools.starmap[_Tco]):
     """Coconut's enhanced version of itertools.starmap. Supports len, indexing, slicing,
-    reversed, fmap, repr, keyword arguments, and the func/iter attributes."""
+    reversed, fmap, repr, keyword arguments, and the func/iter attributes.
+
+    If map_using is passed, instead returns map_using(args => function(*args), iterable)
+    (e.g. map_using=process_map), using a function that can be pickled if function can be.
+    starmap.using_processes/starmap.using_threads do that with process_map/thread_map."""
     func: _t.Callable[..., _Tco]
     iter: _t.Iterable[_t.Iterable[_t.Any]]
+    using_processes: _t.ClassVar[_coconut_starmap_using_processes]
+    using_threads: _t.ClassVar[_coconut_starmap_using_threads]
     @_t.overload
-    def __new__(cls, function: _t.Callable[[_T1], _Tco], iterable: _t.Iterable[_t.Tuple[_T1]]) -> _Self: ...
+    def __new__(cls, function: _t.Callable[[_T1], _Tco], iterable: _t.Iterable[_t.Tuple[_T1]], *, map_using: None = None) -> _Self: ...
     @_t.overload
-    def __new__(cls, function: _t.Callable[[_T1, _T2], _Tco], iterable: _t.Iterable[_t.Tuple[_T1, _T2]]) -> _Self: ...
+    def __new__(cls, function: _t.Callable[[_T1, _T2], _Tco], iterable: _t.Iterable[_t.Tuple[_T1, _T2]], *, map_using: None = None) -> _Self: ...
     @_t.overload
-    def __new__(cls, function: _t.Callable[[_T1, _T2, _T3], _Tco], iterable: _t.Iterable[_t.Tuple[_T1, _T2, _T3]]) -> _Self: ...
+    def __new__(cls, function: _t.Callable[[_T1, _T2, _T3], _Tco], iterable: _t.Iterable[_t.Tuple[_T1, _T2, _T3]], *, map_using: None = None) -> _Self: ...
     @_t.overload
-    def __new__(cls, function: _t.Callable[[_T1, _T2, _T3, _T4], _Tco], iterable: _t.Iterable[_t.Tuple[_T1, _T2, _T3, _T4]]) -> _Self: ...
+    def __new__(cls, function: _t.Callable[[_T1, _T2, _T3, _T4], _Tco], iterable: _t.Iterable[_t.Tuple[_T1, _T2, _T3, _T4]], *, map_using: None = None) -> _Self: ...
     @_t.overload
-    def __new__(cls, function: _t.Callable[..., _Tco], iterable: _t.Iterable[_t.Iterable[_t.Any]]) -> _Self: ...
+    def __new__(cls, function: _t.Callable[..., _Tco], iterable: _t.Iterable[_t.Iterable[_t.Any]], *, map_using: None = None) -> _Self: ...
+    # with map_using, starmap returns whatever map_using does
+    @_t.overload
+    def __new__(cls, function: _t.Callable[[_T1], _S], iterable: _t.Iterable[_t.Tuple[_T1]], *, map_using: _t.Callable[..., _t.Iterable[_t.Any]]) -> _t.Iterable[_S]: ...  # type: ignore[misc]
+    @_t.overload
+    def __new__(cls, function: _t.Callable[[_T1, _T2], _S], iterable: _t.Iterable[_t.Tuple[_T1, _T2]], *, map_using: _t.Callable[..., _t.Iterable[_t.Any]]) -> _t.Iterable[_S]: ...  # type: ignore[misc]
+    @_t.overload
+    def __new__(cls, function: _t.Callable[[_T1, _T2, _T3], _S], iterable: _t.Iterable[_t.Tuple[_T1, _T2, _T3]], *, map_using: _t.Callable[..., _t.Iterable[_t.Any]]) -> _t.Iterable[_S]: ...  # type: ignore[misc]
+    @_t.overload
+    def __new__(cls, function: _t.Callable[[_T1, _T2, _T3, _T4], _S], iterable: _t.Iterable[_t.Tuple[_T1, _T2, _T3, _T4]], *, map_using: _t.Callable[..., _t.Iterable[_t.Any]]) -> _t.Iterable[_S]: ...  # type: ignore[misc]
+    @_t.overload
+    def __new__(cls, function: _t.Callable[..., _S], iterable: _t.Iterable[_t.Iterable[_t.Any]], *, map_using: _t.Callable[..., _t.Iterable[_t.Any]]) -> _t.Iterable[_S]: ...  # type: ignore[misc]
     def __iter__(self) -> _t.Iterator[_Tco]: ...  # type: ignore[override]
     @_t.overload
     def __getitem__(self, index: _SupportsIndex) -> _Tco: ...

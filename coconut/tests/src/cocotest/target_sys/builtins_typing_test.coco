@@ -407,6 +407,22 @@ def parallel_builtins_typing_test() -> bool:
     assert tm.to_tuple() == (4, 6)
     assert tm.chunksize == 1 and tm.strict and not tm.stream and tm.ordered
 
+    # parallel starmap (and map.using_processes/map.using_threads, which are process_map/thread_map)
+    if TYPE_CHECKING:
+        assert_type(starmap.using_processes(add, [(1, 2)]), process_map[int])
+        assert_type(starmap.using_threads(three, [(1, "a", 1.0)], chunksize=2, ordered=False), thread_map[Tuple[int, str, float]])
+        assert_type(starmap.using_threads(add, [(1, 2)], stream=True).to_stream(), Iterator[int])
+        assert_type(starmap(add, [(1, 2)], map_using=thread_map), Iterable[int])
+        assert_type(starmap(add, [(1, 2)], map_using=None), starmap[int])
+        assert_type(map.using_processes(show, [1]), process_map[str])
+        assert_type(map.using_threads(add, [1], [2], strict=True), thread_map[int])
+        starmap.using_processes(add, [(1, 2)], chunksize="2")  # type: ignore[call-overload]
+        starmap.using_threads(add, [(1, 2)], max_workers=2)  # type: ignore[call-overload]
+        starmap.using_threads(add, [(1, 2)], map_using=map)  # type: ignore[call-overload]
+    assert starmap.using_threads(add, [(1, 2), (3, 4)]) |> list == [3, 7]
+    assert starmap(add, [(1, 2)], map_using=thread_map) |> list == [3]
+    assert map.using_threads(show, [1]) |> list == ["1"]
+
     # collectby and mapreduce
     if TYPE_CHECKING:
         assert_type(collectby(is_pos, [1]), DefaultDict[bool, List[int]])
