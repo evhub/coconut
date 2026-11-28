@@ -788,6 +788,11 @@ def test_docs():
     assert docs.operator_at("f ..> g", 2)[0] == "..>"
     assert docs.operator_at("a + b", 2) is None
     assert docs.keyword_entry("match def f(x) = x", 0, 5) == "match def"
+    assert docs.keyword_entry("y = match x:", 4, 9) == "match expression"
+    assert docs.keyword_entry("    return match x:", 11, 16) == "match expression"
+    assert docs.keyword_entry("def f(x) = match x:", 11, 16) == "match expression"
+    assert docs.keyword_entry("match x:", 0, 5) == "match"
+    assert docs.keyword_entry("y == match(x)", 5, 10) is None
     assert docs.keyword_entry("data = 5", 0, 4) is None
     assert docs.keyword_entry("data Point(x, y)", 0, 4) == "data"
     assert docs.search("pattern matching")

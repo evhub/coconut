@@ -401,7 +401,7 @@ The following are disallowed in `--pure` mode:
 - calling in-place mutating methods of built-in types as statements, e.g. `xs.append(x)`, `xs.sort()`, or `d.update(other)` (using the result of such a call, as with persistent data structures whose methods return new objects, is fine)
 - mutable default arguments, e.g. `def f(xs=[])`
 
-Additionally, in `--pure` mode, every multi-case `match` block and every [`case def`](#case-functions) must be total: Coconut generates [exhaustiveness checks](#exhaustiveness-checking) that make it a type error for any value to get through a `match` block (or to match a `case def`'s `type(...)` signature) without being handled by one of its cases. Note that cases with guards (`if <cond>`) never count as handling anything, so a match whose cases all have guards needs a final unguarded case (like Haskell's `otherwise`). Since these are type errors, they're only reported when the code is type-checked (e.g. with `--mypy` or `--pyright`), and since they're only seen by type checkers, they never change what the code does. One-line `match <pattern> in <value>:` statements and destructuring assignments are exempt, since they're partial by design.
+Additionally, in `--pure` mode, every multi-case `match` block (including every [`match` expression](#match-expressions)) and every [`case def`](#case-functions) must be total: Coconut generates [exhaustiveness checks](#exhaustiveness-checking) that make it a type error for any value to get through a `match` block (or to match a `case def`'s `type(...)` signature) without being handled by one of its cases. Note that cases with guards (`if <cond>`) never count as handling anything, so a match whose cases all have guards needs a final unguarded case (like Haskell's `otherwise`). Since these are type errors, they're only reported when the code is type-checked (e.g. with `--mypy` or `--pyright`), and since they're only seen by type checkers, they never change what the code does. One-line `match <pattern> in <value>:` statements and destructuring assignments are exempt, since they're partial by design.
 
 Instead of mutating objects, `--pure` code should build new ones: use [data types](#data) and [update sections](#update-sections) (e.g. `obj |> (.attr = x)` instead of `obj.attr = x`) instead of mutable classes, and comprehensions, [pipelines](#pipes), and [`fmap`](#fmap) instead of loops that mutate.
 
@@ -1535,13 +1535,15 @@ match <value>:
 [else:
     <body>]
 ```
-where `<pattern>` is any `match` pattern, `<value>` is the item to match against, `<cond>` is an optional additional check, and `<body>` is simply code that is executed if the header above it succeeds. Note the absence of an `in` in the `match` statements: that's because the `<value>` in `case <value>` is taking its place. If no `else` is present and no match succeeds, then the `case` statement is simply skipped over as with [`match` statements](#match) (though unlike [destructuring assignments](#destructuring-assignment)).
+where `<pattern>` is any `match` pattern, `<value>` is the item to match against, `<cond>` is an optional additional check, and `<body>` is simply code that is executed if the header above it succeeds. Note the absence of an `in` in the `match` statements: that's because the `<value>` in `case <value>` is taking its place. If no `else` is present and no match succeeds, then the `case` statement is simply skipped over as with [`match` statements](#match) (though unlike [destructuring assignments](#destructuring-assignment) and [`match` expressions](#match-expressions)).
+
+To compute a value by pattern-matching (e.g. to assign or return it), use a [`match` expression](#match-expressions) instead.
 
 _Deprecated: Additionally, `cases` or `case` can be used as the top-level keyword instead of `match`, and in such a block `match` is used for each case rather than `case`._
 
 ##### Exhaustiveness Checking
 
-Coconut can't know the types of the values being matched against, but type checkers can, so for each `match` block, Coconut also generates code that only type checkers ever see, checking that the cases handle everything they need to. Nothing about this changes what the code does at runtime: the checks only produce type errors, which are reported by [MyPy](#mypy-integration) or Pyright (e.g. through `--mypy`, `--pyright`, or the [language server](#language-server)), pointing at the line of the `match`.
+Coconut can't know the types of the values being matched against, but type checkers can, so for each `match` block (including each [`match` expression](#match-expressions)), Coconut also generates code that only type checkers ever see, checking that the cases handle everything they need to. Nothing about this changes what the code does at runtime: the checks only produce type errors, which are reported by [MyPy](#mypy-integration) or Pyright (e.g. through `--mypy`, `--pyright`, or the [language server](#language-server)), pointing at the line of the `match`.
 
 Coconut checks for one of two things, depending on the match:
 - **Every match on a [`case data`](#case-data) type must handle all of its variants.** If some variant could get through a `match` block (or a [`case def`](#case-functions), for each of its `type(...)` signatures) without being handled by any case, that's a type error, e.g. `UnhandledCaseDataVariants[Square]` for a match on a `Shape` that's missing a `Square` case. Matches on any other type (e.g. a match on an `int | str` that only handles `int`) are unaffected, since Python allows partial matches.
@@ -1597,6 +1599,104 @@ _Example of the `cases` keyword instead._
 
 **Python:**
 _Can't be done without a long series of checks for each `match` statement. See the compiled code for the Python syntax._
+
+
+### `match` Expressions
+
+Coconut's `match` expressions are [`case` blocks](#case) that evaluate to a value: each case gives a result, and the `match` expression evaluates to the result of the first case that matches. The syntax for a `match` expression is
+```coconut
+match <value>:
+    case <pattern> [if <cond>]: <expr>
+    case <pattern> [if <cond>]:
+        <stmts>
+        <expr>
+    ...
+    [else: <expr>]
+```
+where `<pattern>` is any [`match` pattern](#match), `<value>` is the item to match against, `<cond>` is an optional additional check, and `<expr>` is the result of the `match` expression if that case is the first to match. As with [assignment functions](#assignment-functions), each case can also have a block body that executes `<stmts>` and then ends in its result `<expr>`. If present, the `else` (which, unlike the `else` of a `case` block, goes inside the `match`, after the last case, and can also have a block body) gives the result if no case matches; if there's no `else` and no case matches, a [`MatchError`](#matcherror) is raised.
+
+`match` expressions can only be used as an entire value, specifically:
+- as the right-hand side of an assignment (`<var> = match <value>:`, where `<var>` can be any assignment target, such as `a, b` or `obj.attr`),
+- after `return` (`return match <value>:`), or
+- as the body of an [assignment function](#assignment-functions) (`def <name>(<args>) = match <value>:`, including [pattern-matching](#pattern-matching-functions) and [`case`](#case-functions) functions).
+
+Thus, a `match` expression can't be used inside of a larger expression (e.g. `1 + match x:` is a syntax error); assign its result to a variable first instead.
+
+A `match` expression compiles to a normal `case` block that assigns (or returns) the result in each case, so it has no runtime overhead and type checkers infer its type from the types of the results of its cases. It also gets the same [exhaustiveness checking](#exhaustiveness-checking) as any other `case` block: a `match` expression on a [`case data`](#case-data) type that doesn't handle every variant is a type error, and in [`--pure`](#pure-mode) mode, every `match` expression must be total. An `else` (or a final unguarded catch-all case such as `case _:`) always makes a `match` expression total.
+
+##### Example
+
+**Coconut:**
+```coconut
+import math
+
+case data Shape:
+    case Circle(r: float)
+    case Square(side: float)
+    case Rect(w: float, h: float)
+
+def area(shape: Shape) -> float = match shape:
+    case Circle(r): math.pi * r**2
+    case Square(s): s**2
+    case Rect(w, h): w * h
+
+def respond(command: str) -> str:
+    reply = match command.split():
+        case ["quit"] | ["exit"]: "Goodbye!"
+        case ["say", *words]: " ".join(words)
+        else: "Unknown command"
+    return reply
+
+def describe(x):
+    return match x:
+        case 0: "zero"
+        case int(n) if n > 0:
+            digits = len(str(n))
+            f"a positive number with {digits} digits"
+        case _: "something else"
+
+assert area(Rect(2, 3)) == 6
+assert respond("say hello world") == "hello world"
+assert describe(123) == "a positive number with 3 digits"
+```
+
+**Python:**
+```coconut_python
+import math
+
+# (with Circle, Square, and Rect defined as classes, Shape as their Union, and MatchError as Coconut's MatchError)
+
+def area(shape: Shape) -> float:
+    match shape:
+        case Circle(r):
+            return math.pi * r**2
+        case Square(s):
+            return s**2
+        case Rect(w, h):
+            return w * h
+    raise MatchError(shape)
+
+def respond(command: str) -> str:
+    match command.split():
+        case ["quit"] | ["exit"]:
+            reply = "Goodbye!"
+        case ["say", *words]:
+            reply = " ".join(words)
+        case _:
+            reply = "Unknown command"
+    return reply
+
+def describe(x):
+    match x:
+        case 0:
+            return "zero"
+        case int(n) if n > 0:
+            digits = len(str(n))
+            return f"a positive number with {digits} digits"
+        case _:
+            return "something else"
+    raise MatchError(x)
+```
 
 
 ### `match for`
@@ -2938,7 +3038,7 @@ for one-liners or
 ```
 for full functions, where `<name>` is the name of the function, `<args>` are the functions arguments, `<stmts>` are any statements that the function should execute, and `<expr>` is the value that the function should return.
 
-_Note: Assignment function definition can be combined with infix and/or pattern-matching function definition._
+_Note: Assignment function definition can be combined with infix and/or pattern-matching function definition. Additionally, the body of an assignment function can be a [`match` expression](#match-expressions) (`def <name>(<args>) = match <value>:`)._
 
 ##### Rationale
 

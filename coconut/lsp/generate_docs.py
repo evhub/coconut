@@ -71,6 +71,7 @@ EXTRA_KEYS = {
     "Alternative Ternary Operator": ["if then else"],
     "Tail Call Optimization": ["tco"],
     "`match for`": ["match for"],
+    "`match` Expressions": ["match expression"],
     "`match data`": ["match data"],
     "`case data`": ["case data"],
     "`async with for`": ["async with for"],

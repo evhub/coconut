@@ -1073,6 +1073,20 @@ Node(Leaf(1), Node(Leaf(2), Leaf(3))) |> size |> print  # 3
 ```
 Copy, paste! Notice how the patterns mirror the definition of `Tree` exactly: to take apart a `Node(l, r)`, we just write the pattern `Node(l, r)`.
 
+Another way to write functions like `size` is with a `match` _expression_, which looks just like a `match` block, except that each `case` gives a value rather than running statements, and the whole `match` evaluates to the value of the first `case` that matches (raising a `MatchError` if none do, unless there's an `else:` at the end to fall back on). A `match` expression can go on the right-hand side of an assignment, after `return`, or, as here, as the body of an assignment function:
+```coconut
+def describe(t) = match t:
+    case Empty(): "an empty tree"
+    case Leaf(n): f"a leaf holding {n}"
+    case Node(_, _): f"a node with {size(t)} leaves"
+
+# Test cases:
+Empty() |> describe |> print  # an empty tree
+Leaf(10) |> describe |> print  # a leaf holding 10
+Node(Leaf(1), Leaf(2)) |> describe |> print  # a node with 2 leaves
+```
+Copy, paste! `case def` is the most natural fit when you're matching on a function's arguments, as with `size`, but `match` expressions let you compute a value by pattern-matching on anything, anywhere you'd assign or return it.
+
 **Your turn:** write a function `leaves` that returns an iterator of all the values in a tree's leaves, from left to right. Try to make it lazy, using the `::` operator we saw in the `quick_sort` case study.
 ```coconut
 # Test cases:
@@ -1126,7 +1140,7 @@ That is, `depth` doesn't handle `Node`. Add the missing case,
 ```
 and the error goes away.
 
-The same check applies to every `match` on a `case data` type, so if you later add a fourth variant to `Tree`, your type checker will point out every function that needs to handle it. For more on what Coconut checks and when, see the documentation on [exhaustiveness checking](./DOCS.md#exhaustiveness-checking).
+The same check applies to every `match` on a `case data` type (including `match` expressions), so if you later add a fourth variant to `Tree`, your type checker will point out every function that needs to handle it. For more on what Coconut checks and when, see the documentation on [exhaustiveness checking](./DOCS.md#exhaustiveness-checking).
 
 ## Filling in the Gaps
 

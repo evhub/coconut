@@ -140,6 +140,9 @@ def keyword_entry(line, start, end):
         return None
     if word == "match" and next_word in ("for", "data"):
         return "match " + next_word
+    # (x = match y:, return match y:, def f(x) = match y:)
+    if word == "match" and re.search(r"(?:(?:^|[\w\s)\]])=|\breturn)$", before) and after.strip().endswith(":"):
+        return "match expression"
     if word == "case" and next_word == "data" and before == "":
         return "case data"
     if word == "data" and line[:start].strip() == "case":
