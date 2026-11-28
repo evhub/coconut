@@ -23,6 +23,7 @@ Specifically, Coconut adds to Python _built-in, syntactical support_ for:
 - prettier lambdas
 - infix notation
 - operator functions
+- None-aware operators
 - tail call optimization
 - where statements
 
@@ -1179,6 +1180,81 @@ The first two Fibonacci numbers are `0` and `1`, and after that, each one is the
 
 </details>
 
+### Built-Ins for Iterators
+
+Coconut comes with a whole toolkit of built-in functions for working with iterators, so before you write a loop (or a helper function of your own), it's worth checking whether there's a built-in that already does what you want. Here are a few of the most useful:
+```coconut
+range(1, 6) |> scan$((+)) |> list |> print  # [1, 3, 6, 10, 15]
+range(1, 6) |> windowsof$(2) |> list |> print  # [(1, 2), (2, 3), (3, 4), (4, 5)]
+range(1, 6) |> groupsof$(2) |> list |> print  # [(1, 2), (3, 4), (5,)]
+[[1, 2], [3], [4, 5]] |> flatten |> list |> print  # [1, 2, 3, 4, 5]
+cartesian_product("ab", [1, 2]) |> list |> print  # [('a', 1), ('a', 2), ('b', 1), ('b', 2)]
+```
+`scan` is like `reduce`, except that it gives you every intermediate result (here, running totals) rather than just the last one. `windowsof(n, ...)` slides a window of size `n` along its input, while `groupsof(n, ...)` splits it into chunks of size `n`. `flatten` removes one level of nesting, and `cartesian_product` gives you every combination of its inputs' elements, replacing nested `for` loops.
+
+All of these are lazy, so they work even on infinite iterators. For example, here are all the running totals of `1, 2, 3, ...` that are less than 20, using the infinite iterator `count(1)` and `takewhile`:
+```coconut
+count(1) |> scan$((+)) |> takewhile$(.<20) |> list |> print  # [1, 3, 6, 10, 15]
+```
+
+For the full list, including `takewhile`, `dropwhile`, `count`, `cycle`, and `zip_longest`, see the documentation on [built-ins for working with iterators](./DOCS.md#built-ins-for-working-with-iterators).
+
+**Your turn:** use `windowsof` to write a function `is_sorted` that checks whether its input is in ascending order. _Hint: `starmap` calls a function with each tuple's elements as separate arguments, and `all` checks that everything in an iterable is true._
+```coconut
+# Test cases:
+[1, 2, 2, 5] |> is_sorted |> print  # True
+[3, 1, 2] |> is_sorted |> print  # False
+[] |> is_sorted |> print  # True
+```
+
+<details>
+<summary>Show solution</summary>
+
+```coconut
+def is_sorted(xs) = xs |> windowsof$(2) |> starmap$(<=) |> all
+```
+Each window `(a, b)` is a pair of neighboring elements, `starmap$(<=)` checks that `a <= b` for each pair, and `all` makes sure that every check passed.
+
+</details>
+
+### Grouping with `collectby`
+
+Another common task is grouping things together, which in Python usually means writing a loop that builds up a dictionary. In Coconut, you can use [`collectby`](./DOCS.md#collectby-and-mapreduce) instead, which takes a function that computes each item's key, and collects the items into a dictionary of lists:
+```coconut
+words = ["apple", "bob", "cherry", "avocado", "banana"]
+
+words |> collectby$(.[0]) |> dict |> print  # {'a': ['apple', 'avocado'], 'b': ['bob', 'banana'], 'c': ['cherry']}
+```
+
+`collectby` actually returns a `collections.defaultdict`, so looking up a key that has no items just gives you an empty list. That makes it handy for partitioning things into two groups:
+```coconut
+evens_and_odds = range(10) |> collectby$(x => x % 2 == 0)
+evens_and_odds[True] |> print  # [0, 2, 4, 6, 8]
+evens_and_odds[False] |> print  # [1, 3, 5, 7, 9]
+```
+
+You can also pass `value_func` to change what gets collected, and `reduce_func` to combine each group's values with `reduce` rather than collecting them into a list. And when it's easier to compute each item's key and value together, `mapreduce` takes a single function that returns a `(key, value)` pair. For example, here are the total length of the words starting with each letter, and a word count:
+```coconut
+words |> collectby$(.[0], value_func=len, reduce_func=(+)) |> print  # {'a': 12, 'b': 9, 'c': 6}
+"the cat saw the dog" |> .split() |> mapreduce$(w => (w, 1), reduce_func=(+)) |> print  # {'the': 2, 'cat': 1, 'saw': 1, 'dog': 1}
+```
+
+**Your turn:** write a function `longest_by_letter` that takes a list of words and returns a dictionary mapping each first letter to the longest word that starts with that letter. _Hint: `max` takes a `key` argument, so `max$(key=len)` is a function that returns the longest of its arguments._
+```coconut
+# Test cases:
+["apple", "bob", "cherry", "avocado", "banana"] |> longest_by_letter |> print  # {'a': 'avocado', 'b': 'banana', 'c': 'cherry'}
+```
+
+<details>
+<summary>Show solution</summary>
+
+```coconut
+def longest_by_letter(words) = words |> collectby$(.[0], reduce_func=max$(key=len))
+```
+We group the words by their first letter, then reduce each group with `max$(key=len)`, which keeps whichever word is longer.
+
+</details>
+
 ### Function Composition
 
 Next is function composition. In Coconut, this is primarily accomplished through the `f1 ..> f2` operator, which takes two functions and composes them, creating a new function equivalent to `(*args, **kwargs) => f2(f1(*args, **kwargs))`. This can be useful in combination with partial application for piecing together multiple higher-order functions, like so:
@@ -1240,6 +1316,105 @@ iter$[]
 
 For a full explanation of what each implicit partial does, see Coconut's documentation on [implicit partials](./DOCS.md#implicit-partial-application).
 
+### Point-Free Helpers
+
+Together with function composition and partial application, a handful of built-in higher-order functions make it possible to define many functions without ever naming their arguments, a style known as _point-free_ programming. The most powerful of these is [`lift`](./DOCS.md#lift-and-lift_apart), which "lifts" a function so that it takes functions as its arguments, such that `lift(f)(g, h)(x)` is `f(g(x), h(x))`:
+```coconut
+mean = lift(/)(sum, len)
+
+mean([1, 2, 3, 6]) |> print  # 3.0
+```
+Here `mean(xs)` is `sum(xs) / len(xs)`, but we never had to mention `xs`. (As with `reduce$(*)`, when an operator function is the only argument to a function, the call's parentheses can double as the operator function's.)
+
+Then there's [`ident`](./DOCS.md#ident), the identity function, which takes an optional `side_effect` function to call on its argument before returning it. That makes `ident$(side_effect=print)` a great tool for debugging pipelines, since you can drop it in anywhere to see what's flowing through without changing the result:
+```coconut
+total = range(3) |> map$(.*10) |> map$(ident$(side_effect=print)) |> sum  # prints 0, 10, and 20
+total |> print  # 30
+```
+
+Finally, `const(x)` makes a function that always returns `x`, `flip(f)` reverses the order of `f`'s arguments, and `call(f, *args)` calls `f(*args)`:
+```coconut
+[1, 2, 3] |> map$(const(0)) |> list |> print  # [0, 0, 0]
+flip(pow)(2, 3) |> print  # 9
+[(+), (*)] |> map$(call$(?, 3, 4)) |> list |> print  # [7, 12]
+```
+
+**Your turn:** use `lift` to define `spread`, which computes the difference between the largest and smallest numbers in a list, without naming its argument.
+```coconut
+# Test cases:
+[3, 1, 4, 1, 5] |> spread |> print  # 4
+[7] |> spread |> print  # 0
+```
+
+<details>
+<summary>Show solution</summary>
+
+```coconut
+spread = lift(-)(max, min)
+```
+`lift(-)(max, min)(xs)` is `max(xs) - min(xs)`.
+
+</details>
+
+### None-Aware Operators
+
+In Python, `None` is used everywhere to mean "nothing here," which leads to a lot of `x if x is not None else ...` checks. Coconut provides [`None`-aware operators](./DOCS.md#none-coalescing) to write those for you. The `??` operator evaluates to its left side unless that's `None`, in which case it evaluates to its right side (which it only evaluates if it needs to). Unlike `or`, it doesn't replace other falsy values like `0` or `""`:
+```coconut
+None ?? "default" |> print  # default
+0 ?? "default" |> print  # 0
+```
+
+Adding a `?` before attribute access, indexing, or a function call short-circuits the rest of the expression if what came before it is `None`, and the `|?>` pipe only calls the function if the value being piped into it isn't `None`:
+```coconut
+import re
+
+re.match(r"\d+", "42 apples")?.group() |> print  # 42
+re.match(r"\d+", "no apples")?.group() |> print  # None
+{"a": [1, 2]}.get("b")?[0] ?? 0 |> print  # 0
+"42" |?> int |> print  # 42
+None |?> int |> print  # None
+```
+
+There's also an in-place version of `??`, which only assigns to a variable if it's currently `None`:
+```coconut
+timeout = None
+timeout ??= 30
+timeout |> print  # 30
+```
+
+### Errors as Values
+
+Not every failure is truly exceptional. When a function can fail in an expected way, like when parsing user input, it's often cleaner to return the error as a value than to raise it. For that, Coconut provides the built-in [`Expected`](./DOCS.md#expected) type, which holds either a result or an error, along with [`safe_call`](./DOCS.md#safe_call), which calls a function and wraps whatever happens in an `Expected`:
+```coconut
+safe_call(int, "42") |> print  # Expected(result=42, error=None)
+safe_call(int, "forty-two").error |> print  # invalid literal for int() with base 10: 'forty-two'
+```
+
+To work with an `Expected`, `fmap` applies a function to its result, if there is one (and leaves an error alone), `.and_then` chains on another step that might fail, and `.result_or` gets the result out, with a default in case of an error:
+```coconut
+def check_percent(n) = Expected(n) if 0 <= n <= 100 else Expected(error=ValueError(f"not a percentage: {n}"))
+
+def parse_percent(s) = safe_call(int, s).and_then(check_percent)
+
+parse_percent("50") |> fmap$(.*2) |> print  # Expected(result=100, error=None)
+parse_percent("150").error |> print  # not a percentage: 150
+parse_percent("abc").result_or(0) |> print  # 0
+```
+`Expected` has a few more useful methods, such as `.unwrap()`, which returns the result or raises the error, and `.handle(...)`, which recovers from a particular type of error.
+
+### Memoization and Parallelism
+
+Coconut also has built-ins for making your code faster. The [`memoize`](./DOCS.md#memoize) decorator caches a function's results, such that calling it again with the same arguments just looks up the answer, which can turn a slow recursive function into a fast one. For example, here's a function that counts the ways to climb a staircase of `n` steps taking one or two steps at a time:
+```coconut
+@memoize
+def climb(n) = 1 if n <= 1 else climb(n - 1) + climb(n - 2)
+
+climb(100) |> print  # 573147844013817084101
+```
+Without `@memoize`, `climb(100)` would make more than 10<sup>20</sup> recursive calls, but with it, each `climb(n)` is only ever computed once.
+
+And when you have an expensive function to apply to a lot of inputs, [`process_map` and `thread_map`](./DOCS.md#process_map-and-thread_map) work just like `map`, but spread the work out over multiple processes or threads. For CPU-heavy work, `inputs |> process_map$(expensive_func) |> list` will make use of all of your computer's cores (as long as `expensive_func` and its arguments can be pickled, which, for example, means defining `expensive_func` at the top level of a module), while `thread_map` is best for I/O-bound work like downloading files. `collectby` and `mapreduce` have parallel versions too, `.using_processes` and `.using_threads`. See the documentation on [built-ins for parallelization](./DOCS.md#built-ins-for-parallelization) for all the details.
+
 ### Type Annotations
 
 For many people, one of the big downsides of Python is the fact that it is dynamically-typed. In Python, this problem is addressed by [MyPy](http://mypy-lang.org/), a static type analyzer for Python, which can check Python-3-style type annotations such as
@@ -1275,7 +1450,7 @@ And to have your editor check your code as you type, Coconut comes with a [langu
 
 ### Further Reading
 
-And that's it for this tutorial! But that's hardly it for Coconut. All of the features examined in this tutorial, as well as a bunch of others, are detailed in Coconut's [documentation](./DOCS.md).
+And that's it for this tutorial! But that's hardly it for Coconut. All of the features examined in this tutorial, as well as a bunch of others, are detailed in Coconut's [documentation](./DOCS.md). A few more that are worth knowing about: [anonymous namedtuples](./DOCS.md#anonymous-namedtuples) like `(x=1, y=2)`, [keyword argument name elision](./DOCS.md#keyword-argument-name-elision) (`f(x=)` for `f(x=x)`), [statement lambdas](./DOCS.md#statement-lambdas), pattern-matching [`for` loops](./DOCS.md#match-for) and [comprehensions](./DOCS.md#match-comprehensions), [multidimensional array literals](./DOCS.md#multidimensional-array-literalconcatenation-syntax) like `[1, 2;; 3, 4]`, [custom operators](./DOCS.md#custom-operators), and [`copyclosure` functions](./DOCS.md#copyclosure-functions).
 
 If you're having an AI assistant write Coconut for you, point it at Coconut's [guide for AI assistants](https://coconut.readthedocs.io/en/master/llms.txt) (also available by running `coconut --ai-docs`), which covers idiomatic Coconut style and common pitfalls.
 
