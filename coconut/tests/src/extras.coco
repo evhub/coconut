@@ -341,6 +341,21 @@ cannot reassign type variable 'T' (use explicit '\T' syntax if intended) (line 1
         assert False
 
     assert_raises(-> parse_with_state("out = where:\n    x = 1\n    y = x"), CoconutSyntaxError, err_has="expected expression as last statement")
+    # match expressions can't go inside larger expressions
+    assert_raises(-> parse_with_state("x = 1 + match y:\n    case 1: 2"), CoconutParseError)
+    assert_raises(-> parse_with_state("f(match y:\n    case 1: 2\n)"), CoconutParseError)
+    assert_raises(-> parse_with_state("x = (match y:\n    case 1: 2\n)"), CoconutParseError)
+    assert_raises(-> parse_with_state("def f(y) = 1 + match y:\n    case 1: 2"), CoconutParseError)
+    assert_raises(-> parse_with_state("x += match y:\n    case 1: 2"), CoconutParseError)
+    assert_raises(-> parse_with_state("x = match y: case 1: 2"), CoconutParseError)
+    # match expression cases must end in an expression
+    assert_raises(-> parse_with_state("x = match y:\n    case 1:\n        z = 2"), CoconutSyntaxError, err_has="match expression case expected expression as last statement")
+    assert_raises(-> parse_with_state("x = match y:\n    case 1:\n        return 2"), CoconutSyntaxError, err_has="match expression case expected expression as last statement")
+    assert_raises(-> parse_with_state("def f(y) = match y:\n    case 1: return 2"), CoconutSyntaxError, err_has="match expression case expected expression")
+    assert_raises(-> parse_with_state("x = match y:\n    else: 3"), CoconutParseError)
+    assert_raises(-> parse_with_state("x = match y:\n    case 1: 2\n    else: 3\n    case 2: 4"), CoconutParseError)
+    # the else of a match expression goes inside it, unlike the else of a match statement
+    assert_raises(-> parse_with_state("x = match y:\n    case 1: 2\nelse: 3"), CoconutParseError)
     assert_raises(-> parse_with_state("match T(**r, a=x) in t: pass"), CoconutSyntaxError, err_has="double-starred arg must come last")
     assert_raises(-> parse_with_state("match T(*s, **r) in t: pass"), CoconutSyntaxError, err_has="both starred arg and double-starred arg")
     assert parse_with_state("def f(x):\n ${var}", "xonsh") == "def f(x):\n    ${var}\n"
@@ -653,6 +668,20 @@ line 6''')
     setup(line_numbers=False, strict=True, target="sys")
     assert_raises(-> parse_with_state("await f x"), CoconutParseError)
 
+    # match expressions (match isn't mistaken for an undefined name, which would be an error in strict mode)
+    assert parse(d"""
+    def f(x) = match x:
+        case 0: 1
+        case _: 2
+    y = match f(0):
+        case 1: "one"
+        else: "other"
+    def g(x):
+        return match x:
+            case [a]: a
+            case _: None
+    """)
+
     # update sections need their own parentheses
     assert_raises(-> parse("y = .x = 1"), CoconutParseError)
     assert_raises(-> parse("y = map(.x = 1, [])"), CoconutParseError)
@@ -686,6 +715,8 @@ line 6''')
     assert "_coconut.match_must_be_total(" in parse("case def f:\n    type(x: int) -> int\n    case(0) = 1\n")
     assert "_coconut.match_must_be_total(" in parse("def f(x):\n    match x:\n        case int(n):\n            pass\n        case str(s):\n            pass\n")
     assert "match_must" not in parse("def f(x):\n    match int(n) in x:\n        pass\n")
+    assert "_coconut.match_must_be_total(" in parse("def f(x) = match x:\n    case int(n): n\n    case str(s): len(s)\n")
+    assert "match_must" not in parse("def f(x) = match x:\n    case int(n): n\n    else: 0\n")
     assert parse(d"""
     class A:
         def mk_int(x) = int(x)
@@ -878,6 +909,17 @@ line 6''')
     assert "_coconut.match_must_be_total(" in never_match and "assert_never(x)  # type: ignore" in never_match
     never_else = parse("def f(x):\n    match x:\n        case int(n):\n            pass\n    else:\n        typing.assert_never(x)\n", "lenient")
     assert "_coconut.match_must_be_total(" in never_else and "typing.assert_never(x)  # type: ignore" in never_else
+    # (match expressions get the same checks)
+    match_expr = "def f(x) = match x:\n    case Circle(r): r\n    case Square(s): s\n"
+    assert "_coconut.match_must_handle_case_data(_coconut.case_data_leftover(" in parse(match_expr, "lenient")
+    assert "match_must" not in parse(match_expr.replace("case Square(s)", "else"), "lenient")
+    assert "match_must" not in parse(match_expr.replace("match x:", "match x:  # type: ignore"), "lenient")
+    # (and returning ones only get past their cases when nothing matched, so they always raise there)
+    assert parse(match_expr, "lenient").endswith("\n    raise _coconut_MatchError('def f(x) = match x:', _coconut_case_match_to_0)")
+    never_match_expr = parse("y = match x:\n    case int(n): n\n    case _: assert_never(x)\n", "lenient")
+    assert "_coconut.match_must_be_total(" in never_match_expr and "y = assert_never(x)  # type: ignore" in never_match_expr
+    never_else_expr = parse("def f(x) = match x:\n    case int(n): n\n    else: typing.assert_never(x)\n", "lenient")
+    assert "_coconut.match_must_be_total(" in never_else_expr and "return typing.assert_never(x)  # type: ignore" in never_else_expr
     # (case def only has to handle everything its signatures accept under --pure)
     assert "_coconut.match_must_handle_case_data(" in parse("case def f:\n    type(x: int) -> int\n    case(0) = 1\n", "lenient")
     assert "match_must" not in parse("case def f:\n    case(0) = 1\n", "lenient")

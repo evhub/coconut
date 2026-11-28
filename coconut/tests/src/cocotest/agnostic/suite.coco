@@ -1132,6 +1132,27 @@ forward 2""") == 900
     assert ShapeNamer().name(Rect(1, 2)) == "rect"
     assert pickle_round_trip(BinNode(BinLeaf(1), BinLeaf(2))) == BinNode(BinLeaf(1), BinLeaf(2))
 
+    # match expressions
+    assert shape_area_expr(Circle(1)) == 3 and shape_area_expr(Square(2)) == 4 and shape_area_expr(Rect(2, 3)) == 6
+    assert command_reply("quit") == "Goodbye!" == command_reply("exit")
+    assert command_reply("say hello world") == "hello world"
+    assert command_reply("dance") == "Unknown command"
+    assert zero_or_other(0) == "zero" and zero_or_other(1) == "other"
+    assert tree_depth_expr(BinLeaf(1)) == 1 and tree_depth_expr(BinNode(BinLeaf(1), BinNode(BinLeaf(2), BinLeaf(3)))) == 3
+    assert sign_expr(5) == "positive" and sign_expr(0) == "zero" and sign_expr(-5) == "negative"
+    assert int_or_str_expr(1) == "int" and int_or_str_expr("a") == "str"
+    assert count_down_expr(10000) == 10000  # tail recursion elimination
+    assert token_len(Num(123)) == 3 and token_len(Op("**")) == 2 and token_len(Empty()) == 0
+    assert first_or_default([None, 1], 2) == 2 and first_or_default([3], 2) == 3
+    assert MatchExprKind().kind(1) == "int" and MatchExprKind().kind("a") == "str" and MatchExprKind().kind(None) == "other"
+    try:
+        shape_area_expr(None)  # type: ignore
+    except MatchError as err:
+        assert err.value is None
+        assert err.pattern == "def shape_area_expr(shape: Shape) -> float = match shape:"
+    else:
+        assert False
+
     # update sections
     player = UPlayer("p", UPoint(1, 2), 100)
     assert player |> (.pos.x += 1) |> (.hp -= 10) == UPlayer("p", UPoint(2, 2), 90)

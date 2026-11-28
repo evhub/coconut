@@ -517,6 +517,45 @@ def primary_test_1() -> bool:
         scope_sentinel = "inner"
         scope_sentinel + "!"
     assert scope_sentinel == "outer"  # block where: variables must not leak to enclosing scope
+    match_expr_out = match [1, 2, 3]:
+        case []: "empty"
+        case [x] + rest if len(rest) > 5: "long"
+        case [x] + rest:
+            rest_len = len(rest)
+            f"{x} then {rest_len} more"
+    assert match_expr_out == "1 then 2 more"
+    head, tail = match (1, 2, 3):  # destructuring assignment target
+        case (x, *xs): x, xs
+    assert head == 1 and tail == [2, 3]
+    match_expr_dict = {"key": "a"}
+    match_expr_dict["key"] = match "a" + "b":
+        case "a" + rest: rest
+    assert match_expr_dict == {"key": "b"}
+    nested_match_expr = match 1:
+        case 1:
+            inner_match_expr = match 2:
+                case 2: "two"
+                else: "not two"
+            "one and " + inner_match_expr
+        else: "neither"
+    assert nested_match_expr == "one and two"
+    match_expr_outs: list[str] = []
+    for match_expr_i in range(3):
+        match_expr_res = match match_expr_i:  # comment
+            # comment
+            case 0: "zero"  # comment
+            case n if n * 2 > 2: str(n * 2)
+            else: str(match_expr_i)
+        match_expr_outs.append(match_expr_res)
+    assert match_expr_outs == ["zero", "1", "4"]
+    try:
+        unbound_match_expr = match 5:
+            case 1: "one"
+    except MatchError as err:
+        assert err.value == 5
+    else:
+        assert False
+    assert "unbound_match_expr" not in locals()
     assert true where: true = True
     assert a == 5 where:
         {"a": a} = {"a": 5}

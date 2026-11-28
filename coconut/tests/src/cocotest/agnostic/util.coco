@@ -2271,6 +2271,68 @@ class ShapeNamer:
         case(self, Rect(_, _)) = "rect"
 
 
+# match expressions
+
+def shape_area_expr(shape: Shape) -> float = match shape:
+    case Circle(r): 3 * r ** 2
+    case Square(s): s ** 2
+    case Rect(w, h): w * h
+
+def command_reply(command: str) -> str:
+    reply = match command.split():
+        case ["quit"] | ["exit"]: "Goodbye!"
+        case ["say", *words]: " ".join(words)
+        else: "Unknown command"
+    return reply
+
+def zero_or_other(x):
+    return match x:
+        case 0: "zero"
+        case _: "other"
+
+def tree_depth_expr(t: BinTree[int]) -> int = match t:
+    case BinLeaf(_): 1
+    case BinNode(l, r):
+        left_depth = tree_depth_expr(l)
+        right_depth = tree_depth_expr(r)
+        1 + max(left_depth, right_depth)
+
+def sign_expr(x: int) -> str:
+    sign = match x:
+        case n if n > 0: "positive"
+        case 0: "zero"
+        else:
+            negative = "negative"
+            negative
+    return sign
+
+def int_or_str_expr(x: int | str) -> str = match x:
+    case int(_): "int"
+    case str(_): "str"
+    case _: typing.assert_never(x)
+
+def count_down_expr(n: int, acc: int = 0) -> int = match n:
+    case 0: acc
+    case _: count_down_expr(n - 1, acc + 1)
+
+case def token_len:
+    type(tok: Token) -> int
+    case(tok) = match tok:
+        case Num(n): len(str(n))
+        case Op(sym): len(sym)
+        case Empty(): 0
+
+match def first_or_default([x] + _, default) = match x:
+    case None: default
+    case _: x
+
+class MatchExprKind:
+    def kind(self, x) = match x:
+        case int(): "int"
+        case str(): "str"
+        else: "other"
+
+
 # update sections
 
 data UPoint(x: int, y: int)

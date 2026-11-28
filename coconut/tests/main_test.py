@@ -365,6 +365,61 @@ case def int_missing:  # PURE
     type(x: int) -> int
     type(x: str) -> int
     case(int(n)) = n
+
+def area_expr_missing(shape: Shape) -> float = match shape:  # ERR
+    case Circle(r): r
+
+def area_expr_complete(shape: Shape) -> float = match shape:
+    case Circle(r): r
+    case Square(s): s
+
+def area_expr_guarded(shape: Shape) -> float = match shape:  # ERR
+    case Circle(r) if r > 0: r
+    case Square(s): s
+
+def area_expr_else(shape: Shape) -> float = match shape:
+    case Circle(r): r
+    else: 0.0
+
+def assign_expr_missing(shape: Shape) -> float:
+    area = match shape:  # ERR
+        case Square(s): s
+    return area
+
+def assign_expr_complete(shape: Shape) -> float:
+    area = match shape:
+        case Circle(r):
+            r_squared = r * r
+            r_squared
+        case Square(s): s
+    return area
+
+def return_expr_missing(t: Tree) -> int:
+    return match t:  # ERR
+        case Leaf(v): v
+        case Node(Leaf(lv), _): lv
+
+def int_expr_guarded(x: int) -> str = match x:  # PURE
+    case pos if pos > 0: "positive"
+    case nonpos if nonpos <= 0: "nonpositive"
+
+def int_expr_total(x: int) -> str = match x:
+    case pos if pos > 0: "positive"
+    case _: "nonpositive"
+
+def int_expr_partial(x: int | str) -> int = match x:  # PURE
+    case int(n): n
+
+def int_expr_total_missing(x: int | str) -> int = match x:  # ERR
+    case int(n): n
+    case _: assert_never(x)
+
+def int_expr_total_complete(x: int | str) -> int:
+    y = match x:
+        case int(n): n
+        case str(s): len(s)
+        else: assert_never(x)
+    return y
 """
 
 addpattern_snip = '''

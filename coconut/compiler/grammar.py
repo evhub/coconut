@@ -2569,6 +2569,55 @@ class Grammar(object):
             - dedent.suppress()
         )
 
+        # match <value>:
+        #     case <pattern> [if <cond>]: <result expr>
+        #     case <pattern> [if <cond>]:
+        #         <stmts>
+        #         <result expr>
+        #     [else: <result expr or block as above>]
+        # (only allowed as <lhs> = match ..., return match ..., and def f(...) = match ...)
+        # (the result's newline is kept separate, since it can contain comments that need to
+        #  go after any type: ignore comment added to the result by the exhaustiveness check)
+        match_expr_result = testlist_star_expr + newline
+        match_expr_body = (
+            labeled_group(
+                newline.suppress()
+                - indent.suppress()
+                - Group(ZeroOrMore(~(stmt + dedent) + stmt))
+                - (
+                    match_expr_result
+                    | invalid_syntax(stmt, "match expression case expected expression as last statement")
+                )
+                - dedent.suppress(),
+                "block",
+            )
+            | labeled_group(match_expr_result, "expr")
+            | invalid_syntax(simple_stmt, "match expression case expected expression but got statement instead")
+        )
+        match_expr_case = Group(
+            keyword("case").suppress()
+            + stores_loc_item
+            + many_match
+            + match_guard
+            - colon.suppress()
+            - match_expr_body
+        )
+        match_expr_tokens = (
+            keyword("match").suppress()
+            + testlist_star_namedexpr
+            + colon.suppress()
+            + newline.suppress()
+            + indent.suppress()
+            - Group(OneOrMore(match_expr_case))
+            - Optional(keyword("else").suppress() - colon.suppress() - match_expr_body)
+            - dedent.suppress()
+        )
+        assign_match_expr_stmt = Forward()
+        assign_match_expr_stmt_ref = Group(assignlist) + equals.suppress() + match_expr_tokens
+        return_match_expr = Forward()
+        return_match_expr_ref = match_expr_tokens
+        return_match_expr_stmt = keyword("return").suppress() + return_match_expr
+
         implicit_return = (
             invalid_syntax(return_stmt, "assignment function expected expression as last statement but got return instead")
             | attach(new_testlist_star_expr, implicit_return_handle)
@@ -2581,11 +2630,14 @@ class Grammar(object):
             condense(implicit_return + newline)
             | implicit_return_where
         )
+        # the body of def f(...) = <body> when it starts on the same line
+        #  (match expressions must come first, since where statements would greedily parse match as a name)
+        implicit_return_suite = attach(return_match_expr | implicit_return_stmt, make_suite_handle)
 
         math_funcdef_body = condense(ZeroOrMore(~(implicit_return_stmt + dedent) + stmt) - implicit_return_stmt)
         math_funcdef_suite = (
             condense(newline - indent - math_funcdef_body - dedent)
-            | attach(implicit_return_stmt, make_suite_handle)
+            | implicit_return_suite
         )
         end_func_equals = return_typedef + equals.suppress() | fixto(equals, ":")
         math_funcdef = attach(
@@ -2605,7 +2657,7 @@ class Grammar(object):
                         - attach(math_funcdef_body, make_suite_handle)
                         - dedent.suppress()
                     )
-                    | attach(implicit_return_stmt, make_suite_handle)
+                    | implicit_return_suite
                 ),
                 join_match_funcdef,
             )
@@ -2636,7 +2688,7 @@ class Grammar(object):
                         + attach(math_funcdef_body, make_suite_handle)
                         + dedent.suppress()
                     )
-                    | attach(implicit_return_stmt, make_suite_handle)
+                    | implicit_return_suite
                 )
             )
         )
@@ -2952,6 +3004,10 @@ class Grammar(object):
             compound_stmt
             | simple_stmt  # includes destructuring
             | cases_stmt  # must be after destructuring due to ambiguity
+            # match expressions must come before where statements, since
+            #  where statements would greedily parse match as a name
+            | assign_match_expr_stmt  # lhs = match <value>: <cases with results>
+            | return_match_expr_stmt  # return match <value>: <cases with results>
             | where_stmt  # slows down parsing when put before simple_stmt
             | block_where_stmt  # lhs = where: <body with last stmt as result>
             # at the very end as a fallback case for the anything parser

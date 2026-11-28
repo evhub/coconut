@@ -1062,6 +1062,8 @@ class Compiler(Grammar, pickleable_obj):
         cls.with_stmt <<= attach(cls.with_stmt_ref, cls.method("with_stmt_handle"))
         cls.await_expr <<= attach(cls.await_expr_ref, cls.method("await_expr_handle"))
         cls.cases_stmt <<= attach(cls.cases_stmt_ref, cls.method("cases_stmt_handle"))
+        cls.assign_match_expr_stmt <<= attach(cls.assign_match_expr_stmt_ref, cls.method("assign_match_expr_stmt_handle"))
+        cls.return_match_expr <<= attach(cls.return_match_expr_ref, cls.method("return_match_expr_handle"))
         cls.decorators <<= attach(cls.decorators_ref, cls.method("decorators_handle"))
         cls.unsafe_typedef_or_expr <<= attach(cls.unsafe_typedef_or_expr_ref, cls.method("unsafe_typedef_or_expr_handle"))
         cls.testlist_star_expr <<= attach(cls.testlist_star_expr_ref, cls.method("testlist_star_expr_handle"))
@@ -4848,22 +4850,19 @@ raise {raise_from_var}
         unpack_comp = comp + " for " + map_var + " in (" + item + ",) for " + key_var + " in " + map_var + ".keys()"
         return self.normal_dict_comp_handle([key_var, map_var + "[" + key_var + "]", unpack_comp])
 
-    def pattern_error(self, original, loc, value_var, check_var, match_error_class='_coconut_MatchError'):
-        """Construct a pattern-matching error message."""
+    def pattern_error(self, original, loc, value_var, check_var, match_error_class='_coconut_MatchError', ln_marker=""):
+        """Construct a pattern-matching error message (raised unconditionally if check_var is None)."""
         base_line = clean(self.reformat(getline(loc, original), ignore_errors=True)).strip()
         line_wrap = self.wrap_str_of(base_line)
-        return handle_indentation(
-            """
-if not {check_var}:
-    raise {match_error_class}({line_wrap}, {value_var})
-            """,
-            add_newline=True,
-        ).format(
-            check_var=check_var,
+        raise_stmt = "raise {match_error_class}({line_wrap}, {value_var}){ln_marker}\n".format(
             value_var=value_var,
             match_error_class=match_error_class,
             line_wrap=line_wrap,
+            ln_marker=ln_marker,
         )
+        if check_var is None:
+            return raise_stmt
+        return "if not " + check_var + ":" + ln_marker + "\n" + openindent + raise_stmt + closeindent
 
     def full_match_handle(self, original, loc, tokens, match_to_var=None, match_check_var=None):
         """Process match blocks."""
@@ -5627,6 +5626,86 @@ __annotations__["{name}"] = {annotation}
         if default is not None:
             out += "if not " + check_var + default
         return out
+
+    def split_match_expr_body(self, body):
+        """Split the body of a match expression case into (stmts, result expr, newline)."""
+        if "block" in body:
+            stmts, result, end = body
+            return "".join(stmts), result, end
+        elif "expr" in body:
+            result, end = body
+            return "", result, end
+        else:
+            raise CoconutInternalException("invalid match expression body tokens", body)
+
+    def match_expr_handle(self, original, loc, set_result, tokens):
+        """Compile a match expression into a case block that does set_result (an assignment or a return) on the result of whichever case matches."""
+        if len(tokens) == 2:
+            item, cases = tokens
+            default = None
+        elif len(tokens) == 3:
+            item, cases, default = tokens
+        else:
+            raise CoconutInternalException("invalid match expression tokens", tokens)
+        returns = set_result == "return "
+
+        # the exhaustiveness check gets each body without set_result, so that it can recognize a bare assert_never
+        bodies = [self.split_match_expr_body(case[-1]) for case in cases]
+        raw_cases = [list(case[:-1]) + [stmts + result] for case, (stmts, result, _) in zip(cases, bodies)]
+        default_body = None if default is None else self.split_match_expr_body(default)
+        raw_default = None if default is None else default_body[0] + default_body[1]
+
+        check_var = self.get_temp_var("case_match_check", loc)
+        match_var = self.get_temp_var("case_match_to", loc)
+        exhaustiveness_code, raw_cases, raw_default = self.match_exhaustiveness_check(original, loc, match_var, raw_cases, raw_default)
+
+        def set_result_in(body, raw_body):
+            """Add set_result to the given body, as possibly changed by the exhaustiveness check."""
+            stmts, result, end = body
+            # the exhaustiveness check only ever changes a bare assert_never result (by adding a type: ignore comment)
+            new_result = raw_body[len(stmts):]
+            # handle return *a, b the same way normal returns do (except around a type: ignore comment)
+            if returns and new_result == result:
+                new_result = self.new_testlist_star_expr_handle([result])
+            # (end goes after any type: ignore comment, since end can include comments)
+            return stmts + set_result + new_result + end
+
+        cases = [
+            raw_case[:-1] + [set_result_in(body, raw_case[-1])]
+            for body, raw_case in zip(bodies, raw_cases)
+        ]
+        out = (
+            match_var + " = " + item + "\n"
+            + exhaustiveness_code
+            + self.match_case_tokens(match_var, check_var, original, cases[0], True)
+        )
+        for case in cases[1:]:
+            out += (
+                "if not " + check_var + ":\n" + openindent
+                + self.match_case_tokens(match_var, check_var, original, case, False) + closeindent
+            )
+
+        # every case that matches either returns or assigns, so if we
+        #  return, we only get past the cases when nothing has matched
+        if default is not None:
+            default_code = set_result_in(default_body, raw_default)
+            if returns:
+                out += default_code
+            else:
+                out += "if not " + check_var + ":\n" + openindent + default_code + closeindent
+        else:
+            # (the error comes after the match expression, but should point to its first line)
+            out += self.pattern_error(original, loc, match_var, None if returns else check_var, ln_marker=self.wrap_loc(original, loc))
+        return out
+
+    def assign_match_expr_stmt_handle(self, original, loc, tokens):
+        """Process <lhs> = match <value>: ... match expressions."""
+        lhs_tokens, match_tokens = tokens[0], tokens[1:]
+        return self.match_expr_handle(original, loc, "".join(lhs_tokens) + " = ", match_tokens)
+
+    def return_match_expr_handle(self, original, loc, tokens):
+        """Process return match <value>: ... match expressions (also used for def f(...) = match <value>: ...)."""
+        return self.match_expr_handle(original, loc, "return ", tokens)
 
     def f_string_handle(self, original, loc, tokens, is_t=False):
         """Process Python 3.6 format strings and Python 3.14 template strings."""
