@@ -7,6 +7,14 @@ def py311_test() -> bool:
     except* ValueError as err:
         got_err = err
     assert repr(got_err) == repr(multi_err), (got_err, multi_err)
+    got_errs: list[BaseExceptionGroup] = []
+    try:
+        raise ExceptionGroup("derp", [TypeError("a"), ValueError("b")])
+    except *TypeError as err:
+        got_errs.append(err)
+    except * ValueError as err:
+        got_errs.append(err)
+    assert [type(e.exceptions[0]) for e in got_errs] == [TypeError, ValueError]
     assert [1, 2, 3][x := 1] == 2
     assert x == 1
 

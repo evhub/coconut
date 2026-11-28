@@ -93,7 +93,8 @@ IPY = (
     and sys.version_info[:2] != (3, 7)
 )
 MYPY = (
-    PY39
+    # (MyPy 1.19, the last version to support Python 3.9, gets many of the built-in stubs' types wrong)
+    PY310
     and not WINDOWS
     and not PYPY
 )
@@ -1409,7 +1410,7 @@ search_terms = (
 exclude_install_dirs = (
     os.path.join("coconut", "tests", "dest"),
     "docs",
-    "pyston",
+    "cpython",
     "pyprover",
     "bbopt",
     "coconut-prelude",

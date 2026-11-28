@@ -2158,11 +2158,12 @@ def final_indentation_level(code):
     return level
 
 
-def strip_comments_and_join_lines(code):
+def strip_comments_and_join_lines(code, join_lines=True):
     """Remove comments and line breaks outside of strings from the given expression.
 
     Inside f-string replacement fields (as inside brackets), line breaks and comments
-    are insignificant (PEP 701), so this gives an equivalent single-line expression."""
+    are insignificant (PEP 701), so this gives an equivalent single-line expression.
+    If not join_lines, only removes comments."""
     out = []
     i = 0
     quote = None
@@ -2172,10 +2173,10 @@ def strip_comments_and_join_lines(code):
             if c == "#":
                 while i < len(code) and code[i] != "\n":
                     i += 1
-            elif c == "\\" and code[i + 1:i + 2] == "\n":
+            elif join_lines and c == "\\" and code[i + 1:i + 2] == "\n":
                 out.append(" ")
                 i += 2
-            elif c in "\r\n":
+            elif join_lines and c in "\r\n":
                 out.append(" ")
                 i += 1
             elif c in "'\"":

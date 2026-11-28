@@ -971,7 +971,7 @@ def primary_test_2() -> bool:
     # f-string = specifier defaults to repr only without a conversion or format spec
     fs_s = "hi"
     fs_x = 3.14159
-    assert f"{fs_s=}" == "fs_s=" + repr("hi")  # (on Python 2, that's u'hi')
+    assert f"{fs_s=}" == "fs_s=" + py_repr("hi")  # (the builtin repr, so on Python 2 that's u'hi')
     assert f"{fs_s=!s}" == "fs_s=hi"
     assert f"{fs_x=:.2f}" == "fs_x=3.14"
     assert f"{1+1=}" == "1+1=2"
@@ -1196,5 +1196,63 @@ def primary_test_2() -> bool:
     assert (2**3)**2 == 64
     assert (.**3**2)(2) == 512
     assert (2**3**.)(2) == 64  # NOQA (an ambiguous operator partial, which means x => (2**3)**x)
+
+    # Python syntax found by compiling CPython's tests as Coconut
+    assert f'' == "" == f"" == rf''  # NOQA
+    assert f'' 'a' == "a" == 'a' f''  # NOQA
+    assert f"{1}" f"" == "1"  # NOQA
+    assert 'ab\
+cd' == "abcd" == "ab\
+cd"
+    assert f'a{1}\
+b' == "a1b"
+    assert b'ab\
+cd' == b"abcd"
+    match def pos_defaults(a, b=1, /, c=2) = (a, b, c)
+    assert pos_defaults(0) == (0, 1, 2)
+    assert pos_defaults(0, 5) == (0, 5, 2)
+    assert pos_defaults(0, 5, c=6) == (0, 5, 6)
+    assert_raises(-> pos_defaults(0, b=5), MatchError)
+    match def pos_only_star(a, b=1, /, *rest) = (a, b, rest)
+    assert pos_only_star(0) == (0, 1, ())
+    assert pos_only_star(0, 2, 3, 4) == (0, 2, (3, 4))
+    match def pos_only_rest(a, /, *rest) = rest
+    assert pos_only_rest(1, 2, 3) == (2, 3)
+    data PosDefaults(a, b=2, /)
+    assert PosDefaults(1) == PosDefaults(1, 2)
+    assert PosDefaults(1)._replace(b=5) == PosDefaults(1, 5)
+    assert F'{1}' == "1" == Rf'{1}' == FR'{1}'
+    assert fR'{1}\n' == "1\\n" == rF'{1}\n'
+    def fstr_yield(y):
+        f'y:{yield y*2}'
+    assert fstr_yield(4) |> next == 8
+    class AttrHolder:
+        x: int
+        y: int
+        z: int
+    attr_holder = AttrHolder()
+    (attr_holder).x = 1
+    (attr_holder).y, attr_holder.z = 2, 3
+    assert (attr_holder.x, attr_holder.y, attr_holder.z) == (1, 2, 3)
+    nested_ls = [0]
+    [nested_ls][0][0] = 5
+    assert nested_ls == [5]
+    assert_raises((def -> "a".__class__ = AttrHolder), TypeError)  # type: ignore
+    empty_gen = (i for i in [1, 2] if i > 2)
+    [] = empty_gen
+    assert_raises((def -> [] = (i for i in [1])), ValueError)  # type: ignore
+    () = []
+    padded_num = 20
+    assert f'{padded_num:=10}' == "        20"  # (a format spec, not an assignment expression)
+    assert f'\N{GREEK CAPITAL LETTER DELTA}{padded_num}' == "\u039420"  # (a named unicode escape, not a replacement field)
+    assert f"{ {'a': 1}['a'] = }" == " {'a': 1}['a'] = 1"
+    assert f'{"a#b" = }' == '"a#b" = ' + py_repr("a#b")
+    assert f"{1+2 = # a comment
+    }" == "1+2 = \n    3"
+    del_a = del_b = del_c = 1
+    del (del_a, [del_b]), del_c
+    assert "del_a" not in locals() and "del_c" not in locals()
+    def args_and_kwargs(*args, **kwargs) = (args, kwargs)
+    assert args_and_kwargs(1, b=2, *[3, 4], c=5) == ((1, 3, 4), {"b": 2, "c": 5})
 
     return True

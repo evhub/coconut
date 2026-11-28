@@ -188,7 +188,10 @@ def pipe_info(op):
 
 
 def split_args_list(tokens, loc):
-    """Splits function definition arguments."""
+    """Splits function definition arguments.
+
+    Positional-only arguments with default values are included in pos_only_args
+    as (arg, default) tuples, the same way they're included in default_args."""
     pos_only_args = []
     req_args = []
     default_args = []
@@ -196,6 +199,7 @@ def split_args_list(tokens, loc):
     kwd_only_args = []
     dubstar_arg = None
     pos = 0
+    saw_slash = False
     for arg in tokens:
         # only the first two components matter; if there's a third it's a typedef
         arg = arg[:2]
@@ -207,15 +211,17 @@ def split_args_list(tokens, loc):
                     raise CoconutDeferredSyntaxError("star separator at invalid position in function definition", loc)
                 pos = 2
             elif arg[0] == "/":
-                # slash sep (pos = 0)
-                if pos > 0:
+                # slash sep (pos = 0, or pos = 1 after positional-only arguments with defaults)
+                if pos > 1:
                     raise CoconutDeferredSyntaxError("slash separator at invalid position in function definition", loc)
-                if pos_only_args:
+                if saw_slash:
                     raise CoconutDeferredSyntaxError("only one slash separator allowed in function definition", loc)
-                if not req_args:
+                if not req_args and not default_args:
                     raise CoconutDeferredSyntaxError("slash separator must come after arguments to mark as positional-only", loc)
-                pos_only_args = req_args
+                saw_slash = True
+                pos_only_args = req_args + default_args
                 req_args = []
+                default_args = []
             else:
                 # pos arg (pos = 0)
                 if pos == 0:
@@ -254,6 +260,11 @@ def split_args_list(tokens, loc):
                     raise CoconutDeferredSyntaxError("invalid default argument in function definition", loc)
 
     return pos_only_args, req_args, default_args, star_arg, kwd_only_args, dubstar_arg
+
+
+def has_default(arg):
+    """Determine if an argument from the pos_only_args of split_args_list has a default value."""
+    return isinstance(arg, tuple)
 
 
 # end: HELPERS
@@ -875,7 +886,7 @@ class Grammar(object):
         kwds = keydefaultdict(partial(base_keyword, explicit_prefix=colon))
         keyword = kwds.__getitem__
 
-        except_star_kwd = combine(keyword("except") + star)
+        except_star_kwd = fixto(keyword("except") + star, "except*")
         kwds["except"] = ~except_star_kwd + keyword("except")
         kwds["lambda"] = keyword("lambda") | fixto(keyword("\u03bb"), "lambda")
         kwds["operator"] = base_keyword("operator", explicit_prefix=colon, require_whitespace=True)
@@ -1600,17 +1611,20 @@ class Grammar(object):
         simple_assign_ref = maybeparens(
             lparen,
             (
-                # refname if there's a trailer, setname if not
-                (refname | passthrough_atom) + OneOrMore(ZeroOrMore(complex_trailer) + OneOrMore(simple_trailer))
+                # refname (or any other atom) if there's a trailer, setname if not
+                atom + OneOrMore(ZeroOrMore(complex_trailer) + OneOrMore(simple_trailer))
                 | setname
                 | passthrough_atom
             ),
             rparen,
         )
+        # (an empty target unpacks an empty iterable; () isn't a valid target before Python 3.8, so it's always compiled to [])
+        empty_assign_item = fixto(lparen + rparen | lbrack + rbrack, "[]")
         base_assign_item = condense(
             simple_assign
             | lparen + assignlist + rparen
             | lbrack + assignlist + rbrack
+            | empty_assign_item
         )
         star_assign_item_ref = condense(star + base_assign_item)
         assign_item = base_assign_item | star_assign_item
@@ -1623,8 +1637,8 @@ class Grammar(object):
         expr_simple_assign_ref = maybeparens(
             lparen,
             (
-                # refname if there's a trailer, expr_setname if not
-                (refname | passthrough_atom) + OneOrMore(ZeroOrMore(complex_trailer) + OneOrMore(simple_trailer))
+                # refname (or any other atom) if there's a trailer, expr_setname if not
+                atom + OneOrMore(ZeroOrMore(complex_trailer) + OneOrMore(simple_trailer))
                 | expr_setname
                 | passthrough_atom
             ),
@@ -1634,6 +1648,7 @@ class Grammar(object):
             expr_simple_assign
             | lparen + expr_assignlist + rparen
             | lbrack + expr_assignlist + rbrack
+            | empty_assign_item
         )
         expr_star_assign_item_ref = condense(star + expr_base_assign_item)
         expr_assign_item = expr_base_assign_item | expr_star_assign_item
@@ -1644,21 +1659,29 @@ class Grammar(object):
         unsafe_simple_assign_ref = maybeparens(
             lparen,
             (
-                # refname if there's a trailer, unsafe_name if not
-                (refname | passthrough_atom) + OneOrMore(ZeroOrMore(complex_trailer) + OneOrMore(simple_trailer))
+                # refname (or any other atom) if there's a trailer, unsafe_name if not
+                atom + OneOrMore(ZeroOrMore(complex_trailer) + OneOrMore(simple_trailer))
                 | unsafe_name
                 | passthrough_atom
             ),
             rparen,
         )
 
-        simple_assignlist = maybeparens(lparen, itemlist(simple_assign, comma, suppress_trailing=False), rparen)
+        # (for del, so it can have parenthesized and bracketed groups of targets, as in Python)
+        simple_assignlist = Forward()
+        simple_assignlist_item = condense(
+            simple_assign
+            | lparen + Optional(simple_assignlist) + rparen
+            | lbrack + Optional(simple_assignlist) + rbrack
+        )
+        simple_assignlist <<= itemlist(simple_assignlist_item, comma, suppress_trailing=False)
         typed_assign_stmt = Forward()
         typed_assign_stmt_ref = (
             # with assignment value, use simple_assign
-            simple_assign + colon.suppress() + typedef_test + equals.suppress() + test_expr
+            #  (keeping any parentheses, since e.g. (x): int doesn't make x a local variable)
+            (condense(lparen + simple_assign + rparen) | simple_assign) + colon.suppress() + typedef_test + equals.suppress() + test_expr
             # bare annotation, use unsafe_simple_assign
-            | unsafe_simple_assign + colon.suppress() + typedef_test
+            | (condense(lparen + unsafe_simple_assign + rparen) | unsafe_simple_assign) + colon.suppress() + typedef_test
         )
         basic_stmt = Forward()
         basic_stmt_ref = addspace(ZeroOrMore(assignlist + equals) + test_expr)
@@ -1669,7 +1692,8 @@ class Grammar(object):
         type_param_constraint = lparen.suppress() + Group(tokenlist(typedef_test, comma, require_sep=True)) + rparen.suppress()
         # PEP 696 type parameter defaults (kept with the "=" so the handler can find them)
         type_param_default = equals + typedef_test
-        type_var_tuple_default = equals + star.suppress() + typedef_test
+        # (a TypeVarTuple's default is usually an unpacked tuple, but doesn't have to be)
+        type_var_tuple_default = equals + star.suppress() + typedef_test | fixto(equals, "=unstarred") + typedef_test
         type_param_ref = (
             # constraint must come before test
             (type_var_name + type_param_bound_op + type_param_constraint + Optional(type_param_default))("TypeVar constraint")
@@ -3235,10 +3259,15 @@ class Grammar(object):
             | fixto(end_of_line, "misplaced newline (maybe missing ':')")
         )
 
-        start_f_str_regex = compile_regex(r"\b[dr]{0,2}[ft][dr]{0,2}$")
+        start_f_str_regex = compile_regex(r"\b[dDrR]{0,2}[fFtT][dDrR]{0,2}$")
         start_f_str_regex_len = 5
+        yield_start_regex = compile_regex(r"\s*yield\b")
+        # (e.g. import a.b after import a just binds a to the same module again)
+        reimport_line_regex = compile_regex(r"[ \t]*import\b(?![^\n]*\bas\b)")
 
-        end_f_str_expr = StartOfStrGrammar(combine(rbrace | colon | bang).leaveWhitespace())
+        # (as in Python, a colon followed by an equals sign starts a format spec, e.g. f"{x:=10}" pads x to 10 characters;
+        #  assignment expressions have to be parenthesized; :: is still Coconut's iterator chain operator though)
+        end_f_str_expr = StartOfStrGrammar(combine(rbrace | disambiguate_literal(":", ["::"]) | bang).leaveWhitespace())
 
         python_quoted_string = regex_item(
             # multiline strings must come first

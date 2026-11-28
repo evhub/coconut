@@ -2337,7 +2337,7 @@ class MatchExprKind:
 
 data UPoint(x: int, y: int)
 data UPlayer(name: str, pos: UPoint, hp: int)
-data UBag(items: list[int], meta: dict[str, typing.Any])
+data UBag(items: typing.List[int], meta: typing.Dict[str, typing.Any])  # (typing.List since list[int] fails at runtime below 3.9 with --no-wrap)
 
 data UInterval(int() as lo, int() as hi if hi >= lo):
     def width(self) = self.hi - self.lo

@@ -489,7 +489,7 @@ if {assign_to} is _coconut_sentinel:
             self.match_in_args_kwargs(pos_only_match_args, match_args, args, kwargs, allow_star_args=star_arg is not None)
 
             if star_arg is not None:
-                self.match(star_arg, args + "[" + str(len(match_args)) + ":]")
+                self.match(star_arg, args + "[" + str(len(pos_only_match_args) + len(match_args)) + ":]")
 
             self.match_in_kwargs(kwd_only_match_args, kwargs)
 

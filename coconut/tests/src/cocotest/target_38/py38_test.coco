@@ -1,3 +1,6 @@
+from .util import assert_raises
+
+
 def py38_test() -> bool:
     """Performs Python-3.8-specific tests."""
     a = 1
@@ -12,4 +15,23 @@ def py38_test() -> bool:
     assert x == 10
     assert not consume(y := i for i in range(10))
     assert y == 9
+    def g(a, b=1, /, c=2, *, d=3) = (a, b, c, d)
+    assert g(0) == (0, 1, 2, 3)
+    assert g(0, 5, 6, d=7) == (0, 5, 6, 7)
+    assert_raises(-> g(0, b=5), TypeError)  # type: ignore
+    def sum_to(n, acc=0, /):
+        if n == 0:
+            return acc
+        return sum_to(n - 1, acc + n)
+    assert sum_to(10) == 55
+    assert sum_to(3, 100) == 106
+    match w := 1, 2:
+        case (a, b):
+            assert (a, b) == (1, 2) and w == 1  # (the walrus binds tighter than the comma)
+    match v := 3,:
+        case (c,):
+            assert c == 3 == v
+    total = match u := 4, 5:
+        case (d, e): d + e
+    assert total == 9 and u == 4
     return True

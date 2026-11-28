@@ -72,7 +72,8 @@ data Vec2(x: int, y: int)
 class Box[T]:
     def __init__(self, item: T) -> None:
         self.item = item
-    # (Box isn't defined yet when the annotation is evaluated with --no-wrap, so it has to be a string)
+    # (Box isn't defined yet when the annotation is evaluated with --no-wrap, so it has to be a string,
+    #  which also tests that type parameters in string annotations are renamed on targets below 3.12)
     def __fmap__[U](self, func: T -> U) -> "Box[U]" = Box(func(self.item))
 
 class OverrideBase:

@@ -1,6 +1,14 @@
 import asyncio
 
 
+annotated_global = 10
+
+def get_annotated_global() -> int:
+    # a parenthesized annotation target isn't a local variable
+    (annotated_global): int
+    return annotated_global
+
+
 def py36_test() -> bool:
     """Performs Python-3.6-specific tests."""
     assert f"{[] |> len}" == "0"
@@ -77,4 +85,5 @@ def py36_test() -> bool:
     loop.run_until_complete(atest())
 
     loop.close()
+    assert get_annotated_global() == 10
     return True

@@ -167,6 +167,7 @@ from coconut.compiler.grammar import (
     update_section_item,
     update_section_handle,
     split_args_list,
+    has_default,
 )
 from coconut.compiler.util import (
     anchor_col,
@@ -363,7 +364,12 @@ def reconstitute_paramdef(pos_only_args, req_args, default_args, star_arg, kwd_o
     """Convert the results of split_args_list back into a parameter defintion string."""
     args_list = []
     if pos_only_args:
-        args_list += pos_only_args
+        for arg in pos_only_args:
+            if has_default(arg):
+                name, default = arg
+                args_list.append(name + "=" + default)
+            else:
+                args_list.append(arg)
         args_list.append("/")
     args_list += req_args
     for name, default in default_args:
@@ -380,6 +386,12 @@ def reconstitute_paramdef(pos_only_args, req_args, default_args, star_arg, kwd_o
     if dubstar_arg is not None:
         args_list.append("**" + dubstar_arg)
     return ", ".join(args_list)
+
+
+def assignable_namedexpr(item):
+    """Make the given compiled testlist_star_namedexpr (e.g. a match subject) safe to assign to a variable."""
+    # (unparenthesized walruses like match x := y, are allowed in match subjects but not on the right side of an assignment)
+    return "(" + item + ")" if ":=" in item else item
 
 
 def split_star_expr_tokens(tokens, is_dict=False):
@@ -695,6 +707,8 @@ class Compiler(Grammar, pickleable_obj):
         # locations of addpattern defs by function name, so that the functions they redefine can be marked as such
         self.addpattern_def_locs = defaultdict(set)
         self.star_import = False
+        # whether from __future__ import annotations has to be added to the header
+        self.future_annotations = False
         self.kept_lines = []
         self.num_lines = 0
         self.original_lines = ()
@@ -2176,7 +2190,12 @@ class Compiler(Grammar, pickleable_obj):
                             hold["exprs"].append("")
                             rerun = True
 
-                    elif is_f and c == "{":
+                    # (in non-raw strings, \N{...} is a named unicode escape, not a replacement field)
+                    elif is_f and c == "{" and not (
+                        not hold["raw"]
+                        and self.str_hold_contents(hold).endswith("\\N")
+                        and count_end(self.str_hold_contents(hold)[:-1], "\\") % 2 == 1
+                    ):
                         hold["saw_brace"] = True
                         self.str_hold_contents(hold, append=c)
                     # backslashes should escape quotes, but nothing else
@@ -2205,12 +2224,18 @@ class Compiler(Grammar, pickleable_obj):
                     # add a line skip if c is inside the string (not done) and we wont be seeing this c again (not rerun)
                     elif not rerun and c == "\n":
                         if not hold.get("in_expr", False) and len(hold["start"]) == 1:
-                            raise self.make_err(CoconutSyntaxError, "linebreak in non-multi-line string", inputstring, i, reformat=False)
+                            # (a backslash right before the linebreak continues the string onto the next line)
+                            contents = self.str_hold_contents(hold)
+                            if not contents.endswith("\n") or count_end(contents[:-1], "\\") % 2 != 1:
+                                raise self.make_err(CoconutSyntaxError, "linebreak in non-multi-line string", inputstring, i, reformat=False)
                         skips = addskip(skips, self.adjust(lineno(i, inputstring)))
 
             elif found is not None:
 
                 # determine if we're at the start of a string
+                #  (num_quotes is how many quotes the string starts with, which for
+                #  an empty string is two, even though its hold's start is one quote)
+                num_quotes = len(found)
                 if c == found[0] and len(found) < 3:
                     found += c
                 elif len(found) == 1:  # found == "_"
@@ -2240,11 +2265,12 @@ class Compiler(Grammar, pickleable_obj):
 
                 # start the string hold if we're at the start of a string
                 if hold is not None:
-                    is_f_check_str = inputstring[clip(i - len(hold["start"]) + 1 - self.start_f_str_regex_len, min=0): i - len(hold["start"]) + 1]
+                    is_f_check_str = inputstring[clip(i - num_quotes + 1 - self.start_f_str_regex_len, min=0): i - num_quotes + 1]
                     is_f = self.start_f_str_regex.search(is_f_check_str)
                     if is_f:
                         hold.update({
                             "type": "f string",
+                            "raw": "r" in is_f.group(0).lower(),
                             "str_parts": [""],
                             "exprs": [],
                             "saw_brace": False,
@@ -3004,7 +3030,7 @@ else:
             if pos_only_args and self.target_info < (3, 8):
                 raise self.make_err(
                     CoconutTargetError,
-                    "found Python 3.8 keyword-only argument{s} (use 'match def' to produce universal code)".format(
+                    "found Python 3.8 positional-only argument{s} (use 'match def' to produce universal code)".format(
                         s="s" if len(pos_only_args) > 1 else "",
                     ),
                     original,
@@ -3015,7 +3041,7 @@ else:
                 raise self.make_err(
                     CoconutTargetError,
                     "found Python 3 keyword-only argument{s} (use 'match def' to produce universal code)".format(
-                        s="s" if len(pos_only_args) > 1 else "",
+                        s="s" if len(kwd_only_args) > 1 else "",
                     ),
                     original,
                     loc,
@@ -3153,6 +3179,14 @@ if False:
                     #  (note that we can't put the original defaults in the actual defaults here,
                     #  since we don't know if func_store will be available at mock definition)
                     names_with_defaults = []
+                    mock_pos_only_args = []
+                    for arg in pos_only_args:
+                        if has_default(arg):
+                            name, default = arg
+                            mock_pos_only_args.append((name, "_coconut_sentinel"))
+                            names_with_defaults.append(name)
+                        else:
+                            mock_pos_only_args.append(arg)
                     mock_default_args = []
                     for name, default in default_args:
                         mock_default_args.append((name, "_coconut_sentinel"))
@@ -3166,7 +3200,7 @@ if False:
                             names_with_defaults.append(name)
 
                     # create mock def that uses original function defaults
-                    mock_paramdef = reconstitute_paramdef(pos_only_args, req_args, mock_default_args, star_arg, mock_kwd_only_args, dubstar_arg)
+                    mock_paramdef = reconstitute_paramdef(mock_pos_only_args, req_args, mock_default_args, star_arg, mock_kwd_only_args, dubstar_arg)
                     mock_body_lines = []
                     for i, name in enumerate(names_with_defaults):
                         mock_body_lines.append(
@@ -3475,7 +3509,10 @@ else:
         main_header = self.getheader(header, polish=False)
         if self.minify:
             main_header = minify_header(main_header)
-        return pre_header + self.docstring + main_header + inputstring
+        out = pre_header + self.docstring + main_header + inputstring
+        if self.future_annotations:
+            out = out.replace("from __future__ import generator_stop\n", "from __future__ import generator_stop, annotations\n", 1)
+        return out
 
     def polish(self, inputstring, final_endline=True, **kwargs):
         """Does final polishing touches."""
@@ -3495,17 +3532,19 @@ else:
         for arg in tokens:
             argstr = "".join(arg)
             if len(arg) == 1:
-                if star_args:
+                if kwd_args or dubstar_args:
+                    raise CoconutDeferredSyntaxError("positional arguments must come before keyword arguments", loc)
+                elif star_args:
                     # if we've already seen a star arg, convert this pos arg to a star arg
                     star_args.append("*(" + argstr + ",)")
-                elif kwd_args or dubstar_args:
-                    raise CoconutDeferredSyntaxError("positional arguments must come before keyword arguments", loc)
                 else:
                     pos_args.append(argstr)
             elif len(arg) == 2:
                 if arg[0] == "*":
-                    if kwd_args or dubstar_args:
-                        raise CoconutDeferredSyntaxError("star unpacking must come before keyword arguments", loc)
+                    # star args can come after keyword args (but not double star args), and are
+                    #  always evaluated before keyword args, so they can be moved before them
+                    if dubstar_args:
+                        raise CoconutDeferredSyntaxError("star unpacking must come before double star unpacking", loc)
                     star_args.append(argstr)
                 elif arg[0] == "**":
                     dubstar_args.append(argstr)
@@ -4130,7 +4169,7 @@ def __new__(_coconut_cls, {match_func_paramdef}):
             return expr
 
         call_args = []
-        for match in pos_only_args + req_args + [match for match, default in default_args]:
+        for match in [arg[0] if has_default(arg) else arg for arg in pos_only_args] + req_args + [match for match, default in default_args]:
             arg = recover_arg(match)
             if arg is None:
                 return self.match_data_unchecked_replace_def(fields)
@@ -4800,7 +4839,16 @@ else:
         if imp_from == "__future__":
             if lazy:
                 raise self.make_err(CoconutSyntaxError, "cannot lazy import from __future__", original, loc)
-            self.strict_err_or_warn("unnecessary from __future__ import (Coconut does these automatically)", original, loc, noqa_able=True)
+            # the header only does from __future__ import annotations when annotations
+            #  aren't already lazy (below 3.14) and when they're being wrapped (not --no-wrap)
+            if (
+                "annotations" in get_imported_names(imports)[0]
+                and (self.no_wrap or self.target_info >= (3, 14))
+                and self.target_info >= (3, 7)
+            ):
+                self.future_annotations = True
+            else:
+                self.strict_err_or_warn("unnecessary from __future__ import (Coconut does these automatically)", original, loc, noqa_able=True)
             return ""
 
         imports = list(imports)
@@ -4917,7 +4965,7 @@ raise {raise_from_var}
             ''',
         ).format(
             match_to_var=match_to_var,
-            item=item,
+            item=assignable_namedexpr(item),
             match=matching.build(stmts, invert=invert),
         )
 
@@ -5101,7 +5149,7 @@ def {name}({match_func_paramdef}):
         if cond is not None:
             return None
         pos_only_args, req_args, default_args, star_arg, kwd_only_args, dubstar_arg = split_args_list(matches, loc)
-        if default_args or star_arg is not None or kwd_only_args or dubstar_arg is not None:
+        if default_args or star_arg is not None or kwd_only_args or dubstar_arg is not None or any(has_default(arg) for arg in pos_only_args):
             return False
         return pos_only_args + req_args
 
@@ -5120,7 +5168,7 @@ def {name}({match_func_paramdef}):
             return None
         _, func_arg_tokens = split_func_tokens
         pos_only_args, req_args, default_args, star_arg, kwd_only_args, dubstar_arg = split_args_list(func_arg_tokens, loc)
-        if default_args or star_arg is not None or kwd_only_args or dubstar_arg is not None:
+        if default_args or star_arg is not None or kwd_only_args or dubstar_arg is not None or any(has_default(arg) for arg in pos_only_args):
             return None
         param_names = pos_only_args + req_args
         if not param_names:
@@ -5453,10 +5501,35 @@ def {builder_name}({expr_setnames_str}):
         add_code_before = self.wrap_code_before(add_code_before_list)
         return self.add_code_before_marker_with_replacement(wrapped, add_code_before, ignore_names=ignore_names)
 
+    def rename_typevars_in_str_typedef(self, typedef):
+        """Rename any type parameters referenced in a type annotation that is just a string (a forward reference),
+        since type parameters are renamed on targets that don't support them, and type checkers read those strings."""
+        if not (typedef.startswith(strwrapper) and typedef.endswith(unwrapper)):
+            return typedef
+        typevar_info = self.current_parsing_context("typevars")
+        if typevar_info is None:
+            return typedef
+        renames = dict((name, new_name) for name, new_name in typevar_info["all_typevars"].items() if name != new_name)
+        if not renames:
+            return typedef
+        reftype, data = self.get_ref(None, typedef[1:-1])
+        if reftype != "str":
+            return typedef
+        text, strchar = data
+        new_text = re.sub(
+            r"(?<![\w.])(" + "|".join(re.escape(name) for name in renames) + r")(?!\w)",
+            lambda match: renames[match.group(1)],
+            text,
+        )
+        if new_text == text:
+            return typedef
+        return strwrapper + self.add_ref("str", (new_text, strchar)) + unwrapper
+
     def typedef_handle(self, tokens):
         """Process Python 3 type annotations."""
         if len(tokens) == 1:  # return typedef
             typedef, = tokens
+            typedef = self.rename_typevars_in_str_typedef(typedef)
             if self.target.startswith("3"):
                 return " -> " + self.wrap_typedef(typedef, for_py_typedef=True) + ":"
             else:
@@ -5469,6 +5542,7 @@ def {builder_name}({expr_setnames_str}):
                 varname, typedef, default, comma = tokens
             else:
                 raise CoconutInternalException("invalid type annotation tokens", tokens)
+            typedef = self.rename_typevars_in_str_typedef(typedef)
             if self.target.startswith("3"):
                 return varname + ": " + self.wrap_typedef(typedef, for_py_typedef=True) + default + comma
             else:
@@ -5487,6 +5561,8 @@ def {builder_name}({expr_setnames_str}):
         if self.target_info >= (3, 6):
             return name + ": " + self.wrap_typedef(typedef, for_py_typedef=True) + ("" if value is None else " = " + value)
         else:
+            if name.startswith("(") and name.endswith(")"):
+                name = name[1:-1]
             return handle_indentation(
                 '''
 {name} = {value}{comment}
@@ -5634,7 +5710,7 @@ __annotations__["{name}"] = {annotation}
 
         exhaustiveness_code, cases, default = self.match_exhaustiveness_check(original, loc, match_var, cases, default)
         out = (
-            match_var + " = " + item + "\n"
+            match_var + " = " + assignable_namedexpr(item) + "\n"
             + exhaustiveness_code
             + self.match_case_tokens(match_var, check_var, original, cases[0], True)
         )
@@ -5695,7 +5771,7 @@ __annotations__["{name}"] = {annotation}
             for body, raw_case in zip(bodies, raw_cases)
         ]
         out = (
-            match_var + " = " + item + "\n"
+            match_var + " = " + assignable_namedexpr(item) + "\n"
             + exhaustiveness_code
             + self.match_case_tokens(match_var, check_var, original, cases[0], True)
         )
@@ -5727,6 +5803,14 @@ __annotations__["{name}"] = {annotation}
         """Process return match <value>: ... match expressions (also used for def f(...) = match <value>: ...)."""
         return self.match_expr_handle(original, loc, "return ", tokens)
 
+    def f_str_literal_text(self, text, strchar, raw):
+        """Escape the given text such that it shows up as-is in the literal part of an f-string."""
+        text = text.replace("{", "{{").replace("}", "}}")
+        # (raw strings can't escape anything, but in them backslashes already show up as-is)
+        if not raw:
+            text = text.replace("\\", "\\\\").replace("\n", "\\n").replace("\r", "\\r").replace(strchar[0], "\\" + strchar[0])
+        return text
+
     def f_string_handle(self, original, loc, tokens, is_t=False):
         """Process Python 3.6 format strings and Python 3.14 template strings."""
         string, = tokens
@@ -5749,10 +5833,12 @@ __annotations__["{name}"] = {annotation}
 
         # handle Python 3.8 f string = specifier
         for i, expr in enumerate(exprs):
-            expr_rstrip = expr.rstrip()
+            # the = specifier shows the expression without comments (but with line breaks)
+            shown_expr = strip_comments_and_join_lines(expr, join_lines=False) if "#" in expr else expr
+            expr_rstrip = shown_expr.rstrip()
             if expr_rstrip.endswith("="):
                 before = string_parts[i]
-                string_parts[i] = assert_remove_suffix(before, "{") + expr + "{"
+                string_parts[i] = assert_remove_suffix(before, "{") + self.f_str_literal_text(shown_expr, strchar, raw) + "{"
                 exprs[i] = assert_remove_suffix(expr_rstrip, "=")
                 # with no conversion or format spec, the = specifier uses repr
                 if string_parts[i + 1].startswith("}"):
@@ -5764,12 +5850,18 @@ __annotations__["{name}"] = {annotation}
             # line breaks and comments are allowed in replacement fields (PEP 701)
             if "\n" in co_expr or "#" in co_expr:
                 co_expr = strip_comments_and_join_lines(co_expr)
+            # yield expressions are allowed unparenthesized in replacement fields
+            if self.yield_start_regex.match(co_expr):
+                co_expr = "(" + co_expr + ")"
             try:
                 py_expr = self.inner_parse_eval(original, loc, co_expr)
             except ParseBaseException:
                 raise CoconutDeferredSyntaxError("parsing failed for format string expression: " + co_expr, loc)
             if not self.cached_does_parse("f_string_handle", self.no_unquoted_newlines, py_expr):
                 raise CoconutDeferredSyntaxError("illegal complex expression in format string: " + co_expr, loc)
+            # (in the literal syntax, a replacement field starting with {{ would be an escaped brace)
+            if py_expr.startswith("{"):
+                py_expr = " " + py_expr
             compiled_exprs.append(py_expr)
 
         # handle t-strings
@@ -6219,12 +6311,13 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
         bound_op_type = ""
         stars = ""
 
-        # PEP 696 defaults come last, after an "="
+        # PEP 696 defaults come last, after an "=" (or "=unstarred" for a TypeVarTuple default that isn't unpacked)
         toks = list(tokens)
         default = None
-        if len(toks) >= 2 and isinstance(toks[-2], str) and toks[-2] == "=":
+        starred_default = False
+        if len(toks) >= 2 and isinstance(toks[-2], str) and toks[-2] in ("=", "=unstarred"):
             default = toks.pop()
-            toks.pop()
+            starred_default = toks.pop() == "="
 
         if "TypeVar" in tokens:
             TypeVarFunc = "TypeVar"
@@ -6242,7 +6335,8 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
             name_loc, name, bound_op, constraints = toks
             # for_py_typedef is different in the two cases here as above
             # constraints must be parenthesized (a tuple), else they'd be parsed as multiple type params
-            raw_bound = "(" + ", ".join(self.wrap_typedef(c, for_py_typedef=True) for c in constraints) + ")"
+            #  (including a single constraint, which needs a trailing comma to stay a tuple)
+            raw_bound = "(" + ", ".join(self.wrap_typedef(c, for_py_typedef=True) for c in constraints) + ("," if len(constraints) == 1 else "") + ")"
             args = ", " + ", ".join(self.wrap_typedef(c, for_py_typedef=False) for c in constraints)
         elif "TypeVarTuple" in tokens:
             TypeVarFunc = "TypeVarTuple"
@@ -6276,7 +6370,7 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
         if self.target_info >= (3, 12):
             raw_default = ""
             if default is not None:
-                raw_default = " = " + ("*" if TypeVarFunc == "TypeVarTuple" else "") + self.wrap_typedef(default, for_py_typedef=True)
+                raw_default = " = " + ("*" if TypeVarFunc == "TypeVarTuple" and starred_default else "") + self.wrap_typedef(default, for_py_typedef=True)
                 # 3.12 has type parameter syntax but not defaults, which we can't mix with the TypeVar backport
                 if self.target_info < (3, 13):
                     return self.check_py("313", "type parameter default (or use a target below 3.12)", original, loc, [""])
@@ -6287,7 +6381,7 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
         kwargs = ""
         if default is not None:
             default_type = self.wrap_typedef(default, for_py_typedef=False)
-            if TypeVarFunc == "TypeVarTuple":
+            if TypeVarFunc == "TypeVarTuple" and starred_default:
                 default_type = "_coconut.typing.Unpack[" + default_type + "]"
             kwargs += ", default=" + default_type
         # TODO: uncomment these lines whenever mypy adds support for infer_variance in TypeVar
@@ -6709,7 +6803,7 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
             if any(
                 imp_loc < loc and not same_line(original, loc, imp_loc)
                 for imp_loc in self.name_info[name]["imported"]
-            ):
+            ) and not self.reimport_line_regex.match(original, original.rfind("\n", 0, loc) + 1):
                 err = self.strict_err_or_warn(
                     "assignment shadows imported '{name}' (use explicit '\\{name}' syntax when purposefully redefining imported names)".format(name=name),
                     original,

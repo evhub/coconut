@@ -36,6 +36,11 @@ def py314_test() -> bool:
     def constrained[T: (int, str)](x: T) -> T = x
     assert constrained.__type_params__[0].__constraints__ == (int, str)  # type: ignore
     assert len(constrained.__type_params__) == 1
+    # a single constraint stays a constraint (rather than becoming a bound)
+    class SingleConstraint[T: (int,)]:
+        pass
+    assert SingleConstraint.__type_params__[0].__constraints__ == (int,)  # type: ignore
+    assert SingleConstraint.__type_params__[0].__bound__ is None
 
     # PEP 696 type parameter defaults
     class DefaultBox[T = int, **P = [int]]:
@@ -43,7 +48,7 @@ def py314_test() -> bool:
     assert [p.__default__ for p in DefaultBox.__type_params__] == [int, [int]]
     class DefaultVariadic[*Ts = *tuple[str, ...]]:
         pass
-    assert DefaultVariadic.__type_params__[0].__default__ == next(iter(tuple[str, ...]))
+    assert DefaultVariadic.__type_params__[0].__default__ == next(iter(tuple[str, ...]))  # type: ignore
     def default_first[T: (int, str) = int](x: T) -> T = x
     assert default_first.__type_params__[0].__default__ is int
 
