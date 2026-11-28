@@ -686,6 +686,8 @@ class Compiler(Grammar, pickleable_obj):
         self.lazy_from_import_locs = {}
         # names of data types defined so far, which pattern-matching uses to tell type checkers how they'll be matched
         self.data_type_names = set()
+        # locations of addpattern defs by function name, so that the functions they redefine can be marked as such
+        self.addpattern_def_locs = defaultdict(set)
         self.star_import = False
         self.kept_lines = []
         self.num_lines = 0
@@ -1370,6 +1372,13 @@ class Compiler(Grammar, pickleable_obj):
     def wrap_comment(self, text):
         """Wrap a comment."""
         return "#" + self.add_ref("comment", text) + unwrapper
+
+    def add_comment_to_first_line(self, code, text):
+        """Add a wrapped comment with the given text to the end of the first line of code."""
+        first_line, newline, rest = code.partition("\n")
+        # (comments have to come before any line number marker)
+        code_part, sep, ln_part = first_line.partition(lnwrapper)
+        return code_part + " " + self.wrap_comment(text) + sep + ln_part + newline + rest
 
     def wrap_error(self, error_maker):
         """Create a symbol that will raise the given error in postprocessing."""
@@ -3010,6 +3019,16 @@ else:
             undotted_name = func_name.rsplit(".", 1)[-1]
             def_name = self.get_temp_var(("dotted", undotted_name), loc)
 
+        # pyright reports redefining a function on the original definition rather than on the redefinition,
+        #  so if this function will be redefined by a later addpattern def, we tell pyright that's intended here
+        redefined_by_addpattern = (
+            func_name is not None
+            and undotted_name is None
+            and any(addpattern_loc > loc for addpattern_loc in self.addpattern_def_locs.get(func_name, ()))
+        )
+        if redefined_by_addpattern:
+            def_stmt = self.add_comment_to_first_line(def_stmt, " pyright: ignore[reportRedeclaration]")
+
         # detect pattern-matching functions
         is_match_func = func_paramdef == match_func_paramdef
 
@@ -3019,14 +3038,19 @@ else:
                 raise CoconutInternalException("could not find name in addpattern function definition", def_stmt)
             # binds most tightly, except for TCO
             addpattern_decorator = self.get_temp_var("addpattern", loc)
+            # type checkers only see the first branch, so they never see the lambda, which would hide the type of the combined function
+            #  (the header defines TYPE_CHECKING, and pyright only recognizes the bare name, not _coconut.typing.TYPE_CHECKING)
             out.append(
                 handle_indentation(
                     """
-try:
+if TYPE_CHECKING:
     {addpattern_decorator} = _coconut_addpattern({func_name}) {type_ignore}
-except _coconut.NameError:
-    _coconut.warnings.warn("Deprecated use of 'addpattern def {func_name}' with no pre-existing '{func_name}' function (use 'match def {func_name}' for the first definition or switch to 'case def' syntax)", _coconut_CoconutWarning)
-    {addpattern_decorator} = lambda f: f
+else:
+    try:
+        {addpattern_decorator} = _coconut_addpattern({func_name})
+    except _coconut.NameError:
+        _coconut.warnings.warn("Deprecated use of 'addpattern def {func_name}' with no pre-existing '{func_name}' function (use 'match def {func_name}' for the first definition or switch to 'case def' syntax)", _coconut_CoconutWarning)
+        {addpattern_decorator} = lambda f: f
                     """,
                     add_newline=True,
                 ).format(
@@ -3201,10 +3225,15 @@ def {mock_var}({mock_paramdef}):
                 ]
             type_def_lines = []
             for i, type_def in enumerate(all_type_defs):
+                is_overload = i < len(all_type_defs) - 1
+                type_def = self.deferred_code_proc(type_def)
+                # (pyright doesn't report redefining overloads)
+                if redefined_by_addpattern and not is_overload:
+                    type_def = self.add_comment_to_first_line(type_def, " pyright: ignore[reportRedeclaration]")
                 type_def_lines.append(
-                    ("@_coconut.typing.overload\n" if i < len(all_type_defs) - 1 else "")
+                    ("@_coconut.typing.overload\n" if is_overload else "")
                     + decorators
-                    + self.deferred_code_proc(type_def)
+                    + type_def
                 )
             if undotted_name is not None:
                 type_def_lines.append("{func_name} = {def_name}".format(
@@ -3219,7 +3248,11 @@ def {mock_var}({mock_paramdef}):
             type_code = self.deferred_code_proc(type_param_code) + "\n".join(type_def_lines + check_defs)
 
         # handle dotted function definition
+        dotted_assign_comment = ""
         if undotted_name is not None:
+            # type checkers don't allow assigning to methods or changing attributes' types, which is what addpattern on a dotted name does
+            if addpattern:
+                dotted_assign_comment = " " + self.type_ignore_comment()
             out.append(
                 handle_indentation(
                     '''
@@ -3243,11 +3276,24 @@ if {temp_var} is not None:
             # decorating the function must come after __name__ has been set,
             #  and if it's a copyclosure function, it has to happen outside the exec
             if not copyclosure:
-                out += [func_name, " = ", call_decorators(decorators, def_name), "\n"]
+                out += [func_name, " = ", call_decorators(decorators, def_name), dotted_assign_comment, "\n"]
                 decorators = ""
         else:
-            out += [decorators, def_stmt, func_code]
+            def_code = decorators + def_stmt + func_code
             decorators = ""
+            # type checkers only allow redefining a function when the redefinition is conditional,
+            #  so we put addpattern functions inside an always-true if (which changes nothing at runtime)
+            if addpattern:
+                def_code = handle_indentation(
+                    """
+if True:
+    {def_code}
+                    """,
+                    add_newline=True,
+                ).format(
+                    def_code=def_code,
+                )
+            out.append(def_code)
 
         # handle copyclosure functions and type_code
         if copyclosure:
@@ -3268,7 +3314,7 @@ else:
     {vars_var} = _coconut.globals().copy()
     {vars_var}.update(_coconut.locals())
     _coconut_exec({code_str}, {vars_var})
-{func_name} = {func_from_vars}
+{func_name} = {func_from_vars}{dotted_assign_comment}
                     ''',
                     add_newline=True,
                 ).format(
@@ -3278,6 +3324,7 @@ else:
                     type_code=code if type_code is None else type_code,
                     code_str=self.wrap_str_of(self.reformat_post_deferred_code_proc(code)),
                     func_from_vars=func_from_vars,
+                    dotted_assign_comment=dotted_assign_comment,
                 ),
             ]
         elif type_code:
@@ -5226,6 +5273,9 @@ def {builder_name}({expr_setnames_str}):
             decorators, funcdef = tokens
         else:
             raise CoconutInternalException("invalid function definition tokens", tokens)
+        addpattern_match = self.addpattern_def_regex.match(funcdef)
+        if addpattern_match:
+            self.addpattern_def_locs[addpattern_match.group(1)].add(loc)
         return funcwrapper + self.add_ref("func", (original, loc, decorators, funcdef, is_async, self.in_method, is_stmt_lambda)) + "\n"
 
     def await_expr_handle(self, original, loc, tokens):
@@ -5897,7 +5947,7 @@ if False:
                     extra_indent=1,
                 )
             else:
-                # new keywords here must be replicated in def_regex and handled in proc_funcdef
+                # new keywords here must be replicated in def_regex and addpattern_def_regex and handled in proc_funcdef
                 internal_assert(kwd in ("addpattern", "copyclosure"), "unknown deferred funcdef keyword", kwd)
                 funcdef = kwd + " " + funcdef
         return funcdef
