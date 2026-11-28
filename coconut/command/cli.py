@@ -151,6 +151,13 @@ arguments.add_argument(
 )
 
 arguments.add_argument(
+    "-m", "--module",
+    metavar="module",
+    type=str,
+    help="compile the given module (found like an import) along with the rest of its package, then run it with 'python -m' (pass arguments to it with --argv)",
+)
+
+arguments.add_argument(
     "-n", "--no-write", "--nowrite",
     action="store_true",
     help="disable writing compiled Python",

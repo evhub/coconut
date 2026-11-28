@@ -123,7 +123,7 @@ depth: 1
 
 ```
 coconut [-h] [--and source [dest ...]] [-v] [-t version] [-i] [-p] [-a] [-l]
-        [--no-line-numbers] [-k] [-w] [-r] [-n] [-d] [-q] [-s]
+        [--no-line-numbers] [-k] [-w] [-r] [-m module] [-n] [-d] [-q] [-s]
         [--silence-warnings regex] [--pure] [--no-tco]
         [--no-wrap-types] [-c code] [-j processes] [-f] [--minify] [--jupyter ...]
         [--mypy ...] [--pyright] [--argv ...] [--tutorial] [--docs] [--lsp] [--mcp] [--ai-docs] [--style name] [--vi-mode]
@@ -164,6 +164,8 @@ dest                destination directory for compiled files (defaults to
                       include source code in comments for ease of debugging
 -w, --watch           watch a directory and recompile on changes
 -r, --run             execute compiled Python
+-m, --module module   compile the given module (found like an import) along with the rest of its
+                      package, then run it with 'python -m' (pass arguments to it with --argv)
 -n, --no-write, --nowrite
                       disable writing compiled Python
 -d, --display         print compiled Python
@@ -247,6 +249,27 @@ which will quietly compile and run `<source>`, passing any additional arguments 
 `coconut-run` will always enable [automatic compilation](#automatic-compilation), such that Coconut source files can be directly imported from any Coconut files run via `coconut-run`. Additionally, compilation parameters (e.g. `--no-tco`) used in `coconut-run` will be passed along and used for any auto compilation.
 
 On Python 3.4+, `coconut-run` will use a `__coconut_cache__` directory to cache the compiled Python. Note that `__coconut_cache__` will always be removed from `__file__`.
+
+#### Running Modules
+
+The usual way to run Coconut code is to compile it and then run the compiled Python just like any other Python code, e.g. with
+```
+coconut my_package
+python -m my_package.my_module
+```
+or to enable [automatic compilation](#automatic-compilation) (e.g. by running `coconut --site-install` once), after which
+```
+python -m my_package.my_module
+```
+will compile `my_package/my_module.coco` (and anything else in `my_package` that it imports) on the fly before running it. If you can, using automatic compilation like that is the recommended way to run Coconut modules.
+
+As a convenience, Coconut also provides
+```
+coconut -m <module> --argv <args>
+```
+which looks up `<module>` the same way `python -m` would (in the current directory, then the rest of `sys.path`), compiles it along with the rest of the top-level package it's in (in place, exactly as `coconut <package directory>` would, such that the package's relative imports work), and then runs it with `python -m <module> <args>`. If `<module>` isn't in a package, only `<module>` itself is compiled. All the usual compilation options (e.g. `--target`, `--strict`, `--force`, `--mypy`) can be combined with `-m`, but not `--run`, `--interact`, `--watch`, `--no-write`, or a source path, since `-m` determines what to compile and always runs it.
+
+`-m` also works with [`coconut-run`](#coconut-scripts): `coconut-run -m <module> <args>` is equivalent to `coconut --quiet --target sys --keep-lines -m <module> --argv <args>`, passing any arguments after the module name to the module. Unlike `coconut-run <source>`, `coconut-run -m <module>` doesn't use a `__coconut_cache__` directory, since `python -m` has to be able to import the compiled package.
 
 #### Naming Source Files
 
@@ -5237,6 +5260,8 @@ Recommended usage is as a debugging tool, where the code `from coconut import em
 Automatic compilation lets you simply import Coconut files directly without having to go through a compilation step first. Automatic compilation can be enabled either by importing [`coconut.api`](#coconut-api) before you import anything else, or by running `coconut --site-install`.
 
 Once automatic compilation is enabled, Coconut will check each of your imports to see if you are attempting to import a `.coco` file and, if so, automatically compile it for you. Note that, for Coconut to know what file you are trying to import, it will need to be accessible via `sys.path`, just like a normal import.
+
+If automatic compilation is enabled whenever Python starts (by running `coconut --site-install`), it also applies to `python -m`, such that `python -m my_package.my_module` will compile and run `my_package/my_module.coco`, along with anything it imports from `my_package` (including through relative imports). That makes it the recommended way to [run Coconut modules](#running-modules).
 
 Automatic compilation always compiles with `--target sys --line-numbers --keep-lines` by default. On Python 3.4+, automatic compilation will use a `__coconut_cache__` directory to cache the compiled Python. Note that `__coconut_cache__` will always be removed from `__file__`.
 

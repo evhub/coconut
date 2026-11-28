@@ -108,6 +108,8 @@ from coconut.command.util import (
     invert_mypy_arg,
     run_with_stack_size,
     proc_run_args,
+    get_run_module_and_argv,
+    find_module_source,
     get_python_lib,
     update_pyright_config,
 )
@@ -155,18 +157,28 @@ class Command(object):
         """Endpoint for coconut and coconut-run."""
         if run:
             args, argv = [], []
-            # for coconut-run, all args beyond the source file should be wrapped in an --argv
+            # for coconut-run, all args beyond the source file (or -m module) should be wrapped in an --argv
             source = None
+            module = None
             for i in range(1, len(sys.argv)):
                 arg = sys.argv[i]
-                # if arg is source file, put everything else in argv
-                if not arg.startswith("-") and can_parse(arguments, args):
-                    source = arg
-                    argv = sys.argv[i + 1:]
+                module_and_argv = get_run_module_and_argv(sys.argv[i:])
+                # (if args can't be parsed, then arg must be the value of the last option in args)
+                if (module_and_argv is not None or not arg.startswith("-")) and can_parse(arguments, args):
+                    # if arg is -m module, put everything after the module in argv
+                    if module_and_argv is not None:
+                        module, argv = module_and_argv
+                    # if arg is source file, put everything else in argv
+                    else:
+                        source = arg
+                        argv = sys.argv[i + 1:]
                     break
-                else:
-                    args.append(arg)
+                args.append(arg)
             args = proc_run_args(args)
+            if module is not None:
+                # -m always runs the module (and is incompatible with --run), so don't add --run
+                self.cmd_sys(args + ["--module", module], argv=argv)
+                return
             if "--run" in args:
                 logger.warn("extraneous --run argument passed; coconut-run implies --run")
             else:
@@ -201,7 +213,7 @@ class Command(object):
                 parsed_args = arguments.parse_args(args)
             if argv is not None:
                 if parsed_args.argv is not None:
-                    raise CoconutException("cannot pass --argv/--args when using coconut-run (coconut-run interprets any arguments after the source file as --argv/--args)")
+                    raise CoconutException("cannot pass --argv/--args when using coconut-run (coconut-run interprets any arguments after the source file or -m module as --argv/--args)")
                 parsed_args.argv = argv
             if parsed_args.target is None:
                 parsed_args.target = default_target
@@ -331,6 +343,23 @@ class Command(object):
                 raise CoconutException("cannot compile as both --package (implied by --{type_checking_arg}) and --standalone".format(type_checking_arg=type_checking_arg))
             if args.no_write and type_checking_arg:
                 raise CoconutException("cannot compile with --no-write when using --{type_checking_arg}".format(type_checking_arg=type_checking_arg))
+            if args.module is not None:
+                if args.source is not None:
+                    raise CoconutException(
+                        "cannot pass a source file/folder with -m/--module (got {source!r})".format(source=args.source),
+                        extra="-m/--module compiles the module's package itself; pass arguments to the module with --argv",
+                    )
+                for incompatible_flag, incompatible_flag_passed in (
+                    ("--interact", args.interact),
+                    ("--run", args.run),
+                    ("--watch", args.watch),
+                    ("--no-write", args.no_write),
+                ):
+                    if incompatible_flag_passed:
+                        raise CoconutException(
+                            "cannot use -m/--module with {flag}".format(flag=incompatible_flag),
+                            extra="-m/--module runs the module with 'python -m' after compiling it",
+                        )
             for and_args in getattr(args, "and") or []:
                 if len(and_args) > 2:
                     raise CoconutException(
@@ -369,6 +398,10 @@ class Command(object):
                 self.site_uninstall()
             if args.site_install:
                 self.site_install()
+
+            # for -m/--module, compile the module's package (python -m looks in the current directory, then the rest of sys.path)
+            if args.module is not None:
+                args.source = find_module_source(args.module, [os.getcwd()] + [path or os.getcwd() for path in sys.path[1:]])
 
             # apply the project's [tool.coconut] configuration, if any
             if args.source is not None:
@@ -456,7 +489,7 @@ class Command(object):
             # validate args if no source is given
             elif getattr(args, "and"):
                 raise CoconutException("--and should only be used for extra source/dest pairs, not the first source/dest pair")
-            elif (
+            elif args.module is None and (
                 (args.run and not args.interact)
                 or args.no_write
                 or args.force
@@ -467,6 +500,10 @@ class Command(object):
             ):
                 raise CoconutException("a source file/folder must be specified when options that depend on the source are enabled")
 
+            # run the module for -m/--module now that it's compiled
+            if args.module is not None:
+                self.run_module(args.module)
+
             # handle extra cli tasks
             if args.code is not None:
                 self.execute(self.parse_block(args.code))
@@ -474,8 +511,8 @@ class Command(object):
             if args.jupyter is not None:
                 self.start_jupyter(args.jupyter)
             # only read piped stdin when running from the command line, since otherwise
-            #  (e.g. when using the import hook) the stdin belongs to the user's program
-            elif interact and stdin_readable():
+            #  (e.g. when using the import hook or -m/--module) the stdin belongs to the user's program
+            elif interact and args.module is None and stdin_readable():
                 logger.log("Reading piped input from stdin...")
                 read_stdin = sys.stdin.read()
                 if read_stdin:
@@ -485,6 +522,7 @@ class Command(object):
                 interact and not (
                     got_stdin
                     or args.source
+                    or args.module
                     or args.code
                     or args.tutorial
                     or args.docs
@@ -965,6 +1003,14 @@ class Command(object):
             self.runner.run(compiled, use_eval=use_eval, path=path, all_errors_exit=path is not None)
 
             self.run_type_checking(code=self.runner.was_run_code())
+
+    def run_module(self, module):
+        """Run the given (compiled) module with python -m, passing it any --argv arguments."""
+        # make sure anything we've printed shows up before the module's output
+        sys.stdout.flush()
+        sys.stderr.flush()
+        run_args = [sys.executable, "-m", module] + (self.argv_args or [])
+        self.register_exit_code(run_cmd(run_args, raise_errs=False))
 
     def execute_file(self, destpath, **kwargs):
         """Execute compiled file."""
