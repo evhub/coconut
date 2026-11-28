@@ -1127,7 +1127,13 @@ def addpattern(
     """
     ...
 
-_coconut_addpattern = addpattern
+# what addpattern def uses: the combined function keeps base_func's signature
+#  (all pattern-matching functions share the same signature) and returns what either function returns
+def _coconut_addpattern(
+    base_func: _t.Callable[_P, _T],
+    *,
+    allow_any_func: bool = False,
+) -> _t.Callable[[_t.Callable[..., _U]], _t.Callable[_P, _t.Union[_T, _U]]]: ...
 
 @_deprecated("use addpattern instead")
 def prepattern(

@@ -1039,5 +1039,11 @@ def primary_test_2() -> bool:
     assert multi_enumerate(["ab", ["c"]]) |> list == [((0,), "ab"), ((1, 0), "c")]
     def lift_add(x, y) = x + y
     assert repr(lift(lift_add)(ident, (.+1))).startswith("lift(")
+    # addpattern def in a generator, which type checkers see as a conditional redefinition
+    def addpattern_gen(0) = iter(())
+    yield addpattern def addpattern_gen(n):
+        yield n
+    assert list(addpattern_gen(0)) == []
+    assert list(addpattern_gen(2)) == [2]
 
     return True

@@ -2970,6 +2970,8 @@ syntax using the [`addpattern`](#addpattern) decorator.
 
 If you want to put a decorator on an `addpattern def` function, make sure to put it on the _last_ pattern function.
 
+Type checkers (e.g. via [`--mypy`](#mypy-integration) or [`--pyright`](#pyright-integration)) accept `addpattern def` as an intentional redefinition, without needing options like `--allow-redefinition`. Note that MyPy gives the combined function the type of its first definition, so if you annotate return types, the first definition's return type should cover what every case returns.
+
 For complex multi-pattern functions, it is generally recommended to use [`case def`](#case-functions) over `addpattern def` in most situations.
 
 _Deprecated: `addpattern def` will act just like a normal [`match def`](#pattern-matching-functions) if the function has not previously been defined. This will show a [`CoconutWarning`](#coconutwarning) and is not recommended._

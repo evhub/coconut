@@ -366,6 +366,45 @@ case def int_missing:  # PURE
     type(x: str) -> int
     case(int(n)) = n
 """
+
+addpattern_snip = '''
+def factorial(0) = 1
+
+addpattern def factorial(int() as n if n > 0) =
+    """Compute n! where n is an integer >= 0."""
+    n * factorial(n - 1)
+
+match def typed_f(int(x)) -> int = x
+addpattern def typed_f(str(s)) -> int = len(s)
+addpattern def typed_f([]) -> int = 0
+x: int = typed_f("abc")
+y: str = typed_f(1)  # ERR
+
+class A:
+    def meth(self, 0) = 0
+    addpattern def meth(self, n) = n
+
+class B:
+    def bmeth(self, 0) = 0
+addpattern def B.bmeth(self, n) = n
+
+def cc(0) = 0
+copyclosure addpattern def cc(n) = n
+
+def outer() -> None:
+    def g(0) = 1
+    addpattern def g(n) = n
+
+def incompat(0) -> int = 0
+addpattern def incompat(str(s)) -> str = s  # MYPY
+
+# (this used to crash MyPy's overload merging)
+def redefined(0) = 0
+addpattern def redefined(n) = n
+assert redefined(1) == 1
+def redefined(0) = 1  # MYPY
+addpattern def redefined(n) = n + 1
+'''
 mypy_snip_err = '''error: Incompatible types in assignment (expression has type'''
 
 mypy_args = ["--follow-imports", "silent", "--ignore-missing-imports", "--allow-redefinition"]
@@ -1176,6 +1215,50 @@ class TestShell(unittest.TestCase):
                 assert pyright_error_lines == expected_errors, (pyright_error_lines, expected_errors, pyright_output)
             finally:
                 shutil.rmtree(exhaustiveness_dir)
+
+        def test_addpattern_redefinition(self):
+            addpattern_dir = tempfile.mkdtemp()
+            try:
+                addpattern_coco = os.path.join(addpattern_dir, "addpattern_test.coco")
+                with open(addpattern_coco, "w") as addpattern_file:
+                    addpattern_file.write(addpattern_snip)
+
+                def get_output(*extra_args):
+                    stdout, stderr, retcode = call_output(
+                        ["coconut", addpattern_coco, "--force", "--no-cache"] + list(extra_args),
+                        color=False,
+                    )
+                    return "".join(stdout + stderr)
+
+                # addpattern def shouldn't produce any redefinition errors; lines marked "# ERR" should get type errors
+                #  (showing that the combined function keeps a real type), and lines marked "# MYPY" should get mypy errors
+                #  (since mypy keeps the type of the first definition, so later cases have to be compatible with it)
+                snip_lines = addpattern_snip.splitlines()
+                expected_type_errors = set(i + 1 for i, line in enumerate(snip_lines) if "# ERR" in line)
+                expected_mypy_errors = expected_type_errors | set(i + 1 for i, line in enumerate(snip_lines) if "# MYPY" in line)
+
+                # (the universal target compiles annotations to type comments)
+                for target_args in ([], ["--target", "sys"]):
+                    # (MyPy's cache can report stale errors for files of the same name in other directories)
+                    mypy_output = get_output(*(target_args + ["--mypy", "--cache-dir", os.path.join(addpattern_dir, ".mypy_cache")]))
+                    mypy_error_lines = set(int(ln) for ln in re.findall(r"addpattern_test\.coco:([0-9]+): error:", mypy_output))
+                    assert mypy_error_lines == expected_mypy_errors, (target_args, mypy_error_lines, expected_mypy_errors, mypy_output)
+                    assert not re.search(r"addpattern_test\.py:[0-9]+: error:", mypy_output), (target_args, mypy_output)
+
+                # (Pyright reports other issues with the compiled pattern-matching code, so only look at the relevant errors)
+                pyright_output = get_output("--target", "sys", "--pyright")
+                pyright_redef_lines = set(int(ln) for ln in re.findall(
+                    r"addpattern_test\.coco:([0-9]+): error: (?:[^\n]*obscured by a declaration of the same name|Cannot assign to attribute)",
+                    pyright_output,
+                ))
+                assert not pyright_redef_lines, (pyright_redef_lines, pyright_output)
+                pyright_type_error_lines = set(int(ln) for ln in re.findall(
+                    r"addpattern_test\.coco:([0-9]+): error: Type \"int\" is not assignable to declared type \"str\"",
+                    pyright_output,
+                ))
+                assert pyright_type_error_lines == expected_type_errors, (pyright_type_error_lines, expected_type_errors, pyright_output)
+            finally:
+                shutil.rmtree(addpattern_dir)
 
         def test_pyright(self):
             pyright_dir = tempfile.mkdtemp()
