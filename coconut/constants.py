@@ -1417,6 +1417,9 @@ exclude_install_dirs = (
 exclude_docs_dirs = (
     ".pytest_cache",
     "README.*",
+    # instructions and skills for AI coding assistants, not documentation pages
+    ".claude",
+    "editors",
 )
 
 script_names = (

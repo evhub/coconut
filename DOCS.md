@@ -549,7 +549,7 @@ Coconut even supports `--mypy` (though not `--pyright`) in the interpreter, whic
 0
 <string>:19: note: Revealed type is 'builtins.unicode'
 ```
-_For more information on `reveal_type`, see [`reveal_type` and `reveal_locals`](#reveal-type-and-reveal-locals)._
+_For more information on `reveal_type`, see [`reveal_type` and `reveal_locals`](#reveal_type-and-reveal_locals)._
 
 #### `numpy` Integration
 
@@ -607,7 +607,7 @@ The same analysis is also available from the command line, for scripts, CI, and 
 
 #### AI Coding Assistant Support
 
-Coconut ships with a condensed guide to writing idiomatic Coconut that's designed to be given to AI coding assistants, available by running `coconut --ai-docs` or online at [`llms.txt`](./llms.txt). To make sure that AI assistants that come across compiled Coconut code know what it is, every compiled file starts with a comment noting the Coconut source file it was compiled from (which should be edited instead of the compiled file) and pointing to that guide.
+Coconut ships with a condensed guide to writing idiomatic Coconut that's designed to be given to AI coding assistants, available by running `coconut --ai-docs` or online at [`llms.txt`](https://coconut.readthedocs.io/en/master/llms.txt). To make sure that AI assistants that come across compiled Coconut code know what it is, every compiled file starts with a comment noting the Coconut source file it was compiled from (which should be edited instead of the compiled file) and pointing to that guide.
 
 If you're using an AI coding assistant on a Coconut project, it's recommended to point it at that guide, e.g. by adding a line like "This project is written in Coconut; run `coconut --ai-docs` to learn how to write idiomatic Coconut code, and always edit `.coco` files rather than compiled `.py` files." to your project's `CLAUDE.md`/`AGENTS.md`.
 
@@ -2527,7 +2527,7 @@ foo[0] = 1   # MyPy error: "Unsupported target for indexed assignment"
 
 If you want to use `List` instead (e.g. if you want to support indexed assignment), use the standard Python 3.5 variable type annotation syntax: `foo: List[<type>]`.
 
-_Note: To easily view your defined types, see [`reveal_type` and `reveal_locals`](#reveal-type-and-reveal-locals)._
+_Note: To easily view your defined types, see [`reveal_type` and `reveal_locals`](#reveal_type-and-reveal_locals)._
 
 ##### Example
 
@@ -2924,7 +2924,7 @@ However, Coconut also provides an alternative syntax that uses the more conventi
 ```
 result = if condition then if_true else if_false
 ```
-making use of the Coconut-specific `then` keyword ([though Coconut still allows `then` as a variable name](#handling-keyword-variable-name-overlap)).
+making use of the Coconut-specific `then` keyword ([though Coconut still allows `then` as a variable name](#handling-keywordvariable-name-overlap)).
 
 ##### Example
 
@@ -4146,7 +4146,7 @@ def ident(x, *, side_effect=None):
     return x
 ```
 
-`ident` is primarily useful when writing in a point-free style (e.g. in combination with [`lift`](#lift)) or for debugging [pipes](#pipes) where `ident$(side_effect=print)` can let you see what is being piped.
+`ident` is primarily useful when writing in a point-free style (e.g. in combination with [`lift`](#lift-and-lift_apart)) or for debugging [pipes](#pipes) where `ident$(side_effect=print)` can let you see what is being piped.
 
 #### `const`
 
@@ -4157,7 +4157,7 @@ Coconut's `const` simply constructs a function that, whatever its arguments, jus
 def const(value) = (*args, **kwargs) => value
 ```
 
-`const` is primarily useful when writing in a point-free style (e.g. in combination with [`lift`](#lift)).
+`const` is primarily useful when writing in a point-free style (e.g. in combination with [`lift`](#lift-and-lift_apart)).
 
 #### `flip`
 
@@ -4457,7 +4457,7 @@ _Can't be done without a long series of checks for each `match` statement. See t
 
 Coconut provides a modified version of `itertools.starmap` that supports `reversed`, `repr`, optimized normal (and iterator) slicing, `len`, and `func`/`iter` attributes.
 
-If _map\_using_ is passed, `starmap` instead returns `map_using(args => function(*args), iterable)`, using a version of `args => function(*args)` that, unlike a lambda, can be pickled whenever _function_ can be. That makes it possible to use [`process_map`](#process_map) or [`thread_map`](#thread_map) as _map\_using_ to compute a `starmap` in parallel.
+If _map\_using_ is passed, `starmap` instead returns `map_using(args => function(*args), iterable)`, using a version of `args => function(*args)` that, unlike a lambda, can be pickled whenever _function_ can be. That makes it possible to use [`process_map`](#process_map-and-thread_map) or [`thread_map`](#process_map-and-thread_map) as _map\_using_ to compute a `starmap` in parallel.
 
 `starmap.using_processes` and `starmap.using_threads` are shortcuts for doing so: `starmap.using_processes(function, iterable, **kwargs)` is equivalent to `starmap(function, iterable, map_using=process_map$(**kwargs))`, which returns a `process_map` object (and similarly for `starmap.using_threads` and `thread_map`). As a result, they take the same keyword arguments as, and work the same way as, [`process_map`/`thread_map`](#process_map-and-thread_map): to make multiple sequential calls share one pool (and to set its _max\_workers_), make them inside a `with process_map.multiple_sequential_calls():` (or `thread_map.multiple_sequential_calls()`) block, which is also required to use _stream_=`True`. Similarly, [`map.using_processes`](#process_map-and-thread_map) and `map.using_threads` are just `process_map` and `thread_map`.
 
@@ -5140,7 +5140,7 @@ If multiple sequential calls to `process_map` need to be made, it is highly reco
 
 ##### **thread\_map\.multiple\_sequential\_calls**(_max\_workers_=`None`)
 
-Coconut provides a `multithreading`-based version of [`process_map`](#process_map) under the name `thread_map`. `thread_map` and `thread_map.multiple_sequential_calls` behave identically to `process_map` except that they use multithreading instead of multiprocessing, and are therefore primarily useful only for IO-bound tasks due to CPython's Global Interpreter Lock.
+Coconut provides a `multithreading`-based version of [`process_map`](#process_map-and-thread_map) under the name `thread_map`. `thread_map` and `thread_map.multiple_sequential_calls` behave identically to `process_map` except that they use multithreading instead of multiprocessing, and are therefore primarily useful only for IO-bound tasks due to CPython's Global Interpreter Lock.
 
 _Deprecated: `concurrent_map` is available as a deprecated alias for `thread_map`. Note that deprecated features are disabled in `--strict` mode._
 
@@ -5198,7 +5198,7 @@ If _reduce\_func_ is passed, instead of collecting the items into lists, [`reduc
 
 If _collect\_in_ is passed, initializes the collection from _collect\_in_ rather than as a `collections.defaultdict` (if `reduce_func=None`) or an empty `dict` (otherwise). Additionally, _reduce\_func_ defaults to `False` rather than `None` when _collect\_in_ is passed. Useful when you want to collect the results into a `pandas.DataFrame`.
 
-If _map_using_ is passed, calculates `key_func` and `value_func` by mapping them over the iterable using `map_using` as `map`. Useful with [`process_map`](#process_map)/[`thread_map`](#thread_map). See `.using_threads` and `.using_processes` methods below for simple shortcut methods that make use of `map_using` internally.
+If _map_using_ is passed, calculates `key_func` and `value_func` by mapping them over the iterable using `map_using` as `map`. Useful with [`process_map`/`thread_map`](#process_map-and-thread_map). See `.using_threads` and `.using_processes` methods below for simple shortcut methods that make use of `map_using` internally.
 
 `collectby` is similar to [`itertools.groupby`](https://docs.python.org/3/library/itertools.html#itertools.groupby) except that `collectby` aggregates common elements regardless of their order in the input iterable, whereas `groupby` only aggregates common elements that are adjacent in the input iterable.
 
@@ -5214,7 +5214,7 @@ If _map_using_ is passed, calculates `key_func` and `value_func` by mapping them
 
 ##### **mapreduce.using_processes**(_key\_value\_func_, _iterable_, \*, _reduce\_func_=`None`, _collect\_in_=`None`, _reduce\_func\_init_=`...`, _ordered_=`False`, _chunksize_=`1`, _max\_workers_=`None`)
 
-These shortcut methods call `collectby`/`mapreduce` with `map_using` set to [`process_map`](#process_map)/[`thread_map`](#thread_map), properly managed using the `.multiple_sequential_calls` method and the `stream=True` argument of [`process_map`](#process_map)/[`thread_map`](#thread_map). `reduce_func` will be called as soon as results arrive, and by default in whatever order they arrive in (to enforce the original order, pass _ordered_=`True`).
+These shortcut methods call `collectby`/`mapreduce` with `map_using` set to [`process_map`/`thread_map`](#process_map-and-thread_map), properly managed using the `.multiple_sequential_calls` method and the `stream=True` argument of [`process_map`/`thread_map`](#process_map-and-thread_map). `reduce_func` will be called as soon as results arrive, and by default in whatever order they arrive in (to enforce the original order, pass _ordered_=`True`).
 
 To make multiple sequential calls to `collectby.using_threads()`/`mapreduce.using_threads()`, manage them using `thread_map.multiple_sequential_calls()`. Similarly, use `process_map.multiple_sequential_calls()` to manage `.using_processes()`.
 
@@ -5481,7 +5481,7 @@ Each _mode_ has two components: what parser it uses, and what header it prepends
     + parser: file
         * The file parser can parse any Coconut code.
     + header: sys
-        * This header imports [`coconut.__coconut__`](#coconut-coconut) to access the necessary Coconut objects.
+        * This header imports [`coconut.__coconut__`](#coconut__coconut__) to access the necessary Coconut objects.
 - `"exec"`:
     + parser: file
     + header: exec
@@ -5597,7 +5597,7 @@ If _use\_cache\_dir_ is passed, it will turn on or off the usage of a `__coconut
 
 **coconut.api.use_coconut_breakpoint**(_on_=`True`)
 
-Switches the [`breakpoint` built-in](https://www.python.org/dev/peps/pep-0553/) which Coconut makes universally available to use [`coconut.embed`](#coconut-embed) instead of [`pdb.set_trace`](https://docs.python.org/3/library/pdb.html#pdb.set_trace) (or undoes that switch if `on=False`). This function is called automatically when `coconut.api` is imported.
+Switches the [`breakpoint` built-in](https://www.python.org/dev/peps/pep-0553/) which Coconut makes universally available to use [`coconut.embed`](#coconutembed) instead of [`pdb.set_trace`](https://docs.python.org/3/library/pdb.html#pdb.set_trace) (or undoes that switch if `on=False`). This function is called automatically when `coconut.api` is imported.
 
 #### `find_packages` and `find_and_compile_packages`
 
