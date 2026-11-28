@@ -43,7 +43,7 @@ Write code that reads at a glance:
 - **Expressions, not steps.** Most functions should be a single `def f(...) = expr`. Name intermediate values in a `where:` block or a short block body rather than reassigning a variable step by step.
 - **One stage per line.** Put a pipeline with more than about three stages in parentheses, one `|>` stage per line, so it reads top to bottom.
 - **Avoid mutation.** Build new values with comprehensions, pipelines, `fmap`, `reduce`/`scan`, and `._replace` on `data` types, and keep mutable state at a program's edges (I/O, caches). (Under `--pure`, mark any such mutation with `# NOQA` and a comment saying why.)
-- **Data first.** Model the domain with `data` types, and with `case data` sum types when a value is one of several alternatives, and write functions on them with pattern matching (`case def`, `match`, or `addpattern def`) instead of `isinstance` chains, tag strings, or flag attributes.
+- **Data first.** Model the domain with `data` types, and with `case data` sum types when a value is one of several alternatives, and write functions on them with pattern matching (`case def` or `match`) instead of `isinstance` chains, tag strings, or flag attributes. Prefer `case def` to `addpattern def`, which redefines the function and so isn't pure; save `addpattern def` for adding a case to a function defined somewhere else.
 - **Let the type checker check your matches.** A `match` or typed `case def` on a `case data` type must handle every variant; type checkers (`--mypy`, `--pyright`) report what's missing (e.g. `UnhandledCaseDataVariants[Square]`), so add the missing cases rather than a catch-all. End a `match` with `case _: assert_never(x)` (`from typing import assert_never`) to require it to handle every value of any type.
 - **Types on top-level definitions**, written in Coconut's type syntax (`int[]`, `int?`, `int -> str`, `(int; str)`), checked with `--mypy` when it's available.
 - **Errors as values** for expected failures: return `Expected` (or `Optional`) values, wrap raising calls in `safe_call`, and chain with `.and_then`/`fmap`; keep `try`/`except` for truly exceptional cases.
@@ -166,13 +166,18 @@ def norm(x, y) =                             # assignment function with a block 
     sq = x**2 + y**2                         #  the last line must be an expression
     sq ** 0.5
 
-def factorial(0) = 1                         # pattern-matching function definition
-addpattern def factorial(int(n) if n > 0) = n * factorial(n - 1)   # add another case
+case def factorial:                          # a pattern-matching function, one case per line
+    case(0) = 1
+    case(int(n) if n > 0) = n * factorial(n - 1)
 
 def head_tail([x] + xs) = (x, xs)            # patterns in arguments
 
-def fact(0, acc=1) = acc                     # patterns can have defaults and guards
-addpattern def fact(int() as n, acc=1 if n > 0) = fact(n - 1, acc * n)
+case def fact:                               # patterns can have defaults and guards
+    case(0, acc=1) = acc
+    case(int() as n, acc=1 if n > 0) = fact(n - 1, acc * n)
+
+def describe(0) = "zero"                     # addpattern def adds a case to an existing
+addpattern def describe(int()) = "an int"    #  pattern-matching function (prefer case def)
 
 case def my_min[T]:                          # many cases at once, with type parameters and
     type(xs: T[]) -> T                       #  optional (overloaded) type signatures
@@ -205,8 +210,9 @@ case data Tree:                              # algebraic data types: case data d
     case Leaf(value)                         #  whose variants are data types
     case Node(*children)                     # a starred field collects the remaining arguments
     def size(self) -> int = depth(self) + 1  # methods shared by all the variants
-def depth(Leaf(_)) = 0
-addpattern def depth(Node(*children)) = children |> map$(depth) |> max |> (.+1)
+case def depth:
+    case(Leaf(_)) = 0
+    case(Node(*children)) = children |> map$(depth) |> max |> (.+1)
 assert depth(Node(Leaf(1), Node(Leaf(2), Leaf(3)))) == 2
 assert Leaf(1) `isinstance` Tree and Node(Leaf(1)).size() == 2
 

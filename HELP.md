@@ -487,7 +487,7 @@ addpattern def factorial(int() as n if n > 0) =
 0 |> factorial |> print  # 1
 3 |> factorial |> print  # 6
 ```
-This is exactly equivalent to the `case def` version above. In general, `case def` is the clearest way to write a pattern-matching function whose cases are all in one place, while `addpattern def` lets you extend a pattern-matching function after the fact.
+This is exactly equivalent to the `case def` version above. But since `addpattern def` works by redefining the function, which isn't very functional, prefer `case def` whenever you can write all the cases in one place, and save `addpattern def` for when you really do need to extend a function after the fact.
 
 ## Case Study 2: `quick_sort`
 
@@ -495,15 +495,15 @@ In the second case study, we will be implementing the [quick sort algorithm](htt
 
 ### Sorting a Sequence
 
-First up is `quick_sort` for lists. We're going to use a recursive pattern-matching approach to tackle this problem—a similar approach to the very last `factorial` function we wrote, using `addpattern` to define our function one case at a time. Without further ado, here's our implementation of `quick_sort` for lists:
+First up is `quick_sort` for lists. We're going to use a recursive pattern-matching approach to tackle this problem—a similar approach to the `case def` version of `factorial` we wrote, with one case for the empty list and one case for everything else. Without further ado, here's our implementation of `quick_sort` for lists:
 ```coconut
-def quick_sort([]) = []
-
-addpattern def quick_sort([head] + tail) =
+case def quick_sort:
     """Sort the input sequence using the quick sort algorithm."""
-    quick_sort(left) + [head] + quick_sort(right) where:
-        left = [x for x in tail if x < head]
-        right = [x for x in tail if x >= head]
+    case([]) = []
+    case([head] + tail) =
+        quick_sort(left) + [head] + quick_sort(right) where:
+            left = [x for x in tail if x < head]
+            right = [x for x in tail if x >= head]
 
 # Test cases:
 [] |> quick_sort |> print  # []
