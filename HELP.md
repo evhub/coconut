@@ -1295,18 +1295,13 @@ mean([1, 2, 3, 6]) |> print  # 3.0
 ```
 Here `mean(xs)` is `sum(xs) / len(xs)`, but we never had to mention `xs`. (As with `reduce$(*)`, when an operator function is the only argument to a function, the call's parentheses can double as the operator function's.)
 
-Then there's [`ident`](./DOCS.md#ident), the identity function, which takes an optional `side_effect` function to call on its argument before returning it. That makes `ident$(side_effect=print)` a great tool for debugging pipelines, since you can drop it in anywhere to see what's flowing through without changing the result:
+Since `lift(f)` is just a function, it also works with infix notation, which reads nicely when lifting a function of two arguments:
 ```coconut
-total = range(3) |> map$(.*10) |> map$(ident$(side_effect=print)) |> sum  # prints 0, 10, and 20
-total |> print  # 30
-```
+min_and_max = min `lift(,)` max
 
-Finally, `const(x)` makes a function that always returns `x`, `flip(f)` reverses the order of `f`'s arguments, and `call(f, *args)` calls `f(*args)`:
-```coconut
-[1, 2, 3] |> map$(const(0)) |> list |> print  # [0, 0, 0]
-flip(pow)(2, 3) |> print  # 9
-[(+), (*)] |> map$(call$(?, 3, 4)) |> list |> print  # [7, 12]
+range(10) |> min_and_max |> print  # (0, 9)
 ```
+Here `(,)` is the operator function for making a tuple, so `min_and_max(xs)` is `(min(xs), max(xs))`.
 
 **Your turn:** use `lift` to define `spread`, which computes the difference between the largest and smallest numbers in a list, without naming its argument.
 ```coconut
@@ -1322,6 +1317,59 @@ flip(pow)(2, 3) |> print  # 9
 spread = lift(-)(max, min)
 ```
 `lift(-)(max, min)(xs)` is `max(xs) - min(xs)`.
+
+</details>
+
+Then there's [`ident`](./DOCS.md#ident), the identity function, which takes an optional `side_effect` function to call on its argument before returning it. That makes `ident$(side_effect=print)` a great tool for debugging pipelines, since you can drop it in anywhere to see what's flowing through without changing the result:
+```coconut
+total = range(3) |> map$(.*10) |> map$(ident$(side_effect=print)) |> sum  # prints 0, 10, and 20
+total |> print  # 30
+```
+
+Finally, `const(x)` makes a function that always returns `x`, `flip(f)` reverses the order of `f`'s arguments, and `call(f, *args)` calls `f(*args)`:
+```coconut
+[1, 2, 3] |> map$(const(0)) |> list |> print  # [0, 0, 0]
+flip(pow)(2, 3) |> print  # 9
+[(+), (*)] |> map$(call$(?, 3, 4)) |> list |> print  # [7, 12]
+```
+
+Together, these give us versions of the classic S, K, and I combinators from [combinatory logic](https://en.wikipedia.org/wiki/Combinatory_logic), where `S(f, g)(x)` is `f(x, g(x))`:
+```coconut
+I = ident
+K = const
+def S(f, g) = lift(f)(ident, g)
+
+S((+), (.*2))(5) |> print  # 15
+```
+
+Putting it all together, here's a point-free solution to a classic coding challenge: find the largest difference `xs[j] - xs[i]` where `i < j` and `xs[i] < xs[j]`, or `-1` if there isn't one.
+```coconut
+max_diff = (
+    ident `lift(zip)` scan$(min)
+    ..> starmap$(-)
+    ..> filter$(.!=0)
+    ..> reduce$(max, ?, -1)
+)
+
+max_diff([7, 1, 4, 5]) |> print  # 4
+max_diff([5, 4, 3]) |> print  # -1
+```
+Step by step: since `scan$(min)` gives the smallest number seen so far, ``ident `lift(zip)` scan$(min)`` pairs each number with the smallest number up to that point. Then `starmap$(-)` subtracts the two, `filter$(.!=0)` drops the zeros (where no earlier number was smaller), and `reduce$(max, ?, -1)` takes the largest difference left, starting from `-1` in case there isn't one.
+
+**Your turn:** Haskell has a handy combinator called `on`, where `on(b, u)` is the function `(x, y) => b(u(x), u(y))`. For example, `on((==), len)` checks whether two things have the same length. Define `on` without naming `x` or `y`. _Hint: `f ..*> g` is like `f ..> g`, except that it passes the tuple returned by `f` to `g` as separate arguments._
+```coconut
+# Test cases:
+on((==), len)("ab", "cd") |> print  # True
+on((+), abs)(-1, -2) |> print  # 3
+```
+
+<details>
+<summary>Show solution</summary>
+
+```coconut
+def on(b, u) = (,) ..> map$(u) ..*> b
+```
+`(,)` packs `x` and `y` into a tuple, `map$(u)` applies `u` to both, and `..*>` passes the results to `b` as two separate arguments.
 
 </details>
 
