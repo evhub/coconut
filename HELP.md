@@ -167,7 +167,7 @@ _Note: If you don't need the full control of the Coconut compiler, you can also 
 
 Although all different types of programming can benefit from using more functional techniques, scientific computing, perhaps more than any other field, lends itself very well to functional programming, an observation the case studies in this tutorial are very good examples of. That's why Coconut aims to provide extensive support for the established tools of scientific computing in Python.
 
-To that end, Coconut provides [built-in IPython/Jupyter support](./DOCS.md#ipython-jupyter-support). To launch a Jupyter notebook with Coconut, just enter the command
+To that end, Coconut provides [built-in IPython/Jupyter support](./DOCS.md#ipythonjupyter-support). To launch a Jupyter notebook with Coconut, just enter the command
 ```
 coconut --jupyter notebook
 ```
