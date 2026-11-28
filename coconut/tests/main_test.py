@@ -397,6 +397,13 @@ def outer() -> None:
 
 def incompat(0) -> int = 0
 addpattern def incompat(str(s)) -> str = s  # MYPY
+
+# (this used to crash MyPy's overload merging)
+def redefined(0) = 0
+addpattern def redefined(n) = n
+assert redefined(1) == 1
+def redefined(0) = 1  # MYPY
+addpattern def redefined(n) = n + 1
 '''
 mypy_snip_err = '''error: Incompatible types in assignment (expression has type'''
 

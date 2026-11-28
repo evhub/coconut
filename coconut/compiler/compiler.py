@@ -3282,12 +3282,15 @@ if {temp_var} is not None:
             def_code = decorators + def_stmt + func_code
             decorators = ""
             # type checkers only allow redefining a function when the redefinition is conditional,
-            #  so we put addpattern functions inside an always-true if (which changes nothing at runtime)
+            #  so we put addpattern functions inside an always-true if (which changes nothing at runtime);
+            #  the trailing pass keeps MyPy from treating the if as a conditional overload, since its
+            #  overload merging crashes on a later redefinition of a decorated function of the same name
             if addpattern:
                 def_code = handle_indentation(
                     """
 if True:
     {def_code}
+    pass
                     """,
                     add_newline=True,
                 ).format(
