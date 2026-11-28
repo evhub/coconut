@@ -384,6 +384,7 @@ The style issues which will cause `--strict` to throw an error are:
 - use of backslash continuation (use [parenthetical continuation](#enhanced-parenthetical-continuation) instead)
 - Python-3.10/PEP-634-style dotted names in pattern-matching (Coconut style is to preface these with `==`)
 - use of `:` instead of `<:` to specify upper bounds in [Coconut's type parameter syntax](#type-parameter-syntax)
+- `return`, `break`, or `continue` statements that exit a `finally` block, which silently swallow any exception being raised (Python 3.14 warns about these, per [PEP 765](https://peps.python.org/pep-0765/); Coconut warns about them on every target)
 
 Note that many of the above style issues will still show a warning if `--strict` is not present.
 

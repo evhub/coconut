@@ -425,6 +425,7 @@ line 6''')
     assert_raises(-> parse_with_state("abc "), CoconutStyleError, err_has="\n     ^")
     assert_raises(-> parse_with_state("abc", "file"), CoconutStyleError)
     assert_raises(-> parse_with_state("class derp(object)"), CoconutStyleError)
+    assert_raises(-> parse_with_state("def f():\n    try:\n        pass\n    finally:\n        return 1\n"), CoconutStyleError, err_has="PEP 765")
     assert_raises(-> parse_with_state("def f(a.b) = True"), CoconutStyleError, err_has="\n        ^")
     assert_raises(-> parse_with_state("match def kwd_only_x_is_int_def_0(*, x is int = 0) = x"), CoconutStyleError, err_has=(
         "\n        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~|",
@@ -975,6 +976,22 @@ def f[T](x):
             parse("x = y\n")
     assert len(inner_collected) == 1
     assert not outer_collected
+
+    # return/break/continue exiting finally blocks (PEP 765)
+    def finally_warnings(code) =
+        with collect_warnings() as collected:
+            parse(code)
+        [warn.bare_message for warn in collected if "'finally' block" in warn.bare_message]
+    assert finally_warnings("def f():\n    try:\n        pass\n    finally:\n        return 1\n") |> .[0] |> .startswith("'return' in a 'finally' block swallows any exception being raised and overrides any value being returned")
+    assert finally_warnings("for x in []:\n    try:\n        pass\n    except ValueError:\n        pass\n    finally:\n        if x:\n            break\n") |> .[0] |> .startswith("'break' in a 'finally' block")
+    assert finally_warnings("while True:\n    try:\n        pass\n    finally:\n        for y in []:\n            pass\n        else:\n            continue\n") |> .[0] |> .startswith("'continue' in a 'finally' block")
+    for not_exiting in (
+        "def f():\n    try:\n        return 1\n    finally:\n        pass\n",
+        "def f():\n    try:\n        pass\n    finally:\n        for y in []:\n            break\n",
+        "def f():\n    try:\n        pass\n    finally:\n        def g() = 1\n        h = x => x\n",
+        "def f():\n    try:\n        pass\n    finally:  # NOQA\n        return 1\n",
+    ):
+        assert not finally_warnings(not_exiting), not_exiting
 
     # operator partials whose operand binds less tightly than their operator
     def partial_warnings(code) =

@@ -33,6 +33,7 @@ from coconut.root import *  # NOQA
 import sys
 import os
 import re
+import ast
 from contextlib import contextmanager
 from functools import update_wrapper
 from collections import defaultdict
@@ -1097,6 +1098,7 @@ class Compiler(Grammar, pickleable_obj):
         cls.new_namedexpr <<= attach(cls.new_namedexpr_ref, cls.method("new_namedexpr_check"))
         cls.match_dotted_name_const <<= attach(cls.match_dotted_name_const_ref, cls.method("match_dotted_name_const_check"))
         cls.except_star_clause <<= attach(cls.except_star_clause_ref, cls.method("except_star_clause_check"))
+        cls.finally_clause <<= attach(cls.finally_clause_ref, cls.method("finally_clause_check"))
         cls.subscript_star <<= cls.subscript_star_ref
         cls.subscriptlist <<= attach(cls.subscriptlist_ref, cls.method("subscriptlist_handle"))
 
@@ -6931,6 +6933,63 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
     def new_namedexpr_check(self, original, loc, tokens):
         """Check for Python 3.10 assignment expressions."""
         return self.check_py("310", "assignment expression in syntactic location only supported for 3.10+", original, loc, tokens)
+
+    new_scope_ast_nodes = (ast.FunctionDef, ast.Lambda, ast.ClassDef) + ((ast.AsyncFunctionDef,) if hasattr(ast, "AsyncFunctionDef") else ())
+    loop_ast_nodes = (ast.For, ast.While) + ((ast.AsyncFor,) if hasattr(ast, "AsyncFor") else ())
+
+    def finally_clause_check(self, original, loc, tokens):
+        """Check for return, break, and continue statements that exit finally blocks (PEP 765)."""
+        code = "".join(tokens)
+        exiting_stmt = self.finally_exiting_stmt(code)
+        if exiting_stmt is not None:
+            self.strict_err_or_warn(
+                "'{stmt}' in a 'finally' block swallows any exception being raised{and_return} (Python 3.14 warns about this, per PEP 765); move it out of the 'finally' block".format(
+                    stmt=exiting_stmt,
+                    and_return=" and overrides any value being returned" if exiting_stmt == "return" else "",
+                ),
+                original,
+                loc,
+                noqa_able=True,
+            )
+        return code
+
+    def finally_exiting_stmt(self, finally_code):
+        """Find a return, break, or continue statement that would exit the given compiled finally clause, if any."""
+        try:
+            py_code = self.reformat(finally_code, ignore_errors=True)
+            finally_body = ast.parse("try:\n    pass\n" + py_code).body[0].finalbody
+        except Exception:
+            # (the compiled code might not be parseable by the current Python, in which case we just skip the check)
+            logger.log_exc()
+            return None
+
+        def find(node, in_loop):
+            if isinstance(node, self.new_scope_ast_nodes):
+                return None
+            if isinstance(node, ast.Return):
+                return "return"
+            if not in_loop and isinstance(node, (ast.Break, ast.Continue)):
+                return "break" if isinstance(node, ast.Break) else "continue"
+            # (a break or continue in a loop's else clause exits the enclosing loop)
+            if isinstance(node, self.loop_ast_nodes):
+                for child in node.body:
+                    found = find(child, True)
+                    if found is not None:
+                        return found
+                children = node.orelse
+            else:
+                children = ast.iter_child_nodes(node)
+            for child in children:
+                found = find(child, in_loop)
+                if found is not None:
+                    return found
+            return None
+
+        for stmt in finally_body:
+            found = find(stmt, False)
+            if found is not None:
+                return found
+        return None
 
     def except_star_clause_check(self, original, loc, tokens):
         """Check for Python 3.11 except* statements."""

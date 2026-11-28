@@ -2460,14 +2460,16 @@ class Grammar(object):
         except_clause = attach(keyword("except") + except_item, except_handle)
         except_star_clause = Forward()
         except_star_clause_ref = attach(except_star_kwd + except_item, except_handle)
+        finally_clause = Forward()
+        finally_clause_ref = keyword("finally") - suite
         try_stmt = condense(
             keyword("try") - suite + (
-                keyword("finally") - suite
+                finally_clause
                 | (
                     OneOrMore(except_clause - suite) - Optional(keyword("except") - suite)
                     | keyword("except") - suite
                     | OneOrMore(except_star_clause - suite)
-                ) - Optional(else_stmt) - Optional(keyword("finally") - suite)
+                ) - Optional(else_stmt) - Optional(finally_clause)
             )
         )
 
