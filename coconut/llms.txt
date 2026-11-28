@@ -7,10 +7,11 @@ This is a condensed guide to writing idiomatic Coconut, intended for AI coding a
 ## Working with Coconut code
 
 - Source files end in `.coco`. **Compiled `.py` files are generated: always edit the `.coco` source, never the compiled `.py` file.** Compiled files start with a comment saying which source file they were compiled from, and every compiled line ends with a `# <n> (line in Coconut source)` comment pointing back to the source line.
-- Compile: `coconut src_dir dest_dir` (or `coconut file.coco`); compile and run: `coconut-run file.coco`; run code directly: `coconut -c "code"`; type check: add `--mypy` (or `--pyright`); target a Python version: `--target 3.11` (default output is universal).
-- Importing `coconut.api` enables automatic compilation of `.coco` files on import. For tests, `pytest -p coconut.pytest_plugin` collects `test_*.coco` files.
+- Compile: `coconut src_dir dest_dir` (or `coconut file.coco`; `--watch` recompiles on changes); compile and run: `coconut-run file.coco`; run code directly: `coconut -c "code"`; type check: add `--mypy` (or `--pyright`); target a Python version: `--target 3.11` (default output is universal).
+- Importing `coconut.api` enables automatic compilation of `.coco` files on import. For tests, `pytest -p coconut.pytest_plugin` collects `test_*.coco` files. For notebooks, `coconut --jupyter notebook` (or `lab`) uses the Coconut Jupyter kernel.
 - `coconut --strict` enables style checks; fix what it reports by restructuring the code rather than suppressing it with `# NOQA`. `coconut --pure` additionally enforces functional purity (no reassignment or mutation); it's optional, so use it when the project enables it or the user asks for it.
-- Check your work: after editing `.coco` files, compile them with `coconut file.coco --strict --no-write` (or pass a directory) to catch errors without writing output, adding `--pure` if the project uses it. Options set in the `[tool.coconut]` table of the project's `pyproject.toml` (e.g. `strict = true`, `pure = true`, `target = "3.10"`) apply automatically. When you're unsure what a construct does, look at the Python it compiles to with `coconut file.coco --no-write --display --quiet --target sys` (or `coconut -c "code" --display`).
+- Check your work: after editing `.coco` files, run `coconut file.coco --strict --no-write` (or pass a directory) to catch errors without writing output, adding `--pure` if the project uses it. Options in the `[tool.coconut]` table of the project's `pyproject.toml` (e.g. `strict = true`, `pure = true`, `target = "3.10"`) apply automatically. To see the Python a construct compiles to, run `coconut -c "code" --display` (or `coconut file.coco --no-write --display --quiet --target sys`).
+- Look things up: `python -m coconut.lsp docs <name>` prints Coconut's documentation for any built-in, keyword, or operator (e.g. `docs collectby`, `docs |?>`), and `python -m coconut.lsp check <files or dirs>` reports errors plus lint warnings (`--mypy` to type check). `coconut --mcp` serves these tools over MCP.
 
 ## Writing idiomatic Coconut
 
@@ -22,6 +23,7 @@ Prefer Coconut's functional features over Python-style imperative code. Good Coc
 - uses **pattern matching** (`match`/`case`, pattern-matching function definitions, destructuring assignment) instead of chains of `if isinstance(...)`/indexing,
 - models data with immutable **`data` types** instead of mutable classes, making updated copies of them with **update sections** (`obj |> (.pos.x += 1)`),
 - uses **recursion** freely (tail calls are optimized automatically) and **lazy iterators** instead of materializing lists,
+- uses Coconut's **built-ins** instead of hand-written helpers: `tap` is `ident$(side_effect=f)`, `curry` is `f$(x)`, `partition`/`group_by` is `collectby`, `pairwise` is `windowsof`, `chunks` is `groupsof`, `accumulate` is `scan`, and `memoize` and parallel `map` exist too (see "Built-ins instead of hand-written helpers"),
 - avoids reassigning variables and mutating objects (`--pure` mode can enforce this).
 
 ```coconut
@@ -100,7 +102,8 @@ def check_port(port: int) -> Expected[int] =
     Expected(port) if 0 < port < 65536 else Expected(error=ValueError(f"bad port: {port}"))
 
 def parse_port(s: str) -> Expected[int] = safe_call(int, s).and_then(check_port)
-assert parse_port("80") == Expected(80) and parse_port("x").error `isinstance` ValueError
+assert parse_port("80") |> fmap$(.+1) == Expected(81) and parse_port("x").error `isinstance` ValueError
+assert parse_port("x").result_or(0) == 0     # also .unwrap(), .handle(ErrType, f), .map_error(f), .or_else(f)
 ```
 
 ## Lambdas, partials, and operator functions
@@ -109,11 +112,14 @@ assert parse_port("80") == Expected(80) and parse_port("x").error `isinstance` V
 add = (x, y) => x + y            # lambda (=> is preferred; old -> syntax is deprecated)
 inc = (.+1)                      # implicit partial: same as x => x + 1
 upper_all = map$(.upper())       # partial application with $: f$(a) is functools.partial(f, a)
+pow_of_2 = pow$(2)               # so there's no need for a curry helper (bare pow$ curries: (pow$)(2)(3) == 8)
 square = pow$(?, 2)              # ? marks positional placeholders: x => pow(x, 2)
-first = .[0]                     # x => x[0]; also .attr and .method(args)
+first = .[0]                     # x => x[0]; also .attr, .method(args), .attr.method(args), .[i][j]
+third = .$[2]                    # .$[i] indexes/slices any iterator (e.g. a filter or generator), lazily
+is_int = (. `isinstance` int)    # infix functions make partials too: x => isinstance(x, int)
 reset = (.pos.x = 0)             # update section: x => a copy of x with x.pos.x set to 0
-assert (+)(1, 2) == 3            # operator functions: (+), (*), (==), (in), (not in), (is), (.), etc.
-f = def (x, y=1) => x + y        # statement lambda (supports default args, multiple statements)
+assert (+)(1, 2) == 3            # operator functions: (+), (==), (in), (not in), (is), (not), (and), (.) (getattr), (,) (tuple), (raise), etc.
+f = def (x, y=1) => x + y        # statement lambda: allows defaults, patterns (def ((k, v)) => k), and statements (def (x) => y = x*2; y+1)
 sign = (=> if _ > 0 then 1 else if _ < 0 then -1 else 0)   # implicit lambda (argument is _), if/then/else expression
 assert [-5, 0, 5] |> map$(sign) |> list == [-1, 0, 1]
 ```
@@ -126,6 +132,10 @@ assert (1, 2) |*> add == 3                          # |*> unpacks positional arg
 assert dict(x=1, y=2) |**> ((x, y) => x - y) == -1  # |**> unpacks keyword args
 assert str <| 1 == "1"                              # backward pipes: <|, <*|, <**|
 assert None |?> (.+1) is None                       # None-aware pipes: |?>, |?*>, |?**>
+config = {"db": {"port": 5432}}
+assert config.get("cache")?["port"] ?? 6379 == 6379 # ?[], ?., ?() short-circuit on None; a ?? b defaults
+port = None
+port ??= 8080                                       # assigns only if port is None
 f = (.+1) ..> (.*2)                                 # forward composition: f(3) == 8
 g = (.*2) <.. (.+1)                                 # backward composition (also ..): g(3) == 8
 xs = [3, 1, 2]
@@ -228,6 +238,13 @@ assert Leaf(1) `isinstance` Tree and Node(Leaf(1)).size() == 2
 data Interval(int() as lo, int() as hi if hi >= lo)   # patterns validate constructor arguments
 assert Interval(1, 3).hi == 3                         #  (Interval(3, 1) raises MatchError, as does
                                                       #  Interval(1, 3) |> (.hi = 0))
+
+data Celsius(degrees: float):                         # custom constructors use __new__, calling
+    def __new__(cls, degrees) = makedata(cls, float(degrees))   #  the base constructor with makedata
+assert Celsius("1.5").degrees == 1.5
+
+pt = (x=1, y=2)                                       # anonymous namedtuple, for one-off records
+assert pt.x == 1 and pt == (1, 2)
 ```
 
 ## Pattern matching
@@ -250,8 +267,8 @@ def describe(obj):
 
 Python 3.10 `match`/`case` syntax works on every target version. Other pattern forms:
 - `[x] + xs` / `xs + [x]` (head/tail and init/last splits), `"prefix_" + rest` (string splits), `(| x, y |)` / `(| x, *rest |)` (lazy lists: match any iterable), `[x] :: rest` (any iterable, lazily)
-- `int(n)` / ``n `isinstance` int`` (type checks), `x if x > 0` (guards), `pat as name`, `pat1 | pat2`, `==expr` (equality checks), `(f) -> pat` (view patterns: match `f(item)` against `pat`)
-- data patterns `Point(x=x, **rest)` (`**rest` collects the remaining fields), class patterns `class C(a, b)`
+- `int(n)` / ``n `isinstance` int`` (type checks), `x if x > 0` (guards), `pat as name`, `pat1 | pat2`, `==expr` (equality checks), `is expr` (identity checks), `(f) -> pat` (view patterns: match `f(item)` against `pat`)
+- data patterns `Point(x=x, **rest)` (`**rest` collects the remaining fields), class patterns `class C(a, b)`, anonymous namedtuple patterns `(x=a, y=b)`, set patterns `s{1, 2, *_}` (sets containing these items; `m{...}` for multisets)
 
 ```coconut
 match (x, y) in (1, 2):                      # one-line match with else
@@ -264,6 +281,8 @@ else:
 
 pairs = [Point(1, 2), Point(3, 4)]
 xs = [x for Point(x, y) in pairs if y > 2]   # match comprehensions (raise MatchError on non-matches)
+for Point(x, y) in pairs:                    # match for loops
+    assert x < y
 
 def first_twin(_ + [p, (.-2) -> p] + _) = (p, p + 2)  # search pattern with a view pattern:
 assert first_twin([2, 3, 5, 7, 11, 13]) == (3, 5)     #  (.-2) -> p matches items equal to p + 2
@@ -277,13 +296,11 @@ match key + "=" + value in "name=coconut":            # string search patterns
 nums = (| 1, 2, 3 |)                                  # lazy list
 def naturals(n=0) = (n,) :: naturals(n + 1)           # :: lazily chains iterators (infinite is fine)
 assert naturals()$[:5] |> list == [0, 1, 2, 3, 4]     # $[...] slices any iterator lazily
-assert range(10) |> groupsof$(3) |> map$(list) |> list == [[0, 1, 2], [3, 4, 5], [6, 7, 8], [9]]
-assert range(4) |> windowsof$(2) |> list == [(0, 1), (1, 2), (2, 3)]
-assert range(5) |> reduce$((+)) == 10                 # reduce and scan are built in
-assert range(4) |> scan$((+)) |> list == [0, 1, 3, 6]
-assert [[1, 2], [3]] |> flatten |> list == [1, 2, 3]
+assert count() |> map$(.**2) |> takewhile$(.<20) |> list == [0, 1, 4, 9, 16]   # count() is infinite
+it = reiterable(x * 2 for x in range(3))              # reiterable lets you iterate more than once
+assert list(it) == list(it) == [0, 2, 4]
 assert [1, 2, 3] |> fmap$(.*10) == [10, 20, 30]       # fmap preserves the container type
-assert ["a", "bb", "c"] |> collectby$(len) == {1: ["a", "c"], 2: ["bb"]}
+assert {"a": 1} |> fmap$(def ((k, v)) => (k, v + 1)) == {"a": 2}   # (on mappings, fmap maps over items)
 
 @recursive_generator                                  # memoizes so self-reference is efficient
 def fibs() = (0, 1) :: map((+), fibs(), fibs()$[1:])
@@ -296,7 +313,32 @@ def twin_primes(_ :: [p, (.-2) -> p] :: ps) =         # :: patterns lazily match
 assert twin_primes(primes())$[:3] |> list == [(3, 5), (5, 7), (11, 13)]
 ```
 
-Other useful built-ins: `takewhile`, `dropwhile`, `count`, `cycle`, `cartesian_product`, `multi_enumerate`, `consume`, `reiterable`, `ident`, `const`, `flip`, `lift`, `memoize` (decorator), `recursive_generator`, `process_map`/`thread_map` (parallel map), `mapreduce`, `multiset`, `safe_call`/`Expected` (error handling without exceptions). Coconut's `map`, `zip`, and `enumerate` support `len` and indexing when their inputs do.
+## Built-ins instead of hand-written helpers
+
+Coconut has most of the functional toolkit built in, so check for a built-in before writing a helper:
+
+```coconut
+assert [1, 2] |> map$(ident$(side_effect=print)) |> list == [1, 2]   # tap/peek (prints 1, 2; handy for debugging pipes)
+evens_odds = range(6) |> collectby$(x => x % 2 == 0)                 # partition/group_by: a defaultdict of lists
+assert evens_odds[True] == [0, 2, 4] and evens_odds[False] == [1, 3, 5]
+assert ["a", "bb", "c"] |> collectby$(len, value_func=.upper()) == {1: ["A", "C"], 2: ["BB"]}
+assert "a bb cc" |> .split() |> collectby$(len, reduce_func=(+)) == {1: "a", 2: "bbcc"}         # group, then fold each group
+assert "a b a" |> .split() |> mapreduce$(w => (w, 1), reduce_func=(+)) == {"a": 2, "b": 1}   # key_value_func returns (key, value)
+assert range(4) |> windowsof$(2) |> list == [(0, 1), (1, 2), (2, 3)]                          # pairwise/sliding window (step=, fillvalue=)
+assert range(5) |> groupsof$(2) |> list == [(0, 1), (2, 3), (4,)]                             # chunks/batches (fillvalue= pads)
+assert range(1, 5) |> reduce$((*)) == 24 and range(1, 5) |> scan$((+)) |> list == [1, 3, 6, 10]   # fold; running totals
+assert [[1], [2, [3]]] |> flatten$(levels=None) |> list == [1, 2, 3]                          # flattens one level by default
+assert cartesian_product("ab", range(2)) |> list == [("a", 0), ("a", 1), ("b", 0), ("b", 1)]  # nested loops (repeat=n for powers)
+assert flip(pow)(2, 3) == 9 and const(0)(1, 2) == 0 and call(pow, 2, 3) == 8              # flip args, constant function, apply
+assert m{"a", "a", "b"}["a"] == 2 and all_equal([1, 1, 1])                                    # multiset (a Counter with set ops)
+
+@memoize                                                             # functools.lru_cache(maxsize=None)
+def fib(n) = n if n < 2 else fib(n - 1) + fib(n - 2)
+assert fib(100) == 354224848179261915075
+assert range(4) |> process_map$(pow$(?, 2)) |> list == [0, 1, 4, 9]  # parallel map over processes (args must pickle); thread_map for I/O
+```
+
+Also built in: `takewhile`, `dropwhile`, `count` (infinite and sliceable), `cycle`, `zip_longest`, `starmap`, `multi_enumerate`, `consume`, `override` (decorator: error if the method doesn't override anything), `and_then`/`and_then_await` (compose `async` functions), and `async_map`. `collectby` and `mapreduce` have parallel `.using_processes`/`.using_threads` versions, and `with process_map.multiple_sequential_calls():` reuses one pool across calls. Coconut's `map`, `zip`, and `enumerate` support `len` and indexing when their inputs do, and `map` and `zip` take `strict=True`.
 
 ## Other features
 
@@ -333,26 +375,28 @@ def Tally.inc(self) -> Tally =               # define a method outside its class
     self
 assert Tally().inc().inc().count == 2
 
-def safe_div(x, y) = safe_call((=> x / y))   # Expected(result) or Expected(error=...)
-assert safe_div(4, 2) |> fmap$(.*10) == Expected(20.0)
-assert safe_div(1, 0).error `isinstance` ZeroDivisionError
-
 def first(xs: int[]) -> int? = xs[0] if xs else None   # int[] = Sequence[int], int? = Optional[int]
 def apply(f: int -> str, x: int) -> str = f(x)         # int -> str = Callable[[int], str]
 pair: (int; str) = (1, "a")                            # (int; str) = Tuple[int, str]
-def lens(xs: int$[]) -> int = xs |> map$(.bit_length()) |> sum   # int$[] = Iterator[int]
+def lens(xs: int$[]) -> int = xs |> map$(.bit_length()) |> sum   # int$[] = Iterable[int]
 num: (+) &: (*) = 1                                    # &: intersects protocols; (+) supports +
+type IntPairs = (int; int)[]                           # aliases need `type` to use Coconut's type syntax
+def clamp[T <: float](x: T, lo: T, hi: T) -> T = max(lo, min(x, hi))   # type params (--strict wants <: for bounds)
 
 lazy import json                             # PEP 810 lazy imports, on every Python version
 assert json.loads("[1]") == [1]
 def double(x) = x * 2
 assert double 3 == 6                         # implicit function application: f x is f(x)
+user_id = 7
+assert dict(user_id=) == {"user_id": 7}      # keyword argument name elision: f(x=) is f(x=x)
+assert [1, 2;; 3, 4] == [[1, 2], [3, 4]]     # multidimensional array literals (;; stacks rows, ; joins columns; numpy-aware)
+final MAX_SIZE = 10                          # final: reassigning it is a compile error (--pure makes every name final)
 ```
 
 ## Common pitfalls
 
 - An assignment function's block body must end in an expression: `def f(x) =` followed by a `match` statement or `if` statement is an error. Use a normal `def` with `return` instead.
-- Write sequence patterns (`[x, y]`, `[x, *rest]`, `case x, y:`) as if they follow Python's rules: they're meant to match only non-string sequences. Coconut still lets them match strings, and lets star and unparenthesized tuple patterns match any iterable, but that's deprecated: such matches emit a `CoconutWarning` and will fail in Coconut v4. To match any iterable, use lazy list patterns `(| x, *rest |)` or `[x] :: rest`; to match strings, use string patterns like `"prefix_" + rest`.
+- As in Python, sequence patterns (`[x, y]`, `[x, *rest]`, `case x, y:`) are meant to match only non-string sequences. Coconut still lets them match strings (and lets star and unparenthesized tuple patterns match any iterable), but that's deprecated: such matches emit a `CoconutWarning` and will fail in Coconut v4. To match any iterable, use `(| x, *rest |)` or `[x] :: rest`; to match strings, use string patterns like `"prefix_" + rest`.
 - Sequence patterns also match `data` types (which are tuples), so put data type patterns before general sequence patterns in a `match`.
 - Coconut keywords like `data`, `match`, `case`, `where`, and `addpattern` can still be used as names, but writing `match[a, b] = x` is a subscript assignment to a variable named `match`. Since normal assignment takes precedence over destructuring assignment, use patterns that aren't valid Python assignment targets (e.g. `[first] + rest = xs`) when you need destructuring.
 - To use a name that conflicts with a Coconut keyword or would be flagged by `--strict`, escape it with a backslash: `\data`, `\match`.
@@ -363,4 +407,5 @@ assert double 3 == 6                         # implicit function application: f 
 - Exhaustiveness errors only show up when type checking (`--mypy`, `--pyright`, or the language server's type checking), never in a plain compile. Guarded cases (`case Circle(r) if r > 0`) don't count as handling anything, and matches using sequence, mapping, or string patterns aren't checked. Under `--pure`, every multi-case `match` and typed `case def` must be total, so give guarded cases a final unguarded fallback.
 - `--pure` treats loop variables as assignments, so reassigning one in the loop body, or reusing the same loop variable name for two loops in one scope, is flagged; prefer a comprehension or pipeline, or use distinct names.
 - Implicit partials can't chain calls: `map$(.lower().strip())` is a syntax error. Use one stage per method (`|> map$(.lower()) |> map$(.strip())`) or a named function.
+- In an operator partial, everything after the operator is its operand: `(.%2==0)` is `x => x % (2==0)`, not `x => x % 2 == 0` (Coconut warns about this). Compose instead (`(.%2) ..> (.==0)`) or use a lambda.
 - Coconut's `map`/`filter`/`zip` are lazy (like Python 3), so convert with `|> list` or `|> tuple` when you need a concrete sequence.

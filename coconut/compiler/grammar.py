@@ -1251,7 +1251,7 @@ class Grammar(object):
             labeled_group(dot.suppress() + partialable_op + test_no_infix, "right partial")
             | labeled_group(test_no_infix + partialable_op + dot.suppress(), "left partial")
         )
-        partial_op_item = attach(partial_op_item_tokens, partial_op_item_handle)
+        partial_op_item = Forward()
         # (.<path> <op> <value>); like operator sections, these need their own parentheses
         update_section_tokens = Forward()
         update_section = attach(update_section_tokens, update_section_handle)
@@ -3024,6 +3024,7 @@ class Grammar(object):
         whitespace_regex = compile_regex(r"\s")
 
         def_regex = compile_regex(r"((async|addpattern|copyclosure)\s+)*def\b")
+        addpattern_def_regex = compile_regex(r"(?:copyclosure\s+)*addpattern\s+(?:copyclosure\s+)*def\s+([\w.]+)")
 
         yield_regex = compile_regex(r"\byield(?!\s+_coconut\.asyncio\.From)\b")
         yield_from_regex = compile_regex(r"\byield\s+from\b")

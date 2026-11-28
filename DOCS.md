@@ -20,7 +20,7 @@ Coconut is a variant of [Python](https://www.python.org/) built for **simple, el
 
 The Coconut compiler turns Coconut code into Python code. The primary method of accessing the Coconut compiler is through the Coconut command-line utility, which also features an interpreter for real-time compilation. In addition to the command-line utility, Coconut also supports the use of IPython/Jupyter notebooks.
 
-Thought Coconut syntax is primarily based on that of Python, other languages that inspired Coconut include [Haskell](https://www.haskell.org/), [CoffeeScript](http://coffeescript.org/), [F#](http://fsharp.org/), and [Julia](https://julialang.org/).
+Though Coconut syntax is primarily based on that of Python, other languages that inspired Coconut include [Haskell](https://www.haskell.org/), [CoffeeScript](http://coffeescript.org/), [F#](http://fsharp.org/), and [Julia](https://julialang.org/).
 
 #### Try It Out
 
@@ -1139,7 +1139,7 @@ import functools
 
 ### Protocol Intersection
 
-Coconut uses the `&:` operator to indicate protocol intersection. That is, for two [`typing.Protocol`s](https://docs.python.org/3/library/typing.html#typing.Protocol) `Protocol1` and `Protocol1`, `Protocol1 &: Protocol2` is equivalent to a `Protocol` that combines the requirements of both `Protocol1` and `Protocol2`.
+Coconut uses the `&:` operator to indicate protocol intersection. That is, for two [`typing.Protocol`s](https://docs.python.org/3/library/typing.html#typing.Protocol) `Protocol1` and `Protocol2`, `Protocol1 &: Protocol2` is equivalent to a `Protocol` that combines the requirements of both `Protocol1` and `Protocol2`.
 
 The recommended way to use Coconut's protocol intersection operator is in combination with Coconut's [operator `Protocol`s](#supported-protocols). Note, however, that while `&:` will work anywhere, operator `Protocol`s will only work inside type annotations (which means, for example, you'll need to do `type HasAdd = (+)` instead of just `HasAdd = (+)`).
 
@@ -1227,7 +1227,7 @@ _Note: these are only the default, built-in unicode operators. Coconut supports 
 **↦ (**\u21a6)             => "|**>"
 ↤** (\u21a4**)             => "<**|"
 ?↦ (?\u21a6)               => "|?>"
-↤? (?\u21a4)               => "<?|"
+↤? (\u21a4?)               => "<?|"
 ?*↦ (?*\u21a6)             => "|?*>"
 ↤*? (\u21a4*?)             => "<*?|"
 ?**↦ (?**\u21a6)           => "|?**>"
@@ -1373,7 +1373,7 @@ base_pattern ::= (
   - View Patterns (`(<expression>) -> <pattern>`): calls `<expression>` on the item being matched and matches the result to `<pattern>`. The match fails if a [`MatchError`](#matcherror) is raised. `<expression>` may be unparenthesized only when it is a single atom.
 - Class and Data Type Matching:
   - Classes or Data Types (`<name>(<args>)`): will match as a data type if given [a Coconut `data` type](#data) (or a tuple of Coconut data types) and a class otherwise.
-  - Data Types (`data <name>(<args>)`): will check that whatever is in that position is of data type `<name>` and will match the attributes to `<args>`. Generally, `data <name>(<args>)` will match any data type that could have been constructed with `makedata(<name>, <args>)`. Includes support for positional arguments, named arguments, default arguments, starred arguments, and double-starred arguments (e.g. `data MyData(x=<some_pattern>, **rest)`, which matches `rest` against a `dict` of all the remaining attributes not matched by the other arguments, allowing those attributes to have any value). Also supports strict attributes by prepending a dot to the attribute name that raises `AttributError` if the attribute is not present rather than failing the match (e.g. `data MyData(.my_attr=<some_pattern>)`).
+  - Data Types (`data <name>(<args>)`): will check that whatever is in that position is of data type `<name>` and will match the attributes to `<args>`. Generally, `data <name>(<args>)` will match any data type that could have been constructed with `makedata(<name>, <args>)`. Includes support for positional arguments, named arguments, default arguments, starred arguments, and double-starred arguments (e.g. `data MyData(x=<some_pattern>, **rest)`, which matches `rest` against a `dict` of all the remaining attributes not matched by the other arguments, allowing those attributes to have any value). Also supports strict attributes by prepending a dot to the attribute name that raises `AttributeError` if the attribute is not present rather than failing the match (e.g. `data MyData(.my_attr=<some_pattern>)`).
   - Classes (`class <name>(<args>)`): does [PEP-634-style class matching](https://www.python.org/dev/peps/pep-0634/#class-patterns). Also supports strict attribute matching and double-starred arguments (which match against a `dict` of the remaining attributes in `__match_args__`) as above.
   - Anonymous Named Tuples (`(<name>=<pattern>, ...)`): checks that the object is a `tuple` of the given length with the given attributes. For matching [anonymous `namedtuple`s](#anonymous-namedtuples).
 - Dict Destructuring:
@@ -1547,7 +1547,7 @@ def classify_sequence(value):
             out += "duplicate pair of "+str(x)
         case (_,_):
             out += "pair"
-        case _ is (tuple, list):
+        case _ `isinstance` (tuple, list):
             out += "sequence"
     else:
         raise TypeError()
@@ -2203,12 +2203,16 @@ In addition, for every Coconut [operator function](#operator-functions), Coconut
 ```
 where `<op>` is the operator function and `<arg>` is any expression. Note that, as with operator functions themselves, the parentheses are necessary for this type of implicit partial application. This syntax is slightly different for multidimensional array concatenation operator functions, which use brackets instead of parentheses.
 
+Since `<arg>` can be any expression, it extends all the way to the closing parenthesis, which means that it's evaluated before the operator is applied. Thus, `(.%2==0)` is `x => x % (2==0)`, not `x => x % 2 == 0`, and `(.*2+1)` is `x => x * 3`. Coconut will show a warning when `<arg>` contains an operator that binds less tightly than `<op>` like this; to apply both operators in order, use a lambda (`x => x % 2 == 0`) or function composition (`(.%2) ..> (.==0)`) instead, or, if the current meaning is intended, put parentheses around `<arg>` (`(. % (2==0))`) to dismiss the warning.
+
 Furthermore, Coconut also supports implicit operator function partials for arbitrary functions as
 ```
 (. `<name>` <arg>)
 (<arg> `<name>` .)
 ```
 based on Coconut's [infix notation](#infix-functions) where `<name>` is the name of the function. Additionally, `` `<name>` `` can instead be a [custom operator](#custom-operators) (in that case, no backticks should be used).
+
+Note that only a single method call can come at the end of an attribute access implicit partial, so chaining method calls as in `.lower().strip()` isn't allowed; use `.lower() ..> .strip()` instead.
 
 _Deprecated: Coconut also supports `obj.` as an implicit partial for `getattr$(obj)`, but its usage is deprecated and will show a warning to switch to `getattr$(obj)` instead._
 
@@ -2454,7 +2458,7 @@ array([[1, 2],
 ```
 As can be seen, `np.array` (or equivalent) can be used to turn the resulting list of lists into an actual array. This syntax works because `;;` inside of a list literal functions as a concatenation/stack along the `-2` axis (with the inner arrays being broadcast to `(1, 2)` arrays before concatenation). Note that this concatenation is done entirely in Python lists of lists here, since the `np.array` call comes only at the end.
 
-In general, the number of semicolons indicates the dimension from the end on which to concatenate. Thus, `;` indicates conatenation along the `-1` axis, `;;` along the `-2` axis, and so on. Before concatenation, arrays are always broadcast to a shape which is large enough to allow the concatenation.
+In general, the number of semicolons indicates the dimension from the end on which to concatenate. Thus, `;` indicates concatenation along the `-1` axis, `;;` along the `-2` axis, and so on. Before concatenation, arrays are always broadcast to a shape which is large enough to allow the concatenation.
 
 Thus, if `a` is a `numpy` array, `[a; a]` is equivalent to `np.concatenate((a, a), axis=-1)`, while `[a ;; a]` would be equivalent to a version of `np.concatenate((a, a), axis=-2)` that also ensures that `a` is at least two dimensional. For normal lists of lists, the behavior is the same, but is implemented without any `numpy` calls.
 
@@ -2616,7 +2620,7 @@ quad = 5 x**2 + 3 x + 1
 **Python:**
 ```coconut_python
 def f(x, y): return (x, y)
-print(f(100, 5+6))
+print(f(5, 10))
 ```
 
 ```coconut_python
@@ -3031,6 +3035,8 @@ syntax using the [`addpattern`](#addpattern) decorator.
 
 If you want to put a decorator on an `addpattern def` function, make sure to put it on the _last_ pattern function.
 
+Type checkers (e.g. via [`--mypy`](#mypy-integration) or [`--pyright`](#pyright-integration)) accept `addpattern def` as an intentional redefinition, without needing options like `--allow-redefinition`. Note that MyPy gives the combined function the type of its first definition, so if you annotate return types, the first definition's return type should cover what every case returns.
+
 For complex multi-pattern functions, it is generally recommended to use [`case def`](#case-functions) over `addpattern def` in most situations.
 
 _Deprecated: `addpattern def` will act just like a normal [`match def`](#pattern-matching-functions) if the function has not previously been defined. This will show a [`CoconutWarning`](#coconutwarning) and is not recommended._
@@ -3056,7 +3062,7 @@ copyclosure def <name>(<args>):
 ```
 to define a function that uses as its closure a shallow copy of its enclosing scopes at the time that the function is defined, rather than a reference to those scopes (as with normal Python functions).
 
-For example,`in
+For example, in
 ```coconut
 def outer_func():
     funcs = []
@@ -3070,7 +3076,7 @@ the resulting `inner_func`s will each return a _different_ `x` value rather than
 
 `copyclosure` functions can also be combined with `async` functions, [`yield` functions](#explicit-generators), [pattern-matching functions](#pattern-matching-functions), [infix function definition](#infix-functions), and [assignment function syntax](#assignment-functions). The various keywords in front of the `def` can be put in any order.
 
-If `global` or `nonlocal` are used in a `copyclosure` function, they will not be able to modify variables in enclosing scopes. However, they will allow state to be preserved accross multiple calls to the `copyclosure` function.
+If `global` or `nonlocal` are used in a `copyclosure` function, they will not be able to modify variables in enclosing scopes. However, they will allow state to be preserved across multiple calls to the `copyclosure` function.
 
 ##### Example
 
@@ -3311,7 +3317,7 @@ from collections.abc import Sequence
 if invalid(input_list):
     raise Exception()
 elif isinstance(input_list, Sequence) and len(input_list) >= 1:
-    head, tail = inputlist[0], inputlist[1:]
+    head, tail = input_list[0], input_list[1:]
     print(head, tail)
 else:
     print(input_list)
@@ -3493,7 +3499,7 @@ def addpattern(base_func, *add_funcs, allow_any_func=False):
 
 If you want to give an `addpattern` function a docstring, make sure to put it on the _last_ function.
 
-Note that the function taken by `addpattern` must be a pattern-matching function. If `addpattern` receives a non pattern-matching function, the function with not raise `MatchError`, and `addpattern` won't be able to detect the failed match. Thus, if a later function was meant to be called, `addpattern` will not know that the first match failed and the correct path will never be reached.
+Note that the function taken by `addpattern` must be a pattern-matching function. If `addpattern` receives a non pattern-matching function, the function will not raise `MatchError`, and `addpattern` won't be able to detect the failed match. Thus, if a later function was meant to be called, `addpattern` will not know that the first match failed and the correct path will never be reached.
 
 For example, the following code raises a `TypeError`:
 ```coconut
@@ -3508,7 +3514,7 @@ print_type()  # appears to work
 print_type(1) # TypeError: print_type() takes 0 positional arguments but 1 was given
 ```
 
-This can be fixed by using either the `match` keyword. For example:
+This can be fixed by using the `match` keyword. For example:
 ```coconut
 match def print_type():
     print("Received no arguments.")
@@ -3667,7 +3673,7 @@ class A:
     x = 1
     def f(self, y) = self.x + y
 
-class B:
+class B(A):
     @override
     def f(self, y) = self.x + y + 1
 ```
@@ -3918,7 +3924,7 @@ _Can't be done without a series of method definitions for each data type. See th
 
 In Haskell, `fmap(func, obj)` takes a data type `obj` and returns a new data type with `func` mapped over the contents. Coconut's `fmap` function does the exact same thing for Coconut's [data types](#data).
 
-`fmap` can also be used on the built-in objects `str`, `dict`, `list`, `tuple`, `set`, `frozenset`, `bytes`, `bytearray`, and `dict` as a variant of `map` that returns back an object of the same type.
+`fmap` can also be used on the built-in objects `str`, `dict`, `list`, `tuple`, `set`, `frozenset`, `bytes`, and `bytearray` as a variant of `map` that returns back an object of the same type.
 
 For `dict`, or any other `collections.abc.Mapping`, `fmap` will map over the mapping's `.items()` instead of the default iteration through its `.keys()`, with the new mapping reconstructed from the mapped over items. _Deprecated: `fmap$(starmap_over_mappings=True)` will `starmap` over the `.items()` instead of `map` over them._
 
@@ -5044,7 +5050,7 @@ async def load_pages(urls):
     async def proc_url(i, url):
         results[i] = await load_page(url)
     async with anyio.create_task_group() as nursery:
-        for i, url in enumerate(urls)
+        for i, url in enumerate(urls):
           nursery.start_soon(proc_url, i, url)
     return results
 ```

@@ -1185,7 +1185,7 @@ all_reqs = {
 
 # min versions are inclusive
 unpinned_min_versions = {
-    "cPyparsing": (2, 4, 7, 2, 4, 3),
+    "cPyparsing": (2, 4, 7, 2, 4, 4),
     ("pre-commit", "py3"): (4,),
     ("psutil", "py3"): (7,),
     "jupyter": (1, 1),
