@@ -81,6 +81,7 @@ from coconut.constants import (
     new_operators,
     wildcard,
     op_func_protocols,
+    reserved_prefix,
     update_op_funcs,
 )
 from coconut.compiler.util import (
@@ -638,10 +639,10 @@ def partial_op_item_handle(tokens):
     """Handle operator function implicit partials."""
     tok_grp, = tokens
     if "left partial" in tok_grp:
-        arg, op = tok_grp
+        _, arg, _, op, _ = tok_grp
         return "_coconut_partial(" + op + ", " + arg + ")"
     elif "right partial" in tok_grp:
-        op, arg = tok_grp
+        _, op, _, arg, _ = tok_grp
         return "_coconut_complex_partial(" + op + ", {1: " + arg + "}, 2, ())"
     else:
         raise CoconutInternalException("invalid operator function implicit partial token group", tok_grp)
@@ -1248,8 +1249,9 @@ class Grammar(object):
         )
         partialable_op = ~keyword("if") + (base_op_item | infix_op)
         partial_op_item_tokens = (
-            labeled_group(dot.suppress() + partialable_op + test_no_infix, "right partial")
-            | labeled_group(test_no_infix + partialable_op + dot.suppress(), "left partial")
+            # (the stored locations are used to check that the operand doesn't bind less tightly than the operator)
+            labeled_group(dot.suppress() + stores_loc_item + partialable_op + stores_loc_item + test_no_infix + stores_loc_item, "right partial")
+            | labeled_group(stores_loc_item + test_no_infix + stores_loc_item + partialable_op + stores_loc_item + dot.suppress(), "left partial")
         )
         partial_op_item = Forward()
         # (.<path> <op> <value>); like operator sections, these need their own parentheses
@@ -1687,7 +1689,9 @@ class Grammar(object):
         factor = Forward()
         unary = neg_minus | plus | tilde
 
-        power = condense(exp_dubstar + ZeroOrMore(unary) + await_item)
+        # (like Python, the right side of ** can itself use **, as in a**b**c)
+        power = Forward()
+        power <<= condense(exp_dubstar + ZeroOrMore(unary) + await_item + Optional(power))
         power_in_impl_call = Forward()
 
         impl_call_arg = condense((
@@ -3093,6 +3097,7 @@ class Grammar(object):
         noqa_regex = compile_regex(r"\b[Nn][Oo][Qq][Aa]\b")
         type_ignore_regex = compile_regex(r"\btype:\s*ignore\b")
         word_regex = compile_regex(r"\w+")
+        temp_var_num_regex = compile_regex(r"\b(" + reserved_prefix + r"_\w+?)_\d+\b")
         method_kind_decorator_regex = compile_regex(r"^@\s*(staticmethod|classmethod)\b(?![.(])", options=re.M)
         assert_never_call_regex = compile_regex(r"^(?:[\w.]+\.)?assert_never\(.*\)$")
         ln_marker_regex = compile_regex(re.escape(lnwrapper) + r"[0-9]+" + re.escape(unwrapper))

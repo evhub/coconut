@@ -384,6 +384,7 @@ The style issues which will cause `--strict` to throw an error are:
 - use of backslash continuation (use [parenthetical continuation](#enhanced-parenthetical-continuation) instead)
 - Python-3.10/PEP-634-style dotted names in pattern-matching (Coconut style is to preface these with `==`)
 - use of `:` instead of `<:` to specify upper bounds in [Coconut's type parameter syntax](#type-parameter-syntax)
+- ambiguous [operator implicit partials](#implicit-partial-application) whose operand binds less tightly than their operator, as in `(.%2==0)` (which means `x => x % (2==0)`; these will be a syntax error in Coconut v4)
 - `return`, `break`, or `continue` statements that exit a `finally` block, which silently swallow any exception being raised (Python 3.14 warns about these, per [PEP 765](https://peps.python.org/pep-0765/); Coconut warns about them on every target)
 
 Note that many of the above style issues will still show a warning if `--strict` is not present.
@@ -2329,7 +2330,7 @@ In addition, for every Coconut [operator function](#operator-functions), Coconut
 ```
 where `<op>` is the operator function and `<arg>` is any expression. Note that, as with operator functions themselves, the parentheses are necessary for this type of implicit partial application. This syntax is slightly different for multidimensional array concatenation operator functions, which use brackets instead of parentheses.
 
-Since `<arg>` can be any expression, it extends all the way to the closing parenthesis, which means that it's evaluated before the operator is applied. Thus, `(.%2==0)` is `x => x % (2==0)`, not `x => x % 2 == 0`, and `(.*2+1)` is `x => x * 3`. Coconut will show a warning when `<arg>` contains an operator that binds less tightly than `<op>` like this; to apply both operators in order, use a lambda (`x => x % 2 == 0`) or function composition (`(.%2) ..> (.==0)`) instead, or, if the current meaning is intended, put parentheses around `<arg>` (`(. % (2==0))`) to dismiss the warning.
+Since `<arg>` can be any expression, it extends all the way to the closing parenthesis, which means that it's evaluated before the operator is applied. Thus, `(.%2==0)` is `x => x % (2==0)`, not `x => x % 2 == 0`, and `(.*2+1)` is `x => x * 3`. Because such partials don't mean what they look like, they're deprecated: whenever `<arg>` contains an operator that binds less tightly than `<op>` (such that reading the partial as normal code would group it differently), Coconut will show a warning (or an error with [`--strict`](#strict-mode)), and in Coconut v4 they'll be a syntax error. To keep the current meaning, put parentheses around `<arg>` (`(. % (2==0))`); to apply both operators in order, use function composition (`(.%2) ..> (.==0)`) or a lambda (`x => x % 2 == 0`) instead. Chains of an associative operator, as in `(. ..> f ..> g)` or `(. and a and b)`, mean the same thing either way, so they're allowed.
 
 Furthermore, Coconut also supports implicit operator function partials for arbitrary functions as
 ```

@@ -122,6 +122,7 @@ from coconut.constants import (
     repeatedly_clear_incremental_cache,
     py_vers_with_eols,
     unwrapper,
+    strwrapper,
     incremental_cache_limit,
     incremental_mode_cache_successes,
     use_adaptive_any_of,
@@ -2368,70 +2369,88 @@ def same_line(original, loc1, loc2):
     return lineno(loc1, original) == lineno(loc2, original)
 
 
-# Python's binary operators, from the loosest-binding to the tightest-binding
-binary_op_precedences = {
-    "or": 1,
-    "and": 2,
-    "<": 3, ">": 3, "<=": 3, ">=": 3, "==": 3, "!=": 3, "in": 3, "not in": 3, "is": 3, "is not": 3,
-    "|": 4,
-    "^": 5,
-    "&": 6,
-    "<<": 7, ">>": 7,
-    "+": 8, "-": 8,
-    "*": 9, "@": 9, "/": 9, "//": 9, "%": 9,
-    "**": 10,
-}
-python_expr_token_regex = re.compile(r"\d(?:[\w.]|(?<=[eE])[+-])*|[^\W\d]\w*|\*\*|//|<<|>>|<=|>=|==|!=|:=|->|\S", re.U)
+class AssociativeFlattener(ast.NodeTransformer):
+    """Flatten nested uses of associative operations in compiled code (and, or, function composition,
+    and :: chains), so that code that only differs in how those are grouped compares equal."""
+    zero_dump = ast.dump(ast.parse("0", mode="eval").body)
+    false_dump = ast.dump(ast.parse("False", mode="eval").body)
 
+    @staticmethod
+    def is_call_to(node, func_name):
+        """Whether node is a call to the function with the given name with at least one positional argument."""
+        return isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == func_name and bool(node.args)
 
-def loosest_binary_op(py_expr):
-    """Find the loosest-binding binary operator at the top level of the given Python expression.
+    def visit_BoolOp(self, node):
+        self.generic_visit(node)
+        values = []
+        for value in node.values:
+            if isinstance(value, ast.BoolOp) and type(value.op) is type(node.op):
+                values.extend(value.values)
+            else:
+                values.append(value)
+        node.values = values
+        return node
 
-    Returns None if there isn't one, or if the expression contains a top-level lambda or ternary
-    (which are treated as self-contained). Unary operators are ignored, since they always bind to
-    the operand right after them."""
-    loosest = None
-    depth = 0
-    prev_is_operand = False
-    tokens = python_expr_token_regex.findall(py_expr)
-    i = 0
-    while i < len(tokens):
-        tok = tokens[i]
-        i += 1
-        if tok in "([{":
-            depth += 1
-            prev_is_operand = False
-            continue
-        elif tok in ")]}":
-            depth -= 1
-            prev_is_operand = True
-            continue
-        elif depth > 0:
-            continue
-        elif tok in ("lambda", "if", ":="):
+    def chain_thunks(self, node):
+        """Get the list of thunks in the given :: chain, or None if it isn't one."""
+        if not self.is_call_to(node, "_coconut_flatten"):
             return None
-        op = None
-        if tok == "not":
-            if prev_is_operand and i < len(tokens) and tokens[i] == "in":
-                op = "not in"
-                i += 1
-        elif tok == "is":
-            op = "is"
-            if i < len(tokens) and tokens[i] == "not":
-                op = "is not"
-                i += 1
-        elif tok in binary_op_precedences:
-            if prev_is_operand or tok not in ("+", "-"):
-                op = tok
-        elif tok == "~" or tok == ".":
-            pass
-        else:
-            prev_is_operand = True
-            continue
-        if op is not None and (loosest is None or binary_op_precedences[op] < binary_op_precedences[loosest]):
-            loosest = op
-        prev_is_operand = False
-    return loosest
+        reiterable = node.args[0]
+        if not self.is_call_to(reiterable, "_coconut_reiterable") or not isinstance(reiterable.args[0], ast.GeneratorExp):
+            return None
+        generators = reiterable.args[0].generators
+        if len(generators) != 1 or not isinstance(generators[0].iter, ast.Tuple):
+            return None
+        return generators[0].iter.elts
+
+    def visit_Call(self, node):
+        self.generic_visit(node)
+        # function composition: _coconut_base_compose(f, (g, stars, none_aware), ...)
+        if self.is_call_to(node, "_coconut_base_compose"):
+            first = node.args[0]
+            # (backward composition nests in the first position)
+            args = list(first.args) if self.is_call_to(first, "_coconut_base_compose") else [first]
+            for arg in node.args[1:]:
+                if (
+                    isinstance(arg, ast.Tuple)
+                    and len(arg.elts) == 3
+                    and self.is_call_to(arg.elts[0], "_coconut_base_compose")
+                    and ast.dump(arg.elts[1]) == self.zero_dump
+                    and ast.dump(arg.elts[2]) == self.false_dump
+                ):
+                    inner_args = arg.elts[0].args
+                    args.append(ast.Tuple(elts=[inner_args[0], arg.elts[1], arg.elts[2]], ctx=ast.Load()))
+                    args.extend(inner_args[1:])
+                else:
+                    args.append(arg)
+            node.args = args
+        # :: chains: _coconut_flatten(_coconut_reiterable(_coconut_func() for _coconut_func in (thunk, ...)))
+        thunks = self.chain_thunks(node)
+        if thunks is not None:
+            new_thunks = []
+            for thunk in thunks:
+                inner_thunks = self.chain_thunks(thunk.body) if isinstance(thunk, ast.Lambda) else None
+                if inner_thunks is None:
+                    new_thunks.append(thunk)
+                else:
+                    new_thunks.extend(inner_thunks)
+            thunks[:] = new_thunks
+        return node
+
+
+def is_atomic_source(code):
+    """Determine whether the given (preprocessed) Coconut code is definitely a single atom
+    (a name, number, string, or bracketed expression, plus any attribute accesses, calls, and
+    subscripts), such that no operator could bind more tightly to part of it."""
+    depth = 0
+    for c in code.strip():
+        if c in "([{":
+            depth += 1
+        elif c in ")]}":
+            depth -= 1
+        elif depth == 0 and not (c.isalnum() or c in "_.$" + strwrapper + unwrapper):
+            return False
+    return True
 
 
 # -----------------------------------------------------------------------------------------------------------------------
