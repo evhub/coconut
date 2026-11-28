@@ -15,6 +15,12 @@ operator !
 from math import factorial as (!)
 
 
+# module-level (and thus pickleable) helpers for testing iterate and unfold
+def next_digit(n: int) -> (int; int)? = None if n == 0 else (n % 10, n // 10)
+def fib_step((a, b)) = (a, (b, a + b))
+def count_up_to_3(n: int?) -> (int; int)? = (0, 1) if n is None else None if n > 3 else (n, n + 1)
+
+
 def primary_test_2() -> bool:
     """Basic no-dependency tests (2/2)."""
     recit: Iterable[int] = ([1,2,3] :: recit) |> map$(.+1)
@@ -1039,5 +1045,119 @@ def primary_test_2() -> bool:
     assert multi_enumerate(["ab", ["c"]]) |> list == [((0,), "ab"), ((1, 0), "c")]
     def lift_add(x, y) = x + y
     assert repr(lift(lift_add)(ident, (.+1))).startswith("lift(")
+
+    # iterate
+    doubles = iterate((.*2), 1)
+    assert doubles$[:5] |> list == [1, 2, 4, 8, 16] == doubles[:5] |> list
+    assert doubles$[10] == 1024 == doubles[10]
+    assert doubles |> iter |> .$[:3] |> list == [1, 2, 4] == doubles |> iter |> .$[:3] |> list  # iterating again starts over
+    assert doubles.func(3) == 6 and doubles.x == 1 and doubles.times is None
+    assert repr(doubles) == "iterate(" + repr(doubles.func) + ", 1)"
+    doubles_slice = doubles[2:10:3]
+    assert doubles_slice |> list == [4, 32, 256] == doubles_slice |> list == doubles$[2:10:3] |> list
+    assert len(doubles_slice) == 3 and doubles_slice[1] == 32 and doubles_slice[-1] == 256
+    assert doubles_slice |> reversed |> list == [256, 32, 4] == doubles_slice$[::-1] |> list
+    assert doubles_slice$[1:] |> list == [32, 256]
+    assert repr(doubles_slice) == repr(doubles) + "$[2:9:3]"
+    assert doubles$[10:0:-4] |> list == [1024, 64, 4]
+    assert doubles$[3::-1] |> list == [8, 4, 2, 1]
+    assert doubles$[5:] |> .$[:3] |> list == [32, 64, 128] == doubles$[5:]$[:3] |> list
+    assert len(doubles[5:][:3]) == 3  # type: ignore
+    assert doubles$[5:]$[2] == 128
+    assert_raises(-> doubles[-1], IndexError)
+    assert_raises(-> doubles$[-2:], IndexError)
+    assert_raises(-> doubles$[::-1], IndexError)
+    assert_raises(-> reversed(doubles), TypeError)
+    assert_raises(-> iterate(ident, 0, -1), ValueError)
+    assert iterate((.+1), 0)$[:10] |> list == iterate((.+1), 0, 10) |> list == list(range(10))
+    # iterate with times
+    plus_threes = iterate((.+3), 0, times=4)
+    assert plus_threes |> list == [0, 3, 6, 9] == plus_threes |> list
+    assert len(plus_threes) == 4 and plus_threes.times == 4
+    assert plus_threes[-1] == 9 == plus_threes$[-1] and plus_threes[-4] == 0
+    assert_raises(-> plus_threes[4], IndexError)
+    assert_raises(-> plus_threes[-5], IndexError)
+    assert plus_threes |> reversed |> list == [9, 6, 3, 0] == plus_threes$[::-1] |> list
+    assert reversed(plus_threes)[0] == 9 and len(reversed(plus_threes)) == 4
+    assert plus_threes$[1:-1] |> list == [3, 6] == plus_threes[1:-1] |> list
+    assert plus_threes$[-2:] |> list == [6, 9]
+    assert plus_threes$[::2] |> list == [0, 6] and plus_threes$[10:] |> list == []
+    assert plus_threes.index(6) == 2
+    assert_raises(-> plus_threes.index(4), ValueError)
+    assert 6 in plus_threes and 4 not in plus_threes
+    assert repr(plus_threes) == "iterate(" + repr(plus_threes.func) + ", 0, times=4)"
+    assert iterate(ident, 0, times=0) |> list == [] == iterate(ident, 0, times=0)$[::-1] |> list
+    assert iterate(ident, 0, times=1) |> list == [0]
+    # iterate is efficient and lazy
+    assert iterate((.+1), 0)$[10**6] == 10**6  # just applies (.+1) a million times without storing anything
+    assert iterate((.+1), 0)$[10**6:]$[0] == 10**6
+    # (iterating takes O(n) time: the naive def it(f, x) = (x,) :: it(f, f(x)) would take minutes to do this)
+    assert iterate((.+1), 0)$[:10**5] |> consume$(keep_last=1) |> list == [10**5 - 1]
+    iterate_calls = []
+    def logged_inc(x):
+        iterate_calls.append(x)
+        return x + 1
+    assert iterate(logged_inc, 0)$[:3] |> list == [0, 1, 2]
+    assert iterate_calls == [0, 1]  # never computes more than it needs to
+    assert iterate(logged_inc, 0)[2] == 2
+    assert iterate_calls == [0, 1, 0, 1]
+    # pickling, copying, fmap, reiterable, and tee
+    assert pickle.loads(pickle.dumps(plus_threes)) == plus_threes
+    assert pickle.loads(pickle.dumps(plus_threes)) |> list == [0, 3, 6, 9]
+    assert pickle.loads(pickle.dumps(plus_threes$[1:])) |> list == [3, 6, 9]
+    assert pickle.loads(pickle.dumps(doubles$[2:])) |> .$[:2] |> list == [4, 8]
+    assert copy(plus_threes) == plus_threes and copy(plus_threes) is not plus_threes
+    assert copy(plus_threes$[1:]) |> list == [3, 6, 9]
+    assert fmap(str, plus_threes) |> list == ["0", "3", "6", "9"]
+    assert len(fmap(str, plus_threes)) == 4 and fmap(str, plus_threes)[1] == "3"
+    assert fmap((.+1), doubles)$[3] == 9
+    assert fmap((.+1), doubles$[1:])$[:2] |> list == [3, 5]
+    plus_threes_tail = plus_threes$[1:]
+    assert reiterable(doubles) is doubles and reiterable(plus_threes_tail) is plus_threes_tail
+    assert tee(plus_threes)[1] is plus_threes
+    assert map((+), doubles, plus_threes) |> list == [1, 5, 10, 17]
+
+    # unfold
+    digits = unfold$(n => None if n == 0 else (n % 10, n // 10))
+    digits_1234 = digits(1234)
+    assert digits_1234 |> list == [4, 3, 2, 1] == digits_1234 |> list
+    assert digits_1234.seed == 1234 and digits_1234.func(12) == (2, 1)
+    assert digits_1234$[1] == 3 and digits_1234$[-1] == 1
+    assert digits_1234$[1:3] |> list == [3, 2] == digits_1234$[1:3] |> list
+    assert digits_1234$[::-1] |> list == [1, 2, 3, 4]
+    assert digits_1234$[-3:-1] |> list == [3, 2]
+    assert digits_1234$[1:]$[1:] |> list == [2, 1]
+    assert digits_1234$[::2] |> list == [4, 2]
+    assert_raises(-> digits_1234$[4], IndexError)
+    assert digits_1234.index(2) == 2
+    assert_raises(-> digits_1234.index(5), ValueError)
+    assert 3 in digits_1234 and 5 not in digits_1234
+    assert digits(0) |> list == []
+    assert repr(digits_1234) == "unfold(" + repr(digits_1234.func) + ", 1234)"
+    assert repr(digits_1234$[1:3]) == repr(digits_1234) + "$[1:3]"
+    fibs = unfold(fib_step, (0, 1))
+    assert fibs$[:8] |> list == [0, 1, 1, 2, 3, 5, 8, 13] == unfold((def ((a, b)) => (a, (b, a + b))), (0, 1))$[:8] |> list
+    assert fibs$[100] == 354224848179261915075
+    assert fibs$[5:]$[:3] |> list == [5, 8, 13] == fibs$[5:8] |> list
+    assert fibs$[5:]$[2] == 13 and fibs$[5:8]$[-1] == 13
+    # unfold without a seed
+    assert unfold(count_up_to_3) |> list == [0, 1, 2, 3] == unfold(count_up_to_3, None) |> list
+    assert unfold(count_up_to_3).seed is None and repr(unfold(count_up_to_3)) == "unfold(" + repr(count_up_to_3) + ")"
+    # unfold is lazy
+    unfold_calls = []
+    def logged_next_digit(n):
+        unfold_calls.append(n)
+        return next_digit(n)
+    assert unfold(logged_next_digit, 1234)$[:2] |> list == [4, 3]
+    assert unfold_calls == [1234, 123]
+    # pickling, copying, fmap, reiterable, and tee
+    digits_of_56 = unfold(next_digit, 56)
+    assert pickle.loads(pickle.dumps(digits_of_56)) == digits_of_56
+    assert pickle.loads(pickle.dumps(digits_of_56)) |> list == [6, 5]
+    assert pickle.loads(pickle.dumps(fibs$[3:])) |> .$[:3] |> list == [2, 3, 5]
+    assert copy(digits_of_56) == digits_of_56 and copy(digits_of_56) |> list == [6, 5]
+    assert fmap((.*2), digits_of_56) |> list == [12, 10]
+    assert fmap((.*2), fibs$[5:])$[:2] |> list == [10, 16]
+    assert reiterable(fibs) is fibs and tee(digits_of_56)[0] is digits_of_56
 
     return True

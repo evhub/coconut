@@ -80,6 +80,9 @@ _Treiterable = _t.TypeVar(
         _t.Mapping[_t.Any, _t.Any],
         _t.AbstractSet[_t.Any],
         "reiterable[_t.Any]",
+        "iterate[_t.Any]",
+        "unfold[_t.Any]",
+        "_coconut_lazy_slice[_t.Any]",
     ],
 )
 
@@ -281,7 +284,7 @@ class reiterable(_coconut_has_iter[_Tco]):
     """Allow an iterator to be iterated over multiple times with the same results.
 
     Note that, if the given iterable is already reiterable (a Sequence, Mapping,
-    Set, or reiterable), reiterable just returns it unchanged."""
+    Set, reiterable, or iterate/unfold object), reiterable just returns it unchanged."""
     @_t.overload
     def __new__(cls, iterable: _Treiterable) -> _Treiterable: ...  # type: ignore[misc]
     @_t.overload
@@ -564,7 +567,7 @@ def tee(iterable: _t.Iterator[_T], n: int = 2) -> _t.Tuple[_t.Iterator[_T], ...]
 def tee(iterable: _t.Iterable[_T], n: int = 2) -> _t.Tuple[_t.Iterable[_T], ...]:
     """Coconut's optimized version of itertools.tee.
 
-    Reiterable objects (Sequences, Mappings, Sets, and reiterables) are returned unchanged
+    Reiterable objects (Sequences, Mappings, Sets, reiterables, and iterate/unfold objects) are returned unchanged
     (n times), copyable iterators are copied, and everything else uses itertools.tee."""
     ...
 _coconut_tee = tee
@@ -648,6 +651,95 @@ class cycle(_coconut_has_iter[_Tco]):
     def __len__(self) -> int: ...
     def __reversed__(self) -> cycle[_Tco]: ...
 _coconut_cycle = cycle
+
+
+class _coconut_lazy_slice(_t.Iterable[_Tco]):
+    """A lazy slice of an iterate or unfold object, which can be iterated over multiple times.
+
+    Gives the elements of iter at indices start, start + step, start + 2*step, ...,
+    either exactly length of them or, if length is None, those before index stop (if not None)."""
+    iter: _t.Iterable[_Tco]
+    start: int
+    stop: _t.Optional[int]
+    step: int
+    length: _t.Optional[int]
+    def __iter__(self) -> _t.Iterator[_Tco]: ...
+    def __len__(self) -> int: ...
+    @_t.overload
+    def __getitem__(self, index: _SupportsIndex) -> _Tco: ...
+    @_t.overload
+    def __getitem__(self, index: slice) -> _t.Iterable[_Tco]: ...
+    def __reversed__(self) -> _coconut_lazy_slice[_Tco]: ...
+    def __copy__(self) -> _coconut_lazy_slice[_Tco]: ...
+    def __hash__(self) -> int: ...
+    def __fmap__(self, func: _t.Callable[[_Tco], _U]) -> map[_U]: ...
+
+
+class iterate(_t.Iterable[_T]):
+    """iterate(func, x) returns the infinite iterator x, func(x), func(func(x)), ...
+
+    If times is passed, only the first times elements are produced (so func is called times - 1 times),
+    which additionally enables len, reversed, and negative indices.
+
+    Iterating over an iterate object again starts over from x, so func should be pure.
+    Indexing and slicing are efficient: iterate(func, x)$[n] just applies func n times."""
+    func: _t.Callable[[_T], _T]
+    x: _T
+    times: _t.Optional[int]
+    def __new__(
+        cls,
+        func: _t.Callable[[_T], _T],
+        x: _T,
+        times: _t.Optional[_SupportsIndex] = None,
+    ) -> iterate[_T]: ...
+    def __iter__(self) -> _t.Iterator[_T]: ...
+    def __len__(self) -> int: ...
+    @_t.overload
+    def __getitem__(self, index: _SupportsIndex) -> _T: ...
+    @_t.overload
+    def __getitem__(self, index: slice) -> _coconut_lazy_slice[_T]: ...
+    def __reversed__(self) -> _coconut_lazy_slice[_T]: ...
+    def __copy__(self) -> iterate[_T]: ...
+    def __hash__(self) -> int: ...
+    def index(self, elem: object) -> int:
+        """Find the index of the first occurrence of elem in the iterate (if times isn't passed, never returns when elem never appears)."""
+        ...
+    def __fmap__(self, func: _t.Callable[[_T], _U]) -> map[_U]: ...
+
+
+class unfold(_t.Iterable[_Tco]):
+    """unfold(func, seed) builds an iterator from a state, starting from seed (or None if no seed is passed).
+
+    func(state) should return (value, next_state) to yield value and continue from next_state,
+    or None to stop. For example, the digits of 1234 from the right are
+        unfold(n => None if n == 0 else (n % 10, n // 10), 1234)
+
+    Iterating over an unfold object again starts over from seed, so func should be pure."""
+    func: _t.Callable[[_t.Any], _t.Optional[_t.Tuple[_Tco, _t.Any]]]
+    seed: _t.Any
+    @_t.overload
+    def __new__(
+        cls,
+        func: _t.Callable[[_S], _t.Optional[_t.Tuple[_Tco, _S]]],
+        seed: _S,
+    ) -> unfold[_Tco]: ...
+    @_t.overload
+    def __new__(
+        cls,
+        func: _t.Callable[[_t.Optional[_S]], _t.Optional[_t.Tuple[_Tco, _S]]],
+        seed: None = None,
+    ) -> unfold[_Tco]: ...
+    def __iter__(self) -> _t.Iterator[_Tco]: ...
+    @_t.overload
+    def __iter_getitem__(self, index: _SupportsIndex) -> _Tco: ...
+    @_t.overload
+    def __iter_getitem__(self, index: slice) -> _t.Iterable[_Tco]: ...
+    def __copy__(self) -> unfold[_Tco]: ...
+    def __hash__(self) -> int: ...
+    def index(self, elem: object) -> int:
+        """Find the index of the first occurrence of elem in the unfold."""
+        ...
+    def __fmap__(self, func: _t.Callable[[_Tco], _U]) -> map[_U]: ...
 
 
 class groupsof(_coconut_has_iter[_t.Tuple[_Tco, ...]]):
@@ -1909,7 +2001,7 @@ def fmap(func: _t.Callable[[_T], _U], obj: flatten[_T]) -> _t.Union[flatten[_U],
 @_t.overload
 def fmap(func: _t.Callable[[_t.Tuple[int, _T]], _U], obj: enumerate[_T]) -> map[_U]: ...
 @_t.overload
-def fmap(func: _t.Callable[[_T], _U], obj: _t.Union[map[_T], zip[_T], filter[_T], _coconut_has_iter[_T], _count[_T], cartesian_product[_T]]) -> map[_U]: ...
+def fmap(func: _t.Callable[[_T], _U], obj: _t.Union[map[_T], zip[_T], filter[_T], _coconut_has_iter[_T], _count[_T], iterate[_T], unfold[_T], _coconut_lazy_slice[_T], cartesian_product[_T]]) -> map[_U]: ...
 @_t.overload
 def fmap(func: _t.Callable[[_T], _U], obj: _coconut_SupportsFmap[_t.Callable[[_T], _U], _V]) -> _V: ...
 @_t.overload

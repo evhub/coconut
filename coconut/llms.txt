@@ -42,7 +42,7 @@ def total_lengths(words) = words |> map$(len) |> filter$(.>2) |> sum
 Write code that reads at a glance:
 - **Expressions, not steps.** Most functions should be a single `def f(...) = expr`. Name intermediate values in a `where:` block or a short block body rather than reassigning a variable step by step.
 - **One stage per line.** Put a pipeline with more than about three stages in parentheses, one `|>` stage per line, so it reads top to bottom.
-- **Avoid mutation.** Build new values with comprehensions, pipelines, `fmap`, `reduce`/`scan`, and `._replace` on `data` types, and keep mutable state at a program's edges (I/O, caches). (Under `--pure`, mark any such mutation with `# NOQA` and a comment saying why.)
+- **Avoid mutation.** Build new values with comprehensions, pipelines, `fmap`, `reduce`/`scan`, and `._replace` on `data` types, replace a loop that repeatedly updates some state with `iterate` (or `unfold`) over a function from one state to the next, and keep mutable state at a program's edges (I/O, caches). (Under `--pure`, mark any such mutation with `# NOQA` and a comment saying why.)
 - **Data first.** Model the domain with `data` types, and with `case data` sum types when a value is one of several alternatives, and write functions on them with pattern matching (`case def` or `match`) instead of `isinstance` chains, tag strings, or flag attributes. Prefer `case def` to `addpattern def`, which redefines the function and so isn't pure; save `addpattern def` for adding a case to a function defined somewhere else.
 - **Let the type checker check your matches.** A `match` or typed `case def` on a `case data` type must handle every variant; type checkers (`--mypy`, `--pyright`) report what's missing (e.g. `UnhandledCaseDataVariants[Square]`), so add the missing cases rather than a catch-all. End a `match` with `case _: assert_never(x)` (`from typing import assert_never`) to require it to handle every value of any type.
 - **Types on top-level definitions**, written in Coconut's type syntax (`int[]`, `int?`, `int -> str`, `(int; str)`), checked with `--mypy` when it's available.
@@ -275,6 +275,13 @@ assert [[1, 2], [3]] |> flatten |> list == [1, 2, 3]
 assert [1, 2, 3] |> fmap$(.*10) == [10, 20, 30]       # fmap preserves the container type
 assert ["a", "bb", "c"] |> collectby$(len) == {1: ["a", "c"], 2: ["bb"]}
 
+# loops without reassignment: iterate(f, x) is x, f(x), f(f(x)), ... (lazy, and $[n] just applies f n times)
+assert iterate((.*2), 1)$[10] == 1024
+assert iterate((.*2), 1) |> dropwhile$(.<=1000) |> .$[0] == 1024
+# unfold(f, seed): f(state) returns (value, next_state) to continue or None to stop
+digits = unfold$(n => None if n == 0 else (n % 10, n // 10))
+assert digits(1234) |> list == [4, 3, 2, 1]
+
 @recursive_generator                                  # memoizes so self-reference is efficient
 def fibs() = (0, 1) :: map((+), fibs(), fibs()$[1:])
 assert fibs()$[:8] |> list == [0, 1, 1, 2, 3, 5, 8, 13]
@@ -350,6 +357,6 @@ assert double 3 == 6                         # implicit function application: f 
 - Precedence: pipes bind more loosely than arithmetic but more tightly than comparisons, so `x |> f == y` is `(x |> f) == y`. A lambda in a pipe extends to the end of the pipe, so `xs |> x => x + 1 |> print` is `xs |> (x => x + 1 |> print)`; parenthesize lambdas in pipes.
 - `data` types are immutable (they're tuples): instead of assigning to an attribute, make a new value with `._replace(...)`.
 - Exhaustiveness errors only show up when type checking (`--mypy`, `--pyright`, or the language server's type checking), never in a plain compile. Guarded cases (`case Circle(r) if r > 0`) don't count as handling anything, and matches using sequence, mapping, or string patterns aren't checked. Under `--pure`, every multi-case `match` and typed `case def` must be total, so give guarded cases a final unguarded fallback.
-- `--pure` treats loop variables as assignments, so reassigning one in the loop body, or reusing the same loop variable name for two loops in one scope, is flagged; prefer a comprehension or pipeline, or use distinct names.
+- `--pure` treats loop variables as assignments, so reassigning one in the loop body, or reusing the same loop variable name for two loops in one scope, is flagged; prefer a comprehension, pipeline, or `iterate`/`unfold`, or use distinct names.
 - Implicit partials can't chain calls: `map$(.lower().strip())` is a syntax error. Use one stage per method (`|> map$(.lower()) |> map$(.strip())`) or a named function.
 - Coconut's `map`/`filter`/`zip` are lazy (like Python 3), so convert with `|> list` or `|> tuple` when you need a concrete sequence.

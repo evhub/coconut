@@ -4560,6 +4560,100 @@ from itertools import cycle, islice
 print(list(islice(cycle(range(2)), 4)))
 ```
 
+#### `iterate`
+
+**iterate**(_func_, _x_, _times_=`None`)
+
+Coconut's `iterate` built-in (like Haskell's `iterate`) produces the infinite iterator `x, func(x), func(func(x)), ...`. If _times_ is passed, `iterate` instead stops after its first _times_ elements, such that `func` is called `times - 1` times.
+
+`iterate` is the idiomatic way to write a loop that repeatedly updates some state without reassigning any variables: write the update as a function from one state to the next, then take what you need from `iterate` with [iterator slicing](#iterator-slicing), [`takewhile`](#takewhile)/[`dropwhile`](#dropwhile), or Coconut's other iterator built-ins (see the examples below). Since `iterate` is infinite unless _times_ is passed, make sure to only consume as much of it as you need (e.g. `iterate(func, x)$[:n] |> list`, not `iterate(func, x) |> list`).
+
+`iterate` objects are lazy, computing each element only once it's needed, and support:
+- iterating over them multiple times, with each iteration starting over from _x_ (so _func_ should be pure, since it will be called again each time),
+- efficient indexing and slicing, including [iterator slicing](#iterator-slicing): `iterate(func, x)$[n]` just applies `func` to `x` `n` times without storing anything, and slices are lazy and can be iterated over multiple times,
+- [`fmap`](#fmap), `repr`, pickling, `copy`, `.index()`, and `func`/`x`/`times` attributes,
+- if _times_ is passed, `len`, `reversed` (which, like slicing with a negative step, has to store the elements it reverses), and negative indices.
+
+Additionally, since they can be iterated over multiple times, [`reiterable`](#reiterable) and [`tee`](#tee) return `iterate` objects unchanged.
+
+Iterating over `iterate(func, x)` takes time proportional to the number of elements produced. Note that this is not true of the naive recursive definition `def iterate(func, x) = (x,) :: iterate(func, func(x))`, which builds up a chain of nested iterators that makes reaching the _n_th element take time proportional to _n_², such that, for example, it takes seconds just to get to the 20,000th element.
+
+##### Example
+
+**Coconut:**
+```coconut
+# the first power of 2 above 1000, with no loop variables
+assert iterate((.*2), 1) |> dropwhile$(.<=1000) |> .$[0] == 1024
+
+# Newton's method for the square root of 2
+def newton_step(x) = (x + 2/x) / 2
+assert abs(iterate(newton_step, 1.0)$[5] - 2**0.5) < 1e-12
+
+assert iterate((.+3), 0, times=4) |> reversed |> list == [9, 6, 3, 0]
+```
+
+**Python:**
+```coconut_python
+x = 1
+while x <= 1000:
+    x *= 2
+assert x == 1024
+
+def newton_step(x):
+    return (x + 2/x) / 2
+x = 1.0
+for _ in range(5):
+    x = newton_step(x)
+assert abs(x - 2**0.5) < 1e-12
+
+assert list(reversed([3*i for i in range(4)])) == [9, 6, 3, 0]
+```
+
+#### `unfold`
+
+**unfold**(_func_, _seed_=`None`)
+
+Coconut's `unfold` built-in (like Haskell's `unfoldr`) builds up an iterator from a state, starting from _seed_. At each step, `func(state)` should return either a `(value, next_state)` tuple, in which case `unfold` yields `value` and continues from `next_state`, or `None`, in which case `unfold` stops. If no _seed_ is passed, the first call is `func(None)`, letting _func_ produce the initial state itself.
+
+Where [`iterate`](#iterate) always continues forever (or for a fixed number of steps), `unfold` lets the state decide when to stop, and lets the values produced be different from the state that produces them. Like `iterate`, `unfold` is a way to write loops without reassigning variables.
+
+`unfold` objects are lazy, calling _func_ only when the next element is needed, and support:
+- iterating over them multiple times, with each iteration starting over from _seed_ (so _func_ should be pure, since it will be called again each time),
+- [iterator slicing](#iterator-slicing), with slices that are lazy and can be iterated over multiple times (though, since the length of an `unfold` isn't known in advance, negative indices and steps work as they do for any other iterator, by going through the whole thing),
+- [`fmap`](#fmap), `repr`, pickling, `copy`, `.index()`, and `func`/`seed` attributes.
+
+Since an `unfold` object's length isn't known until it has been iterated over, `unfold` doesn't support `len`, `reversed`, or normal indexing; use iterator slicing instead (e.g. `$[::-1]` to reverse). Additionally, since they can be iterated over multiple times, [`reiterable`](#reiterable) and [`tee`](#tee) return `unfold` objects unchanged.
+
+##### Example
+
+**Coconut:**
+```coconut
+# the digits of a number, from the right
+digits = unfold$(n => None if n == 0 else (n % 10, n // 10))
+assert digits(1234) |> list == [4, 3, 2, 1]
+
+# the Fibonacci numbers
+fibs = unfold((def ((a, b)) => (a, (b, a + b))), (0, 1))
+assert fibs$[:8] |> list == [0, 1, 1, 2, 3, 5, 8, 13]
+```
+
+**Python:**
+```coconut_python
+def digits(n):
+    while n != 0:
+        yield n % 10
+        n //= 10
+assert list(digits(1234)) == [4, 3, 2, 1]
+
+import itertools
+def fib_gen():
+    a, b = 0, 1
+    while True:
+        yield a
+        a, b = b, a + b
+assert list(itertools.islice(fib_gen(), 8)) == [0, 1, 1, 2, 3, 5, 8, 13]
+```
+
 #### `cartesian_product`
 
 **cartesian\_product**(*_iterables_, _repeat_=`1`)
@@ -4727,7 +4821,7 @@ Coconut provides an optimized version of `itertools.tee` as a built-in under the
 
 Though `tee` is not deprecated, [`reiterable`](#reiterable) is generally recommended over `tee`.
 
-Custom `tee`/`reiterable` implementations for custom [Containers/Collections](https://docs.python.org/3/library/collections.abc.html) should be put in the `__copy__` method. Note that all [Sequences/Mappings/Sets](https://docs.python.org/3/library/collections.abc.html) are always assumed to be reiterable even without calling `__copy__`.
+Custom `tee`/`reiterable` implementations for custom [Containers/Collections](https://docs.python.org/3/library/collections.abc.html) should be put in the `__copy__` method. Note that all [Sequences/Mappings/Sets](https://docs.python.org/3/library/collections.abc.html), as well as [`iterate`](#iterate) and [`unfold`](#unfold) objects, are always assumed to be reiterable even without calling `__copy__`.
 
 ##### Python Docs
 
