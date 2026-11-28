@@ -134,7 +134,7 @@ __pypackages__/
 /coconut/tests/dest/
 /docs/
 /docs_extra/
-pyston/
+cpython/
 pyprover/
 bbopt/
 coconut-prelude/

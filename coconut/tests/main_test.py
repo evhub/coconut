@@ -137,13 +137,109 @@ importable_coco = os.path.join(src, "importable.coco")
 importable_py = os.path.join(src, "importable.py")
 importable_compiled_loc = src_cache_dir if default_use_cache_dir else importable_py
 
-pyston = os.path.join(os.curdir, "pyston")
+cpython = os.path.join(os.curdir, "cpython")
 pyprover = os.path.join(os.curdir, "pyprover")
 prelude = os.path.join(os.curdir, "coconut-prelude")
 bbopt = os.path.join(os.curdir, "bbopt")
 imp_issue_dir = os.path.join(os.curdir, "coconut-issue")
 
-pyston_git = "https://github.com/evhub/pyston.git"
+cpython_git = "https://github.com/python/cpython.git"
+cpython_test_dir = os.path.join(cpython, "Lib", "test")
+
+# tests from CPython's test suite of Python's syntax and core semantics, which test_cpython compiles as
+#  Coconut and runs, to test that compiling any Python code as Coconut works and doesn't change what it does
+cpython_test_modules = (
+    "test_augassign",
+    "test_binop",
+    "test_bool",
+    "test_class",
+    "test_compare",
+    "test_coroutines",
+    "test_dataclasses",
+    "test_decorators",
+    "test_descr",
+    "test_dict",
+    "test_dictcomps",
+    "test_except_star",
+    "test_exception_group",
+    "test_format",
+    "test_fstring",
+    "test_generators",
+    "test_genexps",
+    "test_global",
+    "test_grammar",
+    "test_int",
+    "test_iter",
+    "test_keywordonlyarg",
+    "test_list",
+    "test_listcomps",
+    "test_long",
+    "test_named_expressions",
+    "test_opcodes",
+    "test_patma",
+    "test_peepholer",
+    "test_positional_only_arg",
+    "test_print",
+    "test_property",
+    "test_raise",
+    "test_scope",
+    "test_setcomps",
+    "test_slice",
+    "test_string",
+    "test_string_literals",
+    "test_super",
+    "test_syntax",
+    "test_tuple",
+    "test_type_params",
+    "test_unpack",
+    "test_unpack_ex",
+    "test_with",
+)
+
+# the parts of CPython's test suite that the tests above use (which aren't compiled as Coconut)
+cpython_test_support = (
+    "__init__.py",
+    "support/",
+    "typinganndata/",
+    "list_tests.py",
+    "mapping_tests.py",
+    "seq_tests.py",
+)
+
+# tests above that are skipped (by test id prefix), since they test things Coconut intentionally does differently
+cpython_tests_not_run = (
+    # Coconut's reversed returns a reversible, reiterable view rather than an iterator, and
+    #  doesn't look up __reversed__ on the type the way CPython's special method lookup does
+    "test.test_descr.ClassPropertiesAndMethods.test_special_method_lookup",
+    "test.test_list.ListTest.test_free_after_iterating",
+    "test.test_list.ListTest.test_reversed",
+    "test.test_tuple.TupleTest.test_free_after_iterating",
+    "test.test_tuple.TupleTest.test_reversed_pickle",
+    # importing typing gives Coconut's version of typing, which uses typing_extensions where possible,
+    #  so it isn't the typing module (which dataclasses checks for in string annotations like "typing.ClassVar"),
+    #  and some of its contents are typing_extensions' versions (e.g. TypeAliasType, which lacks evaluate_value)
+    "test.test_dataclasses.TestStringAnnotations.test_classvar",
+    "test.test_type_params.TestEvaluateFunctions.test_general",
+    # Coconut's sequence patterns match strings and iterators until Coconut v4 (#911)
+    "test.test_patma",
+)
+
+# runs the given tests (sys.argv[2:]) other than those whose ids start with the comma-separated prefixes in sys.argv[1]
+cpython_test_runner = """
+import sys
+import unittest
+skip_prefixes = tuple(prefix for prefix in sys.argv[1].split(",") if prefix)
+def skip_tests(suite):
+    kept = []
+    for test in suite:
+        if isinstance(test, unittest.TestSuite):
+            kept.append(skip_tests(test))
+        elif not test.id().startswith(skip_prefixes):
+            kept.append(test)
+    return unittest.TestSuite(kept)
+suite = skip_tests(unittest.defaultTestLoader.loadTestsFromNames(sys.argv[2:]))
+sys.exit(not unittest.TextTestRunner().run(suite).wasSuccessful())
+"""
 pyprover_git = "https://github.com/evhub/pyprover.git"
 prelude_git = "https://github.com/evhub/coconut-prelude"
 bbopt_git = "https://github.com/evhub/bbopt.git"
@@ -1098,15 +1194,66 @@ def comp_all(args=[], agnostic_target=None, **kwargs):
     comp_non_strict(args, **kwargs)
 
 
-def comp_pyston(args=[], **kwargs):
-    """Compiles evhub/pyston."""
-    call(["git", "clone", pyston_git])
-    call_coconut(["pyston", "--force"] + args, check_errors=False, **kwargs)
+def get_cpython_refs():
+    """Get the git refs to try to get CPython's tests for the current Python version from, in order."""
+    major, minor, micro, releaselevel, serial = sys.version_info[:5]
+    tag = "v{major}.{minor}.{micro}".format(major=major, minor=minor, micro=micro)
+    if releaselevel != "final":
+        tag += {"alpha": "a", "beta": "b", "candidate": "rc"}[releaselevel] + str(serial)
+    # (fall back to the version's branch and then main for unreleased versions of Python)
+    return [tag, "{major}.{minor}".format(major=major, minor=minor), "main"]
 
 
-def run_pyston(**kwargs):
-    """Runs pyston."""
-    call_python([os.path.join(pyston, "runner.py")], assert_output=True, **kwargs)
+def get_cpython_tests():
+    """Get CPython's tests for the current Python version, compile them as Coconut, and return the ones that exist."""
+    import subprocess
+    for ref in get_cpython_refs():
+        logger.log_cmd(["git", "clone", "--branch", ref, cpython_git])
+        if subprocess.call(["git", "clone", "--quiet", "--depth", "1", "--filter=blob:none", "--sparse", "--branch", ref, cpython_git, cpython]) == 0:
+            break
+    else:
+        raise AssertionError("failed to clone " + cpython_git)
+    # only check out the tests we need, along with the parts of the test suite they use
+    call(["git", "-C", cpython, "sparse-checkout", "set", "--no-cone"] + [
+        "/Lib/test/" + path
+        for path in cpython_test_support
+    ] + [
+        path
+        for module in cpython_test_modules
+        for path in ("/Lib/test/" + module + ".py", "/Lib/test/" + module + "/")
+    ])
+
+    # rename the tests to .coco so that they're compiled as Coconut
+    found_modules = []
+    for module in cpython_test_modules:
+        module_path = os.path.join(cpython_test_dir, module)
+        if os.path.isdir(module_path):
+            py_paths = [os.path.join(module_path, name) for name in os.listdir(module_path) if name.endswith(".py")]
+        elif os.path.isfile(module_path + ".py"):
+            py_paths = [module_path + ".py"]
+        else:
+            # the test doesn't exist in this version of Python
+            continue
+        for py_path in py_paths:
+            os.rename(py_path, py_path[:-len(".py")] + ".coco")
+        found_modules.append(module)
+    assert len(found_modules) >= len(cpython_test_modules) // 2, "only found CPython tests " + repr(found_modules)
+
+    # (TCO and line number comments change tracebacks, and --no-wrap leaves annotations
+    #  unstringified, as they are in Python, all of which some of the tests check)
+    #  (and the warnings show lines of the tests that mention errors, so just check the return code)
+    call_coconut([cpython_test_dir, "--target", "sys", "--force", "--no-tco", "--no-line-numbers", "--no-wrap"], check_errors=False)
+    return found_modules
+
+
+def run_cpython_tests(modules):
+    """Run the given CPython tests (as compiled by get_cpython_tests)."""
+    call_python(
+        ["-c", cpython_test_runner, ",".join(cpython_tests_not_run)] + ["test." + module for module in modules],
+        cwd=os.path.join(cpython, "Lib"),
+        check_errors=False,
+        assert_output="OK",
+    )
 
 
 def comp_pyprover(args=[], **kwargs):
@@ -1935,11 +2082,11 @@ if TEST_ALL:
                     if not PYPY and PY38 and not PY310:
                         install_bbopt()
 
-            def test_pyston(self):
-                with using_paths(pyston):
-                    comp_pyston(["--no-tco"])
-                    if PYPY and PY2:
-                        run_pyston()
+        # (the tests are for CPython, and many of them only work on the version of CPython they're for)
+        if CPYTHON and PY312:
+            def test_cpython(self):
+                with using_paths(cpython):
+                    run_cpython_tests(get_cpython_tests())
 
         def test_imp_issue(self):
             with using_paths(imp_issue_dir):

@@ -331,7 +331,7 @@ docs: clean
 
 .PHONY: clean-no-tests
 clean-no-tests:
-	rm -rf ./docs ./dist ./build ./bbopt ./pyprover ./pyston ./coconut-prelude ./coconut-issue index.rst ./.mypy_cache
+	rm -rf ./docs ./dist ./build ./bbopt ./pyprover ./cpython ./coconut-prelude ./coconut-issue index.rst ./.mypy_cache
 
 .PHONY: clean
 clean: clean-no-tests
