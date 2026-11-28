@@ -379,7 +379,7 @@ The following are disallowed in `--pure` mode:
 
 Additionally, in `--pure` mode, every multi-case `match` block and every [`case def`](#case-functions) must be total: Coconut generates [exhaustiveness checks](#exhaustiveness-checking) that make it a type error for any value to get through a `match` block (or to match a `case def`'s `type(...)` signature) without being handled by one of its cases. Note that cases with guards (`if <cond>`) never count as handling anything, so a match whose cases all have guards needs a final unguarded case (like Haskell's `otherwise`). Since these are type errors, they're only reported when the code is type-checked (e.g. with `--mypy` or `--pyright`), and since they're only seen by type checkers, they never change what the code does. One-line `match <pattern> in <value>:` statements and destructuring assignments are exempt, since they're partial by design.
 
-Instead of mutating objects, `--pure` code should build new ones: use [data types](#data) and `._replace` instead of mutable classes, and comprehensions, [pipelines](#pipes), and [`fmap`](#fmap) instead of loops that mutate.
+Instead of mutating objects, `--pure` code should build new ones: use [data types](#data) and [update sections](#update-sections) (e.g. `obj |> (.attr = x)` instead of `obj.attr = x`) instead of mutable classes, and comprehensions, [pipelines](#pipes), and [`fmap`](#fmap) instead of loops that mutate.
 
 #### Project Configuration
 
@@ -819,6 +819,8 @@ func(args, obj.attribute.method(args))[index]
 where `func` has to go at the beginning.
 
 If Coconut compiled each of the partials in the pipe syntax as an actual partial application object, it would make the Coconut-style syntax significantly slower than the Python-style syntax. Thus, Coconut does not do that. If any of the above styles of partials or implicit partials are used in pipes, they will whenever possible be compiled to the Python-style syntax, producing no intermediate partial application objects.
+
+The same is true of [update sections](#update-sections), and consecutive update sections in a pipe are additionally merged into a single update, such that `obj |> (.a.x = 1) |> (.b += 1)` copies `obj` only once.
 
 This applies even to in-place pipes such as `|>=`.
 
@@ -1635,7 +1637,7 @@ Compared to [`namedtuple`s](#anonymous-namedtuples), from which `data` types are
 - support starred, typed, and [pattern-matching](#match-data) arguments, and
 - have special [pattern-matching](#match) behavior.
 
-Like [`namedtuple`s](https://docs.python.org/3/library/collections.html#namedtuple-factory-function-for-tuples-with-named-fields), `data` types also support a variety of extra methods, such as [`._asdict()`](https://docs.python.org/3/library/collections.html#collections.somenamedtuple._asdict) and [`._replace(**kwargs)`](https://docs.python.org/3/library/collections.html#collections.somenamedtuple._replace).
+Like [`namedtuple`s](https://docs.python.org/3/library/collections.html#namedtuple-factory-function-for-tuples-with-named-fields), `data` types also support a variety of extra methods, such as [`._asdict()`](https://docs.python.org/3/library/collections.html#collections.somenamedtuple._asdict) and [`._replace(**kwargs)`](https://docs.python.org/3/library/collections.html#collections.somenamedtuple._replace) (which, for [pattern-matching data types](#match-data), checks the new values just like the constructor does). To make updated copies of `data` types, including of `data` types nested inside other `data` types, [update sections](#update-sections) such as `obj |> (.pos.x += 1)` are often more convenient than calling `._replace` directly.
 
 ##### Rationale
 
@@ -1712,6 +1714,8 @@ when iterated over will iterate over all the elements of `xs`, but
 match data vec(*xs)
 ```
 when iterated over will only give the single element `xs`.
+
+Third, the `._replace` method of pattern-matching data types (which [update sections](#update-sections) use) reruns the constructor's pattern-matching on the new values, raising the same `MatchError` the constructor would if they don't match, such that `._replace` can never produce a value the constructor wouldn't. This requires every argument's pattern to bind a field to the whole argument (as in `x`, `int() as x`, or ``x `isinstance` int``); for data types with arguments that are only destructured (e.g. `data Pair((x, y))`), there's no way to rebuild the constructor's arguments from the fields, so `._replace` can't check the new values.
 
 ##### Example
 
@@ -2214,6 +2218,8 @@ Note that only a single method call can come at the end of an attribute access i
 
 _Deprecated: Coconut also supports `obj.` as an implicit partial for `getattr$(obj)`, but its usage is deprecated and will show a warning to switch to `getattr$(obj)` instead._
 
+For a similar syntax for making updated copies of objects, see [update sections](#update-sections).
+
 ##### Example
 
 **Coconut:**
@@ -2228,6 +2234,61 @@ mod$ <| 5 <| 3
 "123"[1]
 mod(5, 3)
 (3 * 2) + 1
+```
+
+
+### Update Sections
+
+Coconut supports _update sections_, functions that return an updated copy of an object without mutating it, using the syntax
+```
+(.<path> <op> <value>)
+```
+where `<path>` is a chain of attribute accesses and/or indexes starting with `.attr` or `.[index]` (as in the `.attr` and `.[index]` [implicit partials](#implicit-partial-application)), `<op>` is either `=` or any augmented assignment operator (e.g. `+=`, `-=`, `*=`, `??=`, `::=`, `|>=`, or `..>=`), and `<value>` is any expression. For example, `(.pos.x += 1)` is the function that takes `obj` and returns a copy of `obj` whose `pos` is a copy of `obj.pos` whose `x` is `obj.pos.x + 1`. Augmented updates are always relative to the old value and never use in-place operators, such that `(.items += [x])` sets `items` to `old.items + [x]` rather than extending `old.items`.
+
+As with [operator implicit partials](#implicit-partial-application) such as `(.+1)`, update sections require their own parentheses (which is what makes the `=` unambiguous), except that, as with [operator functions](#operator-functions), if an update section is the only argument to a function call or [partial](#partial-application), the parentheses of the call can also serve as the parentheses for the update section, as in `map$(.hp -= 1)`. Also like operator implicit partials, `<value>` is evaluated when the update section is created, not each time it's called.
+
+Update sections can update:
+- the attributes of [`data` types](#data) and [`namedtuple`s](https://docs.python.org/3/library/collections.html#collections.namedtuple) (via `._replace`), of [dataclasses](https://docs.python.org/3/library/dataclasses.html) (via `dataclasses.replace`), and of any object that supports Python 3.13's [`copy.replace`](https://docs.python.org/3/library/copy.html#copy.replace) protocol by defining `__replace__` (on any Python version);
+- the items of `tuple`s (making a new tuple), `list`s (making a copy of the list), and `dict`s (making a copy of the dict, which adds the key if it isn't already there), including slices of `tuple`s and `list`s; and
+- the fields of `data` types and `namedtuple`s by their integer indexes.
+
+Trying to update anything else raises a `TypeError`, since it can't be updated without mutating it. Since update sections never mutate anything, they're allowed in [`--pure` mode](#pure-mode), and type checkers see their result as having the same type as the object passed in.
+
+When update sections are used in [pipes](#pipes), Coconut [compiles them inline](#optimizations) rather than creating function objects, and merges consecutive update sections on the same object into a single update that copies each object only once, such that `player |> (.pos.x += 1) |> (.hp -= 10)` makes one copy of `player` and one copy of `player.pos`. Merging updates always gives the same result as applying them one at a time, so for objects where making a copy might do more than substitute in the new values—such as [`match data`](#match-data) types (whose `._replace` checks the new values), dataclasses (which might define `__post_init__`), and objects defining `__replace__`—the updates are still applied one at a time, such that every intermediate value is still checked.
+
+##### Rationale
+
+Immutable data types make code much easier to reason about, but they make changing a value nested inside another value painful: `._replace` only works one level deep, so even just incrementing `player.pos.x` requires `player._replace(pos=player.pos._replace(x=player.pos.x + 1))`. Update sections make such updates as easy to write as the mutating assignments they replace, while still producing new objects that are compatible with pipes, partial application, and function composition.
+
+##### Example
+
+**Coconut:**
+```coconut
+data Point(x: int, y: int)
+data Player(name: str, pos: Point, hp: int)
+
+player = Player("Alice", Point(0, 0), 100)
+moved = player |> (.pos.x += 1) |> (.hp -= 10)
+assert moved == Player("Alice", Point(1, 0), 90)
+assert player == Player("Alice", Point(0, 0), 100)  # player is unchanged
+
+heal = (.hp += 10)
+assert heal(moved).hp == 100
+assert [player, moved] |> map$(.hp -= 1) |> map$(.hp) |> list == [99, 89]
+
+assert (1, 2, 3) |> (.[0] += 10) == (11, 2, 3)
+assert {"board": ["", "", ""]} |> (.["board"][2] = "X") == {"board": ["", "", "X"]}
+```
+
+**Python:**
+```coconut_python
+moved = player._replace(pos=player.pos._replace(x=player.pos.x + 1), hp=player.hp - 10)
+heal = lambda p: p._replace(hp=p.hp + 10)
+damaged = [p._replace(hp=p.hp - 1) for p in [player, moved]]
+t = (1, 2, 3)
+bumped = (t[0] + 10,) + t[1:]
+game = {"board": ["", "", ""]}
+fixed = {**game, "board": game["board"][:2] + ["X"] + game["board"][3:]}
 ```
 
 

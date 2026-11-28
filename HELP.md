@@ -619,6 +619,13 @@ where `<name>` and `<body>` are the same as the equivalent `class` definition, b
 
 One other thing to call attention to here is the use of the [Coconut built-in `fmap`](./DOCS.md#fmap). `fmap` allows you to map functions over algebraic data types. Coconut's `data` types do support iteration, so the standard `map` works on them, but it doesn't return another object of the same data type. In this case, `fmap` is simply `map` plus a call to the object's constructor.
 
+Since we can't modify a `vector2`, the way to "change" one is to make an updated copy. Coconut's [update sections](./DOCS.md#update-sections) make that easy: `(.x = 7)` is a function that returns a copy of whatever it's called on with `x` set to `7`, and `(.x += 1)` returns one with `x` increased by `1`:
+```coconut
+v |> (.x = 7) |> print  # vector2(x=7, y=3)
+v |> (.x += 1) |> (.y *= 2) |> print  # vector2(x=3, y=6)
+v |> print  # vector2(x=2, y=3)
+```
+
 ### n-Vector Constructor
 
 Now that we've got the 2-vector under our belt, let's move to back to our original, more complicated problem: n-vectors, that is, vectors of arbitrary length. We're going to try to make our n-vector support all the basic vector operations, but we'll start out with just the `data` definition and the constructor:

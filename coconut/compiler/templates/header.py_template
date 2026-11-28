@@ -675,6 +675,166 @@ def _coconut_if_op(cond, if_true, if_false):
     """If operator (if). Equivalent to (cond, if_true, if_false) => if_true if cond else if_false."""
     return if_true if cond else if_false
 {def_coconut_matmul}
+_coconut_update_op_funcs = {update_op_funcs}
+def _coconut_update_error(obj, step):
+    if _coconut.isinstance(step, _coconut.list):
+        what = "item " + _coconut.repr(step[0])
+        supported = "tuples, lists, dicts, data types, and namedtuples"
+    else:
+        what = "attribute '" + step + "'"
+        supported = "data types, namedtuples, dataclasses, and objects that define __replace__"
+    return _coconut.TypeError("cannot update " + what + " of '" + _coconut_type(obj).__name__ + "' object without mutating it (update sections can only update the " + what.split(" ", 1)[0] + "s of " + supported + ")")
+def _coconut_update_value(old, updates):
+    """Apply the given (path, op, value) updates, with paths relative to old, to old in order.
+    old can be _coconut_sentinel if the first update doesn't need it."""
+    new = old
+    i = 0
+    while i < _coconut.len(updates):
+        path, op, value = updates[i]
+        if path:
+            j = i + 1
+            while j < _coconut.len(updates) and updates[j][0]:
+                j += 1
+            new = _coconut_update(new, *updates[i:j])
+            i = j
+        else:
+            new = value if op == "=" else _coconut_update_op_funcs[op](new, value)
+            i += 1
+    return new
+def _coconut_update_needs_old(updates):
+    first_path, first_op, _ = updates[0]
+    return first_path or first_op != "="
+def _coconut_update_items(obj, items, updates):
+    """Apply the given updates to items, a fresh copy of obj, in order."""
+    i = 0
+    while i < _coconut.len(updates):
+        step = updates[i][0][0]
+        if not _coconut.isinstance(step, _coconut.list):
+            raise _coconut_update_error(obj, step)
+        j = i + 1
+        while j < _coconut.len(updates) and updates[j][0][0] == step:
+            j += 1
+        key_updates = [(path[1:], op, value) for path, op, value in updates[i:j]]
+        key = step[0]
+        items[key] = _coconut_update_value(items[key] if _coconut_update_needs_old(key_updates) else _coconut_sentinel, key_updates)
+        i = j
+def _coconut_replace_substitutes(cls):
+    """Whether cls._replace is namedtuple's, which just substitutes in new field values."""
+    for base in cls.__mro__:
+        if "_replace" in base.__dict__:
+            return "_fields" in base.__dict__
+    return False
+def _coconut_data_star_field(cls):
+    """Get the name of the starred field of the given data type, or None if it doesn't have one."""
+    for base in cls.__mro__:
+        if "_coconut_data_star_field" in base.__dict__:
+            return base.__dict__["_coconut_data_star_field"]
+        if "_fields" in base.__dict__:{COMMENT.data_types_inheriting_from_starred_data_types_get_their_own_fields}
+            return None
+    return None
+def _coconut_update_field(obj, path):
+    """Get (field name, rest of path) for the given path into a data type or namedtuple."""
+    step = path[0]
+    if not _coconut.isinstance(step, _coconut.list):
+        return step, path[1:]
+    index = step[0]
+    if _coconut.isinstance(index, _coconut.slice):
+        raise _coconut.TypeError("cannot update a slice of '" + _coconut_type(obj).__name__ + "' object (only integer indices of data types and namedtuples can be updated)")
+    index = _coconut.operator.index(index)
+    if index < 0:
+        index += _coconut.len(obj)
+    if not 0 <= index < _coconut.len(obj):
+        raise _coconut.IndexError("tuple index out of range")
+    fields = obj._fields
+    star_field = _coconut_data_star_field(_coconut_type(obj))
+    if star_field is not None and index >= _coconut.len(fields) - 1:
+        return star_field, ([index - _coconut.len(fields) + 1],) + path[1:]
+    return fields[index], path[1:]
+def _coconut_replace_fields(obj, kind, changes):
+    if kind == "namedtuple":
+        return obj._replace(**changes)
+    if kind == "dataclass":
+        import dataclasses
+        return dataclasses.replace(obj, **changes)
+    return _coconut_type(obj).__replace__(obj, **changes)
+def _coconut_update(obj, *updates):
+    """Return a copy of obj with each (path, op, value) update applied in turn, without mutating obj.
+
+    Each path is a tuple of steps, each either an attribute name or a one-element list of an index.
+    Gives the same result as applying the updates one at a time, but only makes one copy
+    of each object updated where doing so can't change the result."""
+    if _coconut.isinstance(obj, (_coconut.list, _coconut.dict)):
+        if _coconut_type(obj) is _coconut.list:
+            new_obj = obj[:]
+        elif _coconut_type(obj) is _coconut.dict:
+            new_obj = obj.copy()
+        else:
+            new_obj = _coconut.copy.copy(obj)
+        _coconut_update_items(obj, new_obj, updates)
+        return new_obj
+    if _coconut_type(obj) is _coconut.tuple:
+        new_items = _coconut.list(obj)
+        _coconut_update_items(obj, new_items, updates)
+        return _coconut.tuple(new_items)
+    cls = _coconut_type(obj)
+    if _coconut.isinstance(obj, _coconut.tuple) and _coconut.hasattr(cls, "_fields") and _coconut.hasattr(cls, "_replace"):
+        kind = "namedtuple"
+    elif _coconut.hasattr(cls, "__dataclass_fields__"):
+        kind = "dataclass"
+    elif _coconut.hasattr(cls, "__replace__"):
+        kind = "replace"
+    else:
+        raise _coconut_update_error(obj, updates[0][0][0])
+    if kind != "namedtuple":
+        for path, _, _ in updates:
+            if _coconut.isinstance(path[0], _coconut.list):
+                raise _coconut_update_error(obj, path[0])
+    if kind == "namedtuple" and _coconut_replace_substitutes(cls):
+        # since setting one field can't affect any other, we can make all the changes with one copy
+        field_names = []
+        field_updates = _coconut.dict()
+        for path, op, value in updates:
+            name, rest = _coconut_update_field(obj, path)
+            if name not in field_updates:
+                field_names.append(name)
+                field_updates[name] = []
+            field_updates[name].append((rest, op, value))
+        changes = _coconut.dict()
+        for name in field_names:
+            name_updates = field_updates[name]
+            changes[name] = _coconut_update_value(_coconut.getattr(obj, name) if _coconut_update_needs_old(name_updates) else _coconut_sentinel, name_updates)
+        return obj._replace(**changes)
+    # otherwise, copying might do more than substitute in new values (e.g. checking them), so do one update at a time
+    for path, op, value in updates:
+        name, rest = _coconut_update_field(obj, path) if kind == "namedtuple" else (path[0], path[1:])
+        name_updates = ((rest, op, value),)
+        changes = _coconut.dict()
+        changes[name] = _coconut_update_value(_coconut.getattr(obj, name) if _coconut_update_needs_old(name_updates) else _coconut_sentinel, name_updates)
+        obj = _coconut_replace_fields(obj, kind, changes)
+    return obj
+class _coconut_updater(_coconut_base_callable):
+    """Update section (.<path> <op> <value>). Calling it on an object returns an updated copy without mutating the original."""
+    __slots__ = ("updates",)
+    def __init__(self, *updates):
+        self.updates = updates
+    def __call__(self, obj):
+        return _coconut_update(obj, *self.updates)
+    def __repr__(self):
+        return " ..> ".join(
+            "(." + "".join(
+                "[" + _coconut.repr(step[0]) + "]" if _coconut.isinstance(step, _coconut.list)
+                else "." + step if i else step
+                for i, step in _coconut.enumerate(path)
+            ) + " " + op + " " + _coconut.repr(value) + ")"
+            for path, op, value in self.updates
+        )
+    def __reduce__(self):
+        return (self.__class__, self.updates)
+    def __hash__(self):
+        return _coconut.hash(_coconut.tuple(
+            (_coconut.tuple(_coconut.tuple(step) if _coconut.isinstance(step, _coconut.list) else step for step in path), op, value)
+            for path, op, value in self.updates
+        ))
 class scan(_coconut_has_iter):
     """Reduce func over iterable, yielding intermediate results,
     optionally starting from initial."""

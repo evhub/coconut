@@ -26,12 +26,13 @@ class AccessCounter():
             self.counts[attr] += 1
         return super(AccessCounter, self).__getattribute__(attr)
 
-def assert_raises(c, exc):
-    """Test whether callable c raises an exception of type exc."""
+def assert_raises(c, exc, err_has=None):
+    """Test whether callable c raises an exception of type exc (whose message contains err_has)."""
     try:
         c()
-    except exc:
-        pass
+    except exc as err:
+        if err_has is not None:
+            assert err_has in str(err), (err_has, err)
     except BaseException as err:
         raise AssertionError(f"got wrong exception {err} (expected {exc})")
     else:
@@ -2268,3 +2269,40 @@ class ShapeNamer:
         case(self, Circle(_)) = "circle"
         case(self, Square(_)) = "square"
         case(self, Rect(_, _)) = "rect"
+
+
+# update sections
+
+data UPoint(x: int, y: int)
+data UPlayer(name: str, pos: UPoint, hp: int)
+data UBag(items: list[int], meta: dict[str, typing.Any])
+
+data UInterval(int() as lo, int() as hi if hi >= lo):
+    def width(self) = self.hi - self.lo
+class USubInterval(UInterval):
+    __slots__ = ()
+match data UKwd(int() as x, *, int() as y = 0)
+match data UStar(int() as x, *ys)
+match data UDubStar(int() as x, **kwargs)
+match data UAlias(int() as a as b)
+match data UTwice(x, x)
+# the argument can't be recovered from the fields, so _replace can't check it
+match data UPair((x, y))
+
+data UVec(*pts)
+data UHead(head, *rest)
+data UFromVec(a, b) from UVec  # type: ignore
+
+class UReplaceable:
+    """Supports Python 3.13's copy.replace protocol."""
+    def __init__(self, a, b):
+        self.a = a
+        self.b = b
+    def __replace__(self, **kwargs):
+        new_kwargs = {"a": self.a, "b": self.b}
+        new_kwargs.update(kwargs)
+        return type(self)(**new_kwargs)
+
+class UMutable:
+    def __init__(self, a):
+        self.a = a

@@ -1195,6 +1195,19 @@ def _coconut_attritemgetter(
 ) -> _t.Callable[[_t.Any], _t.Any]: ...
 
 
+# update sections, (.<path> <op> <value>), where each update is (path, op, value)
+#  and each step of a path is either an attribute name or a one-element list of an index
+_coconut_update_t = _t.Tuple[_t.Tuple[_t.Any, ...], _t.Text, _t.Any]
+def _coconut_update(obj: _T, *updates: _coconut_update_t) -> _T:
+    """Return a copy of obj with each update applied in turn, without mutating obj."""
+    ...
+class _coconut_updater:
+    """Update section (.<path> <op> <value>). Calling it on an object returns an updated copy without mutating the original."""
+    updates: _t.Tuple[_coconut_update_t, ...]
+    def __init__(self, *updates: _coconut_update_t) -> None: ...
+    def __call__(self, obj: _T) -> _T: ...
+
+
 # function composition (f ..> g, g <.. f, etc.) compiles directly to _coconut_base_compose,
 #  where each func_info is (func, number of stars, whether none-aware); the single-argument
 #  overloads come first since matching an overloaded function against a ParamSpec can pick
