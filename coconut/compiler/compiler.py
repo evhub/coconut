@@ -42,6 +42,7 @@ from copy import copy
 
 from coconut._pyparsing import (
     USE_COMPUTATION_GRAPH,
+    CPYPARSING,
     USE_CACHE,
     SUPPORTS_INCREMENTAL,
     ParseBaseException,
@@ -1690,9 +1691,10 @@ class Compiler(Grammar, pickleable_obj):
         with self.lock:
             Compiler.current_compiler = self
             self.reset(keep_state, filename)
-            # parsing creates very little cyclic garbage but a huge number of
-            #  objects, so the cyclic garbage collector is pure overhead here
-            with disabled_gc():
+            # parsing with cPyparsing creates very little cyclic garbage but a huge number of
+            #  objects, so the cyclic garbage collector is pure overhead there (but parsing with
+            #  pure-Python pyparsing creates a lot of cyclic garbage, so it needs the collector)
+            with disabled_gc() if CPYPARSING else noop_ctx():
                 yield
 
     def streamline(self, grammars, inputstring=None, force=False, inner=False):
