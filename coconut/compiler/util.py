@@ -2368,6 +2368,72 @@ def same_line(original, loc1, loc2):
     return lineno(loc1, original) == lineno(loc2, original)
 
 
+# Python's binary operators, from the loosest-binding to the tightest-binding
+binary_op_precedences = {
+    "or": 1,
+    "and": 2,
+    "<": 3, ">": 3, "<=": 3, ">=": 3, "==": 3, "!=": 3, "in": 3, "not in": 3, "is": 3, "is not": 3,
+    "|": 4,
+    "^": 5,
+    "&": 6,
+    "<<": 7, ">>": 7,
+    "+": 8, "-": 8,
+    "*": 9, "@": 9, "/": 9, "//": 9, "%": 9,
+    "**": 10,
+}
+python_expr_token_regex = re.compile(r"\d(?:[\w.]|(?<=[eE])[+-])*|[^\W\d]\w*|\*\*|//|<<|>>|<=|>=|==|!=|:=|->|\S", re.U)
+
+
+def loosest_binary_op(py_expr):
+    """Find the loosest-binding binary operator at the top level of the given Python expression.
+
+    Returns None if there isn't one, or if the expression contains a top-level lambda or ternary
+    (which are treated as self-contained). Unary operators are ignored, since they always bind to
+    the operand right after them."""
+    loosest = None
+    depth = 0
+    prev_is_operand = False
+    tokens = python_expr_token_regex.findall(py_expr)
+    i = 0
+    while i < len(tokens):
+        tok = tokens[i]
+        i += 1
+        if tok in "([{":
+            depth += 1
+            prev_is_operand = False
+            continue
+        elif tok in ")]}":
+            depth -= 1
+            prev_is_operand = True
+            continue
+        elif depth > 0:
+            continue
+        elif tok in ("lambda", "if", ":="):
+            return None
+        op = None
+        if tok == "not":
+            if prev_is_operand and i < len(tokens) and tokens[i] == "in":
+                op = "not in"
+                i += 1
+        elif tok == "is":
+            op = "is"
+            if i < len(tokens) and tokens[i] == "not":
+                op = "is not"
+                i += 1
+        elif tok in binary_op_precedences:
+            if prev_is_operand or tok not in ("+", "-"):
+                op = tok
+        elif tok == "~" or tok == ".":
+            pass
+        else:
+            prev_is_operand = True
+            continue
+        if op is not None and (loosest is None or binary_op_precedences[op] < binary_op_precedences[loosest]):
+            loosest = op
+        prev_is_operand = False
+    return loosest
+
+
 # -----------------------------------------------------------------------------------------------------------------------
 # EXTRAS:
 # -----------------------------------------------------------------------------------------------------------------------

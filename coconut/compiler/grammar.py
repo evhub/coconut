@@ -1226,7 +1226,7 @@ class Grammar(object):
             labeled_group(dot.suppress() + partialable_op + test_no_infix, "right partial")
             | labeled_group(test_no_infix + partialable_op + dot.suppress(), "left partial")
         )
-        partial_op_item = attach(partial_op_item_tokens, partial_op_item_handle)
+        partial_op_item = Forward()
         op_item = (
             # must stay in exactly this order
             partial_op_item

@@ -220,6 +220,8 @@ from coconut.compiler.util import (
     manage,
     sub_all,
     same_line,
+    loosest_binary_op,
+    binary_op_precedences,
     get_cache_items_for,
     clear_packrat_cache,
     add_packrat_cache_items,
@@ -985,6 +987,7 @@ class Compiler(Grammar, pickleable_obj):
         cls.normal_pipe_expr <<= attach(cls.normal_pipe_expr_tokens, cls.method("pipe_handle"))
         cls.return_typedef <<= attach(cls.return_typedef_ref, cls.method("typedef_handle"))
         cls.power_in_impl_call <<= attach(cls.power, cls.method("power_in_impl_call_check"))
+        cls.partial_op_item <<= attach(cls.partial_op_item_tokens, cls.method("partial_op_item_handle"))
 
         # handle all atom + trailers constructs with item_handle
         cls.trailer_atom <<= attach(cls.trailer_atom_ref, cls.method("item_handle"))
@@ -3554,6 +3557,7 @@ else:
             return "itemgetter", (attr, ops_and_args)
         elif "op partial" in tokens:
             inner_toks, = tokens
+            self.check_partial_op_precedence(original, loc, inner_toks)
             if "left partial" in inner_toks:
                 arg, op = inner_toks
                 return "partial", (op, arg, "")
@@ -6695,6 +6699,87 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
     def match_check_equals_check(self, original, loc, tokens):
         """Check for old-style =item in pattern-matching."""
         return self.check_strict("deprecated equality-checking '=...' pattern; use '==...' instead", original, loc, tokens, always_warn=True)
+
+    # the operator functions for Python's binary operators, mapped to the operators
+    partial_op_symbols = {
+        "_coconut_bool_or": "or",
+        "_coconut_bool_and": "and",
+        "_coconut.operator.lt": "<",
+        "_coconut.operator.gt": ">",
+        "_coconut.operator.le": "<=",
+        "_coconut.operator.ge": ">=",
+        "_coconut.operator.eq": "==",
+        "_coconut.operator.ne": "!=",
+        "_coconut_in": "in",
+        "_coconut_not_in": "not in",
+        "_coconut.operator.is_": "is",
+        "_coconut.operator.is_not": "is not",
+        "_coconut.operator.or_": "|",
+        "_coconut.operator.xor": "^",
+        "_coconut.operator.and_": "&",
+        "_coconut.operator.lshift": "<<",
+        "_coconut.operator.rshift": ">>",
+        "_coconut.operator.add": "+",
+        "_coconut_minus": "-",
+        "_coconut.operator.mul": "*",
+        "_coconut_matmul": "@",
+        "_coconut.operator.truediv": "/",
+        "_coconut.operator.floordiv": "//",
+        "_coconut.operator.mod": "%",
+        "_coconut.operator.pow": "**",
+    }
+
+    def partial_op_item_handle(self, original, loc, tokens):
+        """Handle operator function implicit partials."""
+        tok_grp, = tokens
+        self.check_partial_op_precedence(original, loc, tok_grp)
+        return partial_op_item_handle(tokens)
+
+    def check_partial_op_precedence(self, original, loc, tok_grp):
+        """Warn about operator function implicit partials whose operand binds less tightly than their
+        operator, such as (.%2==0), which is x => x % (2==0) rather than x => x % 2 == 0."""
+        if "left partial" in tok_grp:
+            arg, op = tok_grp
+        elif "right partial" in tok_grp:
+            op, arg = tok_grp
+        else:
+            raise CoconutInternalException("invalid operator function implicit partial token group", tok_grp)
+        op_sym = self.partial_op_symbols.get(op)
+        if op_sym is None:
+            return
+        arg_op = loosest_binary_op(arg)
+        if arg_op is None:
+            return
+        op_prec = binary_op_precedences[op_sym]
+        arg_prec = binary_op_precedences[arg_op]
+        # with equal precedence, Python's grouping only matches what's written for ** in right partials
+        #  (as ** is right associative) and for the other non-comparison operators in left partials
+        #  (as they're left associative)
+        if "right partial" in tok_grp:
+            confusing = arg_prec < op_prec or arg_prec == op_prec and op_sym != "**"
+        else:
+            confusing = arg_prec < op_prec or arg_prec == op_prec and (op_sym == "**" or op_prec == binary_op_precedences["=="])
+        if not confusing:
+            return
+        arg_code = self.reformat(arg, ignore_errors=True).strip()
+        if "right partial" in tok_grp:
+            means = "x => x {op} ({arg})".format(op=op_sym, arg=arg_code)
+            not_means = "x => x {op} {arg}".format(op=op_sym, arg=arg_code)
+            explicit = "(. {op} ({arg}))".format(op=op_sym, arg=arg_code)
+        else:
+            means = "x => ({arg}) {op} x".format(op=op_sym, arg=arg_code)
+            not_means = "x => {arg} {op} x".format(op=op_sym, arg=arg_code)
+            explicit = "(({arg}) {op} .)".format(op=op_sym, arg=arg_code)
+        self.syntax_warning(
+            "operator partial means '{means}', not '{not_means}', since its operand ({arg}) extends to the closing parenthesis; use a lambda or function composition instead, or write '{explicit}' if that's intended".format(
+                means=means,
+                not_means=not_means,
+                arg=arg_code,
+                explicit=explicit,
+            ),
+            original,
+            loc,
+        )
 
     def power_in_impl_call_check(self, original, loc, tokens):
         """Check for exponentation in implicit function application / coefficient syntax."""

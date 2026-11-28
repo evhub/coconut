@@ -942,6 +942,30 @@ def f[T](x):
     assert len(inner_collected) == 1
     assert not outer_collected
 
+    # operator partials whose operand binds less tightly than their operator
+    def partial_warnings(code) =
+        with collect_warnings() as collected:
+            parse(code)
+        [warn.bare_message for warn in collected if "operator partial" in warn.bare_message]
+    assert partial_warnings("f = (.%2==0)") |> .[0] |> .startswith("operator partial means 'x => x % (2 == 0)', not 'x => x % 2 == 0'")
+    assert partial_warnings("x = 3 |> (.*2+1)") |> .[0] |> .startswith("operator partial means 'x => x * (2 + 1)'")
+    assert partial_warnings("f = (.-1-1)")
+    assert partial_warnings("f = (.<1<2)")
+    assert partial_warnings("a, b = 1, 2\nf = (a+b*.)") |> .[0] |> .startswith("operator partial means 'x => (a + b) * x'")
+    assert partial_warnings("f = (2**3**.)")
+    for unconfusing in (
+        "f = (.+1)",
+        "f = (. % (2 == 0))",
+        "f = (.**2**3)",
+        "f = (. ** -1)",
+        "f = (1-2-.)",
+        "f = (. == 'a' + 'b')",
+        "y = 1\nf = (. and not y)",
+        "f = (. + abs(-1) * 3)",
+        "f = ([1] + .[1:])",
+    ):
+        assert not partial_warnings(unconfusing), unconfusing
+
     setup()
     return True
 

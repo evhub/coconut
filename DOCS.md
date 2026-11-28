@@ -2199,12 +2199,16 @@ In addition, for every Coconut [operator function](#operator-functions), Coconut
 ```
 where `<op>` is the operator function and `<arg>` is any expression. Note that, as with operator functions themselves, the parentheses are necessary for this type of implicit partial application. This syntax is slightly different for multidimensional array concatenation operator functions, which use brackets instead of parentheses.
 
+Since `<arg>` can be any expression, it extends all the way to the closing parenthesis, which means that it's evaluated before the operator is applied. Thus, `(.%2==0)` is `x => x % (2==0)`, not `x => x % 2 == 0`, and `(.*2+1)` is `x => x * 3`. Coconut will show a warning when `<arg>` contains an operator that binds less tightly than `<op>` like this; to apply both operators in order, use a lambda (`x => x % 2 == 0`) or function composition (`(.%2) ..> (.==0)`) instead, or, if the current meaning is intended, put parentheses around `<arg>` (`(. % (2==0))`) to dismiss the warning.
+
 Furthermore, Coconut also supports implicit operator function partials for arbitrary functions as
 ```
 (. `<name>` <arg>)
 (<arg> `<name>` .)
 ```
 based on Coconut's [infix notation](#infix-functions) where `<name>` is the name of the function. Additionally, `` `<name>` `` can instead be a [custom operator](#custom-operators) (in that case, no backticks should be used).
+
+Note that only a single method call can come at the end of an attribute access implicit partial, so chaining method calls as in `.lower().strip()` isn't allowed; use `.lower() ..> .strip()` instead.
 
 _Deprecated: Coconut also supports `obj.` as an implicit partial for `getattr$(obj)`, but its usage is deprecated and will show a warning to switch to `getattr$(obj)` instead._
 
