@@ -1767,8 +1767,10 @@ case data Tree[T]:
     case Leaf(value: T)
     case Node(left: Tree[T], right: Tree[T])
 
-def tree_sum(Leaf(v)) = v
-addpattern def tree_sum(Node(l, r)) = tree_sum(l) + tree_sum(r)
+case def tree_sum:
+    type(tree: Tree[int]) -> int
+    case(Leaf(v)) = v
+    case(Node(l, r)) = tree_sum(l) + tree_sum(r)
 ```
 
 **Python:**
@@ -2796,11 +2798,13 @@ _Showcases tail recursion elimination._
 
 ```coconut
 # unlike in Python, neither of these functions will ever hit a maximum recursion depth error
-def is_even(0) = True
-addpattern def is_even(n `isinstance` int if n > 0) = is_odd(n-1)
+case def is_even:
+    case(0) = True
+    case(n `isinstance` int if n > 0) = is_odd(n-1)
 
-def is_odd(0) = False
-addpattern def is_odd(n `isinstance` int if n > 0) = is_even(n-1)
+case def is_odd:
+    case(0) = False
+    case(n `isinstance` int if n > 0) = is_even(n-1)
 ```
 _Showcases tail call optimization._
 
@@ -5032,8 +5036,9 @@ x: List[str] = ["a", "b"]
 if TYPE_CHECKING:
     def factorial(n: int) -> int: ...
 else:
-    def factorial(0) = 1
-    addpattern def factorial(n) = n * factorial(n-1)
+    case def factorial:
+        case(0) = 1
+        case(n) = n * factorial(n-1)
 ```
 
 **Python:**
