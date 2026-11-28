@@ -338,6 +338,9 @@ except AttributeError:
     assert True
 else:
     assert False
+assert v |> (.x = 7) |> str == "vector2(x=7, y=3)"
+assert v |> (.x += 1) |> (.y *= 2) |> str == "vector2(x=3, y=6)"
+assert v |> str == "vector2(x=2, y=3)"
 
 data vector(*pts):
     """Immutable n-vector."""

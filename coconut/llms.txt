@@ -20,7 +20,7 @@ Prefer Coconut's functional features over Python-style imperative code. Good Coc
 - builds simple transformations **point-free** by composing functions (`..>`, `lift`) rather than writing wrapper functions,
 - defines functions with **assignment function syntax** (`def f(x) = ...`) when the body is a single expression,
 - uses **pattern matching** (`match`/`case`, pattern-matching function definitions, destructuring assignment) instead of chains of `if isinstance(...)`/indexing,
-- models data with immutable **`data` types** instead of mutable classes,
+- models data with immutable **`data` types** instead of mutable classes, making updated copies of them with **update sections** (`obj |> (.pos.x += 1)`),
 - uses **recursion** freely (tail calls are optimized automatically) and **lazy iterators** instead of materializing lists,
 - avoids reassigning variables and mutating objects (`--pure` mode can enforce this).
 
@@ -42,7 +42,7 @@ def total_lengths(words) = words |> map$(len) |> filter$(.>2) |> sum
 Write code that reads at a glance:
 - **Expressions, not steps.** Most functions should be a single `def f(...) = expr`. Name intermediate values in a `where:` block or a short block body rather than reassigning a variable step by step.
 - **One stage per line.** Put a pipeline with more than about three stages in parentheses, one `|>` stage per line, so it reads top to bottom.
-- **Avoid mutation.** Build new values with comprehensions, pipelines, `fmap`, `reduce`/`scan`, and `._replace` on `data` types, and keep mutable state at a program's edges (I/O, caches). (Under `--pure`, mark any such mutation with `# NOQA` and a comment saying why.)
+- **Avoid mutation.** Build new values with comprehensions, pipelines, `fmap`, `reduce`/`scan`, and update sections (`obj |> (.pos.x += 1)` instead of `obj.pos.x += 1`), and keep mutable state at a program's edges (I/O, caches). (Under `--pure`, mark any such mutation with `# NOQA` and a comment saying why.)
 - **Data first.** Model the domain with `data` types, and with `case data` sum types when a value is one of several alternatives, and write functions on them with pattern matching (`case def` or `match`) instead of `isinstance` chains, tag strings, or flag attributes. Prefer `case def` to `addpattern def`, which redefines the function and so isn't pure; save `addpattern def` for adding a case to a function defined somewhere else.
 - **Let the type checker check your matches.** A `match` or typed `case def` on a `case data` type must handle every variant; type checkers (`--mypy`, `--pyright`) report what's missing (e.g. `UnhandledCaseDataVariants[Square]`), so add the missing cases rather than a catch-all. End a `match` with `case _: assert_never(x)` (`from typing import assert_never`) to require it to handle every value of any type.
 - **Types on top-level definitions**, written in Coconut's type syntax (`int[]`, `int?`, `int -> str`, `(int; str)`), checked with `--mypy` when it's available.
@@ -93,7 +93,8 @@ assert area(Square(2)) == 4
 data Account(owner: str, balance: int)
 
 def deposit(account: Account, amount: int) -> Account =
-    account._replace(balance=account.balance + amount)
+    account |> (.balance += amount)          # an updated copy; account itself is unchanged
+assert deposit(Account("me", 1), 2) == Account("me", 3)
 
 def check_port(port: int) -> Expected[int] =
     Expected(port) if 0 < port < 65536 else Expected(error=ValueError(f"bad port: {port}"))
@@ -110,6 +111,7 @@ inc = (.+1)                      # implicit partial: same as x => x + 1
 upper_all = map$(.upper())       # partial application with $: f$(a) is functools.partial(f, a)
 square = pow$(?, 2)              # ? marks positional placeholders: x => pow(x, 2)
 first = .[0]                     # x => x[0]; also .attr and .method(args)
+reset = (.pos.x = 0)             # update section: x => a copy of x with x.pos.x set to 0
 assert (+)(1, 2) == 3            # operator functions: (+), (*), (==), (in), (not in), (is), (.), etc.
 f = def (x, y=1) => x + y        # statement lambda (supports default args, multiple statements)
 sign = (=> if _ > 0 then 1 else if _ < 0 then -1 else 0)   # implicit lambda (argument is _), if/then/else expression
@@ -204,7 +206,14 @@ data Point(x: float, y: float):              # immutable, hashable, with __eq__/
 
 p = Point(3, 4)
 assert p.norm() == 5 and p + Point(1, 1) == Point(4, 5)
-assert p._replace(x=0) == Point(0, 4)        # "modify" by creating a new value
+assert p |> (.x = 0) == Point(0, 4)          # "modify" by making an updated copy (an update section)
+assert p |> (.x *= 2) |> (.y -= 1) == Point(6, 3) and p == Point(3, 4)
+
+data Segment(start: Point, end: Point)
+seg = Segment(Point(0, 0), Point(1, 1))
+assert seg |> (.end.x += 1) == Segment(Point(0, 0), Point(2, 1))   # nested paths copy each level
+assert [seg] |> map$(.start = p) |> list == [Segment(p, Point(1, 1))]
+assert {"a": [1, 2]} |> (.["a"][0] = 0) == {"a": [0, 2]}           # also tuples, lists, and dicts
 
 case data Tree:                              # algebraic data types: case data defines a sum type
     case Leaf(value)                         #  whose variants are data types
@@ -217,7 +226,8 @@ assert depth(Node(Leaf(1), Node(Leaf(2), Leaf(3)))) == 2
 assert Leaf(1) `isinstance` Tree and Node(Leaf(1)).size() == 2
 
 data Interval(int() as lo, int() as hi if hi >= lo)   # patterns validate constructor arguments
-assert Interval(1, 3).hi == 3                         #  (Interval(3, 1) raises MatchError)
+assert Interval(1, 3).hi == 3                         #  (Interval(3, 1) raises MatchError, as does
+                                                      #  Interval(1, 3) |> (.hi = 0))
 ```
 
 ## Pattern matching
@@ -348,7 +358,8 @@ assert double 3 == 6                         # implicit function application: f 
 - To use a name that conflicts with a Coconut keyword or would be flagged by `--strict`, escape it with a backslash: `\data`, `\match`.
 - `f x` is a function call (implicit application) and `2 x` is `2 * x` (implicit coefficients), so a missing comma doesn't cause an error: `foo(1, a b)` is `foo(1, a(b))`. When code compiles but behaves oddly, check argument lists for missing commas.
 - Precedence: pipes bind more loosely than arithmetic but more tightly than comparisons, so `x |> f == y` is `(x |> f) == y`. A lambda in a pipe extends to the end of the pipe, so `xs |> x => x + 1 |> print` is `xs |> (x => x + 1 |> print)`; parenthesize lambdas in pipes.
-- `data` types are immutable (they're tuples): instead of assigning to an attribute, make a new value with `._replace(...)`.
+- `data` types are immutable (they're tuples): instead of assigning to an attribute, make an updated copy with an update section, e.g. `obj |> (.pos.x = 0)` (which works for nested paths, unlike `._replace(...)`).
+- Update sections need their own parentheses, like `(.+1)`: `map(.hp -= 1, xs)` is a syntax error, so write `xs |> map$(.hp -= 1)` (the parentheses of a call with just the update section count). They never mutate anything, so `(.items += [x])` sets `items` to a new list, `old.items + [x]`.
 - Exhaustiveness errors only show up when type checking (`--mypy`, `--pyright`, or the language server's type checking), never in a plain compile. Guarded cases (`case Circle(r) if r > 0`) don't count as handling anything, and matches using sequence, mapping, or string patterns aren't checked. Under `--pure`, every multi-case `match` and typed `case def` must be total, so give guarded cases a final unguarded fallback.
 - `--pure` treats loop variables as assignments, so reassigning one in the loop body, or reusing the same loop variable name for two loops in one scope, is flagged; prefer a comprehension or pipeline, or use distinct names.
 - Implicit partials can't chain calls: `map$(.lower().strip())` is a syntax error. Use one stage per method (`|> map$(.lower()) |> map$(.strip())`) or a named function.
