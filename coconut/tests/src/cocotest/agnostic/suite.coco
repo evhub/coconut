@@ -1132,6 +1132,135 @@ forward 2""") == 900
     assert ShapeNamer().name(Rect(1, 2)) == "rect"
     assert pickle_round_trip(BinNode(BinLeaf(1), BinLeaf(2))) == BinNode(BinLeaf(1), BinLeaf(2))
 
+    # update sections
+    player = UPlayer("p", UPoint(1, 2), 100)
+    assert player |> (.pos.x += 1) |> (.hp -= 10) == UPlayer("p", UPoint(2, 2), 90)
+    assert player |> (.pos = UPoint(0, 0)) |> (.hp = 100) == UPlayer("p", UPoint(0, 0), 100)
+    assert player == UPlayer("p", UPoint(1, 2), 100)
+    heal = (.hp += 10)
+    assert heal(player) == UPlayer("p", UPoint(1, 2), 110) == player |> heal
+    assert [player, heal(player)] |> map$(.hp -= 1) |> list == [player._replace(hp=99), player._replace(hp=109)]
+    assert list(map((.hp -= 1), [player])) == [player._replace(hp=99)]
+    assert (.pos.y *= 3) <| player == UPlayer("p", UPoint(1, 6), 100)
+    assert repr(heal) == "(.hp += 10)"
+    assert repr((.pos.x = 0)) == "(.pos.x = 0)"
+    assert repr((.[0]["a"].b ??= None)) == "(.[0]['a'].b ??= None)"
+    assert pickle_round_trip(heal) == heal and pickle_round_trip(heal)(player) == heal(player)
+    assert pickle_round_trip((.[0].x = 1)) == (.[0].x = 1)
+    assert heal == (.hp += 10) != (.hp += 11)
+    assert hash((.[0].x = 1)) == hash((.[0].x = 1))
+    assert (.pos.x += 1) ..> (.hp -= 10) <| player == player |> (.pos.x += 1) |> (.hp -= 10)
+    # data types and namedtuples can be indexed by position
+    assert player |> (.[2] -= 1) |> (.[1][0] = 5) == UPlayer("p", UPoint(5, 2), 99)
+    assert player |> (.[-1] = 0) == player._replace(hp=0)
+    assert UVec(1, 2, 3) |> (.[0] += 10) |> (.[-1] = 0) == UVec(11, 2, 0)
+    assert UVec(1, 2, 3) |> (.pts = (4,)) == UVec(4)
+    assert UHead(1, 2) |> (.[1] = 5) |> (.[0] += 1) == UHead(2, 5)
+    assert UHead(1, 2, 3) |> (.rest = ()) |> (.[-1] = 0) == UHead(0)
+    assert UFromVec(1, 2) |> (.[1] = 5) |> (.[0] += 1) == UFromVec(2, 5)
+    assert (a=1, b=2) |> (.b *= 3) |> (.[0] -= 1) == (a=0, b=6)
+    assert_raises(-> player |> (.[1:] = (1, 2)), TypeError)
+    assert_raises(-> player |> (.[5] = 0), IndexError)
+    # tuples, lists, and dicts
+    assert (1, 2, 3) |> (.[0] += 10) == (11, 2, 3)
+    assert (1, 2, 3, 4) |> (.[1:3] = (0,)) |> (.[-1] *= 2) == (1, 0, 8)
+    xs = [1, 2, 3]
+    assert xs |> (.[1] = 0) |> (.[::2] = [5, 5]) == [5, 0, 5]
+    assert xs |> (.[2] += 1) |> (.[-1] *= 2) |> (.[2] -= 1) == [1, 2, 7] == xs |> (.[2] += 1) |> (.[-1] *= 2) |> (.[-1] -= 1)
+    assert xs == [1, 2, 3]
+    d = {"a": 1}
+    assert d |> (.["a"] += 1) |> (.["b"] = 3) == {"a": 2, "b": 3}
+    assert {(1, 2): 0} |> (.[1, 2] += 1) == {(1, 2): 1} == {(1, 2): 0} |> (.[(1, 2)] += 1)
+    assert d == {"a": 1}
+    dd = defaultdict(list, {"a": [1]}) |> (.["a"] += [2])
+    assert type(dd) is defaultdict and dd.default_factory is list and dd == {"a": [1, 2]}
+    assert [UPoint(1, 2), UPoint(3, 4)] |> (.[1].x = 0) == [UPoint(1, 2), UPoint(0, 4)]
+    bag = UBag([1], {"tags": ("a", "b"), "n": 0})
+    new_bag = bag |> (.items += [2]) |> (.meta["tags"][1] = "c") |> (.meta["n"] |>= (+)$(1))
+    assert new_bag == UBag([1, 2], {"tags": ("a", "c"), "n": 1})
+    assert bag == UBag([1], {"tags": ("a", "b"), "n": 0})
+    # all the augmented assignment operators
+    assert UPoint(7, 0) |> (.x += 2) |> .x == 9
+    assert UPoint(7, 0) |> (.x -= 2) |> .x == 5
+    assert UPoint(7, 0) |> (.x *= 2) |> .x == 14
+    assert UPoint(7, 0) |> (.x /= 2) |> .x == 3.5
+    assert UPoint(7, 0) |> (.x //= 2) |> .x == 3
+    assert UPoint(7, 0) |> (.x %= 2) |> .x == 1
+    assert UPoint(7, 0) |> (.x **= 2) |> .x == 49
+    assert UPoint(6, 0) |> (.x &= 3) |> .x == 2
+    assert UPoint(6, 0) |> (.x |= 1) |> .x == 7
+    assert UPoint(6, 0) |> (.x ^= 3) |> .x == 5
+    assert UPoint(1, 0) |> (.x <<= 3) |> .x == 8
+    assert UPoint(8, 0) |> (.x >>= 3) |> .x == 1
+    assert {"a": None} |> (.["a"] ??= 1) == {"a": 1} == {"a": 1} |> (.["a"] ??= 2)
+    chained = {"a": [1]} |> (.["a"] ::= [2])
+    assert list(chained["a"]) == [1, 2] == list(chained["a"])
+    assert {"a": 3} |> (.["a"] |>= (.+1)) == {"a": 4}
+    assert {"a": (1, 2)} |> (.["a"] |*>= (+)) == {"a": 3}
+    assert {"a": {"x": 1}} |> (.["a"] |**>= (x) => x) == {"a": 1}
+    assert {"a": (.+1)} |> (.["a"] <|= 1) == {"a": 2}
+    assert {"a": (+)} |> (.["a"] <*|= (1, 2)) == {"a": 3}
+    assert {"a": (x=0) => x} |> (.["a"] <**|= {"x": 5}) == {"a": 5}
+    assert {"a": None} |> (.["a"] |?>= (.+1)) == {"a": None}
+    assert ({"a": (.+1)} |> (.["a"] ..>= (.*2)))["a"](3) == 8
+    assert ({"a": (.+1)} |> (.["a"] ..= (.*2)))["a"](3) == 7
+    # merging consecutive updates in pipes gives the same result as applying them separately
+    for updates in [
+        [(.pos.x += 1), (.hp -= 10)],
+        [(.pos = UPoint(0, 0)), (.pos.x += 1)],
+        [(.pos.x += 1), (.pos = UPoint(0, 0))],
+        [(.hp -= 1), (.hp *= 2), (.pos.y = 5), (.hp += 3)],
+        [(.[1].x = 0), (.pos.y = 0), (.[2] += 1)],
+    ]:
+        separately = player
+        for update in updates:
+            separately = update(separately)
+        assert reduce((..>), updates)(player) == separately
+    assert player |> (.hp -= 1) |> (.hp *= 2) |> (.pos.y = 5) |> (.hp += 3) == UPlayer("p", UPoint(1, 5), 201)
+    assert player |> (.pos = UPoint(0, 0)) |> (.pos.x += 1) == player._replace(pos=UPoint(1, 0))
+    assert player |> (.pos.x += 1) |> (.pos = UPoint(0, 0)) == player._replace(pos=UPoint(0, 0))
+    assert [1, 2, 3, 4] |> (.[0:2] = [9]) |> (.[0] += 1) == [10, 3, 4]
+    assert None |?> (.hp = 1) is None
+    assert player |?> (.hp = 1) |?> (.pos.x = 0) == player._replace(hp=1, pos=UPoint(0, 2))
+    updated_player = player
+    updated_player |>= (.hp -= 1)
+    assert updated_player == player._replace(hp=99)
+    # values are evaluated when the update section is created
+    made = [0]
+    def make_hp():
+        made[0] += 1
+        return made[0]
+    set_hp = (.hp = make_hp())
+    assert made == [1] and set_hp(player).hp == 1 == set_hp(heal(player)).hp and made == [1]
+    # _replace on pattern-matching data types checks the new values
+    interval = UInterval(1, 3)
+    assert interval._replace(hi=5) == UInterval(1, 5) and interval._replace(lo=2).width() == 1
+    assert_raises(-> interval._replace(hi=0), MatchError)
+    assert_raises(-> interval._replace(lo="a"), MatchError)
+    assert_raises(-> interval._replace(foo=1), ValueError)
+    assert_raises(-> interval |> (.hi = 0), MatchError)
+    assert_raises(-> interval |> (.[1] = 0), MatchError)
+    # (updates on data types that check their values can't be merged, since intermediate values have to be checked)
+    assert_raises(-> interval |> (.lo = 5) |> (.hi = 10), MatchError)
+    assert interval |> (.hi = 10) |> (.lo = 5) == UInterval(5, 10)
+    assert type(USubInterval(1, 3)._replace(hi=4)) is USubInterval
+    assert UKwd(1, y=2)._replace(y=3) == UKwd(1, y=3) == UKwd(1) |> (.y = 3)
+    assert_raises(-> UKwd(1, y=2)._replace(y="a"), MatchError)
+    assert UStar(1, 2, 3)._replace(ys=(4,)) == UStar(1, 4)
+    assert_raises(-> UStar(1, 2)._replace(x="a"), MatchError)
+    assert UDubStar(1, a=2)._replace(kwargs={"b": 3}) == UDubStar(1, b=3)
+    assert UAlias(1)._replace(b=2) == UAlias(2) == UAlias(1)._replace(a=2)
+    assert UTwice(1, 1)._replace(x=2) == UTwice(2, 2)
+    assert UPair((1, 2))._replace(x=3) == UPair((3, 2))
+    # anything else can't be updated without mutating it
+    assert_raises(-> UMutable(1) |> (.a = 2), TypeError, err_has="'UMutable' object without mutating it")
+    assert_raises(-> [1] |> (.a = 2), TypeError, err_has="attribute 'a' of 'list'")
+    assert_raises(-> "abc" |> (.[0] = "x"), TypeError, err_has="item 0 of 'str'")
+    assert_raises(-> player |> (.["hp"] = 0), TypeError)
+    replaceable = UReplaceable(1, 2) |> (.a += 1) |> (.b = 5)
+    assert (replaceable.a, replaceable.b) == (2, 5)
+    assert_raises(-> UReplaceable(1, 2) |> (.[0] = 1), TypeError)
+
     # must come at end
     assert fibs_calls[0] == 1
     assert lols[0] == 5

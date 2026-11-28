@@ -390,6 +390,35 @@ in_place_op_funcs = {
     "..?**>=": "_coconut_forward_none_dubstar_compose",
 }
 
+# for update sections, (.<path> <op>= <value>), maps each augmented assignment operator
+#  to a function that computes the new value as (old, value) => old <op> value
+#  (these are evaluated in the header, so they can use anything defined there)
+update_op_funcs = {
+    "+=": "_coconut.operator.add",
+    "-=": "_coconut.operator.sub",
+    "*=": "_coconut.operator.mul",
+    "/=": "_coconut.operator.truediv",
+    "//=": "_coconut.operator.floordiv",
+    "%=": "_coconut.operator.mod",
+    "**=": "_coconut.operator.pow",
+    "@=": "_coconut_matmul",
+    "&=": "_coconut.operator.and_",
+    "|=": "_coconut.operator.or_",
+    "^=": "_coconut.operator.xor",
+    "<<=": "_coconut.operator.lshift",
+    ">>=": "_coconut.operator.rshift",
+    "??=": "_coconut_none_coalesce",
+    # like the :: operator, but without the laziness, since the value has already been evaluated
+    "::=": "lambda a, b: _coconut_flatten((a, b))",
+    "|>=": "_coconut_pipe",
+    "|*>=": "_coconut_star_pipe",
+    "|**>=": "_coconut_dubstar_pipe",
+    "<|=": "_coconut_back_pipe",
+    "<*|=": "_coconut_back_star_pipe",
+    "<**|=": "_coconut_back_dubstar_pipe",
+}
+update_op_funcs.update(in_place_op_funcs)
+
 op_func_protocols = {
     "add": "_coconut_SupportsAdd",
     "minus": "_coconut_SupportsMinus",

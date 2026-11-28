@@ -151,7 +151,7 @@ from coconut.terminal import (
     complain,
     internal_assert,
 )
-from coconut.compiler.matching import Matcher, match_funcdef_setup_code
+from coconut.compiler.matching import Matcher, match_funcdef_setup_code, get_match_names
 from coconut.compiler.grammar import (
     Grammar,
     lazy_list_handle,
@@ -162,6 +162,8 @@ from coconut.compiler.grammar import (
     itemgetter_handle,
     partial_op_item_handle,
     partial_arr_concat_handle,
+    update_section_item,
+    update_section_handle,
     split_args_list,
 )
 from coconut.compiler.util import (
@@ -3481,6 +3483,7 @@ else:
             - itemgetter: (attr, [(op, args)]) for itemgetter
             - right op partial: (op, arg)
             - right arr concat partial: (op, arg)
+            - update: (update_tuple,)
             - await: ()
             - namedexpr: (varname,)
         """
@@ -3512,6 +3515,8 @@ else:
                 return "right op partial", (op, arg)
             else:
                 raise CoconutInternalException("invalid op partial tokens in pipe_item", inner_toks)
+        elif "update" in tokens:
+            return "update", (update_section_item(tokens),)
         elif "arr concat partial" in tokens:
             inner_toks, = tokens
             if "left arr concat partial" in inner_toks:
@@ -3566,6 +3571,8 @@ else:
                 return partial_op_item_handle(item)
             elif name == "right arr concat partial":
                 return partial_arr_concat_handle(item)
+            elif name == "update":
+                return update_section_handle(item)
             elif name == "await":
                 raise CoconutDeferredSyntaxError("await in pipe must have something piped into it", loc)
             elif name == "namedexpr":
@@ -3601,6 +3608,21 @@ else:
             elif direction == "forwards":
                 # if this is an implicit partial, we have something to apply it to, so optimize it
                 name, split_item = self.pipe_item_split(original, loc, item)
+
+                # merge consecutive update sections on the same object into a single update
+                if name == "update" and not stars:
+                    updates = [split_item[0]]
+                    # (stop at the first item, since that's the object being updated)
+                    while (
+                        len(tokens) >= 3
+                        and not isinstance(tokens[-1], list)  # list implies artificial tokens
+                        and "update" in tokens[-1]
+                        and pipe_info(tokens[-2]) == ("forwards", 0, False)
+                    ):
+                        prev_item, _ = tokens.pop(), tokens.pop()
+                        updates.append(self.pipe_item_split(original, loc, prev_item)[1][0])
+                    updates.reverse()
+
                 subexpr = self.pipe_handle(original, loc, tokens)
 
                 if name == "expr":
@@ -3641,6 +3663,10 @@ else:
                     if stars:
                         raise CoconutDeferredSyntaxError("cannot star pipe into await", loc)
                     return self.await_expr_handle(original, loc, [subexpr])
+                elif name == "update":
+                    if stars:
+                        raise CoconutDeferredSyntaxError("cannot star pipe into update section", loc)
+                    return "_coconut_update(" + subexpr + ", " + ", ".join(updates) + ")"
                 elif name == "right arr concat partial":
                     if stars:
                         raise CoconutDeferredSyntaxError("cannot star pipe into array concatenation operator partial", loc)
@@ -3674,7 +3700,7 @@ else:
             )
             if not is_constructor_init:
                 self.pure_error(
-                    "disallowed mutation of an attribute or item (mutating objects is prohibited in --pure mode; make a new object instead, e.g. with data types and ._replace)",
+                    "disallowed mutation of an attribute or item (mutating objects is prohibited in --pure mode; make an updated copy instead, e.g. with an update section such as 'obj |> (.attr = x)')",
                     original,
                     loc,
                     noqa_able=True,
@@ -4015,9 +4041,68 @@ def __new__(_coconut_cls, {match_func_paramdef}):
             pattern_error=self.pattern_error(original, loc, match_to_args_var, check_var, function_match_error_var),
             arg_tuple=tuple_str_of(matcher.name_list),
         )
+        extra_stmts += self.match_data_replace_def(loc, matches, matcher.name_list)
 
         namedtuple_call = self.make_namedtuple_call(name, matcher.name_list)
         return self.assemble_data(decorators, name, namedtuple_call, inherit, extra_stmts, stmts, matcher.name_list)
+
+    def match_data_replace_def(self, loc, matches, fields):
+        """Get a _replace for a pattern-matching data type that reruns its constructor's checks.
+
+        Returns "" (keeping namedtuple's _replace, which doesn't check anything) if the constructor's
+        arguments can't be recovered from the fields, which requires each argument's pattern to bind
+        a field to the whole argument (e.g. x, int() as x, or x `isinstance` int) and each field to be bound that way."""
+        pos_only_args, req_args, default_args, star_arg, kwd_only_args, dubstar_arg = split_args_list(matches, loc)
+        field_inds = dict((field, i) for i, field in enumerate(fields))
+        recovered_fields = set()
+
+        def recover_arg(match):
+            """Get an expression for the value of the given argument with the new fields, or None if it can't be recovered."""
+            names = [name for name in get_match_names(match) if name in field_inds]
+            if not names:
+                return None
+            recovered_fields.update(names)
+            # all of these names are bound to the same value, so just use whichever is being replaced
+            expr = "_self[" + str(field_inds[names[0]]) + "]"
+            for name in reversed(names):
+                expr = 'kwds.get("' + name + '", ' + expr + ")"
+            return expr
+
+        call_args = []
+        for match in pos_only_args + req_args + [match for match, default in default_args]:
+            arg = recover_arg(match)
+            if arg is None:
+                return ""
+            call_args.append(arg)
+        for match, default in kwd_only_args:
+            arg = recover_arg(match)
+            if arg is None:
+                return ""
+            call_args.append(get_match_names(match)[0] + "=" + arg)
+        # star args must come after keyword args to support Python 2
+        for star, match in (("*", star_arg), ("**", dubstar_arg)):
+            if match is not None:
+                arg = recover_arg(match)
+                if arg is None:
+                    return ""
+                call_args.append(star + arg)
+        if recovered_fields != set(fields):
+            return ""
+
+        return handle_indentation(
+            """
+def _replace(_self, {kwd_only}_coconut_match_new=__new__, **kwds):
+    _coconut_unexpected_fields = _coconut.set(kwds) - _coconut.set({fields_tuple})
+    if _coconut_unexpected_fields:
+        raise _coconut.ValueError("Got unexpected field names: " + _coconut.repr(_coconut.list(_coconut_unexpected_fields)))
+    return _coconut_match_new(_self.__class__, {call_args})
+            """,
+            add_newline=True,
+        ).format(
+            kwd_only=("*, " if self.target.startswith("3") else ""),
+            fields_tuple=tuple_str_of(fields, add_quotes=True),
+            call_args=", ".join(call_args),
+        )
 
     def case_datadef_handle(self, original, loc, tokens):
         """Process case data blocks, which define a sum type whose variants are data types.
@@ -4189,6 +4274,7 @@ def __new__(_coconut_cls, {match_func_paramdef}):
                     '''
 def __new__(_coconut_cls, {all_args}):
     return _coconut.tuple.__new__(_coconut_cls, {base_args_tuple} + {starred_arg})
+_coconut_data_star_field = "{starred_arg}"
 @_coconut.classmethod
 def _make(cls, iterable, {kwd_only}new=_coconut.tuple.__new__, len=_coconut.len):
     result = new(cls, iterable)
@@ -4227,6 +4313,7 @@ def _replace(_self, **kwds):
                     '''
 def __new__(_coconut_cls, {all_args}):
     return _coconut.tuple.__new__(_coconut_cls, {arg})
+_coconut_data_star_field = "{arg}"
 @_coconut.classmethod
 def _make(cls, iterable, {kwd_only}new=_coconut.tuple.__new__, len=None):
     return new(cls, iterable)

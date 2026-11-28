@@ -652,6 +652,33 @@ line 6''')
     setup(line_numbers=False, strict=True, target="sys")
     assert_raises(-> parse_with_state("await f x"), CoconutParseError)
 
+    # update sections need their own parentheses
+    assert_raises(-> parse("y = .x = 1"), CoconutParseError)
+    assert_raises(-> parse("y = map(.x = 1, [])"), CoconutParseError)
+    assert_raises(-> parse("y = [.x = 1]"), CoconutParseError)
+    assert_raises(-> parse("y = (.x = 1, 2)"), CoconutParseError)
+    assert_raises(-> parse("y = (.x() = 1)"), CoconutParseError)
+    assert_raises(-> parse("y = [] |*> (.x = 1)"), CoconutSyntaxError, err_has="cannot star pipe into update section")
+    # (but the parentheses of a call with only the update section count)
+    assert parse("f = map$(.x.y[0] = 1)", "lenient") == 'f = _coconut_partial(map, _coconut_updater((("x", "y", [0]), "=", 1)))'
+    assert parse("f = (.[1, 2] += 1)", "lenient") == 'f = (_coconut_updater((([(1, 2)],), "+=", 1)))'
+    # and comparisons with implicit partials still work
+    assert parse("f = (.x == 1)", "lenient") == 'f = (_coconut.operator.attrgetter("x") == 1)'
+    # in pipes, consecutive update sections on the same object are inlined and merged into a single update
+    pipe_updates = parse("p = 1\nq = p |> (.pos.x += 1) |> (.hp -= 10)", "lenient")
+    assert 'q = _coconut_update(p, (("pos", "x"), "+=", 1), (("hp",), "-=", 10))' in pipe_updates, pipe_updates
+    assert "_coconut_updater" not in pipe_updates
+    assert 'q = _coconut_update((f)(_coconut_update(p, (("a",), "=", 1))), (("b",), "=", 2), (("c",), "=", 3))' in parse(
+        "p = f = 1\nq = p |> (.a = 1) |> f |> (.b = 2) |> (.c = 3)",
+        "lenient",
+    )
+    assert "(lambda _coconut_x: None if _coconut_x is None else _coconut_update(_coconut_x, ((\"b\",), \"=\", 2)))(_coconut_update(p, ((\"a\",), \"=\", 1)))" in parse(
+        "p = 1\nq = p |> (.a = 1) |?> (.b = 2)",
+        "lenient",
+    )
+    assert 'q = _coconut_update(p, (("a",), "=", 1))' in parse("p = 1\nq = (.a = 1) <| p", "lenient")
+    assert 'p = _coconut_update(p, (("a",), "|>=", f))' in parse("p = f = 1\np |>= (.a |>= f)", "lenient")
+
     # pure tests
     setup(line_numbers=False, strict=True, pure=True, target="sys")
     # under --pure, multi-case matches and case defs must be total, but one-line matches don't have to be
@@ -725,6 +752,13 @@ line 6''')
     def f(v) = v.append(1)
     def g(x=()) = x
     g(x=[1])
+    """)
+    # update sections don't mutate anything, so they're fine too
+    assert parse(d"""
+    data Point(x: int, y: int)
+    p = Point(1, 2) |> (.x += 1) |> (.y = 0)
+    reset = (.x = 0)
+    xs = [1, 2] |> (.[0] = 3)
     """)
     # nonlocal requires target="3" since it's Python 3 only
     setup(line_numbers=False, strict=True, pure=True, target="3")

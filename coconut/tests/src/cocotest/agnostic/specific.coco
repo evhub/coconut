@@ -193,6 +193,31 @@ def py37_spec_test() -> bool:
     assert typing.Protocol is typing_extensions.Protocol
     assert_raises((def -> raise ExceptionGroup("derp", [Exception("herp")])), ExceptionGroup)
     assert_raises((def -> raise BaseExceptionGroup("derp", [BaseException("herp")])), BaseExceptionGroup)
+
+    # update sections on dataclasses
+    import dataclasses
+    @dataclasses.dataclass(frozen=True)
+    class Item:
+        name: str
+        tags: typing.List[str] = dataclasses.field(default_factory=list)
+    @dataclasses.dataclass
+    class Inventory:
+        owner: str
+        items: typing.List[Item]
+        count: int = 0
+        def __post_init__(self):
+            if self.count < 0:
+                raise ValueError("negative count")
+    inv = Inventory("me", [Item("a")])
+    new_inv = inv |> (.items[0].tags += ["x"]) |> (.count += 2) |> (.owner = "you")
+    assert new_inv == Inventory("you", [Item("a", ["x"])], 2)
+    assert inv == Inventory("me", [Item("a")], 0)
+    assert_raises(-> inv |> (.count -= 1), ValueError)
+    # (since __post_init__ could check intermediate values, updates on dataclasses aren't merged)
+    assert_raises(-> inv |> (.count -= 1) |> (.count += 2), ValueError)
+    assert inv |> (.count += 2) |> (.count -= 1) == Inventory("me", [Item("a")], 1)
+    assert [Item("a"), Item("b")] |> map$(.name *= 2) |> list == [Item("aa"), Item("bb")]
+    assert_raises(-> inv |> (.[0] = "you"), TypeError)
     return True
 
 

@@ -6,7 +6,7 @@
 # -----------------------------------------------------------------------------------------------------------------------
 
 """
-Author: Evan Hubinger
+Authors: Evan Hubinger, Claude
 License: Apache 2.0
 Description: Basic Coconut constants and compatibility handling.
 """
@@ -26,7 +26,7 @@ import sys as _coconut_sys
 VERSION = "3.2.0"
 VERSION_NAME = None
 # False for release, int >= 1 for develop
-DEVELOP = 23
+DEVELOP = 24
 ALPHA = False  # for pre releases rather than post releases
 
 assert DEVELOP is False or DEVELOP >= 1, "DEVELOP must be False or an int >= 1"

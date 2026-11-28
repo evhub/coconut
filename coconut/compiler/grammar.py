@@ -81,6 +81,7 @@ from coconut.constants import (
     new_operators,
     wildcard,
     op_func_protocols,
+    update_op_funcs,
 )
 from coconut.compiler.util import (
     combine,
@@ -120,6 +121,7 @@ from coconut.compiler.util import (
     disambiguate_literal,
     any_of,
     StartOfStrGrammar,
+    tuple_str_of,
 )
 
 
@@ -643,6 +645,29 @@ def partial_op_item_handle(tokens):
         return "_coconut_complex_partial(" + op + ", {1: " + arg + "}, 2, ())"
     else:
         raise CoconutInternalException("invalid operator function implicit partial token group", tok_grp)
+
+
+def update_section_item(tokens):
+    """Get the (path, op, value) tuple that _coconut_update and _coconut_updater take for an update section,
+    where path is a tuple of steps, each either an attribute name or a one-element list of an index."""
+    path, op, value = tokens
+    internal_assert(op == "=" or op in update_op_funcs, "invalid update section operator", op)
+    steps = []
+    for step in path:
+        if isinstance(step, str):  # .attr
+            steps.append('"' + step + '"')
+        else:  # [index] or [index, ...]
+            indices = [index for index in step if index != ","]
+            if len(indices) == 1 and len(step) == 1:
+                steps.append("[" + indices[0] + "]")
+            else:
+                steps.append("[" + tuple_str_of(indices) + "]")
+    return "(" + tuple_str_of(steps) + ', "' + op + '", ' + value + ")"
+
+
+def update_section_handle(tokens):
+    """Process update sections (.<path> <op> <value>)."""
+    return "_coconut_updater(" + update_section_item(tokens) + ")"
 
 
 def partial_arr_concat_handle(tokens):
@@ -1227,14 +1252,19 @@ class Grammar(object):
             | labeled_group(test_no_infix + partialable_op + dot.suppress(), "left partial")
         )
         partial_op_item = attach(partial_op_item_tokens, partial_op_item_handle)
+        # (.<path> <op> <value>); like operator sections, these need their own parentheses
+        update_section_tokens = Forward()
+        update_section = attach(update_section_tokens, update_section_handle)
         op_item = (
             # must stay in exactly this order
             partial_op_item
+            | update_section
             | typedef_op_item
             | base_op_item
         )
 
         partial_op_atom_tokens = lparen.suppress() + partial_op_item_tokens + rparen.suppress()
+        update_section_atom_tokens = lparen.suppress() + update_section_tokens + rparen.suppress()
 
         partial_arr_concat_tokens = lbrack.suppress() + (
             labeled_group(dot.suppress() + multisemicolon + test_no_infix + rbrack.suppress(), "right arr concat partial")
@@ -1380,6 +1410,18 @@ class Grammar(object):
             subscriptgroup_handle,
         )
         subscriptgrouplist = itemlist(subscriptgroup, comma)
+
+        # paths are attribute names (as strings) and indices (as groups)
+        update_section_index = Group(lbrack.suppress() + tokenlist(subscriptgroup, comma, suppress=False) + rbrack.suppress())
+        update_section_tokens <<= (
+            dot.suppress()
+            + Group(
+                (unsafe_name | update_section_index)
+                + ZeroOrMore(dot.suppress() + unsafe_name | update_section_index)
+            )
+            + (augassign | equals)
+            + test
+        )
 
         anon_namedtuple = Forward()
         maybe_typedef = Optional(colon.suppress() + typedef_test)
@@ -1786,6 +1828,7 @@ class Grammar(object):
             | labeled_group(itemgetter_atom_tokens, "itemgetter") + pipe_op
             | labeled_group(attrgetter_atom_tokens, "attrgetter") + pipe_op
             | labeled_group(partial_op_atom_tokens, "op partial") + pipe_op
+            | labeled_group(update_section_atom_tokens, "update") + pipe_op
             | labeled_group(partial_arr_concat_tokens, "arr concat partial") + pipe_op
             | labeled_group(pipe_namedexpr_partial, "namedexpr") + pipe_op
             # expr must come at end
@@ -1798,6 +1841,7 @@ class Grammar(object):
             | labeled_group(itemgetter_atom_tokens, "itemgetter") + end_simple_stmt_item
             | labeled_group(attrgetter_atom_tokens, "attrgetter") + end_simple_stmt_item
             | labeled_group(partial_op_atom_tokens, "op partial") + end_simple_stmt_item
+            | labeled_group(update_section_atom_tokens, "update") + end_simple_stmt_item
             | labeled_group(partial_arr_concat_tokens, "arr concat partial") + end_simple_stmt_item
             | labeled_group(pipe_namedexpr_partial, "namedexpr") + end_simple_stmt_item
         )
@@ -1810,6 +1854,7 @@ class Grammar(object):
                 itemgetter_atom_tokens("itemgetter"),
                 attrgetter_atom_tokens("attrgetter"),
                 partial_op_atom_tokens("op partial"),
+                update_section_atom_tokens("update"),
                 partial_arr_concat_tokens("arr concat partial"),
                 pipe_namedexpr_partial("namedexpr"),
                 comp_pipe_expr("expr"),
