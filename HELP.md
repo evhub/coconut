@@ -1285,6 +1285,46 @@ iter$[]
 
 For a full explanation of what each implicit partial does, see Coconut's documentation on [implicit partials](./DOCS.md#implicit-partial-application).
 
+### Point-Free Helpers
+
+Together with function composition and partial application, a handful of built-in higher-order functions make it possible to define many functions without ever naming their arguments, a style known as _point-free_ programming. The most powerful of these is [`lift`](./DOCS.md#lift-and-lift_apart), which "lifts" a function so that it takes functions as its arguments, such that `lift(f)(g, h)(x)` is `f(g(x), h(x))`:
+```coconut
+mean = lift(/)(sum, len)
+
+mean([1, 2, 3, 6]) |> print  # 3.0
+```
+Here `mean(xs)` is `sum(xs) / len(xs)`, but we never had to mention `xs`. (As with `reduce$(*)`, when an operator function is the only argument to a function, the call's parentheses can double as the operator function's.)
+
+Then there's [`ident`](./DOCS.md#ident), the identity function, which takes an optional `side_effect` function to call on its argument before returning it. That makes `ident$(side_effect=print)` a great tool for debugging pipelines, since you can drop it in anywhere to see what's flowing through without changing the result:
+```coconut
+total = range(3) |> map$(.*10) |> map$(ident$(side_effect=print)) |> sum  # prints 0, 10, and 20
+total |> print  # 30
+```
+
+Finally, `const(x)` makes a function that always returns `x`, `flip(f)` reverses the order of `f`'s arguments, and `call(f, *args)` calls `f(*args)`:
+```coconut
+[1, 2, 3] |> map$(const(0)) |> list |> print  # [0, 0, 0]
+flip(pow)(2, 3) |> print  # 9
+[(+), (*)] |> map$(call$(?, 3, 4)) |> list |> print  # [7, 12]
+```
+
+**Your turn:** use `lift` to define `spread`, which computes the difference between the largest and smallest numbers in a list, without naming its argument.
+```coconut
+# Test cases:
+[3, 1, 4, 1, 5] |> spread |> print  # 4
+[7] |> spread |> print  # 0
+```
+
+<details>
+<summary>Show solution</summary>
+
+```coconut
+spread = lift(-)(max, min)
+```
+`lift(-)(max, min)(xs)` is `max(xs) - min(xs)`.
+
+</details>
+
 ### None-Aware Operators
 
 In Python, `None` is used everywhere to mean "nothing here," which leads to a lot of `x if x is not None else ...` checks. Coconut provides [`None`-aware operators](./DOCS.md#none-coalescing) to write those for you. The `??` operator evaluates to its left side unless that's `None`, in which case it evaluates to its right side (which it only evaluates if it needs to). Unlike `or`, it doesn't replace other falsy values like `0` or `""`:
