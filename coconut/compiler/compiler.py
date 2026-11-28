@@ -6718,9 +6718,12 @@ class {protocol_var}({tokens}, _coconut.typing.Protocol): pass
                     return err
 
         # undefined name checking
+        #  (which needs the computation graph, since without it, handlers run during
+        #  speculative parses, before all the names they might reference are recorded)
         if (
             not assign
             and not escaped
+            and USE_COMPUTATION_GRAPH
             and safe_to_show_warnings
             and not self.star_import
             and scope["all_vars"] is not None
