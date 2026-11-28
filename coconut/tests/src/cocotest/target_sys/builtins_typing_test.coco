@@ -13,30 +13,29 @@ stubs say. Note that the type checks come before the runtime checks, since asser
 things like `x == 1` narrows the type of x.
 """
 
+# (these are used in annotations, which aren't wrapped in strings with --no-wrap, so they have to exist at runtime)
+from typing import (
+    Any,
+    AsyncIterator,
+    Callable,
+    Coroutine,
+    DefaultDict,
+    Deque,
+    Dict,
+    FrozenSet,
+    Iterable,
+    Iterator,
+    List,
+    NoReturn,
+    Optional,
+    Set,
+    Tuple,
+    Union,
+)
+
 if TYPE_CHECKING:
-    from typing import (
-        Any,
-        AsyncIterator,
-        Callable,
-        Coroutine,
-        DefaultDict,
-        Deque,
-        Dict,
-        FrozenSet,
-        Iterable,
-        Iterator,
-        NoReturn,
-        Optional,
-        Set,
-        Tuple,
-        Union,
-    )
     from contextlib import AbstractContextManager
     from typing_extensions import assert_type
-
-
-# (List is used in annotations, which aren't wrapped in strings with --no-wrap, so it has to exist at runtime)
-from typing import List
 
 # helpers with precise types (since lambda arguments are untyped)
 def inc(x: int) -> int = x + 1
@@ -73,7 +72,8 @@ data Vec2(x: int, y: int)
 class Box[T]:
     def __init__(self, item: T) -> None:
         self.item = item
-    def __fmap__[U](self, func: T -> U) -> Box[U] = Box(func(self.item))
+    # (Box isn't defined yet when the annotation is evaluated with --no-wrap, so it has to be a string)
+    def __fmap__[U](self, func: T -> U) -> "Box[U]" = Box(func(self.item))
 
 class OverrideBase:
     def meth(self) -> int = 1
